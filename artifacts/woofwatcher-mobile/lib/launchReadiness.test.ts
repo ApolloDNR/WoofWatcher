@@ -50,6 +50,7 @@ const fullyApprovedInput: LaunchReadinessInput = {
     privacyLegalApproved: true,
     pushNotificationsConfigured: true,
     storageProviderConfigured: true,
+    storageProviderProofReady: true,
     supportRunbookApproved: true,
   },
   syncStatus: "ready",
@@ -150,6 +151,34 @@ test("surfaces sync and local foundation gaps before provider approval", () => {
   const syncTile = plan.tiles.find((tile) => tile.key === "care-sync");
   assert.equal(syncTile?.status, "review");
   assert.equal(syncTile?.value, "Needs review");
+});
+
+test("keeps records storage blocked when provider setup lacks structured storage proof", () => {
+  const plan = deriveLaunchReadiness({
+    ...fullyApprovedInput,
+    provider: {
+      ...fullyApprovedInput.provider,
+      storageProviderConfigured: true,
+      storageProviderProofReady: false,
+      storageQueue: {
+        total: 3,
+        localOnly: 3,
+        uploadReady: 0,
+        providerSaved: 0,
+        labels: ["record document", "qa screenshot"],
+        detail: "3 local files need structured storage proof before provider upload.",
+      },
+    },
+  });
+
+  assert.equal(plan.status, "provider-gated");
+  assert.equal(plan.storeLaunchReady, false);
+  assert.ok(plan.blockers.some((blocker) => /structured storage proof/i.test(blocker)));
+
+  const storageTile = plan.tiles.find((tile) => tile.key === "storage");
+  assert.equal(storageTile?.status, "blocked");
+  assert.equal(storageTile?.value, "3 local files gated");
+  assert.match(storageTile?.detail ?? "", /structured storage proof/i);
 });
 
 test("distinguishes owner-staged support packets from final legal and store approval", () => {

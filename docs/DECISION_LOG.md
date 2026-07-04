@@ -1804,6 +1804,23 @@ Owner: Codex.
 
 Revisit trigger: Apollo attaches real storage/provider proof files, or WoofWatcher gains a provider-backed report-storage evidence service with signed bucket, policy, and lifecycle metadata.
 
+### 2026-07-04: Attachment Storage Readiness Requires Structured Proof
+
+Decision: the shared attachment manifest cannot treat `storageProviderConfigured` as upload readiness for local medication proof photos, record documents, Adventure memories, Care Pass reports, or QA screenshots. Local attachment queues remain `local-only` until structured attachment storage proof satisfies the shared storage boundary.
+
+Reason: attachment storage spans owner care proof, medical records, generated handoffs, and QA evidence. A single storage checkbox can hide missing bucket names, signed upload/download rules, household scoping, retention/export/deletion approval, QA evidence ownership, and Apollo approval.
+
+Consequences:
+
+- `deriveAttachmentManifest` keeps local attachments blocked as `local-only` when only `storageProviderConfigured` is true.
+- Attachment storage proof must include a file name or URI, acceptable MIME, positive byte size, at least three bucket names, signed upload and download policies, household scope, retention, export, deletion, QA evidence storage, approval owner, and row-specific approval booleans.
+- More Launch Readiness and Privacy & Safety now require a separate `storageProviderProofReady`/structured proof boundary before storage can contribute to release readiness.
+- Real storage bucket configuration, signed policy files, native share/reopen proof, store review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real attachment-storage provider proof files, or WoofWatcher gains a provider-backed attachment evidence service with signed bucket, policy, object lifecycle, and approval metadata.
+
 ### 2026-07-04: Auth Provider Readiness Requires Structured Proof Files
 
 Decision: the Auth/Setup proof manifest cannot treat `clerkProductionApproved`, `redirectDeepLinkApproved`, `householdSyncApproved`, or `launchGateApproved` as account/onboarding readiness. Legacy booleans can stage row copy only; readiness requires structured proof files for Clerk production, redirect/deep-link URLs, household membership policy, and Apollo auth launch approval.

@@ -255,6 +255,8 @@ const runtimeSmokePreviewPath = join(mobileRoot, "scripts", "smoke-runtime-previ
 const livePreviewHandoffProofPath = join(mobileRoot, "scripts", "live-preview-handoff-proof.js");
 const avatarSpriteProductionQaPath = join(mobileRoot, "lib", "avatarSpriteProductionQa.ts");
 const launchProviderSetupPath = join(mobileRoot, "lib", "launchProviderSetup.ts");
+const attachmentManifestPath = join(mobileRoot, "lib", "attachmentManifest.ts");
+const launchReadinessPath = join(mobileRoot, "lib", "launchReadiness.ts");
 const authProviderProofPath = join(mobileRoot, "lib", "authProviderProof.ts");
 const authUiPath = join(mobileRoot, "components", "auth-ui.tsx");
 const aiProviderProofPath = join(mobileRoot, "lib", "aiProviderProof.ts");
@@ -282,6 +284,8 @@ const runtimeSmokePreviewSource = existsSync(runtimeSmokePreviewPath) ? readFile
 const livePreviewHandoffProofSource = existsSync(livePreviewHandoffProofPath) ? readFileSync(livePreviewHandoffProofPath, "utf8") : "";
 const avatarSpriteProductionQaSource = existsSync(avatarSpriteProductionQaPath) ? readFileSync(avatarSpriteProductionQaPath, "utf8") : "";
 const launchProviderSetupSource = existsSync(launchProviderSetupPath) ? readFileSync(launchProviderSetupPath, "utf8") : "";
+const attachmentManifestSource = existsSync(attachmentManifestPath) ? readFileSync(attachmentManifestPath, "utf8") : "";
+const launchReadinessSource = existsSync(launchReadinessPath) ? readFileSync(launchReadinessPath, "utf8") : "";
 const authProviderProofSource = existsSync(authProviderProofPath) ? readFileSync(authProviderProofPath, "utf8") : "";
 const authUiSource = existsSync(authUiPath) ? readFileSync(authUiPath, "utf8") : "";
 const aiProviderProofSource = existsSync(aiProviderProofPath) ? readFileSync(aiProviderProofPath, "utf8") : "";
@@ -963,6 +967,37 @@ check(
   providerAwareCarePassStorageIsSourceBacked
     ? "Records report history follows provider-approved Provider Launch Setup storage readiness without claiming provider-backed upload"
     : "keep Care Pass storage status wired through Provider Launch Setup, Records, and the shared care-domain helper",
+);
+
+const attachmentStorageProofGuardIsSourceBacked = includesAll(attachmentManifestSource, [
+  "AttachmentStorageProviderEvidence",
+  "isAttachmentStorageProviderProofReady",
+  "storageProviderEvidence",
+  "signedUploadPolicy",
+  "signedDownloadPolicy",
+  "householdScopePolicy",
+  "retentionPolicy",
+  "exportPolicy",
+  "deletionPolicy",
+  "qaEvidenceStoragePolicy",
+  "apolloApproved",
+])
+  && includesAll(launchReadinessSource, [
+    "storageProviderProofReady",
+    "Document storage provider requires structured storage proof evidence.",
+    "Attach records storage proof",
+  ])
+  && includesAll(moreRouteSource, [
+    "storageProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.storageProviderConfigured)",
+    "storageProviderProofReady: false",
+    "storageQueue: attachmentManifest.launchQueue",
+  ]);
+check(
+  "attachment storage proof guard is source-backed",
+  attachmentStorageProofGuardIsSourceBacked,
+  attachmentStorageProofGuardIsSourceBacked
+    ? "Attachment queues stay local until structured storage proof files cover buckets, signed access, household scope, retention/export/deletion, QA evidence storage, and Apollo approval"
+    : "keep attachment manifest, launch readiness, and More wired so storageProviderConfigured alone cannot mark local attachments upload-ready",
 );
 
 const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileReleaseQaSource, [

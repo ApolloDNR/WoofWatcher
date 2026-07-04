@@ -7,6 +7,7 @@ import {
   deriveAccountSafetyPlan,
   serializePrivacyExportBundle,
 } from "./privacySafety.ts";
+import type { AttachmentStorageProviderEvidence } from "./attachmentManifest.ts";
 
 const NOW = new Date("2026-06-08T14:00:00.000Z").getTime();
 
@@ -90,6 +91,29 @@ const state = {
   ],
 };
 
+function completeStorageEvidence(): AttachmentStorageProviderEvidence {
+  return {
+    fileName: "attachment-storage-provider-proof.json",
+    uri: "file:///provider-proof/attachment-storage-provider-proof.json",
+    mimeType: "application/json",
+    byteSize: 24_512,
+    bucketNames: ["care-proof-photos", "record-documents", "qa-evidence"],
+    signedUploadPolicy: "Signed upload policy covers care proof photos, record documents, reports, and QA screenshots.",
+    signedDownloadPolicy: "Signed downloads are household scoped with expiring links.",
+    householdScopePolicy: "Objects are keyed by household and dog id, with owner/admin access review.",
+    retentionPolicy: "Retention rules match care export, deletion, and legal hold requirements.",
+    exportPolicy: "Owner exports include attachment object ids, names, and signed export references.",
+    deletionPolicy: "Deletion receipts cover all attachment buckets and object ids.",
+    qaEvidenceStoragePolicy: "QA screenshots and native proof files are stored separately with release audit ownership.",
+    apolloApprovalOwner: "Apollo Duran",
+    signedAccessApproved: true,
+    householdScopeApproved: true,
+    retentionExportDeletionApproved: true,
+    qaEvidenceStorageApproved: true,
+    apolloApproved: true,
+  };
+}
+
 test("builds an owner export bundle with counts and care data", () => {
   const bundle = buildPrivacyExportBundle(
     state,
@@ -169,6 +193,35 @@ test("derives launch safety plan before storage, deletion, AI, and payments are 
   assert.equal(plan.payments.status, "blocked");
   assert.ok(plan.launchBlockers.some((blocker) => /account deletion/i.test(blocker)));
   assert.ok(plan.launchBlockers.some((blocker) => /document storage/i.test(blocker)));
+});
+
+test("keeps document storage blocked when provider setup lacks structured proof evidence", () => {
+  const plan = deriveAccountSafetyPlan({
+    state,
+    aiProviderConfigured: true,
+    storageProviderConfigured: true,
+    accountDeletionEnabled: true,
+    paymentsEnabled: true,
+  });
+
+  assert.equal(plan.documentStorage.status, "blocked");
+  assert.match(plan.documentStorage.detail, /structured storage proof/i);
+  assert.ok(plan.launchBlockers.some((blocker) => /structured storage proof/i.test(blocker)));
+});
+
+test("opens document storage review only with complete structured provider proof", () => {
+  const plan = deriveAccountSafetyPlan({
+    state,
+    aiProviderConfigured: true,
+    storageProviderConfigured: true,
+    storageProviderEvidence: completeStorageEvidence(),
+    accountDeletionEnabled: true,
+    paymentsEnabled: true,
+  });
+
+  assert.equal(plan.documentStorage.status, "ready");
+  assert.match(plan.documentStorage.detail, /ready for provider upload/i);
+  assert.ok(plan.launchBlockers.every((blocker) => !/document storage/i.test(blocker)));
 });
 
 test("builds a non-destructive account deletion request", () => {

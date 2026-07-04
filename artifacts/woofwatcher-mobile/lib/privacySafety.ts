@@ -2,8 +2,10 @@ import {
   buildAttachmentReviewRows,
   deriveAttachmentManifest,
   formatAttachmentManifestSummary,
+  isAttachmentStorageProviderProofReady,
   type AttachmentReviewRow,
   type AttachmentLaunchQueue,
+  type AttachmentStorageProviderEvidence,
 } from "./attachmentManifest.ts";
 
 export interface PrivacyExportProfile {
@@ -138,6 +140,7 @@ export interface AccountSafetyPlanInput {
   state: PrivacyExportState;
   aiProviderConfigured?: boolean;
   storageProviderConfigured?: boolean;
+  storageProviderEvidence?: AttachmentStorageProviderEvidence | null;
   accountDeletionEnabled?: boolean;
   paymentsEnabled?: boolean;
 }
@@ -267,16 +270,23 @@ export function deriveAccountSafetyPlan(input: AccountSafetyPlanInput): AccountS
 
   const accountDeletionEnabled = Boolean(input.accountDeletionEnabled);
   const storageProviderConfigured = Boolean(input.storageProviderConfigured);
+  const storageProviderProofReady = isAttachmentStorageProviderProofReady({
+    storageProviderConfigured,
+    storageProviderEvidence: input.storageProviderEvidence,
+  });
   const aiProviderConfigured = Boolean(input.aiProviderConfigured);
   const paymentsEnabled = Boolean(input.paymentsEnabled);
-  const attachmentManifest = deriveAttachmentManifest(input.state, { storageProviderConfigured });
+  const attachmentManifest = deriveAttachmentManifest(input.state, {
+    storageProviderConfigured,
+    storageProviderEvidence: input.storageProviderEvidence,
+  });
   const attachmentSummary = formatAttachmentManifestSummary(attachmentManifest);
 
   if (!accountDeletionEnabled) {
     launchBlockers.push("Self-serve account deletion is not enabled.");
   }
-  if (!storageProviderConfigured) {
-    launchBlockers.push("Document storage provider and access rules are not approved.");
+  if (!storageProviderProofReady) {
+    launchBlockers.push("Document storage provider requires structured storage proof evidence.");
   }
   if (!aiProviderConfigured) {
     launchBlockers.push("AI provider key and model policy are not configured.");
@@ -309,13 +319,13 @@ export function deriveAccountSafetyPlan(input: AccountSafetyPlanInput): AccountS
       action: "Review disclosure",
     },
     documentStorage: {
-      status: storageProviderConfigured ? "ready" : "blocked",
+      status: storageProviderProofReady ? "ready" : "blocked",
       title: "Document storage rules",
-      detail: storageProviderConfigured
+      detail: storageProviderProofReady
         ? attachmentManifest.uploadReady > 0
           ? `${attachmentSummary} Verify provider migration before release.`
           : "Uploaded records must stay household-scoped with reviewable export and deletion rules."
-        : `${attachmentSummary} Uploads stay disabled until storage, signed access, retention, and deletion rules are approved.`,
+        : `${attachmentSummary} Uploads stay disabled until structured storage proof covers buckets, signed access, household scope, retention, export, deletion, QA evidence storage, and Apollo approval.`,
       action: "Review rules",
     },
     payments: {

@@ -244,6 +244,16 @@ Current environment note:
   proves the structured proof guard only; real Clerk configuration, OAuth,
   provider-backed household creation, native screenshots, store review, public
   launch, and Apollo sign-off remain blocked.
+- Local proof also hardened the shared attachment storage queue on 2026-07-04:
+  medication proof photos, record documents, Adventure memories, Care Pass
+  reports, and QA screenshots stay local-only until structured storage proof
+  files cover bucket names, signed upload/download, household scope,
+  retention/export/deletion, QA evidence storage, approval owner, and approval
+  booleans. Focused attachment/privacy/launch/release/store/mobile readiness
+  tests passed `142/142`, the full zero-dependency suite passed `581/581`, and
+  the JSON mobile beta doctor reports `attachment storage proof guard is
+  source-backed` as `PASS`; real storage provider proof, native evidence, store
+  review, public launch, and Apollo sign-off remain blocked.
 - Branch CI also proved the focused payments provider proof target on 2026-07-03:
   `WoofWatcher Verify` run `28676385615`, job `85050584288`, commit `3b5f4ab`,
   completed successfully in `3m3s` with Setup pnpm, Setup Node, install, JSON

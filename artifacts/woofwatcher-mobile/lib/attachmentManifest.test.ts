@@ -5,6 +5,7 @@ import {
   buildAttachmentReviewRows,
   deriveAttachmentManifest,
   formatAttachmentManifestSummary,
+  type AttachmentStorageProviderEvidence,
   type AttachmentManifestInput,
 } from "./attachmentManifest.ts";
 
@@ -72,6 +73,29 @@ const mixedLocalState: AttachmentManifestInput = {
   ],
 };
 
+function completeStorageEvidence(): AttachmentStorageProviderEvidence {
+  return {
+    fileName: "attachment-storage-provider-proof.json",
+    uri: "file:///provider-proof/attachment-storage-provider-proof.json",
+    mimeType: "application/json",
+    byteSize: 24_512,
+    bucketNames: ["care-proof-photos", "record-documents", "qa-evidence"],
+    signedUploadPolicy: "Signed upload policy covers care proof photos, record documents, reports, and QA screenshots.",
+    signedDownloadPolicy: "Signed downloads are household scoped with expiring links.",
+    householdScopePolicy: "Objects are keyed by household and dog id, with owner/admin access review.",
+    retentionPolicy: "Retention rules match care export, deletion, and legal hold requirements.",
+    exportPolicy: "Owner exports include attachment object ids, names, and signed export references.",
+    deletionPolicy: "Deletion receipts cover all attachment buckets and object ids.",
+    qaEvidenceStoragePolicy: "QA screenshots and native proof files are stored separately with release audit ownership.",
+    apolloApprovalOwner: "Apollo Duran",
+    signedAccessApproved: true,
+    householdScopeApproved: true,
+    retentionExportDeletionApproved: true,
+    qaEvidenceStorageApproved: true,
+    apolloApproved: true,
+  };
+}
+
 test("builds one local attachment queue across proof, records, memories, reports, and QA evidence", () => {
   const manifest = deriveAttachmentManifest(mixedLocalState, { storageProviderConfigured: false });
 
@@ -95,8 +119,23 @@ test("builds one local attachment queue across proof, records, memories, reports
   assert.equal(formatAttachmentManifestSummary(manifest), "5 local files waiting for approved storage rules.");
 });
 
-test("marks local attachments upload-ready once storage provider rules exist", () => {
+test("keeps local attachments blocked when storage rules lack structured proof evidence", () => {
   const manifest = deriveAttachmentManifest(mixedLocalState, { storageProviderConfigured: true });
+
+  assert.equal(manifest.total, 5);
+  assert.equal(manifest.localOnly, 5);
+  assert.equal(manifest.uploadReady, 0);
+  assert.equal(manifest.status, "provider-required");
+  assert.equal(manifest.launchQueue.total, 5);
+  assert.equal(manifest.launchQueue.uploadReady, 0);
+  assert.match(formatAttachmentManifestSummary(manifest), /waiting for approved storage rules/i);
+});
+
+test("marks local attachments upload-ready only with complete structured provider proof", () => {
+  const manifest = deriveAttachmentManifest(mixedLocalState, {
+    storageProviderConfigured: true,
+    storageProviderEvidence: completeStorageEvidence(),
+  });
 
   assert.equal(manifest.total, 5);
   assert.equal(manifest.localOnly, 0);
@@ -132,7 +171,10 @@ test("builds owner-facing attachment review rows by source kind", () => {
 });
 
 test("marks attachment review rows upload-ready after provider storage is configured", () => {
-  const manifest = deriveAttachmentManifest(mixedLocalState, { storageProviderConfigured: true });
+  const manifest = deriveAttachmentManifest(mixedLocalState, {
+    storageProviderConfigured: true,
+    storageProviderEvidence: completeStorageEvidence(),
+  });
   const rows = buildAttachmentReviewRows(manifest);
 
   assert.equal(rows[0]?.statusLabel, "Ready for provider upload");

@@ -64,6 +64,7 @@ const completeInput: LaunchReadinessInput = {
     appStoreAccountsReady: true,
     privacyLegalApproved: true,
     supportRunbookApproved: true,
+    storageProviderProofReady: true,
   },
   syncStatus: "ready",
 };

@@ -1042,6 +1042,7 @@ export default function MoreScreen() {
           authConfigured: Boolean(launchProviderSetupPlan.providerInput.authConfigured),
           databaseConfigured: Boolean(launchProviderSetupPlan.providerInput.databaseConfigured),
           storageProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.storageProviderConfigured),
+          storageProviderProofReady: false,
           storageQueue: attachmentManifest.launchQueue,
           aiProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.aiProviderConfigured),
           paymentsEnabled: Boolean(launchProviderSetupPlan.providerInput.paymentsEnabled),

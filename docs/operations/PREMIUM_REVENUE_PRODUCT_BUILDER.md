@@ -3527,6 +3527,28 @@ successfully in about `3m12s` with Setup pnpm, Setup Node, install, JSON mobile
 beta doctor, focused behavior tests, Typecheck plus CI-safe builds, post steps,
 and Complete job all passing.
 
+The shared Attachment Storage structured-proof pass closes the remaining
+generic-storage overclaim in the local attachment queue. `deriveAttachmentManifest`
+now keeps local medication proof photos, record documents, Adventure memories,
+Care Pass reports, and QA screenshots `local-only` when only
+`storageProviderConfigured` is staged. Upload-ready storage requires
+`AttachmentStorageProviderEvidence` with proof file naming, acceptable MIME,
+positive byte size, at least three bucket names, signed upload/download
+policies, household scope, retention/export/deletion rules, QA evidence storage
+policy, approval owner, and approval booleans. More Launch Readiness and
+Privacy & Safety now consume the same proof boundary. Fresh local proof passed
+`attachmentManifest.test.ts` `6/6`, focused attachment/privacy/launch/release/
+store/mobile readiness tests `142/142`, the full zero-dependency API/mobile/PWA/
+care-domain suite `581/581`, root TypeScript, mobile TypeScript, direct JSON
+doctor source-backed checks including `attachment storage proof guard is
+source-backed`, and `git diff --check`. Direct JSON mobile beta doctor remains
+truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned `10.24.0` and missing
+Corepack; direct native QA tooling doctor remains `BLOCKED` on missing `adb`,
+`emulator`, `java`, Android SDK env vars, and `JAVA_HOME`. This is proof gating
+only; it does not configure storage buckets, attach signed policy evidence,
+prove native iOS/Android share/reopen, satisfy store review, launch publicly, or
+replace Apollo sign-off.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

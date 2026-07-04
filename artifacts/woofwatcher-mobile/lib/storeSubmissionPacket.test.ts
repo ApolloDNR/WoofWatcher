@@ -60,6 +60,7 @@ const completeInput: LaunchReadinessInput = {
     authConfigured: true,
     databaseConfigured: true,
     storageProviderConfigured: true,
+    storageProviderProofReady: true,
     aiProviderConfigured: true,
     paymentsEnabled: true,
     accountDeletionEnabled: true,

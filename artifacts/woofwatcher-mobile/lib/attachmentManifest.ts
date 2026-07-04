@@ -18,6 +18,28 @@ export interface AttachmentManifestInput {
 
 export interface AttachmentManifestOptions {
   storageProviderConfigured?: boolean;
+  storageProviderEvidence?: AttachmentStorageProviderEvidence | null;
+}
+
+export interface AttachmentStorageProviderEvidence {
+  fileName?: string | null;
+  uri?: string | null;
+  mimeType?: string | null;
+  byteSize?: number | null;
+  bucketNames?: readonly string[] | null;
+  signedUploadPolicy?: string | null;
+  signedDownloadPolicy?: string | null;
+  householdScopePolicy?: string | null;
+  retentionPolicy?: string | null;
+  exportPolicy?: string | null;
+  deletionPolicy?: string | null;
+  qaEvidenceStoragePolicy?: string | null;
+  apolloApprovalOwner?: string | null;
+  signedAccessApproved?: boolean | null;
+  householdScopeApproved?: boolean | null;
+  retentionExportDeletionApproved?: boolean | null;
+  qaEvidenceStorageApproved?: boolean | null;
+  apolloApproved?: boolean | null;
 }
 
 export interface AttachmentManifestItem {
@@ -104,7 +126,56 @@ function fileLabel(value: number): string {
   return `${value} local ${value === 1 ? "file" : "files"}`;
 }
 
-function storageStateFor(explicitStatus: string, storageProviderConfigured: boolean): AttachmentStorageState {
+function hasText(value: unknown): boolean {
+  return clean(value).length > 0;
+}
+
+function normalize(value: unknown): string {
+  return clean(value).toLowerCase();
+}
+
+function hasProofMime(value: unknown): boolean {
+  const mime = normalize(value);
+  return mime === "application/json" || mime === "application/pdf" || mime === "text/markdown" || mime === "text/plain";
+}
+
+function hasPositiveByteSize(value: unknown): boolean {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function hasEnoughBuckets(value: unknown): boolean {
+  return Array.isArray(value) && value.map(clean).filter(Boolean).length >= 3;
+}
+
+export function isAttachmentStorageProviderProofReady(options: AttachmentManifestOptions = {}): boolean {
+  const evidence = options.storageProviderEvidence;
+  if (!options.storageProviderConfigured || !evidence) return false;
+
+  const locator = `${normalize(evidence.fileName)} ${normalize(evidence.uri)}`;
+  const namesStorageProof = locator.includes("attachment") && locator.includes("storage") && locator.includes("proof");
+
+  return Boolean(
+    namesStorageProof &&
+      hasProofMime(evidence.mimeType) &&
+      hasPositiveByteSize(evidence.byteSize) &&
+      hasEnoughBuckets(evidence.bucketNames) &&
+      hasText(evidence.signedUploadPolicy) &&
+      hasText(evidence.signedDownloadPolicy) &&
+      hasText(evidence.householdScopePolicy) &&
+      hasText(evidence.retentionPolicy) &&
+      hasText(evidence.exportPolicy) &&
+      hasText(evidence.deletionPolicy) &&
+      hasText(evidence.qaEvidenceStoragePolicy) &&
+      hasText(evidence.apolloApprovalOwner) &&
+      evidence.signedAccessApproved === true &&
+      evidence.householdScopeApproved === true &&
+      evidence.retentionExportDeletionApproved === true &&
+      evidence.qaEvidenceStorageApproved === true &&
+      evidence.apolloApproved === true,
+  );
+}
+
+function storageStateFor(explicitStatus: string, storageProviderReady: boolean): AttachmentStorageState {
   const normalized = explicitStatus.toLowerCase();
   if (
     normalized === "provider-saved" ||
@@ -115,7 +186,7 @@ function storageStateFor(explicitStatus: string, storageProviderConfigured: bool
     return "provider-saved";
   }
 
-  return storageProviderConfigured ? "upload-ready" : "local-only";
+  return storageProviderReady ? "upload-ready" : "local-only";
 }
 
 function pushItem(
@@ -128,7 +199,7 @@ function pushItem(
     uri?: string;
     explicitStatus?: string;
   },
-  storageProviderConfigured: boolean,
+  storageProviderReady: boolean,
 ): void {
   const sourceId = clean(input.sourceId);
   const label = clean(input.label);
@@ -144,14 +215,14 @@ function pushItem(
     label: label || fileName || KIND_LABELS[input.kind],
     fileName: fileName || `${sourceId}-${input.kind}`,
     uri: uri || null,
-    storageState: storageStateFor(clean(input.explicitStatus), storageProviderConfigured),
+    storageState: storageStateFor(clean(input.explicitStatus), storageProviderReady),
   });
 }
 
 function collectCareLogProofs(
   items: AttachmentManifestItem[],
   entries: readonly unknown[],
-  storageProviderConfigured: boolean,
+  storageProviderReady: boolean,
 ): void {
   for (const entryValue of entries) {
     const entry = asRecord(entryValue);
@@ -170,7 +241,7 @@ function collectCareLogProofs(
         uri,
         explicitStatus: clean(details.photoProofStorageStatus),
       },
-      storageProviderConfigured,
+      storageProviderReady,
     );
   }
 }
@@ -178,7 +249,7 @@ function collectCareLogProofs(
 function collectRecordDocuments(
   items: AttachmentManifestItem[],
   records: readonly unknown[],
-  storageProviderConfigured: boolean,
+  storageProviderReady: boolean,
 ): void {
   for (const recordValue of records) {
     const record = asRecord(recordValue);
@@ -196,7 +267,7 @@ function collectRecordDocuments(
         uri,
         explicitStatus: clean(record.attachmentStorageStatus),
       },
-      storageProviderConfigured,
+      storageProviderReady,
     );
   }
 }
@@ -204,7 +275,7 @@ function collectRecordDocuments(
 function collectAdventureMemories(
   items: AttachmentManifestItem[],
   memories: readonly unknown[],
-  storageProviderConfigured: boolean,
+  storageProviderReady: boolean,
 ): void {
   for (const memoryValue of memories) {
     const memory = asRecord(memoryValue);
@@ -222,7 +293,7 @@ function collectAdventureMemories(
         uri,
         explicitStatus: mediaStatus || clean(memory.storageStatus),
       },
-      storageProviderConfigured,
+      storageProviderReady,
     );
   }
 }
@@ -230,7 +301,7 @@ function collectAdventureMemories(
 function collectReportArtifacts(
   items: AttachmentManifestItem[],
   artifacts: readonly unknown[],
-  storageProviderConfigured: boolean,
+  storageProviderReady: boolean,
 ): void {
   for (const artifactValue of artifacts) {
     const artifact = asRecord(artifactValue);
@@ -247,7 +318,7 @@ function collectReportArtifacts(
         fileName: printFileName || `${clean(artifact.title) || "care-pass-report"}.html`,
         explicitStatus: clean(artifact.storageStatus),
       },
-      storageProviderConfigured,
+      storageProviderReady,
     );
   }
 }
@@ -255,7 +326,7 @@ function collectReportArtifacts(
 function collectQaScreenshots(
   items: AttachmentManifestItem[],
   evidence: readonly unknown[],
-  storageProviderConfigured: boolean,
+  storageProviderReady: boolean,
 ): void {
   for (const evidenceValue of evidence) {
     const item = asRecord(evidenceValue);
@@ -273,7 +344,7 @@ function collectQaScreenshots(
         uri,
         explicitStatus: clean(item.storageStatus),
       },
-      storageProviderConfigured,
+      storageProviderReady,
     );
   }
 }
@@ -348,14 +419,14 @@ export function deriveAttachmentManifest(
   input: AttachmentManifestInput,
   options: AttachmentManifestOptions = {},
 ): AttachmentManifest {
-  const storageProviderConfigured = Boolean(options.storageProviderConfigured);
+  const storageProviderReady = isAttachmentStorageProviderProofReady(options);
   const items: AttachmentManifestItem[] = [];
 
-  collectCareLogProofs(items, safeArray(input.entries), storageProviderConfigured);
-  collectRecordDocuments(items, safeArray(input.records), storageProviderConfigured);
-  collectAdventureMemories(items, safeArray(input.adventureMemories), storageProviderConfigured);
-  collectReportArtifacts(items, safeArray(input.reportArtifacts), storageProviderConfigured);
-  collectQaScreenshots(items, safeArray(input.qaScreenshotEvidence), storageProviderConfigured);
+  collectCareLogProofs(items, safeArray(input.entries), storageProviderReady);
+  collectRecordDocuments(items, safeArray(input.records), storageProviderReady);
+  collectAdventureMemories(items, safeArray(input.adventureMemories), storageProviderReady);
+  collectReportArtifacts(items, safeArray(input.reportArtifacts), storageProviderReady);
+  collectQaScreenshots(items, safeArray(input.qaScreenshotEvidence), storageProviderReady);
 
   const total = items.length;
   const localOnly = items.filter((item) => item.storageState === "local-only").length;

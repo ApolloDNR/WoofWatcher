@@ -73,6 +73,7 @@ export interface LaunchReadinessProviderInput {
   privacyLegalOwnerReviewed?: boolean;
   pushNotificationsConfigured?: boolean;
   storageProviderConfigured?: boolean;
+  storageProviderProofReady?: boolean;
   storageQueue?: LaunchReadinessStorageQueueInput;
   supportRunbookApproved?: boolean;
   supportRunbookOwnerReviewed?: boolean;
@@ -238,11 +239,15 @@ function storageQueueDetail(queue: LaunchReadinessStorageQueueInput | undefined)
   return "Document uploads, proof photos, and Care Pass attachments stay local until storage rules are approved.";
 }
 
+function storageProviderReady(provider: LaunchReadinessProviderInput): boolean {
+  return Boolean(provider.storageProviderConfigured && provider.storageProviderProofReady);
+}
+
 function storageTile(provider: LaunchReadinessProviderInput): LaunchReadinessTile {
   const totalQueued = queueTotal(provider.storageQueue);
   const uploadReady = queueUploadReady(provider.storageQueue);
 
-  if (provider.storageProviderConfigured) {
+  if (storageProviderReady(provider)) {
     return uploadReady > 0
       ? {
           key: "storage",
@@ -263,8 +268,11 @@ function storageTile(provider: LaunchReadinessProviderInput): LaunchReadinessTil
   return {
     key: "storage",
     label: "Records Storage",
-    value: totalQueued > 0 ? `${plural(totalQueued, "local file")} gated` : "Storage gated",
-    detail: storageQueueDetail(provider.storageQueue),
+    value: totalQueued > 0 ? `${plural(totalQueued, "local file")} gated` : "Storage proof gated",
+    detail: provider.storageProviderConfigured
+      ? storageQueueDetail(provider.storageQueue) ||
+        "Structured storage proof must cover buckets, signed access, household scope, retention, export, deletion, QA evidence storage, and Apollo approval."
+      : storageQueueDetail(provider.storageQueue),
     status: "blocked",
   };
 }
@@ -377,8 +385,14 @@ function providerBlockers(provider: LaunchReadinessProviderInput): string[] {
   const blockers: string[] = [];
   if (!provider.authConfigured) blockers.push("Production auth is not configured.");
   if (!provider.databaseConfigured) blockers.push("Production household database sync is not configured.");
-  if (!provider.storageProviderConfigured) blockers.push("Document storage provider and access rules are not approved.");
-  if (provider.storageProviderConfigured && queueUploadReady(provider.storageQueue) > 0) {
+  if (!storageProviderReady(provider)) {
+    blockers.push(
+      provider.storageProviderConfigured
+        ? "Document storage provider requires structured storage proof evidence."
+        : "Document storage provider and access rules are not approved.",
+    );
+  }
+  if (storageProviderReady(provider) && queueUploadReady(provider.storageQueue) > 0) {
     blockers.push("Local attachment upload queue needs provider migration verification.");
   }
   if (!provider.aiProviderConfigured) blockers.push("AI provider key, model policy, and disclosure workflow are not configured.");
@@ -540,11 +554,11 @@ function providerNextGate(
     };
   }
 
-  if (!provider.storageProviderConfigured) {
+  if (!storageProviderReady(provider)) {
     return {
       kind: "provider-setup",
       action: "open-provider-setup",
-      label: "Approve records storage",
+      label: provider.storageProviderConfigured ? "Attach records storage proof" : "Approve records storage",
       detail: storageQueueDetail(provider.storageQueue),
       ctaLabel: "Edit Provider Plan",
     };
