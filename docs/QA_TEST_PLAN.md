@@ -1652,11 +1652,14 @@ Latest local evidence, 2026-07-03:
   job, commit, historical label, and rerun warning to stay present, but the
   result remains truthfully `BLOCKED` only because this Windows shell exposes
   pnpm `11.7.0` while the repo is pinned to `10.24.0`.
-- Fresh refresh proof first failed because the packet still named the older
-  recorded run, then passed focused beta handoff plus mobile readiness tests
-  `117/117`. JSON mobile beta doctor source-backed checks pass, including
-  `recorded CI proof freshness boundary is source-backed`, and still block only
-  on the local pnpm/Corepack mismatch.
+- Fresh refresh proof first failed because the machine-readable mobile beta
+  doctor still expected the older recorded run while the packet named
+  `28692423522` / `fd3a98f`, then passed focused beta handoff plus mobile
+  readiness tests `117/117`, the full zero-dependency API/mobile/PWA/care-domain
+  suite `560/560`, root TypeScript, mobile TypeScript, and `git diff --check`.
+  JSON mobile beta doctor source-backed checks pass, including `recorded CI proof
+  freshness boundary is source-backed`, and still block only on the local
+  pnpm/Corepack mismatch.
 - The 2026-07-04 Route Visual capture-instructions refresh updated
   `RECORDED_MOBILE_BETA_CI_PROOF` to run `28692423522` and kept
   `RECORDED_LIVE_PREVIEW_HANDOFF_PROOF` as a historical local `proof:live-preview` run

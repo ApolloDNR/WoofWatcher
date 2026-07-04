@@ -3089,12 +3089,16 @@ proof remains historical and carries a local `proof:live-preview` run generated
 `2026-07-03T22:21:21.304Z` on commit
 `0f60c22` from `http://127.0.0.1:60160/`, with `19/19` web-preview route shell
 checks and the web-preview-only boundary still explicit. Fresh refresh
-verification covered the
-stale beta-handoff/doctor assertions for the old recorded run, then passed
-focused beta handoff plus mobile readiness tests. Direct JSON doctor still
-blocks only on local pnpm `11.7.0` versus pinned `10.24.0`, with Corepack not on
-PATH. This is dependency-proof freshness guardrail work only, not native device
-proof, provider approval, store approval, public launch, or Apollo sign-off.
+verification first failed because the JSON mobile beta doctor still expected the
+older recorded run while Share Beta Handoff named `28692423522` / `fd3a98f`.
+After the guard update, focused beta handoff plus mobile readiness tests passed
+`117/117`, the full zero-dependency API/mobile/PWA/care-domain suite passed
+`560/560`, root TypeScript passed, mobile TypeScript passed, direct JSON doctor
+source-backed checks passed, and `git diff --check` passed. Direct JSON doctor
+still blocks only on local pnpm `11.7.0` versus pinned `10.24.0`, with Corepack
+not on PATH. This is dependency-proof freshness guardrail work only, not native
+device proof, provider approval, store approval, public launch, or Apollo
+sign-off.
 
 The mobile runtime route smoke pass makes the export proof more execution-like
 without overclaiming native QA. `scripts/smoke-runtime-preview.js` starts a
