@@ -266,6 +266,14 @@ Current environment note:
   job `85122931741`, with mobile beta doctor, focused behavior tests, and
   Typecheck plus CI-safe builds all passing; real provider proof files, native
   evidence, store review, public launch, and Apollo sign-off remain blocked.
+- Local proof also hardened Privacy & Safety's AI disclosure on 2026-07-04:
+  `aiProviderConfigured` no longer marks WoofGuide AI ready unless the
+  structured WoofGuide AI provider proof manifest is live-AI ready. Focused
+  Privacy & Safety/mobile readiness tests passed `121/121`, the full
+  zero-dependency suite passed `583/583`, root/mobile TypeScript passed, and
+  the JSON mobile beta doctor reports `privacy safety AI proof guard is
+  source-backed` as `PASS`; real OpenAI proof files, live AI approval,
+  veterinary safety review, public launch, and Apollo sign-off remain blocked.
 - Branch CI also proved the focused payments provider proof target on 2026-07-03:
   `WoofWatcher Verify` run `28676385615`, job `85050584288`, commit `3b5f4ab`,
   completed successfully in `3m3s` with Setup pnpm, Setup Node, install, JSON

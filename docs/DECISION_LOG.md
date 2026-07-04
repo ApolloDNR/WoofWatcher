@@ -1854,6 +1854,22 @@ Owner: Codex.
 
 Revisit trigger: WoofWatcher gains a provider-backed proof evidence service or Apollo attaches real proof files that can populate the aggregate proof-ready flags.
 
+### 2026-07-04: Privacy & Safety AI Disclosure Requires Structured Provider Proof
+
+Decision: Privacy & Safety cannot treat `aiProviderConfigured` as enough to mark the WoofGuide AI disclosure ready. It must consume the WoofGuide AI provider proof manifest and stay `limited` until structured proof files cover OpenAI key storage, approved model policy, source rules, owner-reviewed writes, veterinary safety, and fallback/incident handling.
+
+Reason: Privacy & Safety is an owner-facing launch safety surface. If it marks AI ready from a provider checkbox, it can contradict the focused WoofGuide AI proof manifest and the aggregate Launch Readiness guard.
+
+Consequences:
+
+- `deriveAccountSafetyPlan` accepts `aiProviderEvidence` and calls `buildAiProviderProofManifest`.
+- Configured AI without structured proof adds a WoofGuide AI provider-proof blocker instead of showing the disclosure as ready.
+- Real OpenAI configuration, model approval, live AI, source/citation review, automatic-write approval, veterinary safety approval, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real WoofGuide AI provider proof files or the app gains a provider-backed proof evidence service that can feed Privacy & Safety.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

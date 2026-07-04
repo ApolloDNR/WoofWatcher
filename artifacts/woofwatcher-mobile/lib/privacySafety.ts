@@ -7,6 +7,7 @@ import {
   type AttachmentLaunchQueue,
   type AttachmentStorageProviderEvidence,
 } from "./attachmentManifest.ts";
+import { buildAiProviderProofManifest, type AiProviderProofEvidence } from "./aiProviderProof.ts";
 
 export interface PrivacyExportProfile {
   name?: string;
@@ -139,6 +140,7 @@ export interface AccountSafetySection {
 export interface AccountSafetyPlanInput {
   state: PrivacyExportState;
   aiProviderConfigured?: boolean;
+  aiProviderEvidence?: AiProviderProofEvidence | null;
   storageProviderConfigured?: boolean;
   storageProviderEvidence?: AttachmentStorageProviderEvidence | null;
   accountDeletionEnabled?: boolean;
@@ -275,6 +277,8 @@ export function deriveAccountSafetyPlan(input: AccountSafetyPlanInput): AccountS
     storageProviderEvidence: input.storageProviderEvidence,
   });
   const aiProviderConfigured = Boolean(input.aiProviderConfigured);
+  const aiProviderProof = buildAiProviderProofManifest(input.aiProviderEvidence);
+  const aiProviderProofReady = aiProviderConfigured && aiProviderProof.liveAiAllowed;
   const paymentsEnabled = Boolean(input.paymentsEnabled);
   const attachmentManifest = deriveAttachmentManifest(input.state, {
     storageProviderConfigured,
@@ -290,6 +294,8 @@ export function deriveAccountSafetyPlan(input: AccountSafetyPlanInput): AccountS
   }
   if (!aiProviderConfigured) {
     launchBlockers.push("AI provider key and model policy are not configured.");
+  } else if (!aiProviderProofReady) {
+    launchBlockers.push("WoofGuide AI provider proof requires structured OpenAI, model, source, write-gate, safety, and fallback evidence.");
   }
   if (!paymentsEnabled) {
     launchBlockers.push("Payments remain blocked until privacy, support, refund, and app-store obligations are approved.");
@@ -311,11 +317,13 @@ export function deriveAccountSafetyPlan(input: AccountSafetyPlanInput): AccountS
       action: accountDeletionEnabled ? "Start deletion" : "Prepare request",
     },
     aiDisclosure: {
-      status: aiProviderConfigured ? "ready" : "limited",
+      status: aiProviderProofReady ? "ready" : "limited",
       title: "WoofGuide AI disclosure",
-      detail: aiProviderConfigured
+      detail: aiProviderProofReady
         ? "WoofGuide must cite owner-provided context, keep actions owner-reviewed, and preserve the medical boundary."
-        : "WoofGuide is limited to deterministic or fallback behavior until AI provider policy is configured.",
+        : aiProviderConfigured
+          ? "WoofGuide is limited to deterministic or fallback behavior until structured WoofGuide AI provider proof covers OpenAI key storage, model policy, source rules, owner-reviewed writes, veterinary safety, and fallback handling."
+          : "WoofGuide is limited to deterministic or fallback behavior until AI provider policy is configured.",
       action: "Review disclosure",
     },
     documentStorage: {

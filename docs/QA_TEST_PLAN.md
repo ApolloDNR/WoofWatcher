@@ -44,6 +44,16 @@ Latest local evidence, 2026-06-23:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: Privacy & Safety AI proof hardening now keeps WoofGuide AI disclosure `limited` when `aiProviderConfigured` is true but structured provider proof files are absent.
+- PASS: Focused Privacy & Safety/mobile readiness tests passed `121/121`.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `583/583`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- PASS: Direct JSON mobile beta doctor reports `privacy safety AI proof guard is source-backed` as `PASS`.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- STILL REQUIRED: real OpenAI key storage, approved model policy, source/citation review, owner-reviewed write-gate proof, veterinary safety approval, fallback/incident proof files, public launch, and Apollo sign-off.
+
+Earlier 2026-07-04 local evidence:
+
 - PASS: Aggregate Launch Readiness proof hardening now blocks `storeLaunchReady` when provider/store/approval booleans are true but structured proof flags are absent.
 - PASS: Focused launch/release/store/mobile readiness tests passed `131/131`.
 - PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `582/582`.

@@ -209,6 +209,22 @@ test("keeps document storage blocked when provider setup lacks structured proof 
   assert.ok(plan.launchBlockers.some((blocker) => /structured storage proof/i.test(blocker)));
 });
 
+test("keeps WoofGuide AI disclosure limited until structured provider proof is attached", () => {
+  const plan = deriveAccountSafetyPlan({
+    state,
+    aiProviderConfigured: true,
+    storageProviderConfigured: true,
+    storageProviderEvidence: completeStorageEvidence(),
+    accountDeletionEnabled: true,
+    paymentsEnabled: true,
+  });
+
+  assert.equal(plan.documentStorage.status, "ready");
+  assert.equal(plan.aiDisclosure.status, "limited");
+  assert.match(plan.aiDisclosure.detail, /structured WoofGuide AI provider proof/i);
+  assert.ok(plan.launchBlockers.some((blocker) => /WoofGuide AI provider proof/i.test(blocker)));
+});
+
 test("opens document storage review only with complete structured provider proof", () => {
   const plan = deriveAccountSafetyPlan({
     state,

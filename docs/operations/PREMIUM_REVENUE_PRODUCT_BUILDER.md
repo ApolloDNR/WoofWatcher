@@ -3576,6 +3576,23 @@ Android SDK env vars, and `JAVA_HOME`. This is proof gating only; it does not
 attach provider proof files, configure providers, prove native iOS/Android QA,
 satisfy store review, launch publicly, or replace Apollo sign-off.
 
+The Privacy & Safety AI disclosure structured-proof pass closes the same
+overclaim on the owner-facing safety surface. `deriveAccountSafetyPlan` now
+accepts `aiProviderEvidence`, calls `buildAiProviderProofManifest`, and keeps
+the WoofGuide AI disclosure `limited` when only `aiProviderConfigured` is true.
+Readiness now requires structured proof files for OpenAI key storage, approved
+model policy, source rules, owner-reviewed writes, veterinary safety, and
+fallback/incident handling. Fresh red/green verification first showed
+configured AI plus complete storage/deletion/payments producing `ready`, then
+passed focused Privacy & Safety/mobile readiness tests `121/121`, the full
+zero-dependency API/mobile/PWA/care-domain suite `583/583`, root TypeScript,
+mobile TypeScript, and direct JSON doctor source-backed checks including
+`privacy safety AI proof guard is source-backed`. Direct JSON mobile beta doctor
+remains truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned `10.24.0` and
+missing Corepack. This is proof gating only; it does not configure OpenAI,
+approve a model, enable live AI, approve automatic writes, clear
+veterinary/safety review, launch publicly, or replace Apollo sign-off.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

@@ -269,6 +269,7 @@ const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProvide
 const reportArtifactExportFilePath = join(mobileRoot, "lib", "reportArtifactExportFile.ts");
 const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
 const reportGeneratedBinaryArtifactPath = join(mobileRoot, "lib", "reportGeneratedBinaryArtifact.ts");
+const privacySafetyPath = join(mobileRoot, "lib", "privacySafety.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
 const setupRoutePath = join(mobileRoot, "app", "setup.tsx");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
@@ -298,6 +299,7 @@ const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPa
 const reportArtifactExportFileSource = existsSync(reportArtifactExportFilePath) ? readFileSync(reportArtifactExportFilePath, "utf8") : "";
 const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
 const reportGeneratedBinaryArtifactSource = existsSync(reportGeneratedBinaryArtifactPath) ? readFileSync(reportGeneratedBinaryArtifactPath, "utf8") : "";
+const privacySafetySource = existsSync(privacySafetyPath) ? readFileSync(privacySafetyPath, "utf8") : "";
 const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
 const setupRouteSource = existsSync(setupRoutePath) ? readFileSync(setupRoutePath, "utf8") : "";
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
@@ -1036,6 +1038,32 @@ check(
   aggregateLaunchReadinessProofGuardIsSourceBacked
     ? "Launch Readiness keeps provider/store/approval gates blocked until structured proof flags accompany the provider setup booleans"
     : "keep Launch Readiness and More wired so provider setup booleans alone cannot mark the app store-ready",
+);
+
+const privacySafetyAiProofGuardIsSourceBacked = includesAll(privacySafetySource, [
+  "buildAiProviderProofManifest",
+  "AiProviderProofEvidence",
+  "aiProviderEvidence",
+  "aiProviderProofReady",
+  "WoofGuide AI provider proof requires structured OpenAI, model, source, write-gate, safety, and fallback evidence.",
+  "structured WoofGuide AI provider proof covers OpenAI key storage, model policy, source rules, owner-reviewed writes, veterinary safety, and fallback handling",
+])
+  && includesAll(aiProviderProofSource, [
+    "buildAiProviderProofManifest",
+    "liveAiAllowed",
+    "OpenAI key storage",
+    "model policy",
+    "source/citation rules",
+    "owner-review write gate",
+    "veterinary safety",
+    "fallback handling",
+  ]);
+check(
+  "privacy safety AI proof guard is source-backed",
+  privacySafetyAiProofGuardIsSourceBacked,
+  privacySafetyAiProofGuardIsSourceBacked
+    ? "Privacy & Safety keeps WoofGuide AI disclosure limited until structured AI provider proof files accompany provider configuration"
+    : "keep Privacy & Safety wired to the WoofGuide AI provider proof manifest so aiProviderConfigured alone cannot mark AI disclosure ready",
 );
 
 const ownerPreviewCarePassStorageProofIsSourceBacked = includesAll(mobileReleaseQaSource, [
