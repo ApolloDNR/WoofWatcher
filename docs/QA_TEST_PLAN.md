@@ -132,6 +132,19 @@ Earlier 2026-07-04 local evidence:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: The focused `/care-twin-qa?qaSurface=report-binary-export-proof` mission now derives Provider Launch Setup from saved care state instead of hardcoding provider storage to false.
+- PASS: The focused Report Binary Export proof manifest uses `launchProviderSetupPlan.providerInput.storageProviderConfigured` and forwards saved `storageProviderEvidence` as `providerStorageEvidence`.
+- PASS: Red-first mobile readiness failed because `/care-twin-qa` did not use `useCare` or `deriveLaunchProviderSetup` and still passed `storageProviderConfigured: false`.
+- PASS: Focused report-binary/provider/mobile readiness tests passed `126/126`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed `594/594`.
+- PASS: Direct JSON mobile beta doctor source-backed checks passed while still reporting the local dependency blocker.
+- PASS: `git diff --check` passed with expected Windows CRLF warnings only.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- STILL REQUIRED: real local Care Pass PDF/Dog ID PNG native share and reopen proof, structured provider storage files, actual provider upload, store review, public launch, and Apollo sign-off.
+
+Earlier 2026-07-04 local evidence:
+
 - PASS: Privacy export and deletion-request attachment summaries now derive storage options from normalized saved `launchProviderProfile.storageProviderEvidence`.
 - PASS: Owner export metadata moves attachment queues to `Ready for provider upload` only when the shared structured attachment-storage proof validator accepts the saved evidence.
 - PASS: Deletion request copy includes the same provider-upload-ready attachment summary instead of always saying approved storage rules are waiting.
@@ -1819,6 +1832,26 @@ Latest local evidence, 2026-07-03:
   generation, Dog ID PNG generation, provider-backed storage, four-slot
   iOS/Android artifact proof, and launch approval remain blocked until real
   evidence exists.
+
+Latest follow-up local evidence, 2026-07-04:
+
+- The focused `/care-twin-qa?qaSurface=report-binary-export-proof` mission now
+  consumes saved Provider Launch Setup storage proof through
+  `deriveLaunchProviderSetup(state.launchProviderProfile)`.
+- The focused route forwards saved `storageProviderEvidence` into
+  `buildReportBinaryExportProofManifest`, matching Records Report History's
+  storage-proof path while preserving all binary/native/provider blockers.
+- Red-first verification failed on the missing `useCare` and
+  `deriveLaunchProviderSetup` wiring, then passed focused
+  report-binary/provider/mobile readiness tests `126/126`.
+- Mobile TypeScript, root TypeScript, the full zero-dependency
+  API/mobile/PWA/care-domain suite `594/594`, direct JSON mobile beta doctor
+  source-backed checks, and `git diff --check` passed. The JSON doctor remains
+  truthfully `BLOCKED` only because local pnpm is `11.7.0` while the repo pins
+  `10.24.0` and Corepack is not on PATH.
+- This does not prove native iOS/Android PDF/PNG share/reopen, configure
+  provider storage, upload artifacts, satisfy store review, launch publicly, or
+  replace Apollo sign-off.
 
 ## Mobile Runtime Route Smoke
 

@@ -3883,6 +3883,24 @@ beta doctor source-backed checks. Direct mobile beta doctor remains truthfully
 This still does not perform provider upload, create object ids, approve
 native/store evidence, launch publicly, or replace Apollo sign-off.
 
+The focused Report Binary Export storage-proof pass closes the helper-route
+follow-up. `/care-twin-qa?qaSurface=report-binary-export-proof` now derives
+Provider Launch Setup from saved care state, forwards
+`providerInput.storageProviderConfigured`, and passes saved
+`storageProviderEvidence` into the Report Binary Export proof manifest as
+`providerStorageEvidence`. This keeps the focused helper mission aligned with
+Records and Privacy: valid structured storage proof can reach the provider
+storage row, while raw configured booleans still cannot prove PDF/PNG native
+share/reopen, provider upload, store review, public launch, or Apollo sign-off.
+Fresh local verification first failed because the route still lacked `useCare`
+and `deriveLaunchProviderSetup` and passed `storageProviderConfigured: false`.
+After implementation, focused report-binary/provider/mobile readiness tests
+passed `126/126`, mobile TypeScript passed, root TypeScript passed, the full
+zero-dependency API/mobile/PWA/care-domain suite passed `594/594`, direct JSON
+mobile beta doctor source-backed checks passed while remaining truthfully
+`BLOCKED` on local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack,
+and `git diff --check` passed with expected Windows line-ending warnings.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

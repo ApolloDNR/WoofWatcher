@@ -3522,11 +3522,26 @@ test("does not keep hidden legacy headers behind board route headers", () => {
 
 test("keeps Records report history wired for printable Care Pass artifacts", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
+  const careTwinQaRoute = readAppFile("care-twin-qa.tsx");
 
   assert.match(records, /getCarePassArtifactPrintView/);
   assert.match(records, /describeCarePassArtifactExport/);
   assert.match(records, /buildReportBinaryExportProofManifest/);
   assert.match(records, /deriveLaunchProviderSetup/);
+  assert.match(careTwinQaRoute, /useCare/);
+  assert.match(careTwinQaRoute, /deriveLaunchProviderSetup/);
+  assert.match(
+    careTwinQaRoute,
+    /const launchProviderSetupPlan = useMemo\(\s*\(\) => deriveLaunchProviderSetup\(state\.launchProviderProfile\),\s*\[state\.launchProviderProfile\],\s*\)/,
+  );
+  assert.match(
+    careTwinQaRoute,
+    /storageProviderConfigured: launchProviderSetupPlan\.providerInput\.storageProviderConfigured/,
+  );
+  assert.match(
+    careTwinQaRoute,
+    /providerStorageEvidence:\s*launchProviderSetupPlan\.providerInput\.storageProviderEvidence\s*\?\s*\[launchProviderSetupPlan\.providerInput\.storageProviderEvidence\]\s*:\s*\[\]/,
+  );
   assert.match(records, /import \* as FileSystem from "expo-file-system\/legacy"/);
   assert.match(records, /buildReportArtifactExportFilePlan/);
   assert.match(records, /buildReportArtifactShareContent/);

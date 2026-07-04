@@ -2075,6 +2075,23 @@ Owner: Codex.
 
 Revisit trigger: WoofWatcher gains provider-backed attachment object ids or Apollo attaches real storage migration/deletion receipt proof that should appear in owner export and deletion audit trails.
 
+### 2026-07-04: Focused Report Binary Export Uses Saved Storage Proof
+
+Decision: The focused `/care-twin-qa?qaSurface=report-binary-export-proof` helper route must derive Report Binary Export provider-storage state from the saved launch-provider profile instead of hardcoding storage as unavailable. The helper route should use `deriveLaunchProviderSetup(state.launchProviderProfile)` and pass saved `storageProviderEvidence` into `buildReportBinaryExportProofManifest`.
+
+Reason: Records and Privacy now preserve and consume structured storage proof, but the focused helper mission still rendered provider storage from `storageProviderConfigured: false`. That made real saved/imported proof impossible to review from the exact QA mission Apollo, Replit, or a native helper is instructed to open for PDF/PNG readiness.
+
+Consequences:
+
+- `/care-twin-qa` consumes `useCare` state and derives the same Provider Launch Setup plan as owner-facing launch routes.
+- The focused Report Binary Export proof manifest uses `launchProviderSetupPlan.providerInput.storageProviderConfigured`.
+- The focused manifest forwards saved `storageProviderEvidence` as `providerStorageEvidence`.
+- Valid structured storage proof can reach the helper route, but PDF/PNG readiness still requires local bytes, renderer proof, iOS/Android share/reopen evidence, structured provider storage proof, App Store/Play review where applicable, public launch approval, and Apollo sign-off.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains provider-backed proof attachment capture or the helper route starts editing proof evidence directly instead of only reviewing saved launch-provider proof.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

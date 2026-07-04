@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { LivingPhoenixRoom, type PhoenixRoomStat } from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import {
   evaluateCareTwinRuntimeQaScenario,
@@ -71,6 +72,7 @@ import {
   describeMotionRecipeForSpriteAction,
   motionRecipeForSpriteAction,
 } from "@/lib/careTwinChoreography";
+import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import { deriveLaunchReadiness } from "@/lib/launchReadiness";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 import {
@@ -244,6 +246,7 @@ export default function CareTwinQaScreen() {
   const router = useRouter();
   const routeParams = useLocalSearchParams<{ qaSurface?: string | string[] }>();
   const insets = useSafeAreaInsets();
+  const { state } = useCare();
   const [selectedEvidencePlatform, setSelectedEvidencePlatform] = useState<QaScreenshotEvidencePlatform>(() =>
     qaScreenshotPlatformForRuntime(),
   );
@@ -260,6 +263,10 @@ export default function CareTwinQaScreen() {
     [],
   );
   const releaseSurfaces = useMemo(() => listMobileReleaseQaSurfaces(), []);
+  const launchProviderSetupPlan = useMemo(
+    () => deriveLaunchProviderSetup(state.launchProviderProfile),
+    [state.launchProviderProfile],
+  );
   const storeLaunchReadinessPlan = useMemo(
     () =>
       deriveLaunchReadiness({
@@ -422,13 +429,20 @@ export default function CareTwinQaScreen() {
         ? buildReportBinaryExportProofManifest({
             carePassHtmlFileName: "care-pass-report-history.html",
             dogIdSvgFileName: "dog-id.svg",
-            storageProviderConfigured: false,
+            storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
+            providerStorageEvidence: launchProviderSetupPlan.providerInput.storageProviderEvidence
+              ? [launchProviderSetupPlan.providerInput.storageProviderEvidence]
+              : [],
             pdfGeneratorApproved: false,
             pngRendererApproved: false,
             nativeArtifactEvidenceApproved: false,
           })
         : null,
-    [focusedQaTarget],
+    [
+      focusedQaTarget,
+      launchProviderSetupPlan.providerInput.storageProviderConfigured,
+      launchProviderSetupPlan.providerInput.storageProviderEvidence,
+    ],
   );
   const routeVisualProofManifest = useMemo(
     () =>
