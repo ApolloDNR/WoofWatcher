@@ -3541,13 +3541,16 @@ Privacy & Safety now consume the same proof boundary. Fresh local proof passed
 store/mobile readiness tests `142/142`, the full zero-dependency API/mobile/PWA/
 care-domain suite `581/581`, root TypeScript, mobile TypeScript, direct JSON
 doctor source-backed checks including `attachment storage proof guard is
-source-backed`, and `git diff --check`. Direct JSON mobile beta doctor remains
-truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned `10.24.0` and missing
-Corepack; direct native QA tooling doctor remains `BLOCKED` on missing `adb`,
-`emulator`, `java`, Android SDK env vars, and `JAVA_HOME`. This is proof gating
-only; it does not configure storage buckets, attach signed policy evidence,
-prove native iOS/Android share/reopen, satisfy store review, launch publicly, or
-replace Apollo sign-off.
+source-backed`, and `git diff --check`. Branch CI proved implementation commit
+`84c6fac` in `WoofWatcher Verify` run `28701902248`, job `85121219768`, with
+mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe builds
+all passing. Direct JSON mobile beta doctor remains truthfully `BLOCKED` on
+local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack; direct native
+QA tooling doctor remains `BLOCKED` on missing `adb`, `emulator`, `java`,
+Android SDK env vars, and `JAVA_HOME`. This is proof gating only; it does not
+configure storage buckets, attach signed policy evidence, prove native
+iOS/Android share/reopen, satisfy store review, launch publicly, or replace
+Apollo sign-off.
 
 Next highest-impact work:
 
