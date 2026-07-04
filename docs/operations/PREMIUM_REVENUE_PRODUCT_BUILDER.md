@@ -3516,6 +3516,10 @@ red/green verification first failed on raw provider-approved export, then passed
 source-backed checks including `privacy export launch status proof guard is
 source-backed`, the full zero-dependency API/mobile/PWA/care-domain suite with
 the dot reporter, root TypeScript, mobile TypeScript, and `git diff --check`.
+The export implementation is pushed as `33d8fd0` (`Clamp privacy export launch
+statuses`), but fresh branch CI is still pending because the latest visible run
+list only shows earlier `workflow_dispatch` successes through run `28705671803`,
+which predates this commit.
 This is proof gating only; it does not approve legal/privacy copy, refund
 policy, support operations, veterinary-boundary language, App Store or Play
 Store review, public launch, or Apollo sign-off.
