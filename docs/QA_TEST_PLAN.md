@@ -1446,6 +1446,10 @@ Latest local evidence, 2026-07-03:
   hardening plus handoff/readiness proof passes focused `148/148` tests. The
   broader zero-dependency API/mobile/PWA/care-domain suite passes `567/567`,
   root TypeScript passes, and mobile TypeScript passes.
+- Branch CI proved the native-delivery hardening implementation in
+  `WoofWatcher Verify` run `28695138006`, job `85103354696`, on commit
+  `1772aed`; Setup pnpm, Setup Node, install dependencies, JSON mobile beta
+  doctor, focused behavior tests, and Typecheck plus CI-safe builds all passed.
 - Direct JSON mobile beta doctor reports `push notifications proof manifest is
   source-backed` as `PASS` while remaining blocked only on local
   pnpm/Corepack. Direct JSON native QA tooling doctor remains blocked because
