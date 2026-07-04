@@ -159,6 +159,28 @@ test("builds an owner export bundle with counts and care data", () => {
   assert.match(bundle.disclosures.documents, /2 local files waiting/i);
 });
 
+test("uses saved structured storage proof for owner export attachment queue", () => {
+  const bundle = buildPrivacyExportBundle(
+    {
+      ...state,
+      launchProviderProfile: {
+        ...state.launchProviderProfile,
+        storageProviderConfigured: true,
+        storageProviderEvidence: completeStorageEvidence(),
+      },
+    },
+    { userId: "user_123", householdId: "house_123", householdName: "Phoenix House" },
+    NOW,
+  );
+
+  assert.equal(bundle.storage.attachmentQueue.total, 2);
+  assert.equal(bundle.storage.attachmentQueue.localOnly, 0);
+  assert.equal(bundle.storage.attachmentQueue.uploadReady, 2);
+  assert.equal(bundle.storage.attachmentSummary, "2 local files ready for provider upload.");
+  assert.equal(bundle.storage.attachmentReviewRows[0]?.statusLabel, "Ready for provider upload");
+  assert.match(bundle.disclosures.documents, /2 local files ready for provider upload/i);
+});
+
 test("clamps exported launch approval statuses until structured proof is attached", () => {
   const bundle = buildPrivacyExportBundle(
     {
@@ -322,4 +344,22 @@ test("builds a non-destructive account deletion request", () => {
   assert.match(request.body, /Access Pass drafts/i);
   assert.match(request.body, /Adventure memories/i);
   assert.match(request.body, /local attachment queue/i);
+});
+
+test("uses saved structured storage proof in deletion request attachment summary", () => {
+  const request = buildAccountDeletionRequest(
+    {
+      ...state,
+      launchProviderProfile: {
+        ...state.launchProviderProfile,
+        storageProviderConfigured: true,
+        storageProviderEvidence: completeStorageEvidence(),
+      },
+    },
+    { userId: "user_123", householdId: "house_123", householdName: "Phoenix House" },
+    NOW,
+  );
+
+  assert.match(request.body, /2 local files ready for provider upload/);
+  assert.doesNotMatch(request.body, /2 local files waiting/);
 });

@@ -4,6 +4,7 @@ import {
   formatAttachmentManifestSummary,
   isAttachmentStorageProviderProofReady,
   type AttachmentReviewRow,
+  type AttachmentManifestOptions,
   type AttachmentLaunchQueue,
   type AttachmentStorageProviderEvidence,
 } from "./attachmentManifest.ts";
@@ -12,6 +13,7 @@ import { buildAccountDeletionProofManifest, type AccountDeletionProofEvidence } 
 import { buildPaymentsProviderProofManifest, type PaymentsProviderProofManifestInput } from "./paymentsProviderProof.ts";
 import {
   deriveLaunchProviderSetup,
+  normalizeLaunchProviderProfile,
   type LaunchProviderProfile,
 } from "./launchProviderSetup.ts";
 import {
@@ -210,6 +212,17 @@ function clampLaunchProviderProfileForExport(value: unknown): unknown | null {
   return plan.status === "provider-approved" ? value : { ...value, providerStatus: plan.status };
 }
 
+function attachmentStorageOptionsForState(state: PrivacyExportState): AttachmentManifestOptions {
+  const profile = normalizeLaunchProviderProfile(
+    isJsonRecord(state.launchProviderProfile) ? (state.launchProviderProfile as Partial<LaunchProviderProfile>) : null,
+  );
+
+  return {
+    storageProviderConfigured: profile.storageProviderConfigured,
+    storageProviderEvidence: profile.storageProviderEvidence as AttachmentStorageProviderEvidence | null,
+  };
+}
+
 export function buildPrivacyExportBundle(
   state: PrivacyExportState,
   context: PrivacyExportContext = {},
@@ -225,6 +238,7 @@ export function buildPrivacyExportBundle(
   const calendarEvents = safeArray(state.calendarEvents);
   const reportArtifacts = safeArray(state.reportArtifacts);
   const entries = safeArray(state.entries);
+  const attachmentStorageOptions = attachmentStorageOptionsForState(state);
   const attachmentManifest = deriveAttachmentManifest(
     {
       entries,
@@ -232,7 +246,7 @@ export function buildPrivacyExportBundle(
       adventureMemories,
       reportArtifacts,
     },
-    { storageProviderConfigured: false },
+    attachmentStorageOptions,
   );
   const attachmentSummary = formatAttachmentManifestSummary(attachmentManifest);
 
@@ -403,7 +417,7 @@ export function buildAccountDeletionRequest(
   const householdName = context.householdName?.trim() || "Unknown household";
   const userId = context.userId?.trim() || "Unknown user";
   const householdId = context.householdId?.trim() || "Unknown household id";
-  const attachmentManifest = deriveAttachmentManifest(state, { storageProviderConfigured: false });
+  const attachmentManifest = deriveAttachmentManifest(state, attachmentStorageOptionsForState(state));
   const attachmentSummary = formatAttachmentManifestSummary(attachmentManifest);
 
   return {

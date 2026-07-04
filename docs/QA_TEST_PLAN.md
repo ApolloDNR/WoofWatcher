@@ -132,6 +132,19 @@ Earlier 2026-07-04 local evidence:
 
 Latest local evidence, 2026-07-04:
 
+- PASS: Privacy export and deletion-request attachment summaries now derive storage options from normalized saved `launchProviderProfile.storageProviderEvidence`.
+- PASS: Owner export metadata moves attachment queues to `Ready for provider upload` only when the shared structured attachment-storage proof validator accepts the saved evidence.
+- PASS: Deletion request copy includes the same provider-upload-ready attachment summary instead of always saying approved storage rules are waiting.
+- PASS: `privacySafety.test.ts` passed `12/12`.
+- PASS: Focused privacy/attachment/mobile readiness tests passed `132/132`.
+- PASS: Root TypeScript and mobile TypeScript passed with bundled Node and workspace TypeScript.
+- PASS: Full zero-dependency API/mobile/PWA/care-domain suite passed with the dot reporter.
+- PASS: Direct JSON mobile beta doctor source-backed checks passed while still reporting the local dependency blocker.
+- BLOCKED: Direct JSON mobile beta doctor still reports `BLOCKED` only because local pnpm is `11.7.0` while the repo is pinned to `10.24.0`; Corepack is not on PATH.
+- STILL REQUIRED: real structured provider storage proof files, actual provider upload, object ids, signed access, retention/export/deletion receipts, native proof, store review, public launch, and Apollo sign-off.
+
+Earlier 2026-07-04 local evidence:
+
 - PASS: Provider Launch Setup now normalizes and preserves `storageProviderEvidence` instead of stripping valid saved/imported structured storage proof.
 - PASS: Records Report History forwards Provider Launch Setup storage evidence into both Care Pass artifact export and Report Binary Export proof manifests.
 - PASS: Privacy & Safety forwards the saved storage evidence into `deriveAccountSafetyPlan` instead of hardcoding storage provider setup to false.

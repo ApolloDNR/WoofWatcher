@@ -2058,6 +2058,23 @@ Owner: Codex.
 
 Revisit trigger: WoofWatcher gains a provider-backed storage proof attachment service or Apollo attaches real storage bucket/policy proof files that should be validated from saved app state.
 
+### 2026-07-04: Privacy Export Attachment State Uses Saved Storage Proof
+
+Decision: Owner privacy export and deletion-request attachment summaries must derive storage readiness from the saved launch-provider storage proof instead of forcing attachment queues to local-only. If normalized `launchProviderProfile.storageProviderEvidence` satisfies the shared attachment-storage proof validator, export metadata and deletion copy may show files as ready for provider upload; otherwise they must keep the approved-storage-rules blocker.
+
+Reason: The Privacy screen storage gate and Records proof surfaces could now consume structured storage proof, but `buildPrivacyExportBundle` and `buildAccountDeletionRequest` still called `deriveAttachmentManifest` with `storageProviderConfigured: false`. That made owner export/deletion copy stale and contradicted the shared storage proof boundary when valid proof was saved.
+
+Consequences:
+
+- Privacy export attachment queues use normalized `launchProviderProfile.storageProviderEvidence`.
+- Deletion request attachment summaries use the same storage-proof-derived manifest.
+- Export and deletion copy can show `ready for provider upload` only after the shared attachment-storage proof validator passes.
+- Real provider upload, object ids, signed access, retention/export/deletion receipts, native proof, store review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains provider-backed attachment object ids or Apollo attaches real storage migration/deletion receipt proof that should appear in owner export and deletion audit trails.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
