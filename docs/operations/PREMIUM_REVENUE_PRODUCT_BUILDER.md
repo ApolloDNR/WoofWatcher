@@ -3607,11 +3607,14 @@ deletion plus complete storage/payments producing `ready`, then passed focused
 Privacy & Safety/mobile readiness tests `122/122`, the full zero-dependency
 API/mobile/PWA/care-domain suite `584/584`, root TypeScript, mobile TypeScript,
 and direct JSON doctor source-backed checks including `privacy safety account
-deletion proof guard is source-backed`. Direct JSON mobile beta doctor remains
-truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned `10.24.0` and missing
-Corepack. This is proof gating only; it does not configure deletion routes,
-prove reauthentication, attach export-before-delete or deletion receipts,
-approve legal/store policy, launch publicly, or replace Apollo sign-off.
+deletion proof guard is source-backed`. Branch CI proved implementation commit
+`4357cf7` in `WoofWatcher Verify` run `28703690180`, job `85125840962`, with
+mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe builds
+all passing. Direct JSON mobile beta doctor remains truthfully `BLOCKED` on
+local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack. This is proof
+gating only; it does not configure deletion routes, prove reauthentication,
+attach export-before-delete or deletion receipts, approve legal/store policy,
+launch publicly, or replace Apollo sign-off.
 
 Next highest-impact work:
 
