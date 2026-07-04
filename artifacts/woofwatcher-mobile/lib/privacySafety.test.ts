@@ -159,6 +159,42 @@ test("builds an owner export bundle with counts and care data", () => {
   assert.match(bundle.disclosures.documents, /2 local files waiting/i);
 });
 
+test("clamps exported launch approval statuses until structured proof is attached", () => {
+  const bundle = buildPrivacyExportBundle(
+    {
+      ...state,
+      launchSupportProfile: {
+        ...state.launchSupportProfile,
+        accountDeletionEscalationApproved: true,
+        incidentResponseApproved: true,
+        providerStatus: "provider-approved",
+      },
+      launchProviderProfile: {
+        ...state.launchProviderProfile,
+        databaseConfigured: true,
+        storageProviderConfigured: true,
+        aiProviderConfigured: true,
+        paymentsEnabled: true,
+        pushNotificationsConfigured: true,
+        appStoreAccountsReady: true,
+        accountDeletionEnabled: true,
+        providerStatus: "provider-approved",
+      },
+    },
+    { userId: "user_123", householdId: "house_123", householdName: "Phoenix House" },
+    NOW,
+  );
+
+  assert.equal(
+    (bundle.care.launchSupportProfile as { providerStatus?: string } | null)?.providerStatus,
+    "owner-reviewed",
+  );
+  assert.equal(
+    (bundle.care.launchProviderProfile as { providerStatus?: string } | null)?.providerStatus,
+    "owner-reviewed",
+  );
+});
+
 test("serializes export without auth tokens or secrets", () => {
   const bundle = buildPrivacyExportBundle(
     {

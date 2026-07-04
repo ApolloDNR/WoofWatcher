@@ -2112,6 +2112,22 @@ check(
     : "keep Privacy display and save path clamped so provider-approved support/legal status cannot persist without structured proof",
 );
 
+const privacyExportLaunchStatusProofGuardIsSourceBacked = includesAll(privacySafetySource, [
+  "clampLaunchSupportProfileForExport",
+  "deriveSupportRunbookPlan(value as SupportRunbookInput)",
+  "clampLaunchProviderProfileForExport",
+  "deriveLaunchProviderSetup(value as Partial<LaunchProviderProfile>)",
+  "launchSupportProfile: clampLaunchSupportProfileForExport(state.launchSupportProfile)",
+  "launchProviderProfile: clampLaunchProviderProfileForExport(state.launchProviderProfile)",
+]);
+check(
+  "privacy export launch status proof guard is source-backed",
+  privacyExportLaunchStatusProofGuardIsSourceBacked,
+  privacyExportLaunchStatusProofGuardIsSourceBacked
+    ? "Privacy export clamps stale provider-approved launch support/provider statuses through structured proof models before serialization"
+    : "keep Privacy export from serializing provider-approved launch statuses unless support/provider proof models are ready",
+);
+
 const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
   "route-visual-consistency",
   "Route Visual Consistency",

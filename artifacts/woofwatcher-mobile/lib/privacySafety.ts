@@ -10,6 +10,14 @@ import {
 import { buildAiProviderProofManifest, type AiProviderProofEvidence } from "./aiProviderProof.ts";
 import { buildAccountDeletionProofManifest, type AccountDeletionProofEvidence } from "./accountDeletionProof.ts";
 import { buildPaymentsProviderProofManifest, type PaymentsProviderProofManifestInput } from "./paymentsProviderProof.ts";
+import {
+  deriveLaunchProviderSetup,
+  type LaunchProviderProfile,
+} from "./launchProviderSetup.ts";
+import {
+  deriveSupportRunbookPlan,
+  type SupportRunbookInput,
+} from "./supportRunbook.ts";
 
 export interface PrivacyExportProfile {
   name?: string;
@@ -46,6 +54,10 @@ export interface PrivacyExportEntry {
 }
 
 type JsonRecord = Record<string, unknown>;
+
+function isJsonRecord(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 export interface PrivacyExportState {
   activePetId?: string;
@@ -181,6 +193,23 @@ function attachedDocumentCount(records: readonly PrivacyExportRecord[]): number 
   return records.filter((record) => Boolean(record.attachmentName || record.attachmentUri)).length;
 }
 
+function clampLaunchSupportProfileForExport(value: unknown): unknown | null {
+  if (!isJsonRecord(value)) return value ?? null;
+  const plan = deriveSupportRunbookPlan(value as SupportRunbookInput);
+  if (value.providerStatus === "provider-approved" && !plan.launchReady) {
+    return { ...value, providerStatus: "owner-reviewed" };
+  }
+  return value;
+}
+
+function clampLaunchProviderProfileForExport(value: unknown): unknown | null {
+  if (!isJsonRecord(value)) return value ?? null;
+  if (value.providerStatus !== "provider-approved") return value;
+
+  const plan = deriveLaunchProviderSetup(value as Partial<LaunchProviderProfile>);
+  return plan.status === "provider-approved" ? value : { ...value, providerStatus: plan.status };
+}
+
 export function buildPrivacyExportBundle(
   state: PrivacyExportState,
   context: PrivacyExportContext = {},
@@ -243,8 +272,8 @@ export function buildPrivacyExportBundle(
       activePetId: state.activePetId ?? null,
       pets,
       householdSetup: state.householdSetup ?? null,
-      launchSupportProfile: state.launchSupportProfile ?? null,
-      launchProviderProfile: state.launchProviderProfile ?? null,
+      launchSupportProfile: clampLaunchSupportProfileForExport(state.launchSupportProfile),
+      launchProviderProfile: clampLaunchProviderProfileForExport(state.launchProviderProfile),
       reminderNotificationPreferences: state.reminderNotificationPreferences ?? null,
       accessPasses,
       adventureMemories,

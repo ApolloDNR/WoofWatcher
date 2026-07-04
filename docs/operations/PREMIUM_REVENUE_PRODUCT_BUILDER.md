@@ -3506,6 +3506,16 @@ The implementation is pushed as `9f18688` (`Clamp privacy support proof
 status`), but fresh branch CI is still pending because the latest visible run
 list only shows earlier `workflow_dispatch` successes through run `28705671803`,
 which predates this commit.
+Privacy owner export now applies the same proof boundary before serializing
+launch profiles. `buildPrivacyExportBundle` clamps `launchSupportProfile`
+through `deriveSupportRunbookPlan` and `launchProviderProfile` through
+`deriveLaunchProviderSetup`, so stale imported `provider-approved` support or
+provider profiles without structured proof export as `owner-reviewed`. Fresh
+red/green verification first failed on raw provider-approved export, then passed
+`privacySafety.test.ts` `10/10`, mobile readiness `114/114`, direct JSON doctor
+source-backed checks including `privacy export launch status proof guard is
+source-backed`, the full zero-dependency API/mobile/PWA/care-domain suite with
+the dot reporter, root TypeScript, mobile TypeScript, and `git diff --check`.
 This is proof gating only; it does not approve legal/privacy copy, refund
 policy, support operations, veterinary-boundary language, App Store or Play
 Store review, public launch, or Apollo sign-off.

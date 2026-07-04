@@ -203,6 +203,8 @@ test("keeps launch-blocking safety copy on premium, privacy, and WoofGuide surfa
   assert.match(privacy, /support-legal-readiness-proof/);
   assert.match(privacy, /supportPlan\.launchBlockers/);
   assert.match(privacyModel, /launchSupportProfile/);
+  assert.match(privacyModel, /clampLaunchSupportProfileForExport/);
+  assert.match(privacyModel, /clampLaunchProviderProfileForExport/);
   assert.match(privacyModel, /deriveAttachmentManifest/);
   assert.match(privacy, /bundle\.counts\.localAttachments/);
   assert.match(privacy, /Attachment queue/);
@@ -5964,6 +5966,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "privacy support status proof guard is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "privacy export launch status proof guard is source-backed" &&
         check.status === "PASS",
     ),
   );

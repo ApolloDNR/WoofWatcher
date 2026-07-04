@@ -1816,6 +1816,7 @@ Consequences:
 - `deriveSupportRunbookPlan` accepts `supportLegalReadinessEvidence` and calls `buildSupportLegalReadinessProofManifest`.
 - Staged support/legal fields now show as blocked sections until the matching proof rows are attached.
 - Privacy & Safety may display or persist `provider-approved` support status only when the support runbook plan is `launchReady`; otherwise stale or attempted provider-approved saves are treated as owner-reviewed local packets.
+- Privacy owner exports clamp launch support/provider status through `deriveSupportRunbookPlan` and `deriveLaunchProviderSetup` before serialization, so stale imported `provider-approved` profiles do not leak into owner export proof without structured evidence.
 - Real support operations, privacy/legal copy, refund/subscription policy, veterinary-boundary sign-off, store review, public launch, and Apollo sign-off remain separate blockers.
 
 Owner: Codex.
