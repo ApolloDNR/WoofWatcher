@@ -66,3 +66,27 @@ Date: 2026-07-06
 
 - Native iOS and Android simulator/device screenshot proof is still required for store-grade sign-off; this pass covers the exported web preview only.
 - Dark mode remains native-only by design in `useColors`; native dark-mode screenshots are still pending.
+
+# Design QA - Care Career Game Layer Pass
+
+Date: 2026-07-06
+
+## Scope
+
+- Target: evidence-based Tamagotchi/RPG progression toward Apollo's care + adventure vision board.
+- New shared logic: `artifacts/woofwatcher-mobile/lib/careCareer.ts` derives lifetime care XP, level, care-journey title (New Paw through Legendary Companion), per-level progress, and today's XP from real care logs only. No coins, no purchasable progress, future-dated and unparseable logs never mint XP.
+- Home now shows a care level strip (level badge, title, pixel-segment XP bar, today's XP) between the presence panel and Care Status, announces the values to screen readers, appends "+N care XP" to quick-log toasts, and fires a celebrate-hop room reaction with success haptics when a real log crosses a level threshold.
+
+## Checks Run
+
+- careCareer unit + wiring tests: passed, 9 tests.
+- Focused behavior/readiness suite: passed, 602 tests, 0 failures (Node 24).
+- Mobile TypeScript: passed.
+- Expo web export smoke: passed.
+- Headless Chromium screenshot QA of Home at 390x844.
+
+## Remaining QA
+
+- Level thresholds and title ladder are a first tuning pass; Apollo may want different pacing before launch.
+- Native haptics/celebration timing needs on-device QA.
+- Adventure map, career stats board, and shareable Care Pass QR from the vision board remain future slices.

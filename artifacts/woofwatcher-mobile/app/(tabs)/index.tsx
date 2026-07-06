@@ -61,6 +61,7 @@ import {
 import { getHomeFirstScreenLayout } from "@/lib/homeFirstScreenLayout";
 import { getHomeMissionDeckLayout } from "@/lib/homeMissionLayout";
 import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
+import { careXpForEntry, deriveCareCareer } from "@/lib/careCareer";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import {
   buildWalkSessionStartEntry,
@@ -380,6 +381,10 @@ export default function HomeScreen() {
         now,
       }),
     [state.entries, state.routines, state.caregivers, now],
+  );
+  const careCareer = useMemo(
+    () => deriveCareCareer(state.entries, now),
+    [state.entries, now],
   );
   const todayCommand = useMemo(
     () =>
@@ -1005,6 +1010,32 @@ export default function HomeScreen() {
     () => deriveCareTwinChoreography(deriveCareTwinScene(avatarMotion)),
     [avatarMotion],
   );
+  // Celebrate care level-ups through the room choreography. The level is
+  // derived from real logged evidence only, so this fires exactly when a
+  // real log crosses the next threshold.
+  const prevCareLevel = useRef<number | null>(null);
+  useEffect(() => {
+    if (prevCareLevel.current === null) {
+      prevCareLevel.current = careCareer.level;
+      return;
+    }
+    if (careCareer.level > prevCareLevel.current) {
+      setRoomReaction({
+        id: Date.now(),
+        icon: "energy",
+        label: "Level up!",
+        detail: `${petName} reached Lv ${careCareer.level} ${careCareer.title}.`,
+        tone: colors.amber,
+        spriteAction: "celebrate-hop",
+      });
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => {});
+      }
+    }
+    prevCareLevel.current = careCareer.level;
+  }, [careCareer.level, careCareer.title, colors.amber, petName]);
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = (
@@ -1114,7 +1145,11 @@ export default function HomeScreen() {
         tone: reactionToneColor(reactionPlan.toneRole),
         spriteAction: reactionPlan.spriteAction,
       });
-      showToast("Walk started", { id, title: "Walk started", type: "walk" });
+      showToast(`Walk started · +${careXpForEntry(entry)} care XP`, {
+        id,
+        title: "Walk started",
+        type: "walk",
+      });
       return;
     }
     const role = state.caregivers.find(
@@ -1151,7 +1186,7 @@ export default function HomeScreen() {
       tone: reactionToneColor(reactionPlan.toneRole),
       spriteAction: reactionPlan.spriteAction,
     });
-    showToast(`${item.title} logged`, {
+    showToast(`${item.title} logged · +${careXpForEntry(entry)} care XP`, {
       id,
       title: item.title,
       type: item.type,
@@ -1429,6 +1464,61 @@ export default function HomeScreen() {
             </View>
             <Ionicons name="chevron-forward" size={17} color={colors.navy} />
           </Pressable>
+
+          <BoardCard style={s.careerCard}>
+            <View
+              accessible
+              accessibilityLabel={`Care level ${careCareer.level}, ${careCareer.title}. ${careCareer.levelXp} of ${careCareer.levelSpanXp} XP toward the next level.${careCareer.todayXp > 0 ? ` ${careCareer.todayXp} XP earned today.` : ""}`}
+              style={s.careerRow}
+            >
+              <View style={[s.careerBadge, { backgroundColor: colors.brandNavy, borderColor: colors.amber }]}>
+                <Text style={[s.careerBadgeKicker, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+                  LV
+                </Text>
+                <Text style={[s.careerBadgeLevel, { color: colors.ivory, fontFamily: "Fredoka_700Bold" }]}>
+                  {careCareer.level}
+                </Text>
+              </View>
+              <View style={s.careerBody}>
+                <View style={s.careerTitleRow}>
+                  <Text
+                    numberOfLines={1}
+                    style={[s.careerTitle, { color: colors.navy, fontFamily: "Fredoka_600SemiBold" }]}
+                  >
+                    {careCareer.title}
+                  </Text>
+                  {careCareer.todayXp > 0 ? (
+                    <Text style={[s.careerToday, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
+                      +{careCareer.todayXp} XP today
+                    </Text>
+                  ) : null}
+                </View>
+                <View style={s.careerSegments}>
+                  {Array.from({ length: 10 }).map((_, index) => (
+                    <View
+                      key={`career-seg-${index}`}
+                      style={[
+                        s.careerSegment,
+                        {
+                          backgroundColor:
+                            index < Math.round(careCareer.levelProgress * 10)
+                              ? colors.amber
+                              : colors.muted,
+                          borderColor:
+                            index < Math.round(careCareer.levelProgress * 10)
+                              ? colors.amber
+                              : colors.border,
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+                <Text style={[s.careerXp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  {careCareer.levelXp.toLocaleString()} / {careCareer.levelSpanXp.toLocaleString()} XP · every point from real care logs
+                </Text>
+              </View>
+            </View>
+          </BoardCard>
 
           <BoardCard style={s.careStatusCard}>
             <BoardSectionHeader
@@ -2477,6 +2567,62 @@ const s = StyleSheet.create({
   },
   presenceInitial: { color: "#FFFFFF", fontSize: 17 },
   presenceCopy: { flex: 1, minWidth: 0 },
+  careerCard: {
+    marginBottom: 12,
+  },
+  careerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  careerBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  careerBadgeKicker: {
+    fontSize: 8,
+    letterSpacing: 1,
+  },
+  careerBadgeLevel: {
+    fontSize: 21,
+    lineHeight: 24,
+  },
+  careerBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  careerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  careerTitle: {
+    flexShrink: 1,
+    fontSize: 15,
+  },
+  careerToday: {
+    fontSize: 10.5,
+  },
+  careerSegments: {
+    flexDirection: "row",
+    gap: 3,
+    marginTop: 6,
+  },
+  careerSegment: {
+    flex: 1,
+    height: 10,
+    borderWidth: 1,
+    borderRadius: 2,
+  },
+  careerXp: {
+    fontSize: 10.5,
+    marginTop: 5,
+  },
   presenceText: { fontSize: 14 },
   presenceSub: { fontSize: 11, marginTop: 2 },
   careStatusCard: {
