@@ -759,6 +759,33 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /buildStoreSubmissionPacketShareText/);
   assert.match(qaRoute, /buildReleasePacket/);
   assert.match(qaRoute, /deriveLaunchReadiness/);
+  assert.match(qaRoute, /deriveAttachmentManifest/);
+  assert.match(qaRoute, /deriveSupportRunbookPlan/);
+  assert.match(
+    qaRoute,
+    /const attachmentManifest = useMemo\(\s*\(\) =>\s*deriveAttachmentManifest\(/,
+  );
+  assert.match(
+    qaRoute,
+    /storageProviderConfigured:\s*launchProviderSetupPlan\.providerInput\.storageProviderConfigured/,
+  );
+  assert.match(
+    qaRoute,
+    /storageProviderEvidence:\s*launchProviderSetupPlan\.providerInput\.storageProviderEvidence/,
+  );
+  assert.match(
+    qaRoute,
+    /const launchSupportPlan = useMemo\(\s*\(\) => deriveSupportRunbookPlan\(state\.launchSupportProfile\),\s*\[state\.launchSupportProfile\],\s*\)/,
+  );
+  assert.match(qaRoute, /storageQueue:\s*attachmentManifest\.launchQueue/);
+  assert.match(qaRoute, /authProviderProofReady:\s*Boolean\(launchProviderSetupPlan\.providerInput\.authProviderProofReady\)/);
+  assert.match(qaRoute, /storageProviderProofReady:\s*Boolean\(launchProviderSetupPlan\.providerInput\.storageProviderProofReady\)/);
+  assert.match(qaRoute, /storeAccountsProofReady:\s*Boolean\(launchProviderSetupPlan\.providerInput\.storeAccountsProofReady\)/);
+  assert.match(qaRoute, /privacyLegalApproved,\s*privacyLegalOwnerReviewed/);
+  assert.match(qaRoute, /supportRunbookApproved,\s*supportRunbookOwnerReviewed/);
+  assert.doesNotMatch(qaRoute, /provider:\s*\{[\s\S]*storageProviderConfigured:\s*false/);
+  assert.doesNotMatch(qaRoute, /provider:\s*\{[\s\S]*privacyLegalApproved:\s*false/);
+  assert.doesNotMatch(qaRoute, /provider:\s*\{[\s\S]*supportRunbookApproved:\s*false/);
   assert.match(qaRoute, /storeSubmissionPacket\.screenshotChecklist/);
   assert.match(qaRoute, /Store Screenshot QA/);
   assert.match(

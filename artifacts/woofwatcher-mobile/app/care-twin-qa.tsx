@@ -26,13 +26,14 @@ import {
   type CareTwinQaReviewStatus,
 } from "@/lib/careTwinQaReport";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
+import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import { deriveCareEntryProviderSyncProof } from "@/lib/careEntryProviderSyncProof";
 import { buildAiProviderProofManifest } from "@/lib/aiProviderProof";
 import { buildPushNotificationsProofManifest } from "@/lib/pushNotificationsProof";
 import { buildPaymentsProviderProofManifest } from "@/lib/paymentsProviderProof";
 import { buildStoreAccountsProofManifest } from "@/lib/storeAccountsProof";
 import { buildAccountDeletionProofManifest } from "@/lib/accountDeletionProof";
-import { buildSupportLegalReadinessProofManifest } from "@/lib/supportRunbook";
+import { buildSupportLegalReadinessProofManifest, deriveSupportRunbookPlan } from "@/lib/supportRunbook";
 import { buildRecordsLocalFileHandoffProofManifest } from "@/lib/reportArtifactExportFile";
 import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
 import {
@@ -267,6 +268,43 @@ export default function CareTwinQaScreen() {
     () => deriveLaunchProviderSetup(state.launchProviderProfile),
     [state.launchProviderProfile],
   );
+  const attachmentManifest = useMemo(
+    () =>
+      deriveAttachmentManifest(
+        {
+          entries: state.entries,
+          records: state.records,
+          adventureMemories: state.adventureMemories,
+          reportArtifacts: state.reportArtifacts,
+        },
+        {
+          storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
+          storageProviderEvidence: launchProviderSetupPlan.providerInput.storageProviderEvidence,
+        },
+      ),
+    [
+      launchProviderSetupPlan.providerInput.storageProviderConfigured,
+      launchProviderSetupPlan.providerInput.storageProviderEvidence,
+      state.adventureMemories,
+      state.entries,
+      state.records,
+      state.reportArtifacts,
+    ],
+  );
+  const launchSupportPlan = useMemo(
+    () => deriveSupportRunbookPlan(state.launchSupportProfile),
+    [state.launchSupportProfile],
+  );
+  const supportRunbookOwnerReviewed =
+    state.launchSupportProfile.providerStatus === "owner-reviewed" && launchSupportPlan.supportRunbookApproved;
+  const privacyLegalOwnerReviewed =
+    state.launchSupportProfile.providerStatus === "owner-reviewed" && launchSupportPlan.privacyLegalApproved;
+  const supportRunbookApproved =
+    state.launchSupportProfile.providerStatus === "provider-approved" && launchSupportPlan.supportRunbookApproved;
+  const privacyLegalApproved =
+    state.launchSupportProfile.providerStatus === "provider-approved" && launchSupportPlan.privacyLegalApproved;
+  const supportRunbookProofReady = supportRunbookApproved;
+  const privacyLegalProofReady = privacyLegalApproved;
   const storeLaunchReadinessPlan = useMemo(
     () =>
       deriveLaunchReadiness({
@@ -278,20 +316,42 @@ export default function CareTwinQaScreen() {
           privacyExportReady: true,
         },
         provider: {
-          authConfigured: false,
-          databaseConfigured: false,
-          storageProviderConfigured: false,
-          aiProviderConfigured: false,
-          paymentsEnabled: false,
-          accountDeletionEnabled: false,
-          pushNotificationsConfigured: false,
-          appStoreAccountsReady: false,
-          privacyLegalApproved: false,
-          supportRunbookApproved: false,
+          authConfigured: Boolean(launchProviderSetupPlan.providerInput.authConfigured),
+          authProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.authProviderProofReady),
+          databaseConfigured: Boolean(launchProviderSetupPlan.providerInput.databaseConfigured),
+          databaseProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.databaseProviderProofReady),
+          storageProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.storageProviderConfigured),
+          storageProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.storageProviderProofReady),
+          storageQueue: attachmentManifest.launchQueue,
+          aiProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.aiProviderConfigured),
+          aiProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.aiProviderProofReady),
+          paymentsEnabled: Boolean(launchProviderSetupPlan.providerInput.paymentsEnabled),
+          paymentsProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.paymentsProviderProofReady),
+          accountDeletionEnabled: Boolean(launchProviderSetupPlan.providerInput.accountDeletionEnabled),
+          accountDeletionProofReady: Boolean(launchProviderSetupPlan.providerInput.accountDeletionProofReady),
+          pushNotificationsConfigured: Boolean(launchProviderSetupPlan.providerInput.pushNotificationsConfigured),
+          pushNotificationsProofReady: Boolean(launchProviderSetupPlan.providerInput.pushNotificationsProofReady),
+          appStoreAccountsReady: Boolean(launchProviderSetupPlan.providerInput.appStoreAccountsReady),
+          storeAccountsProofReady: Boolean(launchProviderSetupPlan.providerInput.storeAccountsProofReady),
+          privacyLegalApproved,
+          privacyLegalOwnerReviewed,
+          privacyLegalProofReady,
+          supportRunbookApproved,
+          supportRunbookOwnerReviewed,
+          supportRunbookProofReady,
         },
         syncStatus: "healthy",
       }),
-    [],
+    [
+      attachmentManifest.launchQueue,
+      launchProviderSetupPlan.providerInput,
+      privacyLegalApproved,
+      privacyLegalOwnerReviewed,
+      privacyLegalProofReady,
+      supportRunbookApproved,
+      supportRunbookOwnerReviewed,
+      supportRunbookProofReady,
+    ],
   );
   const storeReleasePacket = useMemo(
     () =>

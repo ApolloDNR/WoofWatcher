@@ -2108,6 +2108,23 @@ Owner: Codex.
 
 Revisit trigger: WoofWatcher gains provider-backed attachment object ids, native upload/share evidence capture, or an in-app proof editor that can attach storage evidence directly from More.
 
+### 2026-07-06: Store Screenshot QA Uses Saved Launch Proof Paths
+
+Decision: Store Screenshot QA's store-prep packet must derive provider, support, and storage state from saved Provider Launch Setup, Support Runbook, and attachment manifest models instead of hardcoding provider gates false.
+
+Reason: Store Screenshot QA already powers the internal screenshot checklist and share packet. It should reflect valid structured proof that the rest of the launch cockpit can see, while still keeping native/store/public approval blocked.
+
+Consequences:
+
+- `/care-twin-qa` derives attachment manifest and support runbook state from saved care state.
+- `storeLaunchReadinessPlan` consumes provider proof-ready flags, support/legal variables, and `attachmentManifest.launchQueue`.
+- `nativeQa` remains `null`, so the store packet stays preparation evidence only.
+- Real native screenshots, store accounts, store review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains a provider-backed proof evidence service or Store Screenshot QA starts editing or attaching proof directly.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

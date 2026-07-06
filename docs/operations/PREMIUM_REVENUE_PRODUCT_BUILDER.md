@@ -3919,6 +3919,23 @@ passed `594/594`, and direct JSON mobile beta doctor source-backed checks
 passed while remaining truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned
 `10.24.0` and missing Corepack.
 
+The Store Screenshot QA launch-proof propagation pass closes the matching
+internal store-prep stale path. `/care-twin-qa` now derives Provider Launch
+Setup, Support Runbook, and attachment manifest state from saved care state
+before building `storeLaunchReadinessPlan`; the Store Submission screenshot QA
+packet consumes provider proof-ready flags, support/legal owner/provider states,
+and `attachmentManifest.launchQueue` instead of hardcoded false provider gates.
+`nativeQa` remains `null` in this internal packet, so store screenshot
+preparation still cannot approve native QA, App Store or Play review, public
+launch, or Apollo sign-off. Fresh local verification first failed because the
+route lacked `deriveAttachmentManifest`/`deriveSupportRunbookPlan` and hardcoded
+store provider gates false; after implementation, mobile readiness passed
+`114/114`, the focused attachment/launch-provider/support/store/mobile QA suite
+passed `177/177`, mobile TypeScript passed, root TypeScript passed, the full
+zero-dependency API/mobile/PWA/care-domain suite passed `594/594`, and direct
+JSON mobile beta doctor source-backed checks passed while remaining truthfully
+`BLOCKED` on local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

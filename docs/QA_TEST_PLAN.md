@@ -1874,6 +1874,32 @@ Latest follow-up local evidence, 2026-07-06:
   share/reopen, satisfy store review, launch publicly, or replace Apollo
   sign-off.
 
+Latest Store Screenshot QA follow-up local evidence, 2026-07-06:
+
+- Store Screenshot QA now consumes the saved Provider Launch Setup, Support
+  Runbook, and attachment-storage proof paths before building the Store
+  Submission screenshot checklist.
+- `/care-twin-qa` derives `launchProviderSetupPlan`, `launchSupportPlan`, and
+  `attachmentManifest` from saved care state, then forwards provider
+  proof-ready flags, support/legal proof variables, and
+  `attachmentManifest.launchQueue` into `storeLaunchReadinessPlan`.
+- `nativeQa` remains `null`, so the packet is still store-prep evidence only
+  and cannot approve native screenshots, App Store or Play review, public
+  launch, or Apollo sign-off.
+- Red-first mobile readiness failed because `/care-twin-qa` lacked
+  `deriveAttachmentManifest`/`deriveSupportRunbookPlan` and still hardcoded
+  store provider gates false, then passed `114/114` after implementation.
+- The focused attachment/launch-provider/support/store/mobile QA suite passed
+  `177/177`.
+- Mobile TypeScript, root TypeScript, the full zero-dependency
+  API/mobile/PWA/care-domain suite `594/594`, and direct JSON mobile beta
+  doctor source-backed checks passed. The JSON doctor remains truthfully
+  `BLOCKED` only because local pnpm is `11.7.0` while the repo pins `10.24.0`
+  and Corepack is not on PATH.
+- This does not attach real proof files, perform provider upload, create store
+  accounts, prove native screenshots, satisfy store review, launch publicly, or
+  replace Apollo sign-off.
+
 ## Mobile Runtime Route Smoke
 
 Latest local evidence, 2026-07-03:
