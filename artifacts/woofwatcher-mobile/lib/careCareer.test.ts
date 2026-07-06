@@ -9,6 +9,7 @@ import {
   careTitleForLevel,
   careXpForEntry,
   deriveCareCareer,
+  deriveCareStreak,
 } from "./careCareer.ts";
 
 const NOW = Date.parse("2026-07-06T12:00:00.000Z");
@@ -108,6 +109,40 @@ test("Home wires the care career level strip, XP toasts, and level-up celebratio
   assert.match(home, /spriteAction: "celebrate-hop"/);
   assert.match(home, /Care level \$\{careCareer\.level\}/);
   assert.match(home, /every point from real care logs/);
+});
+
+test("care streak counts consecutive logged days from real evidence", () => {
+  assert.equal(deriveCareStreak([], NOW), 0);
+  // Today only.
+  assert.equal(deriveCareStreak([entry("meal", "2026-07-06T08:00:00.000Z")], NOW), 1);
+  // Today plus two prior days.
+  assert.equal(
+    deriveCareStreak(
+      [
+        entry("meal", "2026-07-06T08:00:00.000Z"),
+        entry("walk", "2026-07-05T09:00:00.000Z"),
+        entry("potty", "2026-07-04T09:00:00.000Z"),
+      ],
+      NOW,
+    ),
+    3,
+  );
+  // A quiet morning does not break yesterday's streak.
+  assert.equal(
+    deriveCareStreak(
+      [
+        entry("walk", "2026-07-05T09:00:00.000Z"),
+        entry("meal", "2026-07-04T08:00:00.000Z"),
+      ],
+      NOW,
+    ),
+    2,
+  );
+  // A full missed day does break it.
+  assert.equal(
+    deriveCareStreak([entry("walk", "2026-07-03T09:00:00.000Z")], NOW),
+    0,
+  );
 });
 
 test("level progress stays clamped to the 0..1 range", () => {

@@ -97,6 +97,41 @@ function isSameLocalDay(iso: string, now: number): boolean {
   );
 }
 
+function localDayKey(date: Date): string {
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
+/**
+ * Consecutive days with at least one real care log, counting back from
+ * today. A day with no logs yet does not break the streak until it ends,
+ * so a streak held through yesterday still shows this morning.
+ */
+export function deriveCareStreak(
+  entries: readonly CareCareerEntryLike[],
+  now: number,
+): number {
+  const loggedDays = new Set<string>();
+  for (const entry of entries) {
+    const occurred = Date.parse(entry.occurredAt ?? "");
+    if (!Number.isFinite(occurred) || occurred > now) continue;
+    loggedDays.add(localDayKey(new Date(occurred)));
+  }
+  if (loggedDays.size === 0) return 0;
+
+  const cursor = new Date(now);
+  if (!loggedDays.has(localDayKey(cursor))) {
+    cursor.setDate(cursor.getDate() - 1);
+    if (!loggedDays.has(localDayKey(cursor))) return 0;
+  }
+
+  let streak = 0;
+  while (loggedDays.has(localDayKey(cursor))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
 export function deriveCareCareer(
   entries: readonly CareCareerEntryLike[],
   now: number,

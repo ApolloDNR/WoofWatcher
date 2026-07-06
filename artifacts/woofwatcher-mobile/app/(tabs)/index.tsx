@@ -61,7 +61,11 @@ import {
 import { getHomeFirstScreenLayout } from "@/lib/homeFirstScreenLayout";
 import { getHomeMissionDeckLayout } from "@/lib/homeMissionLayout";
 import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
-import { careXpForEntry, deriveCareCareer } from "@/lib/careCareer";
+import {
+  careXpForEntry,
+  deriveCareCareer,
+  deriveCareStreak,
+} from "@/lib/careCareer";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import {
   buildWalkSessionStartEntry,
@@ -384,6 +388,10 @@ export default function HomeScreen() {
   );
   const careCareer = useMemo(
     () => deriveCareCareer(state.entries, now),
+    [state.entries, now],
+  );
+  const careStreak = useMemo(
+    () => deriveCareStreak(state.entries, now),
     [state.entries, now],
   );
   const todayCommand = useMemo(
@@ -1533,7 +1541,10 @@ export default function HomeScreen() {
                   ))}
                 </View>
                 <Text style={[s.careerXp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  {careCareer.levelXp.toLocaleString()} / {careCareer.levelSpanXp.toLocaleString()} XP · every point from real care logs
+                  {careCareer.levelXp.toLocaleString()} / {careCareer.levelSpanXp.toLocaleString()} XP ·{" "}
+                  {careStreak >= 2
+                    ? `${careStreak}-day care streak`
+                    : "every point from real care logs"}
                 </Text>
               </View>
             </View>
