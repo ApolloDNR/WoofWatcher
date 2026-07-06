@@ -9,6 +9,7 @@ import {
   careTitleForLevel,
   careXpForEntry,
   deriveCareCareer,
+  deriveCareerWeek,
   deriveCareStreak,
 } from "./careCareer.ts";
 
@@ -143,6 +144,21 @@ test("care streak counts consecutive logged days from real evidence", () => {
     deriveCareStreak([entry("walk", "2026-07-03T09:00:00.000Z")], NOW),
     0,
   );
+});
+
+test("career week counts only the trailing seven days of real logs", () => {
+  const week = deriveCareerWeek(
+    [
+      entry("meal", "2026-07-06T08:00:00.000Z"),
+      entry("walk", "2026-07-06T09:00:00.000Z"),
+      entry("potty", "2026-07-03T09:00:00.000Z"),
+      entry("meal", "2026-06-20T09:00:00.000Z"), // outside window
+      entry("walk", "2026-07-08T09:00:00.000Z"), // future
+    ],
+    NOW,
+  );
+  assert.equal(week.logsThisWeek, 3);
+  assert.equal(week.activeDays, 2);
 });
 
 test("level progress stays clamped to the 0..1 range", () => {

@@ -132,6 +132,31 @@ export function deriveCareStreak(
   return streak;
 }
 
+export interface CareerWeekModel {
+  /** Real care logs in the trailing 7 days. */
+  logsThisWeek: number;
+  /** Distinct local days with at least one log in that window. */
+  activeDays: number;
+}
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function deriveCareerWeek(
+  entries: readonly CareCareerEntryLike[],
+  now: number,
+): CareerWeekModel {
+  const dayKeys = new Set<string>();
+  let logsThisWeek = 0;
+  for (const entry of entries) {
+    const occurred = Date.parse(entry.occurredAt ?? "");
+    if (!Number.isFinite(occurred) || occurred > now) continue;
+    if (occurred < now - WEEK_MS) continue;
+    logsThisWeek += 1;
+    dayKeys.add(localDayKey(new Date(occurred)));
+  }
+  return { logsThisWeek, activeDays: Math.min(7, dayKeys.size) };
+}
+
 export function deriveCareCareer(
   entries: readonly CareCareerEntryLike[],
   now: number,

@@ -98,7 +98,12 @@ import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle } from "@/lib/pixelRendering";
-import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardMetricTile, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import {
+  deriveCareCareer,
+  deriveCareerWeek,
+  deriveCareStreak,
+} from "@/lib/careCareer";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -365,6 +370,18 @@ export default function MoreScreen() {
 
   const now = Date.now();
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  const moreCareCareer = useMemo(
+    () => deriveCareCareer(state.entries, now),
+    [state.entries, now],
+  );
+  const moreCareStreak = useMemo(
+    () => deriveCareStreak(state.entries, now),
+    [state.entries, now],
+  );
+  const moreCareerWeek = useMemo(
+    () => deriveCareerWeek(state.entries, now),
+    [state.entries, now],
+  );
   const careIntelligence = useMemo(
     () =>
       deriveCareIntelligence({
@@ -1568,6 +1585,45 @@ export default function MoreScreen() {
                 </Pressable>
               </View>
             </ImageBackground>
+          </BoardCard>
+
+          <BoardCard style={s.moreDirectoryCard}>
+            <BoardSectionHeader
+              title="Career & Stats"
+              accessory={
+                <BoardPill
+                  label={`Lv ${moreCareCareer.level} ${moreCareCareer.title}`}
+                  tone={colors.amber}
+                />
+              }
+            />
+            <View style={{ gap: 8 }}>
+              <BoardMetricTile
+                icon="note"
+                label="Logs this week"
+                value={String(moreCareerWeek.logsThisWeek)}
+                detail={`${moreCareCareer.levelXp.toLocaleString()} / ${moreCareCareer.levelSpanXp.toLocaleString()} XP toward Lv ${moreCareCareer.level + 1}`}
+                tone={colors.sage}
+              />
+              <BoardMetricTile
+                icon="clock"
+                label="Active days"
+                value={`${moreCareerWeek.activeDays}/7`}
+                detail="Days with at least one real care log this week"
+                tone={colors.blueSignal}
+              />
+              <BoardMetricTile
+                icon="energy"
+                label="Care streak"
+                value={
+                  moreCareStreak > 0
+                    ? `${moreCareStreak} day${moreCareStreak === 1 ? "" : "s"}`
+                    : "Start today"
+                }
+                detail="Consecutive days of logged care"
+                tone={colors.amber}
+              />
+            </View>
           </BoardCard>
 
           <BoardCard style={s.moreDirectoryCard}>
