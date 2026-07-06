@@ -2176,7 +2176,6 @@ export default function LogScreen() {
               testID="quick-log-command-pixel-stage"
             >
               <View style={s.logCommandStageShade} />
-              <View style={s.logCommandStageScanline} />
               <View style={s.logCommandStageTop}>
                 <View style={s.logCommandBubble}>
                   <Text style={[s.logCommandKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
@@ -4704,10 +4703,6 @@ const s = StyleSheet.create({
   logCommandStageShade: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(8,20,36,0.08)",
-  },
-  logCommandStageScanline: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,249,239,0.05)",
   },
   logCommandStageTop: {
     flexDirection: "row",

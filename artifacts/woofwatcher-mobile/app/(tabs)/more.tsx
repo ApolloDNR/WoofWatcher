@@ -1458,7 +1458,6 @@ export default function MoreScreen() {
               testID="more-launch-command-pixel-stage"
             >
               <View style={s.moreCommandStageShade} />
-              <View style={s.moreCommandStageScanline} />
               <View style={s.moreCommandStageTop}>
                 <View style={s.moreCommandBubble}>
                   <Text style={[s.moreCommandKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
@@ -3788,10 +3787,6 @@ const s = StyleSheet.create({
   moreCommandStageShade: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(8,20,36,0.24)",
-  },
-  moreCommandStageScanline: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,249,239,0.05)",
   },
   moreCommandStageTop: {
     flexDirection: "row",

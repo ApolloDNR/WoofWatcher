@@ -945,7 +945,6 @@ export default function RecordsScreen() {
               testID="records-credential-pixel-stage"
             >
               <View style={s.recordsCredentialStageShade} />
-              <View style={s.recordsCredentialStageScanline} />
               <View style={s.recordsCredentialStageTop}>
                 <View style={s.recordsCredentialBubble}>
                   <Text style={[s.recordsCredentialKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
@@ -2871,11 +2870,6 @@ const s = StyleSheet.create({
   recordsCredentialStageShade: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(4, 16, 28, 0.12)",
-  },
-  recordsCredentialStageScanline: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.22)",
   },
   recordsCredentialStageTop: {
     zIndex: 3,

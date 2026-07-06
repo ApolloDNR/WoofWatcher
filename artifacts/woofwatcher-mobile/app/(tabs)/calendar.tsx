@@ -705,7 +705,6 @@ export default function CalendarScreen() {
               testID="plans-command-pixel-stage"
             >
               <View style={s.commandDeckShade} />
-              <View style={s.commandDeckScanline} />
               <View style={s.commandDeckTop}>
                 <View style={s.commandDeckBubble}>
                   <Text style={[s.commandDeckKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
@@ -1680,12 +1679,6 @@ const s = StyleSheet.create({
   commandDeckShade: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(8,26,42,0.11)",
-  },
-  commandDeckScanline: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
-    borderColor: "rgba(255,249,239,0.24)",
-    backgroundColor: "rgba(255,249,239,0.025)",
   },
   commandDeckTop: {
     position: "relative",

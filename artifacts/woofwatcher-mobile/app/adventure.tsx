@@ -278,7 +278,6 @@ export default function AdventureScreen() {
           style={s.hero}
         >
           <View style={s.heroShade} />
-          <View style={s.heroScanline} />
           <View style={s.heroTop}>
             <Pressable
               accessibilityRole="button"
@@ -592,12 +591,6 @@ const s = StyleSheet.create({
   hero: { minHeight: 326, borderRadius: 8, padding: 16, marginBottom: 14, overflow: "hidden", borderWidth: 2, borderColor: "rgba(8,26,42,0.48)" },
   heroImage: { borderRadius: 8 },
   heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(8, 26, 42, 0.22)" },
-  heroScanline: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
-    borderColor: "rgba(255,249,239,0.22)",
-    backgroundColor: "rgba(255,249,239,0.03)",
-  },
   heroTop: { position: "relative", zIndex: 5, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   heroIcon: { width: 38, height: 38, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(8,26,42,0.68)", borderWidth: 1, borderColor: "rgba(255,249,239,0.24)" },
   heroBadge: { borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, backgroundColor: "rgba(8,26,42,0.72)", borderWidth: 1, borderColor: "rgba(255,249,239,0.24)" },

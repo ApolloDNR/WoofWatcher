@@ -350,7 +350,6 @@ export default function WoofGuideScreen() {
                     testID="woofguide-pixel-guidance-stage"
                   >
                     <View style={s.guideStageShade} />
-                    <View style={s.guideStageScanline} />
                     <View style={s.guideStageTop}>
                       <View style={s.guideBubble}>
                         <Text style={[s.guideKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
@@ -654,13 +653,6 @@ const s = StyleSheet.create({
   guideStageShade: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(8,20,36,0.18)",
-  },
-  guideStageScanline: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 0.16,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: "rgba(255,255,255,0.28)",
   },
   guideStageTop: {
     flexDirection: "row",

@@ -447,7 +447,6 @@ export default function HealthScreen() {
             style={s.healthStage}
           >
             <View style={s.healthStageShade} />
-            <View style={s.healthStageScanline} />
             <View style={s.healthStageTop}>
               <View style={s.healthStageBubble}>
                 <Text style={[s.healthStageBubbleTitle, { color: colors.navy, fontFamily: DISPLAY_SEMI }]}>
@@ -906,12 +905,6 @@ const s = StyleSheet.create({
   healthStageShade: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(8,26,42,0.08)",
-  },
-  healthStageScanline: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
-    borderColor: "rgba(255,249,239,0.22)",
-    backgroundColor: "rgba(255,249,239,0.035)",
   },
   healthStageTop: {
     position: "relative",

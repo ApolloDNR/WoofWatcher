@@ -137,7 +137,6 @@ export default function PremiumScreen() {
               testID="premium-value-pixel-stage"
             >
               <View style={s.premiumValueStageShade} />
-              <View style={s.premiumValueStageScanline} />
 
               <View style={s.premiumValueStageTop}>
                 <View style={s.premiumValueBubble}>
@@ -494,11 +493,6 @@ const s = StyleSheet.create({
   premiumValueStageShade: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(8, 20, 36, 0.14)",
-  },
-  premiumValueStageScanline: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
-    borderColor: "rgba(255, 249, 239, 0.22)",
   },
   premiumValueStageTop: {
     padding: 14,
