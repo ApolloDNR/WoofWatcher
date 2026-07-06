@@ -438,6 +438,10 @@ export default function MoreScreen() {
       entries.length,
     ],
   );
+  const launchProviderSetupPlan = useMemo(
+    () => deriveLaunchProviderSetup(state.launchProviderProfile),
+    [state.launchProviderProfile],
+  );
   const attachmentManifest = useMemo(
     () =>
       deriveAttachmentManifest(
@@ -447,9 +451,19 @@ export default function MoreScreen() {
           adventureMemories: state.adventureMemories,
           reportArtifacts: state.reportArtifacts,
         },
-        { storageProviderConfigured: false },
+        {
+          storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
+          storageProviderEvidence: launchProviderSetupPlan.providerInput.storageProviderEvidence,
+        },
       ),
-    [entries, state.adventureMemories, state.records, state.reportArtifacts],
+    [
+      entries,
+      launchProviderSetupPlan.providerInput.storageProviderConfigured,
+      launchProviderSetupPlan.providerInput.storageProviderEvidence,
+      state.adventureMemories,
+      state.records,
+      state.reportArtifacts,
+    ],
   );
   const launchSupportPlan = useMemo(
     () => deriveSupportRunbookPlan(state.launchSupportProfile),
@@ -1045,11 +1059,6 @@ export default function MoreScreen() {
       onPress: generateCarePass,
     },
   ];
-
-  const launchProviderSetupPlan = useMemo(
-    () => deriveLaunchProviderSetup(state.launchProviderProfile),
-    [state.launchProviderProfile],
-  );
 
   const launchReadinessPlan = useMemo(
     () =>

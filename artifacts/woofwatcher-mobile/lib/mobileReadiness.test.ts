@@ -4716,6 +4716,12 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /buildBetaHandoffPacketShareText/);
   assert.match(more, /buildStoreSubmissionPacket/);
   assert.match(more, /buildStoreSubmissionPacketShareText/);
+  assert.match(
+    more,
+    /storageProviderConfigured:\s*launchProviderSetupPlan\.providerInput\.storageProviderConfigured/,
+  );
+  assert.match(more, /storageProviderEvidence:\s*launchProviderSetupPlan\.providerInput\.storageProviderEvidence/);
+  assert.doesNotMatch(more, /deriveAttachmentManifest\([\s\S]*storageProviderConfigured:\s*false/);
   assert.match(more, /storageQueue: attachmentManifest\.launchQueue/);
   assert.match(more, /supportRunbookOwnerReviewed/);
   assert.match(

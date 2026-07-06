@@ -2092,6 +2092,22 @@ Owner: Codex.
 
 Revisit trigger: WoofWatcher gains provider-backed proof attachment capture or the helper route starts editing proof evidence directly instead of only reviewing saved launch-provider proof.
 
+### 2026-07-06: More Launch Readiness Uses Saved Attachment Storage Proof
+
+Decision: More's Launch Readiness attachment queue must derive storage readiness from the saved Provider Launch Setup storage proof path instead of forcing attachment manifests to local-only. The route should build `launchProviderSetupPlan` before `deriveAttachmentManifest`, then pass `providerInput.storageProviderConfigured` and saved `storageProviderEvidence`.
+
+Reason: Records, Privacy, and the focused Report Binary Export helper can now consume valid saved/imported storage evidence. If More still passes `storageProviderConfigured: false`, the owner launch cockpit shows a stale storage queue and contradicts the storage-specific proof surfaces even when structured evidence is present.
+
+Consequences:
+
+- More's shared attachment manifest uses the same normalized Provider Launch Setup input as Launch Readiness.
+- The Records Storage tile and storage queue can reflect valid structured storage proof when the shared validators accept it.
+- Raw provider setup booleans still cannot prove provider upload, object ids, native share/reopen, store review, public launch, or Apollo sign-off.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains provider-backed attachment object ids, native upload/share evidence capture, or an in-app proof editor that can attach storage evidence directly from More.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

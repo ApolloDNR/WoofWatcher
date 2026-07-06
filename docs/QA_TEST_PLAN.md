@@ -1853,6 +1853,27 @@ Latest follow-up local evidence, 2026-07-04:
   provider storage, upload artifacts, satisfy store review, launch publicly, or
   replace Apollo sign-off.
 
+Latest follow-up local evidence, 2026-07-06:
+
+- More's Launch Readiness attachment queue now consumes the same saved Provider
+  Launch Setup storage proof path as Records, Privacy, and the focused Report
+  Binary Export helper.
+- `deriveAttachmentManifest` in More receives
+  `launchProviderSetupPlan.providerInput.storageProviderConfigured` and saved
+  `storageProviderEvidence` instead of a forced
+  `{ storageProviderConfigured: false }` option.
+- Red-first mobile readiness failed on the old hardcoded false path, then
+  passed `114/114` after implementation.
+- Focused attachment/provider/mobile readiness tests passed `127/127`.
+- Mobile TypeScript, root TypeScript, the full zero-dependency
+  API/mobile/PWA/care-domain suite `594/594`, and direct JSON mobile beta
+  doctor source-backed checks passed. The JSON doctor remains truthfully
+  `BLOCKED` only because local pnpm is `11.7.0` while the repo pins `10.24.0`
+  and Corepack is not on PATH.
+- This does not perform provider upload, create object ids, prove native
+  share/reopen, satisfy store review, launch publicly, or replace Apollo
+  sign-off.
+
 ## Mobile Runtime Route Smoke
 
 Latest local evidence, 2026-07-03:
