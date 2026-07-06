@@ -301,6 +301,28 @@ export function PrimaryButton({
   );
 }
 
+export function LocalPreviewGateway({ subtitle }: { subtitle: string }) {
+  const colors = useColors();
+  const router = useRouter();
+  return (
+    <AuthShell title="Local preview" subtitle={subtitle}>
+      <PrimaryButton
+        label="Continue in local preview"
+        onPress={() => router.replace("/(tabs)")}
+      />
+      <Text
+        style={[
+          styles.previewBoundary,
+          { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+        ]}
+      >
+        Provider sign-in stays off until production auth setup and launch
+        approval are complete. Care data stays on this device.
+      </Text>
+    </AuthShell>
+  );
+}
+
 export function GoogleButton({
   onPress,
   loading,
@@ -640,5 +662,11 @@ const styles = StyleSheet.create({
   },
   formErrorText: {
     fontSize: 13,
+  },
+  previewBoundary: {
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: "center",
+    marginTop: 16,
   },
 });

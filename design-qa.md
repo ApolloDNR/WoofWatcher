@@ -34,3 +34,35 @@ Date: 2026-06-18
 - Native iOS and Android simulator/device QA is still required for safe areas, frame timing, touch targets, and real device pixel crispness.
 - Final illustrated night, bedtime, health-watch, and home-alone room variants still need replacement/approval.
 - Non-Phoenix template emotes, body-class sprite strips, and overlay-aligned accessory layers remain production art tasks.
+
+# Design QA - Premium Typography And Chrome Repair Pass
+
+Date: 2026-07-06
+
+## Scope
+
+- Target: WoofWatcher mobile app-wide typography, stack-header chrome, Home header truth, Phoenix room speech bubble, WoofGuide/Plus console chips, Privacy export grid, auth gateway preview behavior, and the not-found route.
+- Visual source: locked premium neo-retro pixel palette and existing board system.
+
+## Findings Fixed
+
+- `Inter_800ExtraBold` was referenced by 216 text elements and `PressStart2P_400Regular` by the WoofGuide/Plus consoles, but neither font was loaded, so console HUD values, chips, and primary action buttons rendered in the platform fallback serif across Log, Plans, Records, More, WoofGuide, and Plus. Inter ExtraBold is now loaded and the two console constants use the board-system `Fredoka_600SemiBold`.
+- Stack headers for Setup, WoofGuide, WoofWatcher Plus, Privacy & Safety, Adventure Mode, and Care Twin QA used stale green-on-`#F7F5F1` chrome. They now use palette background, Fredoka titles, copper tint, and follow native dark mode.
+- The Home header bell badge was hardcoded to `3`. It now derives from live Health/Bile watch signals, hides when calm, and carries the signal count in an accessibility hint.
+- The Phoenix room speech bubble reserved a fixed-size box and rendered mostly empty for short lines; it now hugs its content.
+- The WoofGuide "Owner review" console chip could be pushed past the card edge once real (wider) fonts loaded; console bubbles/chips can now shrink. The Plus checkout chip got the same guard.
+- The Privacy & Safety export summary tiles wrapped to a single column at 390pt width; they now flex into a true two-up grid.
+- `/sign-in` and `/sign-up` crashed to the error boundary in preview builds because Clerk hooks mounted without a configured provider. They now render a truthful local-preview gateway with a working continue action, and the Clerk forms mount only when Clerk is configured.
+- The not-found route was the stock Expo template; it is now branded with a safe exit back to Home.
+
+## Checks Run
+
+- Focused behavior/readiness suite: passed, 594 tests, 0 failures (Node 24).
+- Mobile TypeScript: passed.
+- Expo web export smoke: passed.
+- Headless Chromium screenshot QA at 390x844 across Home, Quick Log, Plans, Health, Records, More, WoofGuide, Plus, Setup, Privacy, sign-in, and not-found in the exported web build.
+
+## Remaining QA
+
+- Native iOS and Android simulator/device screenshot proof is still required for store-grade sign-off; this pass covers the exported web preview only.
+- Dark mode remains native-only by design in `useColors`; native dark-mode screenshots are still pending.

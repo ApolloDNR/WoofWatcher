@@ -699,7 +699,7 @@ const s = StyleSheet.create({
   heroSub: { color: "rgba(255,255,255,0.84)", fontSize: 15, lineHeight: 22, marginTop: 10 },
   privacyBoard: { marginTop: 14 },
   statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  statTile: { width: "48.5%", borderRadius: 16, borderWidth: 1, padding: 15 },
+  statTile: { flexBasis: "45%", flexGrow: 1, borderRadius: 16, borderWidth: 1, padding: 15 },
   statValue: { fontSize: 24 },
   statLabel: { fontSize: 11.5, marginTop: 3, textTransform: "uppercase", letterSpacing: 0.6 },
   queueSummary: { fontSize: 12.5, lineHeight: 18, marginBottom: 10 },

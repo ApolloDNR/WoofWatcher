@@ -143,7 +143,7 @@ function RootLayoutNav() {
           presentation: "card",
         }}
       />
-      <Stack.Screen name="+not-found" />
+      <Stack.Screen name="+not-found" options={{ title: "Not Found" }} />
     </Stack>
   );
 }
