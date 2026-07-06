@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -115,6 +116,10 @@ const todayMetricRouteType: Record<TodayMetricTarget, CareEventType> = {
   meals: "meal",
   potty: "potty",
 };
+
+// Full-screen immersive room: the living sprite layer floats over this
+// backdrop so the whole Home reads like a scene viewed through a camera.
+const HOME_IMMERSIVE_ROOM = require("@/assets/avatar/rooms/phoenix-room-immersive-tall.png");
 
 const HOME_QUICK_LOG: QuickItem[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
@@ -1244,6 +1249,12 @@ export default function HomeScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
+      <Image
+        source={HOME_IMMERSIVE_ROOM}
+        resizeMode="cover"
+        style={StyleSheet.absoluteFill}
+        fadeDuration={0}
+      />
       <ScrollView
         style={s.container}
         contentContainerStyle={{
@@ -1356,6 +1367,7 @@ export default function HomeScreen() {
                 statusReadouts={roomStats}
                 avatarConfig={avatarConfig}
                 chromeDensity="compact"
+                transparentScene
                 onPress={tapPhoenixRoom}
                 onLongPress={openAvatarStudio}
                 accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
@@ -2470,6 +2482,10 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 10,
+    backgroundColor: "rgba(247,242,232,0.92)",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   headerButton: {
     width: MIN_MOBILE_TOUCH_TARGET,

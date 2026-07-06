@@ -99,6 +99,9 @@ interface Props {
   accessibilityHint?: string;
   presentation?: "home" | "studio";
   chromeDensity?: "full" | "compact";
+  /** Skip the baked room scene so the living sprite layer floats over a
+      full-screen background owned by the host screen. */
+  transparentScene?: boolean;
 }
 
 type PercentString = `${number}%`;
@@ -255,6 +258,7 @@ export function LivingPhoenixRoom({
   accessibilityHint,
   presentation = "home",
   chromeDensity = "full",
+  transparentScene = false,
 }: Props) {
   const colors = useColors();
   const theme = MOOD_THEME[mood];
@@ -657,36 +661,36 @@ export function LivingPhoenixRoom({
       accessibilityHint={accessibilityHint}
       onPress={handlePress}
       onLongPress={onLongPress}
-      style={styles.root}
+      style={[
+        styles.root,
+        transparentScene ? styles.rootTransparent : null,
+      ]}
     >
-      <View pointerEvents="none" style={styles.pixelFrame}>
-        <View style={[styles.frameCorner, styles.frameCornerTopLeft]} />
-        <View style={[styles.frameCorner, styles.frameCornerTopRight]} />
-        <View style={[styles.frameCorner, styles.frameCornerBottomLeft]} />
-        <View style={[styles.frameCorner, styles.frameCornerBottomRight]} />
-      </View>
-      <Animated.Image
-        source={stageSource}
-        resizeMode="cover"
-        style={[
-          styles.scene,
-          pixelImageStyle,
-          animateBakedScene ? sceneMotionStyle : null,
-        ]}
-      />
-      {PIXEL_SCANLINES.map((top) => (
-        <View
-          key={top}
-          pointerEvents="none"
-          style={[styles.scanline, { top }]}
-        />
-      ))}
-      <LinearGradient
-        colors={[theme.wash, "rgba(255,249,239,0)", "rgba(8,20,36,0.28)"]}
-        locations={[0, 0.58, 1]}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      />
+      {transparentScene ? null : (
+        <>
+          <View pointerEvents="none" style={styles.pixelFrame}>
+            <View style={[styles.frameCorner, styles.frameCornerTopLeft]} />
+            <View style={[styles.frameCorner, styles.frameCornerTopRight]} />
+            <View style={[styles.frameCorner, styles.frameCornerBottomLeft]} />
+            <View style={[styles.frameCorner, styles.frameCornerBottomRight]} />
+          </View>
+          <Animated.Image
+            source={stageSource}
+            resizeMode="cover"
+            style={[
+              styles.scene,
+              pixelImageStyle,
+              animateBakedScene ? sceneMotionStyle : null,
+            ]}
+          />
+          <LinearGradient
+            colors={[theme.wash, "rgba(255,249,239,0)", "rgba(8,20,36,0.28)"]}
+            locations={[0, 0.58, 1]}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+        </>
+      )}
 
       <Animated.View
         pointerEvents="none"
@@ -1165,6 +1169,9 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
     backgroundColor: "#081A2A",
+  },
+  rootTransparent: {
+    backgroundColor: "transparent",
   },
   pixelFrame: {
     ...StyleSheet.absoluteFillObject,
