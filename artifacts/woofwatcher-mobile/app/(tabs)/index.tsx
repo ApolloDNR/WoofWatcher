@@ -1225,7 +1225,9 @@ export default function HomeScreen() {
   };
 
   const isWebRoutePreview = (Platform.OS as string) === "web";
-  const routeHorizontalPadding = isWebRoutePreview ? 0 : 16;
+  // The web preview mirrors the native inset so the room console floats
+  // with the same clean margins reviewers see on a real device.
+  const routeHorizontalPadding = 16;
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
   useEffect(() => {
     if (isWebRoutePreview) return;

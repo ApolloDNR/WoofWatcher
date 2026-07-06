@@ -774,7 +774,7 @@ export default function RecordsScreen() {
   }, [fade, isWebRoutePreview, slide]);
 
   // Chart geometry
-  const H_PAD = isWebRoutePreview ? 0 : 20;
+  const H_PAD = 16;
   const cardPad = 18;
   const chartW = width - H_PAD * 2 - cardPad * 2;
   const chartH = 140;

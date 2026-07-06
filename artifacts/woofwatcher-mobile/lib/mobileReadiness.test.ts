@@ -2258,7 +2258,7 @@ test("keeps web route previews visible before native entry animation starts", ()
   }
 });
 
-test("keeps tab route web padding from widening the phone frame", () => {
+test("keeps the floating route gutter consistent across web and native", () => {
   const routeSources: Record<string, string> = {
     log: readAppFile(join("(tabs)", "log.tsx")),
     plans: readAppFile(join("(tabs)", "calendar.tsx")),
@@ -2269,8 +2269,8 @@ test("keeps tab route web padding from widening the phone frame", () => {
   for (const [route, source] of Object.entries(routeSources)) {
     assert.match(
       source,
-      /const H_PAD = isWebRoutePreview \? 0 : 20/,
-      `${route} should remove horizontal ScrollView padding on web preview`,
+      /const H_PAD = 16;/,
+      `${route} should keep the floating 16pt route gutter on web and native`,
     );
     assert.match(
       source,
@@ -2281,8 +2281,8 @@ test("keeps tab route web padding from widening the phone frame", () => {
 
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const health = readAppFile(join("(tabs)", "health.tsx"));
-  assert.match(home, /const routeHorizontalPadding = isWebRoutePreview \? 0 : 16/);
-  assert.match(health, /const routeHorizontalPadding = isWebRoutePreview \? 0 : 18/);
+  assert.match(home, /const routeHorizontalPadding = 16;/);
+  assert.match(health, /const routeHorizontalPadding = 16;/);
   assert.match(home, /paddingHorizontal: routeHorizontalPadding/);
   assert.match(health, /paddingHorizontal: routeHorizontalPadding/);
 });

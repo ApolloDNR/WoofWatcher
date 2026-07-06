@@ -673,7 +673,7 @@ export default function CalendarScreen() {
   }, [fade, isWebRoutePreview, slide]);
 
   const dateLabel = new Date(now).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
-  const H_PAD = isWebRoutePreview ? 0 : 20;
+  const H_PAD = 16;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>

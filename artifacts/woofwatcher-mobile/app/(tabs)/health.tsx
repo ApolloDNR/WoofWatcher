@@ -162,7 +162,7 @@ export default function HealthScreen() {
     bottomInset: insets.bottom,
   });
   const isWebRoutePreview = (Platform.OS as string) === "web";
-  const routeHorizontalPadding = isWebRoutePreview ? 0 : 18;
+  const routeHorizontalPadding = 16;
 
   const healthWatch = useMemo(
     () => deriveHealthWatch({ entries: state.entries, routines: state.routines, now }),
