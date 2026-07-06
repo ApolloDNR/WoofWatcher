@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   buildAdventureMemoryDraft,
   deriveAdventureMode,
+  deriveWalkRouteTemplates,
   normalizeCareEventType,
   type AdventureMemory,
   type CareEventType,
@@ -126,6 +127,11 @@ export default function AdventureScreen() {
         now,
       }),
     [petName, state.entries, state.adventureMemories, now],
+  );
+
+  const trailStops = useMemo(
+    () => deriveWalkRouteTemplates({ entries: state.entries, now, limit: 5 }),
+    [state.entries, now],
   );
 
   const availableQuest =
@@ -440,6 +446,81 @@ export default function AdventureScreen() {
 
         <BoardCard style={s.board}>
           <BoardSectionHeader
+            title="Adventure Trail"
+            accessory={
+              <BoardPill
+                label={
+                  trailStops.length > 0
+                    ? `${trailStops.length} ${trailStops.length === 1 ? "place" : "places"}`
+                    : "Unexplored"
+                }
+                tone={colors.sage}
+              />
+            }
+          />
+          {trailStops.length > 0 ? (
+            <View style={s.trailList}>
+              {trailStops.map((stop, index) => (
+                <Pressable
+                  key={stop.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Start a walk at ${stop.name}. Visited ${stop.visits} ${stop.visits === 1 ? "time" : "times"}.`}
+                  onPress={() =>
+                    router.push(`/log?type=walk&detail=1&intent=${Date.now()}` as never)
+                  }
+                  style={({ pressed }) => [s.trailRow, { opacity: pressed ? 0.72 : 1 }]}
+                >
+                  <View
+                    style={[
+                      s.trailDot,
+                      {
+                        backgroundColor: index === 0 ? colors.copper : colors.secondary,
+                        borderColor: index === 0 ? colors.copper : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.trailDotText,
+                        {
+                          color: index === 0 ? colors.ivory : colors.foreground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      {stop.visits}
+                    </Text>
+                  </View>
+                  <View style={s.trailCopy}>
+                    <Text
+                      numberOfLines={1}
+                      style={[s.trailName, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+                    >
+                      {stop.name}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[s.trailMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                    >
+                      {stop.visits} {stop.visits === 1 ? "visit" : "visits"}
+                      {stop.averageMinutes > 0 ? ` · ~${stop.averageMinutes} min` : ""}
+                      {stop.dogInteractions > 0 ? ` · ${stop.dogInteractions} dog friends` : ""}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+                </Pressable>
+              ))}
+            </View>
+          ) : (
+            <Text style={[s.trailEmpty, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              No places discovered yet. Log a walk with a route or place name and
+              it appears on the trail with real visit counts.
+            </Text>
+          )}
+        </BoardCard>
+
+        <BoardCard style={s.board}>
+          <BoardSectionHeader
             title="Care proof"
             accessory={<BoardPill label={`${adventure.completedProof.length} today`} tone={colors.sage} />}
           />
@@ -659,6 +740,27 @@ const s = StyleSheet.create({
   primaryBtnText: { color: "#FFFFFF", fontSize: 13.5 },
   secondaryBtn: { width: 50, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   questList: { gap: 10 },
+  trailList: { gap: 4 },
+  trailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    minHeight: 52,
+    paddingVertical: 6,
+  },
+  trailDot: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  trailDotText: { fontSize: 12 },
+  trailCopy: { flex: 1, minWidth: 0 },
+  trailName: { fontSize: 15 },
+  trailMeta: { fontSize: 11.5, marginTop: 1 },
+  trailEmpty: { fontSize: 12.5, lineHeight: 18 },
   questRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, borderWidth: 1, borderRadius: 8, padding: 11 },
   questIcon: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   questTitle: { fontSize: 13.5 },
