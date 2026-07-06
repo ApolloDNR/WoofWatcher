@@ -1323,78 +1323,12 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          <BoardCard padded={false} style={s.heroCard}>
+          {/* The room is the screen's background: it bleeds to the screen
+              edges and the care surfaces float over its lower edge, matching
+              the vision-board Home. */}
+          <View style={s.heroBackdrop}>
             <View
-              style={[
-                s.heroConsoleHeader,
-                {
-                  minHeight: homeFirstScreenLayout.heroHeaderMinHeight,
-                  paddingVertical:
-                    homeFirstScreenLayout.heroHeaderVerticalPadding,
-                  backgroundColor: colors.ivory,
-                  borderBottomColor: colors.border,
-                },
-              ]}
-            >
-              <View style={s.heroConsoleTitleRow}>
-                <PixelIcon name="heart" size={22} />
-                <View style={s.heroConsoleCopy}>
-                  <Text
-                    style={[
-                      s.heroConsoleKicker,
-                      {
-                        color: colors.copper,
-                        fontFamily: "Fredoka_600SemiBold",
-                      },
-                    ]}
-                  >
-                    PHOENIX HOME
-                  </Text>
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      s.heroConsoleTitle,
-                      { color: colors.navy, fontFamily: "Fredoka_700Bold" },
-                    ]}
-                  >
-                    Phoenix Room
-                  </Text>
-                </View>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
-                onPress={openAvatarStudio}
-                style={({ pressed }) => [
-                  s.heroStudioButton,
-                  {
-                    width: homeFirstScreenLayout.heroStudioButtonWidth,
-                    minHeight: homeFirstScreenLayout.heroStudioButtonMinHeight,
-                    backgroundColor: pressed ? colors.secondary : colors.card,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    s.heroStudioKicker,
-                    { color: colors.copper, fontFamily: "Inter_700Bold" },
-                  ]}
-                >
-                  Care Twin
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    s.heroStudioTitle,
-                    { color: colors.navy, fontFamily: "Inter_700Bold" },
-                  ]}
-                >
-                  {avatarTemplate.label}
-                </Text>
-              </Pressable>
-            </View>
-            <View
+              accessibilityLabel="Phoenix Room"
               accessibilityHint={homeFirstScreenLayout.qaLabel}
               style={[
                 s.heroWrap,
@@ -1423,7 +1357,31 @@ export default function HomeScreen() {
                 accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
               />
             </View>
-          </BoardCard>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
+              onPress={openAvatarStudio}
+              style={({ pressed }) => [
+                s.heroStudioChip,
+                {
+                  minHeight: homeFirstScreenLayout.heroStudioButtonMinHeight,
+                  backgroundColor: pressed
+                    ? colors.ivory
+                    : "rgba(255,249,239,0.92)",
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  s.heroStudioChipText,
+                  { color: colors.copper, fontFamily: "Inter_700Bold" },
+                ]}
+              >
+                {avatarTemplate.label} twin
+              </Text>
+              <Ionicons name="chevron-forward" size={12} color={colors.copper} />
+            </Pressable>
+          </View>
 
           <Pressable
             accessibilityRole="button"
@@ -2511,13 +2469,27 @@ const s = StyleSheet.create({
   greeting: { fontSize: 20, lineHeight: 24 },
   logoSub: { fontSize: 12, marginTop: 1 },
 
-  heroCard: {
-    overflow: "hidden",
+  heroBackdrop: {
+    marginHorizontal: -16,
     marginBottom: 0,
-    borderWidth: 1,
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    overflow: "hidden",
+  },
+  heroStudioChip: {
+    position: "absolute",
+    top: 10,
+    right: 12,
+    zIndex: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  heroStudioChipText: {
+    fontSize: 11,
   },
   heroConsoleHeader: {
     minHeight: 58,
@@ -2663,30 +2635,26 @@ const s = StyleSheet.create({
     marginBottom: 8,
   },
   statusTiles: {
-    flexDirection: "row",
-    gap: 8,
+    flexDirection: "column",
+    gap: 6,
     marginBottom: 10,
   },
   statusTile: {
-    flex: 1,
-    minHeight: 62,
-    borderWidth: 1,
-    borderRadius: 8,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
+    gap: 12,
+    borderWidth: 0,
+    borderRadius: 14,
+    paddingHorizontal: 10,
     paddingVertical: 6,
   },
   statusTileIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 3,
   },
-  statusTileLabel: { fontSize: 9.5, textAlign: "center" },
-  statusTileValue: { fontSize: 11.5, marginTop: 1, textAlign: "center" },
+  statusTileLabel: { flex: 1, fontSize: 14 },
+  statusTileValue: { fontSize: 13, textAlign: "right" },
   todayCommandCard: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     marginBottom: 10,
