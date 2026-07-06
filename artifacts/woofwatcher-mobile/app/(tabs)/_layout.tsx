@@ -78,15 +78,15 @@ export default function TabLayout() {
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: colors.copperBright,
-          tabBarInactiveTintColor: colors.foreground,
-          tabBarActiveBackgroundColor: "transparent",
-          tabBarLabelStyle: { fontFamily: "Inter_700Bold", fontSize: 10, lineHeight: 12 },
+          tabBarInactiveTintColor: colors.mutedForeground,
+          tabBarActiveBackgroundColor: colors.secondary,
+          tabBarLabelStyle: { fontFamily: "Inter_600SemiBold", fontSize: 10, lineHeight: 12 },
           tabBarItemStyle: {
             paddingTop: 2,
             paddingBottom: 5,
-            marginVertical: 2,
-            marginHorizontal: 2,
-            borderRadius: colors.pixelUi.radius.card,
+            marginVertical: 4,
+            marginHorizontal: 3,
+            borderRadius: 999,
           },
           tabBarStyle: {
             position: "absolute",

@@ -591,19 +591,18 @@ const styles = StyleSheet.create({
   },
   pill: {
     alignSelf: "flex-start",
-    borderWidth: 1,
-    borderRadius: 5,
+    borderWidth: 0,
+    borderRadius: 999,
     minHeight: 28,
-    paddingHorizontal: 9,
+    paddingHorizontal: 11,
     paddingVertical: 5,
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
   },
   pillText: {
-    fontSize: 10.5,
-    textTransform: "uppercase",
-    letterSpacing: 0,
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
   metricTile: {
     borderWidth: 1,
@@ -641,11 +640,10 @@ const styles = StyleSheet.create({
   },
   card: {
     borderWidth: 1,
-    borderBottomWidth: 2,
-    elevation: 1,
+    elevation: 2,
   },
   cardPadded: {
-    padding: 12,
+    padding: 16,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -653,15 +651,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 10,
     marginBottom: 10,
-    paddingBottom: 7,
-    borderBottomWidth: 1,
+    paddingBottom: 2,
+    borderBottomWidth: 0,
   },
   sectionTitle: {
     flexShrink: 1,
     minWidth: 0,
-    fontSize: 13,
+    fontSize: 16,
     letterSpacing: 0,
-    textTransform: "uppercase",
   },
   sectionAction: {
     flexShrink: 0,

@@ -93,21 +93,24 @@ const darkTheme = {
   ivory: "#FFF9EF",
 };
 
+// Softened toward Apollo's 2026-07 vision board: large calm radii, no hard
+// pixel edges on cards, deeper diffuse shadows. Pixel style stays in the art
+// and accents, not in the container chrome.
 const pixelUi = {
   radius: {
-    card: 8,
-    panel: 12,
-    scene: 10,
-    chip: 8,
+    card: 20,
+    panel: 24,
+    scene: 16,
+    chip: 12,
     pill: 999,
   },
   statusSegments: 10,
   borderWidth: 1,
   hairline: "#D7CEC0",
   shadow: {
-    opacity: 0.05,
-    radius: 6,
-    y: 3,
+    opacity: 0.07,
+    radius: 18,
+    y: 10,
   },
 };
 

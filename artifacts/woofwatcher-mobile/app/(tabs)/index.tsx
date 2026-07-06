@@ -1254,14 +1254,33 @@ export default function HomeScreen() {
               <Ionicons name="menu" size={27} color={colors.navy} />
             </Pressable>
             <View style={s.logoWrap}>
-              <WoofWatcherLogo size={39} wordmarkSize={30} />
+              <Text
+                style={[
+                  s.greeting,
+                  { color: colors.navy, fontFamily: "Fredoka_700Bold" },
+                ]}
+              >
+                {new Date(now).getHours() < 12
+                  ? "Good morning"
+                  : new Date(now).getHours() < 18
+                    ? "Good afternoon"
+                    : "Good evening"}
+                , {caregiver}
+              </Text>
               <Text
                 style={[
                   s.logoSub,
-                  { color: colors.navy, fontFamily: "Inter_600SemiBold" },
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
                 ]}
               >
-                Real care. Pixel heart.
+                {status.mood === "unwell"
+                  ? `Keep ${petName}'s day gentle today`
+                  : status.mood === "anxious"
+                    ? `${petName} could use a calm plan`
+                    : `${petName} is ready for adventure`}
               </Text>
             </View>
             <Pressable
@@ -2476,7 +2495,8 @@ const s = StyleSheet.create({
   },
   badgeText: { color: "#FFFFFF", fontSize: 10 },
   logoWrap: { flex: 1, alignItems: "center", gap: 0 },
-  logoSub: { fontSize: 11.5, marginTop: -1 },
+  greeting: { fontSize: 20, lineHeight: 24 },
+  logoSub: { fontSize: 12, marginTop: 1 },
 
   heroCard: {
     overflow: "hidden",
