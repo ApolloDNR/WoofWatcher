@@ -13,12 +13,14 @@ import colors from "@/constants/colors";
 const NAVY = colors.light.brandNavy;
 const COPPER = colors.light.copper;
 
-const HEART = require("@/assets/board/icons/heart.png");
+// 2B Phoenix Mark: navy dog-head profile with the copper heart at the chest,
+// from Apollo's approved brand board.
+const PHOENIX_MARK = require("@/assets/brand/phoenix-mark.png");
 
 export function WoofWatcherMark({ size = 44 }: { size?: number }) {
   return (
     <Image
-      source={HEART}
+      source={PHOENIX_MARK}
       style={{ width: size, height: size }}
       resizeMode="contain"
       fadeDuration={0}

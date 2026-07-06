@@ -793,6 +793,7 @@ export default function HomeScreen() {
       tone: colors.amber,
       target: "mood" as StatusTileTarget,
       actionLabel: "Open mood details",
+      progress: undefined as number | undefined,
     },
     {
       label: "Energy",
@@ -801,6 +802,7 @@ export default function HomeScreen() {
       tone: colors.sage,
       target: "health" as StatusTileTarget,
       actionLabel: "Open Health Watch",
+      progress: status.energy as number | undefined,
     },
     {
       label: "Hunger",
@@ -809,6 +811,7 @@ export default function HomeScreen() {
       tone: fed ? colors.sage : colors.copper,
       target: "diet" as StatusTileTarget,
       actionLabel: "Open Diet Profile",
+      progress: hungerScore as number | undefined,
     },
     {
       label: "Bond",
@@ -817,6 +820,7 @@ export default function HomeScreen() {
       tone: colors.rose,
       target: "bond" as StatusTileTarget,
       actionLabel: "Open play details",
+      progress: bondScore as number | undefined,
     },
   ];
   const openStatusTile = (target: StatusTileTarget) => {
@@ -1564,14 +1568,37 @@ export default function HomeScreen() {
                   >
                     {tile.label}
                   </Text>
-                  <Text
-                    style={[
-                      s.statusTileValue,
-                      { color: tile.tone, fontFamily: "Inter_700Bold" },
-                    ]}
-                  >
-                    {tile.value}
-                  </Text>
+                  {tile.progress != null ? (
+                    <View style={s.statusTileSegments}>
+                      {Array.from({ length: 8 }).map((_, index) => (
+                        <View
+                          key={`${tile.label}-seg-${index}`}
+                          style={[
+                            s.statusTileSegment,
+                            {
+                              backgroundColor:
+                                index <
+                                Math.max(
+                                  1,
+                                  Math.round(((tile.progress ?? 0) / 100) * 8),
+                                )
+                                  ? tile.tone
+                                  : colors.muted,
+                            },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  ) : (
+                    <Text
+                      style={[
+                        s.statusTileValue,
+                        { color: tile.tone, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
+                      {tile.value}
+                    </Text>
+                  )}
                 </Pressable>
               ))}
             </View>
@@ -2655,6 +2682,15 @@ const s = StyleSheet.create({
   },
   statusTileLabel: { flex: 1, fontSize: 14 },
   statusTileValue: { fontSize: 13, textAlign: "right" },
+  statusTileSegments: {
+    flexDirection: "row",
+    gap: 3,
+  },
+  statusTileSegment: {
+    width: 13,
+    height: 18,
+    borderRadius: 4,
+  },
   todayCommandCard: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     marginBottom: 10,
