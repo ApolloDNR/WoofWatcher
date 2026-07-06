@@ -83,8 +83,8 @@ export default function TabLayout() {
           tabBarLabelStyle: { fontFamily: "Inter_600SemiBold", fontSize: 10, lineHeight: 12 },
           tabBarItemStyle: {
             paddingTop: 2,
-            paddingBottom: 5,
-            marginVertical: 4,
+            paddingBottom: 3,
+            marginVertical: 2,
             marginHorizontal: 3,
             borderRadius: 999,
           },
