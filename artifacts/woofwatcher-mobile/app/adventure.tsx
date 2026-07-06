@@ -722,7 +722,7 @@ const s = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "rgba(8,26,42,0.34)",
   },
-  heroCopy: { position: "relative", zIndex: 5, marginTop: 82, maxWidth: "58%" },
+  heroCopy: { position: "relative", zIndex: 5, marginTop: 48, marginBottom: 84, maxWidth: "58%" },
   kicker: { fontSize: 11, letterSpacing: 0.8 },
   title: { color: "#FFFFFF", fontSize: 31, letterSpacing: 0, marginTop: 4 },
   subtitle: { color: "rgba(255,255,255,0.9)", fontSize: 13, lineHeight: 18, marginTop: 5, textShadowColor: "rgba(8,26,42,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
