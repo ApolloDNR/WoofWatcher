@@ -33,7 +33,7 @@ import { pixelImageStyle } from "@/lib/pixelRendering";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
-const PIXEL_DISPLAY = "PressStart2P_400Regular";
+const PIXEL_DISPLAY = "Fredoka_600SemiBold";
 const PREMIUM_VALUE_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-pixellab-400x300.png");
 const PREMIUM_VALUE_STAGE_SPRITE = getCareTwinSpriteAsset("celebrate-hop");
 const PREMIUM_VALUE_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["celebrate-hop"];
@@ -545,6 +545,7 @@ const s = StyleSheet.create({
     transform: [{ rotate: "45deg" }],
   },
   premiumValueChip: {
+    flexShrink: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 8,

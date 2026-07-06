@@ -3,6 +3,7 @@ import {
   Inter_500Medium,
   Inter_600SemiBold,
   Inter_700Bold,
+  Inter_800ExtraBold,
   useFonts,
 } from "@expo-google-fonts/inter";
 import {
@@ -31,6 +32,7 @@ import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CareProvider } from "@/context/CareContext";
 import { AvatarProvider } from "@/context/AvatarContext";
+import { useColors } from "@/hooks/useColors";
 import {
   clerkProxyUrl,
   clerkPublishableKey,
@@ -58,6 +60,7 @@ function RootLayoutNav() {
   const { isSignedIn } = useWoofAuth();
   const segments = useSegments();
   const router = useRouter();
+  const colors = useColors();
 
   // Development convenience: skip the sign-in gate so the app can be reviewed
   // in the web preview / simulator without logging in on every reload. Real
@@ -79,7 +82,18 @@ function RootLayoutNav() {
   return (
     <Stack
       initialRouteName="(tabs)"
-      screenOptions={{ headerBackTitle: "Back", headerTintColor: "#2E5846" }}
+      screenOptions={{
+        headerBackTitle: "Back",
+        headerTintColor: colors.copper,
+        headerTitleStyle: {
+          fontFamily: "Fredoka_700Bold",
+          fontSize: 19,
+          color: colors.foreground,
+        },
+        headerStyle: { backgroundColor: colors.background },
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: colors.background },
+      }}
     >
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -92,7 +106,6 @@ function RootLayoutNav() {
         options={{
           title: "Setup",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
       <Stack.Screen
@@ -100,7 +113,6 @@ function RootLayoutNav() {
         options={{
           title: "WoofGuide",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
       <Stack.Screen
@@ -108,7 +120,6 @@ function RootLayoutNav() {
         options={{
           title: "WoofWatcher Plus",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
       <Stack.Screen
@@ -116,7 +127,6 @@ function RootLayoutNav() {
         options={{
           title: "Privacy & Safety",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
       <Stack.Screen
@@ -124,7 +134,6 @@ function RootLayoutNav() {
         options={{
           title: "Adventure Mode",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
       <Stack.Screen
@@ -132,7 +141,6 @@ function RootLayoutNav() {
         options={{
           title: "Care Twin QA",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
       <Stack.Screen name="+not-found" />
@@ -250,6 +258,7 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    Inter_800ExtraBold,
     Fredoka_500Medium,
     Fredoka_600SemiBold,
     Fredoka_700Bold,

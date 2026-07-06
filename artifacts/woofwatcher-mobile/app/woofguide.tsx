@@ -55,7 +55,7 @@ const ACTION_ICON: Record<WoofGuideActionIcon, IoniconName> = {
   spark: "sparkles-outline",
 };
 
-const DISPLAY_SEMI = "PressStart2P_400Regular";
+const DISPLAY_SEMI = "Fredoka_600SemiBold";
 const WOOFGUIDE_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.night.source;
 const WOOFGUIDE_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
 const WOOFGUIDE_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
@@ -671,7 +671,8 @@ const s = StyleSheet.create({
     zIndex: 3,
   },
   guideBubble: {
-    maxWidth: "70%",
+    flexShrink: 1,
+    maxWidth: "64%",
     minHeight: 88,
     borderRadius: 8,
     borderWidth: 2,
@@ -695,6 +696,7 @@ const s = StyleSheet.create({
     transform: [{ rotate: "45deg" }],
   },
   guideReviewChip: {
+    flexShrink: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     maxWidth: 108,
     borderRadius: 8,

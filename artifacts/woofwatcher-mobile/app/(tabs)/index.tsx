@@ -650,6 +650,11 @@ export default function HomeScreen() {
           color: colors.amber,
         };
 
+  // Header bell badge mirrors the Health/Bile watch cards below: one signal
+  // per watch surface that currently needs owner attention, hidden when calm.
+  const watchSignalCount =
+    (status.counts.healthAlert ? 1 : 0) + (bileCount > 0 ? 1 : 0);
+
   const roomStats = useMemo<PhoenixRoomStat[]>(
     () => [
       {
@@ -1227,6 +1232,11 @@ export default function HomeScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Open Health Watch"
+              accessibilityHint={
+                watchSignalCount > 0
+                  ? `${watchSignalCount} ${watchSignalCount === 1 ? "signal needs" : "signals need"} attention`
+                  : "No active signals"
+              }
               onPress={() => router.push("/health?tab=health" as never)}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[
@@ -1239,11 +1249,13 @@ export default function HomeScreen() {
                 size={23}
                 color={colors.navy}
               />
-              <View style={[s.badge, { backgroundColor: colors.rose }]}>
-                <Text style={[s.badgeText, { fontFamily: "Inter_700Bold" }]}>
-                  3
-                </Text>
-              </View>
+              {watchSignalCount > 0 ? (
+                <View style={[s.badge, { backgroundColor: colors.rose }]}>
+                  <Text style={[s.badgeText, { fontFamily: "Inter_700Bold" }]}>
+                    {watchSignalCount}
+                  </Text>
+                </View>
+              ) : null}
             </Pressable>
           </View>
 
