@@ -265,6 +265,12 @@
   removes a local APNs/FCM evidence propagation gap, but it does not configure
   Expo push, APNs, Firebase/FCM, prove native notification delivery, approve
   store privacy disclosures, launch publicly, or replace Apollo sign-off.
+- 2026-07-07: The focused Store Accounts proof mission now preserves and
+  consumes saved Provider Launch Setup Apple/Google proof evidence. This removes
+  a local Store Accounts evidence propagation gap, but it does not create Apple
+  or Google store accounts, approve reviewer access, attach real
+  metadata/privacy-label proof, allow App Review or Play review submission,
+  launch publicly, or replace Apollo sign-off.
 - The direct JSON mobile beta doctor remains locally blocked only by pnpm
   `11.7.0` versus pinned `10.24.0` and missing Corepack; branch CI should be
   rerun after the new commit before dependency proof is treated as current.

@@ -46,6 +46,7 @@ import type { AiProviderProofEvidence } from "@/lib/aiProviderProof";
 import type { PaymentsProviderProofManifestInput } from "@/lib/paymentsProviderProof";
 import type { AccountDeletionProofEvidence } from "@/lib/accountDeletionProof";
 import type { PushNotificationsProofEvidence } from "@/lib/pushNotificationsProof";
+import type { StoreAccountsProofEvidence } from "@/lib/storeAccountsProof";
 import type { SupportLegalReadinessProofEvidence } from "@/lib/supportRunbook";
 
 const STORAGE_KEY = "woofwatcher.v2.state";
@@ -128,6 +129,7 @@ export interface LaunchProviderProfile {
   pushNotificationsProofEvidence?: PushNotificationsProofEvidence | null;
   appStoreAccountsReady: boolean;
   storeAccountsProofReady: boolean;
+  storeAccountsProofEvidence?: StoreAccountsProofEvidence | null;
   accountDeletionEnabled: boolean;
   accountDeletionProofReady: boolean;
   accountDeletionEvidence?: AccountDeletionProofEvidence | null;

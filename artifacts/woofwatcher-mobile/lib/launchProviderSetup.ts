@@ -20,6 +20,7 @@ import {
 import {
   STORE_ACCOUNTS_PROOF_ITEMS,
   STORE_ACCOUNTS_PROOF_SUMMARY,
+  type StoreAccountsProofEvidence,
 } from "./storeAccountsProof.ts";
 import {
   REPORT_BINARY_EXPORT_PROOF_ITEMS,
@@ -94,6 +95,7 @@ export interface LaunchProviderProfile {
   pushNotificationsProofEvidence?: PushNotificationsProofEvidence | null;
   appStoreAccountsReady: boolean;
   storeAccountsProofReady: boolean;
+  storeAccountsProofEvidence?: StoreAccountsProofEvidence | null;
   accountDeletionEnabled: boolean;
   accountDeletionProofReady: boolean;
   accountDeletionEvidence?: AccountDeletionProofEvidence | null;
@@ -175,6 +177,7 @@ const DEFAULT_PROFILE: LaunchProviderProfile = {
   pushNotificationsProofEvidence: null,
   appStoreAccountsReady: false,
   storeAccountsProofReady: false,
+  storeAccountsProofEvidence: null,
   accountDeletionEnabled: false,
   accountDeletionProofReady: false,
   accountDeletionEvidence: null,
@@ -222,6 +225,12 @@ function normalizePushNotificationsProofEvidence(
   return value && typeof value === "object" && !Array.isArray(value) ? value : null;
 }
 
+function normalizeStoreAccountsProofEvidence(
+  value: StoreAccountsProofEvidence | null | undefined,
+): StoreAccountsProofEvidence | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
 export function normalizeLaunchProviderProfile(input: LaunchProviderProfileInput): LaunchProviderProfile {
   const source = input ?? {};
   const ownerReviewedAt = cleanString(source.ownerReviewedAt);
@@ -244,6 +253,7 @@ export function normalizeLaunchProviderProfile(input: LaunchProviderProfileInput
     pushNotificationsProofEvidence: normalizePushNotificationsProofEvidence(source.pushNotificationsProofEvidence),
     appStoreAccountsReady: Boolean(source.appStoreAccountsReady),
     storeAccountsProofReady: Boolean(source.storeAccountsProofReady),
+    storeAccountsProofEvidence: normalizeStoreAccountsProofEvidence(source.storeAccountsProofEvidence),
     accountDeletionEnabled: Boolean(source.accountDeletionEnabled),
     accountDeletionProofReady: Boolean(source.accountDeletionProofReady),
     accountDeletionEvidence: normalizeAccountDeletionEvidence(source.accountDeletionEvidence),

@@ -88,6 +88,26 @@ function completePushNotificationsProofEvidence() {
   };
 }
 
+function completeStoreAccountsProofEvidence() {
+  return {
+    storeAccountEvidence: [
+      {
+        kind: "apple-developer-access",
+        platform: "ios",
+        store: "app-store-connect",
+        fileName: "ios-app-store-connect-apple-developer-proof.json",
+        mimeType: "application/json",
+        byteSize: 1400,
+        appleDeveloperTeamId: "TEAM123",
+        appStoreConnectAppId: "123456789",
+        accountRole: "admin",
+        bundleId: "com.pegasusdreamscapes.woofwatcher",
+        paidProgramActive: true,
+      },
+    ],
+  };
+}
+
 test("builds a truthful provider setup plan from a local launch profile", async () => {
   const mod = await import("./launchProviderSetup.ts").catch(() => null);
   assert.ok(mod, "launchProviderSetup module should exist");
@@ -259,6 +279,7 @@ test("normalizes stored provider setup profiles before launch-readiness usage", 
   const storageProviderEvidence = completeStorageProviderEvidence();
   const privacyProviderEvidence = completePrivacyProviderEvidence();
   const pushNotificationsProofEvidence = completePushNotificationsProofEvidence();
+  const storeAccountsProofEvidence = completeStoreAccountsProofEvidence();
 
   const profile = mod.normalizeLaunchProviderProfile({
     authConfigured: "yes",
@@ -267,6 +288,7 @@ test("normalizes stored provider setup profiles before launch-readiness usage", 
     storageProviderEvidence,
     ...privacyProviderEvidence,
     pushNotificationsProofEvidence,
+    storeAccountsProofEvidence,
     providerStatus: "unknown",
     ownerReviewedAt: 123,
     notes: 42,
@@ -288,11 +310,13 @@ test("normalizes stored provider setup profiles before launch-readiness usage", 
   assert.deepEqual(profile.paymentsProviderEvidence, privacyProviderEvidence.paymentsProviderEvidence);
   assert.deepEqual(profile.accountDeletionEvidence, privacyProviderEvidence.accountDeletionEvidence);
   assert.deepEqual(profile.pushNotificationsProofEvidence, pushNotificationsProofEvidence);
+  assert.deepEqual(profile.storeAccountsProofEvidence, storeAccountsProofEvidence);
   assert.equal(mod.normalizeLaunchProviderProfile({ storageProviderEvidence: [] }).storageProviderEvidence, null);
   assert.equal(mod.normalizeLaunchProviderProfile({ aiProviderEvidence: [] }).aiProviderEvidence, null);
   assert.equal(mod.normalizeLaunchProviderProfile({ paymentsProviderEvidence: [] }).paymentsProviderEvidence, null);
   assert.equal(mod.normalizeLaunchProviderProfile({ accountDeletionEvidence: [] }).accountDeletionEvidence, null);
   assert.equal(mod.normalizeLaunchProviderProfile({ pushNotificationsProofEvidence: [] }).pushNotificationsProofEvidence, null);
+  assert.equal(mod.normalizeLaunchProviderProfile({ storeAccountsProofEvidence: [] }).storeAccountsProofEvidence, null);
 });
 
 test("keeps owner-reviewed provider toggles out of launch-readiness input until provider approval and structured proof", async () => {

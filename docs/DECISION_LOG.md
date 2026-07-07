@@ -2210,6 +2210,35 @@ Revisit trigger: WoofWatcher gains a provider-backed proof evidence service,
 in-app proof attachment editing, or Apollo attaches real Expo/APNs/FCM/native
 delivery proof files that should be validated from saved app state.
 
+### 2026-07-07: Store Accounts Proof Evidence Must Reach Store QA
+
+Decision: Saved Provider Launch Setup Store Accounts proof evidence should
+survive care-document normalization and feed the focused Store Accounts proof
+mission.
+
+Reason: The Store Accounts proof manifest already requires structured
+platform/store-named Apple Developer, App Store Connect, Google Play,
+bundle/signing, reviewer access, metadata/privacy, and Apollo release approval
+files. Without preserving the evidence object, real saved proof could not reach
+`/care-twin-qa?qaSurface=store-accounts-proof`, and the helper route rendered an
+empty manifest even when proof was imported or saved.
+
+Consequences:
+
+- `LaunchProviderProfile` preserves `storeAccountsProofEvidence`.
+- CareContext keeps that field when saved or imported care documents merge.
+- The focused Store Accounts proof route feeds saved evidence into
+  `buildStoreAccountsProofManifest`.
+- Raw configured/provider-approved store-account booleans still cannot prove
+  App Review readiness, Play review readiness, public launch, or Apollo
+  sign-off.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains a provider-backed proof evidence service,
+in-app proof attachment editing, or Apollo attaches real Apple/Google store
+account proof files that should be validated from saved app state.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

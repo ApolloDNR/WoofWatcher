@@ -1154,3 +1154,19 @@ Direct JSON mobile beta doctor remains truthfully blocked only by local pnpm
 `11.7.0` versus pinned `10.24.0` and missing Corepack. This does not configure
 Expo, APNs, Firebase/FCM, prove native delivery, satisfy store privacy review,
 launch publicly, or replace Apollo sign-off.
+
+Current evidence, 2026-07-07: The focused Store Accounts proof mission now
+consumes saved Provider Launch Setup Apple/Google proof evidence instead of
+losing it. `LaunchProviderProfile` preserves `storeAccountsProofEvidence`
+through normalization and CareContext persistence, and
+`/care-twin-qa?qaSurface=store-accounts-proof` feeds the saved evidence into
+`buildStoreAccountsProofManifest` instead of rendering an empty manifest. Local
+verification passed focused provider/store/readiness tests `125/125`, the full
+zero-dependency API/mobile/PWA/care-domain suite `594/594`, root TypeScript,
+mobile TypeScript, direct JSON mobile beta doctor source-backed checks including
+`store accounts proof evidence propagation is source-backed`, and PixelLab
+asset verification `ok=149 missing=0 invalid=0`. Direct JSON mobile beta doctor
+remains truthfully blocked only by local pnpm `11.7.0` versus pinned `10.24.0`
+and missing Corepack. This does not create Apple or Google store accounts,
+approve reviewer access, attach real metadata/privacy-label proof, allow App
+Review or Play review submission, launch publicly, or replace Apollo sign-off.

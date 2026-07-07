@@ -1145,6 +1145,26 @@ check(
     : "preserve and forward push notification proof evidence from Provider Launch Setup into Reminder Center and the focused QA mission",
 );
 
+const storeAccountsProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
+  "storeAccountsProofEvidence?: StoreAccountsProofEvidence | null",
+  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
+])
+  && includesAll(launchProviderSetupSource, [
+    "storeAccountsProofEvidence?: StoreAccountsProofEvidence | null",
+    "storeAccountsProofEvidence: normalizeStoreAccountsProofEvidence(source.storeAccountsProofEvidence)",
+  ])
+  && includesAll(careTwinQaRouteSource, [
+    "buildStoreAccountsProofManifest(state.launchProviderProfile.storeAccountsProofEvidence)",
+  ])
+  && !careTwinQaRouteSource.includes("buildStoreAccountsProofManifest({})");
+check(
+  "store accounts proof evidence propagation is source-backed",
+  storeAccountsProofEvidencePropagationIsSourceBacked,
+  storeAccountsProofEvidencePropagationIsSourceBacked
+    ? "Focused Store Accounts proof mission consumes saved Apple/Google proof evidence from the durable Provider Launch Setup profile"
+    : "preserve and forward Store Accounts proof evidence from Provider Launch Setup into the focused QA mission",
+);
+
 const providerLaunchSetupProofGuardIsSourceBacked = includesAll(launchProviderSetupSource, [
   "authProviderProofReady",
   "databaseProviderProofReady",

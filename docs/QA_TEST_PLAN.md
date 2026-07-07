@@ -2449,3 +2449,17 @@ Latest local evidence, 2026-07-07:
   not on PATH. Branch CI proved commit `9d02eaa` in `WoofWatcher Verify` run
   `28852945785`, completed success in `3m16s` on
   `automation/premium-revenue-product-builder`.
+- The focused Store Accounts proof mission now consumes saved Provider Launch
+  Setup `storeAccountsProofEvidence`. `LaunchProviderProfile` preserves the
+  field through normalization and CareContext persistence, and the focused
+  helper route feeds it into `buildStoreAccountsProofManifest` instead of using
+  an empty manifest.
+- Focused provider/store/readiness tests passed `125/125`; the full
+  zero-dependency API/mobile/PWA/care-domain suite passed `594/594`; root
+  TypeScript, mobile TypeScript, direct JSON mobile beta doctor source-backed
+  checks, and PixelLab verifier `ok=149 missing=0 invalid=0` passed.
+- Direct JSON mobile beta doctor reports `store accounts proof evidence
+  propagation is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
+  only because local pnpm is `11.7.0` versus pinned `10.24.0` and Corepack is
+  not on PATH. Branch CI still needs a rerun after this commit before dependency
+  proof is current for the final branch tip.

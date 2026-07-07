@@ -535,8 +535,11 @@ export default function CareTwinQaScreen() {
     [focusedQaTarget],
   );
   const storeAccountsProofManifest = useMemo(
-    () => (focusedQaTarget?.surface.id === "store-accounts-proof" ? buildStoreAccountsProofManifest({}) : null),
-    [focusedQaTarget],
+    () =>
+      focusedQaTarget?.surface.id === "store-accounts-proof"
+        ? buildStoreAccountsProofManifest(state.launchProviderProfile.storeAccountsProofEvidence)
+        : null,
+    [focusedQaTarget, state.launchProviderProfile.storeAccountsProofEvidence],
   );
   const accountDeletionProofManifest = useMemo(
     () => (focusedQaTarget?.surface.id === "account-deletion-proof" ? buildAccountDeletionProofManifest({}) : null),

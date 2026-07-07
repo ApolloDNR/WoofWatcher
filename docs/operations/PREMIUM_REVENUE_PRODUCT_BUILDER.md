@@ -3997,6 +3997,24 @@ store privacy disclosures, launch publicly, or replace Apollo sign-off.
 Branch CI proved commit `9d02eaa` in `WoofWatcher Verify` run `28852945785`,
 completed success in `3m16s` on `automation/premium-revenue-product-builder`.
 
+The Store Accounts proof evidence propagation pass closes the matching focused
+helper stale path for App Review and Play review readiness. `LaunchProviderProfile`
+now preserves saved `storeAccountsProofEvidence`, CareContext persists that
+field, and `/care-twin-qa?qaSurface=store-accounts-proof` feeds the saved
+evidence into `buildStoreAccountsProofManifest` instead of rendering an empty
+manifest. Fresh local verification passed focused provider/store/readiness tests
+`125/125`, the full zero-dependency API/mobile/PWA/care-domain suite `594/594`,
+root TypeScript, mobile TypeScript, direct JSON mobile beta doctor source-backed
+checks including `store accounts proof evidence propagation is source-backed`,
+PixelLab verifier `ok=149 missing=0 invalid=0`, and `git diff --check` with
+expected Windows line-ending warnings. Direct JSON mobile beta doctor remains
+truthfully `BLOCKED` only because local pnpm is `11.7.0` versus pinned
+`10.24.0` and Corepack is not on PATH. This still does not create Apple or
+Google store accounts, approve reviewer access, attach real metadata/privacy
+proof, allow App Review or Play review submission, launch publicly, or replace
+Apollo sign-off. Rerun branch CI after this commit before treating dependency
+proof as current for the final branch tip.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

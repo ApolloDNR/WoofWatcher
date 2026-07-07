@@ -299,6 +299,14 @@ Latest known passing automation-branch CI:
   notification proof evidence propagation is source-backed`, and PixelLab
   `ok=149 missing=0 invalid=0`. Dependency-complete branch proof is current for
   commit `9d02eaa`.
+- Store Accounts proof evidence propagation now keeps saved Apple/Google proof
+  evidence durable and visible to the focused Store Accounts QA mission. It
+  passed focused provider/store/readiness tests `125/125`, the full
+  zero-dependency suite `594/594`, root TypeScript, mobile TypeScript, direct
+  JSON mobile beta doctor source-backed checks including `store accounts proof
+  evidence propagation is source-backed`, and PixelLab `ok=149 missing=0
+  invalid=0`. Branch CI still needs a rerun after this commit before
+  dependency-complete proof is current for the final branch tip.
 
 Latest known passing `main` CI after the Full Log search slice:
 
