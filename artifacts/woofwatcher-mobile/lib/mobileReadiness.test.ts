@@ -930,6 +930,10 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Reminder delivery allowed/);
   assert.match(qaRoute, /Reminder Center must stay local/);
   assert.match(qaRoute, /buildPaymentsProviderProofManifest/);
+  assert.match(
+    qaRoute,
+    /buildPaymentsProviderProofManifest\(state\.launchProviderProfile\.paymentsProviderEvidence \?\? undefined\)/,
+  );
   assert.match(qaRoute, /paymentsProviderProofManifest/);
   assert.match(qaRoute, /Payments provider proof manifest/);
   assert.match(qaRoute, /paymentsProviderProofManifest\.rows\.map/);
@@ -1082,6 +1086,10 @@ test("shows premium entitlement policy before checkout is enabled", () => {
   assert.match(premium, /Locked until upgrade/);
   assert.match(premium, /buildPaymentsProviderProofManifest/);
   assert.match(premium, /const paymentsProofManifest = buildPaymentsProviderProofManifest/);
+  assert.match(
+    premium,
+    /buildPaymentsProviderProofManifest\(\s*state\.launchProviderProfile\.paymentsProviderEvidence \?\? undefined,\s*\)/,
+  );
   assert.match(premium, /Payments proof manifest/);
   assert.match(premium, /paymentsProofManifest\.rows\.map/);
   assert.match(premium, /paymentsProofManifest\.blockers\.map/);

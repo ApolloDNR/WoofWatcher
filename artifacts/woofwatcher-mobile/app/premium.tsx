@@ -90,7 +90,9 @@ export default function PremiumScreen() {
     { label: "Signals", value: String(preview.valueSignals.length), tone: colors.sage },
     { label: "Gate", value: "Checkout", tone: colors.amber },
   ];
-  const paymentsProofManifest = buildPaymentsProviderProofManifest();
+  const paymentsProofManifest = buildPaymentsProviderProofManifest(
+    state.launchProviderProfile.paymentsProviderEvidence ?? undefined,
+  );
 
   const isWebRoutePreview = (Platform.OS as string) === "web";
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;

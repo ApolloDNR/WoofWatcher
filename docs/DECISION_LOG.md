@@ -2329,6 +2329,36 @@ Revisit trigger: WoofWatcher gains an in-app proof attachment editor or Apollo
 attaches real Supabase/RLS/migration or OpenAI/model/safety proof files that
 should be validated from saved app state.
 
+### 2026-07-07: Payments Proof Evidence Must Reach Premium Review
+
+Decision: Premium and the focused Payments Provider Proof mission should consume
+saved Provider Launch Setup payments proof evidence instead of rendering empty
+payment manifests.
+
+Reason: The payments proof manifest already requires product catalog, billing
+path, iOS App Store and Android Google Play sandbox receipts, restore purchase,
+entitlement, refund/support, checkout-gate, and Apollo approval proof. If the
+Premium screen or focused helper route ignores saved evidence, real imported or
+saved payment proof cannot reach the owner-facing review surface or the QA
+mission Apollo, Fable, Replit, or a helper would use to review the checkout
+gate.
+
+Consequences:
+
+- `/premium` feeds saved `state.launchProviderProfile.paymentsProviderEvidence`
+  into `buildPaymentsProviderProofManifest`.
+- `/care-twin-qa?qaSurface=payments-provider-proof` feeds the same saved
+  evidence into the focused payments proof manifest.
+- Checkout still remains disabled until the structured payment proof manifest is
+  complete and Apollo signs off; saved evidence visibility is not money movement
+  approval.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains an in-app proof attachment editor, store
+billing is approved, or Apollo attaches real App Store / Google Play / refund
+and support proof files that should be validated from saved app state.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

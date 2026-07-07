@@ -647,6 +647,7 @@ const premiumPaymentsProofManifestIsSourceBacked = includesAll(paymentsProviderP
   && includesAll(premiumRouteSource, [
     "buildPaymentsProviderProofManifest",
     "const paymentsProofManifest = buildPaymentsProviderProofManifest",
+    "state.launchProviderProfile.paymentsProviderEvidence ?? undefined",
     "Payments proof manifest",
     "paymentsProofManifest.rows.map",
     "paymentsProofManifest.blockers.map",
@@ -1942,6 +1943,7 @@ check(
 
 const paymentsProviderProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
   "buildPaymentsProviderProofManifest",
+  "buildPaymentsProviderProofManifest(state.launchProviderProfile.paymentsProviderEvidence ?? undefined)",
   "paymentsProviderProofManifest",
   "Payments provider proof manifest",
   "Checkout allowed",

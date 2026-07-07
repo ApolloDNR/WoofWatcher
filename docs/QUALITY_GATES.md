@@ -1240,3 +1240,24 @@ Branch CI proved implementation commit `f0b1a5b` in `WoofWatcher Verify` run
 `automation/premium-revenue-product-builder`; rerun CI after this proof-record
 docs commit before treating dependency proof as current for the final branch
 tip.
+
+Current evidence, 2026-07-07: The Premium screen and focused Payments Provider
+Proof mission now consume saved Provider Launch Setup payments proof evidence
+instead of rendering empty payment manifests. `/premium` and
+`/care-twin-qa?qaSurface=payments-provider-proof` both pass
+`state.launchProviderProfile.paymentsProviderEvidence` into
+`buildPaymentsProviderProofManifest`, so valid saved product catalog, billing
+path, iOS App Store and Android Google Play sandbox receipt, restore,
+entitlement, refund/support, and checkout-gate proof can reach the owner-facing
+and QA review surfaces without weakening the checkout gate. Local red/green
+verification first failed on the empty manifest calls, then mobile readiness
+passed `114/114`; the full zero-dependency API/mobile/PWA/care-domain suite
+passed `594/594`; root TypeScript and mobile TypeScript passed; direct JSON
+mobile beta doctor source-backed checks passed for Premium and focused payments
+proof manifests while remaining truthfully blocked only by local pnpm `11.7.0`
+versus pinned `10.24.0` and missing Corepack; PixelLab asset verification passed
+`ok=149 missing=0 invalid=0`; and `git diff --check` passed with expected
+Windows CRLF warnings only. This does not approve paid tiers, configure store
+billing, prove receipts/restores, enable checkout, move money, launch publicly,
+or replace Apollo sign-off. Branch CI must be rerun after this commit before
+dependency-complete proof is current for the final branch tip.

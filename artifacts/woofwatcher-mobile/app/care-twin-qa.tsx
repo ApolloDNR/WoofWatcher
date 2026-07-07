@@ -537,8 +537,11 @@ export default function CareTwinQaScreen() {
     [focusedQaTarget, state.launchProviderProfile.pushNotificationsProofEvidence],
   );
   const paymentsProviderProofManifest = useMemo(
-    () => (focusedQaTarget?.surface.id === "payments-provider-proof" ? buildPaymentsProviderProofManifest({}) : null),
-    [focusedQaTarget],
+    () =>
+      focusedQaTarget?.surface.id === "payments-provider-proof"
+        ? buildPaymentsProviderProofManifest(state.launchProviderProfile.paymentsProviderEvidence ?? undefined)
+        : null,
+    [focusedQaTarget, state.launchProviderProfile.paymentsProviderEvidence],
   );
   const storeAccountsProofManifest = useMemo(
     () =>

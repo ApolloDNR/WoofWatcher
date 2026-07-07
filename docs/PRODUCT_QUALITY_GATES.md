@@ -354,6 +354,20 @@ Latest known passing automation-branch CI:
   `28896885332`, completed success in `3m4s`; rerun CI after this proof-record
   docs commit before dependency-complete proof is current for the final branch
   tip.
+- Premium and the focused Payments Provider Proof mission now consume saved
+  Provider Launch Setup `paymentsProviderEvidence` instead of rendering empty
+  payment manifests. `/premium` and
+  `/care-twin-qa?qaSurface=payments-provider-proof` both feed saved evidence
+  into `buildPaymentsProviderProofManifest`, while checkout remains disabled
+  until complete product catalog, billing path, iOS App Store and Android Google
+  Play sandbox receipt, restore, entitlement, refund/support, checkout-gate, and
+  Apollo approval proof exists. Local proof passed mobile readiness `114/114`,
+  the full zero-dependency suite `594/594`, root TypeScript, mobile TypeScript,
+  direct JSON mobile beta doctor source-backed checks, PixelLab `ok=149 missing=0
+  invalid=0`, and `git diff --check` with expected Windows CRLF warnings only.
+  Direct JSON mobile beta doctor remains blocked only by local pnpm `11.7.0`
+  versus pinned `10.24.0` and missing Corepack; rerun branch CI after this
+  commit before dependency-complete proof is current for the final branch tip.
 
 Latest known passing `main` CI after the Full Log search slice:
 

@@ -288,6 +288,14 @@
   not attach real Supabase project/migration/RLS/retention proof, approve mobile
   incremental sync, attach real OpenAI/model/source/write-gate/veterinary proof,
   enable live AI, launch publicly, or replace Apollo sign-off.
+- 2026-07-07: Premium and the focused Payments Provider Proof mission now
+  consume saved Provider Launch Setup payments proof evidence instead of empty
+  manifests. This removes a local payments evidence propagation gap, but it does
+  not approve paid tiers, configure App Store or Google Play billing, prove
+  receipts/restores, approve refund/support policy, enable checkout, move money,
+  launch publicly, or replace Apollo sign-off.
+- Branch CI must be rerun after this payments proof evidence propagation commit
+  before dependency-complete proof is current for the final branch tip.
 - Branch CI proved implementation commit `f0b1a5b` in `WoofWatcher Verify` run
   `28896885332`; rerun branch CI after the proof-record docs commit before
   treating dependency proof as current for the final branch tip.

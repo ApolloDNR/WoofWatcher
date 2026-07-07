@@ -2528,3 +2528,19 @@ Latest local evidence, 2026-07-07:
   `automation/premium-revenue-product-builder`. Rerun CI after this proof-record
   docs commit before treating dependency proof as current for the final branch
   tip.
+- Premium and the focused Payments Provider Proof mission now consume saved
+  Provider Launch Setup `paymentsProviderEvidence` instead of rendering empty
+  payment manifests. Red/green verification first failed because `/premium` and
+  `/care-twin-qa?qaSurface=payments-provider-proof` still called
+  `buildPaymentsProviderProofManifest()` or `{}` without saved evidence.
+- After implementation, mobile readiness passed `114/114`; the full
+  zero-dependency API/mobile/PWA/care-domain suite passed `594/594`; root
+  TypeScript and mobile TypeScript passed; direct JSON mobile beta doctor
+  source-backed checks passed for Premium and focused payments proof manifests;
+  PixelLab verifier passed `ok=149 missing=0 invalid=0`; and `git diff --check`
+  passed with expected Windows CRLF warnings only.
+- Direct JSON mobile beta doctor remains truthfully `BLOCKED` only because
+  local pnpm is `11.7.0` versus pinned `10.24.0` and Corepack is not on PATH.
+  Real paid tiers, billing setup, receipts/restores, checkout, money movement,
+  public launch, and Apollo sign-off remain blocked. Rerun branch CI after this
+  commit before treating dependency proof as current for the final branch tip.
