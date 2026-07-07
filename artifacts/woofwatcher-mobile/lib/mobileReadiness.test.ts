@@ -951,6 +951,10 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Destructive deletion allowed/);
   assert.match(qaRoute, /Destructive account deletion must stay blocked/);
   assert.match(qaRoute, /buildSupportLegalReadinessProofManifest/);
+  assert.match(
+    qaRoute,
+    /buildSupportLegalReadinessProofManifest\(state\.launchSupportProfile\.supportLegalReadinessEvidence\)/,
+  );
   assert.match(qaRoute, /supportLegalReadinessProofManifest/);
   assert.match(qaRoute, /Support legal readiness proof manifest/);
   assert.match(qaRoute, /supportLegalReadinessProofManifest\.items\.map/);

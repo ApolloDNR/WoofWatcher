@@ -1196,3 +1196,22 @@ Branch CI proved implementation commit `4ca69a1` in `WoofWatcher Verify` run
 focused behavior tests, and Typecheck plus CI-safe builds all passing; rerun CI
 after this proof-record docs commit before treating dependency proof as current
 for the final branch tip.
+
+Current evidence, 2026-07-07: The focused Support Legal Readiness proof mission
+now consumes saved Launch Support Profile support/legal proof evidence instead
+of rendering an empty manifest.
+`/care-twin-qa?qaSurface=support-legal-readiness-proof` feeds
+`state.launchSupportProfile.supportLegalReadinessEvidence` into
+`buildSupportLegalReadinessProofManifest`, so valid saved structured proof can
+reach the focused helper route. Local red/green verification first failed on
+the hardcoded empty focused manifest, then passed mobile readiness `114/114`
+and direct JSON mobile beta doctor source-backed checks including the
+support/legal proof manifest and support runbook guard; the full
+zero-dependency API/mobile/PWA/care-domain suite passed `594/594`, root
+TypeScript and mobile TypeScript passed, PixelLab asset verification passed
+`ok=149 missing=0 invalid=0`, and `git diff --check` passed with expected
+Windows CRLF warnings only. Direct JSON mobile beta doctor remains truthfully
+blocked only by local pnpm `11.7.0` versus pinned `10.24.0` and missing
+Corepack. This does not approve support operations, legal/privacy copy,
+refund/subscription policy, veterinary-boundary language, public launch, or
+Apollo sign-off.

@@ -2485,3 +2485,20 @@ Latest local evidence, 2026-07-07:
   focused behavior tests, and Typecheck plus CI-safe builds all passing. Rerun
   CI after this proof-record docs commit before treating dependency proof as
   current for the final branch tip.
+- The focused Support Legal Readiness proof mission now consumes saved Launch
+  Support Profile support/legal proof evidence.
+  `/care-twin-qa?qaSurface=support-legal-readiness-proof` feeds
+  `state.launchSupportProfile.supportLegalReadinessEvidence` into
+  `buildSupportLegalReadinessProofManifest` instead of rendering an empty
+  manifest.
+- Red/green verification first failed on the hardcoded empty focused manifest,
+  then mobile readiness passed `114/114`, the full zero-dependency
+  API/mobile/PWA/care-domain suite passed `594/594`, root TypeScript and mobile
+  TypeScript passed, PixelLab verifier passed `ok=149 missing=0 invalid=0`,
+  and `git diff --check` passed with expected Windows CRLF warnings only.
+  Direct JSON mobile beta doctor reports the support/legal proof source-backed
+  checks as `PASS`, while remaining truthfully `BLOCKED` only because local pnpm
+  is `11.7.0` versus pinned `10.24.0` and Corepack is not on PATH. Real
+  support inbox ownership, privacy/terms approval, refund/subscription policy,
+  veterinary-boundary approval, incident response ownership, public launch, and
+  Apollo sign-off remain required.

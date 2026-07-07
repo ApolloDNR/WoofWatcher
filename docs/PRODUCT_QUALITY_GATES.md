@@ -324,6 +324,19 @@ Latest known passing automation-branch CI:
   Verify` run `28874371159`, job `85645338456`; rerun CI after this proof-record
   docs commit before dependency-complete proof is current for the final branch
   tip.
+- Support Legal Readiness proof evidence propagation now keeps saved
+  support/legal proof evidence visible to the focused Support Legal QA mission.
+  `/care-twin-qa?qaSurface=support-legal-readiness-proof` feeds
+  `state.launchSupportProfile.supportLegalReadinessEvidence` into the structured
+  proof manifest instead of rendering an empty manifest. Local red/green proof
+  passed mobile readiness `114/114`, the full zero-dependency suite `594/594`,
+  root TypeScript, mobile TypeScript, direct JSON mobile beta doctor
+  source-backed checks including the support/legal proof checks, PixelLab
+  `ok=149 missing=0 invalid=0`, and `git diff --check` with expected Windows
+  CRLF warnings only; real legal/privacy approval, refund/subscription policy,
+  support operations, public launch, and Apollo sign-off remain blocked. Rerun
+  branch CI after this commit before dependency-complete proof is current for
+  the final branch tip.
 
 Latest known passing `main` CI after the Full Log search slice:
 

@@ -2269,6 +2269,37 @@ in-app proof attachment editing, or Apollo attaches real account-deletion,
 legal, store, and provider deletion proof files that should be validated from
 saved app state.
 
+### 2026-07-07: Support Legal Proof Evidence Must Reach Launch QA
+
+Decision: Saved Launch Support Profile support/legal proof evidence should feed
+the focused Support Legal Readiness proof mission.
+
+Reason: The Support Legal Readiness proof manifest already requires structured
+support inbox, privacy policy and terms, refund/subscription, veterinary and
+emergency boundary, deletion escalation, incident response, and Apollo
+launch/no-launch proof files. Without forwarding the saved evidence object, real
+imported or saved proof could not reach
+`/care-twin-qa?qaSurface=support-legal-readiness-proof`, and the helper route
+rendered an empty manifest even when proof was available.
+
+Consequences:
+
+- `launchSupportProfile.supportLegalReadinessEvidence` now feeds
+  `buildSupportLegalReadinessProofManifest` in the focused Support Legal
+  Readiness proof route.
+- Raw support/legal approval booleans still cannot prove public launch
+  readiness without the structured proof manifest becoming ready.
+- Legal/privacy copy, refund/subscription policy, support operations,
+  veterinary-boundary approval, public launch, and Apollo sign-off remain
+  separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains a provider-backed proof evidence service,
+in-app proof attachment editing, or Apollo attaches real support/legal/refund,
+veterinary-boundary, incident-response, and launch approval proof files that
+should be validated from saved app state.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

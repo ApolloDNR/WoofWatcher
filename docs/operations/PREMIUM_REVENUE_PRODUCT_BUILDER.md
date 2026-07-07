@@ -4039,6 +4039,24 @@ behavior tests, Typecheck plus CI-safe builds, post steps, and Complete job all
 passing; rerun CI after this proof-record docs commit before dependency proof is
 current for the final branch tip.
 
+The Support Legal Readiness proof evidence propagation pass closes the matching
+focused helper stale path for public-launch readiness. The focused
+`/care-twin-qa?qaSurface=support-legal-readiness-proof` mission now feeds saved
+`state.launchSupportProfile.supportLegalReadinessEvidence` into
+`buildSupportLegalReadinessProofManifest` instead of rendering an empty
+manifest. Fresh red/green verification first failed on the hardcoded empty
+focused manifest, then mobile readiness passed `114/114`, the full
+zero-dependency API/mobile/PWA/care-domain suite passed `594/594`, root
+TypeScript and mobile TypeScript passed, direct JSON mobile beta doctor
+source-backed checks passed including the support/legal proof checks, PixelLab
+verifier passed `ok=149 missing=0 invalid=0`, and `git diff --check` passed with
+expected Windows CRLF warnings only. Direct JSON mobile beta doctor remains
+truthfully `BLOCKED` only because local pnpm is `11.7.0` versus pinned
+`10.24.0` and Corepack is not on PATH. This still does not approve legal/privacy
+copy, refund/subscription policy, support operations, veterinary-boundary
+language, public launch, or Apollo sign-off. Rerun branch CI after this commit
+before dependency proof is current for the final branch tip.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

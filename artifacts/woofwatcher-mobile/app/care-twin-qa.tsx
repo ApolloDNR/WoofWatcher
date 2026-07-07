@@ -551,9 +551,9 @@ export default function CareTwinQaScreen() {
   const supportLegalReadinessProofManifest = useMemo(
     () =>
       focusedQaTarget?.surface.id === "support-legal-readiness-proof"
-        ? buildSupportLegalReadinessProofManifest({})
+        ? buildSupportLegalReadinessProofManifest(state.launchSupportProfile.supportLegalReadinessEvidence)
         : null,
-    [focusedQaTarget],
+    [focusedQaTarget, state.launchSupportProfile.supportLegalReadinessEvidence],
   );
   const nextBetaMission = betaCapturePlan.primaryMission;
   const nextBetaTarget = nextBetaMission.target ?? betaCapturePlan.nextTargets[0];

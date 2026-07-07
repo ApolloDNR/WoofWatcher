@@ -277,6 +277,11 @@
   enable destructive deletion, delete provider data or storage objects, provide
   deletion receipts, approve legal/store policy, launch publicly, or replace
   Apollo sign-off.
+- 2026-07-07: The focused Support Legal Readiness proof mission now consumes
+  saved Launch Support Profile support/legal proof evidence. This removes a
+  local support/legal evidence propagation gap, but it does not approve legal or
+  privacy copy, refund/subscription policy, support operations,
+  veterinary-boundary language, public launch, or replace Apollo sign-off.
 - The direct JSON mobile beta doctor remains locally blocked only by pnpm
   `11.7.0` versus pinned `10.24.0` and missing Corepack; branch CI should be
   rerun after the new commit before dependency proof is treated as current.
