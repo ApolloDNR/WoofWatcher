@@ -320,7 +320,10 @@ Latest known passing automation-branch CI:
   source-backed`, PixelLab `ok=149 missing=0 invalid=0`, and `git diff --check`
   with expected Windows CRLF warnings only; real destructive deletion, provider
   data deletion, legal/store approval, public launch, and Apollo sign-off remain
-  blocked.
+  blocked. Branch CI proved implementation commit `4ca69a1` in `WoofWatcher
+  Verify` run `28874371159`, job `85645338456`; rerun CI after this proof-record
+  docs commit before dependency-complete proof is current for the final branch
+  tip.
 
 Latest known passing `main` CI after the Full Log search slice:
 

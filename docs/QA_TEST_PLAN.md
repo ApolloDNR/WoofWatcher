@@ -2480,3 +2480,8 @@ Latest local evidence, 2026-07-07:
   local pnpm is `11.7.0` versus pinned `10.24.0` and Corepack is not on PATH.
   Real destructive deletion, provider data/object deletion receipts, legal/store
   approval, public launch, and Apollo sign-off remain required.
+- Branch CI proved implementation commit `4ca69a1` in `WoofWatcher Verify` run
+  `28874371159`, job `85645338456`, with install, JSON mobile beta doctor,
+  focused behavior tests, and Typecheck plus CI-safe builds all passing. Rerun
+  CI after this proof-record docs commit before treating dependency proof as
+  current for the final branch tip.

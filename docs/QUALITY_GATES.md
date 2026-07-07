@@ -1191,3 +1191,8 @@ only. Direct JSON mobile beta doctor remains truthfully blocked only by local
 pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack. This does not enable
 destructive deletion, delete provider data or storage objects, approve
 legal/store policy, launch publicly, or replace Apollo sign-off.
+Branch CI proved implementation commit `4ca69a1` in `WoofWatcher Verify` run
+`28874371159`, job `85645338456`, with install, JSON mobile beta doctor,
+focused behavior tests, and Typecheck plus CI-safe builds all passing; rerun CI
+after this proof-record docs commit before treating dependency proof as current
+for the final branch tip.
