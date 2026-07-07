@@ -196,6 +196,19 @@ function getCompactSpriteZone(zone: SpriteStageZone): SpriteStageZone {
   };
 }
 
+// Immersive mode grounds the care twin on the backdrop's rug band: larger
+// (closer to camera) and bottom-anchored so paws land on the floor art
+// instead of floating over the wall.
+function getImmersiveSpriteZone(zone: SpriteStageZone): SpriteStageZone {
+  return {
+    ...zone,
+    left: "27%",
+    top: "36%",
+    width: 184,
+    height: 184,
+  };
+}
+
 const HUD_TONE_COLOR: Record<CareTwinHudTone, string> = {
   steady: "#6DA36F",
   happy: "#D8A852",
@@ -302,9 +315,11 @@ export function LivingPhoenixRoom({
   const zone = ROOM_ZONES[activeZoneKey];
   const focusSpot = FOCUS_SPOTS[activeZoneKey];
   const spriteZone = SPRITE_STAGE_ZONES[activeZoneKey];
-  const activeSpriteZone = compactChrome
-    ? getCompactSpriteZone(spriteZone)
-    : spriteZone;
+  const activeSpriteZone = transparentScene
+    ? getImmersiveSpriteZone(spriteZone)
+    : compactChrome
+      ? getCompactSpriteZone(spriteZone)
+      : spriteZone;
   const spriteAsset = useMemo(
     () =>
       avatarRoomRuntime?.spriteAsset ??

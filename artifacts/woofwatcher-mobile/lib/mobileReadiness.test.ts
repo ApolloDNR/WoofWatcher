@@ -1498,9 +1498,10 @@ test("keeps Home room animation alive without duplicate first-screen HUD chrome"
     room,
     /const stageSpriteAction: CareTwinSpriteAction = compactChrome\s*\?\s*"tail-wag"\s*:\s*activeSpriteAction/,
   );
+  assert.match(room, /function getImmersiveSpriteZone/);
   assert.match(
     room,
-    /const activeSpriteZone = compactChrome[\s\S]*\?\s*getCompactSpriteZone\(spriteZone\)[\s\S]*:\s*spriteZone/,
+    /const activeSpriteZone = transparentScene[\s\S]*\?\s*getImmersiveSpriteZone\(spriteZone\)[\s\S]*compactChrome[\s\S]*\?\s*getCompactSpriteZone\(spriteZone\)[\s\S]*:\s*spriteZone/,
   );
   assert.match(room, /left: activeSpriteZone\.left/);
   assert.match(room, /width: activeSpriteZone\.width/);
