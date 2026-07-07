@@ -291,6 +291,10 @@ Latest known passing automation-branch CI:
   doctor source-backed checks, PixelLab `ok=149 missing=0 invalid=0`, and
   `git diff --check`. Rerun branch CI after the new commit before treating
   dependency proof as current.
+- Branch CI then proved implementation commit `61ed6fd` in `WoofWatcher Verify`
+  run `28844274663`, completed success in `3m17s`. Rerun branch CI after this
+  proof-record docs commit before treating dependency proof as current for the
+  final branch tip.
 
 Latest known passing `main` CI after the Full Log search slice:
 

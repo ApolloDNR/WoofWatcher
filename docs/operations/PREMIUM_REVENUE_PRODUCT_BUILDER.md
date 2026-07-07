@@ -3969,6 +3969,10 @@ doctor remains truthfully `BLOCKED` only because local pnpm is `11.7.0` versus
 pinned `10.24.0` and Corepack is not on PATH. This still does not attach real
 provider proof files, enable live AI, enable checkout, perform destructive
 account deletion, approve stores, launch publicly, or replace Apollo sign-off.
+Branch CI proved the implementation commit `61ed6fd` in `WoofWatcher Verify`
+run `28844274663`, completed success in `3m17s`; rerun branch CI after this
+proof-record docs commit before treating dependency proof as current for the
+final branch tip.
 
 Next highest-impact work:
 

@@ -2424,3 +2424,8 @@ Latest local evidence, 2026-07-07:
   local pnpm is `11.7.0` versus pinned `10.24.0` and Corepack is not on PATH.
   This is local source-backed proof only until branch CI passes after the new
   commit.
+- Branch CI proved the implementation commit `61ed6fd` in `WoofWatcher Verify`
+  run `28844274663`, completed success in `3m17s` on
+  `automation/premium-revenue-product-builder`. Rerun CI after this proof-record
+  docs commit before treating dependency proof as current for the final branch
+  tip.
