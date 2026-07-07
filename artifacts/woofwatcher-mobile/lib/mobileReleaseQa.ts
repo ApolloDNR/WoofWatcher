@@ -100,13 +100,13 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Check header safe area, bottom-nav clearance, one main Phoenix sprite, room crop, quick-log response, long-press Studio handoff, and Next Up reachability on iOS and Android.",
     setupSteps: [
       "Use a local preview household with Phoenix sample care data.",
-      "Start from the Home tab with no modal or bottom sheet covering the room.",
+      "Start from the Today tab (the elevated center paw button) with no modal or bottom sheet covering the room.",
     ],
     verificationSteps: [
-      "Open Phoenix Home from the Home tab and confirm header, date, bell, and profile controls sit below the safe area.",
+      "Open Phoenix Home from the Today paw button and confirm header, date, bell, and profile controls sit below the safe area.",
       "Confirm Phoenix Home answers presence, feeling, next care, and quick logging without scrolling past the main room.",
       "Tap one safe quick-log tile and confirm the main Phoenix sprite reacts without spawning a second avatar.",
-      "Long press the main Phoenix room and confirm it opens Avatar Studio, then return to Home without losing the current care context.",
+      "Long press the main Phoenix room and confirm it opens Avatar Studio, then return to Today without losing the current care context.",
       "Scroll to Next Up and confirm the floating paw nav does not cover the next action or quick-log controls.",
     ],
     acceptanceCriteria: [
@@ -167,26 +167,28 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     title: "Owner Preview Core Loop",
     route: "/",
     priority: "launch-critical",
-    goal: "Prove a real owner can move through the main beta loop without dead ends: Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass.",
+    goal: "Prove a real owner can move through the main beta loop without dead ends: Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass.",
     devicePrompt:
-      "Run the bottom-nav owner preview on iOS and Android: log one safe care event, inspect tomorrow's plan, review Health Watch, open Launch Readiness from More, open Adventure Mode, and confirm records/Care Pass/Avatar Studio remain reachable.",
+      "Run the bottom-nav owner preview on iOS and Android: log one safe care event, inspect tomorrow's plan, open Pack and Story, review Health Watch from Today's header bell or Pack, open Launch Readiness from More, open Adventure Mode, and confirm records/Care Pass/Avatar Studio remain reachable.",
     setupSteps: [
       "Use local preview data with no private real household details visible.",
-      "Start on Home with the floating paw navigation visible.",
+      "Start on Today (Phoenix's room) with the floating paw navigation visible.",
       "Keep provider, payment, storage, AI, and store gates in their truthful blocked or staged state.",
     ],
     verificationSteps: [
-      "Open Home, Log, Plans, Health, and More in order from the bottom navigation.",
+      "Open Log, Plan, Today, Pack, and Story in order from the bottom navigation.",
       "In Log, quick-log one safe care event or open the detail sheet, then undo or leave a QA note if you do not want to persist it.",
-      "In Plans, confirm upcoming care rows are readable and the add/edit flow is reachable without covering the paw nav.",
-      "In Health, confirm Health Watch and Bile Watch, plus the Review packet, Vet-share checklist, and Draft vet questions action stay non-diagnostic and readable on the phone.",
-      "Open Adventure Mode from More or Home and confirm private care quests, proof rows, and the memory shelf are reachable without implying public maps or cloud sharing.",
-      "In More, open Launch Readiness, Records, Avatar Studio, and Care Pass/Reports paths and confirm no route is a dead end.",
+      "In Plan, confirm upcoming care rows are readable and the add/edit flow is reachable without covering the paw nav.",
+      "In Pack, confirm pets, people, household access, and the Care Pass hub expose clear next actions, then confirm Health, More, and Records open from their Pack links.",
+      "In Story, confirm care career, adventure trail, memories, walk story, and badges are reachable without dead ends.",
+      "Open Health from Today's header bell or the Pack links, then confirm Health Watch and Bile Watch, plus the Review packet, Vet-share checklist, and Draft vet questions action stay non-diagnostic and readable on the phone.",
+      "Open Adventure Mode from More or Today and confirm private care quests, proof rows, and the memory shelf are reachable without implying public maps or cloud sharing.",
+      "Open More from Today's header menu or the Pack links, then open Launch Readiness, Records, Avatar Studio, and Care Pass/Reports paths and confirm no route is a dead end.",
       "In Records, confirm Care Pass Report History storage status says Saved on this device, or Ready to upload only after structured provider storage proof is attached; never provider-backed upload unless the provider gate is actually closed.",
     ],
     acceptanceCriteria: [
       "The bottom-nav loop never hides the active action, gets stuck behind a modal, or routes to a blank screen.",
-      "Quick Log, Plans, Health, More, Adventure Mode, Records, Avatar Studio, and Care Pass each expose a clear next action.",
+      "Log, Plan, Today, Pack, Story, Health, More, Adventure Mode, Records, Avatar Studio, and Care Pass each expose a clear next action.",
       "Launch Readiness keeps internal beta, provider setup, store approval, payments, AI, and storage boundaries truthful.",
       "Care Pass Report History shows Saved on this device, or Ready to upload only after structured provider storage proof is attached, without implying cloud-backed storage before upload rules exist.",
     ],
@@ -195,15 +197,10 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     requiredEvidence: [
       "iOS screenshot of Quick Log or Log after opening the owner preview loop.",
       "Android screenshot of Launch Readiness from More after completing the owner preview loop.",
-      "Note confirming Home, Log, Plans, Health, More, Adventure Mode, Records, Avatar Studio, and Care Pass were reachable without dead ends.",
+      "Note confirming Log, Plan, Today, Pack, Story, Health, More, Adventure Mode, Records, Avatar Studio, and Care Pass were reachable without dead ends.",
       "QA note confirming Care Pass Report History storage status stayed truthful.",
     ],
     routeChecklist: [
-      {
-        label: "Home",
-        route: "/",
-        expected: "Confirm Phoenix status, next care, quick actions, long-press-to-Studio, and floating paw navigation are readable.",
-      },
       {
         label: "Log",
         route: "/log",
@@ -211,19 +208,34 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         proof: "iOS Quick Log or Log screenshot.",
       },
       {
-        label: "Plans",
+        label: "Plan",
         route: "/calendar",
         expected: "Inspect upcoming care rows and confirm add/edit plan controls stay reachable.",
       },
       {
+        label: "Today",
+        route: "/",
+        expected: "Confirm Phoenix status, next care, quick actions, long-press-to-Studio, and the elevated Today paw button are readable.",
+      },
+      {
+        label: "Pack",
+        route: "/pack",
+        expected: "Confirm pets, people, household access, and the Care Pass hub expose clear next actions, with Health, More, and Records reachable from Pack links.",
+      },
+      {
+        label: "Story",
+        route: "/story",
+        expected: "Confirm care career, adventure trail, memories, walk story, and badges are reachable without dead ends.",
+      },
+      {
         label: "Health",
         route: "/health",
-        expected: "Review Health Watch and Bile Watch copy for readable, non-diagnostic language.",
+        expected: "Open Health from Today's header bell or the Pack links, then review Health Watch and Bile Watch copy for readable, non-diagnostic language.",
       },
       {
         label: "More",
         route: "/more",
-        expected: "Open Launch Readiness and confirm beta/public launch boundaries stay truthful.",
+        expected: "Open More from Today's header menu or the Pack links, then open Launch Readiness and confirm beta/public launch boundaries stay truthful.",
         proof: "Android Launch Readiness screenshot.",
       },
       {
@@ -234,7 +246,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       {
         label: "Records",
         route: "/records",
-        expected: "Confirm records, dog ID, trend sections, and report history expose clear next actions.",
+        expected: "Open Records from the Pack, Story, or More links and confirm records, dog ID, trend sections, and report history expose clear next actions.",
       },
       {
         label: "Avatar Studio",
@@ -244,7 +256,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       {
         label: "Care Pass",
         route: "/records",
-        expected: "Confirm sitter/vet/trainer handoff previews are reachable from Records or More and Report History storage status stays truthful.",
+        expected: "Confirm sitter/vet/trainer handoff previews are reachable from Pack, Records, or More and Report History storage status stays truthful.",
         proof: "Care Pass Report History storage status note or screenshot.",
       },
     ],
@@ -269,7 +281,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Open /sign-in and confirm the account gateway renders the WoofWatcher CareTwin gateway, local-preview status, and provider-boundary copy without blanking the page.",
       "Open /setup and select Local preview household setup, then confirm save/finish-later controls stay reachable on a phone viewport.",
       "Confirm Create household and Join by invite copy does not claim provider-backed household creation, invite acceptance, or cross-device sync unless real providers are configured.",
-      "Return to More or Home without losing the local preview setup state.",
+      "Return to More or Today without losing the local preview setup state.",
     ],
     acceptanceCriteria: [
       "Auth gateway and Setup are readable, tappable, and clear of safe-area, keyboard, and floating navigation issues on iOS and Android.",
@@ -900,54 +912,53 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     priority: "launch-critical",
     goal: "Prove the main mobile routes feel like one planned premium neo-retro app instead of separate prototypes.",
     devicePrompt:
-      "Run Home, Log, Plans, Health, Records, and More on a small iOS and Android phone. Check the same screen recipe on each route: pixel stage, command board, primary action, safe bottom nav, and no overlapping text.",
+      "Run Log, Plan, Today, Pack, Story, Health, Records, and More on a small iOS and Android phone. Check the same screen recipe on each route: pixel stage, command board, primary action, safe bottom nav, and no overlapping text.",
     setupSteps: [
       "Use the current Option B visual direction: navy shell, cream HUD panels, copper accents, pixel Phoenix, and short operational labels.",
       "Start with local preview data only and keep provider, payment, AI, storage, and native proof gates truthful.",
-      "Open the route through bottom navigation or a visible command row, not through a hidden debug path.",
-      "Name or save each screenshot with the route label and platform before attaching it so the proof manifest can match Home-iOS through More-Android evidence.",
+      "Open each route from the bottom navigation or its visible link (Health from Today's header bell or Pack, More from Today's header menu or Pack, Records from Pack, Story, or More), not through a hidden debug path.",
+      "Name or save each screenshot with the route label and platform before attaching it so the proof manifest can match Log-iOS through More-Android evidence.",
     ],
     verificationSteps: [
-      "Open Home and confirm Phoenix Room, Care Status, Today Command, and Today's Missions read as one first-screen command center.",
+      "Open Today and confirm Phoenix Room, Care Status, Today Command, and Today's Missions read as one first-screen command center.",
       "Open Log and confirm Quick Log Flow, action tiles, and the detail dock do not fight for the same visual priority.",
-      "Open Plans and confirm Today's Missions leads before the detailed schedule.",
-      "Open Health and confirm Health Watch keeps calm non-diagnostic copy with no duplicate metric rails or clipped rows.",
-      "Open Records and confirm Vault Command gives owners clean exits before the dense evidence sections.",
-      "Open More and confirm Command Directory gives a simple map before launch, household, roster, and provider panels.",
+      "Open Plan and confirm Today's Missions leads before the detailed schedule.",
+      "Open Pack and confirm pets, people, household access, and the Care Pass hub read as one planned board.",
+      "Open Story and confirm care career, adventure trail, memories, walk story, and badges read as one planned board.",
+      "Open Health from Today's header bell or Pack and confirm Health Watch keeps calm non-diagnostic copy with no duplicate metric rails or clipped rows.",
+      "Open Records from Pack, Story, or More and confirm Vault Command gives owners clean exits before the dense evidence sections.",
+      "Open More from Today's header menu or Pack and confirm Command Directory gives a simple map before launch, household, roster, and provider panels.",
       "On each route, check header spacing, card spacing, bottom-nav clearance, text wrapping, and one obvious next action.",
     ],
     acceptanceCriteria: [
       "Every core route starts with one clear pixel or command stage and one practical command board.",
-      "Home, Log, Plans, Health, Records, and More use the same board anatomy, compact section headers, and route-to-route spacing rhythm.",
+      "Log, Plan, Today, Pack, Story, Health, Records, and More use the same board anatomy, compact section headers, and route-to-route spacing rhythm.",
       "No first-screen text, card, sprite, tab, or bottom navigation element overlaps on a compact phone.",
       "Each route exposes a real next action that opens a care workflow, QA workflow, record, report, or route with no dead end.",
     ],
     failureEscalation:
       "Mark Needs tune for the first route with crowded hierarchy, clipped copy, duplicate avatar behavior, hidden primary action, bottom-nav overlap, or a visual style that drifts away from the Option B pixel app boards.",
     requiredEvidence: [
-      "iOS screenshot of Home route top.",
-      "Android screenshot of Home route top.",
       "iOS screenshot of Log route top.",
       "Android screenshot of Log route top.",
-      "iOS screenshot of Plans route top.",
-      "Android screenshot of Plans route top.",
+      "iOS screenshot of Plan route top.",
+      "Android screenshot of Plan route top.",
+      "iOS screenshot of Today route top.",
+      "Android screenshot of Today route top.",
+      "iOS screenshot of Pack route top.",
+      "Android screenshot of Pack route top.",
+      "iOS screenshot of Story route top.",
+      "Android screenshot of Story route top.",
       "iOS screenshot of Health route top.",
       "Android screenshot of Health route top.",
       "iOS screenshot of Records route top.",
       "Android screenshot of Records route top.",
       "iOS screenshot of More route top.",
       "Android screenshot of More route top.",
-      "Route-named file names or URIs for every attachment, such as Home-iOS, Home-Android, Log-iOS, Log-Android, Plans-iOS, Plans-Android, Health-iOS, Health-Android, Records-iOS, Records-Android, More-iOS, and More-Android.",
+      "Route-named file names or URIs for every attachment, such as Log-iOS, Log-Android, Plan-iOS, Plan-Android, Today-iOS, Today-Android, Pack-iOS, Pack-Android, Story-iOS, Story-Android, Health-iOS, Health-Android, Records-iOS, Records-Android, More-iOS, and More-Android.",
       "Note listing the first route with overlap, confusing hierarchy, or mockup drift, or confirming no route-to-route design break was found.",
     ],
     routeChecklist: [
-      {
-        label: "Home",
-        route: "/",
-        expected:
-          "Phoenix Room, Care Status, Today Command, Today's Missions, and Quick Log read as one planned first screen.",
-        requiredNativePlatforms: ["ios", "android"],
-      },
       {
         label: "Log",
         route: "/log",
@@ -956,10 +967,31 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         requiredNativePlatforms: ["ios", "android"],
       },
       {
-        label: "Plans",
+        label: "Plan",
         route: "/calendar",
         expected:
           "Today's Missions gives the owner the next responsibility before Mission Schedule shows the full day.",
+        requiredNativePlatforms: ["ios", "android"],
+      },
+      {
+        label: "Today",
+        route: "/",
+        expected:
+          "Phoenix Room, Care Status, Today Command, Today's Missions, and Quick Log read as one planned first screen.",
+        requiredNativePlatforms: ["ios", "android"],
+      },
+      {
+        label: "Pack",
+        route: "/pack",
+        expected:
+          "Pack keeps pets, people, household access, and the Care Pass hub on one planned board with clear links to Health, More, and Records.",
+        requiredNativePlatforms: ["ios", "android"],
+      },
+      {
+        label: "Story",
+        route: "/story",
+        expected:
+          "Story keeps care career, adventure trail, memories, walk story, and badges on one planned board without dead ends.",
         requiredNativePlatforms: ["ios", "android"],
       },
       {

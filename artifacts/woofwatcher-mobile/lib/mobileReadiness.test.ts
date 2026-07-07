@@ -127,22 +127,39 @@ test("registers the critical mobile routes and tabs", () => {
     );
   }
 
-  for (const tab of ["Home", "Log", "Plans", "Health", "More"]) {
+  for (const tab of ["Log", "Plan", "Today", "Pack", "Story"]) {
     assert.match(
       tabLayout,
       new RegExp(`title: "${tab}"`),
       `${tab} tab should be visible`,
     );
   }
-  assert.match(
-    tabLayout,
-    /name="records"/,
-    "records route should stay registered for More links and deep links",
-  );
-  assert.match(
-    tabLayout,
-    /href: null/,
-    "records should not appear as a primary bottom tab in v1.5",
+  for (const tabRoute of ["index", "log", "calendar", "pack", "story"]) {
+    assert.match(
+      tabLayout,
+      new RegExp(`name="${tabRoute}"`),
+      `${tabRoute} tab screen should be registered`,
+    );
+    assert.ok(
+      existsSync(join(APP_DIR, "(tabs)", `${tabRoute}.tsx`)),
+      `${tabRoute} tab route file should exist`,
+    );
+  }
+  for (const hiddenRoute of ["records", "health", "more"]) {
+    assert.match(
+      tabLayout,
+      new RegExp(`name="${hiddenRoute}"`),
+      `${hiddenRoute} route should stay registered for Today/Pack links and deep links`,
+    );
+    assert.ok(
+      existsSync(join(APP_DIR, "(tabs)", `${hiddenRoute}.tsx`)),
+      `${hiddenRoute} route file should exist`,
+    );
+  }
+  const hiddenTabCount = tabLayout.match(/href: null/g)?.length ?? 0;
+  assert.ok(
+    hiddenTabCount >= 3,
+    "health, more, and records should be hidden from the bottom tab bar with href: null",
   );
 });
 
@@ -1496,7 +1513,7 @@ test("keeps Home room animation alive without duplicate first-screen HUD chrome"
   assert.match(room, /height: 150/);
   assert.match(
     room,
-    /const stageSpriteAction: CareTwinSpriteAction = compactChrome\s*\?\s*"tail-wag"\s*:\s*activeSpriteAction/,
+    /const stageSpriteAction: CareTwinSpriteAction =\s*compactChrome && !transparentScene \? "tail-wag" : activeSpriteAction/,
   );
   assert.match(room, /function getImmersiveSpriteZone/);
   assert.match(
@@ -1507,7 +1524,7 @@ test("keeps Home room animation alive without duplicate first-screen HUD chrome"
   assert.match(room, /width: activeSpriteZone\.width/);
   assert.match(
     room,
-    /const shouldUseAvatarRuntime = Boolean\(avatarConfig\) && !compactChrome/,
+    /const shouldUseAvatarRuntime =\s*Boolean\(avatarConfig\) && \(!compactChrome \|\| transparentScene\)/,
   );
   assert.match(
     room,
@@ -1515,11 +1532,23 @@ test("keeps Home room animation alive without duplicate first-screen HUD chrome"
   );
   assert.match(
     room,
-    /const layeredStageReady =\s*!compactChrome &&[\s\S]*layerReadiness\.roomReady/,
+    /const layeredStageReady =\s*\(!compactChrome \|\| transparentScene\) &&[\s\S]*layerReadiness\.roomReady/,
   );
   assert.match(
     room,
-    /const useFallbackAvatarLayer =\s*roomStageReady && \(compactChrome \|\| !layeredStageReady\)/,
+    /const useFallbackAvatarLayer = roomStageReady && !layeredStageReady/,
+  );
+  // The immersive roam contract: the twin walks the floor band between
+  // waypoints, mirrors for rightward travel, and pauses for reactions.
+  assert.match(room, /deriveCareTwinRoamPlan/);
+  assert.match(room, /function RoamingTwinRig/);
+  assert.match(room, /testID="care-twin-roaming-rig"/);
+  assert.match(room, /testID="care-twin-roaming-sprite-player"/);
+  assert.match(room, /roamFlipMirrored/);
+  assert.match(room, /overrideAction \?\? \(moving \? "walk-loop" : dwellAction\)/);
+  assert.match(
+    room,
+    /plan\.scenePhase === "idle" \|\| plan\.scenePhase === "routine"/,
   );
   assert.match(room, /testID="care-twin-fallback-avatar-rig"/);
   assert.match(room, /compactChrome \? styles\.speechBubbleCompact : null/);
@@ -5760,7 +5789,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.nextActions?.some(
       (action) =>
         action.includes("/care-twin-qa?qaSurface=route-visual-consistency") &&
-        action.includes("Home, Log, Plans, Health, Records, and More") &&
+        action.includes("Log, Plan, Today, Pack, Story, Health, Records, and More") &&
         action.includes("iOS and Android") &&
         action.includes("route-named"),
     ),

@@ -8,11 +8,13 @@ import {
   Text,
   View,
   type ImageSourcePropType,
+  type LayoutChangeEvent,
 } from "react-native";
 import Animated, {
   Easing,
   FadeIn,
   FadeOut,
+  cancelAnimation,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
@@ -46,6 +48,11 @@ import {
 import { deriveAvatarRoomRuntime } from "@/lib/avatarRoomRuntime";
 import type { PetAvatarConfig } from "@/lib/avatarStudio";
 import type { AvatarMotionModel } from "@/lib/avatarMotion";
+import {
+  deriveCareTwinRoamPlan,
+  type RoamFacing,
+  type RoamPlan,
+} from "@/lib/careTwinRoam";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import type { Mood } from "@/lib/phoenixStatus";
 
@@ -291,10 +298,12 @@ export function LivingPhoenixRoom({
   const ambientTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeSpriteAction =
     activeReaction?.spriteAction ?? ambientSpriteAction ?? plan.spriteAction;
-  const stageSpriteAction: CareTwinSpriteAction = compactChrome
-    ? "tail-wag"
-    : activeSpriteAction;
-  const shouldUseAvatarRuntime = Boolean(avatarConfig) && !compactChrome;
+  // Immersive mode keeps the real care actions; only framed compact stages
+  // (no full-screen backdrop) pin the twin to a calm tail wag.
+  const stageSpriteAction: CareTwinSpriteAction =
+    compactChrome && !transparentScene ? "tail-wag" : activeSpriteAction;
+  const shouldUseAvatarRuntime =
+    Boolean(avatarConfig) && (!compactChrome || transparentScene);
   const avatarRoomRuntime = useMemo(
     () =>
       shouldUseAvatarRuntime && avatarConfig
@@ -309,9 +318,10 @@ export function LivingPhoenixRoom({
       ? `${avatarRoomRuntime.templateLabel} - ${avatarAccessoryCount} add-ons`
       : `${avatarRoomRuntime.templateLabel} rig`
     : "Pixel room";
-  const activeZoneKey = compactChrome
-    ? "rug"
-    : zoneForSpriteAction(stageSpriteAction, plan.zone);
+  const activeZoneKey =
+    compactChrome && !transparentScene
+      ? "rug"
+      : zoneForSpriteAction(stageSpriteAction, plan.zone);
   const zone = ROOM_ZONES[activeZoneKey];
   const focusSpot = FOCUS_SPOTS[activeZoneKey];
   const spriteZone = SPRITE_STAGE_ZONES[activeZoneKey];
@@ -343,13 +353,14 @@ export function LivingPhoenixRoom({
     getCareTwinSpriteAsset(stageSpriteAction) ??
     spriteAsset;
   const layeredStageReady =
-    !compactChrome &&
+    (!compactChrome || transparentScene) &&
     layerReadiness.roomReady &&
     Boolean(activeSpriteAsset && roomLayer && activeSpriteTrack);
   const roomStageReady = Boolean(roomLayer);
   const stageSource = roomLayer?.source ?? sceneSource;
-  const useFallbackAvatarLayer =
-    roomStageReady && (compactChrome || !layeredStageReady);
+  // Exactly one twin layer may render: the layered sprite stage when its
+  // assets are ready, otherwise the static fallback avatar.
+  const useFallbackAvatarLayer = roomStageReady && !layeredStageReady;
   const animateBakedScene = !roomStageReady && !layeredStageReady;
   const roomStats = useMemo<PhoenixRoomStat[]>(
     () =>
@@ -393,6 +404,43 @@ export function LivingPhoenixRoom({
     () => motionRecipeForSpriteAction(stageSpriteAction),
     [stageSpriteAction],
   );
+
+  // Roam mode: on the immersive Home stage the twin physically walks the
+  // floor band between waypoints whenever the scene is calm. Care actions,
+  // rest, and watch phases stay anchored to their zones.
+  const roamSeed = useRef(Math.floor(Math.random() * 1_000_000_000));
+  const [stageSize, setStageSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+  const roamBaseAction = ambientSpriteAction ?? plan.spriteAction;
+  const roamDwellAction: CareTwinSpriteAction =
+    roamBaseAction === "walk-loop" ? "tail-wag" : roamBaseAction;
+  const roamEligible =
+    transparentScene &&
+    !isStudio &&
+    (plan.scenePhase === "idle" || plan.scenePhase === "routine") &&
+    Boolean(getCareTwinSpriteAsset("walk-loop")) &&
+    Boolean(getCareTwinSpriteAsset(roamDwellAction) ?? avatarConfig);
+  const roamPlan = useMemo(
+    () =>
+      roamEligible
+        ? deriveCareTwinRoamPlan({
+            anchorZone: plan.zone,
+            seed: roamSeed.current,
+          })
+        : null,
+    [plan.zone, roamEligible],
+  );
+  const roamActive = Boolean(roamPlan && stageSize);
+  const handleStageLayout = (event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    setStageSize((prev) =>
+      prev && prev.width === width && prev.height === height
+        ? prev
+        : { width, height },
+    );
+  };
 
   const breath = useSharedValue(0);
   const walkCycle = useSharedValue(0);
@@ -676,6 +724,7 @@ export function LivingPhoenixRoom({
       accessibilityHint={accessibilityHint}
       onPress={handlePress}
       onLongPress={onLongPress}
+      onLayout={handleStageLayout}
       style={[
         styles.root,
         transparentScene ? styles.rootTransparent : null,
@@ -707,17 +756,32 @@ export function LivingPhoenixRoom({
         </>
       )}
 
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.dogFocus,
-          focusSpot,
-          { backgroundColor: theme.glow, borderColor: theme.accent },
-          dogFocusGlow,
-        ]}
-      />
+      {roamActive ? null : (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.dogFocus,
+            focusSpot,
+            { backgroundColor: theme.glow, borderColor: theme.accent },
+            dogFocusGlow,
+          ]}
+        />
+      )}
 
-      {layeredStageReady ? (
+      {roamActive && roamPlan && stageSize ? (
+        <RoamingTwinRig
+          plan={roamPlan}
+          stageWidth={stageSize.width}
+          stageHeight={stageSize.height}
+          dwellAction={roamDwellAction}
+          overrideAction={activeReaction?.spriteAction ?? null}
+          overrideKey={activeReaction?.id ?? null}
+          avatarConfig={avatarConfig}
+          glowColor={theme.glow}
+        />
+      ) : null}
+
+      {layeredStageReady && !roamActive ? (
         <Animated.View
           pointerEvents="none"
           style={[
@@ -788,7 +852,7 @@ export function LivingPhoenixRoom({
         </Animated.View>
       ) : null}
 
-      {useFallbackAvatarLayer ? (
+      {useFallbackAvatarLayer && !roamActive ? (
         <Animated.View
           pointerEvents="none"
           style={[
@@ -1181,6 +1245,206 @@ export function LivingPhoenixRoom({
   );
 }
 
+const ROAM_RIG_SIZE = 200;
+const ROAM_BOB_MS = 340;
+
+interface RoamingTwinRigProps {
+  plan: RoamPlan;
+  stageWidth: number;
+  stageHeight: number;
+  dwellAction: CareTwinSpriteAction;
+  /** A reaction pauses the walk in place and plays over the rig. */
+  overrideAction: CareTwinSpriteAction | null;
+  overrideKey: number | null;
+  avatarConfig?: PetAvatarConfig;
+  glowColor: string;
+}
+
+/**
+ * The traveling care twin: walks the roam plan's floor waypoints with the
+ * side-profile walk strip (mirrored when heading right), idles on arrival,
+ * and holds position while a reaction plays.
+ */
+function RoamingTwinRig({
+  plan,
+  stageWidth,
+  stageHeight,
+  dwellAction,
+  overrideAction,
+  overrideKey,
+  avatarConfig,
+  glowColor,
+}: RoamingTwinRigProps) {
+  const [legIndex, setLegIndex] = useState(0);
+  const [moving, setMoving] = useState(false);
+  const [facing, setFacing] = useState<RoamFacing>("left");
+  const paused = Boolean(overrideAction);
+
+  const toPx = (xPct: number, yPct: number) => ({
+    x: (xPct / 100) * stageWidth,
+    y: (yPct / 100) * stageHeight,
+  });
+
+  const anchorPx = toPx(plan.anchor.xPct, plan.anchor.yPct);
+  const xPx = useSharedValue(anchorPx.x);
+  const yPx = useSharedValue(anchorPx.y);
+  const depth = useSharedValue(plan.anchor.scale);
+  const walkBob = useSharedValue(0);
+
+  useEffect(() => {
+    setLegIndex(0);
+    setMoving(false);
+    setFacing("left");
+    xPx.value = (plan.anchor.xPct / 100) * stageWidth;
+    yPx.value = (plan.anchor.yPct / 100) * stageHeight;
+    depth.value = plan.anchor.scale;
+  }, [depth, plan, stageHeight, stageWidth, xPx, yPx]);
+
+  useEffect(() => {
+    if (paused) {
+      cancelAnimation(xPx);
+      cancelAnimation(yPx);
+      cancelAnimation(depth);
+      setMoving(false);
+      return;
+    }
+    const leg = plan.legs[legIndex % plan.legs.length];
+    setFacing(leg.facing);
+    if (leg.kind === "walk") {
+      setMoving(true);
+      const target = (leg.to.xPct / 100) * stageWidth;
+      const targetY = (leg.to.yPct / 100) * stageHeight;
+      const timing = { duration: leg.durationMs, easing: Easing.linear };
+      xPx.value = withTiming(target, timing);
+      yPx.value = withTiming(targetY, timing);
+      depth.value = withTiming(leg.to.scale, timing);
+    } else {
+      setMoving(false);
+    }
+    const timer = setTimeout(() => {
+      setLegIndex((index) => (index + 1) % plan.legs.length);
+    }, leg.durationMs);
+    return () => clearTimeout(timer);
+  }, [depth, legIndex, paused, plan, stageHeight, stageWidth, xPx, yPx]);
+
+  useEffect(() => {
+    if (moving && !paused) {
+      walkBob.value = 0;
+      walkBob.value = withRepeat(
+        withTiming(1, {
+          duration: ROAM_BOB_MS,
+          easing: Easing.inOut(Easing.sin),
+        }),
+        -1,
+        true,
+      );
+      return;
+    }
+    cancelAnimation(walkBob);
+    walkBob.value = withTiming(0, { duration: 220 });
+  }, [moving, paused, walkBob]);
+
+  const activeAction: CareTwinSpriteAction =
+    overrideAction ?? (moving ? "walk-loop" : dwellAction);
+  const runtime = useMemo(
+    () =>
+      avatarConfig ? deriveAvatarRoomRuntime(avatarConfig, activeAction) : null,
+    [activeAction, avatarConfig],
+  );
+  const spriteAsset = runtime?.spriteAsset ?? getCareTwinSpriteAsset(activeAction);
+  const spriteTrack =
+    runtime?.spriteTrack ?? CARE_TWIN_SPRITE_MANIFEST[activeAction];
+  // Accessory art is fitted to the template sprite-pack geometry; over the
+  // Phoenix action strips it lands at the wrong scale, so it only rides
+  // along when the runtime actually uses the template pack.
+  const showAccessoryLayers = runtime?.spriteMode === "template-idle-walk-pack";
+
+  const rigStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: xPx.value },
+      { translateY: yPx.value - walkBob.value * 3 },
+      { scale: depth.value },
+    ],
+  }));
+
+  const shadowStyle = useAnimatedStyle(() => ({
+    opacity: 0.32 - walkBob.value * 0.07,
+    transform: [
+      { scaleX: 1.18 + walkBob.value * 0.07 },
+      { scaleY: 1 - walkBob.value * 0.05 },
+    ],
+  }));
+
+  if (!spriteAsset || !spriteTrack) return null;
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.roamRig, rigStyle]}
+      testID="care-twin-roaming-rig"
+    >
+      <Animated.View
+        style={[
+          styles.spriteGroundShadow,
+          { backgroundColor: glowColor },
+          shadowStyle,
+        ]}
+      />
+      <View
+        style={[
+          styles.roamFlip,
+          facing === "right" ? styles.roamFlipMirrored : null,
+        ]}
+      >
+        {showAccessoryLayers
+          ? runtime?.underlayLayers.map((layer) =>
+              layer.source ? (
+                <Animated.Image
+                  key={`roam-underlay-${layer.id}`}
+                  source={layer.source}
+                  resizeMode="contain"
+                  style={[
+                    styles.avatarAccessoryLayer,
+                    styles.avatarAccessoryUnderlay,
+                    pixelImageStyle,
+                  ]}
+                />
+              ) : null,
+            )
+          : null}
+        <SpriteSheetPlayer
+          key={
+            overrideKey !== null
+              ? `roam-${overrideKey}-${activeAction}`
+              : `roam-${activeAction}`
+          }
+          asset={spriteAsset}
+          height={ROAM_RIG_SIZE}
+          testID="care-twin-roaming-sprite-player"
+          track={spriteTrack}
+          width={ROAM_RIG_SIZE}
+        />
+        {showAccessoryLayers
+          ? runtime?.overlayLayers.map((layer) =>
+              layer.source ? (
+                <Animated.Image
+                  key={`roam-overlay-${layer.id}`}
+                  source={layer.source}
+                  resizeMode="contain"
+                  style={[
+                    styles.avatarAccessoryLayer,
+                    styles.avatarAccessoryOverlay,
+                    pixelImageStyle,
+                  ]}
+                />
+              ) : null,
+            )
+          : null}
+      </View>
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFillObject,
@@ -1256,6 +1520,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-end",
     zIndex: 4,
+  },
+  roamRig: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: ROAM_RIG_SIZE,
+    height: ROAM_RIG_SIZE,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    zIndex: 4,
+  },
+  roamFlip: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  roamFlipMirrored: {
+    transform: [{ scaleX: -1 }],
   },
   spriteGroundShadow: {
     position: "absolute",
