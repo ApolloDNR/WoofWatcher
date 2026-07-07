@@ -254,6 +254,16 @@
 - Veterinary disclaimer language.
 - Document storage access rules.
 
+## Latest Automation Notes
+
+- 2026-07-07: Privacy & Safety now preserves and consumes saved Provider Launch
+  Setup AI, payments, and account-deletion proof evidence. This removes a local
+  evidence propagation gap, but it does not supply real OpenAI/provider proof,
+  sandbox receipts, deletion receipts, legal/store approval, or Apollo sign-off.
+- The direct JSON mobile beta doctor remains locally blocked only by pnpm
+  `11.7.0` versus pinned `10.24.0` and missing Corepack; branch CI should be
+  rerun after the new commit before dependency proof is treated as current.
+
 ## External Source Notes
 
 The Apollo shared thread was reachable via approved network fetch on 2026-06-08. Standard unauthenticated web tooling did not render the conversation directly; extraction used embedded share-page data.

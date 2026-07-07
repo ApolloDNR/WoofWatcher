@@ -239,7 +239,7 @@ Current gaps:
 - Need role-based access control.
 - Care-log edit/delete audit trail exists in mobile/domain, and household invite/member/Access Pass audit rows now have owner/admin review APIs plus request-time helper expiry enforcement. Broader record/document/account audit policy, provider migration/RLS, retention/export/deletion, and scheduled or owner-facing expired-helper cleanup remain open.
 - Need document storage access rules.
-- AI usage disclosure, owner care-data export, staged pet roster export, Access Pass draft export, Adventure memory export, and non-destructive deletion request preparation exist in mobile; provider-backed policy, cloud media storage, and destructive deletion still need approval.
+- AI usage disclosure, owner care-data export, staged pet roster export, Access Pass draft export, Adventure memory export, and non-destructive deletion request preparation exist in mobile; Privacy & Safety now consumes saved Provider Launch Setup proof evidence for AI, payments, and account deletion when those structured manifests exist. Provider-backed policy, cloud media storage, real checkout, and destructive deletion still need approval.
 
 ## Gate 9: Deployment And Operations
 
@@ -285,6 +285,12 @@ Latest known passing automation-branch CI:
   2026-07-07 UTC for commit `d21f44e`
 - Coverage: Setup pnpm, Setup Node, install dependencies, JSON mobile beta
   doctor, focused behavior tests, and Typecheck plus CI-safe builds
+- Newer local-only proof after this CI run: Privacy provider proof evidence
+  propagation passed focused provider/readiness tests `128/128`, the full
+  zero-dependency suite `594/594`, root TypeScript, direct JSON mobile beta
+  doctor source-backed checks, PixelLab `ok=149 missing=0 invalid=0`, and
+  `git diff --check`. Rerun branch CI after the new commit before treating
+  dependency proof as current.
 
 Latest known passing `main` CI after the Full Log search slice:
 

@@ -38,7 +38,13 @@ import {
   normalizeReminderNotificationPreferences,
   type ReminderNotificationPreferences,
 } from "@/lib/reminderNotificationPreferences";
-import { normalizeLaunchProviderProfile, type LaunchStorageProviderEvidence } from "@/lib/launchProviderSetup";
+import {
+  normalizeLaunchProviderProfile,
+  type LaunchStorageProviderEvidence,
+} from "@/lib/launchProviderSetup";
+import type { AiProviderProofEvidence } from "@/lib/aiProviderProof";
+import type { PaymentsProviderProofManifestInput } from "@/lib/paymentsProviderProof";
+import type { AccountDeletionProofEvidence } from "@/lib/accountDeletionProof";
 import type { SupportLegalReadinessProofEvidence } from "@/lib/supportRunbook";
 
 const STORAGE_KEY = "woofwatcher.v2.state";
@@ -112,14 +118,17 @@ export interface LaunchProviderProfile {
   storageProviderEvidence?: LaunchStorageProviderEvidence | null;
   aiProviderConfigured: boolean;
   aiProviderProofReady: boolean;
+  aiProviderEvidence?: AiProviderProofEvidence | null;
   paymentsEnabled: boolean;
   paymentsProviderProofReady: boolean;
+  paymentsProviderEvidence?: PaymentsProviderProofManifestInput | null;
   pushNotificationsConfigured: boolean;
   pushNotificationsProofReady: boolean;
   appStoreAccountsReady: boolean;
   storeAccountsProofReady: boolean;
   accountDeletionEnabled: boolean;
   accountDeletionProofReady: boolean;
+  accountDeletionEvidence?: AccountDeletionProofEvidence | null;
   ownerReviewedAt?: string;
   providerStatus: "local-draft" | "owner-reviewed" | "provider-approved";
   notes: string;

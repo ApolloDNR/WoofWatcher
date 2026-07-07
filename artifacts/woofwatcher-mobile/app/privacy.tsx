@@ -105,10 +105,13 @@ export default function PrivacyScreen() {
       deriveAccountSafetyPlan({
         state,
         aiProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.aiProviderConfigured),
+        aiProviderEvidence: state.launchProviderProfile.aiProviderEvidence,
         storageProviderConfigured: Boolean(state.launchProviderProfile.storageProviderConfigured),
         storageProviderEvidence: state.launchProviderProfile.storageProviderEvidence,
         accountDeletionEnabled: Boolean(launchProviderSetupPlan.providerInput.accountDeletionEnabled),
+        accountDeletionEvidence: state.launchProviderProfile.accountDeletionEvidence,
         paymentsEnabled: Boolean(launchProviderSetupPlan.providerInput.paymentsEnabled),
+        paymentsProviderEvidence: state.launchProviderProfile.paymentsProviderEvidence,
       }),
     [launchProviderSetupPlan.providerInput, state],
   );

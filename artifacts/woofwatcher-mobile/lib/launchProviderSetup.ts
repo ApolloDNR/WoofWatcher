@@ -10,10 +10,12 @@ import {
 import {
   AI_PROVIDER_PROOF_ITEMS,
   AI_PROVIDER_PROOF_SUMMARY,
+  type AiProviderProofEvidence,
 } from "./aiProviderProof.ts";
 import {
   ACCOUNT_DELETION_PROOF_ITEMS,
   ACCOUNT_DELETION_PROOF_SUMMARY,
+  type AccountDeletionProofEvidence,
 } from "./accountDeletionProof.ts";
 import {
   STORE_ACCOUNTS_PROOF_ITEMS,
@@ -26,6 +28,7 @@ import {
 import {
   PAYMENTS_PROVIDER_PROOF_ITEMS,
   PAYMENTS_PROVIDER_PROOF_SUMMARY,
+  type PaymentsProviderProofManifestInput,
 } from "./paymentsProviderProof.ts";
 import {
   PUSH_NOTIFICATIONS_PROOF_ITEMS,
@@ -81,14 +84,17 @@ export interface LaunchProviderProfile {
   storageProviderEvidence?: LaunchStorageProviderEvidence | null;
   aiProviderConfigured: boolean;
   aiProviderProofReady: boolean;
+  aiProviderEvidence?: AiProviderProofEvidence | null;
   paymentsEnabled: boolean;
   paymentsProviderProofReady: boolean;
+  paymentsProviderEvidence?: PaymentsProviderProofManifestInput | null;
   pushNotificationsConfigured: boolean;
   pushNotificationsProofReady: boolean;
   appStoreAccountsReady: boolean;
   storeAccountsProofReady: boolean;
   accountDeletionEnabled: boolean;
   accountDeletionProofReady: boolean;
+  accountDeletionEvidence?: AccountDeletionProofEvidence | null;
   ownerReviewedAt?: string;
   providerStatus: LaunchProviderSetupStatus;
   notes: string;
@@ -158,14 +164,17 @@ const DEFAULT_PROFILE: LaunchProviderProfile = {
   storageProviderEvidence: null,
   aiProviderConfigured: false,
   aiProviderProofReady: false,
+  aiProviderEvidence: null,
   paymentsEnabled: false,
   paymentsProviderProofReady: false,
+  paymentsProviderEvidence: null,
   pushNotificationsConfigured: false,
   pushNotificationsProofReady: false,
   appStoreAccountsReady: false,
   storeAccountsProofReady: false,
   accountDeletionEnabled: false,
   accountDeletionProofReady: false,
+  accountDeletionEvidence: null,
   providerStatus: "local-draft",
   notes: "",
 };
@@ -186,6 +195,24 @@ function normalizeStorageProviderEvidence(
   return value && typeof value === "object" && !Array.isArray(value) ? value : null;
 }
 
+function normalizeAiProviderEvidence(
+  value: AiProviderProofEvidence | null | undefined,
+): AiProviderProofEvidence | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
+function normalizePaymentsProviderEvidence(
+  value: PaymentsProviderProofManifestInput | null | undefined,
+): PaymentsProviderProofManifestInput | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
+function normalizeAccountDeletionEvidence(
+  value: AccountDeletionProofEvidence | null | undefined,
+): AccountDeletionProofEvidence | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
 export function normalizeLaunchProviderProfile(input: LaunchProviderProfileInput): LaunchProviderProfile {
   const source = input ?? {};
   const ownerReviewedAt = cleanString(source.ownerReviewedAt);
@@ -199,14 +226,17 @@ export function normalizeLaunchProviderProfile(input: LaunchProviderProfileInput
     storageProviderEvidence: normalizeStorageProviderEvidence(source.storageProviderEvidence),
     aiProviderConfigured: Boolean(source.aiProviderConfigured),
     aiProviderProofReady: Boolean(source.aiProviderProofReady),
+    aiProviderEvidence: normalizeAiProviderEvidence(source.aiProviderEvidence),
     paymentsEnabled: Boolean(source.paymentsEnabled),
     paymentsProviderProofReady: Boolean(source.paymentsProviderProofReady),
+    paymentsProviderEvidence: normalizePaymentsProviderEvidence(source.paymentsProviderEvidence),
     pushNotificationsConfigured: Boolean(source.pushNotificationsConfigured),
     pushNotificationsProofReady: Boolean(source.pushNotificationsProofReady),
     appStoreAccountsReady: Boolean(source.appStoreAccountsReady),
     storeAccountsProofReady: Boolean(source.storeAccountsProofReady),
     accountDeletionEnabled: Boolean(source.accountDeletionEnabled),
     accountDeletionProofReady: Boolean(source.accountDeletionProofReady),
+    accountDeletionEvidence: normalizeAccountDeletionEvidence(source.accountDeletionEvidence),
     ownerReviewedAt: ownerReviewedAt || undefined,
     providerStatus: cleanStatus(source.providerStatus),
     notes: cleanString(source.notes),

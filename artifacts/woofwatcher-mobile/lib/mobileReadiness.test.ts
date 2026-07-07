@@ -194,6 +194,9 @@ test("keeps launch-blocking safety copy on premium, privacy, and WoofGuide surfa
   );
   assert.match(privacy, /storageProviderConfigured:\s*Boolean\(state\.launchProviderProfile\.storageProviderConfigured\)/);
   assert.match(privacy, /storageProviderEvidence:\s*state\.launchProviderProfile\.storageProviderEvidence/);
+  assert.match(privacy, /aiProviderEvidence:\s*state\.launchProviderProfile\.aiProviderEvidence/);
+  assert.match(privacy, /paymentsProviderEvidence:\s*state\.launchProviderProfile\.paymentsProviderEvidence/);
+  assert.match(privacy, /accountDeletionEvidence:\s*state\.launchProviderProfile\.accountDeletionEvidence/);
   assert.doesNotMatch(privacy, /storageProviderConfigured:\s*false/);
   assert.match(
     privacy,
@@ -4897,6 +4900,9 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(careContext, /launchProviderProfile/);
   assert.match(careContext, /supportLegalReadinessEvidence\?:\s*SupportLegalReadinessProofEvidence \| null/);
   assert.match(careContext, /storageProviderEvidence\?:\s*LaunchStorageProviderEvidence \| null/);
+  assert.match(careContext, /aiProviderEvidence\?:\s*AiProviderProofEvidence \| null/);
+  assert.match(careContext, /paymentsProviderEvidence\?:\s*PaymentsProviderProofManifestInput \| null/);
+  assert.match(careContext, /accountDeletionEvidence\?:\s*AccountDeletionProofEvidence \| null/);
   assert.match(careContext, /authProviderProofReady:\s*boolean/);
   assert.match(careContext, /databaseProviderProofReady:\s*boolean/);
   assert.match(careContext, /storageProviderProofReady:\s*boolean/);
@@ -4916,6 +4922,12 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(providerSetup, /storageProviderEvidence\?:\s*LaunchStorageProviderEvidence \| null/);
   assert.match(providerSetup, /storageProviderEvidence:\s*normalizeStorageProviderEvidence\(source\.storageProviderEvidence\)/);
   assert.match(providerSetup, /storageProviderEvidence:\s*profile\.storageProviderEvidence/);
+  assert.match(providerSetup, /aiProviderEvidence\?:\s*AiProviderProofEvidence \| null/);
+  assert.match(providerSetup, /paymentsProviderEvidence\?:\s*PaymentsProviderProofManifestInput \| null/);
+  assert.match(providerSetup, /accountDeletionEvidence\?:\s*AccountDeletionProofEvidence \| null/);
+  assert.match(providerSetup, /aiProviderEvidence:\s*normalizeAiProviderEvidence\(source\.aiProviderEvidence\)/);
+  assert.match(providerSetup, /paymentsProviderEvidence:\s*normalizePaymentsProviderEvidence\(source\.paymentsProviderEvidence\)/);
+  assert.match(providerSetup, /accountDeletionEvidence:\s*normalizeAccountDeletionEvidence\(source\.accountDeletionEvidence\)/);
   assert.match(providerSetup, /Provider Launch Setup/);
   assert.match(providerSetup, /LaunchProviderSetupRowStatus = "ready" \| "staged" \| "blocked"/);
   assert.match(providerSetup, /nextGate/);
@@ -5995,6 +6007,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "care document launch proof persistence guard is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "privacy provider proof evidence propagation is source-backed" &&
         check.status === "PASS",
     ),
   );

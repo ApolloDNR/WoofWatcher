@@ -3952,6 +3952,24 @@ JSON mobile beta doctor remains truthfully `BLOCKED` only because local pnpm is
 preview proof remains historical and web-preview-only until a dependency-complete
 helper reruns `proof:live-preview` and `preview:smoke`.
 
+The Privacy provider proof evidence propagation pass closes the matching
+Privacy & Safety stale path. `LaunchProviderProfile` now preserves saved
+`aiProviderEvidence`, `paymentsProviderEvidence`, and
+`accountDeletionEvidence`, CareContext persists those fields, and `/privacy`
+forwards them into the existing WoofGuide AI, payments, and account-deletion
+proof validators. Fresh local verification first failed because
+`normalizeLaunchProviderProfile` stripped `aiProviderEvidence`; after
+implementation, focused provider/readiness tests passed `128/128`, the full
+zero-dependency API/mobile/PWA/care-domain suite passed `594/594`, root
+TypeScript passed, direct JSON mobile beta doctor marked
+`privacy provider proof evidence propagation is source-backed` as `PASS`,
+PixelLab verifier passed `ok=149 missing=0 invalid=0`, and `git diff --check`
+passed with expected Windows line-ending warnings. Direct JSON mobile beta
+doctor remains truthfully `BLOCKED` only because local pnpm is `11.7.0` versus
+pinned `10.24.0` and Corepack is not on PATH. This still does not attach real
+provider proof files, enable live AI, enable checkout, perform destructive
+account deletion, approve stores, launch publicly, or replace Apollo sign-off.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

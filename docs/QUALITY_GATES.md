@@ -1116,3 +1116,19 @@ doctor remains truthfully blocked only by local pnpm `11.7.0` versus pinned
 `10.24.0` and missing Corepack. This clears current branch dependency proof only;
 native iOS/Android evidence, provider proof files, store approval, public launch,
 and Apollo sign-off remain open.
+
+Current evidence, 2026-07-07: Privacy & Safety now consumes saved Provider
+Launch Setup evidence for WoofGuide AI, payments, and account deletion instead
+of only seeing configured booleans. `LaunchProviderProfile` preserves the
+structured AI, payments, and deletion proof evidence through normalization and
+CareContext persistence, and `/privacy` forwards those saved manifests into the
+existing proof validators. Local red/green verification first failed on stripped
+`aiProviderEvidence`; after implementation, focused provider/readiness tests
+passed `128/128`, the full zero-dependency API/mobile/PWA/care-domain suite
+passed `594/594`, root TypeScript passed, direct JSON mobile beta doctor marked
+`privacy provider proof evidence propagation is source-backed` as `PASS`,
+PixelLab asset verification passed `ok=149 missing=0 invalid=0`, and
+`git diff --check` passed with expected Windows CRLF warnings only. Direct JSON
+mobile beta doctor remains truthfully blocked only by local pnpm `11.7.0`
+versus pinned `10.24.0` and missing Corepack. Real proof files, provider setup,
+native evidence, store approval, public launch, and Apollo sign-off remain open.

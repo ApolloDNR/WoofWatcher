@@ -1094,6 +1094,33 @@ check(
     : "preserve structured launch proof fields in CareContext so valid saved/imported proof can reach Launch Readiness without raw boolean bypasses",
 );
 
+const privacyProviderProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
+  "aiProviderEvidence?: AiProviderProofEvidence | null",
+  "paymentsProviderEvidence?: PaymentsProviderProofManifestInput | null",
+  "accountDeletionEvidence?: AccountDeletionProofEvidence | null",
+  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
+])
+  && includesAll(launchProviderSetupSource, [
+    "aiProviderEvidence?: AiProviderProofEvidence | null",
+    "paymentsProviderEvidence?: PaymentsProviderProofManifestInput | null",
+    "accountDeletionEvidence?: AccountDeletionProofEvidence | null",
+    "aiProviderEvidence: normalizeAiProviderEvidence(source.aiProviderEvidence)",
+    "paymentsProviderEvidence: normalizePaymentsProviderEvidence(source.paymentsProviderEvidence)",
+    "accountDeletionEvidence: normalizeAccountDeletionEvidence(source.accountDeletionEvidence)",
+  ])
+  && includesAll(privacyRouteSource, [
+    "aiProviderEvidence: state.launchProviderProfile.aiProviderEvidence",
+    "paymentsProviderEvidence: state.launchProviderProfile.paymentsProviderEvidence",
+    "accountDeletionEvidence: state.launchProviderProfile.accountDeletionEvidence",
+  ]);
+check(
+  "privacy provider proof evidence propagation is source-backed",
+  privacyProviderProofEvidencePropagationIsSourceBacked,
+  privacyProviderProofEvidencePropagationIsSourceBacked
+    ? "Privacy & Safety consumes saved AI, payments, and account-deletion proof evidence from the durable Provider Launch Setup profile"
+    : "preserve and forward AI, payments, and account-deletion proof evidence from Provider Launch Setup into Privacy & Safety",
+);
+
 const providerLaunchSetupProofGuardIsSourceBacked = includesAll(launchProviderSetupSource, [
   "authProviderProofReady",
   "databaseProviderProofReady",

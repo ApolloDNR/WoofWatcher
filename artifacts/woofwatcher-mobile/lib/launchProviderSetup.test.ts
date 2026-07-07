@@ -30,6 +30,27 @@ function completeStorageProviderEvidence() {
   };
 }
 
+function completePrivacyProviderEvidence() {
+  return {
+    aiProviderEvidence: {
+      aiProviderEvidence: [
+        { kind: "provider-key-storage", fileName: "openai-secret-storage-proof.json", mimeType: "application/json", byteSize: 1200 },
+      ],
+    },
+    paymentsProviderEvidence: {
+      productCatalogApproved: true,
+      sandboxReceiptEvidence: [
+        { platform: "ios", store: "app-store", fileName: "ios-app-store-receipt.json", mimeType: "application/json", byteSize: 1200 },
+      ],
+    },
+    accountDeletionEvidence: {
+      accountDeletionEvidence: [
+        { kind: "deletion-route-auth", fileName: "account-deletion-route-auth-proof.json", mimeType: "application/json", byteSize: 1200 },
+      ],
+    },
+  };
+}
+
 test("builds a truthful provider setup plan from a local launch profile", async () => {
   const mod = await import("./launchProviderSetup.ts").catch(() => null);
   assert.ok(mod, "launchProviderSetup module should exist");
@@ -199,12 +220,14 @@ test("normalizes stored provider setup profiles before launch-readiness usage", 
   const mod = await import("./launchProviderSetup.ts").catch(() => null);
   assert.ok(mod, "launchProviderSetup module should exist");
   const storageProviderEvidence = completeStorageProviderEvidence();
+  const privacyProviderEvidence = completePrivacyProviderEvidence();
 
   const profile = mod.normalizeLaunchProviderProfile({
     authConfigured: "yes",
     databaseConfigured: 1,
     storageProviderConfigured: false,
     storageProviderEvidence,
+    ...privacyProviderEvidence,
     providerStatus: "unknown",
     ownerReviewedAt: 123,
     notes: 42,
@@ -222,7 +245,13 @@ test("normalizes stored provider setup profiles before launch-readiness usage", 
   assert.equal(profile.ownerReviewedAt, undefined);
   assert.equal(profile.notes, "");
   assert.deepEqual(profile.storageProviderEvidence, storageProviderEvidence);
+  assert.deepEqual(profile.aiProviderEvidence, privacyProviderEvidence.aiProviderEvidence);
+  assert.deepEqual(profile.paymentsProviderEvidence, privacyProviderEvidence.paymentsProviderEvidence);
+  assert.deepEqual(profile.accountDeletionEvidence, privacyProviderEvidence.accountDeletionEvidence);
   assert.equal(mod.normalizeLaunchProviderProfile({ storageProviderEvidence: [] }).storageProviderEvidence, null);
+  assert.equal(mod.normalizeLaunchProviderProfile({ aiProviderEvidence: [] }).aiProviderEvidence, null);
+  assert.equal(mod.normalizeLaunchProviderProfile({ paymentsProviderEvidence: [] }).paymentsProviderEvidence, null);
+  assert.equal(mod.normalizeLaunchProviderProfile({ accountDeletionEvidence: [] }).accountDeletionEvidence, null);
 });
 
 test("keeps owner-reviewed provider toggles out of launch-readiness input until provider approval and structured proof", async () => {

@@ -2154,6 +2154,32 @@ Owner: Codex.
 Revisit trigger: A new automation commit lands, or a helper environment produces
 fresh `proof:live-preview` and foreground `preview:smoke` output.
 
+### 2026-07-07: Privacy Safety Uses Saved Provider Proof Evidence
+
+Decision: Privacy & Safety should read saved Provider Launch Setup evidence for
+WoofGuide AI, payments, and account deletion instead of treating those gates as
+configured-booleans-only inputs.
+
+Reason: Earlier slices added structured proof validators for AI, payments, and
+account deletion, then persisted proof-ready flags and storage evidence. Without
+preserving and forwarding the matching AI, payments, and deletion evidence
+objects, valid saved proof could not reach the Privacy & Safety validators.
+
+Consequences:
+
+- `LaunchProviderProfile` preserves `aiProviderEvidence`,
+  `paymentsProviderEvidence`, and `accountDeletionEvidence`.
+- CareContext keeps those fields when saved or imported care documents merge.
+- `/privacy` forwards the saved evidence into the existing account safety plan.
+- Raw configured booleans still cannot prove live AI, checkout, destructive
+  deletion, public launch, or Apollo sign-off.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains a provider-backed proof evidence service,
+in-app proof attachment editing, or Apollo changes the production provider
+approval workflow.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
