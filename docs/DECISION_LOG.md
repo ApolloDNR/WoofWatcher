@@ -2180,6 +2180,36 @@ Revisit trigger: WoofWatcher gains a provider-backed proof evidence service,
 in-app proof attachment editing, or Apollo changes the production provider
 approval workflow.
 
+### 2026-07-07: Push Notification Proof Evidence Must Reach Reminder Center
+
+Decision: Saved Provider Launch Setup push notification proof evidence should
+survive care-document normalization and feed both Reminder Center and the
+focused Push Notifications proof mission.
+
+Reason: The Reminder Center already requires the structured Push notifications
+proof manifest before it can claim provider-backed delivery, but the saved
+launch provider profile did not preserve the evidence object. That stranded real
+APNs/FCM proof and kept `/care-twin-qa?qaSurface=push-notifications-proof`
+rendering an empty manifest even when proof was imported or saved.
+
+Consequences:
+
+- `LaunchProviderProfile` preserves `pushNotificationsProofEvidence`.
+- CareContext keeps that field when saved or imported care documents merge.
+- Calendar reads the saved evidence through
+  `buildReminderNotificationPreferencesForCenter`.
+- The focused Push Notifications proof route feeds saved evidence into
+  `buildPushNotificationsProofManifest`.
+- Raw configured/provider-approved push booleans still cannot prove reminder
+  delivery, native notification QA, store privacy review, public launch, or
+  Apollo sign-off.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains a provider-backed proof evidence service,
+in-app proof attachment editing, or Apollo attaches real Expo/APNs/FCM/native
+delivery proof files that should be validated from saved app state.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

@@ -2429,3 +2429,22 @@ Latest local evidence, 2026-07-07:
   `automation/premium-revenue-product-builder`. Rerun CI after this proof-record
   docs commit before treating dependency proof as current for the final branch
   tip.
+- Branch CI then proved proof-record commit `a786f3f` in `WoofWatcher Verify`
+  run `28844518727`, completed success in `3m14s` on
+  `automation/premium-revenue-product-builder`.
+- Reminder Center and `/care-twin-qa?qaSurface=push-notifications-proof` now
+  consume saved Provider Launch Setup `pushNotificationsProofEvidence`.
+  `LaunchProviderProfile` preserves the field through normalization and
+  CareContext persistence, Calendar reads it through
+  `buildReminderNotificationPreferencesForCenter`, and the focused helper route
+  feeds it into `buildPushNotificationsProofManifest` instead of using an empty
+  manifest.
+- Focused provider/reminder/readiness tests passed `124/124`; the full
+  zero-dependency API/mobile/PWA/care-domain suite passed `594/594`; root
+  TypeScript, mobile TypeScript, direct JSON mobile beta doctor source-backed
+  checks, and PixelLab verifier `ok=149 missing=0 invalid=0` passed.
+- Direct JSON mobile beta doctor reports `push notification proof evidence
+  propagation is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
+  only because local pnpm is `11.7.0` versus pinned `10.24.0` and Corepack is
+  not on PATH. Rerun branch CI after the new push-proof propagation commit
+  before treating dependency proof as current for the branch tip.

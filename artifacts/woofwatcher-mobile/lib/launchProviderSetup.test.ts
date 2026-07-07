@@ -51,6 +51,43 @@ function completePrivacyProviderEvidence() {
   };
 }
 
+function completePushNotificationsProofEvidence() {
+  return {
+    expoPushProjectConfig: "Expo push project config proof: production project id, channel, token registration, local preview boundary.",
+    appleApnsCredentials: "Apple APNs credentials proof: production entitlement, device token, and APNs delivery evidence.",
+    firebaseFcmCredentials: "Firebase and FCM credentials proof: google-services config, sender ownership, Android channel behavior.",
+    permissionPromptPreferenceCopy: "Permission prompt and preference copy proof: consent language, denied fallback, and caregiver copy.",
+    quietHoursOptOutBehavior: "Quiet hours and opt-out behavior proof: disabled reminders stay off and quiet hours mute non-urgent reminders.",
+    reminderDeliveryQaFallback: "Reminder delivery QA and fallback proof: iOS and Android delivered reminders plus fallback recovery.",
+    nativeDeliveryEvidence: [
+      {
+        platform: "ios",
+        provider: "apns",
+        fileName: "ios-apns-reminder-delivery-proof.png",
+        mimeType: "image/png",
+        byteSize: 320000,
+        pushTokenRegistered: true,
+        reminderDelivered: true,
+        capturesPermissionPreference: true,
+        capturesQuietHoursOrOptOut: true,
+        capturesFallbackPath: true,
+      },
+      {
+        platform: "android",
+        provider: "fcm",
+        fileName: "android-fcm-reminder-delivery-proof.png",
+        mimeType: "image/png",
+        byteSize: 300000,
+        pushTokenRegistered: true,
+        reminderDelivered: true,
+        capturesPermissionPreference: true,
+        capturesQuietHoursOrOptOut: true,
+        capturesFallbackPath: true,
+      },
+    ],
+  };
+}
+
 test("builds a truthful provider setup plan from a local launch profile", async () => {
   const mod = await import("./launchProviderSetup.ts").catch(() => null);
   assert.ok(mod, "launchProviderSetup module should exist");
@@ -221,6 +258,7 @@ test("normalizes stored provider setup profiles before launch-readiness usage", 
   assert.ok(mod, "launchProviderSetup module should exist");
   const storageProviderEvidence = completeStorageProviderEvidence();
   const privacyProviderEvidence = completePrivacyProviderEvidence();
+  const pushNotificationsProofEvidence = completePushNotificationsProofEvidence();
 
   const profile = mod.normalizeLaunchProviderProfile({
     authConfigured: "yes",
@@ -228,6 +266,7 @@ test("normalizes stored provider setup profiles before launch-readiness usage", 
     storageProviderConfigured: false,
     storageProviderEvidence,
     ...privacyProviderEvidence,
+    pushNotificationsProofEvidence,
     providerStatus: "unknown",
     ownerReviewedAt: 123,
     notes: 42,
@@ -248,10 +287,12 @@ test("normalizes stored provider setup profiles before launch-readiness usage", 
   assert.deepEqual(profile.aiProviderEvidence, privacyProviderEvidence.aiProviderEvidence);
   assert.deepEqual(profile.paymentsProviderEvidence, privacyProviderEvidence.paymentsProviderEvidence);
   assert.deepEqual(profile.accountDeletionEvidence, privacyProviderEvidence.accountDeletionEvidence);
+  assert.deepEqual(profile.pushNotificationsProofEvidence, pushNotificationsProofEvidence);
   assert.equal(mod.normalizeLaunchProviderProfile({ storageProviderEvidence: [] }).storageProviderEvidence, null);
   assert.equal(mod.normalizeLaunchProviderProfile({ aiProviderEvidence: [] }).aiProviderEvidence, null);
   assert.equal(mod.normalizeLaunchProviderProfile({ paymentsProviderEvidence: [] }).paymentsProviderEvidence, null);
   assert.equal(mod.normalizeLaunchProviderProfile({ accountDeletionEvidence: [] }).accountDeletionEvidence, null);
+  assert.equal(mod.normalizeLaunchProviderProfile({ pushNotificationsProofEvidence: [] }).pushNotificationsProofEvidence, null);
 });
 
 test("keeps owner-reviewed provider toggles out of launch-readiness input until provider approval and structured proof", async () => {

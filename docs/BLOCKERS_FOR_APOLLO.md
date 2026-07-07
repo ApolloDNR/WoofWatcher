@@ -260,6 +260,11 @@
   Setup AI, payments, and account-deletion proof evidence. This removes a local
   evidence propagation gap, but it does not supply real OpenAI/provider proof,
   sandbox receipts, deletion receipts, legal/store approval, or Apollo sign-off.
+- 2026-07-07: Reminder Center and the focused Push Notifications proof mission
+  now preserve and consume saved Provider Launch Setup push proof evidence. This
+  removes a local APNs/FCM evidence propagation gap, but it does not configure
+  Expo push, APNs, Firebase/FCM, prove native notification delivery, approve
+  store privacy disclosures, launch publicly, or replace Apollo sign-off.
 - The direct JSON mobile beta doctor remains locally blocked only by pnpm
   `11.7.0` versus pinned `10.24.0` and missing Corepack; branch CI should be
   rerun after the new commit before dependency proof is treated as current.

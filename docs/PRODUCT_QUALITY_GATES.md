@@ -285,16 +285,17 @@ Latest known passing automation-branch CI:
   2026-07-07 UTC for commit `d21f44e`
 - Coverage: Setup pnpm, Setup Node, install dependencies, JSON mobile beta
   doctor, focused behavior tests, and Typecheck plus CI-safe builds
-- Newer local-only proof after this CI run: Privacy provider proof evidence
-  propagation passed focused provider/readiness tests `128/128`, the full
-  zero-dependency suite `594/594`, root TypeScript, direct JSON mobile beta
-  doctor source-backed checks, PixelLab `ok=149 missing=0 invalid=0`, and
-  `git diff --check`. Rerun branch CI after the new commit before treating
-  dependency proof as current.
 - Branch CI then proved implementation commit `61ed6fd` in `WoofWatcher Verify`
-  run `28844274663`, completed success in `3m17s`. Rerun branch CI after this
-  proof-record docs commit before treating dependency proof as current for the
-  final branch tip.
+  run `28844274663`, completed success in `3m17s`.
+- Branch CI then proved proof-record commit `a786f3f` in `WoofWatcher Verify`
+  run `28844518727`, completed success in `3m14s`.
+- Newer local-only proof after this CI run: Push notification proof evidence
+  propagation passed focused provider/reminder/readiness tests `124/124`, the
+  full zero-dependency suite `594/594`, root TypeScript, mobile TypeScript,
+  direct JSON mobile beta doctor source-backed checks including `push
+  notification proof evidence propagation is source-backed`, and PixelLab
+  `ok=149 missing=0 invalid=0`. Rerun branch CI after the new commit before
+  treating dependency proof as current.
 
 Latest known passing `main` CI after the Full Log search slice:
 

@@ -524,8 +524,11 @@ export default function CareTwinQaScreen() {
     [focusedQaTarget],
   );
   const pushNotificationsProofManifest = useMemo(
-    () => (focusedQaTarget?.surface.id === "push-notifications-proof" ? buildPushNotificationsProofManifest({}) : null),
-    [focusedQaTarget],
+    () =>
+      focusedQaTarget?.surface.id === "push-notifications-proof"
+        ? buildPushNotificationsProofManifest(state.launchProviderProfile.pushNotificationsProofEvidence)
+        : null,
+    [focusedQaTarget, state.launchProviderProfile.pushNotificationsProofEvidence],
   );
   const paymentsProviderProofManifest = useMemo(
     () => (focusedQaTarget?.surface.id === "payments-provider-proof" ? buildPaymentsProviderProofManifest({}) : null),

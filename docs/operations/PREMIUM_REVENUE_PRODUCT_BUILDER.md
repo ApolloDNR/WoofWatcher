@@ -3974,6 +3974,29 @@ run `28844274663`, completed success in `3m17s`; rerun branch CI after this
 proof-record docs commit before treating dependency proof as current for the
 final branch tip.
 
+Branch CI later proved the proof-record docs commit `a786f3f` in
+`WoofWatcher Verify` run `28844518727`, completed success in `3m14s` on
+`automation/premium-revenue-product-builder`.
+
+The push notification proof evidence propagation pass closes the matching
+Reminder Center and focused-helper stale path. `LaunchProviderProfile` now
+preserves saved `pushNotificationsProofEvidence`, CareContext persists that
+field, Calendar reads it through
+`buildReminderNotificationPreferencesForCenter`, and
+`/care-twin-qa?qaSurface=push-notifications-proof` feeds the saved evidence into
+`buildPushNotificationsProofManifest` instead of rendering an empty manifest.
+Fresh local verification passed focused provider/reminder/readiness tests
+`124/124`, the full zero-dependency API/mobile/PWA/care-domain suite `594/594`,
+root TypeScript, mobile TypeScript, direct JSON mobile beta doctor
+source-backed checks including `push notification proof evidence propagation is
+source-backed`, and PixelLab verifier `ok=149 missing=0 invalid=0`. Direct JSON
+mobile beta doctor remains truthfully `BLOCKED` only because local pnpm is
+`11.7.0` versus pinned `10.24.0` and Corepack is not on PATH. This still does
+not configure Expo push, APNs, Firebase/FCM, prove native delivery, approve
+store privacy disclosures, launch publicly, or replace Apollo sign-off. Rerun
+branch CI after this commit before treating dependency proof as current for the
+final branch tip.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

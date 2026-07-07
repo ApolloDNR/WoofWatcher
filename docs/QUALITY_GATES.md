@@ -1136,3 +1136,21 @@ Branch CI proved implementation commit `61ed6fd` in `WoofWatcher Verify` run
 `28844274663`, completed success in `3m17s`; rerun branch CI after this
 proof-record docs commit before treating dependency proof as current for the
 final branch tip.
+
+Current evidence, 2026-07-07: Reminder Center and the focused Push
+Notifications proof mission now consume saved Provider Launch Setup push proof
+evidence instead of losing it. `LaunchProviderProfile` preserves
+`pushNotificationsProofEvidence` through normalization and CareContext
+persistence, Calendar reads it through
+`buildReminderNotificationPreferencesForCenter`, and
+`/care-twin-qa?qaSurface=push-notifications-proof` feeds the saved evidence into
+`buildPushNotificationsProofManifest` instead of rendering an empty manifest.
+Local verification passed focused provider/reminder/readiness tests `124/124`,
+the full zero-dependency API/mobile/PWA/care-domain suite `594/594`, root
+TypeScript, mobile TypeScript, direct JSON mobile beta doctor source-backed
+checks including `push notification proof evidence propagation is
+source-backed`, and PixelLab asset verification `ok=149 missing=0 invalid=0`.
+Direct JSON mobile beta doctor remains truthfully blocked only by local pnpm
+`11.7.0` versus pinned `10.24.0` and missing Corepack. This does not configure
+Expo, APNs, Firebase/FCM, prove native delivery, satisfy store privacy review,
+launch publicly, or replace Apollo sign-off.

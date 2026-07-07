@@ -4693,6 +4693,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   const launchModel = readMobileLibFile("launchReadiness.ts");
   const providerSetup = readMobileLibFile("launchProviderSetup.ts");
   const providerSyncProof = readMobileLibFile("careEntryProviderSyncProof.ts");
+  const careTwinQaRoute = readAppFile("care-twin-qa.tsx");
   const careContext = readFileSync(
     join(
       process.cwd(),
@@ -4902,6 +4903,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(careContext, /storageProviderEvidence\?:\s*LaunchStorageProviderEvidence \| null/);
   assert.match(careContext, /aiProviderEvidence\?:\s*AiProviderProofEvidence \| null/);
   assert.match(careContext, /paymentsProviderEvidence\?:\s*PaymentsProviderProofManifestInput \| null/);
+  assert.match(careContext, /pushNotificationsProofEvidence\?:\s*PushNotificationsProofEvidence \| null/);
   assert.match(careContext, /accountDeletionEvidence\?:\s*AccountDeletionProofEvidence \| null/);
   assert.match(careContext, /authProviderProofReady:\s*boolean/);
   assert.match(careContext, /databaseProviderProofReady:\s*boolean/);
@@ -4924,10 +4926,17 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(providerSetup, /storageProviderEvidence:\s*profile\.storageProviderEvidence/);
   assert.match(providerSetup, /aiProviderEvidence\?:\s*AiProviderProofEvidence \| null/);
   assert.match(providerSetup, /paymentsProviderEvidence\?:\s*PaymentsProviderProofManifestInput \| null/);
+  assert.match(providerSetup, /pushNotificationsProofEvidence\?:\s*PushNotificationsProofEvidence \| null/);
   assert.match(providerSetup, /accountDeletionEvidence\?:\s*AccountDeletionProofEvidence \| null/);
   assert.match(providerSetup, /aiProviderEvidence:\s*normalizeAiProviderEvidence\(source\.aiProviderEvidence\)/);
   assert.match(providerSetup, /paymentsProviderEvidence:\s*normalizePaymentsProviderEvidence\(source\.paymentsProviderEvidence\)/);
+  assert.match(providerSetup, /pushNotificationsProofEvidence:\s*normalizePushNotificationsProofEvidence\(source\.pushNotificationsProofEvidence\)/);
   assert.match(providerSetup, /accountDeletionEvidence:\s*normalizeAccountDeletionEvidence\(source\.accountDeletionEvidence\)/);
+  assert.match(
+    careTwinQaRoute,
+    /buildPushNotificationsProofManifest\(state\.launchProviderProfile\.pushNotificationsProofEvidence\)/,
+  );
+  assert.doesNotMatch(careTwinQaRoute, /buildPushNotificationsProofManifest\(\{\}\)/);
   assert.match(providerSetup, /Provider Launch Setup/);
   assert.match(providerSetup, /LaunchProviderSetupRowStatus = "ready" \| "staged" \| "blocked"/);
   assert.match(providerSetup, /nextGate/);
@@ -6014,6 +6023,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "privacy provider proof evidence propagation is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "push notification proof evidence propagation is source-backed" &&
         check.status === "PASS",
     ),
   );

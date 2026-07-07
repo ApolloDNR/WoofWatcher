@@ -1121,6 +1121,30 @@ check(
     : "preserve and forward AI, payments, and account-deletion proof evidence from Provider Launch Setup into Privacy & Safety",
 );
 
+const pushNotificationsProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
+  "pushNotificationsProofEvidence?: PushNotificationsProofEvidence | null",
+  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
+])
+  && includesAll(launchProviderSetupSource, [
+    "pushNotificationsProofEvidence?: PushNotificationsProofEvidence | null",
+    "pushNotificationsProofEvidence: normalizePushNotificationsProofEvidence(source.pushNotificationsProofEvidence)",
+  ])
+  && includesAll(reminderNotificationPreferencesSource, [
+    "pushNotificationsProofEvidence?: PushNotificationsProofEvidence | null",
+    "buildPushNotificationsProofManifest(providerProfile?.pushNotificationsProofEvidence)",
+  ])
+  && includesAll(careTwinQaRouteSource, [
+    "buildPushNotificationsProofManifest(state.launchProviderProfile.pushNotificationsProofEvidence)",
+  ])
+  && !careTwinQaRouteSource.includes("buildPushNotificationsProofManifest({})");
+check(
+  "push notification proof evidence propagation is source-backed",
+  pushNotificationsProofEvidencePropagationIsSourceBacked,
+  pushNotificationsProofEvidencePropagationIsSourceBacked
+    ? "Reminder Center and the focused push proof mission consume saved APNs/FCM proof evidence from the durable Provider Launch Setup profile"
+    : "preserve and forward push notification proof evidence from Provider Launch Setup into Reminder Center and the focused QA mission",
+);
+
 const providerLaunchSetupProofGuardIsSourceBacked = includesAll(launchProviderSetupSource, [
   "authProviderProofReady",
   "databaseProviderProofReady",

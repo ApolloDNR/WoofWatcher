@@ -33,6 +33,7 @@ import {
 import {
   PUSH_NOTIFICATIONS_PROOF_ITEMS,
   PUSH_NOTIFICATIONS_PROOF_SUMMARY,
+  type PushNotificationsProofEvidence,
 } from "./pushNotificationsProof.ts";
 
 export type LaunchProviderSetupStatus = "local-draft" | "owner-reviewed" | "provider-approved";
@@ -90,6 +91,7 @@ export interface LaunchProviderProfile {
   paymentsProviderEvidence?: PaymentsProviderProofManifestInput | null;
   pushNotificationsConfigured: boolean;
   pushNotificationsProofReady: boolean;
+  pushNotificationsProofEvidence?: PushNotificationsProofEvidence | null;
   appStoreAccountsReady: boolean;
   storeAccountsProofReady: boolean;
   accountDeletionEnabled: boolean;
@@ -170,6 +172,7 @@ const DEFAULT_PROFILE: LaunchProviderProfile = {
   paymentsProviderEvidence: null,
   pushNotificationsConfigured: false,
   pushNotificationsProofReady: false,
+  pushNotificationsProofEvidence: null,
   appStoreAccountsReady: false,
   storeAccountsProofReady: false,
   accountDeletionEnabled: false,
@@ -213,6 +216,12 @@ function normalizeAccountDeletionEvidence(
   return value && typeof value === "object" && !Array.isArray(value) ? value : null;
 }
 
+function normalizePushNotificationsProofEvidence(
+  value: PushNotificationsProofEvidence | null | undefined,
+): PushNotificationsProofEvidence | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
 export function normalizeLaunchProviderProfile(input: LaunchProviderProfileInput): LaunchProviderProfile {
   const source = input ?? {};
   const ownerReviewedAt = cleanString(source.ownerReviewedAt);
@@ -232,6 +241,7 @@ export function normalizeLaunchProviderProfile(input: LaunchProviderProfileInput
     paymentsProviderEvidence: normalizePaymentsProviderEvidence(source.paymentsProviderEvidence),
     pushNotificationsConfigured: Boolean(source.pushNotificationsConfigured),
     pushNotificationsProofReady: Boolean(source.pushNotificationsProofReady),
+    pushNotificationsProofEvidence: normalizePushNotificationsProofEvidence(source.pushNotificationsProofEvidence),
     appStoreAccountsReady: Boolean(source.appStoreAccountsReady),
     storeAccountsProofReady: Boolean(source.storeAccountsProofReady),
     accountDeletionEnabled: Boolean(source.accountDeletionEnabled),
