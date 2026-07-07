@@ -2502,3 +2502,9 @@ Latest local evidence, 2026-07-07:
   support inbox ownership, privacy/terms approval, refund/subscription policy,
   veterinary-boundary approval, incident response ownership, public launch, and
   Apollo sign-off remain required.
+- Branch CI proved the implementation commit `cbaa5684` in `WoofWatcher Verify`
+  run `28885884154`, job `85685820048`, with Setup pnpm, Setup Node, Install
+  dependencies, Run mobile beta doctor, Run focused behavior tests, Typecheck
+  and CI-safe builds, post steps, and Complete job all passing. Rerun CI after
+  this proof-record docs commit before treating dependency proof as current for
+  the final branch tip.

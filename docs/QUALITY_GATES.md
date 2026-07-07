@@ -1214,4 +1214,8 @@ Windows CRLF warnings only. Direct JSON mobile beta doctor remains truthfully
 blocked only by local pnpm `11.7.0` versus pinned `10.24.0` and missing
 Corepack. This does not approve support operations, legal/privacy copy,
 refund/subscription policy, veterinary-boundary language, public launch, or
-Apollo sign-off.
+Apollo sign-off. Branch CI proved implementation commit `cbaa5684` in
+`WoofWatcher Verify` run `28885884154`, job `85685820048`, with install, JSON
+mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe builds
+all passing; rerun CI after this proof-record docs commit before treating
+dependency proof as current for the final branch tip.

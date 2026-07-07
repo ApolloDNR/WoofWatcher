@@ -335,8 +335,11 @@ Latest known passing automation-branch CI:
   `ok=149 missing=0 invalid=0`, and `git diff --check` with expected Windows
   CRLF warnings only; real legal/privacy approval, refund/subscription policy,
   support operations, public launch, and Apollo sign-off remain blocked. Rerun
-  branch CI after this commit before dependency-complete proof is current for
-  the final branch tip.
+  branch CI after this proof-record docs commit before dependency-complete proof
+  is current for the final branch tip. Branch CI proved the implementation
+  commit `cbaa5684` in `WoofWatcher Verify` run `28885884154`, job
+  `85685820048`, with install, JSON mobile beta doctor, focused behavior tests,
+  and Typecheck plus CI-safe builds all passing.
 
 Latest known passing `main` CI after the Full Log search slice:
 

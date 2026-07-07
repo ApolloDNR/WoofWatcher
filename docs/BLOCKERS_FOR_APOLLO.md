@@ -282,6 +282,9 @@
   local support/legal evidence propagation gap, but it does not approve legal or
   privacy copy, refund/subscription policy, support operations,
   veterinary-boundary language, public launch, or replace Apollo sign-off.
+- Branch CI proved implementation commit `cbaa5684` in `WoofWatcher Verify` run
+  `28885884154`; rerun branch CI after the proof-record docs commit before
+  treating dependency proof as current for the final branch tip.
 - The direct JSON mobile beta doctor remains locally blocked only by pnpm
   `11.7.0` versus pinned `10.24.0` and missing Corepack; branch CI should be
   rerun after the new commit before dependency proof is treated as current.
