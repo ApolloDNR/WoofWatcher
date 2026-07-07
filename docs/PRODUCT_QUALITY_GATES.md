@@ -289,13 +289,16 @@ Latest known passing automation-branch CI:
   run `28844274663`, completed success in `3m17s`.
 - Branch CI then proved proof-record commit `a786f3f` in `WoofWatcher Verify`
   run `28844518727`, completed success in `3m14s`.
-- Newer local-only proof after this CI run: Push notification proof evidence
+- Current branch CI proof: `WoofWatcher Verify` run `28852945785` passed on
+  commit `9d02eaa` in `3m16s` for the pushed Push notification proof evidence
+  propagation slice.
+- Push notification proof evidence
   propagation passed focused provider/reminder/readiness tests `124/124`, the
   full zero-dependency suite `594/594`, root TypeScript, mobile TypeScript,
   direct JSON mobile beta doctor source-backed checks including `push
   notification proof evidence propagation is source-backed`, and PixelLab
-  `ok=149 missing=0 invalid=0`. Rerun branch CI after the new commit before
-  treating dependency proof as current.
+  `ok=149 missing=0 invalid=0`. Dependency-complete branch proof is current for
+  commit `9d02eaa`.
 
 Latest known passing `main` CI after the Full Log search slice:
 

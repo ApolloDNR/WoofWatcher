@@ -2446,5 +2446,6 @@ Latest local evidence, 2026-07-07:
 - Direct JSON mobile beta doctor reports `push notification proof evidence
   propagation is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
   only because local pnpm is `11.7.0` versus pinned `10.24.0` and Corepack is
-  not on PATH. Rerun branch CI after the new push-proof propagation commit
-  before treating dependency proof as current for the branch tip.
+  not on PATH. Branch CI proved commit `9d02eaa` in `WoofWatcher Verify` run
+  `28852945785`, completed success in `3m16s` on
+  `automation/premium-revenue-product-builder`.

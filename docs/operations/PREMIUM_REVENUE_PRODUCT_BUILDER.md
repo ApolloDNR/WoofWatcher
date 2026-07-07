@@ -3993,9 +3993,9 @@ source-backed`, and PixelLab verifier `ok=149 missing=0 invalid=0`. Direct JSON
 mobile beta doctor remains truthfully `BLOCKED` only because local pnpm is
 `11.7.0` versus pinned `10.24.0` and Corepack is not on PATH. This still does
 not configure Expo push, APNs, Firebase/FCM, prove native delivery, approve
-store privacy disclosures, launch publicly, or replace Apollo sign-off. Rerun
-branch CI after this commit before treating dependency proof as current for the
-final branch tip.
+store privacy disclosures, launch publicly, or replace Apollo sign-off.
+Branch CI proved commit `9d02eaa` in `WoofWatcher Verify` run `28852945785`,
+completed success in `3m16s` on `automation/premium-revenue-product-builder`.
 
 Next highest-impact work:
 
