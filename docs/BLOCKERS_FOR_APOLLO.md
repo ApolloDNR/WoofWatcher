@@ -288,6 +288,9 @@
   not attach real Supabase project/migration/RLS/retention proof, approve mobile
   incremental sync, attach real OpenAI/model/source/write-gate/veterinary proof,
   enable live AI, launch publicly, or replace Apollo sign-off.
+- Branch CI proved implementation commit `f0b1a5b` in `WoofWatcher Verify` run
+  `28896885332`; rerun branch CI after the proof-record docs commit before
+  treating dependency proof as current for the final branch tip.
 - Branch CI proved implementation commit `cbaa5684` in `WoofWatcher Verify` run
   `28885884154`; rerun branch CI after the proof-record docs commit before
   treating dependency proof as current for the final branch tip.

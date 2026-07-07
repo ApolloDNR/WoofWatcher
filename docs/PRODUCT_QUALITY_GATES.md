@@ -350,6 +350,10 @@ Latest known passing automation-branch CI:
   PixelLab `ok=149 missing=0 invalid=0` passed. Real Supabase/RLS/migration
   proof, mobile incremental sign-off, OpenAI/model/source/write-gate/veterinary
   proof, live AI approval, public launch, and Apollo sign-off remain blocked.
+  Branch CI proved implementation commit `f0b1a5b` in `WoofWatcher Verify` run
+  `28896885332`, completed success in `3m4s`; rerun CI after this proof-record
+  docs commit before dependency-complete proof is current for the final branch
+  tip.
 
 Latest known passing `main` CI after the Full Log search slice:
 

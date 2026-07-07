@@ -2523,3 +2523,8 @@ Latest local evidence, 2026-07-07:
   `11.7.0` versus pinned `10.24.0` and Corepack is not on PATH. Rerun branch CI
   after this commit before treating dependency proof as current for the final
   branch tip.
+- Branch CI proved implementation commit `f0b1a5b` in `WoofWatcher Verify` run
+  `28896885332`, completed success in `3m4s` on
+  `automation/premium-revenue-product-builder`. Rerun CI after this proof-record
+  docs commit before treating dependency proof as current for the final branch
+  tip.

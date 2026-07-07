@@ -4080,6 +4080,12 @@ files, enable live AI, launch publicly, or replace Apollo sign-off. Rerun
 branch CI after this commit before dependency proof is current for the final
 branch tip.
 
+Branch CI proved focused provider proof mission propagation commit `f0b1a5b` in
+`WoofWatcher Verify` run `28896885332`, completed success in `3m4s` on
+`automation/premium-revenue-product-builder`. Rerun branch CI after the
+proof-record docs commit before treating dependency proof as current for the
+final branch tip.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.
