@@ -305,8 +305,10 @@ Latest known passing automation-branch CI:
   zero-dependency suite `594/594`, root TypeScript, mobile TypeScript, direct
   JSON mobile beta doctor source-backed checks including `store accounts proof
   evidence propagation is source-backed`, and PixelLab `ok=149 missing=0
-  invalid=0`. Branch CI still needs a rerun after this commit before
-  dependency-complete proof is current for the final branch tip.
+  invalid=0`. Branch CI proved implementation commit `b5286de` in
+  `WoofWatcher Verify` run `28863131822`, completed success in `3m6s`. Rerun CI
+  after this proof-record docs commit before dependency-complete proof is
+  current for the final branch tip.
 
 Latest known passing `main` CI after the Full Log search slice:
 

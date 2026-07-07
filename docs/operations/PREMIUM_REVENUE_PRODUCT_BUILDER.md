@@ -4012,8 +4012,10 @@ truthfully `BLOCKED` only because local pnpm is `11.7.0` versus pinned
 `10.24.0` and Corepack is not on PATH. This still does not create Apple or
 Google store accounts, approve reviewer access, attach real metadata/privacy
 proof, allow App Review or Play review submission, launch publicly, or replace
-Apollo sign-off. Rerun branch CI after this commit before treating dependency
-proof as current for the final branch tip.
+Apollo sign-off. Branch CI proved implementation commit `b5286de` in
+`WoofWatcher Verify` run `28863131822`, completed success in `3m6s`; rerun
+branch CI after this proof-record docs commit before treating dependency proof
+as current for the final branch tip.
 
 Next highest-impact work:
 

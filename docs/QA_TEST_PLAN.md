@@ -2461,5 +2461,8 @@ Latest local evidence, 2026-07-07:
 - Direct JSON mobile beta doctor reports `store accounts proof evidence
   propagation is source-backed` as `PASS`, while remaining truthfully `BLOCKED`
   only because local pnpm is `11.7.0` versus pinned `10.24.0` and Corepack is
-  not on PATH. Branch CI still needs a rerun after this commit before dependency
-  proof is current for the final branch tip.
+  not on PATH. Branch CI proved implementation commit `b5286de` in
+  `WoofWatcher Verify` run `28863131822`, completed success in `3m6s` on
+  `automation/premium-revenue-product-builder`. Rerun CI after this proof-record
+  docs commit before treating dependency proof as current for the final branch
+  tip.

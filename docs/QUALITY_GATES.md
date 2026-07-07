@@ -1170,3 +1170,7 @@ remains truthfully blocked only by local pnpm `11.7.0` versus pinned `10.24.0`
 and missing Corepack. This does not create Apple or Google store accounts,
 approve reviewer access, attach real metadata/privacy-label proof, allow App
 Review or Play review submission, launch publicly, or replace Apollo sign-off.
+Branch CI proved implementation commit `b5286de` in `WoofWatcher Verify` run
+`28863131822`, completed success in `3m6s`; rerun CI after this proof-record
+docs commit before treating dependency proof as current for the final branch
+tip.
