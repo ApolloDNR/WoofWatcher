@@ -801,7 +801,7 @@ export default function HomeScreen() {
     {
       label: "Happiness",
       value: status.meta.label,
-      icon: moodIcon,
+      icon: "happy" as PixelIconName,
       tone: colors.amber,
       target: "mood" as StatusTileTarget,
       actionLabel: "Open mood details",

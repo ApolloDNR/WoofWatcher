@@ -838,29 +838,31 @@ export function LivingPhoenixRoom({
       ))}
 
       <View style={styles.topHud} pointerEvents="none">
-        <View
-          style={[
-            styles.liveChip,
-            {
-              backgroundColor: "rgba(8, 26, 42, 0.88)",
-              borderColor: "rgba(255,249,239,0.22)",
-            },
-          ]}
-        >
-          <Animated.View
+        {transparentScene ? null : (
+          <View
             style={[
-              styles.liveDot,
-              { backgroundColor: hudAccent },
-              activeZoneStyle,
+              styles.liveChip,
+              {
+                backgroundColor: "rgba(8, 26, 42, 0.88)",
+                borderColor: "rgba(255,249,239,0.22)",
+              },
             ]}
-          />
-          <View style={styles.liveCopy}>
-            <Text style={styles.liveText}>{roomLiveTitle}</Text>
-            <Text numberOfLines={1} style={styles.liveSubText}>
-              {roomLiveDetail}
-            </Text>
+          >
+            <Animated.View
+              style={[
+                styles.liveDot,
+                { backgroundColor: hudAccent },
+                activeZoneStyle,
+              ]}
+            />
+            <View style={styles.liveCopy}>
+              <Text style={styles.liveText}>{roomLiveTitle}</Text>
+              <Text numberOfLines={1} style={styles.liveSubText}>
+                {roomLiveDetail}
+              </Text>
+            </View>
           </View>
-        </View>
+        )}
         {!isStudio && !compactChrome ? (
           <Animated.View
             style={[
