@@ -366,8 +366,9 @@ Latest known passing automation-branch CI:
   direct JSON mobile beta doctor source-backed checks, PixelLab `ok=149 missing=0
   invalid=0`, and `git diff --check` with expected Windows CRLF warnings only.
   Direct JSON mobile beta doctor remains blocked only by local pnpm `11.7.0`
-  versus pinned `10.24.0` and missing Corepack; rerun branch CI after this
-  commit before dependency-complete proof is current for the final branch tip.
+  versus pinned `10.24.0` and missing Corepack. Branch CI proved implementation
+  commit `721ebe69` in `WoofWatcher Verify` run `28906351424`, completed success
+  in about `3m04s`.
 
 Latest known passing `main` CI after the Full Log search slice:
 

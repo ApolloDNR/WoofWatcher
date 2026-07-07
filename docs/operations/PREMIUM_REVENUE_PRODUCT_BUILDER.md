@@ -4102,8 +4102,8 @@ JSON mobile beta doctor remains truthfully `BLOCKED` only because local pnpm is
 `11.7.0` versus pinned `10.24.0` and Corepack is not on PATH. This still does
 not approve product ids, billing path, sandbox receipts, restore purchases,
 refund/support policy, checkout, money movement, public launch, or Apollo
-sign-off. Rerun branch CI after this commit before treating dependency proof as
-current for the final branch tip.
+sign-off. Branch CI proved implementation commit `721ebe69` in `WoofWatcher
+Verify` run `28906351424`, completed success in about `3m04s`.
 
 Next highest-impact work:
 

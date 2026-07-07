@@ -1259,5 +1259,5 @@ versus pinned `10.24.0` and missing Corepack; PixelLab asset verification passed
 `ok=149 missing=0 invalid=0`; and `git diff --check` passed with expected
 Windows CRLF warnings only. This does not approve paid tiers, configure store
 billing, prove receipts/restores, enable checkout, move money, launch publicly,
-or replace Apollo sign-off. Branch CI must be rerun after this commit before
-dependency-complete proof is current for the final branch tip.
+or replace Apollo sign-off. Branch CI proved implementation commit `721ebe69`
+in `WoofWatcher Verify` run `28906351424`, completed success in about `3m04s`.

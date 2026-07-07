@@ -294,8 +294,9 @@
   not approve paid tiers, configure App Store or Google Play billing, prove
   receipts/restores, approve refund/support policy, enable checkout, move money,
   launch publicly, or replace Apollo sign-off.
-- Branch CI must be rerun after this payments proof evidence propagation commit
-  before dependency-complete proof is current for the final branch tip.
+- Branch CI proved the payments proof evidence propagation commit `721ebe69` in
+  `WoofWatcher Verify` run `28906351424`; dependency-complete proof is current
+  for that implementation commit.
 - Branch CI proved implementation commit `f0b1a5b` in `WoofWatcher Verify` run
   `28896885332`; rerun branch CI after the proof-record docs commit before
   treating dependency proof as current for the final branch tip.
