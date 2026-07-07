@@ -4017,6 +4017,23 @@ Apollo sign-off. Branch CI proved implementation commit `b5286de` in
 branch CI after this proof-record docs commit before treating dependency proof
 as current for the final branch tip.
 
+The Account Deletion proof evidence propagation pass closes the matching
+focused helper stale path for destructive-deletion readiness. The focused
+`/care-twin-qa?qaSurface=account-deletion-proof` mission now feeds saved
+`state.launchProviderProfile.accountDeletionEvidence` into
+`buildAccountDeletionProofManifest` instead of rendering an empty manifest.
+Fresh red/green verification first failed on the hardcoded empty focused
+manifest, then mobile readiness passed `114/114`, the full zero-dependency
+API/mobile/PWA/care-domain suite passed `594/594`, root TypeScript and mobile
+TypeScript passed, direct JSON mobile beta doctor source-backed checks passed
+including `account deletion proof evidence propagation is source-backed`,
+PixelLab verifier passed `ok=149 missing=0 invalid=0`, and `git diff --check`
+passed with expected Windows CRLF warnings only. Direct JSON mobile beta doctor
+remains truthfully `BLOCKED` only because local pnpm is `11.7.0` versus pinned
+`10.24.0` and Corepack is not on PATH. This still does not enable destructive
+deletion, delete provider data or storage objects, provide deletion receipts,
+approve legal/store policy, launch publicly, or replace Apollo sign-off.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

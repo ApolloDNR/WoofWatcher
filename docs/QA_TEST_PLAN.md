@@ -2466,3 +2466,17 @@ Latest local evidence, 2026-07-07:
   `automation/premium-revenue-product-builder`. Rerun CI after this proof-record
   docs commit before treating dependency proof as current for the final branch
   tip.
+- The focused Account Deletion proof mission now consumes saved Provider Launch
+  Setup `accountDeletionEvidence`. The focused helper route feeds that saved
+  deletion/legal proof evidence into `buildAccountDeletionProofManifest` instead
+  of rendering an empty manifest.
+- Red/green verification first failed on the hardcoded empty focused manifest,
+  then mobile readiness passed `114/114`, the full zero-dependency
+  API/mobile/PWA/care-domain suite passed `594/594`, root TypeScript and mobile
+  TypeScript passed, PixelLab verifier passed `ok=149 missing=0 invalid=0`, and
+  `git diff --check` passed with expected Windows CRLF warnings only. Direct
+  JSON mobile beta doctor reports `account deletion proof evidence propagation
+  is source-backed` as `PASS`, while remaining truthfully `BLOCKED` only because
+  local pnpm is `11.7.0` versus pinned `10.24.0` and Corepack is not on PATH.
+  Real destructive deletion, provider data/object deletion receipts, legal/store
+  approval, public launch, and Apollo sign-off remain required.

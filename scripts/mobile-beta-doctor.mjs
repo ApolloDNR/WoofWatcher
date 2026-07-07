@@ -1165,6 +1165,26 @@ check(
     : "preserve and forward Store Accounts proof evidence from Provider Launch Setup into the focused QA mission",
 );
 
+const accountDeletionProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
+  "accountDeletionEvidence?: AccountDeletionProofEvidence | null",
+  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
+])
+  && includesAll(launchProviderSetupSource, [
+    "accountDeletionEvidence?: AccountDeletionProofEvidence | null",
+    "accountDeletionEvidence: normalizeAccountDeletionEvidence(source.accountDeletionEvidence)",
+  ])
+  && includesAll(careTwinQaRouteSource, [
+    "buildAccountDeletionProofManifest(state.launchProviderProfile.accountDeletionEvidence)",
+  ])
+  && !careTwinQaRouteSource.includes("buildAccountDeletionProofManifest({})");
+check(
+  "account deletion proof evidence propagation is source-backed",
+  accountDeletionProofEvidencePropagationIsSourceBacked,
+  accountDeletionProofEvidencePropagationIsSourceBacked
+    ? "Focused Account Deletion proof mission consumes saved deletion/legal proof evidence from the durable Provider Launch Setup profile"
+    : "preserve and forward Account Deletion proof evidence from Provider Launch Setup into the focused QA mission",
+);
+
 const providerLaunchSetupProofGuardIsSourceBacked = includesAll(launchProviderSetupSource, [
   "authProviderProofReady",
   "databaseProviderProofReady",

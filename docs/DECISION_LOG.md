@@ -2239,6 +2239,36 @@ Revisit trigger: WoofWatcher gains a provider-backed proof evidence service,
 in-app proof attachment editing, or Apollo attaches real Apple/Google store
 account proof files that should be validated from saved app state.
 
+### 2026-07-07: Account Deletion Proof Evidence Must Reach Deletion QA
+
+Decision: Saved Provider Launch Setup account-deletion proof evidence should
+survive care-document normalization and feed the focused Account Deletion proof
+mission.
+
+Reason: The Account Deletion proof manifest already requires structured
+deletion-route/auth, export-before-delete, data/object deletion receipt,
+audit/support, recovery/cancellation, legal/store, and Apollo approval proof
+files. Without forwarding the saved evidence object, real imported or saved
+proof could not reach `/care-twin-qa?qaSurface=account-deletion-proof`, and the
+helper route rendered an empty manifest even when proof was available.
+
+Consequences:
+
+- `LaunchProviderProfile` preserves `accountDeletionEvidence`.
+- CareContext keeps that field when saved or imported care documents merge.
+- The focused Account Deletion proof route feeds saved evidence into
+  `buildAccountDeletionProofManifest`.
+- Raw configured/provider-approved account-deletion booleans still cannot prove
+  destructive deletion readiness, provider data deletion, legal/store approval,
+  public launch, or Apollo sign-off.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains a provider-backed proof evidence service,
+in-app proof attachment editing, or Apollo attaches real account-deletion,
+legal, store, and provider deletion proof files that should be validated from
+saved app state.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

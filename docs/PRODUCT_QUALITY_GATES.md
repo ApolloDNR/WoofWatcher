@@ -309,6 +309,18 @@ Latest known passing automation-branch CI:
   `WoofWatcher Verify` run `28863131822`, completed success in `3m6s`. Rerun CI
   after this proof-record docs commit before dependency-complete proof is
   current for the final branch tip.
+- Account Deletion proof evidence propagation now keeps saved deletion/legal
+  proof evidence visible to the focused Account Deletion QA mission.
+  `/care-twin-qa?qaSurface=account-deletion-proof` feeds
+  `state.launchProviderProfile.accountDeletionEvidence` into the structured
+  proof manifest instead of rendering an empty manifest. Local red/green proof
+  passed mobile readiness `114/114`, the full zero-dependency suite `594/594`,
+  root TypeScript, mobile TypeScript, direct JSON mobile beta doctor
+  source-backed checks including `account deletion proof evidence propagation is
+  source-backed`, PixelLab `ok=149 missing=0 invalid=0`, and `git diff --check`
+  with expected Windows CRLF warnings only; real destructive deletion, provider
+  data deletion, legal/store approval, public launch, and Apollo sign-off remain
+  blocked.
 
 Latest known passing `main` CI after the Full Log search slice:
 

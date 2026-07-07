@@ -271,6 +271,12 @@
   or Google store accounts, approve reviewer access, attach real
   metadata/privacy-label proof, allow App Review or Play review submission,
   launch publicly, or replace Apollo sign-off.
+- 2026-07-07: The focused Account Deletion proof mission now preserves and
+  consumes saved Provider Launch Setup deletion/legal proof evidence. This
+  removes a local Account Deletion evidence propagation gap, but it does not
+  enable destructive deletion, delete provider data or storage objects, provide
+  deletion receipts, approve legal/store policy, launch publicly, or replace
+  Apollo sign-off.
 - The direct JSON mobile beta doctor remains locally blocked only by pnpm
   `11.7.0` versus pinned `10.24.0` and missing Corepack; branch CI should be
   rerun after the new commit before dependency proof is treated as current.

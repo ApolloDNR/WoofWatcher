@@ -4945,6 +4945,11 @@ test("keeps More household, tools, and diet sections on shared board card anatom
     /buildStoreAccountsProofManifest\(state\.launchProviderProfile\.storeAccountsProofEvidence\)/,
   );
   assert.doesNotMatch(careTwinQaRoute, /buildStoreAccountsProofManifest\(\{\}\)/);
+  assert.match(
+    careTwinQaRoute,
+    /buildAccountDeletionProofManifest\(state\.launchProviderProfile\.accountDeletionEvidence\)/,
+  );
+  assert.doesNotMatch(careTwinQaRoute, /buildAccountDeletionProofManifest\(\{\}\)/);
   assert.match(providerSetup, /Provider Launch Setup/);
   assert.match(providerSetup, /LaunchProviderSetupRowStatus = "ready" \| "staged" \| "blocked"/);
   assert.match(providerSetup, /nextGate/);

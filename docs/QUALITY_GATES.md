@@ -1174,3 +1174,20 @@ Branch CI proved implementation commit `b5286de` in `WoofWatcher Verify` run
 `28863131822`, completed success in `3m6s`; rerun CI after this proof-record
 docs commit before treating dependency proof as current for the final branch
 tip.
+
+Current evidence, 2026-07-07: The focused Account Deletion proof mission now
+consumes saved Provider Launch Setup deletion/legal proof evidence instead of
+rendering an empty manifest. `/care-twin-qa?qaSurface=account-deletion-proof`
+feeds `state.launchProviderProfile.accountDeletionEvidence` into
+`buildAccountDeletionProofManifest`, so valid saved structured proof can reach
+the focused helper route. Local red/green verification first failed on the
+hardcoded empty focused manifest, then passed mobile readiness `114/114` and
+direct JSON mobile beta doctor source-backed checks including `account deletion
+proof evidence propagation is source-backed`; the full zero-dependency
+API/mobile/PWA/care-domain suite passed `594/594`, root TypeScript and mobile
+TypeScript passed, PixelLab asset verification passed `ok=149 missing=0
+invalid=0`, and `git diff --check` passed with expected Windows CRLF warnings
+only. Direct JSON mobile beta doctor remains truthfully blocked only by local
+pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack. This does not enable
+destructive deletion, delete provider data or storage objects, approve
+legal/store policy, launch publicly, or replace Apollo sign-off.
