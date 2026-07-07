@@ -277,7 +277,16 @@ Current gaps:
 
 ## Current CI Baseline
 
-Latest known passing CI after the Full Log search slice:
+Latest known passing automation-branch CI:
+
+- Workflow: `WoofWatcher Verify`
+- Branch: `automation/premium-revenue-product-builder`
+- Evidence: run `28836909561`, job `85522525710`, completed success on
+  2026-07-07 UTC for commit `d21f44e`
+- Coverage: Setup pnpm, Setup Node, install dependencies, JSON mobile beta
+  doctor, focused behavior tests, and Typecheck plus CI-safe builds
+
+Latest known passing `main` CI after the Full Log search slice:
 
 - Workflow: `WoofWatcher Verify`
 - Branch: `main`

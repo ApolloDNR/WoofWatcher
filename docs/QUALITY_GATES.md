@@ -1103,3 +1103,16 @@ behavior/readiness suite, PixelLab asset verification at 149 files, and
 `git diff --check` with expected Windows line-ending warnings only. Direct JSON
 doctor output remains truthfully blocked on missing pnpm and missing mobile
 Expo dependency resolution.
+
+Current evidence, 2026-07-06: The automation branch has fresh dependency-complete
+CI proof again. `WoofWatcher Verify` run `28836909561`, job `85522525710`,
+passed on commit `d21f44e`; Setup pnpm, Setup Node, install dependencies, JSON
+mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe builds all
+completed successfully. Local proof-refresh verification passed beta handoff plus
+mobile readiness `117/117`, the full zero-dependency API/mobile/PWA/care-domain
+suite `594/594`, root TypeScript, mobile TypeScript, PixelLab asset verification
+`ok=149 missing=0 invalid=0`, and `git diff --check`. Direct JSON mobile beta
+doctor remains truthfully blocked only by local pnpm `11.7.0` versus pinned
+`10.24.0` and missing Corepack. This clears current branch dependency proof only;
+native iOS/Android evidence, provider proof files, store approval, public launch,
+and Apollo sign-off remain open.

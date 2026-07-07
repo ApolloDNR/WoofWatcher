@@ -2387,3 +2387,22 @@ Latest local evidence, 2026-07-04:
 - This manifest does not approve legal or privacy copy, refund/subscription
   policy, support operations, veterinary-boundary language, App Store or Play
   Store review, public launch, or replace Apollo sign-off.
+
+## Latest Automation Branch CI Proof
+
+Latest evidence, 2026-07-06:
+
+- GitHub Actions `WoofWatcher Verify` run `28836909561`, job `85522525710`,
+  passed on `automation/premium-revenue-product-builder` commit `d21f44e`;
+  Setup pnpm, Setup Node, install dependencies, JSON mobile beta doctor,
+  focused behavior tests, and Typecheck plus CI-safe builds all completed
+  successfully.
+- Local proof-refresh verification passed beta handoff plus mobile readiness
+  `117/117`, the full zero-dependency API/mobile/PWA/care-domain suite
+  `594/594`, root TypeScript, mobile TypeScript, PixelLab verifier
+  `ok=149 missing=0 invalid=0`, and `git diff --check`.
+- Direct JSON mobile beta doctor remains truthfully `BLOCKED` only because
+  local pnpm is `11.7.0` versus pinned `10.24.0` and Corepack is not on PATH.
+- This updates dependency-complete branch proof only; it does not clear native
+  iOS/Android proof, provider proof files, store review, public launch, or
+  Apollo sign-off.

@@ -3936,6 +3936,22 @@ zero-dependency API/mobile/PWA/care-domain suite passed `594/594`, and direct
 JSON mobile beta doctor source-backed checks passed while remaining truthfully
 `BLOCKED` on local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack.
 
+The branch-CI proof refresh closes the pending dependency-proof gap for the
+current automation tip. GitHub Actions `WoofWatcher Verify` run `28836909561`,
+job `85522525710`, passed on commit `d21f44e` with Setup pnpm, Setup Node,
+install dependencies, JSON mobile beta doctor, focused behavior tests, and
+Typecheck plus CI-safe builds all green. Share Beta Handoff now records that
+proof and names the durable launch proof persistence, storage-provider evidence
+propagation, More launch queue storage proof propagation, and Store Screenshot
+QA proof input propagation coverage. Local verification for the proof refresh
+passed beta handoff plus mobile readiness `117/117`, the full zero-dependency
+API/mobile/PWA/care-domain suite `594/594`, root TypeScript, mobile TypeScript,
+PixelLab verifier `ok=149 missing=0 invalid=0`, and `git diff --check`. Direct
+JSON mobile beta doctor remains truthfully `BLOCKED` only because local pnpm is
+`11.7.0` versus pinned `10.24.0` and Corepack is not on PATH. The recorded live
+preview proof remains historical and web-preview-only until a dependency-complete
+helper reruns `proof:live-preview` and `preview:smoke`.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

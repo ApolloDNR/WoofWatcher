@@ -2125,6 +2125,35 @@ Owner: Codex.
 
 Revisit trigger: WoofWatcher gains a provider-backed proof evidence service or Store Screenshot QA starts editing or attaching proof directly.
 
+### 2026-07-06: Share Beta Handoff Records Current Branch CI Proof
+
+Decision: Share Beta Handoff should record `WoofWatcher Verify` run `28836909561`
+for commit `d21f44e` as the current dependency-complete automation-branch proof,
+while leaving the recorded live-preview proof historical until a dependency-
+complete helper reruns `proof:live-preview` and `preview:smoke`.
+
+Reason: The automation branch accumulated multiple proof-propagation commits
+after the last recorded green CI. Reusing older run `28705671803` would understate
+the current dependency-proof boundary and keep docs saying later commits were
+unproven even after GitHub accepted and passed a fresh workflow dispatch.
+
+Consequences:
+
+- Share Beta Handoff names run `28836909561`, job `85522525710`, commit
+  `d21f44e`, and coverage for durable launch proof persistence, storage-provider
+  evidence propagation, More launch queue storage proof propagation, and Store
+  Screenshot QA proof input propagation.
+- The rerun-after-new-commit boundary remains explicit.
+- The live-preview proof still stays web-preview-only and historical until
+  regenerated from a dependency-complete helper environment.
+- Native iOS/Android proof, provider proof files, store approval, public launch,
+  and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: A new automation commit lands, or a helper environment produces
+fresh `proof:live-preview` and foreground `preview:smoke` output.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
