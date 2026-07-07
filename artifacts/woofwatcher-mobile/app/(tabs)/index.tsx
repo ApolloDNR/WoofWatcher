@@ -119,7 +119,14 @@ const todayMetricRouteType: Record<TodayMetricTarget, CareEventType> = {
 
 // Full-screen immersive room: the living sprite layer floats over this
 // backdrop so the whole Home reads like a scene viewed through a camera.
-const HOME_IMMERSIVE_ROOM = require("@/assets/avatar/rooms/phoenix-room-immersive-tall.png");
+// The room follows the household's real clock - lamplit night after 8 PM,
+// daylight from 6 AM - so the world feels alive without faking anything.
+const HOME_IMMERSIVE_ROOM_DAY = require("@/assets/avatar/rooms/phoenix-room-immersive-tall.png");
+const HOME_IMMERSIVE_ROOM_NIGHT = require("@/assets/avatar/rooms/phoenix-room-immersive-tall-night.png");
+
+export function homeImmersiveRoomIsNight(hour: number): boolean {
+  return hour >= 20 || hour < 6;
+}
 
 const HOME_QUICK_LOG: QuickItem[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
@@ -1250,7 +1257,11 @@ export default function HomeScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <Image
-        source={HOME_IMMERSIVE_ROOM}
+        source={
+          homeImmersiveRoomIsNight(new Date(now).getHours())
+            ? HOME_IMMERSIVE_ROOM_NIGHT
+            : HOME_IMMERSIVE_ROOM_DAY
+        }
         resizeMode="cover"
         style={StyleSheet.absoluteFill}
         fadeDuration={0}
