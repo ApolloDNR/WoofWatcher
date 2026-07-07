@@ -282,6 +282,12 @@
   local support/legal evidence propagation gap, but it does not approve legal or
   privacy copy, refund/subscription policy, support operations,
   veterinary-boundary language, public launch, or replace Apollo sign-off.
+- 2026-07-07: The focused Care-entry Provider Sync and WoofGuide AI proof
+  missions now consume saved Provider Launch Setup proof evidence instead of
+  empty manifests. This removes local evidence propagation gaps, but it does
+  not attach real Supabase project/migration/RLS/retention proof, approve mobile
+  incremental sync, attach real OpenAI/model/source/write-gate/veterinary proof,
+  enable live AI, launch publicly, or replace Apollo sign-off.
 - Branch CI proved implementation commit `cbaa5684` in `WoofWatcher Verify` run
   `28885884154`; rerun branch CI after the proof-record docs commit before
   treating dependency proof as current for the final branch tip.

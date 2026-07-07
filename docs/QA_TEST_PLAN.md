@@ -2508,3 +2508,18 @@ Latest local evidence, 2026-07-07:
   and CI-safe builds, post steps, and Complete job all passing. Rerun CI after
   this proof-record docs commit before treating dependency proof as current for
   the final branch tip.
+- The focused Care-entry Provider Sync and WoofGuide AI proof missions now
+  consume saved Provider Launch Setup proof evidence instead of empty manifests.
+  `LaunchProviderProfile` preserves `careEntryProviderSyncEvidence`, CareContext
+  persists it, `/care-twin-qa?qaSurface=care-entry-provider-sync-proof` feeds it
+  into `deriveCareEntryProviderSyncProof`, and
+  `/care-twin-qa?qaSurface=woofguide-ai-provider-proof` feeds saved
+  `aiProviderEvidence` into `buildAiProviderProofManifest`.
+- Focused provider/readiness proof tests passed `127/127`; the full
+  zero-dependency API/mobile/PWA/care-domain suite passed `594/594`; root
+  TypeScript, mobile TypeScript, direct JSON mobile beta doctor source-backed
+  checks, and PixelLab verifier `ok=149 missing=0 invalid=0` passed. Direct JSON
+  mobile beta doctor remains truthfully `BLOCKED` only because local pnpm is
+  `11.7.0` versus pinned `10.24.0` and Corepack is not on PATH. Rerun branch CI
+  after this commit before treating dependency proof as current for the final
+  branch tip.

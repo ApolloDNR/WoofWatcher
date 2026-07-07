@@ -2300,6 +2300,35 @@ in-app proof attachment editing, or Apollo attaches real support/legal/refund,
 veterinary-boundary, incident-response, and launch approval proof files that
 should be validated from saved app state.
 
+### 2026-07-07: Focused Provider Proof Missions Must Use Saved Evidence
+
+Decision: Focused Care-entry Provider Sync and WoofGuide AI proof missions
+should consume saved Provider Launch Setup evidence instead of rendering empty
+manifests.
+
+Reason: The proof manifests already require structured Supabase/RLS/migration
+and OpenAI/model/source/write-gate/veterinary/fallback proof files. If the
+focused helper routes ignore saved evidence, real imported or saved proof cannot
+reach the QA mission that Apollo, Fable, Replit, or a helper would use to review
+the provider gate.
+
+Consequences:
+
+- `LaunchProviderProfile` preserves `careEntryProviderSyncEvidence`.
+- CareContext keeps that field when saved or imported care documents merge.
+- `/care-twin-qa?qaSurface=care-entry-provider-sync-proof` feeds saved evidence
+  into `deriveCareEntryProviderSyncProof`.
+- `/care-twin-qa?qaSurface=woofguide-ai-provider-proof` feeds saved
+  `aiProviderEvidence` into `buildAiProviderProofManifest`.
+- Raw provider setup booleans still cannot prove incremental sync or live AI
+  readiness without complete structured proof files and Apollo sign-off.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains an in-app proof attachment editor or Apollo
+attaches real Supabase/RLS/migration or OpenAI/model/safety proof files that
+should be validated from saved app state.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

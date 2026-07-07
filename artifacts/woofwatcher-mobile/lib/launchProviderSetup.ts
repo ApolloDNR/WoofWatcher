@@ -2,6 +2,7 @@ import type { LaunchReadinessProviderInput } from "./launchReadiness.ts";
 import {
   CARE_ENTRY_PROVIDER_SYNC_PROOF_ITEMS,
   CARE_ENTRY_PROVIDER_SYNC_PROOF_SUMMARY,
+  type CareEntryProviderSyncProofEvidence,
 } from "./careEntryProviderSyncProof.ts";
 import {
   AUTH_PROVIDER_PROOF_ITEMS,
@@ -81,6 +82,7 @@ export interface LaunchProviderProfile {
   authProviderProofReady: boolean;
   databaseConfigured: boolean;
   databaseProviderProofReady: boolean;
+  careEntryProviderSyncEvidence?: CareEntryProviderSyncProofEvidence | null;
   storageProviderConfigured: boolean;
   storageProviderProofReady: boolean;
   storageProviderEvidence?: LaunchStorageProviderEvidence | null;
@@ -163,6 +165,7 @@ const DEFAULT_PROFILE: LaunchProviderProfile = {
   authProviderProofReady: false,
   databaseConfigured: false,
   databaseProviderProofReady: false,
+  careEntryProviderSyncEvidence: null,
   storageProviderConfigured: false,
   storageProviderProofReady: false,
   storageProviderEvidence: null,
@@ -198,6 +201,12 @@ function cleanStatus(value: unknown): LaunchProviderSetupStatus {
 function normalizeStorageProviderEvidence(
   value: LaunchStorageProviderEvidence | null | undefined,
 ): LaunchStorageProviderEvidence | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
+function normalizeCareEntryProviderSyncEvidence(
+  value: CareEntryProviderSyncProofEvidence | null | undefined,
+): CareEntryProviderSyncProofEvidence | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value : null;
 }
 
@@ -239,6 +248,7 @@ export function normalizeLaunchProviderProfile(input: LaunchProviderProfileInput
     authProviderProofReady: Boolean(source.authProviderProofReady),
     databaseConfigured: Boolean(source.databaseConfigured),
     databaseProviderProofReady: Boolean(source.databaseProviderProofReady),
+    careEntryProviderSyncEvidence: normalizeCareEntryProviderSyncEvidence(source.careEntryProviderSyncEvidence),
     storageProviderConfigured: Boolean(source.storageProviderConfigured),
     storageProviderProofReady: Boolean(source.storageProviderProofReady),
     storageProviderEvidence: normalizeStorageProviderEvidence(source.storageProviderEvidence),

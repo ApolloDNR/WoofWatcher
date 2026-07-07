@@ -516,12 +516,18 @@ export default function CareTwinQaScreen() {
     [focusedQaEvidence, focusedQaTarget, surfaceNotes],
   );
   const careEntryProviderSyncProofManifest = useMemo(
-    () => (focusedQaTarget?.surface.id === "care-entry-provider-sync-proof" ? deriveCareEntryProviderSyncProof({}) : null),
-    [focusedQaTarget],
+    () =>
+      focusedQaTarget?.surface.id === "care-entry-provider-sync-proof"
+        ? deriveCareEntryProviderSyncProof(state.launchProviderProfile.careEntryProviderSyncEvidence)
+        : null,
+    [focusedQaTarget, state.launchProviderProfile.careEntryProviderSyncEvidence],
   );
   const woofGuideAiProviderProofManifest = useMemo(
-    () => (focusedQaTarget?.surface.id === "woofguide-ai-provider-proof" ? buildAiProviderProofManifest({}) : null),
-    [focusedQaTarget],
+    () =>
+      focusedQaTarget?.surface.id === "woofguide-ai-provider-proof"
+        ? buildAiProviderProofManifest(state.launchProviderProfile.aiProviderEvidence)
+        : null,
+    [focusedQaTarget, state.launchProviderProfile.aiProviderEvidence],
   );
   const pushNotificationsProofManifest = useMemo(
     () =>

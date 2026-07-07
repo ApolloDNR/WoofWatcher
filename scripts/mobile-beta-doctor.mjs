@@ -1095,12 +1095,15 @@ check(
 );
 
 const privacyProviderProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
+  "careEntryProviderSyncEvidence?: CareEntryProviderSyncProofEvidence | null",
   "aiProviderEvidence?: AiProviderProofEvidence | null",
   "paymentsProviderEvidence?: PaymentsProviderProofManifestInput | null",
   "accountDeletionEvidence?: AccountDeletionProofEvidence | null",
   "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
 ])
   && includesAll(launchProviderSetupSource, [
+    "careEntryProviderSyncEvidence?: CareEntryProviderSyncProofEvidence | null",
+    "careEntryProviderSyncEvidence: normalizeCareEntryProviderSyncEvidence(source.careEntryProviderSyncEvidence)",
     "aiProviderEvidence?: AiProviderProofEvidence | null",
     "paymentsProviderEvidence?: PaymentsProviderProofManifestInput | null",
     "accountDeletionEvidence?: AccountDeletionProofEvidence | null",
@@ -1112,13 +1115,17 @@ const privacyProviderProofEvidencePropagationIsSourceBacked = includesAll(careCo
     "aiProviderEvidence: state.launchProviderProfile.aiProviderEvidence",
     "paymentsProviderEvidence: state.launchProviderProfile.paymentsProviderEvidence",
     "accountDeletionEvidence: state.launchProviderProfile.accountDeletionEvidence",
+  ])
+  && includesAll(careTwinQaRouteSource, [
+    "deriveCareEntryProviderSyncProof(state.launchProviderProfile.careEntryProviderSyncEvidence)",
+    "buildAiProviderProofManifest(state.launchProviderProfile.aiProviderEvidence)",
   ]);
 check(
   "privacy provider proof evidence propagation is source-backed",
   privacyProviderProofEvidencePropagationIsSourceBacked,
   privacyProviderProofEvidencePropagationIsSourceBacked
-    ? "Privacy & Safety consumes saved AI, payments, and account-deletion proof evidence from the durable Provider Launch Setup profile"
-    : "preserve and forward AI, payments, and account-deletion proof evidence from Provider Launch Setup into Privacy & Safety",
+    ? "Privacy & Safety and focused QA missions consume saved provider proof evidence from the durable Provider Launch Setup profile"
+    : "preserve and forward care-entry sync, AI, payments, and account-deletion proof evidence from Provider Launch Setup into Privacy & Safety and focused QA missions",
 );
 
 const pushNotificationsProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
@@ -1672,6 +1679,7 @@ check(
 
 const careEntryProviderSyncProofManifestIsSourceBacked = includesAll(careTwinQaRouteSource, [
   "deriveCareEntryProviderSyncProof",
+  "deriveCareEntryProviderSyncProof(state.launchProviderProfile.careEntryProviderSyncEvidence)",
   "careEntryProviderSyncProofManifest",
   "Care-entry provider sync proof manifest",
   "Incremental sync allowed",

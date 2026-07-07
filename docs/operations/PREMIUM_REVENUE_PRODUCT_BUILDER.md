@@ -4060,6 +4060,26 @@ with install, JSON mobile beta doctor, focused behavior tests, and Typecheck
 plus CI-safe builds all passing. Rerun branch CI after this proof-record docs
 commit before dependency proof is current for the final branch tip.
 
+The focused provider proof mission propagation pass closes two remaining
+focused-helper stale paths. `LaunchProviderProfile` now preserves saved
+`careEntryProviderSyncEvidence`, CareContext persists that field, and
+`/care-twin-qa?qaSurface=care-entry-provider-sync-proof` feeds saved
+Supabase/RLS/migration proof into `deriveCareEntryProviderSyncProof` instead of
+rendering an empty manifest. The focused WoofGuide AI proof mission now feeds
+saved `state.launchProviderProfile.aiProviderEvidence` into
+`buildAiProviderProofManifest` instead of rendering an empty manifest. Fresh
+local verification passed focused proof/readiness tests `127/127`, the full
+zero-dependency API/mobile/PWA/care-domain suite `594/594`, root TypeScript,
+mobile TypeScript, direct JSON mobile beta doctor source-backed checks, and
+PixelLab verifier `ok=149 missing=0 invalid=0`. Direct JSON mobile beta doctor
+remains truthfully `BLOCKED` only because local pnpm is `11.7.0` versus pinned
+`10.24.0` and Corepack is not on PATH. This still does not attach real
+Supabase project/migration/RLS/retention proof files, approve mobile
+incremental sync, attach real OpenAI/model/source/write-gate/veterinary proof
+files, enable live AI, launch publicly, or replace Apollo sign-off. Rerun
+branch CI after this commit before dependency proof is current for the final
+branch tip.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

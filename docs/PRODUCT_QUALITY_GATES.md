@@ -340,6 +340,16 @@ Latest known passing automation-branch CI:
   commit `cbaa5684` in `WoofWatcher Verify` run `28885884154`, job
   `85685820048`, with install, JSON mobile beta doctor, focused behavior tests,
   and Typecheck plus CI-safe builds all passing.
+- Care-entry Provider Sync and WoofGuide AI focused proof missions now consume
+  saved Provider Launch Setup proof evidence instead of rendering empty
+  manifests. `careEntryProviderSyncEvidence` is durable in the care document and
+  reaches `deriveCareEntryProviderSyncProof`; saved `aiProviderEvidence` reaches
+  `buildAiProviderProofManifest`. Focused proof/readiness tests passed
+  `127/127`, the full zero-dependency suite passed `594/594`, root TypeScript,
+  mobile TypeScript, direct JSON mobile beta doctor source-backed checks, and
+  PixelLab `ok=149 missing=0 invalid=0` passed. Real Supabase/RLS/migration
+  proof, mobile incremental sign-off, OpenAI/model/source/write-gate/veterinary
+  proof, live AI approval, public launch, and Apollo sign-off remain blocked.
 
 Latest known passing `main` CI after the Full Log search slice:
 

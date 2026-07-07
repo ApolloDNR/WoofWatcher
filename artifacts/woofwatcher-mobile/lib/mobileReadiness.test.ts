@@ -4904,6 +4904,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(careContext, /launchProviderProfile/);
   assert.match(careContext, /supportLegalReadinessEvidence\?:\s*SupportLegalReadinessProofEvidence \| null/);
+  assert.match(careContext, /careEntryProviderSyncEvidence\?:\s*CareEntryProviderSyncProofEvidence \| null/);
   assert.match(careContext, /storageProviderEvidence\?:\s*LaunchStorageProviderEvidence \| null/);
   assert.match(careContext, /aiProviderEvidence\?:\s*AiProviderProofEvidence \| null/);
   assert.match(careContext, /paymentsProviderEvidence\?:\s*PaymentsProviderProofManifestInput \| null/);
@@ -4927,6 +4928,8 @@ test("keeps More household, tools, and diet sections on shared board card anatom
     /launchProviderProfile:\s*normalizeLaunchProviderProfile\(merged\.launchProviderProfile\)/,
   );
   assert.match(providerSetup, /storageProviderEvidence\?:\s*LaunchStorageProviderEvidence \| null/);
+  assert.match(providerSetup, /careEntryProviderSyncEvidence\?:\s*CareEntryProviderSyncProofEvidence \| null/);
+  assert.match(providerSetup, /careEntryProviderSyncEvidence:\s*normalizeCareEntryProviderSyncEvidence\(source\.careEntryProviderSyncEvidence\)/);
   assert.match(providerSetup, /storageProviderEvidence:\s*normalizeStorageProviderEvidence\(source\.storageProviderEvidence\)/);
   assert.match(providerSetup, /storageProviderEvidence:\s*profile\.storageProviderEvidence/);
   assert.match(providerSetup, /aiProviderEvidence\?:\s*AiProviderProofEvidence \| null/);
@@ -4939,6 +4942,16 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(providerSetup, /pushNotificationsProofEvidence:\s*normalizePushNotificationsProofEvidence\(source\.pushNotificationsProofEvidence\)/);
   assert.match(providerSetup, /storeAccountsProofEvidence:\s*normalizeStoreAccountsProofEvidence\(source\.storeAccountsProofEvidence\)/);
   assert.match(providerSetup, /accountDeletionEvidence:\s*normalizeAccountDeletionEvidence\(source\.accountDeletionEvidence\)/);
+  assert.match(
+    careTwinQaRoute,
+    /deriveCareEntryProviderSyncProof\(state\.launchProviderProfile\.careEntryProviderSyncEvidence\)/,
+  );
+  assert.doesNotMatch(careTwinQaRoute, /deriveCareEntryProviderSyncProof\(\{\}\)/);
+  assert.match(
+    careTwinQaRoute,
+    /buildAiProviderProofManifest\(state\.launchProviderProfile\.aiProviderEvidence\)/,
+  );
+  assert.doesNotMatch(careTwinQaRoute, /buildAiProviderProofManifest\(\{\}\)/);
   assert.match(
     careTwinQaRoute,
     /buildPushNotificationsProofManifest\(state\.launchProviderProfile\.pushNotificationsProofEvidence\)/,

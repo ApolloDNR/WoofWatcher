@@ -1219,3 +1219,18 @@ Apollo sign-off. Branch CI proved implementation commit `cbaa5684` in
 mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe builds
 all passing; rerun CI after this proof-record docs commit before treating
 dependency proof as current for the final branch tip.
+
+Current evidence, 2026-07-07: The focused Care-entry Provider Sync and
+WoofGuide AI proof missions now consume saved Provider Launch Setup proof
+evidence instead of rendering empty manifests. `LaunchProviderProfile` preserves
+`careEntryProviderSyncEvidence`; CareContext persists it; the Care-entry
+provider sync helper route feeds saved evidence into
+`deriveCareEntryProviderSyncProof`; and the WoofGuide AI helper route feeds
+saved `aiProviderEvidence` into `buildAiProviderProofManifest`. Focused
+provider/readiness proof tests passed `127/127`; the full zero-dependency
+API/mobile/PWA/care-domain suite passed `594/594`; root TypeScript and mobile
+TypeScript passed; direct JSON mobile beta doctor source-backed checks passed;
+and PixelLab asset verification passed `ok=149 missing=0 invalid=0`. Direct
+JSON mobile beta doctor remains truthfully blocked only by local pnpm `11.7.0`
+versus pinned `10.24.0` and missing Corepack. Branch CI must be rerun after this
+commit before dependency-complete proof is current for the final branch tip.

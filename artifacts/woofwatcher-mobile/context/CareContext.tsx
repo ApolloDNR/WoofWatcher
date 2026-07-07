@@ -42,6 +42,7 @@ import {
   normalizeLaunchProviderProfile,
   type LaunchStorageProviderEvidence,
 } from "@/lib/launchProviderSetup";
+import type { CareEntryProviderSyncProofEvidence } from "@/lib/careEntryProviderSyncProof";
 import type { AiProviderProofEvidence } from "@/lib/aiProviderProof";
 import type { PaymentsProviderProofManifestInput } from "@/lib/paymentsProviderProof";
 import type { AccountDeletionProofEvidence } from "@/lib/accountDeletionProof";
@@ -115,6 +116,7 @@ export interface LaunchProviderProfile {
   authProviderProofReady: boolean;
   databaseConfigured: boolean;
   databaseProviderProofReady: boolean;
+  careEntryProviderSyncEvidence?: CareEntryProviderSyncProofEvidence | null;
   storageProviderConfigured: boolean;
   storageProviderProofReady: boolean;
   storageProviderEvidence?: LaunchStorageProviderEvidence | null;
