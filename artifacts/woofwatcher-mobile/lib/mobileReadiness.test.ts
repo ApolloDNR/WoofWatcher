@@ -1355,16 +1355,16 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(careTwinAssets, /CARE_TWIN_DOGLESS_ROOM_ASSETS/);
   assert.match(careTwinAssets, /dogless-room-layer/);
   assert.match(careTwinAssets, /listCareTwinSpriteSlots/);
-  assert.match(careTwinAssets, /option-b-idle-tail-wag-strip\.png/);
-  assert.match(careTwinAssets, /option-b-walk-loop-strip\.png/);
-  assert.match(careTwinAssets, /option-b-ear-perk-strip\.png/);
-  assert.match(careTwinAssets, /option-b-bark-reaction-strip\.png/);
-  assert.match(careTwinAssets, /option-b-eat-loop-strip\.png/);
-  assert.match(careTwinAssets, /option-b-drink-loop-strip\.png/);
-  assert.match(careTwinAssets, /option-b-sleep-loop-strip\.png/);
-  assert.match(careTwinAssets, /option-b-comfort-loop-strip\.png/);
-  assert.match(careTwinAssets, /option-b-health-watch-strip\.png/);
-  assert.match(careTwinAssets, /option-b-celebrate-hop-strip\.png/);
+  assert.match(careTwinAssets, /storybook-idle-tail-wag-strip\.png/);
+  assert.match(careTwinAssets, /storybook-walk-loop-strip\.png/);
+  assert.match(careTwinAssets, /storybook-ear-perk-strip\.png/);
+  assert.match(careTwinAssets, /storybook-bark-reaction-strip\.png/);
+  assert.match(careTwinAssets, /storybook-eat-loop-strip\.png/);
+  assert.match(careTwinAssets, /storybook-drink-loop-strip\.png/);
+  assert.match(careTwinAssets, /storybook-sleep-loop-strip\.png/);
+  assert.match(careTwinAssets, /storybook-comfort-loop-strip\.png/);
+  assert.match(careTwinAssets, /storybook-health-watch-strip\.png/);
+  assert.match(careTwinAssets, /storybook-celebrate-hop-strip\.png/);
   assert.doesNotMatch(room, /PhoenixSpriteRig/);
   assert.doesNotMatch(room, /SPRITE LOOP/);
   assert.doesNotMatch(room, /deriveAvatarSpritePlan/);
@@ -1382,7 +1382,7 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(home, /buildHomeMissionDeck/);
   assert.match(home, /getHomeFirstScreenLayout/);
   assert.match(home, /homeFirstScreenLayout\.heroAspectRatio/);
-  assert.match(home, /homeFirstScreenLayout\.presencePanelOverlap/);
+  assert.match(home, /homeFirstScreenLayout\.presencePanelMinHeight/);
   assert.match(home, /homeFirstScreenLayout\.statusTileMinHeight/);
   assert.match(home, /getHomeMissionDeckLayout/);
   assert.match(home, /useWindowDimensions/);
@@ -1449,9 +1449,13 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
   );
   assert.match(
     home,
-    /BoardSectionHeader\s+title="Next Up"[\s\S]*<BoardPill\s+label=\{`1 of \$\{nextCount\}`\}/,
+    /BoardSectionHeader\s+title="Next Up"[\s\S]*accessibilityLabel=\{`Open Plan\. 1 of \$\{nextCount\} next up\.`\}/,
   );
-  assert.match(home, /BoardSectionHeader\s+title="Quick Log"/);
+  assert.match(home, /s\.nextPrimaryRow/);
+  assert.match(home, /Snooze/);
+  assert.match(home, /Reassign/);
+  assert.match(home, /Quick Log/);
+  assert.match(home, /s\.quickSectionHeader/);
   assert.match(home, /HOME_QUICK_LOG\.slice\(0,\s*6\)\.map/);
   assert.match(home, /Today's Missions/);
 });
@@ -1566,12 +1570,10 @@ test("keeps Home Quick Log header action as a real route target", () => {
 
   assert.match(
     home,
-    /BoardSectionHeader\s+title="Quick Log"\s+accessory=\{\s*<Pressable[\s\S]*accessibilityLabel="Open full Quick Log"[\s\S]*onPress=\{\(\) => router\.push\("\/log"\)\}/,
+    /Quick Log[\s\S]*accessibilityLabel="Open full Quick Log"[\s\S]*onPress=\{\(\) => router\.push\("\/log"\)\}/,
   );
-  assert.match(
-    home,
-    /style=\{\(\{ pressed \}\) => \[[\s\S]*s\.quickHeaderAction/,
-  );
+  assert.match(home, /s\.quickSectionTitle/);
+  assert.match(home, /s\.homeQuickCircle/);
   assert.match(primitives, /onLongPress\?: \(\) => void/);
   assert.match(
     primitives,
@@ -1585,7 +1587,7 @@ test("keeps Home Quick Log header action as a real route target", () => {
   assert.match(home, /onLongPress=\{\(\) => openQuickDetails\(item\)\}/);
   assert.match(
     home,
-    /accessibilityHint=\{\s*item\.route\s*\?\s*"Opens the full Quick Log\."\s*:\s*"Long press opens details before saving\."\s*\}/,
+    /accessibilityHint=\{\s*item\.forceDetail\s*\?\s*"Opens details before saving\."\s*:\s*"Long press opens details before saving\."\s*\}/,
   );
   assert.match(
     log,
@@ -1629,7 +1631,7 @@ test("keeps Home Quick Log header action as a real route target", () => {
     /const nextUpRoute =\s*nextPrimary\?\.route \?\? "\/calendar"/,
   );
   assert.match(home, /route: nextUpRoute/);
-  assert.match(home, /router\.push\(item\.route as never\)/);
+  assert.match(home, /router\.push\(nextPrimary\.route as never\)/);
   assert.match(
     home,
     /if \(policy\.tapBehavior === "detail-required"\) \{\s*router\.push\(homeLogDetailRoute\(policy\.type, Date\.now\(\)\) as never\);\s*return;\s*\}/,
@@ -1959,7 +1961,7 @@ test("renders Today Command on Home as a real care workflow control", () => {
   assert.match(home, /Today Command/);
   assert.match(
     home,
-    /accessibilityLabel=\{`Today Command\. \$\{todayCommand\.primaryAction\.label\}\. \$\{todayCommand\.primaryAction\.detail\}`\}/,
+    /accessibilityLabel=\{`Today Command\. \$\{petName\} is \$\{HOME_MOOD_WORD\[status\.mood\]\}\. \$\{glanceLine\}`\}/,
   );
   assert.match(
     home,
@@ -1969,11 +1971,9 @@ test("renders Today Command on Home as a real care workflow control", () => {
     home,
     /router\.push\(todayCommand\.primaryAction\.route as never\)/,
   );
-  assert.match(
-    home,
-    /todayCommandPixelIcon\(todayCommand\.primaryAction\.icon\)/,
-  );
-  assertStyleUsesSharedTouchTarget(home, "todayCommandCard");
+  assert.match(home, /HOME_MOOD_WORD\[status\.mood\]/);
+  assert.match(home, /const glanceLine = useMemo/);
+  assertStyleUsesSharedTouchTarget(home, "moodCard");
 });
 
 test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () => {
@@ -3198,6 +3198,38 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     );
   }
   for (const [fileName, expected] of [
+    ["storybook-idle-tail-wag-strip.png", { width: 2048, height: 256 }],
+    ["storybook-ear-perk-strip.png", { width: 1536, height: 256 }],
+    ["storybook-bark-reaction-strip.png", { width: 1536, height: 256 }],
+    ["storybook-walk-loop-strip.png", { width: 2048, height: 256 }],
+    ["storybook-eat-loop-strip.png", { width: 2048, height: 256 }],
+    ["storybook-drink-loop-strip.png", { width: 2048, height: 256 }],
+    ["storybook-sleep-loop-strip.png", { width: 2048, height: 256 }],
+    ["storybook-comfort-loop-strip.png", { width: 2048, height: 256 }],
+    ["storybook-health-watch-strip.png", { width: 2048, height: 256 }],
+    ["storybook-celebrate-hop-strip.png", { width: 2048, height: 256 }],
+    ["storybook-still-sit.png", { width: 256, height: 256 }],
+    ["storybook-still-sleep.png", { width: 256, height: 256 }],
+  ] as const) {
+    const size = readPngSize(
+      join(
+        process.cwd(),
+        "artifacts",
+        "woofwatcher-mobile",
+        "assets",
+        "avatar",
+        "phoenix",
+        "storybook",
+        fileName,
+      ),
+    );
+    assert.deepEqual(
+      size,
+      expected,
+      `${fileName} should be the live storybook German Shepherd animation strip`,
+    );
+  }
+  for (const [fileName, expected] of [
     ["preview-crisp.png", { width: 340, height: 340 }],
     ["base-crisp.png", { width: 680, height: 680 }],
   ] as const) {
@@ -3362,9 +3394,8 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarContext, /AVATAR_CONFIG_KEY/);
   assert.match(avatarContext, /saveAvatarConfig/);
   assert.match(avatarContext, /hasConfiguredAvatar/);
-  assert.match(avatarContext, /phoenix-main-avatar-v2\.png/);
-  assert.match(avatarContext, /phoenix-home-alone-anxious-v2\.png/);
-  assert.match(avatarContext, /phoenix-sleep-rest-v2\.png/);
+  assert.match(avatarContext, /storybook\/storybook-still-sit\.png/);
+  assert.match(avatarContext, /storybook\/storybook-still-sleep\.png/);
   assert.doesNotMatch(avatarContext, /assets\/phoenix\/phoenix-happy\.png/);
   assert.match(home, /avatarTemplate\.label/);
   assert.match(home, /Open Avatar Studio/);

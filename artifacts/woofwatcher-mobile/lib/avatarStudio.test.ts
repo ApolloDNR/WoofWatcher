@@ -163,7 +163,7 @@ test("keeps Phoenix's shepherd template live in Avatar Studio", () => {
   assert.match(spriteAssets, /shepherd: \{/);
   assert.match(spriteAssets, /key: "shepherd:option-b-idle-tail-wag"/);
   assert.match(spriteAssets, /key: "shepherd:option-b-walk-loop"/);
-  assert.match(spriteAssets, /assets\/avatar\/phoenix\/candidates\/option-b-idle-tail-wag-strip\.png/);
-  assert.match(spriteAssets, /assets\/avatar\/phoenix\/candidates\/option-b-walk-loop-strip\.png/);
+  assert.match(spriteAssets, /assets\/avatar\/phoenix\/storybook\/storybook-idle-tail-wag-strip\.png/);
+  assert.match(spriteAssets, /assets\/avatar\/phoenix\/storybook\/storybook-walk-loop-strip\.png/);
   assert.match(spriteAssets, /Approved Option B Phoenix/);
 });

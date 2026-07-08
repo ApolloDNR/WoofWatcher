@@ -21,12 +21,14 @@ const AVATAR_CONFIG_KEY = "woofwatcher.petAvatarConfig.v1";
 
 export const MOODS: Mood[] = ["happy", "excited", "calm", "anxious", "unwell"];
 
+// Default mood portraits use the storybook German Shepherd so every avatar
+// surface matches the mock-board room environment out of the box.
 const DEFAULT_SOURCES: Record<Mood, ImageSourcePropType> = {
-  happy: require("@/assets/avatar/phoenix/approved/phoenix-main-avatar-v2.png"),
-  excited: require("@/assets/avatar/phoenix/approved/phoenix-proud-happy-v2.png"),
-  calm: require("@/assets/avatar/phoenix/approved/phoenix-main-avatar-v2.png"),
-  anxious: require("@/assets/avatar/phoenix/approved/phoenix-home-alone-anxious-v2.png"),
-  unwell: require("@/assets/avatar/phoenix/approved/phoenix-sleep-rest-v2.png"),
+  happy: require("@/assets/avatar/phoenix/storybook/storybook-still-sit.png"),
+  excited: require("@/assets/avatar/phoenix/storybook/storybook-still-sit.png"),
+  calm: require("@/assets/avatar/phoenix/storybook/storybook-still-sit.png"),
+  anxious: require("@/assets/avatar/phoenix/storybook/storybook-still-sit.png"),
+  unwell: require("@/assets/avatar/phoenix/storybook/storybook-still-sleep.png"),
 };
 
 export type AvatarSet = Partial<Record<Mood, string>>;

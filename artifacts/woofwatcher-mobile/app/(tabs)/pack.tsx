@@ -22,6 +22,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
+import { notifyDialog } from "@/lib/confirmDialog";
 import { deriveCareCareer, deriveCareStreak } from "@/lib/careCareer";
 import {
   getRouteTopPadding,
@@ -286,6 +287,8 @@ export default function PackScreen() {
         {/* Pets */}
         {segment === "pets" ? (
           <BoardCard style={s.sectionCard}>
+            {/* Mock-board pet card: big storybook portrait, name, breed,
+                weight, and a live presence dot - every line real. */}
             <View style={[s.petHero, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <View style={[s.petAvatarFrame, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
                 <Image
@@ -297,52 +300,87 @@ export default function PackScreen() {
               </View>
               <View style={s.petHeroCopy}>
                 <Text style={[s.petName, { color: colors.foreground, fontFamily: DISPLAY }]}>{petName}</Text>
-                <Text
-                  numberOfLines={2}
-                  style={[s.petIdentity, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-                >
-                  {petIdentityLine}
-                </Text>
-                {weightLabel ? (
-                  <Text style={[s.petMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    {weightLabel}
+                {state.profile.breed ? (
+                  <Text
+                    numberOfLines={1}
+                    style={[s.petIdentity, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                  >
+                    {state.profile.breed}
                   </Text>
                 ) : null}
+                <Text
+                  numberOfLines={1}
+                  style={[s.petMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                >
+                  {[weightLabel, careCareer.levelLabel].filter(Boolean).join(" · ")}
+                </Text>
               </View>
-              <BoardPill
-                label={careCareer.levelLabel}
-                icon="paw-outline"
-                tone={colors.copper}
-                style={s.petLevelPill}
+              <View
+                accessibilityLabel={`${petName} care status: ${status.meta.label}`}
+                style={[
+                  s.petPresenceDot,
+                  {
+                    backgroundColor:
+                      status.mood === "unwell"
+                        ? colors.rose
+                        : status.mood === "anxious"
+                          ? colors.amber
+                          : colors.sage,
+                  },
+                ]}
               />
             </View>
 
-            <View style={s.xpBlock}>
-              <View style={[s.levelTrack, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                <View style={[s.levelFill, { width: `${levelPercent}%`, backgroundColor: colors.copper }]} />
-              </View>
-              <Text style={[s.levelMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                {careCareer.levelXp.toLocaleString()} / {careCareer.levelSpanXp.toLocaleString()} XP toward Lv{" "}
-                {careCareer.level + 1}
+            {state.pets
+              .filter((pet) => pet.name && pet.name !== petName)
+              .slice(0, 3)
+              .map((pet) => (
+                <View
+                  key={pet.id}
+                  style={[s.petHero, s.petHeroSecondary, { backgroundColor: colors.background, borderColor: colors.border }]}
+                >
+                  <View style={[s.petAvatarFrame, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                    <Image
+                      source={getAvatarSource("calm")}
+                      style={s.petAvatarImage}
+                      resizeMode="cover"
+                      accessibilityLabel={`${pet.name} avatar`}
+                    />
+                  </View>
+                  <View style={s.petHeroCopy}>
+                    <Text style={[s.petName, { color: colors.foreground, fontFamily: DISPLAY }]}>{pet.name}</Text>
+                    {pet.breed ? (
+                      <Text
+                        numberOfLines={1}
+                        style={[s.petIdentity, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                      >
+                        {pet.breed}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+              ))}
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add Pet"
+              accessibilityHint="WoofWatcher supports one pup per household today."
+              onPress={() =>
+                notifyDialog(
+                  "Add Pet",
+                  `WoofWatcher supports one pup per household today - multi-pet support is on the roadmap. For now, ${petName} has your full attention.`,
+                )
+              }
+              style={({ pressed }) => [
+                s.addPetRow,
+                { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Ionicons name="add" size={16} color={colors.mutedForeground} />
+              <Text style={[s.addPetText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                Add Pet
               </Text>
-            </View>
-
-            <View style={s.metricStack}>
-              <BoardMetricTile
-                icon="energy"
-                label="Care streak"
-                value={careStreak > 0 ? `${careStreak} day${careStreak === 1 ? "" : "s"}` : "Start today"}
-                detail="Consecutive days of logged care"
-                tone={colors.amber}
-              />
-              <BoardMetricTile
-                icon="note"
-                label="Care XP today"
-                value={`${careCareer.todayXp} XP`}
-                detail="Earned only from real care logs"
-                tone={colors.sage}
-              />
-            </View>
+            </Pressable>
 
             <View style={s.infoTiles}>
               <PackInfoTile
@@ -358,14 +396,96 @@ export default function PackScreen() {
                 accessibilityLabel={`Open saved health records for ${petName}`}
               />
               <PackInfoTile
-                icon="scale-outline"
+                icon="paw-outline"
+                tone={colors.copper}
+                label="Sensitivities"
+                value={
+                  state.dietProfile.sensitivities?.trim() ||
+                  state.dietProfile.avoid?.trim() ||
+                  "None noted"
+                }
+                onPress={() => open("/more?section=diet")}
+                accessibilityLabel={`Open diet sensitivities for ${petName} in More`}
+              />
+            </View>
+            <View style={s.infoTiles}>
+              <PackInfoTile
+                icon="document-text-outline"
                 tone={colors.blue}
+                label="Reports"
+                value={
+                  savedReports.length
+                    ? `${savedReports.length} saved`
+                    : "None yet"
+                }
+                onPress={() => open("/records")}
+                accessibilityLabel={`Open shared reports for ${petName} in Records`}
+              />
+              <PackInfoTile
+                icon="scale-outline"
+                tone={colors.amber}
                 label="Weight"
                 value={weightLabel || "Not set"}
                 onPress={() => open("/more?section=diet")}
                 accessibilityLabel={`Open diet and weight details for ${petName} in More`}
               />
             </View>
+
+            {/* People in the Pack preview, mirroring the mock's Pets page. */}
+            <Text style={[s.peoplePreviewTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+              People in the Pack
+            </Text>
+            {householdAccess.people.length === 0 ? (
+              <Text style={[s.emptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Add the first caregiver to build household access.
+              </Text>
+            ) : (
+              householdAccess.people.slice(0, 4).map((person, index) => {
+                const tone = memberTone(index);
+                return (
+                  <Pressable
+                    key={`preview-${person.id}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${person.name}, ${person.role}. Open People.`}
+                    onPress={() => changeSegment("people")}
+                    style={({ pressed }) => [
+                      s.personRow,
+                      { opacity: pressed ? 0.72 : 1 },
+                      index < Math.min(householdAccess.people.length, 4) - 1 && {
+                        borderBottomWidth: 1,
+                        borderBottomColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <View style={[s.personAvatar, { backgroundColor: tone + "1A" }]}>
+                      <Text style={[s.personInitial, { color: tone, fontFamily: "Inter_700Bold" }]}>
+                        {person.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={s.personCopy}>
+                      <Text
+                        numberOfLines={1}
+                        style={[s.personName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                      >
+                        {person.name}
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        style={[s.personMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                      >
+                        {person.role}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        s.presenceDot,
+                        { backgroundColor: person.needsInvite ? colors.amber : colors.sage },
+                      ]}
+                    />
+                  </Pressable>
+                );
+              })
+            )}
 
             <View style={[s.linkList, { borderTopColor: colors.border }]}>
               <PackLinkRow
@@ -652,20 +772,49 @@ const s = StyleSheet.create({
 
   petHero: {
     borderWidth: 1,
-    borderRadius: 12,
-    padding: 11,
+    borderRadius: 16,
+    padding: 12,
     flexDirection: "row",
-    gap: 11,
+    gap: 12,
     alignItems: "center",
   },
+  petHeroSecondary: {
+    marginTop: 8,
+  },
   petAvatarFrame: {
-    width: 72,
-    height: 72,
-    borderRadius: 14,
+    width: 88,
+    height: 88,
+    borderRadius: 16,
     borderWidth: 1,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
+  },
+  petPresenceDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+    alignSelf: "flex-start",
+    marginTop: 6,
+  },
+  addPetRow: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    marginTop: 10,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+  },
+  addPetText: {
+    fontSize: 12.5,
+  },
+  peoplePreviewTitle: {
+    fontSize: 15,
+    marginTop: 14,
+    marginBottom: 2,
   },
   petAvatarImage: {
     width: "100%",

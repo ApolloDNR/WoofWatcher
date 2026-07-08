@@ -72,12 +72,14 @@ const STATE_SCENES: Record<Mood, ImageSourcePropType> = {
   unwell: ROOM_SCENE,
 };
 
+// Storybook German Shepherd stills, matched to the mock-board room art so
+// the static fallback layer never breaks the environment's illusion.
 const PHOENIX_FALLBACK_AVATARS: Record<Mood, ImageSourcePropType> = {
-  happy: require("@/assets/avatar/phoenix/approved/phoenix-main-avatar-v2-crisp.png"),
-  excited: require("@/assets/avatar/phoenix/approved/phoenix-proud-happy-v2.png"),
-  calm: require("@/assets/avatar/phoenix/approved/phoenix-main-avatar-v2-crisp.png"),
-  anxious: require("@/assets/avatar/phoenix/approved/phoenix-home-alone-anxious-v2.png"),
-  unwell: require("@/assets/avatar/phoenix/approved/phoenix-sleep-rest-v2.png"),
+  happy: require("@/assets/avatar/phoenix/storybook/storybook-still-sit.png"),
+  excited: require("@/assets/avatar/phoenix/storybook/storybook-still-sit.png"),
+  calm: require("@/assets/avatar/phoenix/storybook/storybook-still-sit.png"),
+  anxious: require("@/assets/avatar/phoenix/storybook/storybook-still-sit.png"),
+  unwell: require("@/assets/avatar/phoenix/storybook/storybook-still-sleep.png"),
 };
 
 export interface PhoenixRoomReaction {

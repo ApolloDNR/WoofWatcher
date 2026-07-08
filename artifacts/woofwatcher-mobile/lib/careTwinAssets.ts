@@ -74,8 +74,8 @@ function bundledAsset(path: string, source: () => ImageSourcePropType): ImageSou
 
 export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareTwinSpriteAsset>> = {
   "idle-breathe": {
-    source: bundledAsset("assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png", () =>
-      require("@/assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -83,8 +83,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "tail-wag": {
-    source: bundledAsset("assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png", () =>
-      require("@/assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -92,8 +92,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "ear-perk": {
-    source: bundledAsset("assets/avatar/phoenix/candidates/option-b-ear-perk-strip.png", () =>
-      require("@/assets/avatar/phoenix/candidates/option-b-ear-perk-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-ear-perk-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-ear-perk-strip.png"),
     ),
     columns: 6,
     rows: 1,
@@ -101,8 +101,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "walk-loop": {
-    source: bundledAsset("assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png", () =>
-      require("@/assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -110,8 +110,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "eat-loop": {
-    source: bundledAsset("assets/avatar/phoenix/candidates/option-b-eat-loop-strip.png", () =>
-      require("@/assets/avatar/phoenix/candidates/option-b-eat-loop-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-eat-loop-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-eat-loop-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -119,8 +119,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "drink-loop": {
-    source: bundledAsset("assets/avatar/phoenix/candidates/option-b-drink-loop-strip.png", () =>
-      require("@/assets/avatar/phoenix/candidates/option-b-drink-loop-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-drink-loop-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-drink-loop-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -128,8 +128,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "sleep-loop": {
-    source: bundledAsset("assets/avatar/phoenix/candidates/option-b-sleep-loop-strip.png", () =>
-      require("@/assets/avatar/phoenix/candidates/option-b-sleep-loop-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-sleep-loop-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-sleep-loop-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -137,8 +137,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "comfort-loop": {
-    source: bundledAsset("assets/avatar/phoenix/candidates/option-b-comfort-loop-strip.png", () =>
-      require("@/assets/avatar/phoenix/candidates/option-b-comfort-loop-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-comfort-loop-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-comfort-loop-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -146,8 +146,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "celebrate-hop": {
-    source: bundledAsset("assets/avatar/phoenix/candidates/option-b-celebrate-hop-strip.png", () =>
-      require("@/assets/avatar/phoenix/candidates/option-b-celebrate-hop-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-celebrate-hop-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-celebrate-hop-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -155,8 +155,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "health-watch": {
-    source: bundledAsset("assets/avatar/phoenix/candidates/option-b-health-watch-strip.png", () =>
-      require("@/assets/avatar/phoenix/candidates/option-b-health-watch-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-health-watch-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-health-watch-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -164,8 +164,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "bark-loop": {
-    source: bundledAsset("assets/avatar/phoenix/candidates/option-b-bark-reaction-strip.png", () =>
-      require("@/assets/avatar/phoenix/candidates/option-b-bark-reaction-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-bark-reaction-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-bark-reaction-strip.png"),
     ),
     columns: 6,
     rows: 1,

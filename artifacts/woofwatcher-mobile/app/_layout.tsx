@@ -144,6 +144,14 @@ function RootLayoutNav() {
         }}
       />
       <Stack.Screen
+        name="fastlog"
+        options={{
+          headerShown: false,
+          presentation: "modal",
+          contentStyle: { backgroundColor: "#32362B" },
+        }}
+      />
+      <Stack.Screen
         name="care-twin-qa"
         options={{
           title: "Care Twin QA",

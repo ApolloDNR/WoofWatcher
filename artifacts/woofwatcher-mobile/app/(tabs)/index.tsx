@@ -72,7 +72,7 @@ import {
   findOpenWalkSession,
 } from "@/lib/walkSession";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
-import { deriveTodayCommand, type TodayCommandIcon } from "@/lib/todayCommand";
+import { deriveTodayCommand } from "@/lib/todayCommand";
 
 interface QuickItem {
   key: string;
@@ -83,6 +83,8 @@ interface QuickItem {
   mood?: string;
   severity?: string;
   route?: "/log";
+  /** Always open the detail flow - some logs need context before saving. */
+  forceDetail?: boolean;
 }
 
 type StatusTileTarget = "mood" | "health" | "diet" | "bond";
@@ -108,6 +110,10 @@ type HomeNextUpItem = {
   icon: PixelIconName;
   route: HomeNextUpRoute;
   meta?: string;
+  /** open-loop = an active session/outcome to close; routine = a planned item. */
+  kind: "open-loop" | "routine" | "suggestion";
+  routineId?: string;
+  owner?: string;
 };
 
 const todayMetricRouteType: Record<TodayMetricTarget, CareEventType> = {
@@ -138,10 +144,20 @@ const HOME_MOOD_WORD: Record<Mood, string> = {
   unwell: "having a gentle day",
 };
 
+// Mock-board Quick Log row: Meal · Potty · Walk · Meds · Water · Note.
+// Meds and Note always open their detail flow - a med log needs dosage
+// context and a note needs words before anything is saved.
 const HOME_QUICK_LOG: QuickItem[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
-  { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
   { key: "potty", icon: "pee", label: "Potty", type: "potty", title: "Potty" },
+  { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
+  {
+    key: "meds",
+    icon: "medication",
+    label: "Meds",
+    type: "medication",
+    title: "Medication",
+  },
   {
     key: "water",
     icon: "bile",
@@ -150,33 +166,12 @@ const HOME_QUICK_LOG: QuickItem[] = [
     title: "Fresh water",
   },
   {
-    key: "training",
-    icon: "training",
-    label: "Training",
-    type: "training",
-    title: "Training win",
-  },
-  {
-    key: "treat",
-    icon: "treat",
-    label: "Treat",
-    type: "treat",
-    title: "Treat",
-  },
-  {
-    key: "play",
-    icon: "play",
-    label: "Play",
-    type: "play",
-    title: "Play session",
-  },
-  {
-    key: "more",
+    key: "note",
     icon: "note",
-    label: "More",
+    label: "Note",
     type: "note",
-    title: "Open quick log",
-    route: "/log",
+    title: "Care note",
+    forceDetail: true,
   },
 ];
 
@@ -281,23 +276,6 @@ function adventureQuestIcon(id: string): PixelIconName {
   if (id.includes("training")) return "training";
   if (id.includes("play")) return "play";
   return "heart";
-}
-
-function todayCommandPixelIcon(icon: TodayCommandIcon): PixelIconName {
-  if (icon === "bowl") return "meal";
-  if (icon === "paw") return "walk";
-  if (icon === "drop") return "bile";
-  if (icon === "star") return "training";
-  if (icon === "heart") return "heart";
-  if (icon === "bone") return "treat";
-  if (icon === "candy") return "play";
-  if (icon === "bolt") return "energy";
-  if (icon === "sad") return "anxious";
-  if (icon === "vomit") return "vomit";
-  if (icon === "house") return "clock";
-  if (icon === "scale") return "health";
-  if (icon === "pill") return "medication";
-  return "note";
 }
 
 function HomeHeaderAction({
@@ -524,6 +502,10 @@ export default function HomeScreen() {
     [state.entries, now],
   );
 
+  // Session-local snooze: a snoozed routine steps out of Next Up for 30
+  // minutes on this device, without touching the Plan schedule itself.
+  const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
+
   const nextUp = useMemo<HomeNextUpItem[]>(() => {
     if (openAloneSession) {
       return [
@@ -535,6 +517,7 @@ export default function HomeScreen() {
             ? homeLogEntryRoute(openAloneSession.id)
             : homeLogDetailRoute("alone", now),
           meta: "Return",
+          kind: "open-loop" as const,
         },
       ];
     }
@@ -548,6 +531,7 @@ export default function HomeScreen() {
             ? homeLogEntryRoute(openWalkSession.id)
             : homeLogDetailRoute("walk", now),
           meta: "Finish",
+          kind: "open-loop" as const,
         },
       ];
     }
@@ -562,20 +546,31 @@ export default function HomeScreen() {
             ? homeLogEntryRoute(pendingMeal.id)
             : homeLogDetailRoute("meal", now),
           meta: "Update",
+          kind: "open-loop" as const,
         },
       ];
     }
-    if (state.routines.length) {
-      return state.routines.slice(0, 3).map((r) => {
+    const awakeRoutines = state.routines.filter(
+      (r) => (snoozedUntil[r.id] ?? 0) <= now,
+    );
+    if (awakeRoutines.length) {
+      return awakeRoutines.slice(0, 3).map((r) => {
         const routineType = normalizeCareEventType(r.type ?? "note");
         return {
           label: r.label,
           time: r.time,
           icon: routineIcon(routineType),
-          route: "/calendar" as const,
-          meta: "Plan",
+          route: homeLogDetailRoute(routineType, now),
+          meta: "Start",
+          kind: "routine" as const,
+          routineId: r.id,
+          owner: r.owner || undefined,
         };
       });
+    }
+    if (state.routines.length) {
+      // Everything scheduled is snoozed right now.
+      return [];
     }
     return [
       {
@@ -584,6 +579,8 @@ export default function HomeScreen() {
         icon: "walk" as PixelIconName,
         route: homeLogDetailRoute("walk", now),
         meta: "Start",
+        kind: "suggestion" as const,
+        owner: caregiver,
       },
       {
         label: "Dinner",
@@ -591,6 +588,7 @@ export default function HomeScreen() {
         icon: "meal" as PixelIconName,
         route: homeLogDetailRoute("meal", now),
         meta: "Serve",
+        kind: "suggestion" as const,
       },
       {
         label: "Training",
@@ -598,6 +596,7 @@ export default function HomeScreen() {
         icon: "training" as PixelIconName,
         route: homeLogDetailRoute("training", now),
         meta: "Log",
+        kind: "suggestion" as const,
       },
     ];
   }, [
@@ -606,6 +605,7 @@ export default function HomeScreen() {
     openWalkMinutes,
     openWalkSession,
     pendingMeal,
+    snoozedUntil,
     state.routines,
     caregiver,
     now,
@@ -632,6 +632,120 @@ export default function HomeScreen() {
           ? `${nextMeta} - ${nextPrimary?.time ?? "Scheduled"}`
           : (nextPrimary?.time ?? "Ready when you are");
   const nextUpRoute = nextPrimary?.route ?? "/calendar";
+
+  const snoozeNextUp = (item: HomeNextUpItem) => {
+    if (!item.routineId) return;
+    void Haptics.selectionAsync();
+    setSnoozedUntil((prev) => ({
+      ...prev,
+      [item.routineId as string]: now + 30 * 60000,
+    }));
+    showToast(`${item.label} snoozed 30 min`);
+  };
+
+  // "Walk with Emma in 25 min · Dinner at 7:00 PM" - built from the same
+  // real Next Up items, never invented.
+  const glanceLine = useMemo(() => {
+    const parts = nextUp.slice(0, 2).map((item, index) => {
+      if (index === 0 && item.kind === "routine" && status.minutesUntilNext !== null) {
+        return `${item.label} in ${formatDuration(status.minutesUntilNext)}`;
+      }
+      return `${item.label} ${item.time.includes(" - ") ? "" : "at "}${item.time}`.replace(" at Outcome pending", " - outcome pending");
+    });
+    if (!parts.length) return todayCommand.primaryAction.detail;
+    return parts.join(" · ");
+  }, [nextUp, status.minutesUntilNext, todayCommand.primaryAction.detail]);
+
+  // Recency chips: Fed / Potty / Walk / Alone Time, each from the latest
+  // real log of that care lane.
+  const formatAgo = (iso: string): string => {
+    const then = Date.parse(iso);
+    if (!Number.isFinite(then)) return "logged";
+    const minutes = Math.max(0, Math.round((now - then) / 60000));
+    if (minutes < 1) return "just now";
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.round(hours / 24)}d ago`;
+  };
+  const recencyChips = useMemo(() => {
+    const latestOf = (lane: CareEventType) =>
+      [...state.entries]
+        .filter(
+          (entry) => normalizeCareEventType(entry.type, careDetails(entry.details)) === lane,
+        )
+        .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))[0] ?? null;
+    const lastMeal = latestOf("meal");
+    const lastPotty = latestOf("potty");
+    const lastWalk = latestOf("walk");
+    const nextWalkSoon =
+      !openWalkSession &&
+      status.minutesUntilNext !== null &&
+      status.minutesUntilNext <= 90 &&
+      nextUp[0]?.icon === "walk";
+    return [
+      {
+        key: "fed",
+        icon: "meal" as PixelIconName,
+        label: "Fed",
+        value: lastMeal ? formatAgo(lastMeal.occurredAt) : "None yet",
+        route: homeLogDetailRoute("meal", now),
+        hint: "Opens the meal detail flow.",
+      },
+      {
+        key: "potty",
+        icon: "pee" as PixelIconName,
+        label: "Potty",
+        value: lastPotty ? formatAgo(lastPotty.occurredAt) : "None yet",
+        route: homeLogDetailRoute("potty", now),
+        hint: "Opens the potty detail flow.",
+      },
+      {
+        key: "walk",
+        icon: "walk" as PixelIconName,
+        label: "Walk",
+        value: openWalkSession
+          ? "Active now"
+          : nextWalkSoon
+            ? "Due soon"
+            : lastWalk
+              ? formatAgo(lastWalk.occurredAt)
+              : "None yet",
+        route: openWalkSession
+          ? openWalkSession.id
+            ? homeLogEntryRoute(openWalkSession.id)
+            : homeLogDetailRoute("walk", now)
+          : homeLogDetailRoute("walk", now),
+        hint: openWalkSession
+          ? "Opens the active walk log."
+          : "Opens the walk detail flow.",
+      },
+      {
+        key: "alone",
+        icon: "clock" as PixelIconName,
+        label: "Alone",
+        value: openAloneSession ? formatDuration(openAloneMinutes) : "OK",
+        route: openAloneSession
+          ? openAloneSession.id
+            ? homeLogEntryRoute(openAloneSession.id)
+            : homeLogDetailRoute("alone", now)
+          : homeLogDetailRoute("alone", now),
+        hint: openAloneSession
+          ? "Opens the return check-in for the active alone time."
+          : "Opens the Alone Time detail flow.",
+      },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    state.entries,
+    now,
+    nextUp,
+    openAloneMinutes,
+    openAloneSession,
+    openWalkSession,
+    status.minutesUntilNext,
+  ]);
+
   const todayCommandTone =
     todayCommand.primaryAction.urgency === "alert"
       ? colors.rose
@@ -689,6 +803,17 @@ export default function HomeScreen() {
   // per watch surface that currently needs owner attention, hidden when calm.
   const watchSignalCount =
     (status.counts.healthAlert ? 1 : 0) + (bileCount > 0 ? 1 : 0);
+
+  // Header care line + heart card, straight from real state: watch signals
+  // first, then live sessions, then the calm baseline.
+  const careLine =
+    watchSignalCount > 0
+      ? "Needs a look today"
+      : openWalkSession
+        ? "On a walk now"
+        : openAloneSession
+          ? "Home alone now"
+          : "Care on track";
 
   const roomStats = useMemo<PhoenixRoomStat[]>(
     () => [
@@ -1150,6 +1275,10 @@ export default function HomeScreen() {
       router.push(item.route);
       return;
     }
+    if (item.forceDetail) {
+      openQuickDetails(item);
+      return;
+    }
     const policy = getQuickLogPolicy(item.type);
     if (policy.tapBehavior === "detail-required") {
       router.push(homeLogDetailRoute(policy.type, Date.now()) as never);
@@ -1315,28 +1444,33 @@ export default function HomeScreen() {
                   </Text>
                   <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
                 </View>
-                <View style={[s.identityChip, { backgroundColor: colors.sageSoft }]}>
-                  <View style={[s.identityDot, { backgroundColor: colors.forest }]} />
+                <View style={s.identityCareLine}>
+                  <Ionicons
+                    name="heart"
+                    size={13}
+                    color={watchSignalCount > 0 ? colors.amber : colors.forest}
+                  />
                   <Text
                     numberOfLines={1}
-                    style={[s.identityChipText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}
+                    style={[s.identityCareText, { color: watchSignalCount > 0 ? colors.amber : colors.forest, fontFamily: "Inter_700Bold" }]}
                   >
-                    {careStatusLabel}
+                    {careLine}
                   </Text>
                 </View>
               </View>
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Open More"
-              onPress={() => router.push("/more")}
+              accessibilityLabel="Open the Pack"
+              accessibilityHint="Opens pets and people who share the care."
+              onPress={() => router.push("/pack" as never)}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[
                 s.headerButton,
                 { borderColor: "transparent", backgroundColor: "transparent" },
               ]}
             >
-              <Ionicons name="menu" size={25} color={colors.foreground} />
+              <Ionicons name="people-outline" size={24} color={colors.foreground} />
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -1434,6 +1568,378 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
+          {/* Mock-board heart status card: "<Pet> is happy." over the real
+              next-up glance line. It is still the Today Command surface -
+              tapping opens the recommended care workflow. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Today Command. ${petName} is ${HOME_MOOD_WORD[status.mood]}. ${glanceLine}`}
+            accessibilityHint="Opens the exact care workflow behind today's recommended action."
+            hitSlop={MOBILE_INLINE_HIT_SLOP}
+            onPress={() =>
+              router.push(todayCommand.primaryAction.route as never)
+            }
+            style={({ pressed }) => [
+              s.moodCard,
+              {
+                backgroundColor: pressed ? colors.secondary : colors.card,
+                borderColor: pressed ? todayCommandTone : colors.border,
+              },
+            ]}
+          >
+            <View style={s.moodCardBody}>
+              <View style={s.moodTitleRow}>
+                <Ionicons
+                  name="heart"
+                  size={20}
+                  color={
+                    status.mood === "unwell"
+                      ? colors.rose
+                      : status.mood === "anxious"
+                        ? colors.amber
+                        : colors.forest
+                  }
+                />
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    s.moodTitle,
+                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                  ]}
+                >
+                  {petName} is {HOME_MOOD_WORD[status.mood]}.
+                </Text>
+              </View>
+              <Text
+                numberOfLines={1}
+                style={[
+                  s.moodSub,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
+                {glanceLine}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+          </Pressable>
+
+          {/* Recency chips: Fed · Potty · Walk · Alone Time from real logs. */}
+          <View style={s.recencyRow}>
+            {recencyChips.map((chip) => (
+              <Pressable
+                key={chip.key}
+                accessibilityRole="button"
+                accessibilityLabel={`${chip.label}. ${chip.value}.`}
+                accessibilityHint={chip.hint}
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  router.push(chip.route as never);
+                }}
+                style={({ pressed }) => [
+                  s.recencyChip,
+                  {
+                    backgroundColor: pressed ? colors.secondary : colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <PixelIcon name={chip.icon} size={18} />
+                <View style={s.recencyCopy}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      s.recencyLabel,
+                      { color: colors.navy, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    {chip.label}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      s.recencyValue,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    {chip.value}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+
+          <View style={s.homeSplit}>
+            {/* Mock-board Quick Log: bare section title over a row of six
+                circular tiles floating on the parchment. */}
+            <View style={s.quickHomeCard}>
+              <View style={s.quickSectionHeader}>
+                <Text
+                  style={[
+                    s.quickSectionTitle,
+                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                  ]}
+                >
+                  Quick Log
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open full Quick Log"
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={() => router.push("/log")}
+                  style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                >
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={colors.mutedForeground}
+                  />
+                </Pressable>
+              </View>
+              <View style={s.homeQuickGrid}>
+                {HOME_QUICK_LOG.slice(0, 6).map((item) => (
+                  <Pressable
+                    key={item.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Log ${item.label}`}
+                    accessibilityHint={
+                      item.forceDetail
+                        ? "Opens details before saving."
+                        : "Long press opens details before saving."
+                    }
+                    onPress={() => logQuick(item)}
+                    onLongPress={() => openQuickDetails(item)}
+                    style={({ pressed }) => [
+                      s.homeQuickTile,
+                      { transform: [{ scale: pressed ? 0.94 : 1 }] },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        s.homeQuickCircle,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <PixelIcon name={item.icon} size={26} />
+                    </View>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.homeQuickText,
+                        { color: colors.navy, fontFamily: "Inter_600SemiBold" },
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <BoardCard style={s.nextCard}>
+              <BoardSectionHeader
+                title="Next Up"
+                accessory={
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open Plan. 1 of ${nextCount} next up.`}
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() => router.push("/calendar")}
+                    style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                  >
+                    <Ionicons
+                      name="ellipsis-horizontal"
+                      size={18}
+                      color={colors.mutedForeground}
+                    />
+                  </Pressable>
+                }
+              />
+              {nextPrimary ? (
+                <View style={s.nextPrimaryRow}>
+                  <Image
+                    source={require("@/assets/images/phoenix-avatar.png")}
+                    style={[s.nextThumb, { borderColor: colors.border, backgroundColor: colors.secondary }]}
+                    resizeMode="cover"
+                    accessibilityLabel={`${petName} thumbnail`}
+                  />
+                  <View style={s.nextPrimaryCopy}>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.nextPrimaryTitle,
+                        { color: colors.foreground, fontFamily: "Fredoka_600SemiBold" },
+                      ]}
+                    >
+                      {nextPrimary.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.nextPrimaryMeta,
+                        { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                      ]}
+                    >
+                      {nextPrimary.kind === "open-loop"
+                        ? nextDetail
+                        : `${nextPrimary.time}${nextPrimary.owner ? ` · ${nextPrimary.owner} assigned` : ""}`}
+                    </Text>
+                    <View style={s.nextButtonRow}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`${nextPrimary.meta ?? "Start"} ${nextPrimary.label}`}
+                        onPress={() => router.push(nextPrimary.route as never)}
+                        style={({ pressed }) => [
+                          s.nextButton,
+                          {
+                            backgroundColor: colors.primary,
+                            opacity: pressed ? 0.85 : 1,
+                          },
+                        ]}
+                      >
+                        <Text style={[s.nextButtonText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                          {nextPrimary.meta ?? "Start"}
+                        </Text>
+                      </Pressable>
+                      {nextPrimary.kind === "routine" ? (
+                        <>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Snooze ${nextPrimary.label} for 30 minutes`}
+                            onPress={() => snoozeNextUp(nextPrimary)}
+                            style={({ pressed }) => [
+                              s.nextButton,
+                              s.nextButtonSoft,
+                              {
+                                backgroundColor: pressed ? colors.muted : colors.secondary,
+                              },
+                            ]}
+                          >
+                            <Text style={[s.nextButtonText, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
+                              Snooze
+                            </Text>
+                          </Pressable>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Reassign ${nextPrimary.label} in Plan`}
+                            accessibilityHint="Opens the Plan tab, where routines and owners are edited."
+                            onPress={() => router.push("/calendar")}
+                            style={({ pressed }) => [
+                              s.nextButton,
+                              s.nextButtonSoft,
+                              {
+                                backgroundColor: pressed ? colors.muted : colors.secondary,
+                              },
+                            ]}
+                          >
+                            <Text style={[s.nextButtonText, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
+                              Reassign
+                            </Text>
+                          </Pressable>
+                        </>
+                      ) : null}
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <Text
+                  style={[
+                    s.nextEmptyText,
+                    { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                  ]}
+                >
+                  Everything scheduled is snoozed. It returns in 30 minutes, or
+                  open Plan to review.
+                </Text>
+              )}
+              {nextUp.length > 1 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`View ${nextUp.length - 1} more planned ${nextUp.length - 1 === 1 ? "item" : "items"} in Plan`}
+                  onPress={() => router.push("/calendar")}
+                  style={({ pressed }) => [s.nextMoreRow, { opacity: pressed ? 0.6 : 1 }]}
+                >
+                  <Text
+                    style={[
+                      s.nextMoreText,
+                      { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+                    ]}
+                  >
+                    {nextUp.length - 1} more in Plan
+                  </Text>
+                  <Ionicons name="chevron-forward" size={13} color={colors.mutedForeground} />
+                </Pressable>
+              ) : null}
+            </BoardCard>
+          </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Today's Story. ${todayStoryLine} Open Story.`}
+            accessibilityHint="Opens Phoenix's living story."
+            onPress={() => router.push("/story" as never)}
+            style={({ pressed }) => [
+              s.todayStoryCard,
+              {
+                backgroundColor: pressed ? colors.secondary : colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Image
+              source={require("@/assets/board/hero.png")}
+              style={[s.todayStoryThumb, { borderColor: colors.border }]}
+              resizeMode="cover"
+            />
+            <View style={s.todayStoryCopy}>
+              <Text
+                style={[
+                  s.todayStoryKicker,
+                  { color: colors.copper, fontFamily: "Fredoka_600SemiBold" },
+                ]}
+              >
+                Today's Story
+              </Text>
+              <Text
+                numberOfLines={2}
+                style={[
+                  s.todayStoryText,
+                  { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+                ]}
+              >
+                {todayStoryLine}
+              </Text>
+              <View style={s.todayStoryChips}>
+                {careCareer.todayXp > 0 ? (
+                  <View style={[s.todayStoryChip, { backgroundColor: colors.amberSoft }]}>
+                    <Text style={[s.todayStoryChipText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                      +{careCareer.todayXp} XP
+                    </Text>
+                  </View>
+                ) : null}
+                {careStreak >= 2 ? (
+                  <View style={[s.todayStoryChip, { backgroundColor: colors.sageSoft }]}>
+                    <Text style={[s.todayStoryChipText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
+                      {careStreak}-day streak
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+          </Pressable>
+
+          {/* Presence panel: who Phoenix is with right now, still one tap
+              from the live walk / alone-time workflows. Sits below the
+              mock-exact first screen. */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${presenceLabel}. Presence state ${presenceState}`}
@@ -1442,10 +1948,7 @@ export default function HomeScreen() {
             style={[
               s.presencePanel,
               {
-                width: `${homeFirstScreenLayout.presencePanelWidthPercent}%`,
                 minHeight: homeFirstScreenLayout.presencePanelMinHeight,
-                marginTop: -homeFirstScreenLayout.presencePanelOverlap,
-                marginBottom: homeFirstScreenLayout.presencePanelMarginBottom,
                 backgroundColor: colors.card,
                 borderColor: colors.border,
               },
@@ -1501,79 +2004,6 @@ export default function HomeScreen() {
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={17} color={colors.navy} />
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Today Command. ${todayCommand.primaryAction.label}. ${todayCommand.primaryAction.detail}`}
-            accessibilityHint="Opens the exact care workflow behind today's recommended action."
-            hitSlop={MOBILE_INLINE_HIT_SLOP}
-            onPress={() =>
-              router.push(todayCommand.primaryAction.route as never)
-            }
-            style={({ pressed }) => [
-              s.todayCommandCard,
-              {
-                backgroundColor: pressed ? colors.secondary : colors.card,
-                borderColor: pressed ? todayCommandTone : colors.border,
-              },
-            ]}
-          >
-            <View
-              style={[
-                s.todayCommandIcon,
-                { backgroundColor: todayCommandTone + "18" },
-              ]}
-            >
-              <PixelIcon
-                name={todayCommandPixelIcon(todayCommand.primaryAction.icon)}
-                size={28}
-              />
-            </View>
-            <View style={s.todayCommandCopy}>
-              <Text
-                style={[
-                  s.todayCommandKicker,
-                  { color: colors.copper, fontFamily: "Fredoka_600SemiBold" },
-                ]}
-              >
-                Today Command
-              </Text>
-              <Text
-                numberOfLines={1}
-                style={[
-                  s.todayCommandTitle,
-                  { color: colors.navy, fontFamily: "Fredoka_700Bold" },
-                ]}
-              >
-                {petName} is {HOME_MOOD_WORD[status.mood]}. {todayCommand.primaryAction.label}.
-              </Text>
-              <Text
-                numberOfLines={2}
-                style={[
-                  s.todayCommandDetail,
-                  {
-                    color: colors.mutedForeground,
-                    fontFamily: "Inter_600SemiBold",
-                  },
-                ]}
-              >
-                {todayCommand.primaryAction.detail}
-              </Text>
-            </View>
-            <View
-              style={[s.todayCommandCta, { backgroundColor: todayCommandTone }]}
-            >
-              <Text
-                style={[
-                  s.todayCommandCtaText,
-                  { fontFamily: "Inter_800ExtraBold" },
-                ]}
-              >
-                {todayCommandCta}
-              </Text>
-              <Ionicons name="chevron-forward" size={15} color="#FFF9EF" />
-            </View>
           </Pressable>
 
           <BoardCard style={s.careStatusCard}>
@@ -1665,150 +2095,6 @@ export default function HomeScreen() {
               ))}
             </View>
           </BoardCard>
-
-          <View style={s.homeSplit}>
-            <BoardCard style={[s.quickHomeCard, s.homeSplitCard]}>
-              <BoardSectionHeader
-                title="Quick Log"
-                accessory={
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Open full Quick Log"
-                    hitSlop={MOBILE_INLINE_HIT_SLOP}
-                    onPress={() => router.push("/log")}
-                    style={({ pressed }) => [
-                      s.quickHeaderAction,
-                      {
-                        backgroundColor: pressed
-                          ? colors.secondary
-                          : colors.accent,
-                        borderColor: colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        s.quickHeaderActionText,
-                        {
-                          color: colors.navy,
-                          fontFamily: "Inter_800ExtraBold",
-                        },
-                      ]}
-                    >
-                      Open
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={13}
-                      color={colors.navy}
-                    />
-                  </Pressable>
-                }
-              />
-              <View style={s.homeQuickGrid}>
-                {HOME_QUICK_LOG.slice(0, 6).map((item) => (
-                  <QuickActionTile
-                    key={item.key}
-                    icon={item.icon}
-                    label={item.label}
-                    accessibilityLabel={
-                      item.route ? "Open Quick Log" : `Log ${item.label}`
-                    }
-                    accessibilityHint={
-                      item.route
-                        ? "Opens the full Quick Log."
-                        : "Long press opens details before saving."
-                    }
-                    onPress={() => logQuick(item)}
-                    onLongPress={() => openQuickDetails(item)}
-                    accent={colors.secondary}
-                    style={s.homeQuickTile}
-                    iconSize={24}
-                    labelStyle={s.homeQuickText}
-                  />
-                ))}
-              </View>
-            </BoardCard>
-
-            <BoardCard style={[s.nextCard, s.homeSplitCard]}>
-              <BoardSectionHeader
-                title="Next Up"
-                accessory={
-                  <BoardPill
-                    label={`1 of ${nextCount}`}
-                    icon="list-outline"
-                    tone={colors.sage}
-                  />
-                }
-              />
-              {nextUp.slice(0, 3).map((item, index) => (
-                <CareRow
-                  key={`${item.label}-${item.time}-${index}`}
-                  icon={item.icon}
-                  title={item.label}
-                  detail={index === 0 ? nextDetail : item.time}
-                  meta={item.meta ?? ""}
-                  onPress={() => router.push(item.route as never)}
-                />
-              ))}
-            </BoardCard>
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Today's Story. ${todayStoryLine} Open Story.`}
-            accessibilityHint="Opens Phoenix's living story."
-            onPress={() => router.push("/story" as never)}
-            style={({ pressed }) => [
-              s.todayStoryCard,
-              {
-                backgroundColor: pressed ? colors.secondary : colors.card,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <Image
-              source={require("@/assets/board/hero.png")}
-              style={[s.todayStoryThumb, { borderColor: colors.border }]}
-              resizeMode="cover"
-            />
-            <View style={s.todayStoryCopy}>
-              <Text
-                style={[
-                  s.todayStoryKicker,
-                  { color: colors.copper, fontFamily: "Fredoka_600SemiBold" },
-                ]}
-              >
-                Today's Story
-              </Text>
-              <Text
-                numberOfLines={2}
-                style={[
-                  s.todayStoryText,
-                  { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
-                ]}
-              >
-                {todayStoryLine}
-              </Text>
-              <View style={s.todayStoryChips}>
-                {careCareer.todayXp > 0 ? (
-                  <View style={[s.todayStoryChip, { backgroundColor: colors.amberSoft }]}>
-                    <Text style={[s.todayStoryChipText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
-                      +{careCareer.todayXp} XP
-                    </Text>
-                  </View>
-                ) : null}
-                {careStreak >= 2 ? (
-                  <View style={[s.todayStoryChip, { backgroundColor: colors.sageSoft }]}>
-                    <Text style={[s.todayStoryChipText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
-                      {careStreak}-day streak
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-          </Pressable>
 
           <BoardCard style={s.careerCard}>
             <View
@@ -2625,22 +2911,14 @@ const s = StyleSheet.create({
     fontSize: 20,
     lineHeight: 24,
   },
-  identityChip: {
+  identityCareLine: {
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2.5,
+    gap: 4,
   },
-  identityDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  identityChipText: {
-    fontSize: 10.5,
+  identityCareText: {
+    fontSize: 11.5,
   },
 
   heroBackdrop: {
@@ -2689,11 +2967,8 @@ const s = StyleSheet.create({
     position: "relative",
   },
   presencePanel: {
-    width: "84%",
+    width: "100%",
     minHeight: MIN_MOBILE_TOUCH_TARGET,
-    alignSelf: "flex-start",
-    marginTop: -30,
-    marginLeft: 12,
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -2702,11 +2977,70 @@ const s = StyleSheet.create({
     borderRadius: 18,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    shadowColor: "#081424",
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
+  },
+
+  // Mock-board heart status card
+  moodCard: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    marginTop: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  moodCardBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  moodTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  moodTitle: {
+    flexShrink: 1,
+    minWidth: 0,
+    fontSize: 17,
+    lineHeight: 22,
+  },
+  moodSub: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 3,
+  },
+
+  // Recency chips: Fed · Potty · Walk · Alone Time
+  recencyRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  recencyChip: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  recencyCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  recencyLabel: {
+    fontSize: 10,
+  },
+  recencyValue: {
+    fontSize: 9.5,
+    marginTop: 1,
   },
   presenceAvatar: {
     width: 38,
@@ -3057,26 +3391,96 @@ const s = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0,
   },
+  quickSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  },
+  quickSectionTitle: {
+    fontSize: 17,
+    lineHeight: 22,
+  },
   homeQuickGrid: {
     flexDirection: "row",
     flexWrap: "nowrap",
     justifyContent: "space-between",
-    rowGap: 8,
   },
   homeQuickTile: {
     width: "15.5%",
-    minHeight: 62,
-    borderWidth: 0,
-    borderRadius: 14,
-    backgroundColor: "transparent",
+    minHeight: 74,
+    alignItems: "center",
+    gap: 5,
+  },
+  homeQuickCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 999,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 3,
-    paddingVertical: 4,
   },
   homeQuickText: {
     fontSize: 9.5,
     textAlign: "center",
+  },
+
+  // Next Up primary row: thumb + copy + Start/Snooze/Reassign
+  nextPrimaryRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    paddingTop: 2,
+  },
+  nextThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  nextPrimaryCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  nextPrimaryTitle: {
+    fontSize: 15,
+    lineHeight: 19,
+  },
+  nextPrimaryMeta: {
+    fontSize: 11.5,
+    lineHeight: 15,
+    marginTop: 2,
+  },
+  nextButtonRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+  nextButton: {
+    minHeight: 34,
+    borderRadius: 999,
+    paddingHorizontal: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nextButtonSoft: {},
+  nextButtonText: {
+    fontSize: 11.5,
+  },
+  nextEmptyText: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  nextMoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    marginTop: 10,
+    alignSelf: "flex-start",
+  },
+  nextMoreText: {
+    fontSize: 11,
   },
   questCard: {
     marginTop: 10,

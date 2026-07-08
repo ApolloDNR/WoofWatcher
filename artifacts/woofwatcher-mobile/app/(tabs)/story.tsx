@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   deriveAdventureMode,
@@ -40,6 +40,22 @@ const STORY_SEGMENTS: readonly { key: StorySegment; label: string }[] = [
   { key: "memories", label: "Memories" },
   { key: "badges", label: "Badges" },
 ];
+
+// Mock-board pixel art: the adventure map hero and its trail thumbnails are
+// decorative game art; every name, date, and count layered on top comes from
+// real logged walks only.
+const ADVENTURE_MAP_ART = require("@/assets/story/adventure-map.png");
+const TRAIL_THUMBS = [
+  require("@/assets/story/trail-thumb-1.png"),
+  require("@/assets/story/trail-thumb-2.png"),
+  require("@/assets/story/trail-thumb-3.png"),
+] as const;
+const BADGE_ART = [
+  require("@/assets/story/badge-1.png"),
+  require("@/assets/story/badge-2.png"),
+  require("@/assets/story/badge-3.png"),
+] as const;
+const BADGE_TROPHY_ART = require("@/assets/story/badge-trophy.png");
 
 function formatMemoryDate(iso: string): string {
   const date = new Date(iso);
@@ -189,51 +205,82 @@ export default function StoryScreen() {
 
         {segment === "adventures" ? (
           <>
-            {/* Adventure Trail hero: text-forward forest card, real summary only. */}
-            <BoardCard
-              style={[s.board, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+            {/* Adventure map hero: mock-board pixel map with the latest real
+                trail stop layered on top. */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                trailStops.length > 0
+                  ? `Adventure map. Latest discovery: ${trailStops[0].name}, ${formatMemoryDate(trailStops[0].latestAt)}. Open Adventure Mode.`
+                  : "Adventure map. No places discovered yet. Open Adventure Mode."
+              }
+              onPress={openAdventure}
+              style={({ pressed }) => [
+                s.mapCard,
+                { borderColor: colors.border, opacity: pressed ? 0.92 : 1 },
+              ]}
             >
-              <View style={s.heroTopRow}>
-                <Text
-                  style={[
-                    s.heroKicker,
-                    { color: colors.primaryForeground + "CC", fontFamily: "Inter_800ExtraBold" },
-                  ]}
-                >
-                  Adventure Trail
-                </Text>
-                <View style={[s.heroChip, { backgroundColor: colors.primaryForeground + "26" }]}>
-                  <Text
-                    style={[
-                      s.heroChipText,
-                      { color: colors.primaryForeground, fontFamily: "Inter_700Bold" },
-                    ]}
-                  >
-                    {trailStops.length > 0
-                      ? `${trailStops.length} ${trailStops.length === 1 ? "place" : "places"} discovered`
-                      : "Unexplored"}
-                  </Text>
-                </View>
+              <Image
+                source={ADVENTURE_MAP_ART}
+                style={s.mapArt}
+                resizeMode="cover"
+                fadeDuration={0}
+              />
+              <View style={[s.mapOverlayCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                {trailStops.length > 0 ? (
+                  <>
+                    <View style={s.mapOverlayCopy}>
+                      <Text
+                        numberOfLines={1}
+                        style={[s.mapOverlayTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                      >
+                        {trailStops[0].name}
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        style={[s.mapOverlayMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                      >
+                        {formatMemoryDate(trailStops[0].latestAt)}
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        style={[s.mapOverlayState, { color: colors.forest, fontFamily: "Inter_600SemiBold" }]}
+                      >
+                        Discovered
+                      </Text>
+                    </View>
+                    <Image
+                      source={TRAIL_THUMBS[0]}
+                      style={[s.mapOverlayThumb, { borderColor: colors.border }]}
+                      resizeMode="cover"
+                    />
+                    <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+                  </>
+                ) : (
+                  <View style={s.mapOverlayCopy}>
+                    <Text
+                      numberOfLines={1}
+                      style={[s.mapOverlayTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                    >
+                      The trail is waiting
+                    </Text>
+                    <Text
+                      numberOfLines={2}
+                      style={[s.mapOverlayMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                    >
+                      Log a walk with a place name to discover your first spot.
+                    </Text>
+                  </View>
+                )}
               </View>
-              <Text style={[s.heroSummary, { color: colors.primaryForeground, fontFamily: HERO_SERIF }]}>
-                {adventure.summary}
-              </Text>
-              <Text
-                style={[
-                  s.heroMeta,
-                  { color: colors.primaryForeground + "B3", fontFamily: "Inter_600SemiBold" },
-                ]}
-              >
-                {questsCompleteToday} of {adventure.quests.length} quests complete today
-              </Text>
-            </BoardCard>
+            </Pressable>
 
             {/* Recent adventures: real visited places from logged walks. */}
             <BoardCard style={s.board}>
-              <BoardSectionHeader title="Recent adventures" />
+              <BoardSectionHeader title="Recent Adventures" />
               {trailStops.length > 0 ? (
                 <View style={s.trailList}>
-                  {trailStops.map((stop) => (
+                  {trailStops.map((stop, index) => (
                     <Pressable
                       key={stop.id}
                       accessibilityRole="button"
@@ -241,9 +288,11 @@ export default function StoryScreen() {
                       onPress={openAdventure}
                       style={({ pressed }) => [s.trailRow, { opacity: pressed ? 0.72 : 1 }]}
                     >
-                      <View style={[s.trailIcon, { backgroundColor: colors.secondary }]}>
-                        <Ionicons name="trail-sign-outline" size={16} color={colors.forest} />
-                      </View>
+                      <Image
+                        source={TRAIL_THUMBS[index % TRAIL_THUMBS.length]}
+                        style={[s.trailThumb, { borderColor: colors.border }]}
+                        resizeMode="cover"
+                      />
                       <View style={s.trailCopy}>
                         <Text
                           numberOfLines={1}
@@ -262,7 +311,7 @@ export default function StoryScreen() {
                             stop.dogInteractions > 0 ? `${stop.dogInteractions} dog friends` : "",
                           ]
                             .filter(Boolean)
-                            .join(" - ")}
+                            .join(" · ")}
                         </Text>
                       </View>
                       <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
@@ -276,7 +325,7 @@ export default function StoryScreen() {
                 </Text>
               )}
               <BoardActionButton
-                label="View all adventures"
+                label="View All Adventures"
                 variant="soft"
                 icon="map-outline"
                 onPress={openAdventure}
@@ -503,8 +552,25 @@ export default function StoryScreen() {
                 Titles are {petName}'s badge ladder. Every one below was unlocked by real logged
                 care - {career.totalXp.toLocaleString()} lifetime care XP so far.
               </Text>
+              {/* Mock-board badge shelf: one pixel emblem per earned title,
+                  the trophy marks the current one. */}
+              <View style={s.badgeShelf}>
+                {earnedTitles.slice(0, 4).map((earned, index) => (
+                  <Image
+                    key={`shelf-${earned.title}`}
+                    source={
+                      earned.title === career.title
+                        ? BADGE_TROPHY_ART
+                        : BADGE_ART[index % BADGE_ART.length]
+                    }
+                    style={s.badgeShelfArt}
+                    resizeMode="contain"
+                    accessibilityLabel={`${earned.title} badge`}
+                  />
+                ))}
+              </View>
               <View style={s.titleList}>
-                {earnedTitles.map((earned) => {
+                {earnedTitles.map((earned, earnedIndex) => {
                   const current = earned.title === career.title;
                   return (
                     <View
@@ -517,18 +583,15 @@ export default function StoryScreen() {
                         },
                       ]}
                     >
-                      <View
-                        style={[
-                          s.titleIcon,
-                          { backgroundColor: current ? colors.amberSoft : colors.secondary },
-                        ]}
-                      >
-                        <Ionicons
-                          name={current ? "ribbon" : "ribbon-outline"}
-                          size={16}
-                          color={current ? colors.amber : colors.mutedForeground}
-                        />
-                      </View>
+                      <Image
+                        source={
+                          current
+                            ? BADGE_TROPHY_ART
+                            : BADGE_ART[earnedIndex % BADGE_ART.length]
+                        }
+                        style={s.titleBadgeArt}
+                        resizeMode="contain"
+                      />
                       <View style={s.titleCopy}>
                         <Text
                           numberOfLines={1}
@@ -592,8 +655,53 @@ const s = StyleSheet.create({
   statPairValue: { fontSize: 16, marginTop: 3 },
   statPairLabel: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0 },
   statPairDetail: { fontSize: 10.5, lineHeight: 14 },
+  mapCard: {
+    borderRadius: 22,
+    borderWidth: 1,
+    overflow: "hidden",
+    marginBottom: 12,
+    aspectRatio: 5 / 4,
+  },
+  mapArt: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+  },
+  mapOverlayCard: {
+    position: "absolute",
+    right: 12,
+    bottom: 12,
+    maxWidth: "78%",
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  mapOverlayCopy: { flexShrink: 1, minWidth: 0 },
+  mapOverlayTitle: { fontSize: 13.5 },
+  mapOverlayMeta: { fontSize: 11, marginTop: 1 },
+  mapOverlayState: { fontSize: 11, marginTop: 3 },
+  mapOverlayThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
   trailList: { gap: 4, marginBottom: 2 },
-  trailRow: { flexDirection: "row", alignItems: "center", gap: 11, minHeight: 52, paddingVertical: 6 },
+  trailRow: { flexDirection: "row", alignItems: "center", gap: 11, minHeight: 56, paddingVertical: 6 },
+  trailThumb: { width: 48, height: 48, borderRadius: 12, borderWidth: 1 },
+  badgeShelf: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+    marginBottom: 12,
+    paddingVertical: 4,
+  },
+  badgeShelfArt: { width: 58, height: 58 },
+  titleBadgeArt: { width: 34, height: 34 },
   trailIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   trailCopy: { flex: 1, minWidth: 0 },
   trailName: { fontSize: 14 },

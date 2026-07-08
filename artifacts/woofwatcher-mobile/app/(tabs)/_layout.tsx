@@ -1,4 +1,4 @@
-import { Tabs, useRouter } from "expo-router";
+import { Tabs, usePathname, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React from "react";
@@ -30,24 +30,35 @@ function TabIcon({
 }
 
 /* Today is the elevated center tab: the paw button drops the owner into
-   Phoenix's living room. Quick Log stays one tap away on the Log tab. */
+   Phoenix's living room. Pressing it again while already home opens the
+   fast-log sheet, so the paw is also the quickest way to log care. */
 function CenterToday() {
   const colors = useColors();
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const chrome = getFloatingTabChromeMetrics({
     platform: Platform.OS,
     bottomInset: insets.bottom,
   });
+  const onToday = pathname === "/" || pathname === "/index";
   return (
     <View pointerEvents="box-none" style={[s.fabWrap, { bottom: chrome.centerFabBottom }]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Today"
-        accessibilityHint="Open Phoenix's room and today's care"
+        accessibilityLabel={onToday ? "Quick log" : "Today"}
+        accessibilityHint={
+          onToday
+            ? "Opens the fast log sheet"
+            : "Open Phoenix's room and today's care"
+        }
         onPress={() => {
           if (Platform.OS !== "web") {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          }
+          if (onToday) {
+            router.push("/fastlog" as never);
+            return;
           }
           router.push("/");
         }}
