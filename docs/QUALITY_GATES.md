@@ -1270,6 +1270,14 @@ CareContext persistence, so valid saved Clerk production, redirect/deep-link,
 household membership, Apollo auth launch, and iOS/Android Auth/Setup screenshot
 evidence can reach `buildAuthSetupProofManifest`. Local red/green verification
 first failed on the empty manifest calls, then focused mobile readiness plus
-provider setup tests passed `121/121`. This does not configure Clerk, approve
-OAuth, enable provider-backed household creation, attach real native
-screenshots, satisfy store review, launch publicly, or replace Apollo sign-off.
+provider setup tests passed `121/121`; the full zero-dependency
+API/mobile/PWA/care-domain suite, root TypeScript, mobile TypeScript, PixelLab
+asset verification, and `git diff --check` passed. Direct JSON mobile beta
+doctor source-backed checks passed for Auth/Setup proof surfaces while remaining
+truthfully `BLOCKED` only because local pnpm is `11.7.0` versus pinned
+`10.24.0` and Corepack is not on PATH. Branch CI proved implementation commit
+`deeda5d9` in `WoofWatcher Verify` run `28913476038`, completed success in
+`3m5s` on `automation/premium-revenue-product-builder`. This does not configure
+Clerk, approve OAuth, enable provider-backed household creation, attach real
+native screenshots, satisfy store review, launch publicly, or replace Apollo
+sign-off.

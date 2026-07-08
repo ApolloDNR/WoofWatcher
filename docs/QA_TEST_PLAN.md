@@ -2553,6 +2553,14 @@ Latest local evidence, 2026-07-07:
 - Red/green verification first failed because AuthShell, Setup, and
   `/care-twin-qa?qaSurface=auth-setup-onboarding-proof` still rendered empty
   Auth/Setup manifests. After implementation, focused mobile readiness plus
-  provider setup tests passed `121/121`. Real Clerk configuration, OAuth,
-  provider-backed household creation, native screenshots, store review, public
-  launch, and Apollo sign-off remain blocked.
+  provider setup tests passed `121/121`; the full zero-dependency
+  API/mobile/PWA/care-domain suite, root TypeScript, mobile TypeScript,
+  PixelLab asset verification, and `git diff --check` passed. Direct JSON
+  mobile beta doctor source-backed checks passed for Auth/Setup proof surfaces
+  while remaining truthfully `BLOCKED` only because local pnpm is `11.7.0`
+  versus pinned `10.24.0` and Corepack is not on PATH.
+- Branch CI proved implementation commit `deeda5d9` in `WoofWatcher Verify` run
+  `28913476038`, completed success in `3m5s` on
+  `automation/premium-revenue-product-builder`. Real Clerk configuration,
+  OAuth, provider-backed household creation, native screenshots, store review,
+  public launch, and Apollo sign-off remain blocked.
