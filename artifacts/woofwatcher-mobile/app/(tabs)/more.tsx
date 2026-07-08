@@ -13,7 +13,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -86,6 +85,7 @@ import {
 import { buildReleasePacket, buildReleasePacketShareText } from "@/lib/releasePacket";
 import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from "@/lib/storeSubmissionPacket";
 import { deriveSupportRunbookPlan } from "@/lib/supportRunbook";
+import { shareTextPayload } from "@/lib/shareText";
 import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
@@ -695,10 +695,10 @@ export default function MoreScreen() {
   const shareInvite = () => {
     if (!household) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({
+    void shareTextPayload({
       message: `Join our ${household.name} on WoofWatcher to help care for ${petName}. Invite code: ${household.inviteCode}`,
       title: "WoofWatcher invite",
-    }).catch(() => Alert.alert("Invite code", household.inviteCode));
+    });
   };
 
   const openFuturePetSheet = () => {
@@ -771,9 +771,7 @@ export default function MoreScreen() {
       "Provider-backed sharing is not live yet; review this before granting real access.",
     ].join("\n");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message, title: `WoofWatcher Access Pass - ${pass.holderName}` }).catch(() =>
-      Alert.alert("Access Pass", message),
-    );
+    void shareTextPayload({ message, title: `WoofWatcher Access Pass - ${pass.holderName}` });
   };
 
   const submitJoin = () => {
@@ -964,9 +962,7 @@ export default function MoreScreen() {
       `Care boundary: ${profile.vetBoundary}`,
     ].join("\n");
 
-    Share.share({ message: pass, title: `WoofWatcher Care Pass - ${petName}` }).catch(() =>
-      Alert.alert("Care Pass", pass),
-    );
+    void shareTextPayload({ message: pass, title: `WoofWatcher Care Pass - ${petName}` });
   };
 
   const dietItems: { icon: PulseIconName; label: string; value: string }[] = [
@@ -1219,19 +1215,15 @@ export default function MoreScreen() {
 
   const shareProviderSetupPlan = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({
+    void shareTextPayload({
       message: buildLaunchProviderSetupShareText(launchProviderSetupPlan, new Date(now).toISOString()),
       title: launchProviderSetupPlan.title,
-    }).catch(() =>
-      Alert.alert("Provider Launch Setup", buildLaunchProviderSetupShareText(launchProviderSetupPlan, new Date(now).toISOString())),
-    );
+    });
   };
 
   const shareLaunchPacket = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message: buildReleasePacketShareText(launchReleasePacket), title: launchReleasePacket.title }).catch(() =>
-      Alert.alert("Launch Packet", buildReleasePacketShareText(launchReleasePacket)),
-    );
+    void shareTextPayload({ message: buildReleasePacketShareText(launchReleasePacket), title: launchReleasePacket.title });
   };
 
   const shareBetaHandoffPacket = () => {
@@ -1244,35 +1236,29 @@ export default function MoreScreen() {
       proofManifest: savedQaProofManifest,
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message, title: "WoofWatcher 48-Hour Beta Handoff" }).catch(() =>
-      Alert.alert("Beta Handoff", message),
-    );
+    void shareTextPayload({ message, title: "WoofWatcher 48-Hour Beta Handoff" });
   };
 
   const shareStoreSubmissionPacket = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message: buildStoreSubmissionPacketShareText(launchStoreSubmissionPacket), title: launchStoreSubmissionPacket.title }).catch(() =>
-      Alert.alert("Store Submission", buildStoreSubmissionPacketShareText(launchStoreSubmissionPacket)),
-    );
+    void shareTextPayload({ message: buildStoreSubmissionPacketShareText(launchStoreSubmissionPacket), title: launchStoreSubmissionPacket.title });
   };
 
   const shareNativeQaCapturePlan = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({
+    void shareTextPayload({
       message: buildMobileLaunchQaCaptureShareText(nativeQaCapturePlan, new Date(now).toISOString()),
       title: "WoofWatcher Native QA Plan",
-    }).catch(() =>
-      Alert.alert("Native QA Plan", buildMobileLaunchQaCaptureShareText(nativeQaCapturePlan, new Date(now).toISOString())),
-    );
+    });
   };
 
   const shareNativeQaFixBrief = () => {
     const message = buildMobileLaunchQaFixBriefShareText(nativeQaCapturePlan, new Date(now).toISOString());
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({
+    void shareTextPayload({
       message,
       title: "WoofWatcher Needs Tune Fix Brief",
-    }).catch(() => Alert.alert("Needs Tune Fix Brief", message));
+    });
   };
 
   const openLaunchNextGate = () => {

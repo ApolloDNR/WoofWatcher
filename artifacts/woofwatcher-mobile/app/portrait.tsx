@@ -531,7 +531,7 @@ export default function PortraitScreen() {
           title="Avatar Studio"
           subtitle="Choose a pixel twin, then customize."
           back
-          onBack={() => router.back()}
+          onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
           actionIcon="checkmark"
           actionLabel="Save avatar"
           onAction={saveDraft}

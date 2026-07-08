@@ -12,7 +12,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -92,6 +91,7 @@ import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle } from "@/lib/pixelRendering";
+import { shareTextPayload } from "@/lib/shareText";
 import { BoardActionButton, BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -1693,9 +1693,7 @@ export default function LogScreen() {
   const shareEntryHandoff = useCallback((e: Entry) => {
     const message = buildEntryHandoffMessage(e);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message, title: `${e.title} handoff` }).catch(() =>
-      Alert.alert("Entry handoff", message),
-    );
+    void shareTextPayload({ message, title: `${e.title} handoff` });
   }, []);
 
   const handleTrustReview = useCallback(

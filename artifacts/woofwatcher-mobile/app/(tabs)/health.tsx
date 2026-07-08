@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ImageBackground, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { ImageBackground, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { deriveHealthWatch, normalizeCareEventType } from "@workspace/care-domain";
 
@@ -29,6 +29,7 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { pixelImageStyle } from "@/lib/pixelRendering";
+import { shareTextPayload } from "@/lib/shareText";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -365,7 +366,7 @@ export default function HealthScreen() {
   }
 
   async function shareHealthReviewPacket(): Promise<void> {
-    await Share.share({
+    await shareTextPayload({
       message: buildHealthReviewPacketShareText(healthReviewPacket, {
         dogName: state.profile.name || "Phoenix",
         generatedAtIso: new Date(now).toISOString(),

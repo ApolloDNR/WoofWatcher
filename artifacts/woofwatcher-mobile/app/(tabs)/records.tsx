@@ -94,6 +94,7 @@ import {
 } from "@/lib/reportGeneratedBinaryArtifact";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
+import { shareTextPayload } from "@/lib/shareText";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -533,16 +534,12 @@ export default function RecordsScreen() {
     ]
       .filter(Boolean)
       .join("\n");
-    Share.share({ message: lines, title: `${state.profile.name} - ${periodLabel} report` }).catch(() =>
-      Alert.alert("Progress report", lines),
-    );
+    void shareTextPayload({ message: lines, title: `${state.profile.name} - ${periodLabel} report` });
   };
 
   const shareCredential = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Share.share({ message: credential.message, title: `${credential.name} Dog ID` }).catch(() =>
-      Alert.alert(`${credential.name} Dog ID`, credential.message),
-    );
+    void shareTextPayload({ message: credential.message, title: `${credential.name} Dog ID` });
   };
 
   const sharePrintableSourceFile = async (
@@ -564,11 +561,7 @@ export default function RecordsScreen() {
         title: options.title,
       });
       const fallbackContent = buildReportArtifactShareContent(fallbackPlan);
-      try {
-        await Share.share(fallbackContent);
-      } catch {
-        Alert.alert(fallbackContent.title, fallbackContent.message);
-      }
+      await shareTextPayload({ title: fallbackContent.title, message: fallbackContent.message });
     };
 
     if (plan.canWriteLocalFile && plan.directoryUri && plan.fileUri) {
@@ -607,11 +600,7 @@ export default function RecordsScreen() {
         title: options.title,
       });
       const fallbackContent = buildGeneratedBinaryArtifactShareContent(fallbackPlan);
-      try {
-        await Share.share(fallbackContent);
-      } catch {
-        Alert.alert(fallbackContent.title, fallbackContent.message);
-      }
+      await shareTextPayload({ title: fallbackContent.title, message: fallbackContent.message });
     };
 
     if (plan.canWriteLocalFile && plan.directoryUri && plan.fileUri) {
@@ -720,16 +709,12 @@ export default function RecordsScreen() {
         ...doc.reportArtifacts.filter((item) => item.id !== artifact.id),
       ].slice(0, 12),
     }));
-    Share.share({ message: pass.message, title: pass.title }).catch(() =>
-      Alert.alert(pass.title, pass.message),
-    );
+    void shareTextPayload({ message: pass.message, title: pass.title });
   };
 
   const shareReportArtifact = (artifact: CarePassArtifact) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message: artifact.message, title: artifact.title }).catch(() =>
-      Alert.alert(artifact.title, artifact.message),
-    );
+    void shareTextPayload({ message: artifact.message, title: artifact.title });
   };
 
   const sharePrintableReportArtifact = async (artifact: CarePassArtifact) => {

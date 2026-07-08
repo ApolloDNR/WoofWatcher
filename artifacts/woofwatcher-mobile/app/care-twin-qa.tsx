@@ -4,7 +4,7 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
@@ -38,6 +38,7 @@ import { buildAccountDeletionProofManifest } from "@/lib/accountDeletionProof";
 import { buildSupportLegalReadinessProofManifest, deriveSupportRunbookPlan } from "@/lib/supportRunbook";
 import { buildRecordsLocalFileHandoffProofManifest } from "@/lib/reportArtifactExportFile";
 import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
+import { shareTextPayload } from "@/lib/shareText";
 import {
   buildRouteVisualProofManifest,
   buildStoreSubmissionScreenshotQaSurfaces,
@@ -725,53 +726,37 @@ function CareTwinQaScreenBody() {
       buildCareTwinQaShareText(scenarios, qaReviews, reviewedAtIso),
     ].join("\n\n");
 
-    try {
-      await Share.share({
-        title: "WoofWatcher Mobile Release QA",
-        message,
-      });
-    } catch {
-      Alert.alert("Share failed", "Could not open the native share sheet for this QA report.");
-    }
+    await shareTextPayload({
+      title: "WoofWatcher Mobile Release QA",
+      message,
+    });
   };
 
   const shareFocusedTargetChecklist = async () => {
     const generatedAtIso = new Date().toISOString();
     const message = buildMobileLaunchQaFocusedTargetShareText(focusedQaTarget, generatedAtIso);
 
-    try {
-      await Share.share({
-        title: "WoofWatcher Focused QA Target",
-        message,
-      });
-    } catch {
-      Alert.alert("Focused QA Target", message);
-    }
+    await shareTextPayload({
+      title: "WoofWatcher Focused QA Target",
+      message,
+    });
   };
 
   const shareFocusedFixBrief = async () => {
     const generatedAtIso = new Date().toISOString();
     const message = buildMobileLaunchQaFixBriefShareText(betaCapturePlan, generatedAtIso);
 
-    try {
-      await Share.share({
-        title: "WoofWatcher Needs Tune Fix Brief",
-        message,
-      });
-    } catch {
-      Alert.alert("Needs Tune Fix Brief", message);
-    }
+    await shareTextPayload({
+      title: "WoofWatcher Needs Tune Fix Brief",
+      message,
+    });
   };
 
   const shareStoreSubmissionPacket = async () => {
-    try {
-      await Share.share({
-        title: storeSubmissionPacket.title,
-        message: buildStoreSubmissionPacketShareText(storeSubmissionPacket),
-      });
-    } catch {
-      Alert.alert("Store Submission", buildStoreSubmissionPacketShareText(storeSubmissionPacket));
-    }
+    await shareTextPayload({
+      title: storeSubmissionPacket.title,
+      message: buildStoreSubmissionPacketShareText(storeSubmissionPacket),
+    });
   };
 
   return (

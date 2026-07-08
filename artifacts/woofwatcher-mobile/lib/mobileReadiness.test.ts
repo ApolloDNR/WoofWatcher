@@ -766,7 +766,7 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Mobile release cockpit\./);
   assert.match(qaRoute, /qaStatusById/);
   assert.match(qaRoute, /qaNotes/);
-  assert.match(qaRoute, /Share\.share/);
+  assert.match(qaRoute, /shareTextPayload/);
   assert.match(qaRoute, /buildCareTwinQaShareText/);
   assert.match(qaRoute, /listMobileReleaseQaSurfaces/);
   assert.match(qaRoute, /buildMobileReleaseQaShareText/);
@@ -2007,7 +2007,7 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /Share health review/);
   assert.match(
     health,
-    /Share\.share\(\{[\s\S]*message:\s*buildHealthReviewPacketShareText\(healthReviewPacket/,
+    /shareTextPayload\(\{[\s\S]*message:\s*buildHealthReviewPacketShareText\(healthReviewPacket/,
   );
   assert.match(health, /action\.route\.startsWith\("\/log\?"\)/);
   assert.match(health, /router\.push\(action\.route as never\)/);
@@ -4904,7 +4904,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(
     more,
-    /Share\.share\(\{[\s\S]*message:\s*buildLaunchProviderSetupShareText\(launchProviderSetupPlan/,
+    /shareTextPayload\(\{[\s\S]*message:\s*buildLaunchProviderSetupShareText\(launchProviderSetupPlan/,
   );
   assert.match(
     more,
@@ -4916,15 +4916,15 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(more, /livePreviewProof:\s*RECORDED_LIVE_PREVIEW_HANDOFF_PROOF/);
   assert.match(
     more,
-    /Share\.share\(\{ message,\s*title:\s*"WoofWatcher 48-Hour Beta Handoff" \}/,
+    /shareTextPayload\(\{ message,\s*title:\s*"WoofWatcher 48-Hour Beta Handoff" \}/,
   );
   assert.match(
     more,
-    /Share\.share\(\{ message: buildReleasePacketShareText\(launchReleasePacket\)/,
+    /shareTextPayload\(\{ message: buildReleasePacketShareText\(launchReleasePacket\)/,
   );
   assert.match(
     more,
-    /Share\.share\(\{ message: buildStoreSubmissionPacketShareText\(launchStoreSubmissionPacket\)/,
+    /shareTextPayload\(\{ message: buildStoreSubmissionPacketShareText\(launchStoreSubmissionPacket\)/,
   );
   assert.match(careContext, /launchProviderProfile/);
   assert.match(careContext, /supportLegalReadinessEvidence\?:\s*SupportLegalReadinessProofEvidence \| null/);
@@ -5061,7 +5061,7 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   assert.match(more, /nativeQaCaptureCockpitAction/);
   assert.match(
     more,
-    /Share\.share\(\{[\s\S]*message:\s*buildMobileLaunchQaCaptureShareText\(nativeQaCapturePlan/,
+    /shareTextPayload\(\{[\s\S]*message:\s*buildMobileLaunchQaCaptureShareText\(nativeQaCapturePlan/,
   );
   assert.match(
     more,
