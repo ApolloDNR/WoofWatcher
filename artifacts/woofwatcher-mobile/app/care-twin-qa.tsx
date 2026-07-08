@@ -4,7 +4,7 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
@@ -29,6 +29,7 @@ import {
 } from "@/lib/careTwinQaReport";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
+import { notifyDialog } from "@/lib/confirmDialog";
 import { deriveCareEntryProviderSyncProof } from "@/lib/careEntryProviderSyncProof";
 import { buildAiProviderProofManifest } from "@/lib/aiProviderProof";
 import { buildPushNotificationsProofManifest } from "@/lib/pushNotificationsProof";
@@ -692,7 +693,7 @@ function CareTwinQaScreenBody() {
         capturedAtIso: new Date().toISOString(),
       }, fallbackFileName);
     } catch {
-      Alert.alert("Screenshot unavailable", "Choose the screenshot from Photos after capturing it on iOS or Android.");
+      notifyDialog("Screenshot unavailable", "Choose the screenshot from Photos after capturing it on iOS or Android.");
       return null;
     }
   };

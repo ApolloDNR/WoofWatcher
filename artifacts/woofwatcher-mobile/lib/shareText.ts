@@ -52,8 +52,12 @@ async function shareOnWeb(payload: ShareTextPayload): Promise<ShareTextOutcome> 
     try {
       await g.navigator.share({ title: payload.title, text: payload.message });
       return "shared";
-    } catch {
-      // User cancel or unsupported payload: fall through to the clipboard.
+    } catch (error) {
+      // A deliberate cancel is a completed decision, not a failure to
+      // route around — only unsupported payloads fall through.
+      if ((error as { name?: string })?.name === "AbortError") {
+        return "failed";
+      }
     }
   }
 

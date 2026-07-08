@@ -56,6 +56,12 @@ import {
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import type { Mood } from "@/lib/phoenixStatus";
 
+// Constant ink for text on the fixed cream overlay chips/bubbles: the
+// overlays keep their light surface in both color schemes, so their text
+// must not flip with the theme.
+const OVERLAY_INK = "#26221C";
+const OVERLAY_MUTED_INK = "#6E6753";
+
 const ROOM_SCENE = require("@/assets/board/hero.png");
 
 const STATE_SCENES: Record<Mood, ImageSourcePropType> = {
@@ -296,6 +302,7 @@ export function LivingPhoenixRoom({
     useState<CareTwinSpriteAction | null>(null);
   const reactionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ambientTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastReactionIdRef = useRef<number | null>(null);
   const activeSpriteAction =
     activeReaction?.spriteAction ?? ambientSpriteAction ?? plan.spriteAction;
   // Immersive mode keeps the real care actions; only framed compact stages
@@ -494,6 +501,11 @@ export function LivingPhoenixRoom({
 
   useEffect(() => {
     if (!reaction) return;
+    // The host never nulls the reaction prop, so replay only genuinely new
+    // reactions — otherwise a scene-phase change re-runs this effect and
+    // resurrects a stale banner (and re-freezes the roaming twin).
+    if (reaction.id === lastReactionIdRef.current) return;
+    lastReactionIdRef.current = reaction.id;
     if (reactionTimer.current) clearTimeout(reactionTimer.current);
     if (ambientTimer.current) clearTimeout(ambientTimer.current);
     setAmbientSpriteAction(null);
@@ -948,7 +960,7 @@ export function LivingPhoenixRoom({
             ]}
           >
             <PixelIcon name={zone.icon} size={15} />
-            <Text style={[styles.zoneChipText, { color: colors.navy }]}>
+            <Text style={[styles.zoneChipText, { color: OVERLAY_INK }]}>
               {zone.label}
             </Text>
           </Animated.View>
@@ -966,7 +978,7 @@ export function LivingPhoenixRoom({
           ]}
         >
           <View style={styles.roomStatsHeader}>
-            <Text style={[styles.roomStatsTitle, { color: colors.navy }]}>
+            <Text style={[styles.roomStatsTitle, { color: OVERLAY_INK }]}>
               STATUS
             </Text>
             <View style={styles.roomStatsSignalWrap}>
@@ -994,7 +1006,7 @@ export function LivingPhoenixRoom({
                 <View style={styles.roomStatTop}>
                   <Text
                     numberOfLines={1}
-                    style={[styles.roomStatLabel, { color: colors.navy }]}
+                    style={[styles.roomStatLabel, { color: OVERLAY_INK }]}
                   >
                     {stat.label}
                   </Text>
@@ -1039,7 +1051,7 @@ export function LivingPhoenixRoom({
             compactChrome ? styles.speechBubbleCompact : null,
             {
               backgroundColor: "rgba(255,249,239,0.94)",
-              borderColor: colors.navy,
+              borderColor: OVERLAY_INK,
             },
           ]}
         >
@@ -1049,7 +1061,7 @@ export function LivingPhoenixRoom({
               style={[
                 styles.speechText,
                 compactChrome ? styles.speechTextCompact : null,
-                { color: colors.navy },
+                { color: OVERLAY_INK },
               ]}
             >
               {line}
@@ -1060,7 +1072,7 @@ export function LivingPhoenixRoom({
               styles.speechTail,
               {
                 backgroundColor: "rgba(255,249,239,0.94)",
-                borderColor: colors.navy,
+                borderColor: OVERLAY_INK,
               },
             ]}
           />
@@ -1180,13 +1192,13 @@ export function LivingPhoenixRoom({
         >
           <View style={styles.dockColumn}>
             <Text
-              style={[styles.dockKicker, { color: colors.mutedForeground }]}
+              style={[styles.dockKicker, { color: OVERLAY_MUTED_INK }]}
             >
               Presence
             </Text>
             <Text
               numberOfLines={1}
-              style={[styles.dockText, { color: colors.navy }]}
+              style={[styles.dockText, { color: OVERLAY_INK }]}
             >
               {presenceLabel}
             </Text>
@@ -1196,13 +1208,13 @@ export function LivingPhoenixRoom({
           />
           <View style={styles.dockColumn}>
             <Text
-              style={[styles.dockKicker, { color: colors.mutedForeground }]}
+              style={[styles.dockKicker, { color: OVERLAY_MUTED_INK }]}
             >
               Care cue
             </Text>
             <Text
               numberOfLines={1}
-              style={[styles.dockText, { color: colors.navy }]}
+              style={[styles.dockText, { color: OVERLAY_INK }]}
             >
               {plan.recommendedActionLabel}
             </Text>
@@ -1212,7 +1224,7 @@ export function LivingPhoenixRoom({
           />
           <View style={styles.energyDock}>
             <Text
-              style={[styles.dockKicker, { color: colors.mutedForeground }]}
+              style={[styles.dockKicker, { color: OVERLAY_MUTED_INK }]}
             >
               Energy
             </Text>
@@ -1329,6 +1341,12 @@ function RoamingTwinRig({
       depth.value = withTiming(leg.to.scale, timing);
     } else {
       setMoving(false);
+      // Pin the dwell pose directly: a plan reset can land here while a
+      // stale walk tween from the previous plan is still running, and a
+      // direct assignment both cancels it and grounds the twin.
+      xPx.value = (leg.from.xPct / 100) * stageWidth;
+      yPx.value = (leg.from.yPct / 100) * stageHeight;
+      depth.value = leg.from.scale;
     }
     const timer = setTimeout(() => {
       setLegIndex((index) => (index + 1) % plan.legs.length);

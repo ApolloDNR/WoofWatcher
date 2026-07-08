@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef } from "react";
 import {
-  Alert,
   Animated,
   ImageBackground,
   Platform,
@@ -29,6 +28,7 @@ import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/Boa
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { notifyDialog } from "@/lib/confirmDialog";
 import { MIN_MOBILE_TOUCH_TARGET, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import { buildPaymentsProviderProofManifest } from "@/lib/paymentsProviderProof";
 import { pixelImageStyle } from "@/lib/pixelRendering";
@@ -116,7 +116,7 @@ function PremiumScreenBody() {
 
   const showLaunchChecklist = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert(
+    notifyDialog(
       "Premium launch checklist",
       "Payments stay disabled until privacy terms, support scope, refund workflow, subscription packaging, and app-store launch target are approved.",
     );

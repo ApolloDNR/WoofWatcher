@@ -5,7 +5,6 @@ import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   ImageBackground,
   KeyboardAvoidingView,
@@ -79,6 +78,7 @@ import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import {
   buildReportArtifactExportFilePlan,
@@ -461,14 +461,14 @@ export default function RecordsScreen() {
         setRecordAttachmentUri(result.assets[0].uri);
       }
     } catch {
-      Alert.alert("Attachment unavailable", "Choose the file details manually for now.");
+      notifyDialog("Attachment unavailable", "Choose the file details manually for now.");
     }
   };
 
   const saveRecord = () => {
     const title = recordTitle.trim();
     if (!title) {
-      Alert.alert("Add a title", `Name this ${recordOption.label.toLowerCase()} record.`);
+      notifyDialog("Add a title", `Name this ${recordOption.label.toLowerCase()} record.`);
       return;
     }
     const id = `record_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -497,17 +497,20 @@ export default function RecordsScreen() {
 
   const deleteRecord = (id: string | undefined, title: string) => {
     if (!id) return;
-    Alert.alert("Delete record", `Remove "${title}" from ${state.profile.name}'s vault?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          updateCareDoc((doc) => ({ ...doc, records: doc.records.filter((record) => record.id !== id) }));
+    confirmThroughSteps(
+      [
+        {
+          title: "Delete record",
+          message: `Remove "${title}" from ${state.profile.name}'s vault?`,
+          confirmLabel: "Delete",
+          destructive: true,
         },
+      ],
+      () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        updateCareDoc((doc) => ({ ...doc, records: doc.records.filter((record) => record.id !== id) }));
       },
-    ]);
+    );
   };
 
   const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? "Month";

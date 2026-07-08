@@ -4,7 +4,6 @@ import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   ImageBackground,
   KeyboardAvoidingView,
@@ -35,6 +34,7 @@ import {
   type StickyNoteColor,
 } from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
+import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
@@ -1187,7 +1187,7 @@ export default function LogScreen() {
       if (!trimmed && config.numeric.optional) {
         amount = undefined;
       } else if (n == null || (n <= 0 && config.type !== "meal")) {
-        Alert.alert("Add a value", `Enter a ${config.numeric.label.toLowerCase()} to log.`);
+        notifyDialog("Add a value", `Enter a ${config.numeric.label.toLowerCase()} to log.`);
         return null;
       } else {
         const unit = config.numeric.unit === "diet" ? dietProgress.unit : state.profile.weight.unit;
@@ -1206,12 +1206,12 @@ export default function LogScreen() {
       const eaten = parseNonNegativeNumber(eatenAmount);
 
       if (eatenAmount.trim() && eaten == null) {
-        Alert.alert("Check eaten amount", "Enter a valid eaten amount, or leave it blank.");
+        notifyDialog("Check eaten amount", "Enter a valid eaten amount, or leave it blank.");
         return null;
       }
 
       if (mealOutcomeNeedsEatenAmount(completion) && eaten == null) {
-        Alert.alert("Add eaten amount", "For a partial meal, enter how much Phoenix actually ate.");
+        notifyDialog("Add eaten amount", "For a partial meal, enter how much Phoenix actually ate.");
         return null;
       }
 
@@ -1282,12 +1282,12 @@ export default function LogScreen() {
       const interactionCount = parseNonNegativeNumber(walkDogInteractions);
 
       if (walkDistanceMiles.trim() && distance == null) {
-        Alert.alert("Check distance", "Enter a valid distance, or leave it blank.");
+        notifyDialog("Check distance", "Enter a valid distance, or leave it blank.");
         return null;
       }
 
       if (walkDogInteractions.trim() && interactionCount == null) {
-        Alert.alert("Check dog interactions", "Enter a valid dog interaction count, or leave it blank.");
+        notifyDialog("Check dog interactions", "Enter a valid dog interaction count, or leave it blank.");
         return null;
       }
 
@@ -1338,7 +1338,7 @@ export default function LogScreen() {
       const recovery = parseNonNegativeNumber(recoveryMinutes);
 
       if (recoveryMinutes.trim() && recovery == null) {
-        Alert.alert("Check recovery time", "Enter recovery minutes as a number, or leave it blank.");
+        notifyDialog("Check recovery time", "Enter recovery minutes as a number, or leave it blank.");
         return null;
       }
 
@@ -1549,33 +1549,36 @@ export default function LogScreen() {
 
   const handleDelete = useCallback(
     (id: string, title: string, onDeleted?: () => void) => {
-      Alert.alert("Delete entry", `Remove "${title}"?`, [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            const entry = state.entries.find((item) => item.id === id);
-            const deleted = await deleteEntry(id);
-            if (!deleted) {
-              Alert.alert("Delete failed", "WoofWatcher kept the log because the household sync rejected the delete. Try again after refresh.");
-              return;
-            }
-            if (entry) {
-              addEntry(
-                buildCareLogDeletionAuditEntry({
-                  id: auditId(),
-                  caregiver,
-                  occurredAt: new Date().toISOString(),
-                  entry,
-                }),
-              );
-            }
-            onDeleted?.();
+      confirmThroughSteps(
+        [
+          {
+            title: "Delete entry",
+            message: `Remove "${title}"?`,
+            confirmLabel: "Delete",
+            destructive: true,
           },
+        ],
+        async () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          const entry = state.entries.find((item) => item.id === id);
+          const deleted = await deleteEntry(id);
+          if (!deleted) {
+            notifyDialog("Delete failed", "WoofWatcher kept the log because the household sync rejected the delete. Try again after refresh.");
+            return;
+          }
+          if (entry) {
+            addEntry(
+              buildCareLogDeletionAuditEntry({
+                id: auditId(),
+                caregiver,
+                occurredAt: new Date().toISOString(),
+                entry,
+              }),
+            );
+          }
+          onDeleted?.();
         },
-      ]);
+      );
     },
     [addEntry, caregiver, deleteEntry, state.entries],
   );
@@ -1707,7 +1710,7 @@ export default function LogScreen() {
       });
 
       if (!patch) {
-        Alert.alert("Adult review needed", "Only an adult owner or primary caregiver can review this log.");
+        notifyDialog("Adult review needed", "Only an adult owner or primary caregiver can review this log.");
         return;
       }
 
@@ -1741,14 +1744,14 @@ export default function LogScreen() {
       });
 
       if (!patch) {
-        Alert.alert("Proof not attached", "Choose a clear photo before saving proof to this log.");
+        notifyDialog("Proof not attached", "Choose a clear photo before saving proof to this log.");
         return;
       }
 
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       updateEntry(detailEntry.id, patch);
     } catch {
-      Alert.alert("Photo unavailable", "Attach proof later. Medication logs stay pending until an owner confirms them.");
+      notifyDialog("Photo unavailable", "Attach proof later. Medication logs stay pending until an owner confirms them.");
     }
   }, [caregiver, detailEntry, now, updateEntry]);
 
@@ -2004,7 +2007,7 @@ export default function LogScreen() {
       if (!openAloneSession?.id) return;
       const recovery = returnRecoveryMinutes.trim() ? parseNonNegativeNumber(returnRecoveryMinutes) : null;
       if (returnRecoveryMinutes.trim() && recovery == null) {
-        Alert.alert("Check recovery time", "Enter recovery minutes as a number, or leave it blank.");
+        notifyDialog("Check recovery time", "Enter recovery minutes as a number, or leave it blank.");
         return;
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -2044,12 +2047,12 @@ export default function LogScreen() {
     const dogCount = walkFinishDogInteractions.trim() ? parseNonNegativeNumber(walkFinishDogInteractions) : null;
 
     if (walkFinishDistanceMiles.trim() && distance == null) {
-      Alert.alert("Check distance", "Enter a valid distance, or leave it blank.");
+      notifyDialog("Check distance", "Enter a valid distance, or leave it blank.");
       return;
     }
 
     if (walkFinishDogInteractions.trim() && dogCount == null) {
-      Alert.alert("Check dog interactions", "Enter a valid dog interaction count, or leave it blank.");
+      notifyDialog("Check dog interactions", "Enter a valid dog interaction count, or leave it blank.");
       return;
     }
 

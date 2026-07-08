@@ -36,7 +36,6 @@ import {
   type PhoenixRoomStat,
 } from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
-import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
@@ -1282,7 +1281,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade }}>
-          <View style={s.header}>
+          <View style={[s.header, { backgroundColor: colors.card }]}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${petName}. ${careStatusLabel}. Open the Pack`}
@@ -1434,7 +1433,7 @@ export default function HomeScreen() {
                 minHeight: homeFirstScreenLayout.presencePanelMinHeight,
                 marginTop: -homeFirstScreenLayout.presencePanelOverlap,
                 marginBottom: homeFirstScreenLayout.presencePanelMarginBottom,
-                backgroundColor: colors.ivory,
+                backgroundColor: colors.card,
                 borderColor: colors.border,
               },
             ]}
@@ -1502,7 +1501,7 @@ export default function HomeScreen() {
             style={({ pressed }) => [
               s.todayCommandCard,
               {
-                backgroundColor: pressed ? colors.secondary : colors.ivory,
+                backgroundColor: pressed ? colors.secondary : colors.card,
                 borderColor: pressed ? todayCommandTone : colors.border,
               },
             ]}
@@ -2561,7 +2560,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 10,
-    backgroundColor: "rgba(247,242,232,0.92)",
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -2649,36 +2647,6 @@ const s = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-  },
-  heroConsoleHeader: {
-    minHeight: 58,
-    borderBottomWidth: 1,
-    paddingHorizontal: 13,
-    paddingVertical: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  heroConsoleTitleRow: {
-    flex: 1,
-    minWidth: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 9,
-  },
-  heroConsoleCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-  heroConsoleKicker: {
-    fontSize: 10,
-    letterSpacing: 0.9,
-  },
-  heroConsoleTitle: {
-    fontSize: 17,
-    lineHeight: 20,
-    marginTop: 1,
   },
   heroStudioButton: {
     width: 116,

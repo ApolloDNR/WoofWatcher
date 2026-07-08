@@ -5,7 +5,6 @@ import * as Haptics from "expo-haptics";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   Image,
   ImageBackground,
@@ -41,6 +40,7 @@ import {
 import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
 import { useAvatar } from "@/context/AvatarContext";
+import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { deriveCareSyncDashboard } from "@/lib/careSync";
@@ -750,7 +750,7 @@ export default function MoreScreen() {
   const shareAccessPassSummary = () => {
     const pass = accessPassPlan.passes[0];
     if (!pass) {
-      Alert.alert("Access Pass", "Create a local Access Pass draft before sharing helper instructions.");
+      notifyDialog("Access Pass", "Create a local Access Pass draft before sharing helper instructions.");
       return;
     }
     const message = [
@@ -787,7 +787,7 @@ export default function MoreScreen() {
           refreshMe();
           refresh();
         },
-        onError: () => Alert.alert("Couldn't join", "That invite code didn't match a household."),
+        onError: () => notifyDialog("Couldn't join", "That invite code didn't match a household."),
       },
     );
   };
@@ -803,7 +803,7 @@ export default function MoreScreen() {
           setRenameOpen(false);
           refreshMe();
         },
-        onError: () => Alert.alert("Couldn't rename", "Please try again."),
+        onError: () => notifyDialog("Couldn't rename", "Please try again."),
       },
     );
   };
@@ -819,7 +819,7 @@ export default function MoreScreen() {
           setNameOpen(false);
           refreshMe();
         },
-        onError: () => Alert.alert("Couldn't update name", "Please try again."),
+        onError: () => notifyDialog("Couldn't update name", "Please try again."),
       },
     );
   };
@@ -903,17 +903,20 @@ export default function MoreScreen() {
   };
 
   const confirmSignOut = () => {
-    Alert.alert("Sign out", "You'll need to sign back in to sync care logs.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign out",
-        style: "destructive",
-        onPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          signOut();
+    confirmThroughSteps(
+      [
+        {
+          title: "Sign out",
+          message: "You'll need to sign back in to sync care logs.",
+          confirmLabel: "Sign out",
+          destructive: true,
         },
+      ],
+      () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        signOut();
       },
-    ]);
+    );
   };
 
   // Mount animation
@@ -1819,7 +1822,7 @@ export default function MoreScreen() {
                   onPress={() => {
                     Haptics.selectionAsync();
                     if (!pet.canSwitch) {
-                      Alert.alert(
+                      notifyDialog(
                         "Multi-dog switching is staged",
                         "This dog is saved as a planned CareTwin slot. Separate logs, routines, records, and reports need provider-backed multi-dog care documents before switching is enabled.",
                       );

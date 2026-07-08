@@ -4,7 +4,6 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   ImageBackground,
   Modal,
@@ -33,6 +32,7 @@ import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
+import { confirmThroughSteps } from "@/lib/confirmDialog";
 import { parseLocalDate } from "@/lib/time";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
@@ -472,18 +472,21 @@ export default function CalendarScreen() {
   };
 
   const deleteRoutine = (id: string) => {
-    Alert.alert("Delete Routine", "Remove this routine from your schedule?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          updateCareDoc((doc) => ({ ...doc, routines: doc.routines.filter((r) => r.id !== id) }));
-          setRoutineOpen(false);
+    confirmThroughSteps(
+      [
+        {
+          title: "Delete Routine",
+          message: "Remove this routine from your schedule?",
+          confirmLabel: "Delete",
+          destructive: true,
         },
+      ],
+      () => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        updateCareDoc((doc) => ({ ...doc, routines: doc.routines.filter((r) => r.id !== id) }));
+        setRoutineOpen(false);
       },
-    ]);
+    );
   };
 
   const submitRoutine = () => {
@@ -783,13 +786,13 @@ export default function CalendarScreen() {
                 <View style={s.commandDeckHudCell}>
                   <Text style={[s.commandDeckHudLabel, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>Done</Text>
                   <Text style={[s.commandDeckHudValue, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
-                    {completedScheduleCount}/{scheduleRows.length}
+                    {isSampleSchedule ? "—" : `${completedScheduleCount}/${scheduleRows.length}`}
                   </Text>
                 </View>
                 <View style={s.commandDeckHudCell}>
                   <Text style={[s.commandDeckHudLabel, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>Open</Text>
                   <Text style={[s.commandDeckHudValue, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
-                    {openScheduleCount}
+                    {isSampleSchedule ? "—" : openScheduleCount}
                   </Text>
                 </View>
                 <View style={s.commandDeckHudCell}>
@@ -948,7 +951,16 @@ export default function CalendarScreen() {
           <BoardCard style={s.planMissionBoard}>
             <BoardSectionHeader
               title="Today's Missions"
-              accessory={<BoardPill label={`${completedScheduleCount}/${scheduleRows.length} done`} tone={commandDeckTone} />}
+              accessory={
+                <BoardPill
+                  label={
+                    isSampleSchedule
+                      ? "Sample day"
+                      : `${completedScheduleCount}/${scheduleRows.length} done`
+                  }
+                  tone={commandDeckTone}
+                />
+              }
             />
             <View style={s.planMissionList}>
               {planMissionRows.map((mission, index) => (

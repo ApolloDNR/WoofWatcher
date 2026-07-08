@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetMe } from "@workspace/api-client-react";
+import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type LaunchSupportProfile } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
@@ -84,6 +85,7 @@ export default function PrivacyScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, updateCareDoc, eraseAllLocalData } = useCare();
+  const { clearAvatarSet, resetAvatarConfig } = useAvatar();
   // Launch-ops cards (support runbook, launch gates) are owner tooling and
   // stay out of store production builds.
   const ownerOps = isOwnerOpsBuild();
@@ -253,12 +255,17 @@ export default function PrivacyScreen() {
         },
       ],
       () => {
-        void eraseAllLocalData().then(() => {
-          notifyDialog(
-            "All data deleted",
-            "WoofWatcher has been reset to a fresh household on this device.",
-          );
-        });
+        // The avatar contexts hold hydrated in-memory state, so the wipe
+        // must reset them too or the custom twin would survive on screen
+        // (and a later Studio save would re-persist deleted data).
+        void Promise.all([eraseAllLocalData(), clearAvatarSet(), resetAvatarConfig()]).then(
+          () => {
+            notifyDialog(
+              "All data deleted",
+              "WoofWatcher has been reset to a fresh household on this device.",
+            );
+          },
+        );
       },
     );
   };

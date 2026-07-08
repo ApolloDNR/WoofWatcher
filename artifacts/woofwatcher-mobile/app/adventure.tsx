@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-  Alert,
   ImageBackground,
   Pressable,
   Platform,
@@ -28,6 +27,7 @@ import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { notifyDialog } from "@/lib/confirmDialog";
 import { buildQuickLogEntry } from "@/lib/quickLogEntry";
 import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import {
@@ -150,7 +150,7 @@ export default function AdventureScreen() {
 
   const saveMemory = (quest: AdventureQuest | null | undefined = availableQuest) => {
     if (quest?.action === "save-memory" && quest.status === "locked") {
-      Alert.alert("Complete care first", "Log a walk, training win, or play reset before saving this quest memory.");
+      notifyDialog("Complete care first", "Log a walk, training win, or play reset before saving this quest memory.");
       return;
     }
     const memory = buildAdventureMemoryDraft({
@@ -168,13 +168,13 @@ export default function AdventureScreen() {
         ...(doc.adventureMemories ?? []),
       ],
     }));
-    Alert.alert("Memory saved", "Saved as a local private household memory. Cloud photo storage is still provider-gated.");
+    notifyDialog("Memory saved", "Saved as a local private household memory. Cloud photo storage is still provider-gated.");
   };
 
   const startQuest = (quest: AdventureQuest, proofEntryId: string | null) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (quest.status === "locked") {
-      Alert.alert("Quest locked", quest.evidence);
+      notifyDialog("Quest locked", quest.evidence);
       return;
     }
     if (quest.status === "complete") {
