@@ -2564,3 +2564,9 @@ Latest local evidence, 2026-07-07:
   `automation/premium-revenue-product-builder`. Real Clerk configuration,
   OAuth, provider-backed household creation, native screenshots, store review,
   public launch, and Apollo sign-off remain blocked.
+- Branch CI then proved proof-record commit `95003f80` in `WoofWatcher Verify`
+  run `28913781554`, job `85776382988`, completed success in `3m15s` on
+  `automation/premium-revenue-product-builder` with dependency install, JSON
+  mobile beta doctor, focused behavior tests, typecheck plus CI-safe builds, and
+  post steps all passing. This proof is current through `95003f80` only; rerun
+  branch CI after the next commit before treating dependency proof as current.

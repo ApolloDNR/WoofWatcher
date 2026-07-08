@@ -4122,8 +4122,14 @@ implementation commit `deeda5d9` in `WoofWatcher Verify` run `28913476038`,
 completed success in `3m5s` on `automation/premium-revenue-product-builder`.
 This still does not configure Clerk, approve OAuth, enable provider-backed
 household creation, attach real native screenshots, satisfy store review, launch
-publicly, or replace Apollo sign-off. Rerun branch CI after the proof-record docs
-commit before dependency proof is current for the final branch tip.
+publicly, or replace Apollo sign-off. Branch CI then proved proof-record commit
+`95003f80` in `WoofWatcher Verify` run `28913781554`, job `85776382988`,
+completed success in `3m15s` on `automation/premium-revenue-product-builder`
+with checkout, pnpm setup, Node setup, dependency install, JSON mobile beta
+doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and
+Complete job all passing. This proves dependency-complete CI through
+`95003f80` only; rerun branch CI after the next commit before treating
+dependency proof as current.
 
 Next highest-impact work:
 

@@ -303,6 +303,11 @@
 - Branch CI proved the payments proof evidence propagation commit `721ebe69` in
   `WoofWatcher Verify` run `28906351424`; dependency-complete proof is current
   for that implementation commit.
+- Branch CI proved the Auth/Setup proof evidence propagation proof-record commit
+  `95003f80` in `WoofWatcher Verify` run `28913781554`, job `85776382988`;
+  dependency-complete proof is current through that docs commit only. Rerun
+  branch CI after the next commit before treating dependency proof as current for
+  the final branch tip.
 - Branch CI proved implementation commit `f0b1a5b` in `WoofWatcher Verify` run
   `28896885332`; rerun branch CI after the proof-record docs commit before
   treating dependency proof as current for the final branch tip.
