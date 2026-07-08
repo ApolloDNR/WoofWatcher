@@ -336,3 +336,9 @@ propagation gap, but it does not attach real iOS/Android share-sheet evidence,
 Android content URI or saved-file proof, fallback-copy capture, native PDF/PNG
 share/reopen proof, provider storage proof, public launch, or replace Apollo
 sign-off.
+
+Branch CI proved implementation commit `db6f280c` in `WoofWatcher Verify` run
+`28963158539`, job `85939529375`, with dependency install, JSON mobile beta
+doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and
+Complete job all passing. Rerun CI after the proof-record docs commit before
+dependency proof is current for the final branch tip.
