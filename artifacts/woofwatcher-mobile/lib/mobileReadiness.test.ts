@@ -488,7 +488,9 @@ test("keeps auth entry styled as the truthful CareTwin gateway", () => {
   assert.match(authUi, /accessibilityLabel="Open auth and setup proof mission"/);
   assert.match(authUi, /accessibilityRole="button"/);
   assert.match(authUi, /buildAuthSetupProofManifest/);
-  assert.match(authUi, /const authSetupProofManifest = buildAuthSetupProofManifest/);
+  assert.match(authUi, /useCare/);
+  assert.match(authUi, /state\.launchProviderProfile\.authSetupProofEvidence/);
+  assert.match(authUi, /const authSetupProofManifest = buildAuthSetupProofManifest\(state\.launchProviderProfile\.authSetupProofEvidence \?\? undefined\)/);
   assert.match(authUi, /Auth\/Setup proof manifest/);
   assert.match(authUi, /authSetupProofManifest\.rows\.map/);
   assert.match(authUi, /authSetupProofManifest\.blockers\.map/);
@@ -3539,7 +3541,8 @@ test("keeps Setup onboarding on shared board anatomy", () => {
   assert.match(setup, /Open setup proof/);
   assert.match(setup, /accessibilityLabel="Open auth and setup proof mission"/);
   assert.match(setup, /buildAuthSetupProofManifest/);
-  assert.match(setup, /const authSetupProofManifest = buildAuthSetupProofManifest/);
+  assert.match(setup, /state\.launchProviderProfile\.authSetupProofEvidence/);
+  assert.match(setup, /const authSetupProofManifest = buildAuthSetupProofManifest\(state\.launchProviderProfile\.authSetupProofEvidence \?\? undefined\)/);
   assert.match(setup, /Auth\/Setup proof manifest/);
   assert.match(setup, /authSetupProofManifest\.rows\.map/);
   assert.match(setup, /authSetupProofManifest\.blockers\.map/);
@@ -4912,6 +4915,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(careContext, /launchProviderProfile/);
   assert.match(careContext, /supportLegalReadinessEvidence\?:\s*SupportLegalReadinessProofEvidence \| null/);
+  assert.match(careContext, /authSetupProofEvidence\?:\s*AuthSetupProofManifestInput \| null/);
   assert.match(careContext, /careEntryProviderSyncEvidence\?:\s*CareEntryProviderSyncProofEvidence \| null/);
   assert.match(careContext, /storageProviderEvidence\?:\s*LaunchStorageProviderEvidence \| null/);
   assert.match(careContext, /aiProviderEvidence\?:\s*AiProviderProofEvidence \| null/);
@@ -4936,6 +4940,8 @@ test("keeps More household, tools, and diet sections on shared board card anatom
     /launchProviderProfile:\s*normalizeLaunchProviderProfile\(merged\.launchProviderProfile\)/,
   );
   assert.match(providerSetup, /storageProviderEvidence\?:\s*LaunchStorageProviderEvidence \| null/);
+  assert.match(providerSetup, /authSetupProofEvidence\?:\s*AuthSetupProofManifestInput \| null/);
+  assert.match(providerSetup, /authSetupProofEvidence:\s*normalizeAuthSetupProofEvidence\(source\.authSetupProofEvidence\)/);
   assert.match(providerSetup, /careEntryProviderSyncEvidence\?:\s*CareEntryProviderSyncProofEvidence \| null/);
   assert.match(providerSetup, /careEntryProviderSyncEvidence:\s*normalizeCareEntryProviderSyncEvidence\(source\.careEntryProviderSyncEvidence\)/);
   assert.match(providerSetup, /storageProviderEvidence:\s*normalizeStorageProviderEvidence\(source\.storageProviderEvidence\)/);
@@ -4950,6 +4956,11 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(providerSetup, /pushNotificationsProofEvidence:\s*normalizePushNotificationsProofEvidence\(source\.pushNotificationsProofEvidence\)/);
   assert.match(providerSetup, /storeAccountsProofEvidence:\s*normalizeStoreAccountsProofEvidence\(source\.storeAccountsProofEvidence\)/);
   assert.match(providerSetup, /accountDeletionEvidence:\s*normalizeAccountDeletionEvidence\(source\.accountDeletionEvidence\)/);
+  assert.match(
+    careTwinQaRoute,
+    /buildAuthSetupProofManifest\(state\.launchProviderProfile\.authSetupProofEvidence \?\? undefined\)/,
+  );
+  assert.doesNotMatch(careTwinQaRoute, /buildAuthSetupProofManifest\(\{\}\)/);
   assert.match(
     careTwinQaRoute,
     /deriveCareEntryProviderSyncProof\(state\.launchProviderProfile\.careEntryProviderSyncEvidence\)/,

@@ -42,6 +42,7 @@ import {
   normalizeLaunchProviderProfile,
   type LaunchStorageProviderEvidence,
 } from "@/lib/launchProviderSetup";
+import type { AuthSetupProofManifestInput } from "@/lib/authProviderProof";
 import type { CareEntryProviderSyncProofEvidence } from "@/lib/careEntryProviderSyncProof";
 import type { AiProviderProofEvidence } from "@/lib/aiProviderProof";
 import type { PaymentsProviderProofManifestInput } from "@/lib/paymentsProviderProof";
@@ -114,6 +115,7 @@ export interface LaunchSupportProfile {
 export interface LaunchProviderProfile {
   authConfigured: boolean;
   authProviderProofReady: boolean;
+  authSetupProofEvidence?: AuthSetupProofManifestInput | null;
   databaseConfigured: boolean;
   databaseProviderProofReady: boolean;
   careEntryProviderSyncEvidence?: CareEntryProviderSyncProofEvidence | null;

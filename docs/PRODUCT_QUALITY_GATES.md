@@ -369,6 +369,18 @@ Latest known passing automation-branch CI:
   versus pinned `10.24.0` and missing Corepack. Branch CI proved implementation
   commit `721ebe69` in `WoofWatcher Verify` run `28906351424`, completed success
   in about `3m04s`.
+- AuthShell, Setup, and the focused Auth/Setup proof mission now consume saved
+  Provider Launch Setup `authSetupProofEvidence` instead of rendering empty
+  Auth/Setup manifests. `LaunchProviderProfile` preserves the structured
+  Auth/Setup proof object and CareContext persists it, so saved Clerk
+  production, redirect/deep-link, household membership, Apollo auth launch, and
+  iOS/Android Auth/Setup screenshot evidence can reach
+  `buildAuthSetupProofManifest`. Local red/green proof passed focused mobile
+  readiness plus provider setup tests `121/121`; rerun branch CI after this
+  commit before treating dependency-complete proof as current for the final
+  branch tip. Real Clerk configuration, OAuth, provider-backed household
+  creation, native screenshots, store review, public launch, and Apollo sign-off
+  remain blocked.
 
 Latest known passing `main` CI after the Full Log search slice:
 

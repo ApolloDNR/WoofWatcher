@@ -473,8 +473,11 @@ export default function CareTwinQaScreen() {
     : colors.mutedForeground;
   const focusedQaEvidence = focusedQaTarget ? surfaceEvidenceById[focusedQaTarget.target.surfaceId] ?? [] : [];
   const authSetupProofManifest = useMemo(
-    () => (focusedQaTarget?.surface.id === "auth-setup-onboarding-proof" ? buildAuthSetupProofManifest({}) : null),
-    [focusedQaTarget],
+    () =>
+      focusedQaTarget?.surface.id === "auth-setup-onboarding-proof"
+        ? buildAuthSetupProofManifest(state.launchProviderProfile.authSetupProofEvidence ?? undefined)
+        : null,
+    [focusedQaTarget, state.launchProviderProfile.authSetupProofEvidence],
   );
   const recordsLocalFileHandoffProofManifest = useMemo(
     () =>

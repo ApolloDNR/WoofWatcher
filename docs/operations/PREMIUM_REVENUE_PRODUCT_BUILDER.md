@@ -4105,6 +4105,19 @@ refund/support policy, checkout, money movement, public launch, or Apollo
 sign-off. Branch CI proved implementation commit `721ebe69` in `WoofWatcher
 Verify` run `28906351424`, completed success in about `3m04s`.
 
+The Auth/Setup proof evidence propagation pass closes the matching auth and
+onboarding stale path. `LaunchProviderProfile` now preserves saved
+`authSetupProofEvidence`, CareContext persists that field, and AuthShell, Setup,
+and `/care-twin-qa?qaSurface=auth-setup-onboarding-proof` feed saved Clerk,
+redirect/deep-link, household membership, Apollo launch, and native Auth/Setup
+proof evidence into `buildAuthSetupProofManifest` instead of rendering empty
+manifests. Fresh red/green verification first failed on the empty manifest
+calls, then focused mobile readiness plus provider setup tests passed `121/121`.
+This still does not configure Clerk, approve OAuth, enable provider-backed
+household creation, attach real native screenshots, satisfy store review, launch
+publicly, or replace Apollo sign-off. Rerun branch CI after this commit before
+dependency proof is current for the final branch tip.
+
 Next highest-impact work:
 
 1. After each new commit, rerun branch CI before treating dependency proof as current. Then use branch CI as the dependency-complete proof for `pnpm run doctor:mobile-beta:json`, focused tests, `smoke:web`, `smoke:runtime`, and `proof:live-preview`, including `/sign-in` and `/setup`; run `pnpm --filter @workspace/woofwatcher-mobile run preview:smoke` from Replit, Git Bash/WSL with pnpm 10.24.0 installed or Corepack-enabled, or a native helper environment when Apollo needs a foreground live preview handoff. Attach the JSON doctor/export/runtime/live-preview/preview proof to Share Beta Handoff's `Live preview handoff proof` section without claiming native QA or provider-backed auth.

@@ -99,7 +99,7 @@ export default function SetupScreen() {
     () => buildSetupWizardConfirmation(preview, { isSignedIn: Boolean(isSignedIn), isClerkConfigured }),
     [isSignedIn, preview],
   );
-  const authSetupProofManifest = buildAuthSetupProofManifest();
+  const authSetupProofManifest = buildAuthSetupProofManifest(state.launchProviderProfile.authSetupProofEvidence ?? undefined);
 
   const setField = (key: keyof SetupWizardDraft, value: string) => {
     setDirty(true);

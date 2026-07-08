@@ -2544,3 +2544,15 @@ Latest local evidence, 2026-07-07:
   Real paid tiers, billing setup, receipts/restores, checkout, money movement,
   public launch, and Apollo sign-off remain blocked. Rerun branch CI after this
   commit before treating dependency proof as current for the final branch tip.
+- AuthShell, Setup, and the focused Auth/Setup proof mission now consume saved
+  Provider Launch Setup `authSetupProofEvidence` instead of empty manifests.
+  `LaunchProviderProfile` preserves that structured evidence object and
+  CareContext persists it, so saved Clerk production, redirect/deep-link,
+  household membership, Apollo auth launch, and iOS/Android Auth/Setup
+  screenshot evidence can reach `buildAuthSetupProofManifest`.
+- Red/green verification first failed because AuthShell, Setup, and
+  `/care-twin-qa?qaSurface=auth-setup-onboarding-proof` still rendered empty
+  Auth/Setup manifests. After implementation, focused mobile readiness plus
+  provider setup tests passed `121/121`. Real Clerk configuration, OAuth,
+  provider-backed household creation, native screenshots, store review, public
+  launch, and Apollo sign-off remain blocked.

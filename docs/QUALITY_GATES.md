@@ -1261,3 +1261,15 @@ Windows CRLF warnings only. This does not approve paid tiers, configure store
 billing, prove receipts/restores, enable checkout, move money, launch publicly,
 or replace Apollo sign-off. Branch CI proved implementation commit `721ebe69`
 in `WoofWatcher Verify` run `28906351424`, completed success in about `3m04s`.
+
+Current evidence, 2026-07-07: AuthShell, Setup, and the focused Auth/Setup
+proof mission now consume saved Provider Launch Setup `authSetupProofEvidence`
+instead of rendering empty Auth/Setup manifests. `LaunchProviderProfile`
+preserves the structured Auth/Setup proof object through normalization and
+CareContext persistence, so valid saved Clerk production, redirect/deep-link,
+household membership, Apollo auth launch, and iOS/Android Auth/Setup screenshot
+evidence can reach `buildAuthSetupProofManifest`. Local red/green verification
+first failed on the empty manifest calls, then focused mobile readiness plus
+provider setup tests passed `121/121`. This does not configure Clerk, approve
+OAuth, enable provider-backed household creation, attach real native
+screenshots, satisfy store review, launch publicly, or replace Apollo sign-off.

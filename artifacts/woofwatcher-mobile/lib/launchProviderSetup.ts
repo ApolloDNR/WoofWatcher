@@ -7,6 +7,7 @@ import {
 import {
   AUTH_PROVIDER_PROOF_ITEMS,
   AUTH_PROVIDER_PROOF_SUMMARY,
+  type AuthSetupProofManifestInput,
 } from "./authProviderProof.ts";
 import {
   AI_PROVIDER_PROOF_ITEMS,
@@ -80,6 +81,7 @@ export interface LaunchStorageProviderEvidence {
 export interface LaunchProviderProfile {
   authConfigured: boolean;
   authProviderProofReady: boolean;
+  authSetupProofEvidence?: AuthSetupProofManifestInput | null;
   databaseConfigured: boolean;
   databaseProviderProofReady: boolean;
   careEntryProviderSyncEvidence?: CareEntryProviderSyncProofEvidence | null;
@@ -163,6 +165,7 @@ export interface LaunchProviderSetupPlan {
 const DEFAULT_PROFILE: LaunchProviderProfile = {
   authConfigured: false,
   authProviderProofReady: false,
+  authSetupProofEvidence: null,
   databaseConfigured: false,
   databaseProviderProofReady: false,
   careEntryProviderSyncEvidence: null,
@@ -201,6 +204,12 @@ function cleanStatus(value: unknown): LaunchProviderSetupStatus {
 function normalizeStorageProviderEvidence(
   value: LaunchStorageProviderEvidence | null | undefined,
 ): LaunchStorageProviderEvidence | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
+function normalizeAuthSetupProofEvidence(
+  value: AuthSetupProofManifestInput | null | undefined,
+): AuthSetupProofManifestInput | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value : null;
 }
 
@@ -246,6 +255,7 @@ export function normalizeLaunchProviderProfile(input: LaunchProviderProfileInput
   return {
     authConfigured: Boolean(source.authConfigured),
     authProviderProofReady: Boolean(source.authProviderProofReady),
+    authSetupProofEvidence: normalizeAuthSetupProofEvidence(source.authSetupProofEvidence),
     databaseConfigured: Boolean(source.databaseConfigured),
     databaseProviderProofReady: Boolean(source.databaseProviderProofReady),
     careEntryProviderSyncEvidence: normalizeCareEntryProviderSyncEvidence(source.careEntryProviderSyncEvidence),

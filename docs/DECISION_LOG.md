@@ -12,6 +12,35 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-07-07: Auth Setup Proof Evidence Must Reach Auth Review Surfaces
+
+Decision: Saved Provider Launch Setup Auth/Setup proof evidence should survive
+care-document normalization and feed AuthShell, Setup, and the focused
+`/care-twin-qa?qaSurface=auth-setup-onboarding-proof` mission.
+
+Reason: The Auth/Setup proof manifest already requires structured Clerk
+production, redirect/deep-link, household membership, Apollo auth launch, and
+iOS/Android Auth/Setup screenshot evidence. If AuthShell, Setup, or the focused
+helper route render an empty manifest, real imported or saved proof cannot reach
+the exact owner-facing and QA surfaces used to review account/onboarding
+readiness.
+
+Consequences:
+
+- `LaunchProviderProfile` preserves `authSetupProofEvidence`.
+- CareContext keeps that field when saved or imported care documents merge.
+- AuthShell, Setup, and the focused Auth/Setup route feed saved evidence into
+  `buildAuthSetupProofManifest`.
+- Raw auth setup booleans still cannot prove provider-backed account sync,
+  household creation, native Auth/Setup readiness, public launch, or Apollo
+  sign-off.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains an in-app proof attachment editor, Clerk auth
+is configured for production, or Apollo attaches real Auth/Setup provider and
+native proof files that should be validated from saved app state.
+
 ### 2026-06-20: Incident Watch Follow-Ups Are Owner-Reviewed Guidance
 
 Decision: Incident Watch may derive trend signals, owner follow-up tasks, and trainer goal suggestions from household-visible incident logs, but those outputs must route humans into review workflows instead of automatically creating behavior plans, medical claims, or trainer instructions.

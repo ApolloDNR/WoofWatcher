@@ -51,6 +51,34 @@ function completePrivacyProviderEvidence() {
   };
 }
 
+function completeAuthSetupProofEvidence() {
+  return {
+    nativeEvidence: [
+      {
+        platform: "ios",
+        surface: "auth-gateway",
+        fileName: "ios-auth-gateway-proof.png",
+        mimeType: "image/png",
+        byteSize: 1200,
+        capturesProviderBoundaryCopy: true,
+      },
+    ],
+    providerEvidence: [
+      {
+        kind: "clerk-production",
+        fileName: "clerk-production-auth-proof.json",
+        mimeType: "application/json",
+        byteSize: 1200,
+        productionAppId: "clerk-prod",
+        publishableKeyEnvironment: "production",
+        secretStorageLocation: "server env",
+        localPlaceholderKeysExcluded: true,
+        secretStorageApproved: true,
+      },
+    ],
+  };
+}
+
 function completePushNotificationsProofEvidence() {
   return {
     expoPushProjectConfig: "Expo push project config proof: production project id, channel, token registration, local preview boundary.",
@@ -276,6 +304,7 @@ test("builds a truthful provider setup plan from a local launch profile", async 
 test("normalizes stored provider setup profiles before launch-readiness usage", async () => {
   const mod = await import("./launchProviderSetup.ts").catch(() => null);
   assert.ok(mod, "launchProviderSetup module should exist");
+  const authSetupProofEvidence = completeAuthSetupProofEvidence();
   const storageProviderEvidence = completeStorageProviderEvidence();
   const privacyProviderEvidence = completePrivacyProviderEvidence();
   const pushNotificationsProofEvidence = completePushNotificationsProofEvidence();
@@ -283,6 +312,7 @@ test("normalizes stored provider setup profiles before launch-readiness usage", 
 
   const profile = mod.normalizeLaunchProviderProfile({
     authConfigured: "yes",
+    authSetupProofEvidence,
     databaseConfigured: 1,
     storageProviderConfigured: false,
     storageProviderEvidence,
@@ -305,12 +335,14 @@ test("normalizes stored provider setup profiles before launch-readiness usage", 
   assert.equal(profile.providerStatus, "local-draft");
   assert.equal(profile.ownerReviewedAt, undefined);
   assert.equal(profile.notes, "");
+  assert.deepEqual(profile.authSetupProofEvidence, authSetupProofEvidence);
   assert.deepEqual(profile.storageProviderEvidence, storageProviderEvidence);
   assert.deepEqual(profile.aiProviderEvidence, privacyProviderEvidence.aiProviderEvidence);
   assert.deepEqual(profile.paymentsProviderEvidence, privacyProviderEvidence.paymentsProviderEvidence);
   assert.deepEqual(profile.accountDeletionEvidence, privacyProviderEvidence.accountDeletionEvidence);
   assert.deepEqual(profile.pushNotificationsProofEvidence, pushNotificationsProofEvidence);
   assert.deepEqual(profile.storeAccountsProofEvidence, storeAccountsProofEvidence);
+  assert.equal(mod.normalizeLaunchProviderProfile({ authSetupProofEvidence: [] }).authSetupProofEvidence, null);
   assert.equal(mod.normalizeLaunchProviderProfile({ storageProviderEvidence: [] }).storageProviderEvidence, null);
   assert.equal(mod.normalizeLaunchProviderProfile({ aiProviderEvidence: [] }).aiProviderEvidence, null);
   assert.equal(mod.normalizeLaunchProviderProfile({ paymentsProviderEvidence: [] }).paymentsProviderEvidence, null);

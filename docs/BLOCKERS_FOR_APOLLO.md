@@ -294,6 +294,12 @@
   not approve paid tiers, configure App Store or Google Play billing, prove
   receipts/restores, approve refund/support policy, enable checkout, move money,
   launch publicly, or replace Apollo sign-off.
+- 2026-07-07: AuthShell, Setup, and the focused Auth/Setup proof mission now
+  consume saved Provider Launch Setup Auth/Setup proof evidence instead of empty
+  manifests. This removes a local Clerk/native Auth evidence propagation gap,
+  but it does not configure Clerk, approve OAuth, enable provider-backed
+  household creation, attach native iOS/Android screenshots, satisfy store
+  review, launch publicly, or replace Apollo sign-off.
 - Branch CI proved the payments proof evidence propagation commit `721ebe69` in
   `WoofWatcher Verify` run `28906351424`; dependency-complete proof is current
   for that implementation commit.

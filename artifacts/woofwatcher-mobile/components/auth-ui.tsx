@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
+import { useCare } from "@/context/CareContext";
 import { isClerkConfigured } from "@/lib/auth";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
@@ -59,6 +60,7 @@ export function AuthShell({
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { state } = useCare();
   const bottomPadding = getStandaloneRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -72,7 +74,7 @@ export function AuthShell({
     Haptics.selectionAsync();
     router.push("/care-twin-qa?qaSurface=auth-setup-onboarding-proof" as never);
   };
-  const authSetupProofManifest = buildAuthSetupProofManifest();
+  const authSetupProofManifest = buildAuthSetupProofManifest(state.launchProviderProfile.authSetupProofEvidence ?? undefined);
 
   return (
     <ScrollView
