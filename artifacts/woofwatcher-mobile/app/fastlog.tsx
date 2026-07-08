@@ -334,6 +334,11 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
+    shadowColor: "#000000",
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
   tileLabel: {
     color: TILE_INK,

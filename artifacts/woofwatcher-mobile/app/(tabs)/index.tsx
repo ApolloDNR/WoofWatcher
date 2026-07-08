@@ -1581,6 +1581,7 @@ export default function HomeScreen() {
             }
             style={({ pressed }) => [
               s.moodCard,
+              s.softShadow,
               {
                 backgroundColor: pressed ? colors.secondary : colors.card,
                 borderColor: pressed ? todayCommandTone : colors.border,
@@ -1640,6 +1641,7 @@ export default function HomeScreen() {
                 }}
                 style={({ pressed }) => [
                   s.recencyChip,
+                  s.softShadow,
                   {
                     backgroundColor: pressed ? colors.secondary : colors.card,
                     borderColor: colors.border,
@@ -1722,6 +1724,7 @@ export default function HomeScreen() {
                     <View
                       style={[
                         s.homeQuickCircle,
+                        s.softShadow,
                         {
                           backgroundColor: colors.card,
                           borderColor: colors.border,
@@ -1888,6 +1891,7 @@ export default function HomeScreen() {
             onPress={() => router.push("/story" as never)}
             style={({ pressed }) => [
               s.todayStoryCard,
+              s.softShadow,
               {
                 backgroundColor: pressed ? colors.secondary : colors.card,
                 borderColor: colors.border,
@@ -1947,6 +1951,7 @@ export default function HomeScreen() {
             onPress={openPresencePanel}
             style={[
               s.presencePanel,
+              s.softShadow,
               {
                 minHeight: homeFirstScreenLayout.presencePanelMinHeight,
                 backgroundColor: colors.card,
@@ -2977,6 +2982,16 @@ const s = StyleSheet.create({
     borderRadius: 18,
     paddingVertical: 10,
     paddingHorizontal: 12,
+  },
+
+  // Soft premium elevation for the mock-board surfaces, matching the
+  // BoardCard shadow language so everything floats gently on the parchment.
+  softShadow: {
+    shadowColor: "#2A2118",
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
   },
 
   // Mock-board heart status card
