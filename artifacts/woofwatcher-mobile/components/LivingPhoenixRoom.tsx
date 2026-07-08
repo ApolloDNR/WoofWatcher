@@ -203,14 +203,14 @@ function getCompactSpriteZone(zone: SpriteStageZone): SpriteStageZone {
   };
 }
 
-// Immersive mode grounds the care twin on the backdrop's rug band: larger
-// (closer to camera) and bottom-anchored so paws land on the floor art
-// instead of floating over the wall.
+// Immersive mode grounds the care twin on the framed room card's floor
+// band: the storybook card is shorter than the old full-bleed stage, so the
+// rig anchors higher to keep paws inside the frame at every density.
 function getImmersiveSpriteZone(zone: SpriteStageZone): SpriteStageZone {
   return {
     ...zone,
     left: "27%",
-    top: "36%",
+    top: "14%",
     width: 184,
     height: 184,
   };
@@ -348,6 +348,11 @@ export function LivingPhoenixRoom({
     avatarRoomRuntime?.spriteTrack ??
     CARE_TWIN_SPRITE_MANIFEST[stageSpriteAction] ??
     plan.spriteTrack;
+  // Accessory art is fitted to the template sprite-pack geometry; over the
+  // Phoenix action strips it lands at the wrong scale, so it only renders
+  // when the runtime actually uses the template pack.
+  const showStageAccessoryLayers =
+    avatarRoomRuntime?.spriteMode === "template-idle-walk-pack";
   const activeSpriteAsset =
     avatarRoomRuntime?.spriteAsset ??
     getCareTwinSpriteAsset(stageSpriteAction) ??
@@ -803,21 +808,23 @@ export function LivingPhoenixRoom({
               spriteShadowStyle,
             ]}
           />
-          {avatarRoomRuntime?.underlayLayers.map((layer) =>
-            layer.source ? (
-              <Animated.Image
-                key={`avatar-underlay-${layer.id}`}
-                source={layer.source}
-                resizeMode="contain"
-                style={[
-                  styles.avatarAccessoryLayer,
-                  styles.avatarAccessoryUnderlay,
-                  pixelImageStyle,
-                ]}
-                testID={`care-twin-avatar-underlay-${layer.id}`}
-              />
-            ) : null,
-          )}
+          {showStageAccessoryLayers
+            ? avatarRoomRuntime?.underlayLayers.map((layer) =>
+                layer.source ? (
+                  <Animated.Image
+                    key={`avatar-underlay-${layer.id}`}
+                    source={layer.source}
+                    resizeMode="contain"
+                    style={[
+                      styles.avatarAccessoryLayer,
+                      styles.avatarAccessoryUnderlay,
+                      pixelImageStyle,
+                    ]}
+                    testID={`care-twin-avatar-underlay-${layer.id}`}
+                  />
+                ) : null,
+              )
+            : null}
           <SpriteSheetPlayer
             key={
               activeReaction?.spriteAction
@@ -834,21 +841,23 @@ export function LivingPhoenixRoom({
             track={activeSpriteTrack}
             width={activeSpriteZone.width}
           />
-          {avatarRoomRuntime?.overlayLayers.map((layer) =>
-            layer.source ? (
-              <Animated.Image
-                key={`avatar-overlay-${layer.id}`}
-                source={layer.source}
-                resizeMode="contain"
-                style={[
-                  styles.avatarAccessoryLayer,
-                  styles.avatarAccessoryOverlay,
-                  pixelImageStyle,
-                ]}
-                testID={`care-twin-avatar-overlay-${layer.id}`}
-              />
-            ) : null,
-          )}
+          {showStageAccessoryLayers
+            ? avatarRoomRuntime?.overlayLayers.map((layer) =>
+                layer.source ? (
+                  <Animated.Image
+                    key={`avatar-overlay-${layer.id}`}
+                    source={layer.source}
+                    resizeMode="contain"
+                    style={[
+                      styles.avatarAccessoryLayer,
+                      styles.avatarAccessoryOverlay,
+                      pixelImageStyle,
+                    ]}
+                    testID={`care-twin-avatar-overlay-${layer.id}`}
+                  />
+                ) : null,
+              )
+            : null}
         </Animated.View>
       ) : null}
 

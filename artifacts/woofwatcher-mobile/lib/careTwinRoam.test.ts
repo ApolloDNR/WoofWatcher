@@ -105,8 +105,8 @@ test("waypoints keep the sprite rig inside the immersive stage", () => {
       `${waypoint.zone} xPct ${waypoint.xPct} must keep the 184px rig on a 390pt stage`,
     );
     assert.ok(
-      waypoint.yPct >= 30 && waypoint.yPct <= 40,
-      `${waypoint.zone} yPct ${waypoint.yPct} must stay on the floor band`,
+      waypoint.yPct >= 22 && waypoint.yPct <= 32,
+      `${waypoint.zone} yPct ${waypoint.yPct} must keep paws on the framed card's floor band`,
     );
     assert.ok(
       waypoint.scale >= 0.94 && waypoint.scale <= 1.08,
