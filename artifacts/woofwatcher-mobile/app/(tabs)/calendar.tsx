@@ -159,6 +159,17 @@ function routineBoardPillTone(status: RoutineBoardStatus): BoardStatusPillTone {
   return "upcoming";
 }
 
+/** Time-of-day band for grouping the schedule like a real day planner. */
+function scheduleBandForTime(time: string): "Morning" | "Afternoon" | "Evening" | "Anytime" {
+  const match = /(\d+):(\d+)\s*(AM|PM)/i.exec(time);
+  if (!match) return "Anytime";
+  let hour = parseInt(match[1], 10) % 12;
+  if (/pm/i.test(match[3])) hour += 12;
+  if (hour < 12) return "Morning";
+  if (hour < 17) return "Afternoon";
+  return "Evening";
+}
+
 function reminderUrgencyLabel(urgency: string): string {
   if (urgency === "alert") return "Urgent";
   if (urgency === "watch") return "Watch";
@@ -853,18 +864,43 @@ export default function CalendarScreen() {
               {scheduleRows.map((row, index) => {
                 const done = row.status === "done";
                 const pill = scheduleStatusPill(row.status, index === firstUpcomingScheduleIndex);
+                const band = scheduleBandForTime(row.time);
+                const showBandHeader =
+                  scheduleTab !== "week" &&
+                  (index === 0 || scheduleBandForTime(scheduleRows[index - 1].time) !== band);
+                const showNowLine =
+                  scheduleTab === "today" && !isSampleSchedule && index === firstUpcomingScheduleIndex;
+                const bandHeader = showBandHeader ? (
+                  <View style={s.scheduleBand}>
+                    <Text style={[s.scheduleBandText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      {band.toUpperCase()}
+                    </Text>
+                    <View style={[s.scheduleBandRule, { backgroundColor: colors.border }]} />
+                  </View>
+                ) : null;
+                const nowLine = showNowLine ? (
+                  <View style={s.scheduleNowLine} accessible accessibilityLabel="Current time marker">
+                    <View style={[s.scheduleNowChip, { backgroundColor: colors.primary }]}>
+                      <Text style={[s.scheduleNowChipText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                        NOW
+                      </Text>
+                    </View>
+                    <View style={[s.scheduleNowBar, { backgroundColor: colors.primary }]} />
+                  </View>
+                ) : null;
                 if (isSampleSchedule) {
                   // Preview-only sample rows: no backing routine exists, so no
                   // Pressable wrappers and no mark-done toggles render here.
                   return (
+                    <React.Fragment key={`${row.id}-${index}`}>
+                    {bandHeader}
                     <View
-                      key={`${row.id}-${index}`}
                       accessible
                       accessibilityLabel={`Sample day preview: ${row.time} ${row.label}`}
                       style={[
                         s.scheduleRow,
                         s.scheduleSampleRow,
-                        index > 0 && { borderTopColor: colors.border, borderTopWidth: 1 },
+                        index > 0 && !showBandHeader && { borderTopColor: colors.border, borderTopWidth: 1 },
                       ]}
                     >
                       <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
@@ -881,19 +917,25 @@ export default function CalendarScreen() {
                       </View>
                       <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
                     </View>
+                    </React.Fragment>
                   );
                 }
                 const sourceRoutine = routineBoard.items.find((item) => item.id === row.id);
                 return (
+                  <React.Fragment key={`${row.id}-${index}`}>
+                  {bandHeader}
+                  {nowLine}
                   <Pressable
-                    key={`${row.id}-${index}`}
                     accessibilityRole="button"
                     accessibilityLabel={`${row.time} ${row.label}`}
                     onPress={() => {
                       Haptics.selectionAsync();
                       if (sourceRoutine) openBoardRoutine(sourceRoutine);
                     }}
-                    style={[s.scheduleRow, index > 0 && { borderTopColor: colors.border, borderTopWidth: 1 }]}
+                    style={[
+                      s.scheduleRow,
+                      index > 0 && !showBandHeader && !showNowLine && { borderTopColor: colors.border, borderTopWidth: 1 },
+                    ]}
                   >
                     <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                       {row.time}
@@ -926,6 +968,7 @@ export default function CalendarScreen() {
                       {done ? <Ionicons name="checkmark" size={13} color="#FFFFFF" /> : null}
                     </Pressable>
                   </Pressable>
+                  </React.Fragment>
                 );
               })}
             </View>
@@ -1963,6 +2006,44 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   scheduleList: { marginTop: 2 },
+  scheduleBand: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 14,
+    marginBottom: 2,
+  },
+  scheduleBandText: {
+    fontSize: 11,
+    letterSpacing: 1.4,
+  },
+  scheduleBandRule: {
+    flex: 1,
+    height: 1,
+    borderRadius: 1,
+  },
+  scheduleNowLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 2,
+  },
+  scheduleNowChip: {
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 2,
+  },
+  scheduleNowChipText: {
+    fontSize: 10,
+    letterSpacing: 1.1,
+  },
+  scheduleNowBar: {
+    flex: 1,
+    height: 2,
+    borderRadius: 2,
+    opacity: 0.55,
+  },
   scheduleRow: {
     minHeight: 44,
     flexDirection: "row",

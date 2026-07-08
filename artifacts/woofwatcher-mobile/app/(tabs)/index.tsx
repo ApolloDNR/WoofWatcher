@@ -1545,6 +1545,9 @@ export default function HomeScreen() {
                 reaction={roomReaction}
                 statusReadouts={roomStats}
                 avatarConfig={avatarConfig}
+                petName={petName}
+                awayOnWalk={Boolean(openWalkSession)}
+                awayMinutes={openWalkMinutes}
                 chromeDensity="compact"
                 transparentScene
                 onPress={tapPhoenixRoom}

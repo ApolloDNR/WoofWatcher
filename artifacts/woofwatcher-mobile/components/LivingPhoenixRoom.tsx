@@ -109,6 +109,10 @@ interface Props {
   reaction?: PhoenixRoomReaction | null;
   statusReadouts?: readonly PhoenixRoomStat[];
   avatarConfig?: PetAvatarConfig;
+  petName?: string;
+  /** A walk session is open: the twin is out of the room with their person. */
+  awayOnWalk?: boolean;
+  awayMinutes?: number;
   onPress?: () => void;
   onLongPress?: () => void;
   accessibilityHint?: string;
@@ -281,6 +285,9 @@ export function LivingPhoenixRoom({
   reaction,
   statusReadouts,
   avatarConfig,
+  petName,
+  awayOnWalk = false,
+  awayMinutes,
   onPress,
   onLongPress,
   accessibilityHint,
@@ -446,7 +453,9 @@ export function LivingPhoenixRoom({
         : null,
     [plan.zone, roamEligible],
   );
-  const roamActive = Boolean(roamPlan && stageSize);
+  // While a walk session is open the twin is genuinely out of the room, so
+  // every dog layer stands down and the door cue tells the story instead.
+  const roamActive = Boolean(roamPlan && stageSize) && !awayOnWalk;
   const handleStageLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
     setStageSize((prev) =>
@@ -525,6 +534,38 @@ export function LivingPhoenixRoom({
       if (reactionTimer.current) clearTimeout(reactionTimer.current);
     };
   }, [choreography.reactionDurationMs, reaction, reactionProgress]);
+
+  // Petting is affection-only feedback - hearts, a wag, a soft buzz. It never
+  // touches care stats: every number in WoofWatcher stays earned by real care.
+  const petLineIndex = useRef(0);
+  const triggerPetReaction = () => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
+    const petLines = [
+      "So loved.",
+      "Happy wiggles!",
+      "Tail says thanks.",
+      "Best friend ever.",
+    ];
+    const label = petLines[petLineIndex.current % petLines.length];
+    petLineIndex.current += 1;
+    if (reactionTimer.current) clearTimeout(reactionTimer.current);
+    if (ambientTimer.current) clearTimeout(ambientTimer.current);
+    setAmbientSpriteAction(null);
+    setActiveReaction({
+      id: Date.now(),
+      icon: "heart",
+      label,
+      spriteAction: "tail-wag",
+    });
+    reactionProgress.value = 0;
+    reactionProgress.value = withSequence(
+      withSpring(1, { damping: 9, stiffness: 120 }),
+      withDelay(1250, withTiming(0, { duration: 260 })),
+    );
+    reactionTimer.current = setTimeout(() => setActiveReaction(null), 1900);
+  };
 
   useEffect(() => {
     if (ambientTimer.current) clearTimeout(ambientTimer.current);
@@ -797,10 +838,30 @@ export function LivingPhoenixRoom({
           overrideKey={activeReaction?.id ?? null}
           avatarConfig={avatarConfig}
           glowColor={theme.glow}
+          petName={petName}
+          onPet={triggerPetReaction}
         />
       ) : null}
 
-      {layeredStageReady && !roamActive ? (
+      {awayOnWalk ? (
+        <View pointerEvents="none" style={styles.awayCue}>
+          <View style={styles.awayCueCard}>
+            <PixelIcon name="walk" size={18} />
+            <View>
+              <Text style={styles.awayCueTitle}>
+                {petName ?? "Phoenix"} is out exploring
+              </Text>
+              <Text style={styles.awayCueDetail}>
+                {typeof awayMinutes === "number" && awayMinutes >= 0
+                  ? `On a walk - ${awayMinutes} min so far`
+                  : "On a walk right now"}
+              </Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {layeredStageReady && !roamActive && !awayOnWalk ? (
         <Animated.View
           pointerEvents="none"
           style={[
@@ -875,7 +936,7 @@ export function LivingPhoenixRoom({
         </Animated.View>
       ) : null}
 
-      {useFallbackAvatarLayer && !roamActive ? (
+      {useFallbackAvatarLayer && !roamActive && !awayOnWalk ? (
         <Animated.View
           pointerEvents="none"
           style={[
@@ -1281,6 +1342,43 @@ interface RoamingTwinRigProps {
   overrideKey: number | null;
   avatarConfig?: PetAvatarConfig;
   glowColor: string;
+  petName?: string;
+  onPet?: () => void;
+}
+
+/** One floating heart of the petting burst: rises, blooms, and fades. */
+function PetHeart({ dx, delayMs, size }: { dx: number; delayMs: number; size: number }) {
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.value = withDelay(
+      delayMs,
+      withTiming(1, { duration: 1150, easing: Easing.out(Easing.quad) }),
+    );
+  }, [delayMs, progress]);
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 0.12, 0.75, 1], [0, 1, 0.85, 0]),
+    transform: [
+      { translateX: dx },
+      { translateY: interpolate(progress.value, [0, 1], [4, -40]) },
+      { scale: interpolate(progress.value, [0, 0.3, 1], [0.5, 1.05, 0.9]) },
+    ],
+  }));
+  return (
+    <Animated.View style={[styles.petHeart, style]}>
+      <PixelIcon name="heart" size={size} />
+    </Animated.View>
+  );
+}
+
+/** Affection-only feedback for petting: pure delight, never a care stat. */
+function PetHeartsBurst() {
+  return (
+    <View pointerEvents="none" style={styles.petHearts}>
+      <PetHeart dx={-26} delayMs={0} size={15} />
+      <PetHeart dx={2} delayMs={110} size={21} />
+      <PetHeart dx={26} delayMs={220} size={14} />
+    </View>
+  );
 }
 
 /**
@@ -1297,11 +1395,29 @@ function RoamingTwinRig({
   overrideKey,
   avatarConfig,
   glowColor,
+  petName,
+  onPet,
 }: RoamingTwinRigProps) {
   const [legIndex, setLegIndex] = useState(0);
   const [moving, setMoving] = useState(false);
   const [facing, setFacing] = useState<RoamFacing>("left");
+  const [petBurstId, setPetBurstId] = useState<number | null>(null);
+  const petBurstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const paused = Boolean(overrideAction);
+
+  useEffect(
+    () => () => {
+      if (petBurstTimer.current) clearTimeout(petBurstTimer.current);
+    },
+    [],
+  );
+
+  const handlePet = () => {
+    setPetBurstId(Date.now());
+    if (petBurstTimer.current) clearTimeout(petBurstTimer.current);
+    petBurstTimer.current = setTimeout(() => setPetBurstId(null), 1500);
+    onPet?.();
+  };
 
   const toPx = (xPct: number, yPct: number) => ({
     x: (xPct / 100) * stageWidth,
@@ -1408,18 +1524,24 @@ function RoamingTwinRig({
 
   return (
     <Animated.View
-      pointerEvents="none"
+      pointerEvents="box-none"
       style={[styles.roamRig, rigStyle]}
       testID="care-twin-roaming-rig"
     >
       <Animated.View
+        pointerEvents="none"
         style={[
           styles.spriteGroundShadow,
           { backgroundColor: glowColor },
           shadowStyle,
         ]}
       />
-      <View
+      {petBurstId ? <PetHeartsBurst key={petBurstId} /> : null}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Pet ${petName ?? "your dog"}`}
+        accessibilityHint="A little affection - hearts and a tail wag."
+        onPress={handlePet}
         style={[
           styles.roamFlip,
           facing === "right" ? styles.roamFlipMirrored : null,
@@ -1469,7 +1591,7 @@ function RoamingTwinRig({
               ) : null,
             )
           : null}
-      </View>
+      </Pressable>
     </Animated.View>
   );
 }
@@ -1568,6 +1690,47 @@ const styles = StyleSheet.create({
   },
   roamFlipMirrored: {
     transform: [{ scaleX: -1 }],
+  },
+  petHearts: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: -6,
+    alignItems: "center",
+    zIndex: 4,
+  },
+  petHeart: {
+    position: "absolute",
+    top: 0,
+  },
+  awayCue: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "flex-start",
+    justifyContent: "flex-end",
+    padding: 14,
+    zIndex: 5,
+  },
+  awayCueCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "rgba(251, 246, 231, 0.94)",
+    borderColor: "rgba(38, 34, 28, 0.16)",
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  awayCueTitle: {
+    color: OVERLAY_INK,
+    fontFamily: "Inter_700Bold",
+    fontSize: 13,
+  },
+  awayCueDetail: {
+    color: OVERLAY_MUTED_INK,
+    fontFamily: "Inter_500Medium",
+    fontSize: 11,
+    marginTop: 1,
   },
   spriteGroundShadow: {
     position: "absolute",

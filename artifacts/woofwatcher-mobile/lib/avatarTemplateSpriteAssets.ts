@@ -52,7 +52,7 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         ),
       ),
       track: {
-        key: "shepherd:option-b-idle-tail-wag",
+        key: "shepherd:storybook-idle-tail-wag",
         frameCount: 8,
         fps: 7,
         loop: true,
@@ -61,7 +61,7 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
           "assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png",
         anchor: "bottom-center",
         notes:
-          "Approved Option B Phoenix shepherd idle/tail-wag strip for the live Avatar Studio care-twin preview.",
+          "Storybook board-matched shepherd idle/tail-wag strip for the live Avatar Studio care-twin preview.",
       },
     },
     "walk-loop": {
@@ -75,7 +75,7 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
         ),
       ),
       track: {
-        key: "shepherd:option-b-walk-loop",
+        key: "shepherd:storybook-walk-loop",
         frameCount: 8,
         fps: 9,
         loop: true,
@@ -84,7 +84,7 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
           "assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png",
         anchor: "bottom-center",
         notes:
-          "Approved Option B Phoenix shepherd walk loop for live Avatar Studio movement.",
+          "Storybook board-matched shepherd walk loop for live Avatar Studio movement.",
       },
     },
   },
