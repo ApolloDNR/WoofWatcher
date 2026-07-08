@@ -60,8 +60,8 @@
     "android": {
       "package": "com.pegasusdreamscapes.woofwatcher",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/app-icon.png",
-        "backgroundColor": "#F3ECDA"
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#2E5B3C"
       },
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
