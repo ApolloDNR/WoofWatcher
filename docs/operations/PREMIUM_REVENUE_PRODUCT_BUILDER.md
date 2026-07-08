@@ -4158,3 +4158,21 @@ Next highest-impact work:
 4. Continue production-scale Avatar Studio animation packs: native phone-size QA for the wired Option B Phoenix family, review all template-matched sprite strips, refine weak gait loops where needed, add overlay layers, remaining emote stills, and body-class polish.
 5. Continue screen-by-screen polish, accessibility traversal, and visual regression.
 6. Prepare provider-backed auth, storage, AI, notifications, checkout, and app-store submission only after Apollo approves those production decisions.
+
+## 2026-07-08 Records Local File Proof Evidence Propagation
+
+The Records local-file proof evidence propagation pass now keeps saved native
+file/share evidence from being dropped before focused QA review.
+`LaunchProviderProfile` preserves `recordsLocalFileHandoffEvidence`, CareContext
+persists it, and `/care-twin-qa?qaSurface=records-local-file-handoff` feeds the
+saved object into `buildRecordsLocalFileHandoffProofManifest`.
+
+Local proof passed mobile readiness `114/114`, direct JSON doctor with
+`records local file proof evidence propagation is source-backed` as `PASS`, the
+zero-dependency suite `543/543`, root TypeScript, PixelLab `ok=149 missing=0
+invalid=0`, and `git diff --check` with expected CRLF warnings only. Direct JSON
+doctor remains blocked only by local pnpm `11.7.0` versus pinned `10.24.0` and
+missing Corepack. This still does not attach real iOS/Android share-sheet proof,
+Android content URI or saved-file proof, fallback-copy capture, native PDF/PNG
+share/reopen proof, provider storage proof, public launch, or Apollo sign-off.
+Rerun branch CI after this commit before treating dependency proof as current.

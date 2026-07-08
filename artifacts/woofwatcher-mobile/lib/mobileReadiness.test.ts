@@ -4918,6 +4918,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(careContext, /authSetupProofEvidence\?:\s*AuthSetupProofManifestInput \| null/);
   assert.match(careContext, /careEntryProviderSyncEvidence\?:\s*CareEntryProviderSyncProofEvidence \| null/);
   assert.match(careContext, /storageProviderEvidence\?:\s*LaunchStorageProviderEvidence \| null/);
+  assert.match(careContext, /recordsLocalFileHandoffEvidence\?:\s*RecordsLocalFileHandoffProofEvidence \| null/);
   assert.match(careContext, /aiProviderEvidence\?:\s*AiProviderProofEvidence \| null/);
   assert.match(careContext, /paymentsProviderEvidence\?:\s*PaymentsProviderProofManifestInput \| null/);
   assert.match(careContext, /pushNotificationsProofEvidence\?:\s*PushNotificationsProofEvidence \| null/);
@@ -4940,6 +4941,9 @@ test("keeps More household, tools, and diet sections on shared board card anatom
     /launchProviderProfile:\s*normalizeLaunchProviderProfile\(merged\.launchProviderProfile\)/,
   );
   assert.match(providerSetup, /storageProviderEvidence\?:\s*LaunchStorageProviderEvidence \| null/);
+  assert.match(providerSetup, /RecordsLocalFileHandoffProofEvidence/);
+  assert.match(providerSetup, /recordsLocalFileHandoffEvidence\?:\s*RecordsLocalFileHandoffProofEvidence \| null/);
+  assert.match(providerSetup, /recordsLocalFileHandoffEvidence:\s*normalizeRecordsLocalFileHandoffEvidence\(\s*source\.recordsLocalFileHandoffEvidence,\s*\)/);
   assert.match(providerSetup, /authSetupProofEvidence\?:\s*AuthSetupProofManifestInput \| null/);
   assert.match(providerSetup, /authSetupProofEvidence:\s*normalizeAuthSetupProofEvidence\(source\.authSetupProofEvidence\)/);
   assert.match(providerSetup, /careEntryProviderSyncEvidence\?:\s*CareEntryProviderSyncProofEvidence \| null/);
@@ -4961,6 +4965,11 @@ test("keeps More household, tools, and diet sections on shared board card anatom
     /buildAuthSetupProofManifest\(state\.launchProviderProfile\.authSetupProofEvidence \?\? undefined\)/,
   );
   assert.doesNotMatch(careTwinQaRoute, /buildAuthSetupProofManifest\(\{\}\)/);
+  assert.match(
+    careTwinQaRoute,
+    /buildRecordsLocalFileHandoffProofManifest\(\s*state\.launchProviderProfile\.recordsLocalFileHandoffEvidence \?\? undefined,\s*\)/,
+  );
+  assert.doesNotMatch(careTwinQaRoute, /buildRecordsLocalFileHandoffProofManifest\(\{\}\)/);
   assert.match(
     careTwinQaRoute,
     /deriveCareEntryProviderSyncProof\(state\.launchProviderProfile\.careEntryProviderSyncEvidence\)/,
@@ -6100,6 +6109,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "store accounts proof evidence propagation is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "records local file proof evidence propagation is source-backed" &&
         check.status === "PASS",
     ),
   );

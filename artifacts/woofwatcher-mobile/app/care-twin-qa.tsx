@@ -482,9 +482,11 @@ export default function CareTwinQaScreen() {
   const recordsLocalFileHandoffProofManifest = useMemo(
     () =>
       focusedQaTarget?.surface.id === "records-local-file-handoff"
-        ? buildRecordsLocalFileHandoffProofManifest({})
+        ? buildRecordsLocalFileHandoffProofManifest(
+            state.launchProviderProfile.recordsLocalFileHandoffEvidence ?? undefined,
+          )
         : null,
-    [focusedQaTarget],
+    [focusedQaTarget, state.launchProviderProfile.recordsLocalFileHandoffEvidence],
   );
   const reportBinaryExportProofManifest = useMemo(
     () =>

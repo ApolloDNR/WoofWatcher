@@ -327,3 +327,12 @@
 ## External Source Notes
 
 The Apollo shared thread was reachable via approved network fetch on 2026-06-08. Standard unauthenticated web tooling did not render the conversation directly; extraction used embedded share-page data.
+
+## 2026-07-08 Records Local File Proof Evidence Boundary
+
+The focused Records Local File Handoff proof mission now consumes saved Provider
+Launch Setup Records local-file proof evidence. This removes a local evidence
+propagation gap, but it does not attach real iOS/Android share-sheet evidence,
+Android content URI or saved-file proof, fallback-copy capture, native PDF/PNG
+share/reopen proof, provider storage proof, public launch, or replace Apollo
+sign-off.

@@ -28,6 +28,7 @@ import {
   REPORT_BINARY_EXPORT_PROOF_ITEMS,
   REPORT_BINARY_EXPORT_PROOF_SUMMARY,
 } from "./reportBinaryExportProof.ts";
+import type { RecordsLocalFileHandoffProofEvidence } from "./reportArtifactExportFile.ts";
 import {
   PAYMENTS_PROVIDER_PROOF_ITEMS,
   PAYMENTS_PROVIDER_PROOF_SUMMARY,
@@ -88,6 +89,7 @@ export interface LaunchProviderProfile {
   storageProviderConfigured: boolean;
   storageProviderProofReady: boolean;
   storageProviderEvidence?: LaunchStorageProviderEvidence | null;
+  recordsLocalFileHandoffEvidence?: RecordsLocalFileHandoffProofEvidence | null;
   aiProviderConfigured: boolean;
   aiProviderProofReady: boolean;
   aiProviderEvidence?: AiProviderProofEvidence | null;
@@ -172,6 +174,7 @@ const DEFAULT_PROFILE: LaunchProviderProfile = {
   storageProviderConfigured: false,
   storageProviderProofReady: false,
   storageProviderEvidence: null,
+  recordsLocalFileHandoffEvidence: null,
   aiProviderConfigured: false,
   aiProviderProofReady: false,
   aiProviderEvidence: null,
@@ -204,6 +207,12 @@ function cleanStatus(value: unknown): LaunchProviderSetupStatus {
 function normalizeStorageProviderEvidence(
   value: LaunchStorageProviderEvidence | null | undefined,
 ): LaunchStorageProviderEvidence | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
+function normalizeRecordsLocalFileHandoffEvidence(
+  value: RecordsLocalFileHandoffProofEvidence | null | undefined,
+): RecordsLocalFileHandoffProofEvidence | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value : null;
 }
 
@@ -262,6 +271,9 @@ export function normalizeLaunchProviderProfile(input: LaunchProviderProfileInput
     storageProviderConfigured: Boolean(source.storageProviderConfigured),
     storageProviderProofReady: Boolean(source.storageProviderProofReady),
     storageProviderEvidence: normalizeStorageProviderEvidence(source.storageProviderEvidence),
+    recordsLocalFileHandoffEvidence: normalizeRecordsLocalFileHandoffEvidence(
+      source.recordsLocalFileHandoffEvidence,
+    ),
     aiProviderConfigured: Boolean(source.aiProviderConfigured),
     aiProviderProofReady: Boolean(source.aiProviderProofReady),
     aiProviderEvidence: normalizeAiProviderEvidence(source.aiProviderEvidence),

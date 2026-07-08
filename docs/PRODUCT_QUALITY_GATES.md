@@ -409,3 +409,18 @@ Latest known passing `main` CI after the Full Log search slice:
 ## Required Before Claiming Full Release
 
 Do not mark Full Premium Release complete until every gate above is either passing with evidence or explicitly waived by Apollo in writing.
+
+## 2026-07-08 Records File-Proof Evidence
+
+Latest local Records file-proof evidence: mobile readiness passed `114/114`,
+direct JSON mobile beta doctor reported `records local file proof evidence
+propagation is source-backed` as `PASS`, the zero-dependency
+API/mobile/PWA/care-domain suite passed `543/543`, root TypeScript passed,
+PixelLab verifier passed `ok=149 missing=0 invalid=0`, and `git diff --check`
+passed with expected CRLF warnings only. This clears only local proof that saved
+Records local-file handoff evidence can persist through Provider Launch
+Setup/CareContext and reach
+`/care-twin-qa?qaSurface=records-local-file-handoff`; it does not clear real
+iOS/Android share-sheet proof, Android content URI or saved-file proof,
+fallback-copy capture, native PDF/PNG share/reopen proof, provider storage
+proof, public launch, or Apollo sign-off.

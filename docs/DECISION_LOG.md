@@ -2415,6 +2415,34 @@ Revisit trigger: WoofWatcher gains an in-app proof attachment editor, store
 billing is approved, or Apollo attaches real App Store / Google Play / refund
 and support proof files that should be validated from saved app state.
 
+### 2026-07-08: Records Local File Proof Evidence Must Reach Focused QA
+
+Decision: The focused Records Local File Handoff proof mission should consume
+saved Provider Launch Setup Records local-file evidence instead of rendering an
+empty native-file manifest.
+
+Reason: `buildRecordsLocalFileHandoffProofManifest` already requires Care Pass
+local HTML, Dog ID local HTML, Dog ID SVG, native share-sheet behavior, Android
+content URI or saved-file proof, fallback copy, and generated PDF/PNG/provider
+boundary evidence. If the focused helper route ignores saved evidence, real
+device proof can be collected but still fail to reach the launch-review surface.
+
+Consequences:
+
+- `LaunchProviderProfile` preserves `recordsLocalFileHandoffEvidence`.
+- CareContext persists the structured Records local-file evidence object.
+- `/care-twin-qa?qaSurface=records-local-file-handoff` feeds saved evidence into
+  `buildRecordsLocalFileHandoffProofManifest`.
+- Native Records file proof remains blocked until real iOS/Android share-sheet,
+  Android content URI or saved-file, fallback-copy, PDF/PNG, provider-storage,
+  and Apollo approval proof exists.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains an in-app proof attachment editor, native
+Records file QA attaches real iOS/Android evidence, or provider-backed document
+storage is approved.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

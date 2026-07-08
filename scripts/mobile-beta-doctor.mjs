@@ -1227,6 +1227,28 @@ check(
     : "preserve and forward Store Accounts proof evidence from Provider Launch Setup into the focused QA mission",
 );
 
+const recordsLocalFileProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
+  "recordsLocalFileHandoffEvidence?: RecordsLocalFileHandoffProofEvidence | null",
+  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
+])
+  && includesAll(launchProviderSetupSource, [
+    "RecordsLocalFileHandoffProofEvidence",
+    "recordsLocalFileHandoffEvidence?: RecordsLocalFileHandoffProofEvidence | null",
+    "recordsLocalFileHandoffEvidence: normalizeRecordsLocalFileHandoffEvidence",
+  ])
+  && includesAll(careTwinQaRouteSource, [
+    "buildRecordsLocalFileHandoffProofManifest(",
+    "state.launchProviderProfile.recordsLocalFileHandoffEvidence ?? undefined",
+  ])
+  && !careTwinQaRouteSource.includes("buildRecordsLocalFileHandoffProofManifest({})");
+check(
+  "records local file proof evidence propagation is source-backed",
+  recordsLocalFileProofEvidencePropagationIsSourceBacked,
+  recordsLocalFileProofEvidencePropagationIsSourceBacked
+    ? "Focused Records local file proof mission consumes saved native file/share evidence from the durable Provider Launch Setup profile"
+    : "preserve and forward Records native local-file proof evidence from Provider Launch Setup into the focused QA mission",
+);
+
 const accountDeletionProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
   "accountDeletionEvidence?: AccountDeletionProofEvidence | null",
   "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",

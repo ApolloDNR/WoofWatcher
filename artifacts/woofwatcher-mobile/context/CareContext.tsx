@@ -42,6 +42,7 @@ import {
   normalizeLaunchProviderProfile,
   type LaunchStorageProviderEvidence,
 } from "@/lib/launchProviderSetup";
+import type { RecordsLocalFileHandoffProofEvidence } from "@/lib/reportArtifactExportFile";
 import type { AuthSetupProofManifestInput } from "@/lib/authProviderProof";
 import type { CareEntryProviderSyncProofEvidence } from "@/lib/careEntryProviderSyncProof";
 import type { AiProviderProofEvidence } from "@/lib/aiProviderProof";
@@ -122,6 +123,7 @@ export interface LaunchProviderProfile {
   storageProviderConfigured: boolean;
   storageProviderProofReady: boolean;
   storageProviderEvidence?: LaunchStorageProviderEvidence | null;
+  recordsLocalFileHandoffEvidence?: RecordsLocalFileHandoffProofEvidence | null;
   aiProviderConfigured: boolean;
   aiProviderProofReady: boolean;
   aiProviderEvidence?: AiProviderProofEvidence | null;

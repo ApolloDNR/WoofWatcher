@@ -2583,3 +2583,22 @@ Latest local evidence, 2026-07-07:
   API/mobile/PWA/care-domain suite passed `561/561`; root TypeScript and mobile
   TypeScript passed; PixelLab verifier passed `ok=149 missing=0 invalid=0`; and
   `git diff --check` passed with expected Windows CRLF warnings only.
+
+## 2026-07-08 Records Local File Proof Evidence Propagation
+
+The Records local-file proof evidence propagation pass closes the matching
+focused Records helper stale path. `LaunchProviderProfile` now preserves
+`recordsLocalFileHandoffEvidence`, CareContext persists it, and
+`/care-twin-qa?qaSurface=records-local-file-handoff` feeds saved native
+file/share evidence into `buildRecordsLocalFileHandoffProofManifest` instead of
+rendering an empty manifest.
+
+Local proof passed mobile readiness `114/114`, direct JSON mobile beta doctor
+with `records local file proof evidence propagation is source-backed` as
+`PASS`, the zero-dependency API/mobile/PWA/care-domain suite `543/543`, root
+TypeScript, PixelLab verifier `ok=149 missing=0 invalid=0`, and
+`git diff --check` with expected CRLF warnings only. Direct JSON doctor remains
+locally blocked by pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack.
+This does not attach native iOS/Android share-sheet proof, Android content URI
+or saved-file proof, fallback-copy capture, native PDF/PNG share/reopen proof,
+provider storage proof, public launch, or Apollo sign-off.
