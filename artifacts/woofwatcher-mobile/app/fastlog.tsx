@@ -148,6 +148,9 @@ export default function FastLogScreen() {
   };
 
   const flashLogged = (key: string) => {
+    if (Platform.OS !== "web") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    }
     setJustLogged(key);
     if (loggedTimer.current) clearTimeout(loggedTimer.current);
     loggedTimer.current = setTimeout(() => setJustLogged(null), 1600);

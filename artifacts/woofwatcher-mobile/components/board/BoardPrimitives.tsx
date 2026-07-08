@@ -13,6 +13,7 @@ import {
 
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useColors } from "@/hooks/useColors";
+import { hapticSelect } from "@/lib/haptics";
 import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -223,7 +224,10 @@ export function BoardSegmentTabs<T extends string>({
             accessibilityRole="button"
             accessibilityLabel={segment.label}
             accessibilityState={{ selected: isActive }}
-            onPress={() => onChange(segment.key)}
+            onPress={() => {
+              if (!isActive) hapticSelect();
+              onChange(segment.key);
+            }}
             style={({ pressed }) => [
               styles.segmentChip,
               {
