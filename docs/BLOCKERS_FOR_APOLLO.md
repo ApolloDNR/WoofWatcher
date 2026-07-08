@@ -300,6 +300,12 @@
   but it does not configure Clerk, approve OAuth, enable provider-backed
   household creation, attach native iOS/Android screenshots, satisfy store
   review, launch publicly, or replace Apollo sign-off.
+- 2026-07-08: The JSON mobile beta doctor now explicitly checks Auth/Setup and
+  Payments proof-evidence propagation. The new source-backed labels prove the
+  saved evidence paths are guarded by the doctor, but they do not configure
+  Clerk, approve OAuth, attach native Auth/Setup screenshots, configure App
+  Store or Google Play billing, prove sandbox receipts/restores, enable
+  checkout, move money, launch publicly, or replace Apollo sign-off.
 - Branch CI proved the payments proof evidence propagation commit `721ebe69` in
   `WoofWatcher Verify` run `28906351424`; dependency-complete proof is current
   for that implementation commit.

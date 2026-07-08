@@ -12,6 +12,33 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-07-08: Doctor Guards Auth And Payments Evidence Propagation
+
+Decision: The machine-readable mobile beta doctor should have named
+source-backed checks for Auth/Setup and Payments proof-evidence propagation, not
+only generic proof-manifest checks.
+
+Reason: AuthShell, Setup, Premium, Privacy & Safety, and focused QA routes now
+consume saved proof evidence from Provider Launch Setup. Without explicit doctor
+labels for those propagation paths, a future regression could leave real saved
+proof stranded while the older manifest checks still pass.
+
+Consequences:
+
+- `scripts/mobile-beta-doctor.mjs` reports `auth setup proof evidence
+  propagation is source-backed` for the saved Auth/Setup evidence path.
+- `scripts/mobile-beta-doctor.mjs` reports `payments proof evidence propagation
+  is source-backed` for the saved Payments evidence path.
+- The checks preserve truth boundaries: they prove source wiring only, not real
+  Clerk configuration, native screenshots, billing setup, receipts, checkout,
+  public launch, or Apollo sign-off.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains a provider-backed proof evidence service,
+in-app proof attachment editing, or Apollo attaches real Auth/Setup or Payments
+proof files that should be validated beyond source-path guards.
+
 ### 2026-07-07: Auth Setup Proof Evidence Must Reach Auth Review Surfaces
 
 Decision: Saved Provider Launch Setup Auth/Setup proof evidence should survive

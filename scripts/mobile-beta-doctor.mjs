@@ -1129,6 +1129,60 @@ check(
     : "preserve and forward care-entry sync, AI, payments, and account-deletion proof evidence from Provider Launch Setup into Privacy & Safety and focused QA missions",
 );
 
+const authSetupProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
+  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
+])
+  && includesAll(launchProviderSetupSource, [
+    "authSetupProofEvidence?: AuthSetupProofManifestInput | null",
+    "authSetupProofEvidence: normalizeAuthSetupProofEvidence(source.authSetupProofEvidence)",
+  ])
+  && includesAll(authUiSource, [
+    "buildAuthSetupProofManifest(state.launchProviderProfile.authSetupProofEvidence ?? undefined)",
+  ])
+  && includesAll(setupRouteSource, [
+    "buildAuthSetupProofManifest(state.launchProviderProfile.authSetupProofEvidence ?? undefined)",
+  ])
+  && includesAll(careTwinQaRouteSource, [
+    "buildAuthSetupProofManifest(state.launchProviderProfile.authSetupProofEvidence ?? undefined)",
+  ])
+  && !authUiSource.includes("buildAuthSetupProofManifest({})")
+  && !setupRouteSource.includes("buildAuthSetupProofManifest({})")
+  && !careTwinQaRouteSource.includes("buildAuthSetupProofManifest({})");
+check(
+  "auth setup proof evidence propagation is source-backed",
+  authSetupProofEvidencePropagationIsSourceBacked,
+  authSetupProofEvidencePropagationIsSourceBacked
+    ? "AuthShell, Setup, and the focused auth/setup proof mission consume saved Clerk/native setup proof evidence from the durable Provider Launch Setup profile"
+    : "preserve and forward Auth/Setup proof evidence from Provider Launch Setup into AuthShell, Setup, and the focused QA mission",
+);
+
+const paymentsProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
+  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
+])
+  && includesAll(launchProviderSetupSource, [
+    "paymentsProviderEvidence?: PaymentsProviderProofManifestInput | null",
+    "paymentsProviderEvidence: normalizePaymentsProviderEvidence(source.paymentsProviderEvidence)",
+  ])
+  && includesAll(premiumRouteSource, [
+    "buildPaymentsProviderProofManifest(",
+    "state.launchProviderProfile.paymentsProviderEvidence ?? undefined",
+  ])
+  && includesAll(privacyRouteSource, [
+    "paymentsProviderEvidence: state.launchProviderProfile.paymentsProviderEvidence",
+  ])
+  && includesAll(careTwinQaRouteSource, [
+    "buildPaymentsProviderProofManifest(state.launchProviderProfile.paymentsProviderEvidence ?? undefined)",
+  ])
+  && !premiumRouteSource.includes("buildPaymentsProviderProofManifest({})")
+  && !careTwinQaRouteSource.includes("buildPaymentsProviderProofManifest({})");
+check(
+  "payments proof evidence propagation is source-backed",
+  paymentsProofEvidencePropagationIsSourceBacked,
+  paymentsProofEvidencePropagationIsSourceBacked
+    ? "Premium, Privacy & Safety, and the focused payments proof mission consume saved billing proof evidence from the durable Provider Launch Setup profile"
+    : "preserve and forward payments proof evidence from Provider Launch Setup into Premium, Privacy & Safety, and the focused QA mission",
+);
+
 const pushNotificationsProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
   "pushNotificationsProofEvidence?: PushNotificationsProofEvidence | null",
   "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",

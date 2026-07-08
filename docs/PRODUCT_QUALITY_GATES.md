@@ -386,6 +386,19 @@ Latest known passing automation-branch CI:
   completed success in `3m5s` on `automation/premium-revenue-product-builder`.
   Real Clerk configuration, OAuth, provider-backed household creation, native
   screenshots, store review, public launch, and Apollo sign-off remain blocked.
+- The machine-readable beta doctor now explicitly guards Auth/Setup and Payments
+  proof-evidence propagation. It reports `auth setup proof evidence propagation
+  is source-backed` only when saved Auth/Setup evidence reaches AuthShell, Setup,
+  and the focused Auth/Setup proof mission; it reports `payments proof evidence
+  propagation is source-backed` only when saved payments evidence reaches
+  Premium, Privacy & Safety, and the focused Payments proof mission. Local
+  red/green proof first failed on the missing doctor labels, then passed mobile
+  readiness `114/114`, direct JSON doctor source-backed checks for both labels,
+  the zero-dependency suite `561/561`, root TypeScript, mobile TypeScript,
+  PixelLab `ok=149 missing=0 invalid=0`, and `git diff --check` with expected
+  CRLF warnings only. Direct JSON doctor remains locally blocked by pnpm
+  `11.7.0` versus pinned `10.24.0` and missing Corepack; branch CI must be
+  rerun after this commit before dependency proof is current.
 
 Latest known passing `main` CI after the Full Log search slice:
 

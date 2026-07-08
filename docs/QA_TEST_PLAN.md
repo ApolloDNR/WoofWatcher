@@ -2570,3 +2570,16 @@ Latest local evidence, 2026-07-07:
   mobile beta doctor, focused behavior tests, typecheck plus CI-safe builds, and
   post steps all passing. This proof is current through `95003f80` only; rerun
   branch CI after the next commit before treating dependency proof as current.
+- The JSON mobile beta doctor now has explicit source-backed propagation checks
+  for the newest Auth/Setup and Payments slices. `auth setup proof evidence
+  propagation is source-backed` verifies saved Auth/Setup evidence reaches
+  AuthShell, Setup, and the focused Auth/Setup QA mission; `payments proof
+  evidence propagation is source-backed` verifies saved payments evidence
+  reaches Premium, Privacy & Safety, and the focused Payments QA mission.
+- Red/green verification first failed on the missing doctor labels, then mobile
+  readiness passed `114/114`; direct JSON doctor output showed both new labels
+  as `PASS` while remaining locally `BLOCKED` only on pnpm `11.7.0` versus
+  pinned `10.24.0` and missing Corepack; the zero-dependency
+  API/mobile/PWA/care-domain suite passed `561/561`; root TypeScript and mobile
+  TypeScript passed; PixelLab verifier passed `ok=149 missing=0 invalid=0`; and
+  `git diff --check` passed with expected Windows CRLF warnings only.
