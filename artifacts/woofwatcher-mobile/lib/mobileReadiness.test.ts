@@ -1462,9 +1462,10 @@ test("keeps Home first-screen status grouped as a care status board", () => {
   const todayCommandIndex = home.indexOf("Today Command");
 
   assert.notEqual(careStatusIndex, -1, "Home should group status tiles in a board");
+  assert.notEqual(todayCommandIndex, -1, "Home should render the Today Command");
   assert.ok(
-    careStatusIndex < todayCommandIndex,
-    "Care Status should stay above the Today Command",
+    todayCommandIndex < careStatusIndex,
+    "Today Command should lead into the Care Status board per the storybook mockup",
   );
   assert.match(home, /const careStatusTone = openAloneSession/);
   assert.match(home, /const careStatusLabel = openAloneSession/);
@@ -2114,7 +2115,8 @@ test("locks the mobile pixel UI foundation to Apollo's reference boards", () => 
 
   assert.match(colors, /#081424/);
   assert.match(colors, /#0D182A/);
-  assert.match(colors, /#FFF9EF/);
+  assert.match(colors, /#FBF6E7/);
+  assert.match(colors, /#2E5B3C/);
   assert.match(colors, /#A8CBE8/);
   assert.match(colors, /pixelUi/);
   assert.ok(existsSync(primitivesPath), "board primitives should exist");

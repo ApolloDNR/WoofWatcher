@@ -1240,6 +1240,22 @@ export default function HomeScreen() {
     router.push("/portrait");
   };
 
+  // Today's Story: one honest sentence from the day's real log evidence.
+  const todayStoryLine = useMemo(() => {
+    const todayKey = new Date(now).toDateString();
+    const todaysEntries = state.entries.filter(
+      (entry) => new Date(entry.occurredAt).toDateString() === todayKey,
+    );
+    if (!todaysEntries.length) {
+      return `${petName}'s story is ready for its first care moment today.`;
+    }
+    const latest = [...todaysEntries].sort((a, b) =>
+      b.occurredAt.localeCompare(a.occurredAt),
+    )[0];
+    const count = todaysEntries.length;
+    return `${latest.title} logged by ${latest.caregiver}. ${count} care ${count === 1 ? "moment" : "moments"} today.`;
+  }, [now, petName, state.entries]);
+
   const isWebRoutePreview = (Platform.OS as string) === "web";
   // The web preview mirrors the native inset so the room console floats
   // with the same clean margins reviewers see on a real device.
@@ -1256,16 +1272,6 @@ export default function HomeScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
-      <Image
-        source={
-          homeImmersiveRoomIsNight(new Date(now).getHours())
-            ? HOME_IMMERSIVE_ROOM_NIGHT
-            : HOME_IMMERSIVE_ROOM_DAY
-        }
-        resizeMode="cover"
-        style={StyleSheet.absoluteFill}
-        fadeDuration={0}
-      />
       <ScrollView
         style={s.container}
         contentContainerStyle={{
@@ -1279,6 +1285,39 @@ export default function HomeScreen() {
           <View style={s.header}>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={`${petName}. ${careStatusLabel}. Open the Pack`}
+              accessibilityHint="Opens pets and people who share the care."
+              onPress={() => router.push("/pack" as never)}
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={({ pressed }) => [s.identityWrap, { opacity: pressed ? 0.75 : 1 }]}
+            >
+              <Image
+                source={require("@/assets/images/phoenix-avatar.png")}
+                style={[s.identityAvatar, { borderColor: colors.border, backgroundColor: colors.secondary }]}
+              />
+              <View style={s.identityCopy}>
+                <View style={s.identityNameRow}>
+                  <Text
+                    numberOfLines={1}
+                    style={[s.identityName, { color: colors.foreground, fontFamily: "Fraunces_700Bold" }]}
+                  >
+                    {petName}
+                  </Text>
+                  <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                </View>
+                <View style={[s.identityChip, { backgroundColor: colors.sageSoft }]}>
+                  <View style={[s.identityDot, { backgroundColor: colors.forest }]} />
+                  <Text
+                    numberOfLines={1}
+                    style={[s.identityChipText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}
+                  >
+                    {careStatusLabel}
+                  </Text>
+                </View>
+              </View>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
               accessibilityLabel="Open More"
               onPress={() => router.push("/more")}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
@@ -1287,38 +1326,8 @@ export default function HomeScreen() {
                 { borderColor: "transparent", backgroundColor: "transparent" },
               ]}
             >
-              <Ionicons name="menu" size={27} color={colors.navy} />
+              <Ionicons name="menu" size={25} color={colors.foreground} />
             </Pressable>
-            <View style={s.logoWrap}>
-              <Text
-                style={[
-                  s.greeting,
-                  { color: colors.navy, fontFamily: "Fredoka_700Bold" },
-                ]}
-              >
-                {new Date(now).getHours() < 12
-                  ? "Good morning"
-                  : new Date(now).getHours() < 18
-                    ? "Good afternoon"
-                    : "Good evening"}
-                , {caregiver}
-              </Text>
-              <Text
-                style={[
-                  s.logoSub,
-                  {
-                    color: colors.mutedForeground,
-                    fontFamily: "Inter_500Medium",
-                  },
-                ]}
-              >
-                {status.mood === "unwell"
-                  ? `Keep ${petName}'s day gentle today`
-                  : status.mood === "anxious"
-                    ? `${petName} could use a calm plan`
-                    : `${petName} is ready for adventure`}
-              </Text>
-            </View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Open Health Watch"
@@ -1349,10 +1358,20 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          {/* The room is the screen's background: it bleeds to the screen
-              edges and the care surfaces float over its lower edge, matching
-              the vision-board Home. */}
-          <View style={s.heroBackdrop}>
+          {/* The room is a framed storybook card: day/night art fills the
+              frame and the living twin roams inside it, matching Apollo's
+              storybook mockup Home. */}
+          <View style={[s.heroBackdrop, { borderColor: colors.border, backgroundColor: colors.card }]}>
+            <Image
+              source={
+                homeImmersiveRoomIsNight(new Date(now).getHours())
+                  ? HOME_IMMERSIVE_ROOM_NIGHT
+                  : HOME_IMMERSIVE_ROOM_DAY
+              }
+              resizeMode="cover"
+              style={StyleSheet.absoluteFill}
+              fadeDuration={0}
+            />
             <View
               accessibilityLabel="Phoenix Room"
               accessibilityHint={homeFirstScreenLayout.qaLabel}
@@ -1394,19 +1413,12 @@ export default function HomeScreen() {
                   minHeight: homeFirstScreenLayout.heroStudioButtonMinHeight,
                   backgroundColor: pressed
                     ? colors.ivory
-                    : "rgba(255,249,239,0.92)",
+                    : "rgba(251,246,231,0.94)",
+                  borderColor: colors.border,
                 },
               ]}
             >
-              <Text
-                style={[
-                  s.heroStudioChipText,
-                  { color: colors.copper, fontFamily: "Inter_700Bold" },
-                ]}
-              >
-                {avatarTemplate.label} twin
-              </Text>
-              <Ionicons name="chevron-forward" size={12} color={colors.copper} />
+              <Ionicons name="color-wand-outline" size={17} color={colors.forest} />
             </Pressable>
           </View>
 
@@ -1479,63 +1491,78 @@ export default function HomeScreen() {
             <Ionicons name="chevron-forward" size={17} color={colors.navy} />
           </Pressable>
 
-          <BoardCard style={s.careerCard}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Today Command. ${todayCommand.primaryAction.label}. ${todayCommand.primaryAction.detail}`}
+            accessibilityHint="Opens the exact care workflow behind today's recommended action."
+            hitSlop={MOBILE_INLINE_HIT_SLOP}
+            onPress={() =>
+              router.push(todayCommand.primaryAction.route as never)
+            }
+            style={({ pressed }) => [
+              s.todayCommandCard,
+              {
+                backgroundColor: pressed ? colors.secondary : colors.ivory,
+                borderColor: pressed ? todayCommandTone : colors.border,
+              },
+            ]}
+          >
             <View
-              accessible
-              accessibilityLabel={`Care level ${careCareer.level}, ${careCareer.title}. ${careCareer.levelXp} of ${careCareer.levelSpanXp} XP toward the next level.${careCareer.todayXp > 0 ? ` ${careCareer.todayXp} XP earned today.` : ""}`}
-              style={s.careerRow}
+              style={[
+                s.todayCommandIcon,
+                { backgroundColor: todayCommandTone + "18" },
+              ]}
             >
-              <View style={[s.careerBadge, { backgroundColor: colors.brandNavy, borderColor: colors.amber }]}>
-                <Text style={[s.careerBadgeKicker, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
-                  LV
-                </Text>
-                <Text style={[s.careerBadgeLevel, { color: colors.ivory, fontFamily: "Fredoka_700Bold" }]}>
-                  {careCareer.level}
-                </Text>
-              </View>
-              <View style={s.careerBody}>
-                <View style={s.careerTitleRow}>
-                  <Text
-                    numberOfLines={1}
-                    style={[s.careerTitle, { color: colors.navy, fontFamily: "Fredoka_600SemiBold" }]}
-                  >
-                    {careCareer.title}
-                  </Text>
-                  {careCareer.todayXp > 0 ? (
-                    <Text style={[s.careerToday, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
-                      +{careCareer.todayXp} XP today
-                    </Text>
-                  ) : null}
-                </View>
-                <View style={s.careerSegments}>
-                  {Array.from({ length: 10 }).map((_, index) => (
-                    <View
-                      key={`career-seg-${index}`}
-                      style={[
-                        s.careerSegment,
-                        {
-                          backgroundColor:
-                            index < Math.round(careCareer.levelProgress * 10)
-                              ? colors.amber
-                              : colors.muted,
-                          borderColor:
-                            index < Math.round(careCareer.levelProgress * 10)
-                              ? colors.amber
-                              : colors.border,
-                        },
-                      ]}
-                    />
-                  ))}
-                </View>
-                <Text style={[s.careerXp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  {careCareer.levelXp.toLocaleString()} / {careCareer.levelSpanXp.toLocaleString()} XP ·{" "}
-                  {careStreak >= 2
-                    ? `${careStreak}-day care streak`
-                    : "every point from real care logs"}
-                </Text>
-              </View>
+              <PixelIcon
+                name={todayCommandPixelIcon(todayCommand.primaryAction.icon)}
+                size={28}
+              />
             </View>
-          </BoardCard>
+            <View style={s.todayCommandCopy}>
+              <Text
+                style={[
+                  s.todayCommandKicker,
+                  { color: colors.copper, fontFamily: "Fredoka_600SemiBold" },
+                ]}
+              >
+                Today Command
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={[
+                  s.todayCommandTitle,
+                  { color: colors.navy, fontFamily: "Fredoka_700Bold" },
+                ]}
+              >
+                {todayCommand.primaryAction.label}
+              </Text>
+              <Text
+                numberOfLines={2}
+                style={[
+                  s.todayCommandDetail,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
+                {todayCommand.primaryAction.detail}
+              </Text>
+            </View>
+            <View
+              style={[s.todayCommandCta, { backgroundColor: todayCommandTone }]}
+            >
+              <Text
+                style={[
+                  s.todayCommandCtaText,
+                  { fontFamily: "Inter_800ExtraBold" },
+                ]}
+              >
+                {todayCommandCta}
+              </Text>
+              <Ionicons name="chevron-forward" size={15} color="#FFF9EF" />
+            </View>
+          </Pressable>
 
           <BoardCard style={s.careStatusCard}>
             <BoardSectionHeader
@@ -1627,79 +1654,6 @@ export default function HomeScreen() {
             </View>
           </BoardCard>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Today Command. ${todayCommand.primaryAction.label}. ${todayCommand.primaryAction.detail}`}
-            accessibilityHint="Opens the exact care workflow behind today's recommended action."
-            hitSlop={MOBILE_INLINE_HIT_SLOP}
-            onPress={() =>
-              router.push(todayCommand.primaryAction.route as never)
-            }
-            style={({ pressed }) => [
-              s.todayCommandCard,
-              {
-                backgroundColor: pressed ? colors.secondary : colors.ivory,
-                borderColor: pressed ? todayCommandTone : colors.border,
-              },
-            ]}
-          >
-            <View
-              style={[
-                s.todayCommandIcon,
-                { backgroundColor: todayCommandTone + "18" },
-              ]}
-            >
-              <PixelIcon
-                name={todayCommandPixelIcon(todayCommand.primaryAction.icon)}
-                size={28}
-              />
-            </View>
-            <View style={s.todayCommandCopy}>
-              <Text
-                style={[
-                  s.todayCommandKicker,
-                  { color: colors.copper, fontFamily: "Fredoka_600SemiBold" },
-                ]}
-              >
-                Today Command
-              </Text>
-              <Text
-                numberOfLines={1}
-                style={[
-                  s.todayCommandTitle,
-                  { color: colors.navy, fontFamily: "Fredoka_700Bold" },
-                ]}
-              >
-                {todayCommand.primaryAction.label}
-              </Text>
-              <Text
-                numberOfLines={2}
-                style={[
-                  s.todayCommandDetail,
-                  {
-                    color: colors.mutedForeground,
-                    fontFamily: "Inter_600SemiBold",
-                  },
-                ]}
-              >
-                {todayCommand.primaryAction.detail}
-              </Text>
-            </View>
-            <View
-              style={[s.todayCommandCta, { backgroundColor: todayCommandTone }]}
-            >
-              <Text
-                style={[
-                  s.todayCommandCtaText,
-                  { fontFamily: "Inter_800ExtraBold" },
-                ]}
-              >
-                {todayCommandCta}
-              </Text>
-              <Ionicons name="chevron-forward" size={15} color="#FFF9EF" />
-            </View>
-          </Pressable>
-
           <View style={s.homeSplit}>
             <BoardCard style={[s.nextCard, s.homeSplitCard]}>
               <BoardSectionHeader
@@ -1787,6 +1741,120 @@ export default function HomeScreen() {
               </View>
             </BoardCard>
           </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Today's Story. ${todayStoryLine} Open Story.`}
+            accessibilityHint="Opens Phoenix's living story."
+            onPress={() => router.push("/story" as never)}
+            style={({ pressed }) => [
+              s.todayStoryCard,
+              {
+                backgroundColor: pressed ? colors.secondary : colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Image
+              source={require("@/assets/board/hero.png")}
+              style={[s.todayStoryThumb, { borderColor: colors.border }]}
+              resizeMode="cover"
+            />
+            <View style={s.todayStoryCopy}>
+              <Text
+                style={[
+                  s.todayStoryKicker,
+                  { color: colors.copper, fontFamily: "Fredoka_600SemiBold" },
+                ]}
+              >
+                Today's Story
+              </Text>
+              <Text
+                numberOfLines={2}
+                style={[
+                  s.todayStoryText,
+                  { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+                ]}
+              >
+                {todayStoryLine}
+              </Text>
+              <View style={s.todayStoryChips}>
+                {careCareer.todayXp > 0 ? (
+                  <View style={[s.todayStoryChip, { backgroundColor: colors.amberSoft }]}>
+                    <Text style={[s.todayStoryChipText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                      +{careCareer.todayXp} XP
+                    </Text>
+                  </View>
+                ) : null}
+                {careStreak >= 2 ? (
+                  <View style={[s.todayStoryChip, { backgroundColor: colors.sageSoft }]}>
+                    <Text style={[s.todayStoryChipText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
+                      {careStreak}-day streak
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+          </Pressable>
+
+          <BoardCard style={s.careerCard}>
+            <View
+              accessible
+              accessibilityLabel={`Care level ${careCareer.level}, ${careCareer.title}. ${careCareer.levelXp} of ${careCareer.levelSpanXp} XP toward the next level.${careCareer.todayXp > 0 ? ` ${careCareer.todayXp} XP earned today.` : ""}`}
+              style={s.careerRow}
+            >
+              <View style={[s.careerBadge, { backgroundColor: colors.amberSoft, borderColor: colors.amber }]}>
+                <Text style={[s.careerBadgeKicker, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+                  LV
+                </Text>
+                <Text style={[s.careerBadgeLevel, { color: colors.foreground, fontFamily: "Fraunces_700Bold" }]}>
+                  {careCareer.level}
+                </Text>
+              </View>
+              <View style={s.careerBody}>
+                <View style={s.careerTitleRow}>
+                  <Text
+                    numberOfLines={1}
+                    style={[s.careerTitle, { color: colors.navy, fontFamily: "Fredoka_600SemiBold" }]}
+                  >
+                    {careCareer.title}
+                  </Text>
+                  {careCareer.todayXp > 0 ? (
+                    <Text style={[s.careerToday, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
+                      +{careCareer.todayXp} XP today
+                    </Text>
+                  ) : null}
+                </View>
+                <View style={s.careerSegments}>
+                  {Array.from({ length: 10 }).map((_, index) => (
+                    <View
+                      key={`career-seg-${index}`}
+                      style={[
+                        s.careerSegment,
+                        {
+                          backgroundColor:
+                            index < Math.round(careCareer.levelProgress * 10)
+                              ? colors.amber
+                              : colors.muted,
+                          borderColor:
+                            index < Math.round(careCareer.levelProgress * 10)
+                              ? colors.amber
+                              : colors.border,
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+                <Text style={[s.careerXp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  {careCareer.levelXp.toLocaleString()} / {careCareer.levelSpanXp.toLocaleString()} XP ·{" "}
+                  {careStreak >= 2
+                    ? `${careStreak}-day care streak`
+                    : "every point from real care logs"}
+                </Text>
+              </View>
+            </View>
+          </BoardCard>
 
           <BoardCard
             tone="navy"
@@ -2519,31 +2587,68 @@ const s = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: { color: "#FFFFFF", fontSize: 10 },
-  logoWrap: { flex: 1, alignItems: "center", gap: 0 },
-  greeting: { fontSize: 20, lineHeight: 24 },
-  logoSub: { fontSize: 12, marginTop: 1 },
+  identityWrap: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  identityAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1,
+  },
+  identityCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
+  },
+  identityNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  identityName: {
+    fontSize: 20,
+    lineHeight: 24,
+  },
+  identityChip: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+  },
+  identityDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  identityChipText: {
+    fontSize: 10.5,
+  },
 
   heroBackdrop: {
-    marginHorizontal: -16,
     marginBottom: 0,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+    borderRadius: 24,
+    borderWidth: 1,
     overflow: "hidden",
   },
   heroStudioChip: {
     position: "absolute",
-    top: 10,
+    bottom: 12,
     right: 12,
     zIndex: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
+    width: 40,
+    height: 40,
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  heroStudioChipText: {
-    fontSize: 11,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   heroConsoleHeader: {
     minHeight: 58,
@@ -2626,6 +2731,46 @@ const s = StyleSheet.create({
   },
   presenceInitial: { color: "#FFFFFF", fontSize: 17 },
   presenceCopy: { flex: 1, minWidth: 0 },
+  todayStoryCard: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  todayStoryThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  todayStoryCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+  },
+  todayStoryKicker: {
+    fontSize: 11,
+  },
+  todayStoryText: {
+    fontSize: 12.5,
+    lineHeight: 17,
+  },
+  todayStoryChips: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  todayStoryChip: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  todayStoryChipText: {
+    fontSize: 10,
+  },
   careerCard: {
     marginBottom: 12,
   },

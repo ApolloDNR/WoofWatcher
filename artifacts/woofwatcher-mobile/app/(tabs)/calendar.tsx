@@ -48,6 +48,12 @@ import {
 } from "@/lib/mobileLayout";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import {
+  BoardActionButton,
+  BoardSegmentTabs,
+  BoardStatusPill,
+  type BoardStatusPillTone,
+} from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -134,6 +140,22 @@ function routineStatusLabel(status: RoutineBoardStatus): string {
   if (status === "overdue") return "Overdue";
   if (status === "due") return "Due now";
   return "Upcoming";
+}
+
+function scheduleStatusPill(
+  status: RoutineBoardStatus,
+  isNextUpcoming: boolean,
+): { label: string; tone: BoardStatusPillTone } {
+  if (status === "done") return { label: "Done", tone: "done" };
+  if (status === "overdue" || status === "due") return { label: "Due", tone: "due" };
+  if (isNextUpcoming) return { label: "Up Next", tone: "upNext" };
+  return { label: "Upcoming", tone: "upcoming" };
+}
+
+function routineBoardPillTone(status: RoutineBoardStatus): BoardStatusPillTone {
+  if (status === "done") return "done";
+  if (status === "overdue" || status === "due") return "due";
+  return "upcoming";
 }
 
 function reminderUrgencyLabel(urgency: string): string {
@@ -310,6 +332,7 @@ export default function CalendarScreen() {
   const openScheduleCount = Math.max(0, scheduleRows.length - completedScheduleCount);
   const nextScheduleRow = scheduleRows.find((row) => row.status !== "done") ?? scheduleRows[0];
   const nextScheduleStatus = nextScheduleRow ? routineStatusLabel(nextScheduleRow.status) : "Ready";
+  const firstUpcomingScheduleIndex = scheduleRows.findIndex((row) => row.status === "upcoming");
   const commandDeckTone =
     nextScheduleRow?.status === "overdue"
       ? colors.rose
@@ -684,10 +707,8 @@ export default function CalendarScreen() {
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           <BoardRouteHeader
-            kicker="Plans"
-            title="Plans & Schedule"
+            title="Plan"
             subtitle={dateLabel}
-            icon="calendar-outline"
             actionIcon="add"
             actionLabel="Add plan"
             onAction={() => {
@@ -701,23 +722,23 @@ export default function CalendarScreen() {
               source={PLANS_COMMAND_STAGE_ROOM}
               resizeMode="cover"
               imageStyle={[s.commandDeckImage, pixelImageStyle]}
-              style={s.commandDeckStage}
+              style={[s.commandDeckStage, { borderColor: colors.border }]}
               testID="plans-command-pixel-stage"
             >
               <View style={s.commandDeckShade} />
               <View style={s.commandDeckTop}>
-                <View style={s.commandDeckBubble}>
-                  <Text style={[s.commandDeckKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                <View style={[s.commandDeckBubble, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Text style={[s.commandDeckKicker, { color: colors.forest, fontFamily: DISPLAY_SEMI }]}>
                     Plans Command Deck
                   </Text>
-                  <Text style={[s.commandDeckSpeech, { color: colors.navy, fontFamily: DISPLAY_SEMI }]}>
+                  <Text style={[s.commandDeckSpeech, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                     {commandDeckSpeech}
                   </Text>
-                  <View style={s.commandDeckBubbleTail} />
+                  <View style={[s.commandDeckBubbleTail, { backgroundColor: colors.card, borderColor: colors.border }]} />
                 </View>
-                <View style={[s.commandDeckChip, { backgroundColor: colors.brandNavy + "DD", borderColor: colors.ivory + "55" }]}>
+                <View style={[s.commandDeckChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <PixelIcon name={nextScheduleRow ? routinePixelIcon(nextScheduleRow.type) : "clock"} size={17} />
-                  <Text style={[s.commandDeckChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                  <Text style={[s.commandDeckChipText, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
                     {nextScheduleStatus}
                   </Text>
                 </View>
@@ -734,21 +755,21 @@ export default function CalendarScreen() {
                 />
               </View>
 
-              <View style={[s.commandDeckHud, { backgroundColor: colors.brandNavy + "DC", borderColor: colors.ivory + "44" }]}>
+              <View style={[s.commandDeckHud, { backgroundColor: colors.card + "F2", borderColor: colors.border }]}>
                 <View style={s.commandDeckHudCell}>
-                  <Text style={[s.commandDeckHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>Done</Text>
-                  <Text style={[s.commandDeckHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                  <Text style={[s.commandDeckHudLabel, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>Done</Text>
+                  <Text style={[s.commandDeckHudValue, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
                     {completedScheduleCount}/{scheduleRows.length}
                   </Text>
                 </View>
                 <View style={s.commandDeckHudCell}>
-                  <Text style={[s.commandDeckHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>Open</Text>
-                  <Text style={[s.commandDeckHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                  <Text style={[s.commandDeckHudLabel, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>Open</Text>
+                  <Text style={[s.commandDeckHudValue, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
                     {openScheduleCount}
                   </Text>
                 </View>
                 <View style={s.commandDeckHudCell}>
-                  <Text style={[s.commandDeckHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>Signal</Text>
+                  <Text style={[s.commandDeckHudLabel, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>Signal</Text>
                   <View style={s.commandDeckSignalRow}>
                     {[0, 1, 2, 3, 4].map((bar) => (
                       <View
@@ -759,7 +780,7 @@ export default function CalendarScreen() {
                             height: 6 + bar * 2,
                             backgroundColor: bar < Math.max(1, Math.min(5, openScheduleCount + 1))
                               ? commandDeckTone
-                              : colors.ivory + "33",
+                              : colors.muted,
                           },
                         ]}
                       />
@@ -773,7 +794,7 @@ export default function CalendarScreen() {
           <BoardCard style={s.scheduleCard}>
             <View style={s.scheduleCardHeader}>
               <View style={s.scheduleHeaderCopy}>
-                <Text style={[s.scheduleEyebrow, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>Mission Schedule</Text>
+                <Text style={[s.scheduleEyebrow, { color: colors.forest, fontFamily: DISPLAY_SEMI }]}>Mission Schedule</Text>
                 <Text style={[s.scheduleHeaderTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                   {scheduleTab === "today" ? "Today's care plan" : scheduleTab === "tomorrow" ? "Tomorrow preview" : "Weekly rhythm"}
                 </Text>
@@ -783,50 +804,25 @@ export default function CalendarScreen() {
                 tone={openScheduleCount === 0 ? colors.sage : commandDeckTone}
               />
             </View>
-            <View style={s.scheduleTabs}>
-              {[
+            <BoardSegmentTabs
+              segments={[
                 { key: "today" as const, label: "Today" },
                 { key: "tomorrow" as const, label: "Tomorrow" },
                 { key: "week" as const, label: "Week" },
-              ].map((tab) => {
-                const active = scheduleTab === tab.key;
-                return (
-                  <Pressable
-                    key={tab.key}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Show ${tab.label} plans`}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setScheduleTab(tab.key);
-                    }}
-                    style={[
-                      s.scheduleTab,
-                      {
-                        backgroundColor: active ? colors.brandNavy : colors.background,
-                        borderColor: active ? colors.brandNavy : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        s.scheduleTabText,
-                        {
-                          color: active ? colors.ivory : colors.navy,
-                          fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold",
-                        },
-                      ]}
-                    >
-                      {tab.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+              ]}
+              active={scheduleTab}
+              onChange={(key) => {
+                Haptics.selectionAsync();
+                setScheduleTab(key);
+              }}
+              style={s.scheduleTabs}
+            />
 
             <View style={s.scheduleList}>
               {scheduleRows.map((row, index) => {
                 const done = row.status === "done";
                 const sourceRoutine = routineBoard.items.find((item) => item.id === row.id);
+                const pill = scheduleStatusPill(row.status, index === firstUpcomingScheduleIndex);
                 return (
                   <Pressable
                     key={`${row.id}-${index}`}
@@ -838,10 +834,10 @@ export default function CalendarScreen() {
                     }}
                     style={[s.scheduleRow, index > 0 && { borderTopColor: colors.border, borderTopWidth: 1 }]}
                   >
-                    <Text style={[s.scheduleTime, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                    <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                       {row.time}
                     </Text>
-                    <PixelIcon name={routinePixelIcon(row.type)} size={25} />
+                    <PixelIcon name={routinePixelIcon(row.type)} size={22} />
                     <View style={s.scheduleRowCopy}>
                       <Text style={[s.scheduleTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                         {row.label}
@@ -850,6 +846,7 @@ export default function CalendarScreen() {
                         {scheduleTab === "week" ? `${dayLabel(today)} - ${row.detail}` : row.detail}
                       </Text>
                     </View>
+                    <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Mark ${row.label} done`}
@@ -872,23 +869,16 @@ export default function CalendarScreen() {
               })}
             </View>
 
-            <Pressable
-              accessibilityRole="button"
+            <BoardActionButton
+              label="Add Plan"
+              icon="add"
               accessibilityLabel="Add plan"
               onPress={() => {
                 Haptics.selectionAsync();
                 openNewRoutine();
               }}
-              style={({ pressed }) => [
-                s.scheduleAdd,
-                { backgroundColor: colors.brandNavy, opacity: pressed ? 0.88 : 1 },
-              ]}
-            >
-              <Ionicons name="add" size={17} color={colors.ivory} />
-              <Text style={[s.scheduleAddText, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
-                Add Plan
-              </Text>
-            </Pressable>
+              style={s.scheduleAddButton}
+            />
           </BoardCard>
 
           <BoardCard style={s.planMissionBoard}>
@@ -1354,12 +1344,12 @@ export default function CalendarScreen() {
                           ) : null}
                         </View>
                         <View style={s.routineActions}>
-                          <View style={[s.routineStatusPill, { backgroundColor: statusColor + "16" }]}>
-                            <Text style={[s.routineStatusText, { color: statusColor, fontFamily: "Inter_700Bold" }]}>
-                              {routineStatusLabel(r.status)}
-                            </Text>
-                          </View>
-                          <Text style={[s.routineTime, { color: done ? colors.sage : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{r.time}</Text>
+                          <BoardStatusPill
+                            label={routineStatusLabel(r.status)}
+                            tone={routineBoardPillTone(r.status)}
+                            style={s.routineRowPill}
+                          />
+                          <Text style={[s.routineTime, { color: done ? colors.sage : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{r.time}</Text>
                           <Pressable
                             onPress={(event) => {
                               event.stopPropagation?.();
@@ -1667,18 +1657,17 @@ const s = StyleSheet.create({
   },
   commandDeckStage: {
     minHeight: 146,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: "rgba(8,26,42,0.42)",
+    borderRadius: 12,
+    borderWidth: 1,
     overflow: "hidden",
     padding: 10,
   },
   commandDeckImage: {
-    borderRadius: 8,
+    borderRadius: 12,
   },
   commandDeckShade: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(8,26,42,0.11)",
+    backgroundColor: "rgba(243,236,218,0.12)",
   },
   commandDeckTop: {
     position: "relative",
@@ -1691,11 +1680,9 @@ const s = StyleSheet.create({
   commandDeckBubble: {
     maxWidth: "63%",
     minHeight: 50,
-    borderRadius: 3,
-    borderWidth: 2,
-    borderColor: "#081A2A",
-    backgroundColor: "rgba(255,249,239,0.95)",
-    paddingHorizontal: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 9,
     paddingVertical: 6,
   },
   commandDeckKicker: {
@@ -1714,10 +1701,8 @@ const s = StyleSheet.create({
     bottom: -7,
     width: 12,
     height: 12,
-    borderLeftWidth: 2,
-    borderBottomWidth: 2,
-    borderColor: "#081A2A",
-    backgroundColor: "rgba(255,249,239,0.95)",
+    borderLeftWidth: 1,
+    borderBottomWidth: 1,
     transform: [{ rotate: "-45deg" }],
   },
   commandDeckChip: {
@@ -1889,6 +1874,8 @@ const s = StyleSheet.create({
     gap: 6,
     marginBottom: 8,
   },
+  // Segment chips render through BoardSegmentTabs; this block stays as the
+  // shared mobile touch-target contract for the schedule tabs.
   scheduleTab: {
     flex: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -1897,7 +1884,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  scheduleTabText: { fontSize: 12.5 },
   scheduleList: { marginTop: 2 },
   scheduleRow: {
     minHeight: 44,
@@ -1916,6 +1902,7 @@ const s = StyleSheet.create({
   },
   scheduleTitle: { fontSize: 13.5 },
   scheduleDetail: { fontSize: 11.5, marginTop: 2 },
+  scheduleRowPill: { alignSelf: "center" },
   scheduleStatus: {
     minWidth: MIN_MOBILE_TOUCH_TARGET,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -1924,16 +1911,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  scheduleAdd: {
-    minHeight: 46,
-    borderRadius: 9,
-    marginTop: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  scheduleAddText: { fontSize: 14 },
+  scheduleAddButton: { marginTop: 12 },
 
   plansBoardCard: { marginTop: 14 },
   routineHeaderAccessory: { flexDirection: "row", alignItems: "center", gap: 10 },
@@ -2054,8 +2032,7 @@ const s = StyleSheet.create({
   routineMetaRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   routineNote: { fontSize: 12, lineHeight: 16, marginTop: 3 },
   routineActions: { width: 82, alignItems: "flex-end", gap: 5 },
-  routineStatusPill: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  routineStatusText: { fontSize: 9.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  routineRowPill: { alignSelf: "flex-end" },
   routineTime: { fontSize: 13 },
   routineDoneBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   routineFeedback: {

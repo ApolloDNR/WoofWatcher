@@ -1,19 +1,23 @@
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetMe } from "@workspace/api-client-react";
 import { buildCarePass, deriveHouseholdAccessPlan } from "@workspace/care-domain";
 
 import {
+  BoardActionButton,
   BoardCard,
   BoardMetricTile,
   BoardPill,
   BoardRouteHeader,
   BoardSectionHeader,
-  CareRow,
+  BoardSegmentTabs,
+  BoardStatusPill,
 } from "@/components/board/BoardPrimitives";
+import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
@@ -29,11 +33,126 @@ import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
 type HouseholdMemberSummary = {
   displayName?: string | null;
   email?: string | null;
   role?: string | null;
 };
+
+type PackSegment = "pets" | "people" | "access" | "carepass";
+
+const PACK_SEGMENTS: readonly { key: PackSegment; label: string }[] = [
+  { key: "pets", label: "Pets" },
+  { key: "people", label: "People" },
+  { key: "access", label: "Access" },
+  { key: "carepass", label: "Care Pass" },
+];
+
+/** Storybook-mockup link row: soft round icon chip, bold title, chevron. */
+function PackLinkRow({
+  icon,
+  tone,
+  title,
+  detail,
+  onPress,
+  accessibilityLabel,
+  last,
+}: {
+  icon: PixelIconName;
+  tone: string;
+  title: string;
+  detail?: string;
+  onPress: () => void;
+  accessibilityLabel?: string;
+  last?: boolean;
+}) {
+  const colors = useColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? `${title}. ${detail ?? ""}`}
+      onPress={onPress}
+      style={({ pressed }) => [
+        s.linkRow,
+        !last && { borderBottomWidth: 1, borderBottomColor: colors.border },
+        { opacity: pressed ? 0.72 : 1 },
+      ]}
+    >
+      <View style={[s.linkChip, { backgroundColor: tone + "16" }]}>
+        <PixelIcon name={icon} size={20} />
+      </View>
+      <View style={s.linkCopy}>
+        <Text
+          numberOfLines={1}
+          style={[s.linkTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+        >
+          {title}
+        </Text>
+        {detail ? (
+          <Text
+            numberOfLines={1}
+            style={[s.linkDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+          >
+            {detail}
+          </Text>
+        ) : null}
+      </View>
+      <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+    </Pressable>
+  );
+}
+
+/** Storybook-mockup quick info tile: soft icon chip, muted label, bold value. */
+function PackInfoTile({
+  icon,
+  tone,
+  label,
+  value,
+  onPress,
+  accessibilityLabel,
+}: {
+  icon: IoniconName;
+  tone: string;
+  label: string;
+  value: string;
+  onPress: () => void;
+  accessibilityLabel: string;
+}) {
+  const colors = useColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed }) => [
+        s.infoTile,
+        {
+          backgroundColor: colors.background,
+          borderColor: colors.border,
+          opacity: pressed ? 0.75 : 1,
+        },
+      ]}
+    >
+      <View style={[s.infoTileChip, { backgroundColor: tone + "16" }]}>
+        <Ionicons name={icon} size={15} color={tone} />
+      </View>
+      <Text
+        numberOfLines={1}
+        style={[s.infoTileLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}
+      >
+        {label}
+      </Text>
+      <Text
+        numberOfLines={1}
+        style={[s.infoTileValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+      >
+        {value}
+      </Text>
+    </Pressable>
+  );
+}
 
 export default function PackScreen() {
   const colors = useColors();
@@ -43,6 +162,7 @@ export default function PackScreen() {
   const { avatarConfig, getAvatarSource } = useAvatar();
   const me = useGetMe();
   const now = Date.now();
+  const [segment, setSegment] = useState<PackSegment>("pets");
 
   const household = me.data?.household;
   const members: HouseholdMemberSummary[] = me.data?.members ?? [];
@@ -118,11 +238,20 @@ export default function PackScreen() {
   ]
     .filter(Boolean)
     .join(" - ");
+  // Only real profile fields: weight is the only sourced vitals field today.
+  const weightCurrent = state.profile.weight?.current ?? 0;
+  const weightLabel =
+    weightCurrent > 0 ? `${weightCurrent} ${state.profile.weight?.unit || "lb"}` : "";
   const levelPercent = Math.round(careCareer.levelProgress * 100);
 
   const open = (route: string) => {
     Haptics.selectionAsync();
     router.push(route as never);
+  };
+
+  const changeSegment = (key: PackSegment) => {
+    Haptics.selectionAsync();
+    setSegment(key);
   };
 
   return (
@@ -152,27 +281,43 @@ export default function PackScreen() {
           style={s.routeHeaderCompact}
         />
 
-        {/* Pets */}
-        <BoardCard style={s.sectionCard}>
-          <BoardSectionHeader
-            title="Pets"
-            accessory={<BoardPill label={careCareer.levelLabel} icon="paw-outline" tone={colors.copper} />}
-          />
+        <BoardSegmentTabs segments={PACK_SEGMENTS} active={segment} onChange={changeSegment} style={s.segmentTabs} />
 
-          <View style={[s.petHero, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <View style={[s.petAvatarFrame, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-              <Image
-                source={getAvatarSource(status.mood)}
-                style={s.petAvatarImage}
-                resizeMode="cover"
-                accessibilityLabel={`${petName} avatar`}
+        {/* Pets */}
+        {segment === "pets" ? (
+          <BoardCard style={s.sectionCard}>
+            <View style={[s.petHero, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View style={[s.petAvatarFrame, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                <Image
+                  source={getAvatarSource(status.mood)}
+                  style={s.petAvatarImage}
+                  resizeMode="cover"
+                  accessibilityLabel={`${petName} avatar`}
+                />
+              </View>
+              <View style={s.petHeroCopy}>
+                <Text style={[s.petName, { color: colors.foreground, fontFamily: DISPLAY }]}>{petName}</Text>
+                <Text
+                  numberOfLines={2}
+                  style={[s.petIdentity, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                >
+                  {petIdentityLine}
+                </Text>
+                {weightLabel ? (
+                  <Text style={[s.petMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {weightLabel}
+                  </Text>
+                ) : null}
+              </View>
+              <BoardPill
+                label={careCareer.levelLabel}
+                icon="paw-outline"
+                tone={colors.copper}
+                style={s.petLevelPill}
               />
             </View>
-            <View style={s.petHeroCopy}>
-              <Text style={[s.petName, { color: colors.foreground, fontFamily: DISPLAY }]}>{petName}</Text>
-              <Text style={[s.petIdentity, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                {petIdentityLine}
-              </Text>
+
+            <View style={s.xpBlock}>
               <View style={[s.levelTrack, { backgroundColor: colors.muted, borderColor: colors.border }]}>
                 <View style={[s.levelFill, { width: `${levelPercent}%`, backgroundColor: colors.copper }]} />
               </View>
@@ -181,265 +326,304 @@ export default function PackScreen() {
                 {careCareer.level + 1}
               </Text>
             </View>
-          </View>
 
-          <View style={s.metricStack}>
-            <BoardMetricTile
-              icon="energy"
-              label="Care streak"
-              value={careStreak > 0 ? `${careStreak} day${careStreak === 1 ? "" : "s"}` : "Start today"}
-              detail="Consecutive days of logged care"
-              tone={colors.amber}
-            />
-            <BoardMetricTile
-              icon="note"
-              label="Care XP today"
-              value={`${careCareer.todayXp} XP`}
-              detail="Earned only from real care logs"
-              tone={colors.sage}
-            />
-          </View>
-
-          <View style={[s.linkList, { borderTopColor: colors.border }]}>
-            <CareRow
-              icon="health"
-              title="Health Watch"
-              detail="Owner notes, no diagnosis"
-              onPress={() => open("/health?tab=health")}
-              accessibilityLabel={`Open Health Watch for ${petName}`}
-            />
-            <CareRow
-              icon="bile"
-              title="Bile Watch"
-              detail="Yellow bile pattern log"
-              onPress={() => open("/health?tab=bile")}
-              accessibilityLabel={`Open Bile Watch for ${petName}`}
-            />
-            <CareRow
-              icon="note"
-              title="Records & reports"
-              detail={
-                state.records.length
-                  ? `${state.records.length} record${state.records.length === 1 ? "" : "s"} saved`
-                  : "No records saved yet"
-              }
-              onPress={() => open("/records")}
-              accessibilityLabel={`Open records and reports for ${petName}`}
-            />
-            <CareRow
-              icon="happy"
-              title="Avatar Studio"
-              detail={`${avatarTemplate.label} template`}
-              onPress={() => open("/portrait")}
-              accessibilityLabel={`Open Avatar Studio for ${petName}`}
-            />
-          </View>
-        </BoardCard>
-
-        {/* People */}
-        <BoardCard style={s.sectionCard}>
-          <BoardSectionHeader
-            title="People"
-            accessory={
-              <BoardPill
-                label={`${householdAccess.people.length} ${householdAccess.people.length === 1 ? "person" : "people"}`}
-                icon="people-outline"
+            <View style={s.metricStack}>
+              <BoardMetricTile
+                icon="energy"
+                label="Care streak"
+                value={careStreak > 0 ? `${careStreak} day${careStreak === 1 ? "" : "s"}` : "Start today"}
+                detail="Consecutive days of logged care"
+                tone={colors.amber}
+              />
+              <BoardMetricTile
+                icon="note"
+                label="Care XP today"
+                value={`${careCareer.todayXp} XP`}
+                detail="Earned only from real care logs"
                 tone={colors.sage}
               />
-            }
-          />
+            </View>
 
-          {householdAccess.people.length === 0 ? (
-            <Text style={[s.emptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              Add the first caregiver to build household access.
-            </Text>
-          ) : (
-            householdAccess.people.slice(0, 5).map((person, index) => {
-              const tone = memberTone(index);
-              const logCount = state.entries.filter(
-                (entry) => entry.caregiver.trim().toLowerCase() === person.name.toLowerCase(),
-              ).length;
-              const isYou = Boolean(myName) && person.name.toLowerCase() === myName.toLowerCase();
-              return (
-                <View
-                  key={person.id}
-                  style={[
-                    s.personRow,
-                    index < Math.min(householdAccess.people.length, 5) - 1 && {
-                      borderBottomWidth: 1,
-                      borderBottomColor: colors.border,
-                    },
-                  ]}
-                >
-                  <View style={[s.personAvatar, { backgroundColor: tone + "1A" }]}>
-                    <Text style={[s.personInitial, { color: tone, fontFamily: "Inter_700Bold" }]}>
-                      {person.name.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={s.personCopy}>
-                    <View style={s.personNameLine}>
-                      <Text
-                        numberOfLines={1}
-                        style={[s.personName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
-                      >
-                        {person.name}
-                      </Text>
-                      {isYou ? (
-                        <View style={[s.youBadge, { backgroundColor: colors.primary + "1A" }]}>
-                          <Text style={[s.youBadgeText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
-                            You
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
-                    <Text
-                      numberOfLines={1}
-                      style={[s.personMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-                    >
-                      {person.role} - {person.needsInvite ? "Invite needed" : "Synced"}
-                    </Text>
-                  </View>
+            <View style={s.infoTiles}>
+              <PackInfoTile
+                icon="folder-open-outline"
+                tone={colors.sage}
+                label="Health Records"
+                value={
+                  state.records.length
+                    ? `${state.records.length} saved`
+                    : "None yet"
+                }
+                onPress={() => open("/records")}
+                accessibilityLabel={`Open saved health records for ${petName}`}
+              />
+              <PackInfoTile
+                icon="scale-outline"
+                tone={colors.blue}
+                label="Weight"
+                value={weightLabel || "Not set"}
+                onPress={() => open("/more?section=diet")}
+                accessibilityLabel={`Open diet and weight details for ${petName} in More`}
+              />
+            </View>
+
+            <View style={[s.linkList, { borderTopColor: colors.border }]}>
+              <PackLinkRow
+                icon="health"
+                tone={colors.sage}
+                title="Health Watch"
+                detail="Owner notes, no diagnosis"
+                onPress={() => open("/health?tab=health")}
+                accessibilityLabel={`Open Health Watch for ${petName}`}
+              />
+              <PackLinkRow
+                icon="bile"
+                tone={colors.amber}
+                title="Bile Watch"
+                detail="Yellow bile pattern log"
+                onPress={() => open("/health?tab=bile")}
+                accessibilityLabel={`Open Bile Watch for ${petName}`}
+              />
+              <PackLinkRow
+                icon="note"
+                tone={colors.blue}
+                title="Records & reports"
+                detail={
+                  state.records.length
+                    ? `${state.records.length} record${state.records.length === 1 ? "" : "s"} saved`
+                    : "No records saved yet"
+                }
+                onPress={() => open("/records")}
+                accessibilityLabel={`Open records and reports for ${petName}`}
+              />
+              <PackLinkRow
+                icon="happy"
+                tone={colors.copper}
+                title="Avatar Studio"
+                detail={`${avatarTemplate.label} template`}
+                onPress={() => open("/portrait")}
+                accessibilityLabel={`Open Avatar Studio for ${petName}`}
+                last
+              />
+            </View>
+          </BoardCard>
+        ) : null}
+
+        {/* People */}
+        {segment === "people" ? (
+          <BoardCard style={s.sectionCard}>
+            <BoardSectionHeader
+              title="People"
+              accessory={
+                <BoardPill
+                  label={`${householdAccess.people.length} ${householdAccess.people.length === 1 ? "person" : "people"}`}
+                  icon="people-outline"
+                  tone={colors.sage}
+                />
+              }
+            />
+
+            {householdAccess.people.length === 0 ? (
+              <Text style={[s.emptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Add the first caregiver to build household access.
+              </Text>
+            ) : (
+              householdAccess.people.slice(0, 5).map((person, index) => {
+                const tone = memberTone(index);
+                const logCount = state.entries.filter(
+                  (entry) => entry.caregiver.trim().toLowerCase() === person.name.toLowerCase(),
+                ).length;
+                const isYou = Boolean(myName) && person.name.toLowerCase() === myName.toLowerCase();
+                return (
                   <View
+                    key={person.id}
                     style={[
-                      s.personBadge,
-                      { backgroundColor: person.needsInvite ? colors.amber + "18" : colors.background },
+                      s.personRow,
+                      index < Math.min(householdAccess.people.length, 5) - 1 && {
+                        borderBottomWidth: 1,
+                        borderBottomColor: colors.border,
+                      },
                     ]}
                   >
-                    <Text
-                      style={[
-                        s.personBadgeText,
-                        {
-                          color: person.needsInvite ? colors.amber : colors.mutedForeground,
-                          fontFamily: "Inter_600SemiBold",
-                        },
-                      ]}
-                    >
-                      {person.needsInvite ? "Invite" : `${logCount} log${logCount === 1 ? "" : "s"}`}
-                    </Text>
+                    <View style={[s.personAvatar, { backgroundColor: tone + "1A" }]}>
+                      <Text style={[s.personInitial, { color: tone, fontFamily: "Inter_700Bold" }]}>
+                        {person.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={s.personCopy}>
+                      <View style={s.personNameLine}>
+                        <Text
+                          numberOfLines={1}
+                          style={[s.personName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                        >
+                          {person.name}
+                        </Text>
+                        {isYou ? (
+                          <View style={[s.youBadge, { backgroundColor: colors.primary + "1A" }]}>
+                            <Text style={[s.youBadgeText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+                              You
+                            </Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text
+                        numberOfLines={1}
+                        style={[s.personMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                      >
+                        {person.role} - {person.needsInvite ? "Invite needed" : "Synced"}
+                      </Text>
+                    </View>
+                    <View style={s.personSide}>
+                      <Text
+                        style={[
+                          s.personSideText,
+                          {
+                            color: person.needsInvite ? colors.amber : colors.mutedForeground,
+                            fontFamily: "Inter_600SemiBold",
+                          },
+                        ]}
+                      >
+                        {person.needsInvite ? "Invite" : `${logCount} log${logCount === 1 ? "" : "s"}`}
+                      </Text>
+                      <View
+                        accessibilityLabel={
+                          person.needsInvite ? `${person.name} needs an invite` : `${person.name} is synced`
+                        }
+                        style={[
+                          s.presenceDot,
+                          { backgroundColor: person.needsInvite ? colors.amber : colors.sage },
+                        ]}
+                      />
+                    </View>
                   </View>
-                </View>
-              );
-            })
-          )}
+                );
+              })
+            )}
 
-          <View style={[s.linkList, { borderTopColor: colors.border }]}>
-            <CareRow
-              icon="bond"
-              title="Manage household"
-              detail="Care Team, invites, and roles"
+            <BoardActionButton
+              label="Manage household"
+              icon="key-outline"
+              variant="soft"
               onPress={() => open("/more?section=household")}
               accessibilityLabel="Manage household in the More tab"
+              style={s.segmentAction}
             />
-          </View>
-        </BoardCard>
+          </BoardCard>
+        ) : null}
 
         {/* Access */}
-        <BoardCard style={[s.sectionCard, { borderColor: accessTone + "44" }]}>
-          <BoardSectionHeader
-            title="Access"
-            accessory={
-              <BoardPill
-                label={householdAccess.status === "ready" ? "Aligned" : "Needs review"}
-                icon="key-outline"
-                tone={accessTone}
-              />
-            }
-          />
+        {segment === "access" ? (
+          <BoardCard style={[s.sectionCard, { borderColor: accessTone + "44" }]}>
+            <BoardSectionHeader
+              title="Access"
+              accessory={
+                <BoardStatusPill
+                  label={householdAccess.status === "ready" ? "Aligned" : "Needs review"}
+                  tone={householdAccess.status === "ready" ? "done" : "due"}
+                />
+              }
+            />
 
-          <Text style={[s.accessTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-            {householdAccess.householdName}
-          </Text>
-          <Text style={[s.accessSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-            {householdAccess.summary}
-          </Text>
+            <Text style={[s.accessTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+              {householdAccess.householdName}
+            </Text>
+            <Text style={[s.accessSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              {householdAccess.summary}
+            </Text>
 
-          <View style={s.accessMetrics}>
-            {[
-              { label: "Synced", value: householdAccess.syncedMembers },
-              { label: "Invites", value: householdAccess.localOnlyCaregivers },
-              { label: "Routine-only", value: householdAccess.routineOnlyOwners },
-            ].map((metric) => (
-              <View key={metric.label} style={[s.accessMetric, { backgroundColor: colors.background }]}>
-                <Text style={[s.accessMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {metric.value}
-                </Text>
-                <Text style={[s.accessMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  {metric.label}
-                </Text>
-              </View>
-            ))}
-          </View>
+            <View style={s.accessMetrics}>
+              {[
+                { label: "Synced", value: householdAccess.syncedMembers },
+                { label: "Invites", value: householdAccess.localOnlyCaregivers },
+                { label: "Routine-only", value: householdAccess.routineOnlyOwners },
+              ].map((metric) => (
+                <View key={metric.label} style={[s.accessMetric, { backgroundColor: colors.background }]}>
+                  <Text style={[s.accessMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {metric.value}
+                  </Text>
+                  <Text style={[s.accessMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {metric.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
 
-          <Text style={[s.accessNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-            {householdAccess.nextStep}
-          </Text>
+            <Text style={[s.accessNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              {householdAccess.nextStep}
+            </Text>
 
-          <View style={[s.linkList, { borderTopColor: colors.border }]}>
-            <CareRow
-              icon="bond"
-              title="Household Access console"
-              detail="Invites, roles, and Access Passes"
+            <BoardActionButton
+              label="Open household console"
+              icon="key-outline"
+              variant="soft"
               onPress={() => open("/more")}
               accessibilityLabel="Open the full Household Access console in More"
+              style={s.segmentAction}
             />
-          </View>
-        </BoardCard>
+          </BoardCard>
+        ) : null}
 
         {/* Care Pass */}
-        <BoardCard style={s.sectionCard}>
-          <BoardSectionHeader
-            title="Care Pass"
-            accessory={
-              <BoardPill
-                label={savedReports.length ? `${savedReports.length} saved` : "No saved"}
-                icon="card-outline"
-                tone={colors.primary}
+        {segment === "carepass" ? (
+          <BoardCard style={s.sectionCard}>
+            <BoardSectionHeader
+              title="Care Pass"
+              accessory={
+                <BoardPill
+                  label={savedReports.length ? `${savedReports.length} saved` : "No saved"}
+                  icon="card-outline"
+                  tone={colors.primary}
+                />
+              }
+            />
+
+            <Text style={[s.carePassSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              {carePass.summary}
+            </Text>
+
+            <View style={s.metricStack}>
+              <BoardMetricTile
+                icon="note"
+                label="Sections ready"
+                value={String(carePass.sections.length)}
+                detail="Built live from real care logs"
+                tone={colors.copper}
               />
-            }
-          />
+              <BoardMetricTile
+                icon="clock"
+                label="Reports saved"
+                value={String(savedReports.length)}
+                detail={latestReport ? `Latest: ${latestReport.title}` : "Share a Care Pass to start history"}
+                tone={colors.sage}
+              />
+            </View>
 
-          <Text style={[s.carePassSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-            {carePass.summary}
-          </Text>
-
-          <View style={s.metricStack}>
-            <BoardMetricTile
-              icon="note"
-              label="Sections ready"
-              value={String(carePass.sections.length)}
-              detail="Built live from real care logs"
-              tone={colors.copper}
-            />
-            <BoardMetricTile
-              icon="clock"
-              label="Reports saved"
-              value={String(savedReports.length)}
-              detail={latestReport ? `Latest: ${latestReport.title}` : "Share a Care Pass to start history"}
-              tone={colors.sage}
-            />
-          </View>
-
-          <View style={[s.linkList, { borderTopColor: colors.border }]}>
-            <CareRow
-              icon="heart"
-              title="Build & share Care Pass"
-              detail="Sitter, vet, trainer, and caregiver views"
+            <BoardActionButton
+              label="Build & share Care Pass"
+              icon="share-outline"
+              variant="primary"
               onPress={() => open("/more")}
               accessibilityLabel="Build and share a Care Pass from More"
+              style={s.segmentAction}
             />
-            <CareRow
-              icon="note"
-              title="Report history"
-              detail={
-                savedReports.length
-                  ? `${savedReports.length} shared report${savedReports.length === 1 ? "" : "s"}`
-                  : "Shared Care Passes appear in Records"
-              }
-              onPress={() => open("/records")}
-              accessibilityLabel="Open report history in Records"
-            />
-          </View>
-        </BoardCard>
+
+            <View style={[s.linkList, { borderTopColor: colors.border }]}>
+              <PackLinkRow
+                icon="note"
+                tone={colors.blue}
+                title="Report history"
+                detail={
+                  savedReports.length
+                    ? `${savedReports.length} shared report${savedReports.length === 1 ? "" : "s"}`
+                    : "Shared Care Passes appear in Records"
+                }
+                onPress={() => open("/records")}
+                accessibilityLabel="Open report history in Records"
+                last
+              />
+            </View>
+          </BoardCard>
+        ) : null}
 
         <View style={[s.boundaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[s.boundaryLabel, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>CARE BOUNDARY</Text>
@@ -458,11 +642,17 @@ const s = StyleSheet.create({
   routeHeaderCompact: {
     marginBottom: 10,
   },
+  segmentTabs: {
+    marginBottom: 2,
+  },
   sectionCard: { marginTop: 10 },
+  segmentAction: {
+    marginTop: 12,
+  },
 
   petHero: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 11,
     flexDirection: "row",
     gap: 11,
@@ -471,7 +661,7 @@ const s = StyleSheet.create({
   petAvatarFrame: {
     width: 72,
     height: 72,
-    borderRadius: 8,
+    borderRadius: 14,
     borderWidth: 1,
     overflow: "hidden",
     alignItems: "center",
@@ -494,12 +684,22 @@ const s = StyleSheet.create({
     lineHeight: 16,
     marginTop: 2,
   },
+  petMeta: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 3,
+  },
+  petLevelPill: {
+    alignSelf: "flex-start",
+  },
+  xpBlock: {
+    marginTop: 10,
+  },
   levelTrack: {
     height: 9,
     borderRadius: 999,
     borderWidth: 1,
     overflow: "hidden",
-    marginTop: 8,
   },
   levelFill: {
     height: "100%",
@@ -514,10 +714,64 @@ const s = StyleSheet.create({
     gap: 8,
     marginTop: 10,
   },
+  infoTiles: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+  infoTile: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+  },
+  infoTileChip: {
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  infoTileLabel: {
+    fontSize: 9.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.2,
+    marginTop: 7,
+  },
+  infoTileValue: {
+    fontSize: 14,
+    lineHeight: 18,
+    marginTop: 2,
+  },
   linkList: {
     borderTopWidth: 1,
-    marginTop: 10,
+    marginTop: 12,
     paddingTop: 2,
+  },
+  linkRow: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 9,
+  },
+  linkChip: {
+    width: 34,
+    height: 34,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  linkCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  linkTitle: {
+    fontSize: 13,
+  },
+  linkDetail: {
+    fontSize: 11,
+    marginTop: 1,
   },
 
   emptyCopy: {
@@ -534,7 +788,7 @@ const s = StyleSheet.create({
   personAvatar: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -567,13 +821,18 @@ const s = StyleSheet.create({
     fontSize: 11.5,
     marginTop: 1,
   },
-  personBadge: {
-    borderRadius: 8,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
+  personSide: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
   },
-  personBadgeText: {
-    fontSize: 11,
+  personSideText: {
+    fontSize: 10.5,
+  },
+  presenceDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 999,
   },
 
   accessTitle: {

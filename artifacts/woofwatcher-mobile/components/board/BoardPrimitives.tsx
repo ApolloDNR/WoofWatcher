@@ -17,6 +17,8 @@ import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLay
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+// Storybook mockup: big warm serif route titles, sans everywhere else.
+const TITLE_SERIF = "Fraunces_700Bold";
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 function firstParam(value: string | string[] | undefined): string | undefined {
@@ -105,7 +107,7 @@ export function BoardRouteHeader({
           {kicker ? (
             <Text style={[styles.routeKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>{kicker}</Text>
           ) : null}
-          <Text style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: DISPLAY }]}>
+          <Text style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: TITLE_SERIF }]}>
             {title}
           </Text>
           {subtitle ? (
@@ -160,6 +162,157 @@ export function BoardRouteHeader({
         </Pressable>
       ) : null}
     </>
+  );
+}
+
+export type BoardStatusPillTone =
+  | "done"
+  | "due"
+  | "upNext"
+  | "upcoming"
+  | "neutral";
+
+/** Storybook-mockup status pill: Done / Due / Up Next / Upcoming. */
+export function BoardStatusPill({
+  label,
+  tone = "neutral",
+  style,
+}: {
+  label: string;
+  tone?: BoardStatusPillTone;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const colors = useColors();
+  const palette: Record<BoardStatusPillTone, { bg: string; fg: string }> = {
+    done: { bg: colors.sageSoft, fg: colors.forest },
+    due: { bg: colors.amberSoft, fg: colors.amber },
+    upNext: { bg: colors.amberSoft, fg: colors.amber },
+    upcoming: { bg: colors.blueSoft, fg: colors.blue },
+    neutral: { bg: colors.muted, fg: colors.mutedForeground },
+  };
+  const swatch = palette[tone];
+  return (
+    <View style={[styles.statusPill, { backgroundColor: swatch.bg }, style]}>
+      <Text style={[styles.statusPillText, { color: swatch.fg, fontFamily: "Inter_700Bold" }]}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+/** Storybook-mockup segmented chip tabs (Schedule | Routines | Reminders). */
+export function BoardSegmentTabs<T extends string>({
+  segments,
+  active,
+  onChange,
+  style,
+}: {
+  segments: readonly { key: T; label: string }[];
+  active: T;
+  onChange: (key: T) => void;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const colors = useColors();
+  return (
+    <View style={[styles.segmentRow, style]}>
+      {segments.map((segment) => {
+        const isActive = segment.key === active;
+        return (
+          <Pressable
+            key={segment.key}
+            accessibilityRole="button"
+            accessibilityLabel={segment.label}
+            accessibilityState={{ selected: isActive }}
+            onPress={() => onChange(segment.key)}
+            style={({ pressed }) => [
+              styles.segmentChip,
+              {
+                backgroundColor: isActive
+                  ? colors.primary
+                  : pressed
+                    ? colors.secondary
+                    : colors.card,
+                borderColor: isActive ? colors.primary : colors.border,
+              },
+            ]}
+          >
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.segmentChipText,
+                {
+                  color: isActive ? colors.primaryForeground : colors.foreground,
+                  fontFamily: "Inter_700Bold",
+                },
+              ]}
+            >
+              {segment.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Storybook-mockup action button: forest primary, soft sage, or outline. */
+export function BoardActionButton({
+  label,
+  onPress,
+  variant = "primary",
+  icon,
+  disabled,
+  accessibilityLabel,
+  style,
+  compact,
+}: {
+  label: string;
+  onPress: () => void;
+  variant?: "primary" | "soft" | "outline";
+  icon?: IoniconName;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+  style?: StyleProp<ViewStyle>;
+  compact?: boolean;
+}) {
+  const colors = useColors();
+  const background =
+    variant === "primary"
+      ? colors.primary
+      : variant === "soft"
+        ? colors.secondary
+        : "transparent";
+  const foreground =
+    variant === "primary" ? colors.primaryForeground : colors.forest;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [
+        styles.actionButton,
+        compact && styles.actionButtonCompact,
+        {
+          backgroundColor: background,
+          borderColor: variant === "outline" ? colors.border : background,
+          opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
+        },
+        style,
+      ]}
+    >
+      {icon ? <Ionicons name={icon} size={compact ? 14 : 16} color={foreground} /> : null}
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.actionButtonText,
+          compact && styles.actionButtonTextCompact,
+          { color: variant === "outline" ? colors.foreground : foreground, fontFamily: "Inter_700Bold" },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -573,8 +726,8 @@ const styles = StyleSheet.create({
     marginBottom: 1,
   },
   routeTitle: {
-    fontSize: 24,
-    lineHeight: 28,
+    fontSize: 28,
+    lineHeight: 34,
     letterSpacing: 0,
   },
   routeTitleCentered: {
@@ -588,6 +741,57 @@ const styles = StyleSheet.create({
   },
   routeSubtitleCentered: {
     textAlign: "center",
+  },
+  statusPill: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    minHeight: 24,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusPillText: {
+    fontSize: 10.5,
+    letterSpacing: 0.2,
+  },
+  segmentRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 14,
+  },
+  segmentChip: {
+    flexShrink: 1,
+    minHeight: 36,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  segmentChipText: {
+    fontSize: 12.5,
+  },
+  actionButton: {
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  actionButtonCompact: {
+    minHeight: 36,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+  },
+  actionButtonText: {
+    fontSize: 13.5,
+  },
+  actionButtonTextCompact: {
+    fontSize: 12,
   },
   pill: {
     alignSelf: "flex-start",
@@ -704,18 +908,18 @@ const styles = StyleSheet.create({
   },
   quickTile: {
     width: "23.5%",
-    minHeight: 72,
+    minHeight: 76,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
-    paddingVertical: 8,
+    gap: 6,
+    paddingVertical: 9,
   },
   quickIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 7,
+    width: 38,
+    height: 38,
+    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
   },

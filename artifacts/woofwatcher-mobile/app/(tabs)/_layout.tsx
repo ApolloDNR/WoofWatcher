@@ -5,7 +5,6 @@ import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { PixelIcon } from "@/components/PixelIcon";
 import { getFloatingTabChromeMetrics } from "@/lib/mobileLayout";
 
 export const unstable_settings = {
@@ -58,16 +57,16 @@ function CenterToday() {
             width: chrome.centerFabSize,
             height: chrome.centerFabSize,
             borderRadius: chrome.centerFabSize / 2,
-            backgroundColor: colors.copperBright,
+            backgroundColor: colors.forest,
             borderColor: colors.card,
             shadowColor: colors.brandNavy,
             transform: [{ scale: pressed ? 0.94 : 1 }],
           },
         ]}
       >
-        <PixelIcon name="heart" size={28} />
+        <Ionicons name="paw" size={26} color={colors.primaryForeground} />
       </Pressable>
-      <Text style={[s.fabLabel, { color: colors.copperBright }]}>Today</Text>
+      <Text style={[s.fabLabel, { color: colors.forest }]}>Today</Text>
     </View>
   );
 }
@@ -85,7 +84,7 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: colors.copperBright,
+          tabBarActiveTintColor: colors.forest,
           tabBarInactiveTintColor: colors.mutedForeground,
           tabBarActiveBackgroundColor: colors.secondary,
           tabBarLabelStyle: { fontFamily: "Inter_600SemiBold", fontSize: 10, lineHeight: 12 },

@@ -87,12 +87,12 @@ import {
   getQuickLogPolicy,
 } from "@/lib/quickLogEntry";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
-import { relativeTime, dayKey, dayLabel } from "@/lib/time";
+import { dayKey, dayLabel } from "@/lib/time";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle } from "@/lib/pixelRendering";
-import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardActionButton, BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -1069,12 +1069,6 @@ export default function LogScreen() {
     setDetailEntryId(routeEntryParam);
     lastRouteEntryParam.current = routeEntryParam;
   }, [routeEntryParam, state.entries]);
-
-  const caregiverColor = (name: string) => {
-    const palette = [colors.primary, colors.copper, colors.sage, colors.amber];
-    const idx = state.caregivers.findIndex((c) => c.name === name);
-    return palette[(idx >= 0 ? idx : 0) % palette.length];
-  };
 
   const stickyColor = (color: StickyNoteColor) => {
     if (color === "sun") return colors.amber;
@@ -2154,10 +2148,8 @@ export default function LogScreen() {
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           <BoardRouteHeader
-            title="Quick Log"
+            title="Log"
             back
-            centered
-            plain
             onBack={() => router.push("/")}
             actionIcon="notifications-outline"
             actionLabel="Open Health Watch"
@@ -2260,7 +2252,7 @@ export default function LogScreen() {
                   style={({ pressed }) => [
                     s.logCommandAction,
                     {
-                      backgroundColor: selectedLauncherRequiresDetail ? colors.amber : colors.sage,
+                      backgroundColor: selectedLauncherRequiresDetail ? colors.amber : colors.primary,
                       opacity: pressed ? 0.82 : 1,
                     },
                   ]}
@@ -2312,8 +2304,8 @@ export default function LogScreen() {
                     style={[
                       s.launcherTab,
                       {
-                        backgroundColor: active ? colors.brandNavy : colors.background,
-                        borderColor: active ? colors.brandNavy : colors.border,
+                        backgroundColor: active ? colors.primary : colors.card,
+                        borderColor: active ? colors.primary : colors.border,
                       },
                     ]}
                   >
@@ -2321,7 +2313,7 @@ export default function LogScreen() {
                       style={[
                         s.launcherTabText,
                         {
-                          color: active ? colors.ivory : colors.navy,
+                          color: active ? colors.primaryForeground : colors.foreground,
                           fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold",
                         },
                       ]}
@@ -2471,9 +2463,9 @@ export default function LogScreen() {
                       Haptics.selectionAsync();
                       setDetailEntryId(lastQuickLog.id);
                     }}
-                    style={[s.quickFeedbackButton, { backgroundColor: colors.brandNavy, borderColor: colors.brandNavy }]}
+                    style={[s.quickFeedbackButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                   >
-                    <Text style={[s.quickFeedbackButtonText, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
+                    <Text style={[s.quickFeedbackButtonText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
                       Add details
                     </Text>
                   </Pressable>
@@ -2658,26 +2650,15 @@ export default function LogScreen() {
               </View>
             </View>
 
-            <Pressable
-              accessibilityRole="button"
+            <BoardActionButton
+              label="Add Details (optional)"
               accessibilityLabel="Add details to the selected log"
+              variant="soft"
               onPress={() => {
                 Haptics.selectionAsync();
                 scrollRef.current?.scrollTo({ y: 620, animated: true });
               }}
-              style={({ pressed }) => [
-                s.launcherCta,
-                {
-                      backgroundColor: colors.brandNavy,
-                      opacity: pressed ? 0.88 : 1,
-                    },
-                  ]}
-            >
-              <Text style={[s.launcherCtaText, { fontFamily: "Inter_700Bold" }]}>
-                Add Details (optional)
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.ivory} />
-            </Pressable>
+            />
             </View>
           </BoardCard>
 
@@ -2878,18 +2859,18 @@ export default function LogScreen() {
                     style={[
                       s.typeChip,
                       {
-                        backgroundColor: active ? tint : colors.background,
-                        borderColor: active ? colors.navy : colors.border,
+                        backgroundColor: active ? colors.primary : colors.card,
+                        borderColor: active ? colors.primary : colors.border,
                       },
                     ]}
                   >
                     <View style={[s.typeChipIcon, { backgroundColor: active ? "rgba(255,255,255,0.18)" : tint + "1A" }]}>
-                      <PulseIcon name={q.icon} size={15} color={active ? "#FFFFFF" : undefined} />
+                      <PulseIcon name={q.icon} size={15} color={active ? colors.primaryForeground : undefined} />
                     </View>
                     <Text
                       style={[
                         s.typeChipLabel,
-                        { color: active ? "#FFFFFF" : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_500Medium" },
+                        { color: active ? colors.primaryForeground : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_500Medium" },
                       ]}
                     >
                       {q.label}
@@ -3534,13 +3515,13 @@ export default function LogScreen() {
               </View>
             )}
 
-            <Pressable
+            <BoardActionButton
+              label={`Log ${(config?.label ?? "care").toLowerCase()}`}
+              icon="checkmark-circle"
+              variant="primary"
               onPress={handleLog}
-              style={({ pressed }) => [s.logBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
-            >
-              <Ionicons name="checkmark-circle" size={20} color="#fff" />
-              <Text style={[s.logBtnText, { fontFamily: "Inter_700Bold" }]}>Log {config?.label.toLowerCase()}</Text>
-            </Pressable>
+              style={s.logSaveAction}
+            />
           </BoardCard>
 
           {/* Today at a glance */}
@@ -3619,13 +3600,12 @@ export default function LogScreen() {
                   Haptics.selectionAsync();
                   setFilter(null);
                 }}
-                style={[s.filterChip, { backgroundColor: filter === null ? colors.foreground : colors.card, borderColor: filter === null ? colors.foreground : colors.border }]}
+                style={[s.filterChip, { backgroundColor: filter === null ? colors.primary : colors.card, borderColor: filter === null ? colors.primary : colors.border }]}
               >
-                <Text style={[s.filterText, { color: filter === null ? "#FFFFFF" : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>All</Text>
+                <Text style={[s.filterText, { color: filter === null ? colors.primaryForeground : colors.foreground, fontFamily: filter === null ? "Inter_700Bold" : "Inter_600SemiBold" }]}>All</Text>
               </Pressable>
                 {presentTypes.map((q) => {
                   const active = filter === q.type;
-                  const tint = PULSE_COLORS[q.icon];
                   return (
                     <Pressable
                       key={q.type}
@@ -3633,10 +3613,10 @@ export default function LogScreen() {
                         Haptics.selectionAsync();
                         setFilter(active ? null : q.type);
                       }}
-                      style={[s.filterChip, { backgroundColor: active ? tint : colors.card, borderColor: active ? tint : colors.border }]}
+                      style={[s.filterChip, { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border }]}
                     >
-                      <PulseIcon name={q.icon} size={14} color={active ? "#FFFFFF" : undefined} />
-                      <Text style={[s.filterText, { color: active ? "#FFFFFF" : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{q.label}</Text>
+                      <PulseIcon name={q.icon} size={14} color={active ? colors.primaryForeground : undefined} />
+                      <Text style={[s.filterText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold" }]}>{q.label}</Text>
                     </Pressable>
                   );
                 })}
@@ -3663,7 +3643,6 @@ export default function LogScreen() {
                   {g.entries.map((e, i) => {
                     const normalizedType = normalizeCareEventType(e.type, e.details);
                     const icon = TYPE_ICON[normalizedType] ?? "paw";
-                    const cg = caregiverColor(e.caregiver);
                     const sev = e.severity && e.severity !== "normal" ? e.severity : null;
                     const sevColor = sev === "alert" ? colors.rose : colors.amber;
                     const statusLabel = syncLabel(e.syncStatus);
@@ -3675,6 +3654,8 @@ export default function LogScreen() {
                           : statusLabel;
                     const stickyNotes = getStickyNotes(e.details);
                     const entryAttentionChips = getCareLogAttentionChips(e);
+                    const pendingMeal = isPendingMealEntry(e);
+                    const entryTime = new Date(e.occurredAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
                     return (
                       <Pressable
                         key={e.id}
@@ -3686,22 +3667,20 @@ export default function LogScreen() {
                         }}
                         style={({ pressed }) => [
                           s.entryRow,
-                          { backgroundColor: pressed ? colors.background : "transparent" },
-                          i < g.entries.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                          pendingMeal
+                            ? [s.entryRowPending, { backgroundColor: colors.amberSoft, borderColor: colors.amber + "33", opacity: pressed ? 0.85 : 1 }]
+                            : { backgroundColor: pressed ? colors.background : "transparent" },
+                          !pendingMeal && i < g.entries.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
                         ]}
                       >
-                        <View style={[s.entryAccent, { backgroundColor: PULSE_COLORS[icon] }]} />
-                        <View style={[s.entryAvatar, { backgroundColor: cg + "18" }]}>
-                          <Text style={[s.entryInitial, { color: cg, fontFamily: "Inter_700Bold" }]}>
-                            {(e.caregiver || "?").charAt(0).toUpperCase()}
+                        <View style={s.entryTimeCol}>
+                          <Text numberOfLines={1} style={[s.entryTime, { color: pendingMeal ? colors.amber : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                            {entryTime}
                           </Text>
                         </View>
-                        <View style={[s.entryIconWrap, { backgroundColor: PULSE_COLORS[icon] + "14" }]}>
-                          <PulseIcon name={icon} size={18} />
-                        </View>
-                        <View style={{ flex: 1 }}>
+                        <View style={{ flex: 1, minWidth: 0 }}>
                           <View style={s.entryTitleLine}>
-                            <Text numberOfLines={1} style={[s.entryTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                            <Text numberOfLines={1} style={[s.entryTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                               {e.title}
                             </Text>
                             {sev && (
@@ -3711,8 +3690,8 @@ export default function LogScreen() {
                             )}
                           </View>
                           <View style={s.entryMetaLine}>
-                            <Text style={[s.entryMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                              {e.caregiver} - {new Date(e.occurredAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                            <Text numberOfLines={1} style={[s.entryMeta, { color: pendingMeal ? colors.amber : colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                              {e.caregiver}
                             </Text>
                             {compactStatusLabel ? (
                               <View
@@ -3792,16 +3771,8 @@ export default function LogScreen() {
                             </View>
                           ) : null}
                         </View>
-                        <View style={s.entryRight}>
-                          <Text style={[s.entryRelTime, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                            {relativeTime(e.occurredAt, now)}
-                          </Text>
-                          <View style={[s.entryOpenPill, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                            <Text style={[s.entryOpenText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                              Open
-                            </Text>
-                            <Ionicons name="chevron-forward" size={13} color={colors.mutedForeground} />
-                          </View>
+                        <View style={[s.entryIconChip, { backgroundColor: pendingMeal ? colors.amber + "26" : PULSE_COLORS[icon] + "16" }]}>
+                          <PulseIcon name={icon} size={18} />
                         </View>
                       </Pressable>
                     );
@@ -3921,15 +3892,15 @@ export default function LogScreen() {
                     style={({ pressed }) => [
                       s.launcherDetailPrimary,
                       {
-                        backgroundColor: pressed ? colors.brandNavy + "DD" : colors.brandNavy,
-                        borderColor: colors.shellNavy,
+                        backgroundColor: pressed ? colors.primary + "DD" : colors.primary,
+                        borderColor: colors.primary,
                       },
                     ]}
                   >
-                    <Text style={[s.launcherDetailPrimaryText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                    <Text style={[s.launcherDetailPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>
                       {launcherDetailPresentation.primaryActionLabel}
                     </Text>
-                    <Ionicons name="arrow-forward" size={17} color={colors.ivory} />
+                    <Ionicons name="arrow-forward" size={17} color={colors.primaryForeground} />
                   </Pressable>
 
                   <Pressable
@@ -4610,13 +4581,13 @@ export default function LogScreen() {
               multiline
               style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
             />
-            <Pressable
+            <BoardActionButton
+              label="Save changes"
+              icon="checkmark"
+              variant="primary"
               onPress={saveEditEntry}
-              style={({ pressed }) => [s.logBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1, marginTop: 20 }]}
-            >
-              <Ionicons name="checkmark" size={18} color="#fff" />
-              <Text style={[s.logBtnText, { fontFamily: "Inter_700Bold" }]}>Save changes</Text>
-            </Pressable>
+              style={s.editSaveAction}
+            />
           </Pressable>
         </Pressable>
       </Modal>
@@ -4936,7 +4907,7 @@ const s = StyleSheet.create({
   launcherTabs: {
     flexDirection: "row",
     gap: 6,
-    borderRadius: 10,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: "rgba(8, 20, 36, 0.08)",
     padding: 2,
@@ -4945,7 +4916,7 @@ const s = StyleSheet.create({
     flex: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -5185,22 +5156,6 @@ const s = StyleSheet.create({
   walkFinishText: {
     fontSize: 13,
   },
-  launcherCta: {
-    minHeight: 48,
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-    paddingHorizontal: 16,
-  },
-  launcherCtaText: {
-    color: "#FFF9EF",
-    fontSize: 14,
-    flex: 1,
-    textAlign: "center",
-  },
-
   composerHero: {
     borderRadius: 8,
     padding: 12,
@@ -5281,10 +5236,10 @@ const s = StyleSheet.create({
     paddingLeft: 6,
     paddingRight: 13,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 999,
     borderWidth: 1,
   },
-  typeChipIcon: { width: 26, height: 26, borderRadius: 6, alignItems: "center", justifyContent: "center" },
+  typeChipIcon: { width: 26, height: 26, borderRadius: 999, alignItems: "center", justifyContent: "center" },
   typeChipLabel: { fontSize: 13.5 },
 
   fieldBlock: { marginTop: 16 },
@@ -5326,21 +5281,7 @@ const s = StyleSheet.create({
   dietFill: { height: "100%", borderRadius: 99 },
   dietHint: { fontSize: 12.5, lineHeight: 17, marginTop: 10 },
 
-  logBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    height: 52,
-    borderRadius: 8,
-    marginTop: 18,
-    shadowColor: "#2E5846",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  logBtnText: { color: "#fff", fontSize: 15.5 },
+  logSaveAction: { marginTop: 18, minHeight: 52 },
 
   logBoardCard: { marginTop: 12 },
   searchPanel: {
@@ -5348,12 +5289,12 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 13,
+    borderRadius: 999,
+    paddingHorizontal: 15,
     paddingVertical: 10,
   },
   searchInput: { flex: 1, fontSize: 14.5, minHeight: 28, paddingVertical: 0 },
-  searchClear: { width: 28, height: 28, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  searchClear: { width: 28, height: 28, borderRadius: 999, alignItems: "center", justifyContent: "center" },
   searchSummary: { fontSize: 12.5, lineHeight: 18, marginTop: 8, marginLeft: 2 },
 
   filterScroll: { marginTop: 8 },
@@ -5362,9 +5303,9 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 13,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 999,
     borderWidth: 1,
   },
   filterText: { fontSize: 13 },
@@ -5374,26 +5315,31 @@ const s = StyleSheet.create({
   snapshotCount: { fontSize: 22, letterSpacing: -0.3 },
   snapshotLabel: { fontSize: 13 },
   snapshotIcons: { flexDirection: "row", gap: 6, flex: 1, justifyContent: "flex-end", flexWrap: "wrap" },
-  snapshotChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 10 },
+  snapshotChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999 },
   snapshotChipCount: { fontSize: 12 },
 
   dayEntries: { marginTop: -2 },
   entryRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 10,
     paddingVertical: 14,
     paddingHorizontal: 6,
     marginHorizontal: -6,
     borderRadius: 8,
   },
-  entryAccent: { width: 3, height: 38, borderRadius: 2, marginRight: 2 },
-  entryAvatar: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  entryInitial: { fontSize: 13 },
-  entryIconWrap: { width: 34, height: 34, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  entryRowPending: {
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    marginVertical: 4,
+  },
+  entryTimeCol: { width: 64, flexShrink: 0, paddingTop: 2 },
+  entryTime: { fontSize: 12, lineHeight: 16 },
+  entryIconChip: { width: 34, height: 34, borderRadius: 999, alignItems: "center", justifyContent: "center" },
   entryTitleLine: { flexDirection: "row", alignItems: "center", gap: 8 },
   entryTitle: { fontSize: 14.5, flexShrink: 1 },
-  sevBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
+  sevBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999 },
   sevText: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0.4 },
   entryMetaLine: {
     flexDirection: "row",
@@ -5402,10 +5348,10 @@ const s = StyleSheet.create({
     gap: 6,
     marginTop: 2,
   },
-  entryMeta: { fontSize: 12, marginTop: 2 },
+  entryMeta: { fontSize: 12, marginTop: 2, flexShrink: 1 },
   entryStatusChip: {
-    borderRadius: 7,
-    paddingHorizontal: 6,
+    borderRadius: 999,
+    paddingHorizontal: 7,
     paddingVertical: 2,
   },
   entryStatusText: {
@@ -5414,8 +5360,8 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
   },
   entryAttentionChip: {
-    borderRadius: 7,
-    paddingHorizontal: 6,
+    borderRadius: 999,
+    paddingHorizontal: 7,
     paddingVertical: 2,
   },
   entryAttentionText: {
@@ -5429,18 +5375,6 @@ const s = StyleSheet.create({
   stickyNote: { borderLeftWidth: 3, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8 },
   stickyNoteText: { fontSize: 12.5, lineHeight: 17 },
   stickyNoteMeta: { fontSize: 11, marginTop: 4 },
-  entryRight: { alignItems: "flex-end", gap: 4 },
-  entryRelTime: { fontSize: 11.5 },
-  entryOpenPill: {
-    minHeight: 26,
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    paddingHorizontal: 7,
-  },
-  entryOpenText: { fontSize: 10 },
   launcherDetailSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, gap: 14 },
   launcherDetailTop: { flexDirection: "row", alignItems: "center", gap: 13 },
   launcherDetailIcon: { width: 58, height: 58, borderRadius: 18, alignItems: "center", justifyContent: "center" },
@@ -5763,6 +5697,7 @@ const s = StyleSheet.create({
   editHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
   editSheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
   editFieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 14 },
+  editSaveAction: { marginTop: 20 },
 
   emptyPanel: {
     borderRadius: 16,
