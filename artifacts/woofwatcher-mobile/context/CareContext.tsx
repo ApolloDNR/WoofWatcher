@@ -423,6 +423,12 @@ interface CareContextValue {
   updateEntry: (id: string, patch: Partial<Omit<Entry, "id">>) => void;
   updateCareDoc: (updater: (doc: CareDoc) => CareDoc) => void;
   refresh: () => void;
+  /**
+   * Store-compliance data deletion: resets the live care document and
+   * removes every WoofWatcher key on this device (care state, avatar art,
+   * QA sessions). Local-first means this is the complete deletion.
+   */
+  eraseAllLocalData: () => Promise<void>;
   syncOutbox: CareSyncOutbox;
   isLoaded: boolean;
   isSyncing: boolean;
@@ -816,6 +822,27 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const syncOutbox = useMemo(() => deriveCareSyncOutbox(entries), [entries]);
 
+  const eraseAllLocalData = useCallback(async () => {
+    // Reset the live document first so the UI reflects the wipe instantly,
+    // then remove every WoofWatcher-owned key on the device. The persist
+    // effect re-saves only a pristine default household afterward.
+    setDoc(getDefaultDoc());
+    setEntries([]);
+    setServerVersion(0);
+    realIdByTemp.current.clear();
+    pendingPatch.current.clear();
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const owned = keys.filter((key) => key.startsWith("woofwatcher"));
+      if (owned.length) {
+        await AsyncStorage.multiRemove(owned);
+      }
+    } catch {
+      // Best effort: the in-memory reset above already cleared the live
+      // document, and the persist effect overwrites the primary cache key.
+    }
+  }, []);
+
   const value = useMemo<CareContextValue>(
     () => ({
       state,
@@ -824,6 +851,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       updateEntry,
       updateCareDoc,
       refresh: () => void syncFromServer(),
+      eraseAllLocalData,
       syncOutbox,
       isLoaded: hydrated,
       isSyncing,
@@ -835,6 +863,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       updateEntry,
       updateCareDoc,
       syncFromServer,
+      eraseAllLocalData,
       syncOutbox,
       hydrated,
       isSyncing,

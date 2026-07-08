@@ -99,6 +99,7 @@ import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import { BoardCard, BoardMetricTile, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import {
   deriveCareCareer,
   deriveCareerWeek,
@@ -347,6 +348,9 @@ export default function MoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  // Owner launch tooling renders in development/internal builds only; store
+  // production builds keep More to household care surfaces.
+  const ownerOps = isOwnerOpsBuild();
   const routeParams = useLocalSearchParams<{
     section?: string | string[];
   }>();
@@ -1014,16 +1018,20 @@ export default function MoreScreen() {
         router.push("/woofguide");
       },
     },
-    {
-      icon: "star",
-      iconName: "diamond-outline",
-      label: "WoofWatcher Plus",
-      sub: "Preview Plus, Family, and paid-value packaging",
-      onPress: () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push("/premium");
-      },
-    },
+    ...(ownerOps
+      ? [
+          {
+            icon: "star" as PulseIconName,
+            iconName: "diamond-outline" as keyof typeof Ionicons.glyphMap,
+            label: "WoofWatcher Plus",
+            sub: "Preview Plus, Family, and paid-value packaging",
+            onPress: () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/premium");
+            },
+          },
+        ]
+      : []),
     {
       icon: "heart",
       iconName: "shield-checkmark-outline",
@@ -1054,7 +1062,7 @@ export default function MoreScreen() {
         router.push("/portrait");
       },
     },
-    ...(__DEV__
+    ...(ownerOps
       ? [
           {
             icon: "star" as PulseIconName,
@@ -1419,32 +1427,36 @@ export default function MoreScreen() {
         router.push("/records" as never);
       },
     },
-    {
-      id: "design-qa",
-      iconName: "color-palette-outline",
-      eyebrow: "Design QA",
-      label: "Route polish pass",
-      detail: routeVisualConsistencyDetail,
-      actionLabel: "Review",
-      tone: colors.copper,
-      onPress: () => {
-        Haptics.selectionAsync();
-        router.push(buildCareTwinQaFocusRoute(routeVisualConsistencyTarget) as never);
-      },
-    },
-    {
-      id: "launch-qa",
-      iconName: "phone-portrait-outline",
-      eyebrow: "Launch QA",
-      label: nativeQaPrimaryMission.label,
-      detail: nativeQaPrimaryMission.detail,
-      actionLabel: nativeQaCaptureCockpitActionLabel,
-      tone: betaShipTone,
-      onPress: () => {
-        Haptics.selectionAsync();
-        router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
-      },
-    },
+    ...(ownerOps
+      ? [
+          {
+            id: "design-qa",
+            iconName: "color-palette-outline" as const,
+            eyebrow: "Design QA",
+            label: "Route polish pass",
+            detail: routeVisualConsistencyDetail,
+            actionLabel: "Review",
+            tone: colors.copper,
+            onPress: () => {
+              Haptics.selectionAsync();
+              router.push(buildCareTwinQaFocusRoute(routeVisualConsistencyTarget) as never);
+            },
+          },
+          {
+            id: "launch-qa",
+            iconName: "phone-portrait-outline" as const,
+            eyebrow: "Launch QA",
+            label: nativeQaPrimaryMission.label,
+            detail: nativeQaPrimaryMission.detail,
+            actionLabel: nativeQaCaptureCockpitActionLabel,
+            tone: betaShipTone,
+            onPress: () => {
+              Haptics.selectionAsync();
+              router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+            },
+          },
+        ]
+      : []),
   ];
 
   const H_PAD = 16;
@@ -1547,42 +1559,44 @@ export default function MoreScreen() {
                     {moreCommandOpenGates} launch / {moreCommandProviderOpen} provider
                   </Text>
                 </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    launchReleasePacket.betaShipStatus === "qa-first"
-                      ? "Open native QA cockpit from launch command hub"
-                      : "Share WoofWatcher beta handoff packet from launch command hub"
-                  }
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    if (launchReleasePacket.betaShipStatus === "qa-first") {
-                      router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
-                      return;
+                {ownerOps ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      launchReleasePacket.betaShipStatus === "qa-first"
+                        ? "Open native QA cockpit from launch command hub"
+                        : "Share WoofWatcher beta handoff packet from launch command hub"
                     }
-                    shareBetaHandoffPacket();
-                  }}
-                  style={({ pressed }) => [
-                    s.moreCommandAction,
-                    {
-                      backgroundColor: launchReleasePacket.betaShipStatus === "qa-first" ? colors.amber : colors.sage,
-                      opacity: pressed ? 0.82 : 1,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
-                    size={15}
-                    color={colors.ivory}
-                  />
-                  <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    style={[s.moreCommandActionText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      if (launchReleasePacket.betaShipStatus === "qa-first") {
+                        router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+                        return;
+                      }
+                      shareBetaHandoffPacket();
+                    }}
+                    style={({ pressed }) => [
+                      s.moreCommandAction,
+                      {
+                        backgroundColor: launchReleasePacket.betaShipStatus === "qa-first" ? colors.amber : colors.sage,
+                        opacity: pressed ? 0.82 : 1,
+                      },
+                    ]}
                   >
-                    {launchReleasePacket.betaShipStatus === "qa-first" ? "QA Cockpit" : "Beta Packet"}
-                  </Text>
-                </Pressable>
+                    <Ionicons
+                      name={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
+                      size={15}
+                      color={colors.ivory}
+                    />
+                    <Text
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      style={[s.moreCommandActionText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}
+                    >
+                      {launchReleasePacket.betaShipStatus === "qa-first" ? "QA Cockpit" : "Beta Packet"}
+                    </Text>
+                  </Pressable>
+                ) : null}
               </View>
             </ImageBackground>
           </BoardCard>
@@ -1923,6 +1937,8 @@ export default function MoreScreen() {
             </Pressable>
           </BoardCard>
 
+          {ownerOps ? (
+            <>
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader
               title="Launch Readiness"
@@ -2718,6 +2734,8 @@ export default function MoreScreen() {
               <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
             </LinearGradient>
           </Pressable>
+            </>
+          ) : null}
 
           {/* Care Team / Household */}
           <BoardCard style={s.moreBoardCard}>
@@ -3143,21 +3161,23 @@ export default function MoreScreen() {
             <Text style={[s.syncNextStep, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {syncDashboard.nextStep}
             </Text>
-            <Pressable
-              onPress={openCareEntryProviderSyncProofMission}
-              accessibilityRole="button"
-              accessibilityLabel="Open care-entry provider sync proof mission"
-              hitSlop={MOBILE_INLINE_HIT_SLOP}
-              style={({ pressed }) => [
-                s.providerSetupRowAction,
-                { borderColor: colors.border, backgroundColor: colors.background, opacity: pressed ? 0.72 : 1 },
-              ]}
-            >
-              <Ionicons name="server-outline" size={14} color={syncTone} />
-              <Text style={[s.providerSetupRowActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                Open sync proof
-              </Text>
-            </Pressable>
+            {ownerOps ? (
+              <Pressable
+                onPress={openCareEntryProviderSyncProofMission}
+                accessibilityRole="button"
+                accessibilityLabel="Open care-entry provider sync proof mission"
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                style={({ pressed }) => [
+                  s.providerSetupRowAction,
+                  { borderColor: colors.border, backgroundColor: colors.background, opacity: pressed ? 0.72 : 1 },
+                ]}
+              >
+                <Ionicons name="server-outline" size={14} color={syncTone} />
+                <Text style={[s.providerSetupRowActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  Open sync proof
+                </Text>
+              </Pressable>
+            ) : null}
           </BoardCard>
 
           {/* Household actions */}

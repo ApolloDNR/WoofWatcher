@@ -8,6 +8,8 @@ import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextIn
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { OwnerOpsUnavailableScreen } from "@/components/board/OwnerOpsBoundary";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { LivingPhoenixRoom, type PhoenixRoomStat } from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useCare } from "@/context/CareContext";
@@ -243,6 +245,14 @@ function buildQaReturnRoute(target: { route: string; id?: string; surfaceId?: st
 }
 
 export default function CareTwinQaScreen() {
+  // Store builds never render the internal QA cockpit, even via deep link.
+  if (!isOwnerOpsBuild()) {
+    return <OwnerOpsUnavailableScreen title="QA cockpit unavailable" />;
+  }
+  return <CareTwinQaScreenBody />;
+}
+
+function CareTwinQaScreenBody() {
   const colors = useColors();
   const router = useRouter();
   const routeParams = useLocalSearchParams<{ qaSurface?: string | string[] }>();

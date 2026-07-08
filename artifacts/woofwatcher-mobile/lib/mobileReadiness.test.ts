@@ -752,7 +752,7 @@ test("registers the care twin native QA route for device review", () => {
     more,
     /buildCareTwinQaFocusRoute\(nativeQaPrimaryMissionTarget\)/,
   );
-  assert.match(more, /__DEV__/);
+  assert.match(more, /isOwnerOpsBuild/);
   assert.match(qaRoute, /listCareTwinRuntimeQaScenarios/);
   assert.match(qaRoute, /evaluateCareTwinRuntimeQaScenario/);
   assert.match(qaRoute, /deriveCareTwinChoreography/);

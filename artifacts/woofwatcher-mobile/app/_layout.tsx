@@ -130,6 +130,13 @@ function RootLayoutNav() {
         }}
       />
       <Stack.Screen
+        name="legal"
+        options={{
+          headerShown: false,
+          presentation: "card",
+        }}
+      />
+      <Stack.Screen
         name="adventure"
         options={{
           title: "Adventure Mode",

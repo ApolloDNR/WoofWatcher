@@ -20,6 +20,7 @@ import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { isClerkConfigured, useWoofAuth } from "@/lib/auth";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import {
   getKeyboardAvoidingVerticalOffset,
   getRouteTopPadding,
@@ -74,6 +75,7 @@ export default function SetupScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const ownerOps = isOwnerOpsBuild();
   const { state, updateCareDoc, isLoaded } = useCare();
   const { isSignedIn } = useWoofAuth();
   const [draft, setDraft] = useState<SetupWizardDraft>(() => createSetupWizardDraft(state));
@@ -388,18 +390,20 @@ export default function SetupScreen() {
             <Pressable onPress={finishLater} style={({ pressed }) => [s.laterBtn, { opacity: pressed ? 0.65 : 1 }]}>
               <Text style={[s.laterText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Finish later</Text>
             </Pressable>
-            <Pressable
-              onPress={openAuthSetupProofMission}
-              accessibilityRole="button"
-              accessibilityLabel="Open auth and setup proof mission"
-              style={({ pressed }) => [
-                s.proofBtn,
-                { borderColor: colors.border, backgroundColor: colors.background, opacity: pressed ? 0.72 : 1 },
-              ]}
-            >
-              <Ionicons name="shield-checkmark-outline" size={15} color={colors.copper} />
-              <Text style={[s.proofText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Open setup proof</Text>
-            </Pressable>
+            {ownerOps ? (
+              <Pressable
+                onPress={openAuthSetupProofMission}
+                accessibilityRole="button"
+                accessibilityLabel="Open auth and setup proof mission"
+                style={({ pressed }) => [
+                  s.proofBtn,
+                  { borderColor: colors.border, backgroundColor: colors.background, opacity: pressed ? 0.72 : 1 },
+                ]}
+              >
+                <Ionicons name="shield-checkmark-outline" size={15} color={colors.copper} />
+                <Text style={[s.proofText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Open setup proof</Text>
+              </Pressable>
+            ) : null}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWoofAuth } from "@/lib/auth";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import {
   deriveCareReminderCenter,
   deriveHouseholdResponsibility,
@@ -200,6 +201,7 @@ export default function CalendarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const ownerOps = isOwnerOpsBuild();
   const { state, updateCareDoc, addEntry, deleteEntry } = useCare();
 
   const { getToken } = useWoofAuth();
@@ -1190,20 +1192,22 @@ export default function CalendarScreen() {
                     Save quiet hours
                   </Text>
                 </Pressable>
-                <Pressable
-                  onPress={openPushNotificationProofMission}
-                  accessibilityRole="button"
-                  accessibilityLabel="Open push notifications proof mission"
-                  style={({ pressed }) => [
-                    s.reminderPreferenceButton,
-                    { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
-                  ]}
-                >
-                  <Ionicons name="shield-checkmark-outline" size={15} color={colors.amber} />
-                  <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                    Open push proof
-                  </Text>
-                </Pressable>
+                {ownerOps ? (
+                  <Pressable
+                    onPress={openPushNotificationProofMission}
+                    accessibilityRole="button"
+                    accessibilityLabel="Open push notifications proof mission"
+                    style={({ pressed }) => [
+                      s.reminderPreferenceButton,
+                      { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
+                    ]}
+                  >
+                    <Ionicons name="shield-checkmark-outline" size={15} color={colors.amber} />
+                    <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      Open push proof
+                    </Text>
+                  </Pressable>
+                ) : null}
               </View>
               <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 Saved locally; delivery still needs provider proof and native notification QA.

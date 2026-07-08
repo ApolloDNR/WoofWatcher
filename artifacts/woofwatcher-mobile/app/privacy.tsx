@@ -34,6 +34,7 @@ import {
   type AccountSafetySection,
   type AccountSafetyStatus,
 } from "@/lib/privacySafety";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import {
   buildSupportRunbookShareText,
@@ -82,7 +83,10 @@ export default function PrivacyScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, updateCareDoc } = useCare();
+  const { state, updateCareDoc, eraseAllLocalData } = useCare();
+  // Launch-ops cards (support runbook, launch gates) are owner tooling and
+  // stay out of store production builds.
+  const ownerOps = isOwnerOpsBuild();
   const [launchEditorOpen, setLaunchEditorOpen] = useState(false);
   const [launchDraft, setLaunchDraft] = useState<LaunchSupportProfile>(state.launchSupportProfile);
   const me = useGetMe();
@@ -225,6 +229,47 @@ export default function PrivacyScreen() {
     router.push("/care-twin-qa?qaSurface=support-legal-readiness-proof" as never);
   };
 
+  const openLegalDocuments = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/legal" as never);
+  };
+
+  const confirmEraseAllLocalData = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(
+      "Delete all data on this device?",
+      `This permanently removes every log, routine, record, memory, report, and avatar for ${state.profile.name} from this device. WoofWatcher keeps no copy anywhere else. Export first if you want a backup.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete everything",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "This cannot be undone",
+              "Delete all WoofWatcher data from this device now?",
+              [
+                { text: "Keep my data", style: "cancel" },
+                {
+                  text: "Yes, delete it all",
+                  style: "destructive",
+                  onPress: () => {
+                    void eraseAllLocalData().then(() => {
+                      Alert.alert(
+                        "All data deleted",
+                        "WoofWatcher has been reset to a fresh household on this device.",
+                      );
+                    });
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -311,6 +356,59 @@ export default function PrivacyScreen() {
           </Pressable>
         </View>
 
+        <BoardCard style={s.privacyBoard}>
+          <BoardSectionHeader
+            title="Your data, your rules"
+            accessory={<BoardPill label="On this device" tone={colors.sage} />}
+          />
+          <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            Every care log lives only on this device. Read the full privacy
+            policy and terms, or erase everything in one step.
+          </Text>
+          <Pressable
+            onPress={openLegalDocuments}
+            accessibilityRole="button"
+            accessibilityLabel="Open privacy policy and terms of service"
+            style={({ pressed }) => [
+              s.legalRow,
+              { borderColor: colors.border, backgroundColor: pressed ? colors.secondary : colors.background },
+            ]}
+          >
+            <Ionicons name="document-text-outline" size={18} color={colors.forest} />
+            <View style={{ flex: 1 }}>
+              <Text style={[s.legalRowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                Privacy policy & terms
+              </Text>
+              <Text style={[s.legalRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Plain-language rules for your household's data
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+          </Pressable>
+          <Pressable
+            onPress={confirmEraseAllLocalData}
+            accessibilityRole="button"
+            accessibilityLabel="Delete all WoofWatcher data on this device"
+            style={({ pressed }) => [
+              s.legalRow,
+              { borderColor: colors.rose + "55", backgroundColor: pressed ? colors.rose + "14" : colors.background },
+            ]}
+          >
+            <Ionicons name="trash-bin-outline" size={18} color={colors.rose} />
+            <View style={{ flex: 1 }}>
+              <Text style={[s.legalRowTitle, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>
+                Delete all data on this device
+              </Text>
+              <Text style={[s.legalRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Permanent. Resets WoofWatcher to a fresh household.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+          </Pressable>
+        </BoardCard>
+
+        {ownerOps ? (
+          <>
         <BoardCard style={s.privacyBoard}>
           <BoardSectionHeader
             title="Support runbook"
@@ -416,6 +514,8 @@ export default function PrivacyScreen() {
             </View>
           </View>
         </BoardCard>
+          </>
+        ) : null}
       </ScrollView>
       <Modal visible={launchEditorOpen} transparent animationType="slide" onRequestClose={() => setLaunchEditorOpen(false)}>
         <Pressable style={s.modalBackdrop} onPress={() => setLaunchEditorOpen(false)}>
@@ -719,6 +819,19 @@ const s = StyleSheet.create({
   primaryText: { color: "#FFFFFF", fontSize: 14 },
   secondaryBtn: { flex: 1, height: 52, borderRadius: 17, borderWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
   secondaryText: { fontSize: 13.5 },
+  legalRow: {
+    minHeight: 52,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  legalRowTitle: { fontSize: 13 },
+  legalRowSub: { fontSize: 11, marginTop: 1 },
   sectionStack: { gap: 10 },
   supportVerdict: { fontSize: 14, lineHeight: 18, marginBottom: 5 },
   launchProfilePanel: {

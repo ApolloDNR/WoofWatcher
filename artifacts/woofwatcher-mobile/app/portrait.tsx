@@ -67,6 +67,7 @@ import {
   hasAvatarTemplateSpritePack,
 } from "@/lib/avatarTemplateSpriteAssets";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import {
   getRouteTopPadding,
@@ -172,6 +173,7 @@ export default function PortraitScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const ownerOps = isOwnerOpsBuild();
   const { state } = useCare();
   const {
     avatarConfig,
@@ -1526,30 +1528,32 @@ export default function PortraitScreen() {
               >
                 {productionTemplateReview.nativeProofStatus}
               </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Open Avatar sprite production QA cockpit"
-                accessibilityHint="Opens the focused native QA checklist for sprite gait and phone crop review."
-                hitSlop={MOBILE_INLINE_HIT_SLOP}
-                onPress={openAvatarSpriteProductionQa}
-                style={({ pressed }) => [
-                  s.productionQaButton,
-                  {
-                    backgroundColor: colors.brandNavy,
-                    opacity: pressed ? 0.78 : 1,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    s.productionQaButtonText,
-                    { fontFamily: "Inter_800ExtraBold" },
+              {ownerOps ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open Avatar sprite production QA cockpit"
+                  accessibilityHint="Opens the focused native QA checklist for sprite gait and phone crop review."
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={openAvatarSpriteProductionQa}
+                  style={({ pressed }) => [
+                    s.productionQaButton,
+                    {
+                      backgroundColor: colors.brandNavy,
+                      opacity: pressed ? 0.78 : 1,
+                    },
                   ]}
                 >
-                  Open sprite QA cockpit
-                </Text>
-                <Ionicons name="arrow-forward" size={17} color="#FFF9EF" />
-              </Pressable>
+                  <Text
+                    style={[
+                      s.productionQaButtonText,
+                      { fontFamily: "Inter_800ExtraBold" },
+                    ]}
+                  >
+                    Open sprite QA cockpit
+                  </Text>
+                  <Ionicons name="arrow-forward" size={17} color="#FFF9EF" />
+                </Pressable>
+              ) : null}
             </BoardCard>
           </>
         ) : null}

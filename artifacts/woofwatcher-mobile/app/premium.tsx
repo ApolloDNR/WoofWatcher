@@ -14,6 +14,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { OwnerOpsUnavailableScreen } from "@/components/board/OwnerOpsBoundary";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import {
   deriveHealthWatch,
   derivePremiumPreview,
@@ -47,6 +49,15 @@ function signalIcon(key: PremiumValueSignal["key"]): keyof typeof Ionicons.glyph
 }
 
 export default function PremiumScreen() {
+  // Store builds hide the gated Plus preview: pricing tiers may not be
+  // shown to reviewers or households until checkout is provider-approved.
+  if (!isOwnerOpsBuild()) {
+    return <OwnerOpsUnavailableScreen title="WoofWatcher Plus preview unavailable" />;
+  }
+  return <PremiumScreenBody />;
+}
+
+function PremiumScreenBody() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();

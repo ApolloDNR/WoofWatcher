@@ -77,6 +77,7 @@ import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import {
@@ -204,6 +205,7 @@ export default function RecordsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const ownerOps = isOwnerOpsBuild();
   const { state, updateCareDoc } = useCare();
   const { width } = useWindowDimensions();
 
@@ -909,16 +911,20 @@ export default function RecordsScreen() {
       tone: colors.primary,
       onPress: shareReport,
     },
-    {
-      id: "proof",
-      icon: "shield-checkmark-outline",
-      eyebrow: "Native proof",
-      label: "Records file handoff",
-      detail: "Capture Care Pass local HTML, Dog ID HTML/SVG, share-sheet behavior, and fallback copy.",
-      actionLabel: "Proof",
-      tone: colors.amber,
-      onPress: openRecordsFileProofMission,
-    },
+    ...(ownerOps
+      ? [
+          {
+            id: "proof",
+            icon: "shield-checkmark-outline" as const,
+            eyebrow: "Native proof",
+            label: "Records file handoff",
+            detail: "Capture Care Pass local HTML, Dog ID HTML/SVG, share-sheet behavior, and fallback copy.",
+            actionLabel: "Proof",
+            tone: colors.amber,
+            onPress: openRecordsFileProofMission,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -2499,18 +2505,20 @@ export default function RecordsScreen() {
                         >
                           <Ionicons name="download-outline" size={15} color={colors.sage} />
                         </Pressable>
-                        <Pressable
-                          onPress={openReportBinaryExportProofMission}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Open report binary export proof mission for ${artifact.title}`}
-                          hitSlop={MOBILE_INLINE_HIT_SLOP}
-                          style={({ pressed }) => [
-                            s.artifactIconButton,
-                            { backgroundColor: colors.amber + "14", opacity: pressed ? 0.75 : 1 },
-                          ]}
-                        >
-                          <Ionicons name="shield-checkmark-outline" size={15} color={colors.amber} />
-                        </Pressable>
+                        {ownerOps ? (
+                          <Pressable
+                            onPress={openReportBinaryExportProofMission}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Open report binary export proof mission for ${artifact.title}`}
+                            hitSlop={MOBILE_INLINE_HIT_SLOP}
+                            style={({ pressed }) => [
+                              s.artifactIconButton,
+                              { backgroundColor: colors.amber + "14", opacity: pressed ? 0.75 : 1 },
+                            ]}
+                          >
+                            <Ionicons name="shield-checkmark-outline" size={15} color={colors.amber} />
+                          </Pressable>
+                        ) : null}
                       </View>
                     </View>
                   </View>
