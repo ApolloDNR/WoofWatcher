@@ -1452,7 +1452,7 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
     /BoardSectionHeader\s+title="Next Up"[\s\S]*<BoardPill\s+label=\{`1 of \$\{nextCount\}`\}/,
   );
   assert.match(home, /BoardSectionHeader\s+title="Quick Log"/);
-  assert.match(home, /HOME_QUICK_LOG\.slice\(0,\s*4\)\.map/);
+  assert.match(home, /HOME_QUICK_LOG\.slice\(0,\s*6\)\.map/);
   assert.match(home, /Today's Missions/);
 });
 

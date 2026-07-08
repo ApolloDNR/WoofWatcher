@@ -116,16 +116,27 @@ const todayMetricRouteType: Record<TodayMetricTarget, CareEventType> = {
   potty: "potty",
 };
 
-// Full-screen immersive room: the living sprite layer floats over this
-// backdrop so the whole Home reads like a scene viewed through a camera.
-// The room follows the household's real clock - lamplit night after 8 PM,
-// daylight from 6 AM - so the world feels alive without faking anything.
-const HOME_IMMERSIVE_ROOM_DAY = require("@/assets/avatar/rooms/phoenix-room-immersive-tall.png");
-const HOME_IMMERSIVE_ROOM_NIGHT = require("@/assets/avatar/rooms/phoenix-room-immersive-tall-night.png");
+// Framed storybook room: the living sprite layer floats over this backdrop
+// inside the Today card. The art is lifted straight from Apollo's mock
+// boards (baked-in dog and camera chip removed with the approved edit
+// pipeline, recomposed to 3:2 for the card). The room follows the
+// household's real clock - lamplit night after 8 PM, daylight from 6 AM -
+// so the world feels alive without faking anything.
+const HOME_IMMERSIVE_ROOM_DAY = require("@/assets/avatar/rooms/phoenix-room-storybook-day.png");
+const HOME_IMMERSIVE_ROOM_NIGHT = require("@/assets/avatar/rooms/phoenix-room-storybook-night.png");
 
 export function homeImmersiveRoomIsNight(hour: number): boolean {
   return hour >= 20 || hour < 6;
 }
+
+// Storybook status sentence, non-diagnostic by design.
+const HOME_MOOD_WORD: Record<Mood, string> = {
+  happy: "happy",
+  excited: "excited",
+  calm: "calm",
+  anxious: "a little unsettled",
+  unwell: "having a gentle day",
+};
 
 const HOME_QUICK_LOG: QuickItem[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
@@ -1368,7 +1379,9 @@ export default function HomeScreen() {
                   : HOME_IMMERSIVE_ROOM_DAY
               }
               resizeMode="cover"
-              style={StyleSheet.absoluteFill}
+              // Explicit size: react-native-web falls back to the asset's
+              // intrinsic dimensions without it and blows the card open.
+              style={[StyleSheet.absoluteFill, s.heroRoomArt]}
               fadeDuration={0}
             />
             <View
@@ -1533,7 +1546,7 @@ export default function HomeScreen() {
                   { color: colors.navy, fontFamily: "Fredoka_700Bold" },
                 ]}
               >
-                {todayCommand.primaryAction.label}
+                {petName} is {HOME_MOOD_WORD[status.mood]}. {todayCommand.primaryAction.label}.
               </Text>
               <Text
                 numberOfLines={2}
@@ -1654,29 +1667,6 @@ export default function HomeScreen() {
           </BoardCard>
 
           <View style={s.homeSplit}>
-            <BoardCard style={[s.nextCard, s.homeSplitCard]}>
-              <BoardSectionHeader
-                title="Next Up"
-                accessory={
-                  <BoardPill
-                    label={`1 of ${nextCount}`}
-                    icon="list-outline"
-                    tone={colors.sage}
-                  />
-                }
-              />
-              {nextUp.slice(0, 3).map((item, index) => (
-                <CareRow
-                  key={`${item.label}-${item.time}-${index}`}
-                  icon={item.icon}
-                  title={item.label}
-                  detail={index === 0 ? nextDetail : item.time}
-                  meta={item.meta ?? ""}
-                  onPress={() => router.push(item.route as never)}
-                />
-              ))}
-            </BoardCard>
-
             <BoardCard style={[s.quickHomeCard, s.homeSplitCard]}>
               <BoardSectionHeader
                 title="Quick Log"
@@ -1716,7 +1706,7 @@ export default function HomeScreen() {
                 }
               />
               <View style={s.homeQuickGrid}>
-                {HOME_QUICK_LOG.slice(0, 4).map((item) => (
+                {HOME_QUICK_LOG.slice(0, 6).map((item) => (
                   <QuickActionTile
                     key={item.key}
                     icon={item.icon}
@@ -1733,11 +1723,34 @@ export default function HomeScreen() {
                     onLongPress={() => openQuickDetails(item)}
                     accent={colors.secondary}
                     style={s.homeQuickTile}
-                    iconSize={25}
+                    iconSize={24}
                     labelStyle={s.homeQuickText}
                   />
                 ))}
               </View>
+            </BoardCard>
+
+            <BoardCard style={[s.nextCard, s.homeSplitCard]}>
+              <BoardSectionHeader
+                title="Next Up"
+                accessory={
+                  <BoardPill
+                    label={`1 of ${nextCount}`}
+                    icon="list-outline"
+                    tone={colors.sage}
+                  />
+                }
+              />
+              {nextUp.slice(0, 3).map((item, index) => (
+                <CareRow
+                  key={`${item.label}-${item.time}-${index}`}
+                  icon={item.icon}
+                  title={item.label}
+                  detail={index === 0 ? nextDetail : item.time}
+                  meta={item.meta ?? ""}
+                  onPress={() => router.push(item.route as never)}
+                />
+              ))}
             </BoardCard>
           </View>
 
@@ -2631,10 +2644,15 @@ const s = StyleSheet.create({
   },
 
   heroBackdrop: {
+    width: "100%",
     marginBottom: 0,
     borderRadius: 24,
     borderWidth: 1,
     overflow: "hidden",
+  },
+  heroRoomArt: {
+    width: "100%",
+    height: "100%",
   },
   heroStudioChip: {
     position: "absolute",
@@ -2997,18 +3015,17 @@ const s = StyleSheet.create({
   },
 
   homeSplit: {
-    flexDirection: "row",
+    flexDirection: "column",
     gap: 10,
     alignItems: "stretch",
     marginBottom: 10,
   },
   homeSplitCard: {
-    flex: 1,
     minWidth: 0,
   },
   nextCard: { marginTop: 0 },
   quickHomeCard: {
-    minHeight: 188,
+    minHeight: 0,
   },
   quickHeaderAction: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -3042,19 +3059,20 @@ const s = StyleSheet.create({
   },
   homeQuickGrid: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
     justifyContent: "space-between",
     rowGap: 8,
   },
   homeQuickTile: {
-    width: "48%",
-    minHeight: 54,
-    borderWidth: 1,
-    borderRadius: 8,
+    width: "15.5%",
+    minHeight: 62,
+    borderWidth: 0,
+    borderRadius: 14,
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
-    paddingVertical: 5,
+    gap: 3,
+    paddingVertical: 4,
   },
   homeQuickText: {
     fontSize: 9.5,

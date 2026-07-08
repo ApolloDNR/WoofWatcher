@@ -215,10 +215,10 @@ function getCompactSpriteZone(zone: SpriteStageZone): SpriteStageZone {
 function getImmersiveSpriteZone(zone: SpriteStageZone): SpriteStageZone {
   return {
     ...zone,
-    left: "27%",
-    top: "14%",
-    width: 184,
-    height: 184,
+    left: "30%",
+    top: "22%",
+    width: 150,
+    height: 150,
   };
 }
 
@@ -1266,7 +1266,7 @@ export function LivingPhoenixRoom({
   );
 }
 
-const ROAM_RIG_SIZE = 200;
+const ROAM_RIG_SIZE = 150;
 const ROAM_BOB_MS = 340;
 
 interface RoamingTwinRigProps {

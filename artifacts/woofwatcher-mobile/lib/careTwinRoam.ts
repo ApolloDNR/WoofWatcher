@@ -62,11 +62,11 @@ const DEFAULT_DWELL_MS = 3600;
  * wobble that the scale cue mirrors.
  */
 export const IMMERSIVE_ROAM_WAYPOINTS: Record<AvatarRoomZone, RoamWaypoint> = {
-  door: { zone: "door", xPct: 3, yPct: 26, scale: 0.99 },
-  window: { zone: "window", xPct: 12, yPct: 25, scale: 0.97 },
-  rug: { zone: "rug", xPct: 27, yPct: 27, scale: 1 },
-  bed: { zone: "bed", xPct: 39, yPct: 26, scale: 1 },
-  bowl: { zone: "bowl", xPct: 48, yPct: 28, scale: 1.03 },
+  door: { zone: "door", xPct: 4, yPct: 23, scale: 0.99 },
+  window: { zone: "window", xPct: 13, yPct: 22, scale: 0.97 },
+  rug: { zone: "rug", xPct: 30, yPct: 24, scale: 1 },
+  bed: { zone: "bed", xPct: 42, yPct: 23, scale: 1 },
+  bowl: { zone: "bowl", xPct: 50, yPct: 25, scale: 1.03 },
 };
 
 const ROAM_STOP_ORDER: readonly AvatarRoomZone[] = [
