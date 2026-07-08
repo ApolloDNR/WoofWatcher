@@ -489,24 +489,33 @@ export default function CareTwinQaScreen() {
     [focusedQaTarget, state.launchProviderProfile.recordsLocalFileHandoffEvidence],
   );
   const reportBinaryExportProofManifest = useMemo(
-    () =>
-      focusedQaTarget?.surface.id === "report-binary-export-proof"
-        ? buildReportBinaryExportProofManifest({
-            carePassHtmlFileName: "care-pass-report-history.html",
-            dogIdSvgFileName: "dog-id.svg",
-            storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
-            providerStorageEvidence: launchProviderSetupPlan.providerInput.storageProviderEvidence
-              ? [launchProviderSetupPlan.providerInput.storageProviderEvidence]
-              : [],
-            pdfGeneratorApproved: false,
-            pngRendererApproved: false,
-            nativeArtifactEvidenceApproved: false,
-          })
-        : null,
+    () => {
+      if (focusedQaTarget?.surface.id !== "report-binary-export-proof") return null;
+
+      const savedProof = state.launchProviderProfile.reportBinaryExportProofEvidence ?? {};
+      return buildReportBinaryExportProofManifest({
+        carePassHtmlFileName: savedProof.carePassHtmlFileName ?? "care-pass-report-history.html",
+        dogIdSvgFileName: savedProof.dogIdSvgFileName ?? "dog-id.svg",
+        generatedCarePassPdf: savedProof.generatedCarePassPdf,
+        generatedDogIdPng: savedProof.generatedDogIdPng,
+        nativeArtifactEvidence: savedProof.nativeArtifactEvidence,
+        storageProviderConfigured:
+          savedProof.storageProviderConfigured ?? launchProviderSetupPlan.providerInput.storageProviderConfigured,
+        providerStorageEvidence:
+          savedProof.providerStorageEvidence ??
+          (launchProviderSetupPlan.providerInput.storageProviderEvidence
+            ? [launchProviderSetupPlan.providerInput.storageProviderEvidence]
+            : []),
+        pdfGeneratorApproved: Boolean(savedProof.pdfGeneratorApproved),
+        pngRendererApproved: Boolean(savedProof.pngRendererApproved),
+        nativeArtifactEvidenceApproved: Boolean(savedProof.nativeArtifactEvidenceApproved),
+      });
+    },
     [
       focusedQaTarget,
       launchProviderSetupPlan.providerInput.storageProviderConfigured,
       launchProviderSetupPlan.providerInput.storageProviderEvidence,
+      state.launchProviderProfile.reportBinaryExportProofEvidence,
     ],
   );
   const routeVisualProofManifest = useMemo(

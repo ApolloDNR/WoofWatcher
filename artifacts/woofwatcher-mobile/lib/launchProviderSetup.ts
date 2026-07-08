@@ -27,6 +27,7 @@ import {
 import {
   REPORT_BINARY_EXPORT_PROOF_ITEMS,
   REPORT_BINARY_EXPORT_PROOF_SUMMARY,
+  type ReportBinaryExportProofEvidence,
 } from "./reportBinaryExportProof.ts";
 import type { RecordsLocalFileHandoffProofEvidence } from "./reportArtifactExportFile.ts";
 import {
@@ -90,6 +91,7 @@ export interface LaunchProviderProfile {
   storageProviderProofReady: boolean;
   storageProviderEvidence?: LaunchStorageProviderEvidence | null;
   recordsLocalFileHandoffEvidence?: RecordsLocalFileHandoffProofEvidence | null;
+  reportBinaryExportProofEvidence?: ReportBinaryExportProofEvidence | null;
   aiProviderConfigured: boolean;
   aiProviderProofReady: boolean;
   aiProviderEvidence?: AiProviderProofEvidence | null;
@@ -175,6 +177,7 @@ const DEFAULT_PROFILE: LaunchProviderProfile = {
   storageProviderProofReady: false,
   storageProviderEvidence: null,
   recordsLocalFileHandoffEvidence: null,
+  reportBinaryExportProofEvidence: null,
   aiProviderConfigured: false,
   aiProviderProofReady: false,
   aiProviderEvidence: null,
@@ -213,6 +216,12 @@ function normalizeStorageProviderEvidence(
 function normalizeRecordsLocalFileHandoffEvidence(
   value: RecordsLocalFileHandoffProofEvidence | null | undefined,
 ): RecordsLocalFileHandoffProofEvidence | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
+function normalizeReportBinaryExportProofEvidence(
+  value: ReportBinaryExportProofEvidence | null | undefined,
+): ReportBinaryExportProofEvidence | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value : null;
 }
 
@@ -273,6 +282,9 @@ export function normalizeLaunchProviderProfile(input: LaunchProviderProfileInput
     storageProviderEvidence: normalizeStorageProviderEvidence(source.storageProviderEvidence),
     recordsLocalFileHandoffEvidence: normalizeRecordsLocalFileHandoffEvidence(
       source.recordsLocalFileHandoffEvidence,
+    ),
+    reportBinaryExportProofEvidence: normalizeReportBinaryExportProofEvidence(
+      source.reportBinaryExportProofEvidence,
     ),
     aiProviderConfigured: Boolean(source.aiProviderConfigured),
     aiProviderProofReady: Boolean(source.aiProviderProofReady),

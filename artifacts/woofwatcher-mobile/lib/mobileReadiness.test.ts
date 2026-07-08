@@ -3585,7 +3585,11 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
   );
   assert.match(
     careTwinQaRoute,
-    /providerStorageEvidence:\s*launchProviderSetupPlan\.providerInput\.storageProviderEvidence\s*\?\s*\[launchProviderSetupPlan\.providerInput\.storageProviderEvidence\]\s*:\s*\[\]/,
+    /providerStorageEvidence:\s*savedProof\.providerStorageEvidence/,
+  );
+  assert.match(
+    careTwinQaRoute,
+    /launchProviderSetupPlan\.providerInput\.storageProviderEvidence\s*\?\s*\[launchProviderSetupPlan\.providerInput\.storageProviderEvidence\]\s*:\s*\[\]/,
   );
   assert.match(records, /import \* as FileSystem from "expo-file-system\/legacy"/);
   assert.match(records, /buildReportArtifactExportFilePlan/);
@@ -4919,6 +4923,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(careContext, /careEntryProviderSyncEvidence\?:\s*CareEntryProviderSyncProofEvidence \| null/);
   assert.match(careContext, /storageProviderEvidence\?:\s*LaunchStorageProviderEvidence \| null/);
   assert.match(careContext, /recordsLocalFileHandoffEvidence\?:\s*RecordsLocalFileHandoffProofEvidence \| null/);
+  assert.match(careContext, /reportBinaryExportProofEvidence\?:\s*ReportBinaryExportProofEvidence \| null/);
   assert.match(careContext, /aiProviderEvidence\?:\s*AiProviderProofEvidence \| null/);
   assert.match(careContext, /paymentsProviderEvidence\?:\s*PaymentsProviderProofManifestInput \| null/);
   assert.match(careContext, /pushNotificationsProofEvidence\?:\s*PushNotificationsProofEvidence \| null/);
@@ -4944,6 +4949,9 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(providerSetup, /RecordsLocalFileHandoffProofEvidence/);
   assert.match(providerSetup, /recordsLocalFileHandoffEvidence\?:\s*RecordsLocalFileHandoffProofEvidence \| null/);
   assert.match(providerSetup, /recordsLocalFileHandoffEvidence:\s*normalizeRecordsLocalFileHandoffEvidence\(\s*source\.recordsLocalFileHandoffEvidence,\s*\)/);
+  assert.match(providerSetup, /ReportBinaryExportProofEvidence/);
+  assert.match(providerSetup, /reportBinaryExportProofEvidence\?:\s*ReportBinaryExportProofEvidence \| null/);
+  assert.match(providerSetup, /reportBinaryExportProofEvidence:\s*normalizeReportBinaryExportProofEvidence\(\s*source\.reportBinaryExportProofEvidence,\s*\)/);
   assert.match(providerSetup, /authSetupProofEvidence\?:\s*AuthSetupProofManifestInput \| null/);
   assert.match(providerSetup, /authSetupProofEvidence:\s*normalizeAuthSetupProofEvidence\(source\.authSetupProofEvidence\)/);
   assert.match(providerSetup, /careEntryProviderSyncEvidence\?:\s*CareEntryProviderSyncProofEvidence \| null/);
@@ -4970,6 +4978,11 @@ test("keeps More household, tools, and diet sections on shared board card anatom
     /buildRecordsLocalFileHandoffProofManifest\(\s*state\.launchProviderProfile\.recordsLocalFileHandoffEvidence \?\? undefined,\s*\)/,
   );
   assert.doesNotMatch(careTwinQaRoute, /buildRecordsLocalFileHandoffProofManifest\(\{\}\)/);
+  assert.match(careTwinQaRoute, /const savedProof = state\.launchProviderProfile\.reportBinaryExportProofEvidence \?\? \{\}/);
+  assert.match(careTwinQaRoute, /generatedCarePassPdf:\s*savedProof\.generatedCarePassPdf/);
+  assert.match(careTwinQaRoute, /generatedDogIdPng:\s*savedProof\.generatedDogIdPng/);
+  assert.match(careTwinQaRoute, /nativeArtifactEvidence:\s*savedProof\.nativeArtifactEvidence/);
+  assert.match(careTwinQaRoute, /providerStorageEvidence:\s*savedProof\.providerStorageEvidence/);
   assert.match(
     careTwinQaRoute,
     /deriveCareEntryProviderSyncProof\(state\.launchProviderProfile\.careEntryProviderSyncEvidence\)/,

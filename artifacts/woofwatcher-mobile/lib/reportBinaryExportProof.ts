@@ -18,6 +18,8 @@ export interface ReportBinaryExportProofManifestInput {
   nativeArtifactEvidenceApproved: boolean;
 }
 
+export type ReportBinaryExportProofEvidence = Partial<ReportBinaryExportProofManifestInput>;
+
 export interface ReportGeneratedBinaryArtifactProof {
   fileName: string;
   mimeType: "application/pdf" | "image/png";

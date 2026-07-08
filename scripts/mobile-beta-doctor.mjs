@@ -1249,6 +1249,31 @@ check(
     : "preserve and forward Records native local-file proof evidence from Provider Launch Setup into the focused QA mission",
 );
 
+const reportBinaryExportProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
+  "reportBinaryExportProofEvidence?: ReportBinaryExportProofEvidence | null",
+  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
+])
+  && includesAll(launchProviderSetupSource, [
+    "ReportBinaryExportProofEvidence",
+    "reportBinaryExportProofEvidence?: ReportBinaryExportProofEvidence | null",
+    "reportBinaryExportProofEvidence: normalizeReportBinaryExportProofEvidence",
+  ])
+  && includesAll(careTwinQaRouteSource, [
+    "const savedProof = state.launchProviderProfile.reportBinaryExportProofEvidence ?? {}",
+    "generatedCarePassPdf: savedProof.generatedCarePassPdf",
+    "generatedDogIdPng: savedProof.generatedDogIdPng",
+    "nativeArtifactEvidence: savedProof.nativeArtifactEvidence",
+    "providerStorageEvidence:",
+    "savedProof.providerStorageEvidence",
+  ]);
+check(
+  "report binary export proof evidence propagation is source-backed",
+  reportBinaryExportProofEvidencePropagationIsSourceBacked,
+  reportBinaryExportProofEvidencePropagationIsSourceBacked
+    ? "Focused Report Binary Export proof mission consumes saved generated artifact, native share/reopen, and provider storage evidence from the durable Provider Launch Setup profile"
+    : "preserve and forward Report Binary Export generated artifact, native proof, and provider storage evidence from Provider Launch Setup into the focused QA mission",
+);
+
 const accountDeletionProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
   "accountDeletionEvidence?: AccountDeletionProofEvidence | null",
   "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",

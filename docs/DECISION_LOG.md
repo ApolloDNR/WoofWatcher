@@ -12,6 +12,35 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-07-08: Report Binary Export Proof Must Use Saved Evidence
+
+Decision: Report Binary Export QA must preserve and consume saved
+`reportBinaryExportProofEvidence` from Provider Launch Setup before the focused
+helper can mark generated PDF, PNG, native artifact, or provider storage rows
+ready.
+
+Reason: The Report Binary Export proof manifest asks for concrete local binary
+artifact proof, native share/reopen proof, and provider storage proof. If the
+focused QA route relies on hardcoded filenames or setup-only storage fallback
+state, real saved proof can be stranded and the helper can misrepresent what is
+still blocked.
+
+Consequences:
+
+- `LaunchProviderProfile` preserves `reportBinaryExportProofEvidence`.
+- CareContext keeps that field when saved or imported care documents merge.
+- `/care-twin-qa?qaSurface=report-binary-export-proof` feeds saved PDF, PNG,
+  native artifact, and provider storage evidence into
+  `buildReportBinaryExportProofManifest`.
+- Raw setup booleans still cannot prove native binary export readiness,
+  provider upload, store review, public launch, or Apollo sign-off.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains in-app proof attachment editing, a native
+PDF/PNG generator/share flow, or Apollo attaches real storage and native binary
+artifact proof files that should be validated beyond source-path guards.
+
 ### 2026-07-08: Doctor Guards Auth And Payments Evidence Propagation
 
 Decision: The machine-readable mobile beta doctor should have named

@@ -4182,3 +4182,25 @@ Branch CI proved implementation commit `db6f280c` in `WoofWatcher Verify` run
 doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and
 Complete job all passing. Rerun CI after the proof-record docs commit before
 dependency proof is current for the final branch tip.
+
+## 2026-07-08 Report Binary Export Proof Evidence Propagation
+
+The Report Binary Export proof evidence propagation pass keeps saved/generated
+binary artifact proof from being stranded before focused QA review.
+`LaunchProviderProfile` now preserves `reportBinaryExportProofEvidence`,
+CareContext persists it, and
+`/care-twin-qa?qaSurface=report-binary-export-proof` feeds the saved Care Pass
+PDF, Dog ID PNG, native artifact/share evidence, and provider storage evidence
+into `buildReportBinaryExportProofManifest`.
+
+Local proof passed mobile readiness `114/114`, the full zero-dependency
+API/mobile/PWA/care-domain suite with the dot reporter, PixelLab `ok=149
+missing=0 invalid=0`, direct JSON doctor with `report binary export proof
+evidence propagation is source-backed` as `PASS`, and `git diff --check` with
+expected CRLF warnings only. Root TypeScript could not run in this local
+worktree because `node_modules\typescript\bin\tsc` is missing. Direct JSON
+doctor remains blocked by local pnpm `11.7.0` versus pinned `10.24.0` and the
+mobile package missing installed Expo dependencies. This still does not attach
+real iOS/Android PDF/PNG share/reopen proof, structured provider storage proof
+files, provider upload proof, store review, public launch, or Apollo sign-off.
+Rerun branch CI after this commit before treating dependency proof as current.
