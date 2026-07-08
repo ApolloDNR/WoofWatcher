@@ -416,7 +416,9 @@ export default function HomeScreen() {
     () => getAvatarTemplate(avatarConfig.templateId),
     [avatarConfig.templateId],
   );
-  const caregiver = state.caregivers[0]?.name ?? "Emma";
+  // Never invent a person: with no caregivers yet, care is simply "You".
+  const hasCaregivers = state.caregivers.length > 0;
+  const caregiver = state.caregivers[0]?.name ?? "You";
   const timeLabel = useMemo(
     () => shortTime(new Date(now).toISOString()),
     [now],
@@ -574,13 +576,13 @@ export default function HomeScreen() {
     }
     return [
       {
-        label: `Walk with ${caregiver}`,
+        label: hasCaregivers ? `Walk with ${caregiver}` : "Evening walk",
         time: "5:30 PM",
         icon: "walk" as PixelIconName,
         route: homeLogDetailRoute("walk", now),
         meta: "Start",
         kind: "suggestion" as const,
-        owner: caregiver,
+        owner: hasCaregivers ? caregiver : undefined,
       },
       {
         label: "Dinner",
@@ -608,6 +610,7 @@ export default function HomeScreen() {
     snoozedUntil,
     state.routines,
     caregiver,
+    hasCaregivers,
     now,
   ]);
 
@@ -1793,7 +1796,13 @@ export default function HomeScreen() {
                     >
                       {nextPrimary.kind === "open-loop"
                         ? nextDetail
-                        : `${nextPrimary.time}${nextPrimary.owner ? ` · ${nextPrimary.owner} assigned` : ""}`}
+                        : `${nextPrimary.time}${
+                            nextPrimary.owner
+                              ? ` · ${nextPrimary.owner} assigned`
+                              : nextPrimary.kind === "suggestion"
+                                ? " · Suggested"
+                                : ""
+                          }`}
                     </Text>
                     <View style={s.nextButtonRow}>
                       <Pressable
