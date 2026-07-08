@@ -12,6 +12,16 @@ Each decision should include:
 
 ## Decisions
 
+### 2026-07-07: Report Handoff Prep Combines Saved Sources, Local Files, And Dog ID Readiness
+
+Decision: Records and WoofGuide should reuse `summarizeReportHandoffPrep` before native PDF/export, server-backed report storage, or provider-backed document storage exists. The helper may combine saved local report sources, local receipt/document attachment readiness, Dog ID credential readiness, owner-review lines, and provider-gated lifecycle boundaries.
+
+Reason: Owners need one pre-share checklist before handing context to a sitter, trainer, caregiver, or vet. Report History already tracks reusable local sources, Records Vault tracks local file readiness, and Dog ID readiness tracks credential gaps; combining them prevents Records and WoofGuide from drifting into different handoff claims.
+
+Owner: Codex.
+
+Revisit trigger: Native PDF/image export, server-backed report artifacts, provider-backed document or credential storage, cloud sharing, persisted assistant drafts, permission-aware assistant writes, share revocation, or storage retention/deletion policy become active release work.
+
 ### 2026-07-01: Report History Pre-Share Review Guidance Is Shared
 
 Decision: Records Report History and WoofGuide saved-report drafts should reuse a shared pre-share review line from `summarizeReportArtifacts`. The line may tell owners to review the latest local source for stale routines, medications, records, and audience before resending, but it must not imply provider-backed storage, native export, cloud sharing, retention, deletion, or unsupervised assistant actions are ready.

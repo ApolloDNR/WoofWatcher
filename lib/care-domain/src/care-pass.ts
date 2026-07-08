@@ -12,6 +12,9 @@ import {
   getPetCredentialPrintView,
   summarizeRecordVault,
   type PetCredential,
+  type PetCredentialCaregiver,
+  type PetCredentialReadiness,
+  type RecordAttachmentSummary,
 } from "./record-vault.ts";
 import { deriveTrainingProgress, type TrainingProgressItem } from "./training-progress.ts";
 import { deriveWaterHydration } from "./water.ts";
@@ -183,6 +186,24 @@ export interface ReportArtifactSummary {
   reviewLine: string;
   cleanupLine: string;
   boundaryLine: string;
+}
+
+export interface ReportHandoffPrepInput {
+  artifacts?: readonly ReportArtifact[];
+  records?: readonly CarePassRecord[];
+  profile?: CarePassProfile;
+  caregivers?: readonly PetCredentialCaregiver[];
+}
+
+export interface ReportHandoffPrepSummary {
+  status: "ready" | "needs_review" | "no_sources";
+  summary: string;
+  reviewLines: string[];
+  action: string;
+  boundaryLine: string;
+  reportHistory: ReportArtifactSummary;
+  attachmentSummary: RecordAttachmentSummary;
+  credentialReadiness: PetCredentialReadiness;
 }
 
 export interface ReportArtifactSourceDescription {
@@ -1461,5 +1482,51 @@ export function summarizeReportArtifacts(
     reviewLine: "Review the latest local source for stale routines, medications, records, and audience before resending.",
     cleanupLine: "Remove obsolete local sources only after review; this updates local Report History and does not revoke shares or change provider retention.",
     boundaryLine: "Saved report artifacts are local reusable sources; native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are not enabled.",
+  };
+}
+
+export function summarizeReportHandoffPrep(input: ReportHandoffPrepInput = {}): ReportHandoffPrepSummary {
+  const reportHistory = summarizeReportArtifacts(input.artifacts ?? []);
+  const vault = summarizeRecordVault(input.records ?? []);
+  const attachmentSummary = vault.localAttachmentSummary;
+  const credentialReadiness = derivePetCredentialReadiness({
+    profile: input.profile,
+    caregivers: input.caregivers,
+    records: input.records,
+  });
+
+  const attachmentLine = attachmentSummary.totalAttachable
+    ? `${attachmentSummary.withAttachment} of ${attachmentSummary.totalAttachable} receipt/document files attached locally.`
+    : "No receipt or document records are ready for local attachment review yet.";
+  const credentialLine = `Dog ID has ${credentialReadiness.readyCount} of ${credentialReadiness.totalCount} credential fields ready.`;
+  const reviewLines = [
+    reportHistory.reviewLine,
+    attachmentSummary.missingAttachmentTitles.length
+      ? `Attach local files before sharing: ${attachmentSummary.missingAttachmentTitles.slice(0, 3).join(", ")}.`
+      : "Local receipt/document attachments are ready for the records currently on file.",
+    credentialReadiness.missingLabels.length
+      ? `Fill missing Dog ID fields before a credential handoff: ${credentialReadiness.missingLabels.slice(0, 4).join(", ")}.`
+      : "Dog ID credential fields are ready for local printable-source sharing.",
+  ];
+
+  const status =
+    reportHistory.total === 0
+      ? "no_sources"
+      : attachmentSummary.missingAttachment > 0 || credentialReadiness.status === "needs_info"
+        ? "needs_review"
+        : "ready";
+
+  return {
+    status,
+    summary: `${reportHistory.summary} ${attachmentLine} ${credentialLine}`,
+    reviewLines,
+    action:
+      reportHistory.total > 0
+        ? "Open Records Report History to review, resend, share printable source, or remove obsolete local sources after owner review."
+        : "Share a Care Pass, Progress Report, or Dog ID from Records to create the first local handoff source.",
+    boundaryLine: `${reportHistory.boundaryLine} ${attachmentSummary.boundaryLine} ${credentialReadiness.boundaryLine}`,
+    reportHistory,
+    attachmentSummary,
+    credentialReadiness,
   };
 }

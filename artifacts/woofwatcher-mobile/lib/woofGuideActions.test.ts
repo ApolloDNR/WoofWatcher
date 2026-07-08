@@ -385,6 +385,9 @@ test("surfaces saved report history without claiming native or server-backed exp
   assert.match(reportAction?.draft?.body ?? "", /Resend or share printable source/);
   assert.match(reportAction?.draft?.body ?? "", /Review the latest local source/);
   assert.match(reportAction?.draft?.body ?? "", /routines, medications, records, and audience/);
+  assert.match(reportAction?.draft?.body ?? "", /Local receipt\/document attachments are ready|Attach local files before sharing/);
+  assert.match(reportAction?.draft?.body ?? "", /Dog ID credential fields are ready|Fill missing Dog ID fields/);
+  assert.match(reportAction?.draft?.body ?? "", /Open Records Report History to review/);
   assert.match(reportAction?.draft?.body ?? "", /Remove obsolete local sources only after review/);
   assert.match(reportAction?.draft?.body ?? "", /does not revoke shares/);
   assert.match(reportAction?.draft?.safety ?? "", /server-backed report storage/);

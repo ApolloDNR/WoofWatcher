@@ -12,6 +12,13 @@ CI must pass `WoofWatcher Verify` on `main`.
 
 Latest local evidence, 2026-07-01:
 
+- PASS: 290 focused mobile/domain tests on 2026-07-07 for the owner-reviewed report handoff prep slice:
+  `node --experimental-strip-types --test artifacts/woofwatcher-mobile/lib/*.test.ts lib/care-domain/test/*.test.ts`.
+  Coverage now includes `summarizeReportHandoffPrep`, Mobile Records' Owner-reviewed handoff prep summary, and WoofGuide saved-report draft reuse of local report source, receipt/document attachment, and Dog ID readiness boundaries. Node printed the existing `MODULE_TYPELESS_PACKAGE_JSON` warning for mobile test files; tests passed.
+- PASS: PixelLab asset verifier on 2026-07-07 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid for the owner-reviewed report handoff prep slice. Node printed the existing `MODULE_TYPELESS_PACKAGE_JSON` warning for the verifier script; verification passed.
+- PASS: 113 targeted care-domain/mobile tests on 2026-07-07 after JSX cleanup:
+  `node --experimental-strip-types --test lib/care-domain/test/care-pass.test.ts artifacts/woofwatcher-mobile/lib/woofGuideActions.test.ts artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+  Node printed the existing `MODULE_TYPELESS_PACKAGE_JSON` warning for mobile test files; tests passed.
 - PASS: GitHub Actions `WoofWatcher Verify` run `28525398502` on 2026-07-01 for commit `5c60e01` completed the real `Install, Test, Typecheck, Build` job successfully after the Report History pre-share review guidance slice.
 - PASS: 289 focused tests with the command above on 2026-07-01, now including shared Report History pre-share review guidance from `summarizeReportArtifacts.reviewLine` and Mobile Records/WoofGuide wiring so owners review stale routines, medications, records, and audience before resending local handoff sources.
 - PASS: PixelLab asset verifier on 2026-07-01 checked 353 Phoenix room/sprite/template assets with 0 missing and 0 invalid after the Report History pre-share review guidance slice.

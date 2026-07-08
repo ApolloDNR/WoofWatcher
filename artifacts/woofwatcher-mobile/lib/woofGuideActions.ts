@@ -8,6 +8,7 @@ import {
   normalizeCareEventType,
   summarizePetCredentialArtifacts,
   summarizeReportArtifacts,
+  summarizeReportHandoffPrep,
   summarizeRecordVault,
   type ReportArtifact,
 } from "../../../lib/care-domain/src/index.ts";
@@ -379,6 +380,12 @@ function reportHistoryDraft(state: WoofGuideActionState): WoofGuideActionDraft |
 
   const name = dogName(state);
   const latestSource = describeReportArtifactSource(summary.latest);
+  const handoffPrep = summarizeReportHandoffPrep({
+    artifacts: state.reportArtifacts,
+    records: state.records,
+    profile: state.profile,
+    caregivers: state.caregivers,
+  });
   return {
     kind: "report_history",
     title: "Review saved handoff sources",
@@ -390,10 +397,11 @@ function reportHistoryDraft(state: WoofGuideActionState): WoofGuideActionDraft |
       latestSource.metadataLine,
       latestSource.fileLine,
       summary.action,
-      summary.reviewLine,
+      ...handoffPrep.reviewLines,
+      handoffPrep.action,
       summary.cleanupLine,
       latestSource.lifecycleLine,
-      summary.boundaryLine,
+      handoffPrep.boundaryLine,
     ].filter(Boolean).join("\n"),
     cta: "Open Report History",
     safety: "Owner-reviewed resend only; native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are not enabled.",
