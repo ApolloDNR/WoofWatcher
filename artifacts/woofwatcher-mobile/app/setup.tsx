@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -21,6 +20,7 @@ import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/co
 import { isClerkConfigured, useWoofAuth } from "@/lib/auth";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
+import { notifyDialog } from "@/lib/confirmDialog";
 import {
   getKeyboardAvoidingVerticalOffset,
   getRouteTopPadding,
@@ -115,9 +115,13 @@ export default function SetupScreen() {
     if (!canSave) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     updateCareDoc((doc) => applySetupWizardDraft(doc, draft));
-    Alert.alert("Care foundation saved", `${confirmation.detail}\n\n${confirmation.providerBoundary}`, [
-      { text: "Open Today", onPress: () => router.replace("/(tabs)") },
-    ]);
+    // Alert is a no-op on react-native-web, so the confirmation and the
+    // hand-off to Today must both work without it.
+    notifyDialog(
+      "Care foundation saved",
+      `${confirmation.detail}\n\n${confirmation.providerBoundary}`,
+    );
+    router.replace("/(tabs)");
   };
 
   const finishLater = () => {
@@ -231,6 +235,9 @@ export default function SetupScreen() {
                 return (
                   <Pressable
                     key={item.value}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Routine type ${item.label}`}
+                    accessibilityState={{ selected }}
                     onPress={() => {
                       Haptics.selectionAsync();
                       setField("routineType", item.value);
@@ -377,6 +384,9 @@ export default function SetupScreen() {
             <Pressable
               onPress={saveSetup}
               disabled={!canSave}
+              accessibilityRole="button"
+              accessibilityLabel={householdReady ? "Save foundation" : "Add invite code"}
+              accessibilityState={{ disabled: !canSave }}
               style={({ pressed }) => [
                 s.saveBtn,
                 { backgroundColor: canSave ? colors.primary : colors.border, opacity: pressed ? 0.82 : 1 },
@@ -387,7 +397,12 @@ export default function SetupScreen() {
                 {householdReady ? "Save foundation" : "Add invite code"}
               </Text>
             </Pressable>
-            <Pressable onPress={finishLater} style={({ pressed }) => [s.laterBtn, { opacity: pressed ? 0.65 : 1 }]}>
+            <Pressable
+              onPress={finishLater}
+              accessibilityRole="button"
+              accessibilityLabel="Finish setup later"
+              style={({ pressed }) => [s.laterBtn, { opacity: pressed ? 0.65 : 1 }]}
+            >
               <Text style={[s.laterText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Finish later</Text>
             </Pressable>
             {ownerOps ? (

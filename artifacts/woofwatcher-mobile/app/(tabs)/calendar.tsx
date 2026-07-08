@@ -269,6 +269,10 @@ export default function CalendarScreen() {
     () => deriveRoutineBoard({ routines: sortedRoutines, entries, caregivers, now }),
     [sortedRoutines, entries, caregivers, now],
   );
+  // Fresh installs have no routines yet, so the schedule falls back to a
+  // hardcoded sample day. Those rows have no backing routine, so they must
+  // render as clearly-labeled, non-interactive preview content.
+  const isSampleSchedule = routineBoard.items.length === 0;
   const scheduleRows = useMemo(() => {
     const fallback = [
       { id: "breakfast", label: "Breakfast", type: "meal", time: "7:00 AM", detail: "1 1/4 cups", status: "done" as RoutineBoardStatus },
@@ -341,9 +345,11 @@ export default function CalendarScreen() {
       : nextScheduleRow?.status === "due"
         ? colors.amber
         : colors.sage;
-  const commandDeckSpeech = nextScheduleRow
-    ? `${nextScheduleRow.label} is next at ${nextScheduleRow.time}.`
-    : "Phoenix has a clear care board.";
+  const commandDeckSpeech = isSampleSchedule
+    ? "Here's a sample day. Add your first routine to make it yours."
+    : nextScheduleRow
+      ? `${nextScheduleRow.label} is next at ${nextScheduleRow.time}.`
+      : "Phoenix has a clear care board.";
 
   // Group upcoming one-off events by date.
   const upcoming = useMemo(() => {
@@ -622,19 +628,35 @@ export default function CalendarScreen() {
   const planMissionRows: PlanMissionRow[] = [];
 
   if (nextScheduleRow) {
-    planMissionRows.push({
-      id: "next-plan",
-      eyebrow: "Next Mission",
-      title: nextScheduleRow.label,
-      detail: `${nextScheduleRow.time} - ${nextScheduleRow.detail}`,
-      icon: routinePixelIcon(nextScheduleRow.type),
-      tone: commandDeckTone,
-      actionLabel: nextScheduleRoutine ? "Open" : nextScheduleStatus,
-      onPress: () => {
-        Haptics.selectionAsync();
-        if (nextScheduleRoutine) openBoardRoutine(nextScheduleRoutine);
-      },
-    });
+    planMissionRows.push(
+      isSampleSchedule
+        ? {
+            id: "next-plan",
+            eyebrow: "Next Mission",
+            title: "Add your first routine",
+            detail: "The schedule shows a sample day until you do",
+            icon: routinePixelIcon(nextScheduleRow.type),
+            tone: commandDeckTone,
+            actionLabel: "Add",
+            onPress: () => {
+              Haptics.selectionAsync();
+              openNewRoutine();
+            },
+          }
+        : {
+            id: "next-plan",
+            eyebrow: "Next Mission",
+            title: nextScheduleRow.label,
+            detail: `${nextScheduleRow.time} - ${nextScheduleRow.detail}`,
+            icon: routinePixelIcon(nextScheduleRow.type),
+            tone: commandDeckTone,
+            actionLabel: nextScheduleRoutine ? "Open" : nextScheduleStatus,
+            onPress: () => {
+              Haptics.selectionAsync();
+              if (nextScheduleRoutine) openBoardRoutine(nextScheduleRoutine);
+            },
+          },
+    );
   }
 
   planMissionRows.push({
@@ -741,7 +763,7 @@ export default function CalendarScreen() {
                 <View style={[s.commandDeckChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <PixelIcon name={nextScheduleRow ? routinePixelIcon(nextScheduleRow.type) : "clock"} size={17} />
                   <Text style={[s.commandDeckChipText, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
-                    {nextScheduleStatus}
+                    {isSampleSchedule ? "Sample" : nextScheduleStatus}
                   </Text>
                 </View>
               </View>
@@ -801,10 +823,14 @@ export default function CalendarScreen() {
                   {scheduleTab === "today" ? "Today's care plan" : scheduleTab === "tomorrow" ? "Tomorrow preview" : "Weekly rhythm"}
                 </Text>
               </View>
-              <BoardPill
-                label={openScheduleCount === 0 ? "Clear" : `${openScheduleCount} open`}
-                tone={openScheduleCount === 0 ? colors.sage : commandDeckTone}
-              />
+              {isSampleSchedule ? (
+                <BoardPill label="Sample day" tone={colors.mutedForeground} />
+              ) : (
+                <BoardPill
+                  label={openScheduleCount === 0 ? "Clear" : `${openScheduleCount} open`}
+                  tone={openScheduleCount === 0 ? colors.sage : commandDeckTone}
+                />
+              )}
             </View>
             <BoardSegmentTabs
               segments={[
@@ -823,8 +849,38 @@ export default function CalendarScreen() {
             <View style={s.scheduleList}>
               {scheduleRows.map((row, index) => {
                 const done = row.status === "done";
-                const sourceRoutine = routineBoard.items.find((item) => item.id === row.id);
                 const pill = scheduleStatusPill(row.status, index === firstUpcomingScheduleIndex);
+                if (isSampleSchedule) {
+                  // Preview-only sample rows: no backing routine exists, so no
+                  // Pressable wrappers and no mark-done toggles render here.
+                  return (
+                    <View
+                      key={`${row.id}-${index}`}
+                      accessible
+                      accessibilityLabel={`Sample day preview: ${row.time} ${row.label}`}
+                      style={[
+                        s.scheduleRow,
+                        s.scheduleSampleRow,
+                        index > 0 && { borderTopColor: colors.border, borderTopWidth: 1 },
+                      ]}
+                    >
+                      <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        {row.time}
+                      </Text>
+                      <PixelIcon name={routinePixelIcon(row.type)} size={22} />
+                      <View style={s.scheduleRowCopy}>
+                        <Text style={[s.scheduleTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          {row.label}
+                        </Text>
+                        <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          {scheduleTab === "week" ? `${dayLabel(today)} - ${row.detail}` : row.detail}
+                        </Text>
+                      </View>
+                      <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
+                    </View>
+                  );
+                }
+                const sourceRoutine = routineBoard.items.find((item) => item.id === row.id);
                 return (
                   <Pressable
                     key={`${row.id}-${index}`}
@@ -871,10 +927,16 @@ export default function CalendarScreen() {
               })}
             </View>
 
+            {isSampleSchedule ? (
+              <Text style={[s.scheduleSampleNote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                This is a sample day to show how your plan will look. Add your first routine to make it real.
+              </Text>
+            ) : null}
+
             <BoardActionButton
-              label="Add Plan"
+              label={isSampleSchedule ? "Add your first routine" : "Add Plan"}
               icon="add"
-              accessibilityLabel="Add plan"
+              accessibilityLabel={isSampleSchedule ? "Add your first routine" : "Add plan"}
               onPress={() => {
                 Haptics.selectionAsync();
                 openNewRoutine();
@@ -1907,6 +1969,8 @@ const s = StyleSheet.create({
   scheduleTitle: { fontSize: 13.5 },
   scheduleDetail: { fontSize: 11.5, marginTop: 2 },
   scheduleRowPill: { alignSelf: "center" },
+  scheduleSampleRow: { opacity: 0.62 },
+  scheduleSampleNote: { fontSize: 11.5, lineHeight: 16, marginTop: 10, textAlign: "center" },
   scheduleStatus: {
     minWidth: MIN_MOBILE_TOUCH_TARGET,
     minHeight: MIN_MOBILE_TOUCH_TARGET,

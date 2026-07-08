@@ -4,12 +4,10 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   Modal,
   Platform,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -35,7 +33,9 @@ import {
   type AccountSafetyStatus,
 } from "@/lib/privacySafety";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
+import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
+import { shareTextPayload } from "@/lib/shareText";
 import {
   buildSupportRunbookShareText,
   deriveSupportRunbookPlan,
@@ -197,19 +197,19 @@ export default function PrivacyScreen() {
   const shareExport = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const fresh = buildPrivacyExportBundle(state, context, Date.now());
-    Share.share({
+    void shareTextPayload({
       title: `WoofWatcher care export - ${fresh.dogName}`,
       message: serializePrivacyExportBundle(fresh),
-    }).catch(() => Alert.alert("Export unavailable", "The device share sheet could not open."));
+    });
   };
 
   const shareDeletionRequest = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const request = buildAccountDeletionRequest(state, context, Date.now());
-    Share.share({
+    void shareTextPayload({
       title: request.subject,
       message: `${request.subject}\n\n${request.body}`,
-    }).catch(() => Alert.alert("Deletion request", request.body));
+    });
   };
 
   const shareSupportRunbook = () => {
@@ -218,10 +218,10 @@ export default function PrivacyScreen() {
       appName: "WoofWatcher",
       generatedAtIso: new Date().toISOString(),
     });
-    Share.share({
+    void shareTextPayload({
       title: "WoofWatcher Support Runbook",
       message,
-    }).catch(() => Alert.alert("Support runbook", message));
+    });
   };
 
   const openSupportLegalProofMission = () => {
@@ -236,37 +236,30 @@ export default function PrivacyScreen() {
 
   const confirmEraseAllLocalData = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert(
-      "Delete all data on this device?",
-      `This permanently removes every log, routine, record, memory, report, and avatar for ${state.profile.name} from this device. WoofWatcher keeps no copy anywhere else. Export first if you want a backup.`,
+    confirmThroughSteps(
       [
-        { text: "Cancel", style: "cancel" },
         {
-          text: "Delete everything",
-          style: "destructive",
-          onPress: () => {
-            Alert.alert(
-              "This cannot be undone",
-              "Delete all WoofWatcher data from this device now?",
-              [
-                { text: "Keep my data", style: "cancel" },
-                {
-                  text: "Yes, delete it all",
-                  style: "destructive",
-                  onPress: () => {
-                    void eraseAllLocalData().then(() => {
-                      Alert.alert(
-                        "All data deleted",
-                        "WoofWatcher has been reset to a fresh household on this device.",
-                      );
-                    });
-                  },
-                },
-              ],
-            );
-          },
+          title: "Delete all data on this device?",
+          message: `This permanently removes every log, routine, record, memory, report, and avatar for ${state.profile.name} from this device. WoofWatcher keeps no copy anywhere else. Export first if you want a backup.`,
+          confirmLabel: "Delete everything",
+          destructive: true,
+        },
+        {
+          title: "This cannot be undone",
+          message: "Delete all WoofWatcher data from this device now?",
+          confirmLabel: "Yes, delete it all",
+          cancelLabel: "Keep my data",
+          destructive: true,
         },
       ],
+      () => {
+        void eraseAllLocalData().then(() => {
+          notifyDialog(
+            "All data deleted",
+            "WoofWatcher has been reset to a fresh household on this device.",
+          );
+        });
+      },
     );
   };
 
@@ -287,7 +280,7 @@ export default function PrivacyScreen() {
               <Ionicons name="shield-checkmark-outline" size={22} color="#FFFFFF" />
             </View>
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => (router.canGoBack() ? router.back() : router.replace("/more"))}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               accessibilityRole="button"
               accessibilityLabel="Close Privacy and Safety"

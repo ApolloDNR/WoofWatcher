@@ -8,7 +8,6 @@ import {
   Pressable,
   Platform,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   View,
@@ -38,6 +37,7 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { pixelImageStyle } from "@/lib/pixelRendering";
+import { shareTextPayload } from "@/lib/shareText";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -244,9 +244,7 @@ export default function AdventureScreen() {
       adventure.privacyBoundary,
     ].join("\n");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message, title: `WoofWatcher Adventure - ${adventure.petName}` }).catch(() =>
-      Alert.alert("Adventure Mode", message),
-    );
+    void shareTextPayload({ message, title: `WoofWatcher Adventure - ${adventure.petName}` });
   };
 
   const shareAdventureMemory = (memory: AdventureMemory) => {
@@ -266,9 +264,7 @@ export default function AdventureScreen() {
       "Photos and provider sync stay private/local until storage rules are approved.",
     ].join("\n");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message, title: `WoofWatcher Memory - ${memory.petName}` }).catch(() =>
-      Alert.alert("Adventure memory", message),
-    );
+    void shareTextPayload({ message, title: `WoofWatcher Memory - ${memory.petName}` });
   };
 
   return (
@@ -288,7 +284,7 @@ export default function AdventureScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Back to More"
-              onPress={() => router.back()}
+              onPress={() => (router.canGoBack() ? router.back() : router.replace("/more"))}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={s.heroIcon}
             >
