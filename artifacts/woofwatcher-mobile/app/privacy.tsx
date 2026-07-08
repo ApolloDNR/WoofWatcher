@@ -297,7 +297,9 @@ export default function PrivacyScreen() {
           </View>
           <Text style={[s.heroTitle, { fontFamily: DISPLAY }]}>Privacy & Safety</Text>
           <Text style={[s.heroSub, { fontFamily: "Inter_500Medium" }]}>
-            Export care data, prepare deletion requests, and review the rules that keep AI, documents, and payments gated.
+            {ownerOps
+              ? "Export care data, prepare deletion requests, and review the rules that keep AI, documents, and payments gated."
+              : "Your household's care data lives on this device. Export it, read the policy, or delete everything at any time."}
           </Text>
         </LinearGradient>
 

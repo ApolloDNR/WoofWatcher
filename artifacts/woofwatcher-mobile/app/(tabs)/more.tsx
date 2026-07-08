@@ -1643,7 +1643,7 @@ export default function MoreScreen() {
           <BoardCard style={s.moreDirectoryCard}>
             <BoardSectionHeader
               title="Command Directory"
-              accessory={<BoardPill label="5 hubs" tone={colors.copper} />}
+              accessory={<BoardPill label={`${moreDirectoryItems.length} hubs`} tone={colors.copper} />}
             />
             <View style={s.moreDirectoryList}>
               {moreDirectoryItems.map((item, index) => (

@@ -4665,7 +4665,7 @@ test("keeps More organized around a grouped command directory", () => {
   assert.match(more, /interface MoreDirectoryItem/);
   assert.match(more, /const moreDirectoryItems: MoreDirectoryItem\[\] = \[/);
   assert.match(more, /Command Directory/);
-  assert.match(more, /BoardPill label="5 hubs"/);
+  assert.match(more, /BoardPill label=\{`\$\{moreDirectoryItems\.length\} hubs`\}/);
   assert.match(more, /Care today/);
   assert.match(more, /Household/);
   assert.match(more, /Records & passes/);
