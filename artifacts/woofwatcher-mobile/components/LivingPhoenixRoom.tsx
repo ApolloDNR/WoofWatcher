@@ -456,9 +456,10 @@ export function LivingPhoenixRoom({
         : null,
     [plan.zone, roamEligible],
   );
-  // While a walk session is open the twin is genuinely out of the room, so
-  // every dog layer stands down and the door cue tells the story instead.
-  const roamActive = Boolean(roamPlan && stageSize) && !awayOnWalk;
+  // While a walk session is open the host screen swaps the scene to the
+  // park, so the twin stays visible and walks it - the away cue narrates
+  // the live session on top.
+  const roamActive = Boolean(roamPlan && stageSize);
   const handleStageLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
     setStageSize((prev) =>
@@ -864,7 +865,7 @@ export function LivingPhoenixRoom({
         </View>
       ) : null}
 
-      {layeredStageReady && !roamActive && !awayOnWalk ? (
+      {layeredStageReady && !roamActive ? (
         <Animated.View
           pointerEvents="none"
           style={[
@@ -939,7 +940,7 @@ export function LivingPhoenixRoom({
         </Animated.View>
       ) : null}
 
-      {useFallbackAvatarLayer && !roamActive && !awayOnWalk ? (
+      {useFallbackAvatarLayer && !roamActive ? (
         <Animated.View
           pointerEvents="none"
           style={[

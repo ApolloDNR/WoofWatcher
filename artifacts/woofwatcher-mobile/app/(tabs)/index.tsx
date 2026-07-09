@@ -130,6 +130,10 @@ const todayMetricRouteType: Record<TodayMetricTarget, CareEventType> = {
 // area) and calm wooden floor flows down behind the floating console.
 const HOME_IMMERSIVE_ROOM_DAY = require("@/assets/avatar/rooms/home-fullbleed-day.png");
 const HOME_IMMERSIVE_ROOM_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-night.png");
+// During a real walk session the home scene becomes the park and the twin
+// visibly walks it - the room returns when the walk is finished.
+const HOME_IMMERSIVE_PARK_DAY = require("@/assets/avatar/rooms/home-fullbleed-park-day.png");
+const HOME_IMMERSIVE_PARK_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-park-night.png");
 
 export function homeImmersiveRoomIsNight(hour: number): boolean {
   return hour >= 20 || hour < 6;
@@ -1412,9 +1416,13 @@ export default function HomeScreen() {
           stays legible while the background still peeks through. */}
       <Image
         source={
-          homeImmersiveRoomIsNight(new Date(now).getHours())
-            ? HOME_IMMERSIVE_ROOM_NIGHT
-            : HOME_IMMERSIVE_ROOM_DAY
+          openWalkSession
+            ? homeImmersiveRoomIsNight(new Date(now).getHours())
+              ? HOME_IMMERSIVE_PARK_NIGHT
+              : HOME_IMMERSIVE_PARK_DAY
+            : homeImmersiveRoomIsNight(new Date(now).getHours())
+              ? HOME_IMMERSIVE_ROOM_NIGHT
+              : HOME_IMMERSIVE_ROOM_DAY
         }
         resizeMode="cover"
         style={s.fullBleedArt}
