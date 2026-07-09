@@ -420,6 +420,14 @@ export default function HomeScreen() {
   // Never invent a person: with no caregivers yet, care is simply "You".
   const hasCaregivers = state.caregivers.length > 0;
   const caregiver = state.caregivers[0]?.name ?? "you";
+  // A brand-new household: no care logged and no profile finished yet. We
+  // greet them once (dismissible) and point at setup, without ever blocking
+  // the app - guest/preview mode stays fully usable behind the card.
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const isFreshStart =
+    !hasCaregivers &&
+    state.entries.length === 0 &&
+    !state.profile.breed?.trim();
   const timeLabel = useMemo(
     () => shortTime(new Date(now).toISOString()),
     [now],
@@ -1511,6 +1519,58 @@ export default function HomeScreen() {
               ) : null}
             </Pressable>
           </View>
+
+          {isFreshStart && !welcomeDismissed ? (
+            <View style={[s.welcomeCard, s.softShadow, { backgroundColor: colors.forest }]}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Dismiss welcome"
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                onPress={() => setWelcomeDismissed(true)}
+                style={s.welcomeDismiss}
+              >
+                <Ionicons name="close" size={16} color={colors.primaryForeground} />
+              </Pressable>
+              <Text style={[s.welcomeKicker, { color: colors.amberSoft, fontFamily: "Fredoka_600SemiBold" }]}>
+                WELCOME TO WOOFWATCHER
+              </Text>
+              <Text style={[s.welcomeTitle, { color: colors.primaryForeground, fontFamily: "Fraunces_700Bold" }]}>
+                Let's make {petName} yours
+              </Text>
+              <Text style={[s.welcomeBody, { color: colors.primaryForeground, fontFamily: "Inter_500Medium" }]}>
+                Add your dog's name, breed, and routines so Today, Log, and Records fit your real day. It takes a minute.
+              </Text>
+              <View style={s.welcomeActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Set up ${petName}`}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    router.push("/setup" as never);
+                  }}
+                  style={({ pressed }) => [
+                    s.welcomePrimary,
+                    { backgroundColor: colors.primaryForeground, opacity: pressed ? 0.85 : 1 },
+                  ]}
+                >
+                  <Text style={[s.welcomePrimaryText, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
+                    Set up {petName}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={15} color={colors.forest} />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Explore first"
+                  onPress={() => setWelcomeDismissed(true)}
+                  style={({ pressed }) => [s.welcomeGhost, { opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <Text style={[s.welcomeGhostText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                    Explore first
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
 
           {/* The room is a framed storybook card: day/night art fills the
               frame and the living twin roams inside it, matching Apollo's
@@ -3001,6 +3061,63 @@ const s = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 5 },
     elevation: 2,
+  },
+
+  // First-run welcome (fresh household only)
+  welcomeCard: {
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 14,
+  },
+  welcomeDismiss: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
+  welcomeKicker: {
+    fontSize: 11,
+    letterSpacing: 1.3,
+    marginBottom: 4,
+  },
+  welcomeTitle: {
+    fontSize: 22,
+    marginBottom: 6,
+  },
+  welcomeBody: {
+    fontSize: 13,
+    lineHeight: 19,
+    opacity: 0.92,
+    marginBottom: 14,
+    paddingRight: 8,
+  },
+  welcomeActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  welcomePrimary: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+  },
+  welcomePrimaryText: {
+    fontSize: 14,
+  },
+  welcomeGhost: {
+    paddingHorizontal: 10,
+    paddingVertical: 11,
+  },
+  welcomeGhostText: {
+    fontSize: 13,
   },
 
   // Mock-board heart status card
