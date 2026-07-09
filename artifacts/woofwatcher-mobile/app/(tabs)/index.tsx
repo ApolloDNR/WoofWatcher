@@ -125,8 +125,11 @@ const todayMetricRouteType: Record<TodayMetricTarget, CareEventType> = {
 // pipeline, recomposed to 3:2 for the card). The room follows the
 // household's real clock - lamplit night after 8 PM, daylight from 6 AM -
 // so the world feels alive without faking anything.
-const HOME_IMMERSIVE_ROOM_DAY = require("@/assets/avatar/rooms/phoenix-room-storybook-day.png");
-const HOME_IMMERSIVE_ROOM_NIGHT = require("@/assets/avatar/rooms/phoenix-room-storybook-night.png");
+// Full-bleed home scene from the mock boards: tall 9:16 art where the
+// furniture band and paw-print rug live in the top third (the dog's traffic
+// area) and calm wooden floor flows down behind the floating console.
+const HOME_IMMERSIVE_ROOM_DAY = require("@/assets/avatar/rooms/home-fullbleed-day.png");
+const HOME_IMMERSIVE_ROOM_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-night.png");
 
 export function homeImmersiveRoomIsNight(hour: number): boolean {
   return hour >= 20 || hour < 6;
@@ -1420,10 +1423,10 @@ export default function HomeScreen() {
       <LinearGradient
         colors={[
           "rgba(0,0,0,0)",
-          colors.background + "66",
+          colors.background + "55",
           colors.background + "E0",
         ]}
-        locations={[0.3, 0.55, 0.92]}
+        locations={[0.42, 0.62, 0.95]}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
