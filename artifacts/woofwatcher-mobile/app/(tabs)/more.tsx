@@ -1467,6 +1467,7 @@ export default function MoreScreen() {
             style={s.moreRouteHeader}
           />
 
+          {ownerOps ? (
           <BoardCard padded={false} style={s.moreCommandStageCard}>
             <ImageBackground
               source={MORE_COMMAND_STAGE_ROOM}
@@ -1589,6 +1590,7 @@ export default function MoreScreen() {
               </View>
             </ImageBackground>
           </BoardCard>
+          ) : null}
 
           <BoardCard style={s.moreDirectoryCard}>
             <BoardSectionHeader

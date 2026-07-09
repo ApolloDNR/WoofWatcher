@@ -378,7 +378,7 @@ export default function PortraitScreen() {
       }),
     [state.entries, state.routines, state.caregivers, now, status.energy],
   );
-  const caregiver = state.caregivers[0]?.name ?? "Emma";
+  const caregiver = state.caregivers[0]?.name ?? "you";
   const scanTranslate = scanAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 250],

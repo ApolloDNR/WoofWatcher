@@ -128,7 +128,7 @@ export default function FastLogScreen() {
   const [justLogged, setJustLogged] = useState<string | null>(null);
   const loggedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const caregiver = state.caregivers[0]?.name ?? "Emma";
+  const caregiver = state.caregivers[0]?.name ?? "you";
   const openWalkSession = useMemo(() => findOpenWalkSession(state.entries), [state.entries]);
 
   const recent = useMemo(

@@ -418,7 +418,7 @@ export default function HomeScreen() {
   );
   // Never invent a person: with no caregivers yet, care is simply "You".
   const hasCaregivers = state.caregivers.length > 0;
-  const caregiver = state.caregivers[0]?.name ?? "You";
+  const caregiver = state.caregivers[0]?.name ?? "you";
   const timeLabel = useMemo(
     () => shortTime(new Date(now).toISOString()),
     [now],
@@ -1135,13 +1135,19 @@ export default function HomeScreen() {
       status.counts.healthAlert,
     ],
   );
+  // The Next Up card already owns today's care action; the deck keeps the
+  // quest, health, and Care Pass missions so nothing repeats on one screen.
+  const deckMissions = useMemo(
+    () => homeMissions.filter((mission) => mission.key !== "care-today"),
+    [homeMissions],
+  );
   const missionLayout = useMemo(
     () =>
       getHomeMissionDeckLayout({
         width: viewportWidth,
-        missionCount: homeMissions.length,
+        missionCount: deckMissions.length,
       }),
-    [homeMissions.length, viewportWidth],
+    [deckMissions.length, viewportWidth],
   );
 
   const missionToneColor = (tone: HomeMissionTone) => {
@@ -1791,7 +1797,7 @@ export default function HomeScreen() {
                       {nextPrimary.label}
                     </Text>
                     <Text
-                      numberOfLines={1}
+                      numberOfLines={2}
                       style={[
                         s.nextPrimaryMeta,
                         { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
@@ -2099,14 +2105,24 @@ export default function HomeScreen() {
                       ))}
                     </View>
                   ) : (
-                    <Text
+                    <View
                       style={[
-                        s.statusTileValue,
-                        { color: tile.tone, fontFamily: "Inter_700Bold" },
+                        s.statusTileValuePill,
+                        {
+                          backgroundColor: tile.tone + "1C",
+                          borderColor: tile.tone + "55",
+                        },
                       ]}
                     >
-                      {tile.value}
-                    </Text>
+                      <Text
+                        style={[
+                          s.statusTileValue,
+                          { color: tile.tone, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        {tile.value}
+                      </Text>
+                    </View>
                   )}
                 </Pressable>
               ))}
@@ -2194,7 +2210,7 @@ export default function HomeScreen() {
                   numberOfLines={1}
                   style={[s.missionTitle, { fontFamily: "Fredoka_700Bold" }]}
                 >
-                  Care RPG command center
+                  Quest board
                 </Text>
               </View>
               {missionLayout.showBadge ? (
@@ -2212,7 +2228,7 @@ export default function HomeScreen() {
               ) : null}
             </View>
             <View style={[s.missionRows, { gap: missionLayout.rowGap }]}>
-              {homeMissions.map((mission) => {
+              {deckMissions.map((mission) => {
                 const tone = missionToneColor(mission.tone);
                 return (
                   <Pressable
@@ -2301,21 +2317,9 @@ export default function HomeScreen() {
                         },
                       ]}
                     >
-                      <Text
-                        numberOfLines={1}
-                        style={[
-                          s.missionCtaText,
-                          {
-                            maxWidth: missionLayout.ctaTextMaxWidth,
-                            fontFamily: "Inter_800ExtraBold",
-                          },
-                        ]}
-                      >
-                        {mission.cta}
-                      </Text>
                       <Ionicons
                         name="chevron-forward"
-                        size={15}
+                        size={17}
                         color="#FFF9EF"
                       />
                     </View>
@@ -2581,25 +2585,6 @@ export default function HomeScreen() {
               <View style={s.questBadge}>
                 <PixelIcon name="heart" size={30} />
               </View>
-            </View>
-            <View style={s.questProofGrid}>
-              {careIntelligence.metrics.slice(0, 3).map((metric) => (
-                <View key={metric.label} style={s.questProofTile}>
-                  <Text
-                    style={[
-                      s.questProofValue,
-                      { fontFamily: "Fredoka_700Bold" },
-                    ]}
-                  >
-                    {metric.value}
-                  </Text>
-                  <Text
-                    style={[s.questProofLabel, { fontFamily: "Inter_700Bold" }]}
-                  >
-                    {metric.label}
-                  </Text>
-                </View>
-              ))}
             </View>
             <View style={s.questMeterWrap}>
               {Array.from({ length: 10 }).map((_, index) => {
@@ -3200,6 +3185,12 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   statusTileLabel: { flex: 1, fontSize: 14 },
+  statusTileValuePill: {
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
   statusTileValue: { fontSize: 13, textAlign: "right" },
   statusTileSegments: {
     flexDirection: "row",
@@ -3545,33 +3536,6 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(255,249,239,0.12)",
     borderWidth: 1,
     borderColor: "rgba(255,249,239,0.18)",
-  },
-  questProofGrid: {
-    flexDirection: "row",
-    gap: 7,
-    marginTop: 13,
-  },
-  questProofTile: {
-    flex: 1,
-    minHeight: 54,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,249,239,0.16)",
-    backgroundColor: "rgba(255,249,239,0.08)",
-    paddingHorizontal: 8,
-    paddingVertical: 7,
-    justifyContent: "center",
-  },
-  questProofValue: {
-    color: "#FFF9EF",
-    fontSize: 16,
-  },
-  questProofLabel: {
-    color: "rgba(255,249,239,0.68)",
-    fontSize: 9,
-    lineHeight: 12,
-    marginTop: 1,
-    textTransform: "uppercase",
   },
   questMeterWrap: {
     flexDirection: "row",

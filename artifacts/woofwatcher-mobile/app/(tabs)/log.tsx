@@ -2185,7 +2185,7 @@ export default function LogScreen() {
                 <View style={[s.logCommandChip, { backgroundColor: colors.brandNavy + "E8", borderColor: colors.ivory + "55" }]}>
                   <PixelIcon name={selectedLauncherAction?.icon ?? "heart"} size={17} />
                   <Text style={[s.logCommandChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
-                    {selectedLauncherRequiresDetail ? "Details" : "Tap Ready"}
+                    {selectedLauncherRequiresDetail ? "Details" : "Ready"}
                   </Text>
                 </View>
               </View>
@@ -2380,29 +2380,33 @@ export default function LogScreen() {
                     >
                       {action.label}
                     </Text>
-                    <View
-                      style={[
-                        s.launcherTileMode,
-                        {
-                          backgroundColor: launcherPresentation.detailRequired ? colors.amber + "18" : colors.sage + "16",
-                          borderColor: launcherPresentation.detailRequired ? colors.amber + "55" : colors.sage + "44",
-                        },
-                      ]}
-                    >
-                      <Text
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
+                    {/* Only detail-required tiles carry a pill: a quiet
+                        differentiator instead of twelve identical labels. */}
+                    {launcherPresentation.detailRequired ? (
+                      <View
                         style={[
-                          s.launcherTileModeText,
+                          s.launcherTileMode,
                           {
-                            color: launcherPresentation.detailRequired ? colors.copper : colors.sage,
-                            fontFamily: "Inter_800ExtraBold",
+                            backgroundColor: colors.amber + "18",
+                            borderColor: colors.amber + "55",
                           },
                         ]}
                       >
-                        {launcherPresentation.modeLabel}
-                      </Text>
-                    </View>
+                        <Text
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          style={[
+                            s.launcherTileModeText,
+                            {
+                              color: colors.copper,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
+                          {launcherPresentation.modeLabel}
+                        </Text>
+                      </View>
+                    ) : null}
                   </Pressable>
                 );
               })}
