@@ -62,7 +62,10 @@ import type { Mood } from "@/lib/phoenixStatus";
 const OVERLAY_INK = "#26221C";
 const OVERLAY_MUTED_INK = "#6E6753";
 
-const ROOM_SCENE = require("@/assets/board/hero.png");
+// Dogless room so the dog is ALWAYS the layered sprite (never baked in),
+// which keeps the cuter twin consistent and avoids a second dog showing
+// behind it in non-transparent stages like Avatar Studio.
+const ROOM_SCENE = require("@/assets/avatar/rooms/phoenix-room-storybook-day.png");
 
 const STATE_SCENES: Record<Mood, ImageSourcePropType> = {
   happy: ROOM_SCENE,
