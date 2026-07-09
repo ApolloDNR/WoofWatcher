@@ -36,6 +36,7 @@ import {
   type PhoenixRoomStat,
 } from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
@@ -1733,18 +1734,22 @@ export default function HomeScreen() {
                       { transform: [{ scale: pressed ? 0.94 : 1 }] },
                     ]}
                   >
-                    <View
-                      style={[
-                        s.homeQuickCircle,
-                        s.softShadow,
-                        {
-                          backgroundColor: colors.card,
-                          borderColor: colors.border,
-                        },
-                      ]}
-                    >
-                      <PixelIcon name={item.icon} size={26} />
-                    </View>
+                    {hasMedallion(item.icon) ? (
+                      <BoardMedallion name={item.icon} size={54} style={s.softShadow} />
+                    ) : (
+                      <View
+                        style={[
+                          s.homeQuickCircle,
+                          s.softShadow,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <PixelIcon name={item.icon} size={26} />
+                      </View>
+                    )}
                     <Text
                       numberOfLines={1}
                       style={[
@@ -2060,21 +2065,28 @@ export default function HomeScreen() {
                     },
                   ]}
                 >
-                  <View
-                    style={[
-                      s.statusTileIcon,
-                      {
-                        width: homeFirstScreenLayout.statusTileIconBoxSize,
-                        height: homeFirstScreenLayout.statusTileIconBoxSize,
-                        backgroundColor: tile.tone + "16",
-                      },
-                    ]}
-                  >
-                    <PixelIcon
+                  {hasMedallion(tile.icon) ? (
+                    <BoardMedallion
                       name={tile.icon}
-                      size={homeFirstScreenLayout.statusTileIconSize}
+                      size={homeFirstScreenLayout.statusTileIconBoxSize}
                     />
-                  </View>
+                  ) : (
+                    <View
+                      style={[
+                        s.statusTileIcon,
+                        {
+                          width: homeFirstScreenLayout.statusTileIconBoxSize,
+                          height: homeFirstScreenLayout.statusTileIconBoxSize,
+                          backgroundColor: tile.tone + "16",
+                        },
+                      ]}
+                    >
+                      <PixelIcon
+                        name={tile.icon}
+                        size={homeFirstScreenLayout.statusTileIconSize}
+                      />
+                    </View>
+                  )}
                   <Text
                     style={[
                       s.statusTileLabel,

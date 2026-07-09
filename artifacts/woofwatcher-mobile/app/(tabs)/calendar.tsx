@@ -31,6 +31,7 @@ import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { confirmThroughSteps } from "@/lib/confirmDialog";
 import { parseLocalDate } from "@/lib/time";
@@ -924,9 +925,13 @@ export default function CalendarScreen() {
                         </Text>
                         <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
                       </View>
-                      <View style={[s.scheduleIconBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                        <PixelIcon name={routinePixelIcon(row.type)} size={22} />
-                      </View>
+                      {hasMedallion(routinePixelIcon(row.type)) ? (
+                        <BoardMedallion name={routinePixelIcon(row.type) as never} size={44} />
+                      ) : (
+                        <View style={[s.scheduleIconBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                          <PixelIcon name={routinePixelIcon(row.type)} size={22} />
+                        </View>
+                      )}
                     </View>
                     </React.Fragment>
                   );
@@ -972,9 +977,13 @@ export default function CalendarScreen() {
                       ) : null}
                       <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
                     </View>
-                    <View style={[s.scheduleIconBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                      <PixelIcon name={routinePixelIcon(row.type)} size={22} />
-                    </View>
+                    {hasMedallion(routinePixelIcon(row.type)) ? (
+                      <BoardMedallion name={routinePixelIcon(row.type) as never} size={44} />
+                    ) : (
+                      <View style={[s.scheduleIconBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                        <PixelIcon name={routinePixelIcon(row.type)} size={22} />
+                      </View>
+                    )}
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Mark ${row.label} done`}

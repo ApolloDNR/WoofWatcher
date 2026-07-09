@@ -18,6 +18,8 @@ import {
   BoardStatusPill,
 } from "@/components/board/BoardPrimitives";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { BoardMedallion, type MedallionName } from "@/components/BoardMedallion";
+import { PersonPortrait } from "@/components/PersonPortrait";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
@@ -114,7 +116,7 @@ function PackInfoTile({
   onPress,
   accessibilityLabel,
 }: {
-  icon: IoniconName;
+  icon: MedallionName;
   tone: string;
   label: string;
   value: string;
@@ -136,9 +138,7 @@ function PackInfoTile({
         },
       ]}
     >
-      <View style={[s.infoTileChip, { backgroundColor: tone + "16" }]}>
-        <Ionicons name={icon} size={15} color={tone} />
-      </View>
+      <BoardMedallion name={icon} size={34} />
       <Text
         numberOfLines={1}
         style={[s.infoTileLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}
@@ -384,7 +384,7 @@ export default function PackScreen() {
 
             <View style={s.infoTiles}>
               <PackInfoTile
-                icon="folder-open-outline"
+                icon="health"
                 tone={colors.sage}
                 label="Health Records"
                 value={
@@ -396,7 +396,7 @@ export default function PackScreen() {
                 accessibilityLabel={`Open saved health records for ${petName}`}
               />
               <PackInfoTile
-                icon="paw-outline"
+                icon="walk"
                 tone={colors.copper}
                 label="Sensitivities"
                 value={
@@ -410,7 +410,7 @@ export default function PackScreen() {
             </View>
             <View style={s.infoTiles}>
               <PackInfoTile
-                icon="document-text-outline"
+                icon="note"
                 tone={colors.blue}
                 label="Reports"
                 value={
@@ -422,7 +422,7 @@ export default function PackScreen() {
                 accessibilityLabel={`Open shared reports for ${petName} in Records`}
               />
               <PackInfoTile
-                icon="scale-outline"
+                icon="hunger"
                 tone={colors.amber}
                 label="Weight"
                 value={weightLabel || "Not set"}
@@ -457,11 +457,7 @@ export default function PackScreen() {
                       },
                     ]}
                   >
-                    <View style={[s.personAvatar, { backgroundColor: tone + "1A" }]}>
-                      <Text style={[s.personInitial, { color: tone, fontFamily: "Inter_700Bold" }]}>
-                        {person.name.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
+                    <PersonPortrait name={person.name} size={40} />
                     <View style={s.personCopy}>
                       <Text
                         numberOfLines={1}
@@ -565,11 +561,7 @@ export default function PackScreen() {
                       },
                     ]}
                   >
-                    <View style={[s.personAvatar, { backgroundColor: tone + "1A" }]}>
-                      <Text style={[s.personInitial, { color: tone, fontFamily: "Inter_700Bold" }]}>
-                        {person.name.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
+                    <PersonPortrait name={person.name} size={40} />
                     <View style={s.personCopy}>
                       <View style={s.personNameLine}>
                         <Text
