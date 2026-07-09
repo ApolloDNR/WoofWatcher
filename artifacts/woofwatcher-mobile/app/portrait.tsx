@@ -75,6 +75,7 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
+import { resolvePetName } from "@/lib/petIdentity";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
@@ -86,11 +87,11 @@ type Phase = "idle" | "working" | "result";
 type StudioTab = "scan" | "template" | "customize" | "emotes";
 
 const SCAN_LINES = [
-  "Reading body shape...",
-  "Finding coat colors...",
-  "Checking ears and muzzle...",
-  "Matching a pixel template...",
-  "Preparing owner review...",
+  "Opening your photo as a reference...",
+  "Lining up pixel template bases...",
+  "Setting your dog side by side...",
+  "Suggesting a base to start from...",
+  "Handing the picks back to you...",
 ];
 
 const SCAN_WORKFLOW_ACCESSIBILITY_SUMMARY =
@@ -183,10 +184,7 @@ export default function PortraitScreen() {
     resetAvatarConfig,
   } = useAvatar();
 
-  const petName =
-    state.profile.name && state.profile.name !== "My Dog"
-      ? state.profile.name
-      : "Phoenix";
+  const petName = resolvePetName(state.profile.name);
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
     topInset: insets.top,
@@ -300,6 +298,9 @@ export default function PortraitScreen() {
   }, [templateLife]);
 
   const selectedTemplate = getAvatarTemplate(draft.templateId);
+  const faceMarkingLabel =
+    FACE_MARKINGS.find((marking) => marking.id === draft.faceMarkingId)?.label ??
+    draft.faceMarkingId;
   const liveTemplateCount = useMemo(
     () =>
       AVATAR_TEMPLATES.filter((template) =>
@@ -527,7 +528,7 @@ export default function PortraitScreen() {
         contentInsetAdjustmentBehavior="automatic"
       >
         <BoardRouteHeader
-          kicker="Avatar Studio"
+          kicker="Pixel Twin"
           title="Avatar Studio"
           subtitle="Choose a pixel twin, then customize."
           back
@@ -866,14 +867,14 @@ export default function PortraitScreen() {
                       s.templateSpeech,
                       {
                         backgroundColor: colors.ivory,
-                        borderColor: colors.navy,
+                        borderColor: colors.brandNavy,
                       },
                     ]}
                   >
                     <Text
                       style={[
                         s.templateSpeechText,
-                        { color: colors.navy, fontFamily: DISPLAY },
+                        { color: colors.brandNavy, fontFamily: DISPLAY },
                       ]}
                     >
                       {heroSpeech}
@@ -981,7 +982,9 @@ export default function PortraitScreen() {
                 },
               ]}
             >
-              {scanSuggestion.copy}
+              Set your photo side by side and pick the base that best matches
+              your dog. These are starting cues to compare against, not an
+              automatic detection.
             </Text>
             <View style={s.traitGrid}>
               {scanSuggestion.detectedTraits.map((trait) => (
@@ -1284,6 +1287,7 @@ export default function PortraitScreen() {
               </View>
             </BoardCard>
 
+            {ownerOps ? (
             <BoardCard style={s.avatarBoard}>
               <BoardSectionHeader
                 title="Sprite production review"
@@ -1555,6 +1559,7 @@ export default function PortraitScreen() {
                 </Pressable>
               ) : null}
             </BoardCard>
+            ) : null}
           </>
         ) : null}
 
@@ -1598,13 +1603,25 @@ export default function PortraitScreen() {
                   );
                 })}
               </View>
+              <Text
+                style={[
+                  s.swatchLegend,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
+                Tap a swatch to set the primary coat, then tap it again to set
+                the secondary.
+              </Text>
             </BoardCard>
 
             <BoardCard style={s.avatarBoard}>
               <BoardSectionHeader
-                title="Face and ears"
+                title="Face markings"
                 accessory={
-                  <BoardPill label={draft.faceMarkingId} tone={colors.amber} />
+                  <BoardPill label={faceMarkingLabel} tone={colors.amber} />
                 }
               />
               <View style={s.optionGrid}>
@@ -2463,6 +2480,7 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
   },
   swatchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
+  swatchLegend: { fontSize: 11.5, lineHeight: 15, marginTop: 8 },
   swatch: {
     minWidth: MIN_MOBILE_TOUCH_TARGET,
     minHeight: MIN_MOBILE_TOUCH_TARGET,

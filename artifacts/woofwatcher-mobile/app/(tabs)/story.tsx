@@ -25,6 +25,7 @@ import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { careTitleForLevel, deriveCareCareer, deriveCareStreak } from "@/lib/careCareer";
 import { getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import { resolvePetName } from "@/lib/petIdentity";
 
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 // Storybook mockup: serif reserved for the route title, hero copy, and the
@@ -98,8 +99,7 @@ export default function StoryScreen() {
     bottomInset: insets.bottom,
   });
 
-  const petName =
-    state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
+  const petName = resolvePetName(state.profile.name);
 
   /* Care career: level, title, XP, and streak from real logged care only. */
   const career = useMemo(() => deriveCareCareer(state.entries, now), [state.entries, now]);
@@ -191,7 +191,7 @@ export default function StoryScreen() {
         }}
       >
         <BoardRouteHeader
-          kicker="Story"
+          kicker={`${petName}'s Journey`}
           title="Story"
           subtitle={`${petName}'s real care, told as a living story.`}
           icon="book-outline"
@@ -320,8 +320,8 @@ export default function StoryScreen() {
                 </View>
               ) : (
                 <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  No places discovered yet. Log a walk with a route or place name and it appears on
-                  the trail with real visit counts.
+                  Your first spot lands here once discovered, with real visit counts and average
+                  time on the trail.
                 </Text>
               )}
               <BoardActionButton
@@ -466,10 +466,28 @@ export default function StoryScreen() {
                 ))}
               </View>
             ) : (
-              <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Saved adventure memories will appear here. Photos remain local/provider-gated until
-                storage rules are approved.
-              </Text>
+              <View style={s.memoryEmpty}>
+                <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Saved adventure memories will appear here. Photos stay on this device for now -
+                  cloud backup isn't available yet.
+                </Text>
+                <View style={s.memoryPlaceholderList} accessibilityElementsHidden>
+                  {[0, 1, 2].map((slot) => (
+                    <View
+                      key={`memory-locked-${slot}`}
+                      style={[s.memoryPlaceholderRow, { borderColor: colors.border }]}
+                    >
+                      <View style={[s.memoryPlaceholderIcon, { backgroundColor: colors.muted }]}>
+                        <Ionicons name="lock-closed" size={14} color={colors.mutedForeground} />
+                      </View>
+                      <View style={s.memoryPlaceholderCopy}>
+                        <View style={[s.memoryPlaceholderBar, { backgroundColor: colors.muted, width: "62%" }]} />
+                        <View style={[s.memoryPlaceholderBar, { backgroundColor: colors.muted, width: "40%" }]} />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
             )}
             <Text style={[s.footnote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               Save and share private household memories in Adventure Mode.
@@ -553,22 +571,25 @@ export default function StoryScreen() {
                 care - {career.totalXp.toLocaleString()} lifetime care XP so far.
               </Text>
               {/* Mock-board badge shelf: one pixel emblem per earned title,
-                  the trophy marks the current one. */}
-              <View style={s.badgeShelf}>
-                {earnedTitles.slice(0, 4).map((earned, index) => (
-                  <Image
-                    key={`shelf-${earned.title}`}
-                    source={
-                      earned.title === career.title
-                        ? BADGE_TROPHY_ART
-                        : BADGE_ART[index % BADGE_ART.length]
-                    }
-                    style={s.badgeShelfArt}
-                    resizeMode="contain"
-                    accessibilityLabel={`${earned.title} badge`}
-                  />
-                ))}
-              </View>
+                  the trophy marks the current one. Hidden on the single-title
+                  first run so the trophy does not read twice above the row. */}
+              {earnedTitles.length > 1 ? (
+                <View style={s.badgeShelf}>
+                  {earnedTitles.slice(0, 4).map((earned, index) => (
+                    <Image
+                      key={`shelf-${earned.title}`}
+                      source={
+                        earned.title === career.title
+                          ? BADGE_TROPHY_ART
+                          : BADGE_ART[index % BADGE_ART.length]
+                      }
+                      style={s.badgeShelfArt}
+                      resizeMode="contain"
+                      accessibilityLabel={`${earned.title} badge`}
+                    />
+                  ))}
+                </View>
+              ) : null}
               <View style={s.titleList}>
                 {earnedTitles.map((earned, earnedIndex) => {
                   const current = earned.title === career.title;
@@ -707,6 +728,21 @@ const s = StyleSheet.create({
   trailName: { fontSize: 14 },
   trailMeta: { fontSize: 11.5, marginTop: 2 },
   memoryList: { gap: 8, marginBottom: 6 },
+  memoryEmpty: { marginBottom: 6 },
+  memoryPlaceholderList: { gap: 8, marginTop: 10, opacity: 0.55 },
+  memoryPlaceholderRow: {
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    padding: 10,
+  },
+  memoryPlaceholderIcon: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  memoryPlaceholderCopy: { flex: 1, minWidth: 0, gap: 6 },
+  memoryPlaceholderBar: { height: 8, borderRadius: 999 },
   memoryRow: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 10, borderWidth: 1, padding: 10 },
   memoryIcon: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   memoryCopy: { flex: 1, minWidth: 0 },

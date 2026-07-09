@@ -1673,12 +1673,8 @@ test("keeps Home owner-preview section actions as real route targets", () => {
     home,
     /router\.push\(\s*`\/log\?entry=\$\{encodeURIComponent\(entry\.id\)\}` as never,?\s*\)/,
   );
-  assert.match(
-    home,
-    /BoardSectionHeader\s+title="Phoenix status"\s+accessory=\{\s*<HomeHeaderAction/,
-  );
-  assert.match(home, /accessibilityLabel="Open full Health Watch"/);
-  assert.match(home, /route="\/health\?tab=health"/);
+  // The bottom "Phoenix status" meters card was removed as a duplicate of the
+  // Care Status tiles above; the header bell still routes to Health Watch.
   assert.match(
     home,
     /accessibilityLabel="Open Health Watch"[\s\S]*router\.push\("\/health\?tab=health" as never\)/,
@@ -1785,77 +1781,8 @@ test("keeps Home today summary metrics route-backed instead of decorative", () =
   assert.match(home, /onPress=\{\(\) => openTodayMetric\("potty"\)\}/);
 });
 
-test("keeps Home Phoenix status meters route-backed instead of decorative", () => {
-  const home = readAppFile(join("(tabs)", "index.tsx"));
-  const primitives = readFileSync(
-    join(
-      process.cwd(),
-      "artifacts",
-      "woofwatcher-mobile",
-      "components",
-      "board",
-      "BoardPrimitives.tsx",
-    ),
-    "utf8",
-  );
-
-  assert.match(primitives, /onPress\?: \(\) => void/);
-  assert.match(primitives, /accessibilityHint\?: string/);
-  assert.match(primitives, /hitSlop=\{MOBILE_INLINE_HIT_SLOP\}/);
-  assert.match(
-    home,
-    /type PhoenixStatusMeterTarget =[\s\S]*"energy"[\s\S]*"hunger"[\s\S]*"hydration"[\s\S]*"bile"[\s\S]*"bond";/,
-  );
-  assert.match(
-    home,
-    /const openPhoenixStatusMeter = \(target: PhoenixStatusMeterTarget\) =>/,
-  );
-  assert.match(
-    home,
-    /target === "energy"[\s\S]*router\.push\("\/health\?tab=health" as never\)/,
-  );
-  assert.match(
-    home,
-    /target === "bile"[\s\S]*router\.push\("\/health\?tab=bile" as never\)/,
-  );
-  assert.match(
-    home,
-    /router\.push\(\s*`\/log\?type=meal&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
-  );
-  assert.match(
-    home,
-    /router\.push\(\s*`\/log\?type=water&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
-  );
-  assert.match(
-    home,
-    /router\.push\(\s*`\/log\?type=play&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
-  );
-  assert.match(
-    home,
-    /accessibilityLabel="Open Phoenix energy in Health Watch"/,
-  );
-  assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("energy"\)\}/);
-  assert.match(
-    home,
-    /accessibilityLabel="Open Phoenix meal detail from hunger"/,
-  );
-  assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("hunger"\)\}/);
-  assert.match(
-    home,
-    /accessibilityLabel="Open Phoenix water detail from hydration"/,
-  );
-  assert.match(
-    home,
-    /onPress=\{\(\) => openPhoenixStatusMeter\("hydration"\)\}/,
-  );
-  assert.match(
-    home,
-    /accessibilityLabel="Open Phoenix bile risk in Health Watch"/,
-  );
-  assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("bile"\)\}/);
-  assert.match(home, /accessibilityLabel="Open Phoenix bond play detail"/);
-  assert.match(home, /onPress=\{\(\) => openPhoenixStatusMeter\("bond"\)\}/);
-});
+// The bottom "Phoenix status" meters card was removed as a duplicate of the
+// Care Status tiles, so its route-backed-meters test was retired alongside it.
 
 test("keeps Home watch cards deep-linked to exact care workflows", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
@@ -2931,7 +2858,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   );
   assert.match(
     avatarStudio,
-    /BoardSectionHeader\s+title="Face and ears"[\s\S]*<BoardPill\s+label=\{draft\.faceMarkingId\}/,
+    /BoardSectionHeader\s+title="Face markings"[\s\S]*<BoardPill\s+label=\{faceMarkingLabel\}/,
   );
   assert.match(
     avatarStudio,

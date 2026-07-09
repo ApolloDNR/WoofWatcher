@@ -35,6 +35,7 @@ import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { confirmThroughSteps } from "@/lib/confirmDialog";
 import { parseLocalDate } from "@/lib/time";
+import { resolvePetName } from "@/lib/petIdentity";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import {
@@ -773,7 +774,7 @@ export default function CalendarScreen() {
               style={[s.commandDeckStage, { borderColor: colors.border }]}
               testID="plans-command-pixel-stage"
             >
-              <View style={s.commandDeckShade} />
+              <View style={[s.commandDeckShade, { backgroundColor: colors.card + "CC" }]} />
               <View style={s.commandDeckTop}>
                 <View style={[s.commandDeckBubble, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <Text style={[s.commandDeckKicker, { color: colors.forest, fontFamily: DISPLAY_SEMI }]}>
@@ -819,20 +820,26 @@ export default function CalendarScreen() {
                 <View style={s.commandDeckHudCell}>
                   <Text style={[s.commandDeckHudLabel, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>Signal</Text>
                   <View style={s.commandDeckSignalRow}>
-                    {[0, 1, 2, 3, 4].map((bar) => (
-                      <View
-                        key={bar}
-                        style={[
-                          s.commandDeckSignalBar,
-                          {
-                            height: 6 + bar * 2,
-                            backgroundColor: bar < Math.max(1, Math.min(5, openScheduleCount + 1))
-                              ? commandDeckTone
-                              : colors.muted,
-                          },
-                        ]}
-                      />
-                    ))}
+                    {[0, 1, 2, 3, 4].map((bar) => {
+                      const activeBars = isSampleSchedule ? 1 : Math.max(1, Math.min(5, openScheduleCount + 1));
+                      const filled = bar < activeBars;
+                      return (
+                        <View
+                          key={bar}
+                          style={[
+                            s.commandDeckSignalBar,
+                            {
+                              height: 6 + bar * 2,
+                              backgroundColor: filled
+                                ? isSampleSchedule
+                                  ? colors.mutedForeground
+                                  : commandDeckTone
+                                : colors.muted,
+                            },
+                          ]}
+                        />
+                      );
+                    })}
                   </View>
                 </View>
               </View>
@@ -1007,23 +1014,6 @@ export default function CalendarScreen() {
               })}
             </View>
 
-            {!isSampleSchedule ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Add Event"
-                onPress={openNewRoutine}
-                style={({ pressed }) => [
-                  s.scheduleAddEvent,
-                  { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
-                ]}
-              >
-                <Ionicons name="add" size={15} color={colors.mutedForeground} />
-                <Text style={[s.scheduleAddEventText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  Add Event
-                </Text>
-              </Pressable>
-            ) : null}
-
             {isSampleSchedule ? (
               <Text style={[s.scheduleSampleNote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 This is a sample day to show how your plan will look. Add your first routine to make it real.
@@ -1031,9 +1021,9 @@ export default function CalendarScreen() {
             ) : null}
 
             <BoardActionButton
-              label={isSampleSchedule ? "Add your first routine" : "Add Plan"}
+              label={isSampleSchedule ? "Add your first routine" : "Add routine"}
               icon="add"
-              accessibilityLabel={isSampleSchedule ? "Add your first routine" : "Add plan"}
+              accessibilityLabel={isSampleSchedule ? "Add your first routine" : "Add routine"}
               onPress={() => {
                 Haptics.selectionAsync();
                 openNewRoutine();
@@ -1107,7 +1097,7 @@ export default function CalendarScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[s.discoverTitle, { fontFamily: DISPLAY_SEMI }]}>Discover nearby dog events</Text>
-              <Text style={[s.discoverSub, { fontFamily: "Inter_400Regular" }]}>WoofGuide curates outings for {profile.name}</Text>
+              <Text style={[s.discoverSub, { fontFamily: "Inter_400Regular" }]}>WoofGuide curates outings for {resolvePetName(profile.name)}</Text>
             </View>
             <Ionicons name={discoverOpen ? "chevron-up" : "chevron-down"} size={20} color="#fff" />
           </Pressable>
@@ -1614,7 +1604,7 @@ export default function CalendarScreen() {
             <TextInput
               value={rLabel}
               onChangeText={setRLabel}
-              placeholder="Morning walk, breakfast, bedtime snack..."
+              placeholder="Morning walk"
               placeholderTextColor={colors.mutedForeground}
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
@@ -1687,7 +1677,7 @@ export default function CalendarScreen() {
             />
 
             <Pressable onPress={submitRoutine} disabled={!rLabel.trim()} style={[s.saveBtn, { backgroundColor: rLabel.trim() ? colors.primary : colors.border }]}>
-              <Text style={[s.saveBtnText, { fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
+              <Text style={[s.saveBtnText, { color: rLabel.trim() ? "#fff" : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
             </Pressable>
 
             {routineEditId && (
@@ -2098,13 +2088,14 @@ const s = StyleSheet.create({
   scheduleRow: {
     minHeight: 44,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 10,
     paddingVertical: 7,
   },
   scheduleTime: {
     width: 66,
     fontSize: 12,
+    paddingTop: 2,
   },
   scheduleRowCopy: {
     flex: 1,

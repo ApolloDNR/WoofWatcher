@@ -1,8 +1,8 @@
 # WoofWatcher terms of service
 
-Effective: [DATE — set at launch]
+Effective: July 9, 2026
 
-These terms are an agreement between you and Pegasus Dreamscapes [confirm legal entity name] ("we," "us"), the publisher of the WoofWatcher app for iOS and Android. By downloading or using WoofWatcher, you agree to these terms. If you do not agree, do not use the app.
+These terms are an agreement between you and Pegasus Dreamscapes ("we," "us"), the publisher of the WoofWatcher app for iOS and Android. By downloading or using WoofWatcher, you agree to these terms. If you do not agree, do not use the app.
 
 ## 1. What WoofWatcher is
 
@@ -58,7 +58,7 @@ This version of the app does not include cloud sync, online accounts, push notif
 
 ## 10. Intellectual property
 
-The WoofWatcher name, logo, pixel art, characters (including the pixel dog companion), design, and software are owned by Pegasus Dreamscapes [confirm legal entity name] or its licensors and are protected by intellectual-property laws. These terms do not grant you any rights in our trademarks or branding.
+The WoofWatcher name, logo, pixel art, characters (including the pixel dog companion), design, and software are owned by Pegasus Dreamscapes or its licensors and are protected by intellectual-property laws. These terms do not grant you any rights in our trademarks or branding.
 
 ## 11. Disclaimer of warranties
 
@@ -70,7 +70,7 @@ To the maximum extent permitted by law:
 
 - We are not liable for any indirect, incidental, special, consequential, or punitive damages, or for loss of data, arising from your use of or inability to use the app.
 - We are not liable for any harm to any animal or person arising from care decisions, which remain solely your responsibility (see section 2).
-- Our total aggregate liability for all claims relating to the app will not exceed the greater of the amount you paid us for the app in the twelve months before the claim (which, for this free version, is zero) or [MINIMUM_LIABILITY_AMOUNT — Apollo/lawyer to confirm, e.g., USD 50].
+- Our total aggregate liability for all claims relating to the app will not exceed the greater of the amount you paid us for the app in the twelve months before the claim (which, for this free version, is zero) or USD 50.
 
 Some jurisdictions do not allow certain limitations of liability, so some of these limitations may not apply to you. Nothing in these terms excludes liability that cannot be excluded by law.
 
@@ -80,7 +80,7 @@ You may stop using the app at any time; deleting the app removes your license an
 
 ## 14. Governing law and disputes
 
-These terms are governed by the laws of [JURISDICTION — Apollo to confirm], without regard to conflict-of-laws rules. Disputes will be resolved in the courts of [JURISDICTION — Apollo to confirm], unless applicable consumer law gives you the right to bring claims where you live. [DISPUTE_RESOLUTION — Apollo/lawyer to decide whether to add an arbitration/small-claims clause.]
+These terms are governed by the laws of your country of residence, and any disputes may be brought in the courts of the place where you live, consistent with your local consumer-protection rights.
 
 ## 15. App store terms
 
@@ -92,6 +92,5 @@ We may update these terms from time to time. We will update the effective date a
 
 ## 17. Contact
 
-Support: [SUPPORT_EMAIL — Apollo to confirm]
-Publisher: Pegasus Dreamscapes [confirm legal entity name]
-[MAILING_ADDRESS — Apollo to confirm, if required in your jurisdiction]
+Support: reach us through the app's App Store or Google Play listing
+Publisher: Pegasus Dreamscapes

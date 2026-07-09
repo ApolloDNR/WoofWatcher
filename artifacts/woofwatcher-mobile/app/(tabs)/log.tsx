@@ -1959,7 +1959,7 @@ export default function LogScreen() {
       tone: logCommandOpenLoops > 0 ? colors.amber : colors.sage,
     },
     {
-      label: "Sync",
+      label: "Saved",
       value: syncOutbox.total > 0 ? `${syncOutbox.total}` : "Ready",
       tone: syncOutbox.status === "needs-retry" ? colors.amber : colors.primary,
     },
@@ -2414,7 +2414,7 @@ export default function LogScreen() {
 
             <View style={s.launcherDoctrineRail}>
               {QUICK_LOG_DOCTRINE.map((item) => {
-                const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.brandNavy;
+                const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.blueSignal;
                 return (
                   <View
                     key={item.label}
@@ -3830,7 +3830,7 @@ export default function LogScreen() {
 
                 <View style={s.launcherDetailModeRail}>
                   {launcherDetailPresentation.interactionRail.map((item) => {
-                    const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.brandNavy;
+                    const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.blueSignal;
                     return (
                       <View
                         key={item.label}
@@ -3959,7 +3959,7 @@ export default function LogScreen() {
 
                 <View style={s.detailCommandRail}>
                   {DETAIL_WORKFLOW_RAIL.map((item) => {
-                    const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.brandNavy;
+                    const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.blueSignal;
                     const detail =
                       item.label === "Audit" && detailAuditTrail.length > 0
                         ? `${detailAuditTrail.length} event${detailAuditTrail.length === 1 ? "" : "s"}`

@@ -28,6 +28,7 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
+import { resolvePetName } from "@/lib/petIdentity";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
 
@@ -268,6 +269,30 @@ export default function HealthScreen() {
       ? "Keep logging meals, stool, vomiting, energy, and medication so future changes are easy to review."
       : "Capture timing, food context, energy, stool detail, and repeat events before sharing with your vet.";
 
+  const isBileTab = activeTab === "bile";
+  const heroBubbleTitle = isBileTab
+    ? bileStatus === "Low Risk"
+      ? "Bile looks calm."
+      : "Watching bile gently."
+    : healthWatch.status === "good"
+      ? "Feeling steady."
+      : "Let's take it easy.";
+  const heroBubbleCopy = isBileTab
+    ? "Bile Watch records patterns calmly."
+    : "Health Watch records patterns calmly.";
+  const snapshotTitle = isBileTab ? "Bile Snapshot" : "Health Snapshot";
+  const heroStatusKicker = isBileTab ? "BILE STATUS" : "CARE STATUS";
+  const heroPanelTitle = isBileTab
+    ? bileStatus === "Review"
+      ? "Bile worth review"
+      : bileStatus === "Watch"
+        ? "Bile worth watching"
+        : "Bile looks low risk"
+    : heroTitle;
+  const heroPanelCopy = isBileTab
+    ? "Yellow bile events are tracked as calm owner notes, not diagnoses."
+    : heroCopy;
+
   const healthRows: {
     label: string;
     status: string;
@@ -333,7 +358,7 @@ export default function HealthScreen() {
     },
   ];
   const healthReviewPacket = deriveHealthReviewPacket({
-    dogName: state.profile.name || "Phoenix",
+    dogName: resolvePetName(state.profile.name),
     healthStatus: healthWatch.status,
     healthSummary: healthWatch.summary,
     healthCounts: {
@@ -368,7 +393,7 @@ export default function HealthScreen() {
   async function shareHealthReviewPacket(): Promise<void> {
     await shareTextPayload({
       message: buildHealthReviewPacketShareText(healthReviewPacket, {
-        dogName: state.profile.name || "Phoenix",
+        dogName: resolvePetName(state.profile.name),
         generatedAtIso: new Date(now).toISOString(),
       }),
       title: "WoofWatcher Health Review Packet",
@@ -440,6 +465,85 @@ export default function HealthScreen() {
           })}
         </View>
 
+        {isBileTab ? (
+          <BoardCard style={s.bileCard}>
+            <View style={s.sectionTop}>
+              <BoardSectionHeader title="Bile Watch" style={s.boardSectionTop} />
+              <BoardPill label={bileStatus} icon="water-outline" tone={bileTone} />
+            </View>
+
+            <View style={[s.bilePanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View style={[s.bileMedallion, { backgroundColor: bileTone + "16", borderColor: bileTone + "55" }]}>
+                <PixelIcon name="bile" size={34} />
+                <Text style={[s.bileMedallionText, { color: bileTone, fontFamily: "Inter_700Bold" }]}>
+                  {bileStatus}
+                </Text>
+              </View>
+              <View style={s.bileTrendArea}>
+                <Text style={[s.bileTrendTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  7-day bile log
+                </Text>
+                <Text style={[s.bileTrendCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Yellow bile events are tracked as owner notes, not diagnoses.
+                </Text>
+                <View style={s.bileBars}>
+                  {bileTrend.map((day, index) => {
+                    const active = day.count > 0;
+                    return (
+                      <View key={`${day.label}-${index}`} style={s.bileBarColumn}>
+                        <View
+                          style={[
+                            s.bileBar,
+                            {
+                              height: active ? Math.min(34, 14 + day.count * 8) : 8,
+                              backgroundColor: active ? bileTone : colors.sage + "33",
+                              borderColor: active ? bileTone : colors.border,
+                            },
+                          ]}
+                        />
+                        <Text style={[s.bileBarLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          {day.label}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            </View>
+
+            <View style={s.metricGrid}>
+              <BoardMetricTile
+                icon="bile"
+                label="Last yellow bile event"
+                value={formatDateTime(bileEntries[0]?.occurredAt)}
+                tone={bileTone}
+                style={s.metricHalf}
+              />
+              <BoardMetricTile
+                icon="meal"
+                label="Longest food gap"
+                value={mealGaps ? `${mealGaps.toFixed(1)} hours` : "Needs more meal logs"}
+                tone={colors.copper}
+                style={s.metricHalf}
+              />
+              <BoardMetricTile
+                icon="treat"
+                label="Bedtime snack proof"
+                value={state.dietProfile.bedtimeSnack || "Not set"}
+                tone={colors.amber}
+                style={s.metricHalf}
+              />
+              <BoardMetricTile
+                icon="vomit"
+                label="7-day trend"
+                value={`${healthWatch.counts.vomit7} vomit logs`}
+                tone={colors.rose}
+                style={s.metricHalf}
+              />
+            </View>
+          </BoardCard>
+        ) : null}
+
         <BoardCard style={s.heroCard}>
           <ImageBackground
             source={HEALTH_WATCH_STAGE_ROOM}
@@ -450,11 +554,11 @@ export default function HealthScreen() {
             <View style={s.healthStageShade} />
             <View style={s.healthStageTop}>
               <View style={s.healthStageBubble}>
-                <Text style={[s.healthStageBubbleTitle, { color: colors.navy, fontFamily: DISPLAY_SEMI }]}>
-                  {healthWatch.status === "good" ? "Feeling steady." : "Let's take it easy."}
+                <Text style={[s.healthStageBubbleTitle, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>
+                  {heroBubbleTitle}
                 </Text>
-                <Text style={[s.healthStageBubbleCopy, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                  Health Watch records patterns calmly.
+                <Text style={[s.healthStageBubbleCopy, { color: colors.brandNavy, fontFamily: "Inter_700Bold" }]}>
+                  {heroBubbleCopy}
                 </Text>
                 <View style={s.healthStageBubbleTail} />
               </View>
@@ -479,7 +583,7 @@ export default function HealthScreen() {
 
           <View style={[s.healthHeroPanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <BoardSectionHeader
-              title="Health Snapshot"
+              title={snapshotTitle}
               style={s.healthSnapshotHeader}
               accessory={
                 <HealthHeaderAction
@@ -501,10 +605,10 @@ export default function HealthScreen() {
               </View>
 
               <View style={s.healthHeroCopyStack}>
-                <Text style={[s.heroLabel, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>CARE STATUS</Text>
-                <Text style={[s.heroTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>{heroTitle}</Text>
+                <Text style={[s.heroLabel, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>{heroStatusKicker}</Text>
+                <Text style={[s.heroTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>{heroPanelTitle}</Text>
                 <Text style={[s.heroCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {heroCopy}
+                  {heroPanelCopy}
                 </Text>
                 <View style={[s.statusScoreTrack, { backgroundColor: colors.muted, borderColor: colors.border }]}>
                   <View style={[s.statusScoreFill, { width: `${score}%`, backgroundColor: scoreTone }]} />
@@ -730,85 +834,6 @@ export default function HealthScreen() {
             </Pressable>
           </View>
         </BoardCard>
-
-        {activeTab === "bile" ? (
-          <BoardCard style={s.sectionCard}>
-            <View style={s.sectionTop}>
-              <BoardSectionHeader title="Bile Watch" style={s.boardSectionTop} />
-              <BoardPill label={bileStatus} icon="water-outline" tone={bileTone} />
-            </View>
-
-            <View style={[s.bilePanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <View style={[s.bileMedallion, { backgroundColor: bileTone + "16", borderColor: bileTone + "55" }]}>
-                <PixelIcon name="bile" size={34} />
-                <Text style={[s.bileMedallionText, { color: bileTone, fontFamily: "Inter_700Bold" }]}>
-                  {bileStatus}
-                </Text>
-              </View>
-              <View style={s.bileTrendArea}>
-                <Text style={[s.bileTrendTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  7-day bile log
-                </Text>
-                <Text style={[s.bileTrendCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Yellow bile events are tracked as owner notes, not diagnoses.
-                </Text>
-                <View style={s.bileBars}>
-                  {bileTrend.map((day, index) => {
-                    const active = day.count > 0;
-                    return (
-                      <View key={`${day.label}-${index}`} style={s.bileBarColumn}>
-                        <View
-                          style={[
-                            s.bileBar,
-                            {
-                              height: active ? Math.min(34, 14 + day.count * 8) : 8,
-                              backgroundColor: active ? bileTone : colors.sage + "33",
-                              borderColor: active ? bileTone : colors.border,
-                            },
-                          ]}
-                        />
-                        <Text style={[s.bileBarLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                          {day.label}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            </View>
-
-            <View style={s.metricGrid}>
-              <BoardMetricTile
-                icon="bile"
-                label="Last yellow bile event"
-                value={formatDateTime(bileEntries[0]?.occurredAt)}
-                tone={bileTone}
-                style={s.metricHalf}
-              />
-              <BoardMetricTile
-                icon="meal"
-                label="Longest food gap"
-                value={mealGaps ? `${mealGaps.toFixed(1)} hours` : "Needs more meal logs"}
-                tone={colors.copper}
-                style={s.metricHalf}
-              />
-              <BoardMetricTile
-                icon="treat"
-                label="Bedtime snack proof"
-                value={state.dietProfile.bedtimeSnack || "Not set"}
-                tone={colors.amber}
-                style={s.metricHalf}
-              />
-              <BoardMetricTile
-                icon="vomit"
-                label="7-day trend"
-                value={`${healthWatch.counts.vomit7} vomit logs`}
-                tone={colors.rose}
-                style={s.metricHalf}
-              />
-            </View>
-          </BoardCard>
-        ) : null}
 
         <BoardCard style={s.sectionCard}>
           <BoardSectionHeader
@@ -1124,6 +1149,7 @@ const s = StyleSheet.create({
   heroActionSecondaryText: { color: "#FFF9EF", fontSize: 13 },
 
   sectionCard: { marginTop: 10 },
+  bileCard: { marginBottom: 10 },
   healthSnapshotHeader: {
     marginBottom: 8,
     paddingBottom: 6,

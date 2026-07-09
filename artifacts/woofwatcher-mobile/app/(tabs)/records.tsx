@@ -93,6 +93,7 @@ import {
   type GeneratedBinaryArtifactSource,
 } from "@/lib/reportGeneratedBinaryArtifact";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
+import { resolvePetName } from "@/lib/petIdentity";
 import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
 import { shareTextPayload } from "@/lib/shareText";
 
@@ -977,10 +978,10 @@ export default function RecordsScreen() {
                   <Text style={[s.recordsCredentialIdLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
                     WOOFWATCHER DOG ID
                   </Text>
-                  <Text numberOfLines={1} style={[s.recordsCredentialIdName, { color: colors.navy, fontFamily: DISPLAY }]}>
-                    {credential.name}
+                  <Text numberOfLines={1} style={[s.recordsCredentialIdName, { color: colors.brandNavy, fontFamily: DISPLAY }]}>
+                    {resolvePetName(credential.name)}
                   </Text>
-                  <Text numberOfLines={1} style={[s.recordsCredentialIdMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text numberOfLines={1} style={[s.recordsCredentialIdMeta, { color: colors.brandNavy + "99", fontFamily: "Inter_600SemiBold" }]}>
                     {credential.breed} - {credential.weight}
                   </Text>
                 </View>
@@ -989,7 +990,7 @@ export default function RecordsScreen() {
               <View style={[s.recordsCredentialHud, { backgroundColor: colors.brandNavy, borderColor: colors.brandNavy + "22" }]}>
                 {[
                   { label: "Saved", value: String(recordVault.total) },
-                  { label: "Ready", value: `${recordsVaultScore}%` },
+                  { label: "Vault", value: `${recordsVaultScore}%` },
                   { label: "Alerts", value: String(recordReminders.length + recordVault.missingCritical.length) },
                 ].map((item) => (
                   <View key={item.label} style={s.recordsCredentialHudCell}>

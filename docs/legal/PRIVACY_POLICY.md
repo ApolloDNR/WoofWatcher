@@ -1,8 +1,8 @@
 # WoofWatcher privacy policy
 
-Effective: [DATE — set at launch]
+Effective: July 9, 2026
 
-WoofWatcher is published by Pegasus Dreamscapes [confirm legal entity name] ("we," "us"). This policy explains what information the WoofWatcher app for iOS and Android handles, where it lives, and the choices you have. It is written to match how the app actually works at version 1.0.
+WoofWatcher is published by Pegasus Dreamscapes ("we," "us"). This policy explains what information the WoofWatcher app for iOS and Android handles, where it lives, and the choices you have. It is written to match how the app actually works at version 1.0.
 
 ## The short version
 
@@ -16,8 +16,8 @@ WoofWatcher is published by Pegasus Dreamscapes [confirm legal entity name] ("we
 
 WoofWatcher is a dog-care app that lets you log your dog's real daily care — meals, walks, potty breaks, medications, and observations — and see that care reflected in a pixel companion. It is published by:
 
-Pegasus Dreamscapes [confirm legal entity name]
-Support: [SUPPORT_EMAIL — Apollo to confirm]
+Pegasus Dreamscapes
+Support: reach us through the app's App Store or Google Play listing
 
 ## 2. What we collect: nothing
 
@@ -101,6 +101,5 @@ If we change this policy, we will update the effective date above and publish th
 
 Questions or requests about privacy:
 
-Support: [SUPPORT_EMAIL — Apollo to confirm]
-Publisher: Pegasus Dreamscapes [confirm legal entity name]
-[MAILING_ADDRESS — Apollo to confirm, if required in your jurisdiction]
+Support: reach us through the app's App Store or Google Play listing
+Publisher: Pegasus Dreamscapes

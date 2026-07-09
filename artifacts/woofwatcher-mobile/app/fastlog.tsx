@@ -18,6 +18,7 @@ import { useCare, type Entry } from "@/context/CareContext";
 import { careXpForEntry } from "@/lib/careCareer";
 import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
+import { MEAL_OUTCOME_UPDATE_OPTIONS } from "@/lib/mealOutcomeUpdate";
 import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 
 /**
@@ -98,12 +99,11 @@ function outcomeLabel(entry: {
   const type = normalizeCareEventType(entry.type);
   if (type === "meal") {
     const completion = detailString(entry.details, "mealCompletion");
-    if (completion === "ate-all") return "Ate all";
-    if (completion === "ate-most") return "Ate most";
-    if (completion === "ate-some") return "Ate some";
-    if (completion === "refused") return "Refused";
     if (completion === "grazing") return "Grazing";
     if (completion === "served") return "Served";
+    // Reuse the real outcome labels so complete/most/partial/skipped never drift.
+    const option = MEAL_OUTCOME_UPDATE_OPTIONS.find((o) => o.id === completion);
+    if (option) return option.label;
   }
   if (type === "medication") {
     const outcome = detailString(entry.details, "medicationOutcome");

@@ -32,6 +32,7 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
 } from "@/lib/mobileLayout";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
+import { resolvePetName } from "@/lib/petIdentity";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -174,8 +175,7 @@ export default function PackScreen() {
     bottomInset: insets.bottom,
   });
 
-  const petName =
-    state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
+  const petName = resolvePetName(state.profile.name);
 
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
   const careCareer = useMemo(() => deriveCareCareer(state.entries, now), [state.entries, now]);
@@ -200,7 +200,7 @@ export default function PackScreen() {
     () =>
       buildCarePass({
         audience: "sitter",
-        profile: state.profile,
+        profile: { ...state.profile, name: petName },
         dietProfile: state.dietProfile,
         entries: state.entries,
         routines: state.routines,
@@ -211,6 +211,7 @@ export default function PackScreen() {
       }),
     [
       state.profile,
+      petName,
       state.dietProfile,
       state.entries,
       state.routines,
@@ -317,18 +318,28 @@ export default function PackScreen() {
               </View>
               <View
                 accessibilityLabel={`${petName} care status: ${status.meta.label}`}
-                style={[
-                  s.petPresenceDot,
-                  {
-                    backgroundColor:
-                      status.mood === "unwell"
-                        ? colors.rose
-                        : status.mood === "anxious"
-                          ? colors.amber
-                          : colors.sage,
-                  },
-                ]}
-              />
+                style={s.petStatusChip}
+              >
+                <View
+                  style={[
+                    s.petPresenceDot,
+                    {
+                      backgroundColor:
+                        status.mood === "unwell"
+                          ? colors.rose
+                          : status.mood === "anxious"
+                            ? colors.amber
+                            : colors.sage,
+                    },
+                  ]}
+                />
+                <Text
+                  numberOfLines={1}
+                  style={[s.petStatusText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                >
+                  {status.meta.label}
+                </Text>
+              </View>
             </View>
 
             {state.pets
@@ -649,7 +660,7 @@ export default function PackScreen() {
                 { label: "Invites", value: householdAccess.localOnlyCaregivers },
                 { label: "Routine-only", value: householdAccess.routineOnlyOwners },
               ].map((metric) => (
-                <View key={metric.label} style={[s.accessMetric, { backgroundColor: colors.background }]}>
+                <View key={metric.label} style={[s.accessMetric, { backgroundColor: colors.background, borderColor: colors.border }]}>
                   <Text style={[s.accessMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                     {metric.value}
                   </Text>
@@ -782,12 +793,21 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  petStatusChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    alignSelf: "flex-start",
+    marginTop: 6,
+  },
+  petStatusText: {
+    fontSize: 10.5,
+    lineHeight: 14,
+  },
   petPresenceDot: {
     width: 10,
     height: 10,
     borderRadius: 999,
-    alignSelf: "flex-start",
-    marginTop: 6,
   },
   addPetRow: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -992,6 +1012,7 @@ const s = StyleSheet.create({
   },
   accessMetric: {
     flex: 1,
+    borderWidth: 1,
     borderRadius: 8,
     paddingVertical: 9,
     alignItems: "center",

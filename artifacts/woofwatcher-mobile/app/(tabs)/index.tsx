@@ -73,6 +73,7 @@ import {
   findOpenWalkSession,
 } from "@/lib/walkSession";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
+import { resolvePetName } from "@/lib/petIdentity";
 import { deriveTodayCommand } from "@/lib/todayCommand";
 
 interface QuickItem {
@@ -90,12 +91,6 @@ interface QuickItem {
 
 type StatusTileTarget = "mood" | "health" | "diet" | "bond";
 type TodayMetricTarget = "activity" | "meals" | "potty";
-type PhoenixStatusMeterTarget =
-  | "energy"
-  | "hunger"
-  | "hydration"
-  | "bile"
-  | "bond";
 type HomeWatchTarget = "health" | "bile" | "alone";
 type HomePresenceRoute =
   | "/more?section=household"
@@ -409,10 +404,7 @@ export default function HomeScreen() {
     [state.caregivers, state.entries, state.profile, state.routines, now],
   );
 
-  const petName =
-    state.profile.name && state.profile.name !== "My Dog"
-      ? state.profile.name
-      : "Phoenix";
+  const petName = resolvePetName(state.profile.name);
   const avatarTemplate = useMemo(
     () => getAvatarTemplate(avatarConfig.templateId),
     [avatarConfig.templateId],
@@ -658,6 +650,9 @@ export default function HomeScreen() {
   // "Walk with Emma in 25 min · Dinner at 7:00 PM" - built from the same
   // real Next Up items, never invented.
   const glanceLine = useMemo(() => {
+    // Next Up already owns the live-walk "Finish" CTA, so the mood card falls
+    // back to the calm command line instead of echoing the active walk here.
+    if (openWalkSession) return todayCommand.primaryAction.detail;
     const parts = nextUp.slice(0, 2).map((item, index) => {
       if (index === 0 && item.kind === "routine" && status.minutesUntilNext !== null) {
         return `${item.label} in ${formatDuration(status.minutesUntilNext)}`;
@@ -666,7 +661,7 @@ export default function HomeScreen() {
     });
     if (!parts.length) return todayCommand.primaryAction.detail;
     return parts.join(" · ");
-  }, [nextUp, status.minutesUntilNext, todayCommand.primaryAction.detail]);
+  }, [nextUp, openWalkSession, status.minutesUntilNext, todayCommand.primaryAction.detail]);
 
   // Recency chips: Fed / Potty / Walk / Alone Time, each from the latest
   // real log of that care lane.
@@ -717,9 +712,9 @@ export default function HomeScreen() {
         icon: "walk" as PixelIconName,
         label: "Walk",
         value: openWalkSession
-          ? "Active now"
+          ? "Now"
           : nextWalkSoon
-            ? "Due soon"
+            ? "Soon"
             : lastWalk
               ? formatAgo(lastWalk.occurredAt)
               : "None yet",
@@ -930,7 +925,6 @@ export default function HomeScreen() {
     [state.entries],
   );
 
-  const careProgress = careIntelligence.score;
   const questLine = careIntelligence.title;
   const adventureMode = useMemo(
     () =>
@@ -1004,27 +998,6 @@ export default function HomeScreen() {
     router.push(
       `/log?type=${todayMetricRouteType[target]}&detail=1&intent=${Date.now()}` as never,
     );
-  };
-
-  const openPhoenixStatusMeter = (target: PhoenixStatusMeterTarget) => {
-    void Haptics.selectionAsync();
-    if (target === "energy") {
-      router.push("/health?tab=health" as never);
-      return;
-    }
-    if (target === "bile") {
-      router.push("/health?tab=bile" as never);
-      return;
-    }
-    if (target === "hunger") {
-      router.push(`/log?type=meal&detail=1&intent=${Date.now()}` as never);
-      return;
-    }
-    if (target === "hydration") {
-      router.push(`/log?type=water&detail=1&intent=${Date.now()}` as never);
-      return;
-    }
-    router.push(`/log?type=play&detail=1&intent=${Date.now()}` as never);
   };
 
   const openHomeWatchCard = (target: HomeWatchTarget) => {
@@ -2025,8 +1998,10 @@ export default function HomeScreen() {
           </Pressable>
 
           {/* Presence panel: who Phoenix is with right now, still one tap
-              from the live walk / alone-time workflows. Sits below the
-              mock-exact first screen. */}
+              from the live alone-time workflow. During an active walk, Next
+              Up already owns the live "Finish" CTA, so the panel steps aside
+              instead of echoing the same walk status a second time. */}
+          {openWalkSession ? null : (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${presenceLabel}. Presence state ${presenceState}`}
@@ -2093,6 +2068,7 @@ export default function HomeScreen() {
             </View>
             <Ionicons name="chevron-forward" size={17} color={colors.navy} />
           </Pressable>
+          )}
 
           <BoardCard style={s.careStatusCard}>
             <BoardSectionHeader
@@ -2171,6 +2147,10 @@ export default function HomeScreen() {
                                 )
                                   ? tile.tone
                                   : colors.muted,
+                              // Hairline keeps empty segments legible on the
+                              // dark board, where the muted fill nearly
+                              // matches the card behind it.
+                              borderColor: colors.border,
                             },
                           ]}
                         />
@@ -2351,15 +2331,21 @@ export default function HomeScreen() {
                         >
                           {mission.label}
                         </Text>
-                        <Text
-                          numberOfLines={1}
-                          style={[
-                            s.missionStatus,
-                            { color: tone, fontFamily: "Inter_800ExtraBold" },
-                          ]}
-                        >
-                          {mission.statusLabel}
-                        </Text>
+                        {/* The Quest board header already carries the "Care
+                            RPG" badge, so the adventure row drops its
+                            duplicate status pill and reads under its own
+                            "Adventure" category label. */}
+                        {mission.key === "adventure" ? null : (
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              s.missionStatus,
+                              { color: tone, fontFamily: "Inter_800ExtraBold" },
+                            ]}
+                          >
+                            {mission.statusLabel}
+                          </Text>
+                        )}
                       </View>
                       <Text
                         numberOfLines={1}
@@ -2636,54 +2622,70 @@ export default function HomeScreen() {
             ))}
           </View>
 
-          <BoardCard tone="navy" style={s.questCard}>
+          {/* Care quest sits on the default card surface, not navy, so it
+              reads as its own lighter block instead of a second dark panel
+              stacked under the Quest board mission deck. */}
+          <BoardCard style={s.questCard}>
             <View style={s.questTop}>
-              <View>
+              <View style={s.questTopCopy}>
                 <Text
                   style={[
                     s.questKicker,
-                    { color: colors.amber, fontFamily: "Fredoka_600SemiBold" },
+                    { color: colors.copper, fontFamily: "Fredoka_600SemiBold" },
                   ]}
                 >
                   Care quest
                 </Text>
-                <Text style={[s.questTitle, { fontFamily: "Fredoka_700Bold" }]}>
+                <Text
+                  style={[
+                    s.questTitle,
+                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                  ]}
+                >
                   {questLine}
                 </Text>
-                <Text style={[s.questSub, { fontFamily: "Inter_600SemiBold" }]}>
+                <Text
+                  style={[
+                    s.questSub,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
                   {careIntelligence.subtitle}
                 </Text>
               </View>
-              <View style={s.questBadge}>
+              <View
+                style={[
+                  s.questBadge,
+                  {
+                    backgroundColor: colors.rose + "1C",
+                    borderColor: colors.rose + "55",
+                  },
+                ]}
+              >
                 <PixelIcon name="heart" size={30} />
               </View>
             </View>
-            <View style={s.questMeterWrap}>
-              {Array.from({ length: 10 }).map((_, index) => {
-                const active = index < Math.round(careProgress / 10);
-                return (
-                  <View
-                    key={`quest-${index}`}
-                    style={[
-                      s.questPip,
-                      {
-                        backgroundColor: active
-                          ? colors.sage
-                          : "rgba(255,249,239,0.18)",
-                        borderColor: active
-                          ? colors.sage
-                          : "rgba(255,249,239,0.26)",
-                      },
-                    ]}
-                  />
-                );
-              })}
-            </View>
             <View style={s.questMetaRow}>
-              <Text style={[s.questMeta, { fontFamily: "Inter_700Bold" }]}>
+              <Text
+                style={[
+                  s.questMeta,
+                  { color: colors.navy, fontFamily: "Inter_700Bold" },
+                ]}
+              >
                 {careIntelligence.score}% Care IQ
               </Text>
-              <Text style={[s.questMeta, { fontFamily: "Inter_600SemiBold" }]}>
+              <Text
+                style={[
+                  s.questMeta,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
                 {careIntelligence.confidenceScore}% log confidence
               </Text>
             </View>
@@ -2695,30 +2697,42 @@ export default function HomeScreen() {
               style={({ pressed }) => [
                 s.questNextAction,
                 {
-                  borderColor: pressed
-                    ? colors.amber
-                    : "rgba(255,249,239,0.26)",
+                  borderColor: pressed ? colors.amber : colors.border,
                   backgroundColor: pressed
-                    ? "rgba(255,249,239,0.16)"
-                    : "rgba(255,249,239,0.1)",
+                    ? colors.secondary
+                    : colors.background,
                 },
               ]}
             >
-              <View style={s.questNextIcon}>
+              <View
+                style={[
+                  s.questNextIcon,
+                  {
+                    backgroundColor: colors.amber + "1C",
+                    borderColor: colors.amber + "55",
+                  },
+                ]}
+              >
                 <PixelIcon name={homeCareIntelligenceIcon} size={24} />
               </View>
               <View style={s.questNextCopy}>
                 <Text
                   style={[
                     s.questNextKicker,
-                    { fontFamily: "Inter_800ExtraBold" },
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_800ExtraBold",
+                    },
                   ]}
                 >
                   Next care move
                 </Text>
                 <Text
                   numberOfLines={1}
-                  style={[s.questNextTitle, { fontFamily: "Fredoka_700Bold" }]}
+                  style={[
+                    s.questNextTitle,
+                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                  ]}
                 >
                   {careIntelligence.nextAction.label}
                 </Text>
@@ -2726,22 +2740,34 @@ export default function HomeScreen() {
                   numberOfLines={2}
                   style={[
                     s.questNextDetail,
-                    { fontFamily: "Inter_600SemiBold" },
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
                   ]}
                 >
                   {careIntelligence.nextAction.detail}
                 </Text>
               </View>
-              <View style={s.questNextCta}>
+              <View
+                style={[s.questNextCta, { backgroundColor: colors.primary }]}
+              >
                 <Text
                   style={[
                     s.questNextCtaText,
-                    { fontFamily: "Inter_800ExtraBold" },
+                    {
+                      color: colors.primaryForeground,
+                      fontFamily: "Inter_800ExtraBold",
+                    },
                   ]}
                 >
                   {homeCareIntelligenceCta}
                 </Text>
-                <Ionicons name="chevron-forward" size={15} color="#FFF9EF" />
+                <Ionicons
+                  name="chevron-forward"
+                  size={15}
+                  color={colors.primaryForeground}
+                />
               </View>
             </Pressable>
             <Pressable
@@ -2751,12 +2777,21 @@ export default function HomeScreen() {
               style={({ pressed }) => [
                 s.adventureInline,
                 {
-                  borderColor: "rgba(255,249,239,0.28)",
+                  backgroundColor: pressed ? colors.secondary : colors.background,
+                  borderColor: colors.border,
                   opacity: pressed ? 0.78 : 1,
                 },
               ]}
             >
-              <View style={s.adventureIcon}>
+              <View
+                style={[
+                  s.adventureIcon,
+                  {
+                    backgroundColor: colors.copper + "1C",
+                    borderColor: colors.copper + "55",
+                  },
+                ]}
+              >
                 <PixelIcon
                   name={adventureQuestIcon(adventureQuest.id)}
                   size={25}
@@ -2764,91 +2799,41 @@ export default function HomeScreen() {
               </View>
               <View style={s.adventureCopy}>
                 <Text
-                  style={[s.adventureKicker, { fontFamily: "Inter_700Bold" }]}
+                  style={[
+                    s.adventureKicker,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_700Bold",
+                    },
+                  ]}
                 >
                   Adventure Mode
                 </Text>
                 <Text
                   numberOfLines={1}
-                  style={[s.adventureTitle, { fontFamily: "Fredoka_700Bold" }]}
+                  style={[
+                    s.adventureTitle,
+                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                  ]}
                 >
                   {adventureQuest.title}
                 </Text>
                 <Text
                   numberOfLines={2}
-                  style={[s.adventureSub, { fontFamily: "Inter_600SemiBold" }]}
+                  style={[
+                    s.adventureSub,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
                 >
                   Level {adventureMode.level} - {adventureMode.todayXp} XP today
                   - {adventureMode.memoriesCount} memories
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#FFF9EF" />
+              <Ionicons name="chevron-forward" size={18} color={colors.navy} />
             </Pressable>
-          </BoardCard>
-
-          <BoardCard style={s.statusCard}>
-            <BoardSectionHeader
-              title="Phoenix status"
-              accessory={
-                <HomeHeaderAction
-                  label="View full report"
-                  accessibilityLabel="Open full Health Watch"
-                  route="/health?tab=health"
-                />
-              }
-            />
-            <View style={s.meterStack}>
-              <StatusMeter
-                label="Energy"
-                icon="energy"
-                value={status.energy}
-                valueLabel={`${status.energy}%`}
-                tone={colors.sage}
-                accessibilityLabel="Open Phoenix energy in Health Watch"
-                accessibilityHint="Opens Health Watch for energy and activity context."
-                onPress={() => openPhoenixStatusMeter("energy")}
-              />
-              <StatusMeter
-                label="Hunger"
-                icon="hunger"
-                value={hungerScore}
-                valueLabel={fed ? "Full" : "Hungry"}
-                tone={fed ? colors.sage : colors.copper}
-                accessibilityLabel="Open Phoenix meal detail from hunger"
-                accessibilityHint="Opens the meal detail flow for portions and outcomes."
-                onPress={() => openPhoenixStatusMeter("hunger")}
-              />
-              <StatusMeter
-                label="Hydration"
-                icon="bile"
-                value={hydrationScore}
-                valueLabel="Good"
-                tone={colors.blueSignal}
-                accessibilityLabel="Open Phoenix water detail from hydration"
-                accessibilityHint="Opens the water detail flow for hydration notes."
-                onPress={() => openPhoenixStatusMeter("hydration")}
-              />
-              <StatusMeter
-                label="Bile Risk"
-                icon="bile"
-                value={bileCount ? 46 : 82}
-                valueLabel={bile.status}
-                tone={bile.color}
-                accessibilityLabel="Open Phoenix bile risk in Health Watch"
-                accessibilityHint="Opens Health Watch and Bile Watch context."
-                onPress={() => openPhoenixStatusMeter("bile")}
-              />
-              <StatusMeter
-                label="Bond"
-                icon="bond"
-                value={bondScore}
-                valueLabel={bondLabel}
-                tone={colors.sage}
-                accessibilityLabel="Open Phoenix bond play detail"
-                accessibilityHint="Opens the play detail flow for bond-building care."
-                onPress={() => openPhoenixStatusMeter("bond")}
-              />
-            </View>
           </BoardCard>
         </Animated.View>
       </ScrollView>
@@ -3329,6 +3314,7 @@ const s = StyleSheet.create({
     width: 13,
     height: 18,
     borderRadius: 4,
+    borderWidth: 1,
   },
   todayCommandCard: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -3641,20 +3627,20 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
   },
+  questTopCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
   questKicker: { fontSize: 11, textTransform: "uppercase" },
   questTitle: {
-    color: "#FFF9EF",
     fontSize: 17,
     lineHeight: 21,
     marginTop: 2,
-    maxWidth: 245,
   },
   questSub: {
-    color: "rgba(255,249,239,0.78)",
     fontSize: 11.5,
     lineHeight: 16,
     marginTop: 5,
-    maxWidth: 245,
   },
   questBadge: {
     width: 44,
@@ -3662,30 +3648,16 @@ const s = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,249,239,0.12)",
     borderWidth: 1,
-    borderColor: "rgba(255,249,239,0.18)",
-  },
-  questMeterWrap: {
-    flexDirection: "row",
-    gap: 5,
-    marginTop: 13,
-  },
-  questPip: {
-    flex: 1,
-    height: 12,
-    borderWidth: 1,
-    borderRadius: 2,
   },
   questMetaRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
-    marginTop: 9,
+    marginTop: 12,
   },
   questMeta: {
-    color: "rgba(255,249,239,0.82)",
     fontSize: 11.5,
   },
   questNextAction: {
@@ -3705,28 +3677,23 @@ const s = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,249,239,0.16)",
     borderWidth: 1,
-    borderColor: "rgba(255,249,239,0.2)",
   },
   questNextCopy: {
     flex: 1,
     minWidth: 0,
   },
   questNextKicker: {
-    color: "rgba(255,249,239,0.64)",
     fontSize: 8.5,
     letterSpacing: 0,
     textTransform: "uppercase",
   },
   questNextTitle: {
-    color: "#FFF9EF",
     fontSize: 13.5,
     lineHeight: 16,
     marginTop: 1,
   },
   questNextDetail: {
-    color: "rgba(255,249,239,0.74)",
     fontSize: 10.5,
     lineHeight: 14,
     marginTop: 2,
@@ -3739,10 +3706,8 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    backgroundColor: "rgba(255,249,239,0.12)",
   },
   questNextCtaText: {
-    color: "#FFF9EF",
     fontSize: 10.5,
   },
   adventureInline: {
@@ -3755,7 +3720,6 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "rgba(255,249,239,0.09)",
   },
   adventureIcon: {
     width: 38,
@@ -3763,28 +3727,23 @@ const s = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,249,239,0.16)",
+    borderWidth: 1,
   },
   adventureCopy: { flex: 1, minWidth: 0 },
   adventureKicker: {
-    color: "rgba(255,249,239,0.68)",
     fontSize: 9,
     textTransform: "uppercase",
   },
   adventureTitle: {
-    color: "#FFF9EF",
     fontSize: 14,
     lineHeight: 17,
     marginTop: 1,
   },
   adventureSub: {
-    color: "rgba(255,249,239,0.74)",
     fontSize: 10.5,
     lineHeight: 14,
     marginTop: 2,
   },
-  statusCard: { marginBottom: 10 },
-  meterStack: { gap: 8 },
   cardGrid: { gap: 10, marginTop: 10 },
   gridCard: { minHeight: 124 },
   todayGrid: {
