@@ -110,7 +110,8 @@ function summaryFor(input: {
     `${input.localOnlyCaregivers} pending invite${input.localOnlyCaregivers === 1 ? "" : "s"}`,
     `${input.routineOnlyOwners} routine-only owner${input.routineOnlyOwners === 1 ? "" : "s"}`,
   ];
-  if (!input.canShareInvite) parts.push("invite unavailable");
+  // The actionable next-step line already explains the pre-household state;
+  // an "invite unavailable" clause here just reads like an error.
   return `${parts.join(", ")}.`;
 }
 

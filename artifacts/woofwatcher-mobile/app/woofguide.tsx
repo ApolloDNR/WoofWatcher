@@ -244,7 +244,7 @@ export default function WoofGuideScreen() {
       setMessages((prev) => [{ id: `a_${Date.now()}`, role: "assistant", content: answer }, ...prev]);
     } catch {
       setMessages((prev) => [
-        { id: `err_${Date.now()}`, role: "assistant", content: "Unable to connect to care assistant. Check that the API server is running." },
+        { id: `err_${Date.now()}`, role: "assistant", content: "WoofGuide is unavailable right now. Your logs are safe - please try again in a moment." },
         ...prev,
       ]);
     } finally {

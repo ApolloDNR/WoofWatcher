@@ -1,3 +1,5 @@
+import { resolvePetName } from "./petIdentity.ts";
+
 export type CareTwinRosterPetStatus = "live" | "setup-needed" | "provider-gated";
 
 export interface CareTwinRosterWeight {
@@ -107,7 +109,10 @@ function statusDetail(status: CareTwinRosterPetStatus, name: string): string {
 }
 
 function petFromProfile(profile: CareTwinRosterProfile | null | undefined, isPrimary: boolean): CareTwinRosterPet {
-  const name = clean(profile?.publicLabel) || clean(profile?.name) || (isPrimary ? "Phoenix" : "Future dog");
+  const rawName = clean(profile?.publicLabel) || clean(profile?.name);
+  // One shared rule so the roster never says "My Dog" while the rest of the
+  // app says "Phoenix"; non-primary rows keep their own name or a placeholder.
+  const name = isPrimary ? resolvePetName(rawName) : rawName || "Future dog";
   const status = normalizeStatus(profile?.status, isPrimary);
   return {
     id: isPrimary ? "primary" : clean(profile?.id) || `pet_${slugify(name)}`,

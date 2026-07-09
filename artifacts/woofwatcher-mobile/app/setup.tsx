@@ -61,13 +61,13 @@ const HOUSEHOLD_MODES: {
     label: "Join by invite",
     value: "join",
     icon: "mail-open-outline",
-    detail: "Stage an invite code locally until provider-backed invite acceptance is enabled.",
+    detail: "Have an invite code? Enter it to join an existing household.",
   },
   {
     label: "Local preview",
     value: "local",
     icon: "phone-portrait-outline",
-    detail: "Keep setup on this device while accounts and household sync are being configured.",
+    detail: "Keep everything on this device for now - you can connect an account later.",
   },
 ];
 
@@ -179,7 +179,7 @@ export default function SetupScreen() {
                   {onboarding.completedCount}/{onboarding.totalCount}
                 </Text>
                 <Text style={[s.progressLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  Setup steps ready
+                  Steps to confirm before saving
                 </Text>
               </View>
               <View style={[s.percentPill, { backgroundColor: colors.primary + "16" }]}>
@@ -198,7 +198,10 @@ export default function SetupScreen() {
                     color={step.done ? colors.sage : colors.mutedForeground}
                   />
                   <Text numberOfLines={1} style={[s.stepText, { color: step.done ? colors.foreground : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    {step.title.replace("Set up ", "").replace("Add ", "")}
+                    {(() => {
+                      const t = step.title.replace("Set up ", "").replace("Add ", "");
+                      return t.charAt(0).toUpperCase() + t.slice(1);
+                    })()}
                   </Text>
                 </View>
               ))}
@@ -347,6 +350,7 @@ export default function SetupScreen() {
             </View>
           </BoardCard>
 
+          {ownerOps ? (
           <BoardCard style={s.authSetupProofCard}>
             <BoardSectionHeader
               title="Auth/Setup proof manifest"
@@ -379,6 +383,7 @@ export default function SetupScreen() {
               </Text>
             ))}
           </BoardCard>
+          ) : null}
 
           <View style={s.actions}>
             <Pressable

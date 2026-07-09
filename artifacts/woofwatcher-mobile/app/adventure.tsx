@@ -665,7 +665,7 @@ function QuestRow({
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  hero: { minHeight: 326, borderRadius: 8, padding: 16, marginBottom: 14, overflow: "hidden", borderWidth: 2, borderColor: "rgba(8,26,42,0.48)" },
+  hero: { minHeight: 360, borderRadius: 8, padding: 16, marginBottom: 14, overflow: "hidden", borderWidth: 2, borderColor: "rgba(8,26,42,0.48)" },
   heroImage: { borderRadius: 8 },
   heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(8, 26, 42, 0.22)" },
   heroTop: { position: "relative", zIndex: 5, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
@@ -718,7 +718,7 @@ const s = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "rgba(8,26,42,0.34)",
   },
-  heroCopy: { position: "relative", zIndex: 5, marginTop: 48, marginBottom: 84, maxWidth: "58%" },
+  heroCopy: { position: "relative", zIndex: 5, marginTop: 96, marginBottom: 76, maxWidth: "58%" },
   kicker: { fontSize: 11, letterSpacing: 0.8 },
   title: { color: "#FFFFFF", fontSize: 31, letterSpacing: 0, marginTop: 4 },
   subtitle: { color: "rgba(255,255,255,0.9)", fontSize: 13, lineHeight: 18, marginTop: 5, textShadowColor: "rgba(8,26,42,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },

@@ -275,7 +275,7 @@ export function describeQuickLogDetailSheet(
   const interactionRail: QuickLogInteractionRailItem[] = [
     {
       label: canQuickLog ? "Tap" : "Details first",
-      detail: canQuickLog ? "safe default" : "context before save",
+      detail: canQuickLog ? "safe default" : "before saving",
       tone: canQuickLog ? "quick" : "detail",
     },
     { label: "Hold", detail: "add context", tone: "detail" },

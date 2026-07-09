@@ -347,15 +347,21 @@ export default function PrivacyScreen() {
             <Ionicons name="download-outline" size={18} color="#FFFFFF" />
             <Text style={[s.primaryText, { fontFamily: "Inter_700Bold" }]}>Export care data</Text>
           </Pressable>
-          <Pressable
-            onPress={shareDeletionRequest}
-            accessibilityRole="button"
-            accessibilityLabel="Prepare account deletion request"
-            style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.75 : 1 }]}
-          >
-            <Ionicons name="trash-outline" size={17} color={colors.rose} />
-            <Text style={[s.secondaryText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>Deletion request</Text>
-          </Pressable>
+          {/* The email-based "Deletion request" only makes sense once a
+              provider account exists. In the local-first build there is no
+              server copy, so the on-device "Delete all data" below is the
+              real, complete deletion path - keep this owner-gated. */}
+          {ownerOps ? (
+            <Pressable
+              onPress={shareDeletionRequest}
+              accessibilityRole="button"
+              accessibilityLabel="Prepare account deletion request"
+              style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.75 : 1 }]}
+            >
+              <Ionicons name="trash-outline" size={17} color={colors.rose} />
+              <Text style={[s.secondaryText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>Deletion request</Text>
+            </Pressable>
+          ) : null}
         </View>
 
         <BoardCard style={s.privacyBoard}>
