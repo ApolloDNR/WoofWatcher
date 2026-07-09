@@ -285,7 +285,15 @@ export default function CalendarScreen() {
   // render as clearly-labeled, non-interactive preview content.
   const isSampleSchedule = routineBoard.items.length === 0;
   const scheduleRows = useMemo(() => {
-    const fallback = [
+    const fallback: {
+      id: string;
+      label: string;
+      type: string;
+      time: string;
+      detail: string;
+      status: RoutineBoardStatus;
+      owner?: string;
+    }[] = [
       { id: "breakfast", label: "Breakfast", type: "meal", time: "7:00 AM", detail: "1 1/4 cups", status: "done" as RoutineBoardStatus },
       { id: "walk-am", label: "Walk", type: "walk", time: "8:00 AM", detail: "45 min", status: "done" as RoutineBoardStatus },
       { id: "training", label: "Training", type: "training", time: "10:00 AM", detail: "15 min", status: "done" as RoutineBoardStatus },
@@ -300,7 +308,8 @@ export default function CalendarScreen() {
           label: item.label,
           type: item.normalizedType,
           time: item.time,
-          detail: item.owner || item.note || routineStatusLabel(item.status),
+          owner: item.owner || "",
+          detail: item.note || "",
           status: item.status,
         }))
       : fallback;
@@ -906,7 +915,6 @@ export default function CalendarScreen() {
                       <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                         {row.time}
                       </Text>
-                      <PixelIcon name={routinePixelIcon(row.type)} size={22} />
                       <View style={s.scheduleRowCopy}>
                         <Text style={[s.scheduleTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                           {row.label}
@@ -914,8 +922,11 @@ export default function CalendarScreen() {
                         <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                           {scheduleTab === "week" ? `${dayLabel(today)} - ${row.detail}` : row.detail}
                         </Text>
+                        <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
                       </View>
-                      <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
+                      <View style={[s.scheduleIconBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                        <PixelIcon name={routinePixelIcon(row.type)} size={22} />
+                      </View>
                     </View>
                     </React.Fragment>
                   );
@@ -940,16 +951,30 @@ export default function CalendarScreen() {
                     <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                       {row.time}
                     </Text>
-                    <PixelIcon name={routinePixelIcon(row.type)} size={22} />
                     <View style={s.scheduleRowCopy}>
                       <Text style={[s.scheduleTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                         {row.label}
                       </Text>
-                      <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {scheduleTab === "week" ? `${dayLabel(today)} - ${row.detail}` : row.detail}
-                      </Text>
+                      {row.owner ? (
+                        <View style={s.scheduleOwnerRow}>
+                          <Ionicons name="person-outline" size={11} color={colors.mutedForeground} />
+                          <Text
+                            numberOfLines={1}
+                            style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                          >
+                            {row.owner}
+                          </Text>
+                        </View>
+                      ) : row.detail ? (
+                        <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          {scheduleTab === "week" ? `${dayLabel(today)} - ${row.detail}` : row.detail}
+                        </Text>
+                      ) : null}
+                      <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
                     </View>
-                    <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
+                    <View style={[s.scheduleIconBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                      <PixelIcon name={routinePixelIcon(row.type)} size={22} />
+                    </View>
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Mark ${row.label} done`}
@@ -972,6 +997,23 @@ export default function CalendarScreen() {
                 );
               })}
             </View>
+
+            {!isSampleSchedule ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Add Event"
+                onPress={openNewRoutine}
+                style={({ pressed }) => [
+                  s.scheduleAddEvent,
+                  { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Ionicons name="add" size={15} color={colors.mutedForeground} />
+                <Text style={[s.scheduleAddEventText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  Add Event
+                </Text>
+              </Pressable>
+            ) : null}
 
             {isSampleSchedule ? (
               <Text style={[s.scheduleSampleNote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -2061,7 +2103,33 @@ const s = StyleSheet.create({
   },
   scheduleTitle: { fontSize: 13.5 },
   scheduleDetail: { fontSize: 11.5, marginTop: 2 },
-  scheduleRowPill: { alignSelf: "center" },
+  scheduleRowPill: { alignSelf: "flex-start", marginTop: 5 },
+  scheduleOwnerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 1,
+  },
+  scheduleIconBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scheduleAddEvent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderRadius: 14,
+    paddingVertical: 12,
+    marginTop: 12,
+  },
+  scheduleAddEventText: { fontSize: 13 },
   scheduleSampleRow: { opacity: 0.62 },
   scheduleSampleNote: { fontSize: 11.5, lineHeight: 16, marginTop: 10, textAlign: "center" },
   scheduleStatus: {
