@@ -3,6 +3,31 @@
 WoofWatcher is a mobile-first shared dog care OS for routines, logging, health
 patterns, records, caregiver handoff, and AI-assisted care.
 
+## Preview And Host On Replit
+
+The fastest way to see the app in a browser is the static Expo **web export**
+of the mobile app - no native tooling, no secrets, no backend required. It is
+exactly the build used for QA screenshots.
+
+- **Run button:** press Run. The `Project` workflow builds the web export the
+  first time (a few minutes) and serves it on port 8080, which Replit maps to
+  the webview. Later runs reuse the export and start instantly.
+- **Manual (Replit shell):**
+  - `pnpm install`
+  - `pnpm run preview` - build-if-needed, then serve on `0.0.0.0:$PORT`
+    (8080 via the Run button; falls back to 4194 locally).
+  - `pnpm run preview:rebuild` - force a fresh export first.
+- **Deploy (Publish):** the autoscale deployment builds `smoke:web` and serves
+  the export via `preview:web`. It is a fully client-side single-page app
+  (local-first storage), so it needs no server secrets to preview or host.
+
+Notes:
+- The web export is the **preview/host** surface. Native iOS/Android builds
+  still go through EAS on an Apple/Google developer account - Replit cannot
+  produce store binaries.
+- Auth/cloud features are owner-gated and inert in the export, so the preview
+  runs in local-first guest mode by design.
+
 ## Run And Operate
 
 - `pnpm --filter @workspace/api-server run dev` - run the API server.

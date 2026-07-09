@@ -1,8 +1,15 @@
 modules = ["nodejs-24", "python-3.11"]
 
+# Run button / classic runner: build the web export once, then serve it on
+# port 8080 (mapped to external 80 below) bound to 0.0.0.0 so the Replit
+# webview opens automatically.
+run = ["sh", "-c", "PORT=8080 node scripts/replit-preview.mjs"]
+
 [deployment]
 router = "application"
 deploymentTarget = "autoscale"
+build = ["pnpm", "--filter", "@workspace/woofwatcher-mobile", "run", "smoke:web"]
+run = ["pnpm", "--filter", "@workspace/woofwatcher-mobile", "run", "preview:web"]
 
 [deployment.postBuild]
 args = ["pnpm", "store", "prune"]
@@ -10,6 +17,16 @@ env = { "CI" = "true" }
 
 [workflows]
 runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "sequential"
+author = 0
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=8080 node scripts/replit-preview.mjs"
+waitForPort = 8080
 
 [agent]
 stack = "PNPM_WORKSPACE"
