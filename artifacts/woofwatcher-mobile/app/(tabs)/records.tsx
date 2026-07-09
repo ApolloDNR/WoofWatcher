@@ -502,7 +502,7 @@ export default function RecordsScreen() {
       [
         {
           title: "Delete record",
-          message: `Remove "${title}" from ${state.profile.name}'s vault?`,
+          message: `Remove "${title}" from ${resolvePetName(state.profile.name)}'s vault?`,
           confirmLabel: "Delete",
           destructive: true,
         },
@@ -538,7 +538,7 @@ export default function RecordsScreen() {
     ]
       .filter(Boolean)
       .join("\n");
-    void shareTextPayload({ message: lines, title: `${state.profile.name} - ${periodLabel} report` });
+    void shareTextPayload({ message: lines, title: `${resolvePetName(state.profile.name)} - ${periodLabel} report` });
   };
 
   const shareCredential = () => {
@@ -862,7 +862,7 @@ export default function RecordsScreen() {
       id: "dog-id",
       icon: "card-outline",
       eyebrow: "Dog ID",
-      label: `${credential.name} credential`,
+      label: `${resolvePetName(credential.name)} credential`,
       detail: `${credentialReadinessPercent}% ready for sitter, vet, and emergency handoff.`,
       actionLabel: "Share",
       tone: recordsVaultTone,
@@ -927,7 +927,7 @@ export default function RecordsScreen() {
           <BoardRouteHeader
             kicker="Records"
             title="Records"
-            subtitle={`${state.profile.name}'s file cabinet - trends, incidents & reports`}
+            subtitle={`${resolvePetName(state.profile.name)}'s file cabinet - trends, incidents & reports`}
             icon="folder-open-outline"
           />
 

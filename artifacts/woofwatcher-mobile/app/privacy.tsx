@@ -34,6 +34,7 @@ import {
   type AccountSafetyStatus,
 } from "@/lib/privacySafety";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
+import { resolvePetName } from "@/lib/petIdentity";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import { shareTextPayload } from "@/lib/shareText";
@@ -242,7 +243,7 @@ export default function PrivacyScreen() {
       [
         {
           title: "Delete all data on this device?",
-          message: `This permanently removes every log, routine, record, memory, report, and avatar for ${state.profile.name} from this device. WoofWatcher keeps no copy anywhere else. Export first if you want a backup.`,
+          message: `This permanently removes every log, routine, record, memory, report, and avatar for ${resolvePetName(state.profile.name)} from this device. WoofWatcher keeps no copy anywhere else. Export first if you want a backup.`,
           confirmLabel: "Delete everything",
           destructive: true,
         },
