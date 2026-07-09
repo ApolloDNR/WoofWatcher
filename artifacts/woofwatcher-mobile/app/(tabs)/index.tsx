@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -1402,6 +1403,30 @@ export default function HomeScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
+      {/* Full-bleed storybook backdrop from the mock boards: the scene fills
+          the whole screen top to bottom. The dog's traffic area is the top
+          band; a soft scrim quiets the lower floor so the floating console
+          stays legible while the background still peeks through. */}
+      <Image
+        source={
+          homeImmersiveRoomIsNight(new Date(now).getHours())
+            ? HOME_IMMERSIVE_ROOM_NIGHT
+            : HOME_IMMERSIVE_ROOM_DAY
+        }
+        resizeMode="cover"
+        style={s.fullBleedArt}
+        fadeDuration={0}
+      />
+      <LinearGradient
+        colors={[
+          "rgba(0,0,0,0)",
+          colors.background + "66",
+          colors.background + "E0",
+        ]}
+        locations={[0.3, 0.55, 0.92]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
       <ScrollView
         style={s.container}
         contentContainerStyle={{
@@ -1548,19 +1573,7 @@ export default function HomeScreen() {
           {/* The room is a framed storybook card: day/night art fills the
               frame and the living twin roams inside it, matching Apollo's
               storybook mockup Home. */}
-          <View style={[s.heroBackdrop, { borderColor: colors.border, backgroundColor: colors.card }]}>
-            <Image
-              source={
-                homeImmersiveRoomIsNight(new Date(now).getHours())
-                  ? HOME_IMMERSIVE_ROOM_NIGHT
-                  : HOME_IMMERSIVE_ROOM_DAY
-              }
-              resizeMode="cover"
-              // Explicit size: react-native-web falls back to the asset's
-              // intrinsic dimensions without it and blows the card open.
-              style={[StyleSheet.absoluteFill, s.heroRoomArt]}
-              fadeDuration={0}
-            />
+          <View style={s.heroBackdrop}>
             <View
               accessibilityLabel="Phoenix Room"
               accessibilityHint={homeFirstScreenLayout.qaLabel}
@@ -2983,11 +2996,13 @@ const s = StyleSheet.create({
   heroBackdrop: {
     width: "100%",
     marginBottom: 0,
-    borderRadius: 24,
-    borderWidth: 1,
-    overflow: "hidden",
   },
-  heroRoomArt: {
+  fullBleedArt: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     width: "100%",
     height: "100%",
   },
