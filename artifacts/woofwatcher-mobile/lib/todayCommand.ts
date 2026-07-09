@@ -374,7 +374,7 @@ export function deriveTodayCommand(
         detail:
           sync.failed > 0
             ? "A local care log failed to reach the shared household record."
-            : "Offline logs are saved locally and need to sync.",
+            : "New logs are saved safely here and share when connected.",
         route: "/log",
         urgency: "watch",
         icon: "bolt",
