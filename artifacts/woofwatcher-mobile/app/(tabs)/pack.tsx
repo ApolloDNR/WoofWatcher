@@ -1,8 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
-import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Image,
+  type ImageSourcePropType,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetMe } from "@workspace/api-client-react";
 import { buildCarePass, deriveHouseholdAccessPlan } from "@workspace/care-domain";
@@ -156,6 +173,44 @@ function PackInfoTile({
   );
 }
 
+/**
+ * Idle breathe for the pet-card hero sprite: a slow ~3.5s scale pulse
+ * (1.0 -> 1.012), mirroring the LivingPhoenixRoom breath pattern. The
+ * amplitude stays tiny so the portrait reads alive without pulling focus
+ * (there is no app-wide reduced-motion setting yet, so subtle is the rule).
+ */
+function BreathingPetSprite({
+  source,
+  accessibilityLabel,
+}: {
+  source: ImageSourcePropType;
+  accessibilityLabel: string;
+}) {
+  const breath = useSharedValue(0);
+
+  useEffect(() => {
+    breath.value = withRepeat(
+      withTiming(1, { duration: 1750, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true,
+    );
+    return () => cancelAnimation(breath);
+  }, [breath]);
+
+  const breathStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + breath.value * 0.012 }],
+  }));
+
+  return (
+    <Animated.Image
+      source={source}
+      style={[s.petAvatarImage, breathStyle]}
+      resizeMode="cover"
+      accessibilityLabel={accessibilityLabel}
+    />
+  );
+}
+
 export default function PackScreen() {
   const colors = useColors();
   const router = useRouter();
@@ -292,10 +347,8 @@ export default function PackScreen() {
                 weight, and a live presence dot - every line real. */}
             <View style={[s.petHero, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <View style={[s.petAvatarFrame, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                <Image
+                <BreathingPetSprite
                   source={getAvatarSource(status.mood)}
-                  style={s.petAvatarImage}
-                  resizeMode="cover"
                   accessibilityLabel={`${petName} avatar`}
                 />
               </View>

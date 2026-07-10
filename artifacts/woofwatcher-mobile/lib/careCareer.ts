@@ -10,7 +10,7 @@ import { normalizeCareEventType, type CareEventDetails } from "@workspace/care-d
 export interface CareCareerEntryLike {
   type?: string;
   occurredAt?: string;
-  details?: CareEventDetails | { [key: string]: unknown };
+  details?: CareEventDetails | { [key: string]: unknown } | null;
 }
 
 export interface CareCareerModel {
@@ -67,11 +67,23 @@ const CARE_TITLES: ReadonlyArray<{ level: number; title: string }> = [
   { level: 1, title: "New Paw" },
 ];
 
+/** Walk-session entries carry `details.walkLifecycle` (see lib/walkSession). */
+function isInProgressWalk(details: CareCareerEntryLike["details"]): boolean {
+  if (details == null || typeof details !== "object" || Array.isArray(details)) {
+    return false;
+  }
+  return (details as { walkLifecycle?: unknown }).walkLifecycle === "in-progress";
+}
+
 export function careXpForEntry(entry: CareCareerEntryLike): number {
   const normalized = normalizeCareEventType(
     entry.type ?? "",
     entry.details as CareEventDetails,
   );
+  // Walk XP lands only when the walk finishes, matching the shared
+  // adventure lib's completion semantics. An in-progress session is not
+  // yet care evidence, so it earns nothing until it completes.
+  if (normalized === "walk" && isInProgressWalk(entry.details)) return 0;
   return CARE_XP_BY_TYPE[normalized] ?? DEFAULT_EVENT_XP;
 }
 

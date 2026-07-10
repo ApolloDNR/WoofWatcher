@@ -1316,7 +1316,7 @@ export default function HomeScreen() {
       spriteAction: "celebrate-hop",
     });
     showToast(
-      `Walk completed · ${formatDuration(patch.durationMinutes)} logged`,
+      `Walk completed · ${formatDuration(patch.durationMinutes)} logged · +${careXpForEntry({ ...openWalkSession, details: patch.details })} care XP`,
     );
   };
 
@@ -1358,7 +1358,7 @@ export default function HomeScreen() {
         tone: reactionToneColor(reactionPlan.toneRole),
         spriteAction: reactionPlan.spriteAction,
       });
-      showToast(`Walk started · +${careXpForEntry(entry)} care XP`, {
+      showToast("Walk started · care XP lands when you finish", {
         id,
         title: "Walk started",
         type: "walk",

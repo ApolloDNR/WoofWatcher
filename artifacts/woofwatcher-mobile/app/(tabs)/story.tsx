@@ -1,7 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
-import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Image,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  type StyleProp,
+  Text,
+  View,
+  type ViewStyle,
+} from "react-native";
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   deriveAdventureMode,
@@ -79,6 +97,39 @@ function formatWalkTime(iso: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+/**
+ * Gentle idle pulse for the adventure map's quest-marker card: a 2.5s
+ * opacity/scale breathe (1.0 -> 1.01, opacity dips to 0.96) in the
+ * LivingPhoenixRoom reanimated style. Only the marker moves - the map art
+ * itself stays perfectly still - and the amplitude stays tiny because the
+ * app has no reduced-motion setting yet.
+ */
+function QuestMarkerPulse({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const pulse = useSharedValue(0);
+
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withTiming(1, { duration: 1250, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true,
+    );
+    return () => cancelAnimation(pulse);
+  }, [pulse]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    opacity: 1 - pulse.value * 0.04,
+    transform: [{ scale: 1 + pulse.value * 0.01 }],
+  }));
+
+  return <Animated.View style={[style, pulseStyle]}>{children}</Animated.View>;
 }
 
 export default function StoryScreen() {
@@ -226,7 +277,9 @@ export default function StoryScreen() {
                 resizeMode="cover"
                 fadeDuration={0}
               />
-              <View style={[s.mapOverlayCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <QuestMarkerPulse
+                style={[s.mapOverlayCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
                 {trailStops.length > 0 ? (
                   <>
                     <View style={s.mapOverlayCopy}>
@@ -272,7 +325,7 @@ export default function StoryScreen() {
                     </Text>
                   </View>
                 )}
-              </View>
+              </QuestMarkerPulse>
             </Pressable>
 
             {/* Recent adventures: real visited places from logged walks. */}

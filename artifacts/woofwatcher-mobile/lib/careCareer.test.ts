@@ -12,6 +12,10 @@ import {
   deriveCareerWeek,
   deriveCareStreak,
 } from "./careCareer.ts";
+import {
+  buildWalkSessionFinishPatch,
+  buildWalkSessionStartEntry,
+} from "./walkSession.ts";
 
 const NOW = Date.parse("2026-07-06T12:00:00.000Z");
 
@@ -26,6 +30,36 @@ test("care XP comes only from real care evidence with per-type weights", () => {
   assert.equal(careXpForEntry(entry("treat", "2026-07-06T08:00:00.000Z")), 5);
   // Unknown types still count as small evidence, never zero and never huge.
   assert.equal(careXpForEntry(entry("mystery", "2026-07-06T08:00:00.000Z")), 4);
+});
+
+test("in-progress walk sessions earn no XP until they finish", () => {
+  // Real walk-session shape: started via the shared builder, so details
+  // carry walkLifecycle exactly as the app stores it.
+  const started = buildWalkSessionStartEntry({
+    caregiver: "Apollo",
+    now: "2026-07-06T09:00:00.000Z",
+  });
+  assert.equal(started.details?.walkLifecycle, "in-progress");
+  assert.equal(careXpForEntry(started), 0);
+
+  // The same entry finished flips to completed and earns the full walk XP,
+  // matching the shared adventure lib's completion semantics.
+  const patch = buildWalkSessionFinishPatch(started, {
+    caregiver: "Apollo",
+    now: "2026-07-06T09:30:00.000Z",
+  });
+  const finished = { ...started, ...patch };
+  assert.equal(finished.details.walkLifecycle, "completed");
+  assert.equal(careXpForEntry(finished), 20);
+
+  // Home's career card derives from this model: a walk that only just
+  // started adds nothing today; finishing it lands the +20.
+  const whileWalking = deriveCareCareer([started], NOW);
+  assert.equal(whileWalking.totalXp, 0);
+  assert.equal(whileWalking.todayXp, 0);
+  const afterWalk = deriveCareCareer([finished], NOW);
+  assert.equal(afterWalk.totalXp, 20);
+  assert.equal(afterWalk.todayXp, 20);
 });
 
 test("aliased event types normalize before XP weighting", () => {
