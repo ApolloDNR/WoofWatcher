@@ -29,7 +29,7 @@ import { useCare, CareState } from "@/context/CareContext";
 import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
-import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { resolvePetName } from "@/lib/petIdentity";
 import {
   getDockedComposerBottomPadding,
@@ -61,7 +61,7 @@ const ACTION_ICON: Record<WoofGuideActionIcon, IoniconName> = {
 };
 
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
-const WOOFGUIDE_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.night.source;
+const WOOFGUIDE_STAGE_ROOM = require("@/assets/avatar/rooms/woofguide-stage.png");
 const WOOFGUIDE_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
 const WOOFGUIDE_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
 

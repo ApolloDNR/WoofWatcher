@@ -10,7 +10,10 @@ Target files:
 - `phoenix-room-day.png` - legacy PixelLab dogless room layer retained for fallback/history.
 - `phoenix-room-night.png` - active dogless night deck layer; now carries the storybook night room (1200x900 render of `phoenix-room-storybook-night.png`). The PixelLab-era candidate remains in `phoenix-room-night-pixellab-source.png`.
 - `phoenix-room-bedtime.png` - bedtime room layer; now a storybook-family night scene (moonlit window, blanket-ready dog bed). PixelLab-era source retained in `phoenix-room-bedtime-pixellab-source.png`.
-- `phoenix-room-health-watch.png` - Health Watch stage layer; now a storybook-family rest nook (daylight window, water bowl, green dog bed lower right for the sleeping sprite). PixelLab-era source retained in `phoenix-room-health-watch-pixellab-source.png`.
+- `phoenix-room-health-watch.png` - Health Watch stage layer; a purpose-composed 16:9 storybook rest band (window and plant left, calm wall for the speech bubble, green dog bed right-of-center where the sleeping sprite lands). PixelLab-era source retained in `phoenix-room-health-watch-pixellab-source.png`.
+- `phoenix-room-day-banner.png` - ultra-wide (21:9) storybook console band for the Log/Plan quick-care decks (paneled wall, round rug, bowl left, open floor right for the sitting sprite).
+- `woofguide-stage.png` - square storybook evening study for the WoofGuide stage (lamplit bookshelf, calm dim wall upper-left for the bubble, open warm floor center-right for the dog).
+- `adventure-hero.png` - 3:4 storybook park-trail hero for Adventure Mode (winding path, calm greens on the left for the text panel, open path center-right for the walking sprite).
 - `phoenix-room-home-alone.png` - home-alone room layer; now a storybook-family scene (front door, toys on the rug). PixelLab-era source retained in `phoenix-room-home-alone-pixellab-source.png`.
 
 Rules:

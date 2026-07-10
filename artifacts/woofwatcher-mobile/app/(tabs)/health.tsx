@@ -995,8 +995,10 @@ const s = StyleSheet.create({
   healthStageSprite: {
     position: "absolute",
     zIndex: 4,
-    right: 12,
-    bottom: 6,
+    // Proportional offset keeps the sleeping sprite centered on the green
+    // dog bed baked right-of-center in the stage art at any card width.
+    right: "24%",
+    bottom: 8,
     width: 104,
     height: 104,
     alignItems: "center",

@@ -41,7 +41,7 @@ import { shareTextPayload } from "@/lib/shareText";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
-const ADVENTURE_STAGE_SCENE = require("@/assets/avatar/rooms/phoenix-room-day-option-b.png");
+const ADVENTURE_STAGE_SCENE = require("@/assets/avatar/rooms/adventure-hero.png");
 const ADVENTURE_STAGE_SPRITE = getCareTwinSpriteAsset("walk-loop");
 const ADVENTURE_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["walk-loop"];
 

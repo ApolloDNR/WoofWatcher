@@ -2572,7 +2572,9 @@ test("keeps WoofGuide rooted in a live pixel guidance stage", () => {
   assert.match(guide, /inverted=\{messages\.length > 0\}/);
   assert.match(guide, /ImageBackground/);
   assert.match(guide, /WOOFGUIDE_STAGE_ROOM/);
-  assert.match(guide, /CARE_TWIN_ROOM_VARIANT_ASSETS\.night/);
+  // Stage art is the purpose-composed evening-study scene, not a crop of the
+  // night room variant.
+  assert.match(guide, /woofguide-stage\.png/);
   assert.match(guide, /SpriteSheetPlayer/);
   assert.match(guide, /testID="woofguide-pixel-guidance-stage"/);
   assert.match(guide, /guideStage:\s*\{[\s\S]*minHeight:\s*294/);
