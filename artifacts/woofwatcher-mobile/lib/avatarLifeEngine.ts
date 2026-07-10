@@ -95,7 +95,9 @@ export const CARE_TWIN_SPRITE_MANIFEST: Record<CareTwinSpriteAction, CareTwinSpr
   "walk-loop": {
     key: "walk-loop",
     frameCount: 8,
-    fps: 10,
+    // 12fps over the two-stride strip keeps a natural ~1.5 strides/sec dog
+    // cadence; 10fps read as a choppy flipbook.
+    fps: 12,
     loop: true,
     anchor: "bottom-center",
     slotSize: 256,
