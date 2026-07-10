@@ -19,6 +19,7 @@ const WEB_FOLLOWS_SCHEME = process.env.EXPO_PUBLIC_WEB_COLOR_SCHEME === "auto";
 export function useColors() {
   const scheme = useColorScheme();
   const darkAllowed = Platform.OS !== "web" || WEB_FOLLOWS_SCHEME;
-  const palette = darkAllowed && scheme === "dark" ? colors.dark : colors.light;
-  return { ...palette, radius: colors.radius, pixelUi: colors.pixelUi };
+  const isDark = darkAllowed && scheme === "dark";
+  const palette = isDark ? colors.dark : colors.light;
+  return { ...palette, radius: colors.radius, pixelUi: colors.pixelUi, isDark };
 }

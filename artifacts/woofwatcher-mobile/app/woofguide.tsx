@@ -30,6 +30,7 @@ import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/Boa
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { resolvePetName } from "@/lib/petIdentity";
 import {
   getDockedComposerBottomPadding,
   getKeyboardAvoidingVerticalOffset,
@@ -193,7 +194,7 @@ export default function WoofGuideScreen() {
     topInset: insets.top,
     surface: "standalone",
   });
-  const name = state.profile.name || "your dog";
+  const name = resolvePetName(state.profile.name);
 
   const quickQuestions = useMemo(() => [
     `Why does ${name} vomit yellow bile?`,

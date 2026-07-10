@@ -1479,6 +1479,12 @@ export default function HomeScreen() {
         style={s.fullBleedArt}
         fadeDuration={0}
       />
+      {colors.isDark ? (
+        <View
+          style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(9,17,32,0.42)" }]}
+          pointerEvents="none"
+        />
+      ) : null}
       <LinearGradient
         colors={[
           "rgba(0,0,0,0)",

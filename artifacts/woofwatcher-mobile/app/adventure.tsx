@@ -651,7 +651,7 @@ function QuestRow({
       <View style={[s.questIcon, { backgroundColor: tone + "18" }]}>
         <Ionicons name={questIcon(quest.id)} size={17} color={tone} />
       </View>
-      <View style={{ flex: 1 }}>
+      <View style={s.questCopy}>
         <Text style={[s.questTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{quest.title}</Text>
         <Text style={[s.questPrompt, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{quest.prompt}</Text>
         <Text style={[s.questEvidence, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{evidenceLabel}</Text>
@@ -799,7 +799,11 @@ const s = StyleSheet.create({
   trailName: { fontSize: 15 },
   trailMeta: { fontSize: 11.5, marginTop: 1 },
   trailEmpty: { fontSize: 12.5, lineHeight: 18 },
-  questRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, borderWidth: 1, borderRadius: 8, padding: 11 },
+  questRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 8, padding: 11 },
+  // Keeps the copy column readable at phone widths: it never shrinks below
+  // 160pt, so the status pill and action button wrap to a second line
+  // instead of crushing the text into one-character columns.
+  questCopy: { flexGrow: 1, flexShrink: 1, flexBasis: 180, minWidth: 160 },
   questIcon: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   questTitle: { fontSize: 13.5 },
   questPrompt: { fontSize: 12, lineHeight: 16, marginTop: 2 },
