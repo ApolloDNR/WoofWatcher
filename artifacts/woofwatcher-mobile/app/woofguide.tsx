@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useWoofAuth } from "@/lib/auth";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -38,8 +38,12 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { pixelImageStyle } from "@/lib/pixelRendering";
+import { buildAiProviderProofManifest } from "@/lib/aiProviderProof";
 import {
   deriveWoofGuideActions,
+  deriveWoofGuideVetNoteAction,
+  resolveWoofGuideAssistantGate,
+  WOOFGUIDE_ASSISTANT_FALLBACK_LINKS,
   type WoofGuideActionCard,
   type WoofGuideActionIcon,
 } from "@/lib/woofGuideActions";
@@ -69,6 +73,15 @@ interface Message {
 const BASE_URL = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
   : "";
+
+// Honest provider gate: live answers stay off until structured AI provider
+// proof exists and a care-helper domain is configured. No provider is set up
+// in this build, so the chat affordances are replaced with truthful copy and
+// working destinations instead of a fake "try again" error.
+const ASSISTANT_GATE = resolveWoofGuideAssistantGate({
+  apiBaseUrl: BASE_URL,
+  liveAiProofReady: buildAiProviderProofManifest({}).liveAiAllowed,
+});
 
 function buildAssistantContext(state: CareState) {
   const today = new Date().toISOString().slice(0, 10);
@@ -160,10 +173,13 @@ export default function WoofGuideScreen() {
   const router = useRouter();
   const { state, addEntry, updateCareDoc } = useCare();
   const { getToken } = useWoofAuth();
+  const routeParams = useLocalSearchParams<{ prompt?: string | string[] }>();
+  const promptParam = Array.isArray(routeParams.prompt) ? routeParams.prompt[0] : routeParams.prompt;
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [reviewAction, setReviewAction] = useState<WoofGuideActionCard | null>(null);
+  const [handledPromptParam, setHandledPromptParam] = useState<string | null>(null);
   const composerBottomPadding = getDockedComposerBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -194,7 +210,9 @@ export default function WoofGuideScreen() {
   const guideSignal = Math.max(1, Math.min(5, actionCards.length || 1));
   const guideSpeech =
     actionCards[0]?.detail ??
-    `Ask about ${name}'s care. I can summarize logs and prepare owner-reviewed next steps.`;
+    (ASSISTANT_GATE.enabled
+      ? `Ask about ${name}'s care. I can summarize logs and prepare owner-reviewed next steps.`
+      : `Live answers are off in this build. I can still prep owner-reviewed drafts from ${name}'s logs.`);
   const guideHud = [
     {
       label: "Actions",
@@ -219,6 +237,9 @@ export default function WoofGuideScreen() {
   ];
 
   const sendMessage = useCallback(async (text: string) => {
+    // Hard stop while no assistant provider is configured: the honest gated
+    // UI replaces the ask affordances, and nothing may be posted anywhere.
+    if (!ASSISTANT_GATE.enabled) return;
     const q = text.trim();
     if (!q || loading) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -243,8 +264,10 @@ export default function WoofGuideScreen() {
       const answer = data.answer || "No response received.";
       setMessages((prev) => [{ id: `a_${Date.now()}`, role: "assistant", content: answer }, ...prev]);
     } catch {
+      // Only reachable when a provider is configured (gate enabled), so a
+      // retry suggestion is truthful here.
       setMessages((prev) => [
-        { id: `err_${Date.now()}`, role: "assistant", content: "WoofGuide is unavailable right now. Your logs are safe - please try again in a moment." },
+        { id: `err_${Date.now()}`, role: "assistant", content: "WoofGuide couldn't reach the assistant service. Your logs are safe on this device - check your connection and try again." },
         ...prev,
       ]);
     } finally {
@@ -262,10 +285,20 @@ export default function WoofGuideScreen() {
       router.push(action.route);
       return;
     }
-    if (action.prompt) {
+    if (action.prompt && ASSISTANT_GATE.enabled) {
       void sendMessage(action.prompt);
     }
   }, [router, sendMessage]);
+
+  // Health Watch's "Draft vet questions" funnel lands here with
+  // prompt=health-review. Open the existing deterministic owner-reviewed
+  // vet-note draft immediately so the funnel ends somewhere that works
+  // even while the live assistant is gated off.
+  useEffect(() => {
+    if (promptParam !== "health-review" || handledPromptParam === "health-review") return;
+    setHandledPromptParam("health-review");
+    setReviewAction(deriveWoofGuideVetNoteAction(state));
+  }, [promptParam, handledPromptParam, state]);
 
   const applyDraft = useCallback(() => {
     const draft = reviewAction?.draft;
@@ -425,22 +458,42 @@ export default function WoofGuideScreen() {
                           Drafts stay owner-reviewed
                         </Text>
                       </View>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel="Ask first WoofGuide quick question from guidance console"
-                        onPress={() => {
-                          void sendMessage(quickQuestions[0]);
-                        }}
-                        style={({ pressed }) => [
-                          s.guideStageAction,
-                          { backgroundColor: colors.sage, opacity: pressed ? 0.82 : 1 },
-                        ]}
-                      >
-                        <Text style={[s.guideStageActionText, { fontFamily: "Inter_800ExtraBold" }]}>
-                          Ask WoofGuide
-                        </Text>
-                        <Ionicons name="arrow-forward" size={15} color={colors.ivory} />
-                      </Pressable>
+                      {ASSISTANT_GATE.enabled ? (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Ask first WoofGuide quick question from guidance console"
+                          onPress={() => {
+                            void sendMessage(quickQuestions[0]);
+                          }}
+                          style={({ pressed }) => [
+                            s.guideStageAction,
+                            { backgroundColor: colors.sage, opacity: pressed ? 0.82 : 1 },
+                          ]}
+                        >
+                          <Text style={[s.guideStageActionText, { fontFamily: "Inter_800ExtraBold" }]}>
+                            Ask WoofGuide
+                          </Text>
+                          <Ionicons name="arrow-forward" size={15} color={colors.ivory} />
+                        </Pressable>
+                      ) : (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Open Health Watch from guidance console"
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            router.push("/health");
+                          }}
+                          style={({ pressed }) => [
+                            s.guideStageAction,
+                            { backgroundColor: colors.sage, opacity: pressed ? 0.82 : 1 },
+                          ]}
+                        >
+                          <Text style={[s.guideStageActionText, { fontFamily: "Inter_800ExtraBold" }]}>
+                            Health Watch
+                          </Text>
+                          <Ionicons name="arrow-forward" size={15} color={colors.ivory} />
+                        </Pressable>
+                      )}
                     </View>
                   </ImageBackground>
                 </BoardCard>
@@ -469,25 +522,69 @@ export default function WoofGuideScreen() {
                     </View>
                   </View>
                 </BoardCard>
-                <BoardCard style={s.quickQuestionBoard}>
-                  <BoardSectionHeader
-                    title="Quick questions"
-                    accessory={<BoardPill label="Tap to ask" tone={colors.sage} />}
-                  />
-                  <View style={s.quickQuestionGrid}>
-                    {quickQuestions.map((q) => (
-                      <Pressable
-                        key={q}
-                        onPress={() => sendMessage(q)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Ask WoofGuide: ${q}`}
-                        style={({pressed}) => [s.quickChip, { backgroundColor: colors.background, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
-                      >
-                        <Text style={[s.quickText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{q}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </BoardCard>
+                {ASSISTANT_GATE.enabled ? (
+                  <BoardCard style={s.quickQuestionBoard}>
+                    <BoardSectionHeader
+                      title="Quick questions"
+                      accessory={<BoardPill label="Tap to ask" tone={colors.sage} />}
+                    />
+                    <View style={s.quickQuestionGrid}>
+                      {quickQuestions.map((q) => (
+                        <Pressable
+                          key={q}
+                          onPress={() => sendMessage(q)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Ask WoofGuide: ${q}`}
+                          style={({pressed}) => [s.quickChip, { backgroundColor: colors.background, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+                        >
+                          <Text style={[s.quickText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{q}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </BoardCard>
+                ) : (
+                  <BoardCard style={s.quickQuestionBoard}>
+                    <BoardSectionHeader
+                      title="Assistant"
+                      accessory={<BoardPill label={ASSISTANT_GATE.statusLabel} tone={colors.amber} />}
+                    />
+                    <Text style={[s.gateHeadline, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                      {ASSISTANT_GATE.headline}
+                    </Text>
+                    <Text style={[s.gatePrivacyNote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {ASSISTANT_GATE.privacyNote}
+                    </Text>
+                    <Text style={[s.gateWorksLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                      What works today
+                    </Text>
+                    <View style={s.gateLinkList}>
+                      {WOOFGUIDE_ASSISTANT_FALLBACK_LINKS.map((link) => (
+                        <Pressable
+                          key={link.id}
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            router.push(link.route);
+                          }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${link.label}. ${link.detail}`}
+                          style={({ pressed }) => [
+                            s.gateLinkRow,
+                            { backgroundColor: colors.background, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                          ]}
+                        >
+                          <View style={[s.actionIcon, { backgroundColor: colors.primary + "16" }]}>
+                            <Ionicons name={ACTION_ICON[link.icon]} size={17} color={colors.primary} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[s.actionLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{link.label}</Text>
+                            <Text style={[s.actionDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{link.detail}</Text>
+                          </View>
+                          <Ionicons name="chevron-forward" size={17} color={colors.primary} />
+                        </Pressable>
+                      ))}
+                    </View>
+                  </BoardCard>
+                )}
                 <BoardCard style={s.actionBoard}>
                   <BoardSectionHeader
                     title="Suggested actions"
@@ -551,31 +648,56 @@ export default function WoofGuideScreen() {
           )}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         />
-        <View style={[s.inputArea, { borderTopColor: colors.border, paddingBottom: composerBottomPadding, backgroundColor: colors.background }]}>
-          <TextInput
-            value={input}
-            onChangeText={setInput}
-            placeholder={`Ask about ${state.profile.name}...`}
-            placeholderTextColor={colors.mutedForeground}
-            style={[s.input, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
-            multiline
-            returnKeyType="send"
-            onSubmitEditing={() => sendMessage(input)}
-            blurOnSubmit
-          />
-          <Pressable
-            onPress={() => sendMessage(input)}
-            disabled={!input.trim() || loading}
-            accessibilityRole="button"
-            accessibilityLabel="Send WoofGuide message"
-            style={[s.sendBtn, { backgroundColor: input.trim() && !loading ? colors.primary : colors.card, borderColor: colors.border }]}
-          >
-            {loading
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Ionicons name="arrow-up" size={20} color={input.trim() ? "#fff" : colors.mutedForeground} />
-            }
-          </Pressable>
-        </View>
+        {ASSISTANT_GATE.enabled ? (
+          <View style={[s.inputArea, { borderTopColor: colors.border, paddingBottom: composerBottomPadding, backgroundColor: colors.background }]}>
+            <TextInput
+              value={input}
+              onChangeText={setInput}
+              placeholder={`Ask about ${state.profile.name}...`}
+              placeholderTextColor={colors.mutedForeground}
+              style={[s.input, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
+              multiline
+              returnKeyType="send"
+              onSubmitEditing={() => sendMessage(input)}
+              blurOnSubmit
+            />
+            <Pressable
+              onPress={() => sendMessage(input)}
+              disabled={!input.trim() || loading}
+              accessibilityRole="button"
+              accessibilityLabel="Send WoofGuide message"
+              style={[s.sendBtn, { backgroundColor: input.trim() && !loading ? colors.primary : colors.card, borderColor: colors.border }]}
+            >
+              {loading
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Ionicons name="arrow-up" size={20} color={input.trim() ? "#fff" : colors.mutedForeground} />
+              }
+            </Pressable>
+          </View>
+        ) : (
+          <View style={[s.inputArea, { borderTopColor: colors.border, paddingBottom: composerBottomPadding, backgroundColor: colors.background }]}>
+            <View style={[s.gateComposerNotice, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Ionicons name="cloud-offline-outline" size={16} color={colors.mutedForeground} />
+              <Text style={[s.gateComposerText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {ASSISTANT_GATE.composerNote}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push("/health");
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Open Health Watch instead of the disabled assistant"
+              style={({ pressed }) => [
+                s.gateComposerLink,
+                { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
+              ]}
+            >
+              <Text style={[s.gateComposerLinkText, { fontFamily: "Inter_700Bold" }]}>Health</Text>
+            </Pressable>
+          </View>
+        )}
       </KeyboardAvoidingView>
       <Modal visible={reviewAction !== null} transparent animationType="slide" onRequestClose={() => setReviewAction(null)}>
         <Pressable
@@ -788,6 +910,15 @@ const s = StyleSheet.create({
   quickQuestionGrid: { gap: 10 },
   quickChip: { borderRadius: 14, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, padding: 14 },
   quickText: { fontSize: 14, lineHeight: 20 },
+  gateHeadline: { fontSize: 14, lineHeight: 20 },
+  gatePrivacyNote: { fontSize: 12.5, lineHeight: 18, marginTop: 6 },
+  gateWorksLabel: { fontSize: 10.5, lineHeight: 14, letterSpacing: 0.6, textTransform: "uppercase", marginTop: 14, marginBottom: 8 },
+  gateLinkList: { gap: 10 },
+  gateLinkRow: { flexDirection: "row", alignItems: "center", gap: 11, borderRadius: 16, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, padding: 13 },
+  gateComposerNotice: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 18, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 14, paddingVertical: 10 },
+  gateComposerText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
+  gateComposerLink: { minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
+  gateComposerLinkText: { color: "#fff", fontSize: 13 },
   actionBoard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 8 },
   guideActionList: { gap: 10 },
   actionRow: { flexDirection: "row", alignItems: "center", gap: 11, borderRadius: 16, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, padding: 13 },
