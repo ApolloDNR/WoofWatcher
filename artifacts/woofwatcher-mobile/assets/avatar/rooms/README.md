@@ -9,9 +9,9 @@ Target files:
 - `phoenix-room-day-option-b.png` - active dogless day room layer for Avatar Studio, Adventure, auth, and day decks; now carries the storybook day room (center-cropped 1200x1200 render of `phoenix-room-storybook-day.png`).
 - `phoenix-room-day.png` - legacy PixelLab dogless room layer retained for fallback/history.
 - `phoenix-room-night.png` - active dogless night deck layer; now carries the storybook night room (1200x900 render of `phoenix-room-storybook-night.png`). The PixelLab-era candidate remains in `phoenix-room-night-pixellab-source.png`.
-- `phoenix-room-bedtime.png` - bedtime room layer (PixelLab-era source retained in `phoenix-room-bedtime-pixellab-source.png`).
-- `phoenix-room-health-watch.png` - Health Watch stage layer (PixelLab-era source retained in `phoenix-room-health-watch-pixellab-source.png`).
-- `phoenix-room-home-alone.png` - home-alone room layer (PixelLab-era source retained in `phoenix-room-home-alone-pixellab-source.png`).
+- `phoenix-room-bedtime.png` - bedtime room layer; now a storybook-family night scene (moonlit window, blanket-ready dog bed). PixelLab-era source retained in `phoenix-room-bedtime-pixellab-source.png`.
+- `phoenix-room-health-watch.png` - Health Watch stage layer; now a storybook-family rest nook (daylight window, water bowl, green dog bed lower right for the sleeping sprite). PixelLab-era source retained in `phoenix-room-health-watch-pixellab-source.png`.
+- `phoenix-room-home-alone.png` - home-alone room layer; now a storybook-family scene (front door, toys on the rug). PixelLab-era source retained in `phoenix-room-home-alone-pixellab-source.png`.
 
 Rules:
 
