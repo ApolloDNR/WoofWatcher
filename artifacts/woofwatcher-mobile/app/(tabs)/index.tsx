@@ -1468,10 +1468,10 @@ export default function HomeScreen() {
       <Image
         source={
           openWalkSession
-            ? homeImmersiveRoomIsNight(new Date(now).getHours())
+            ? colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours())
               ? HOME_IMMERSIVE_PARK_NIGHT
               : HOME_IMMERSIVE_PARK_DAY
-            : homeImmersiveRoomIsNight(new Date(now).getHours())
+            : colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours())
               ? HOME_IMMERSIVE_ROOM_NIGHT
               : HOME_IMMERSIVE_ROOM_DAY
         }
@@ -1481,7 +1481,7 @@ export default function HomeScreen() {
       />
       {colors.isDark ? (
         <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(9,17,32,0.42)" }]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(9,17,32,0.16)" }]}
           pointerEvents="none"
         />
       ) : null}

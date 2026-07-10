@@ -38,7 +38,7 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
-import { pixelImageStyle } from "@/lib/pixelRendering";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { buildAiProviderProofManifest } from "@/lib/aiProviderProof";
 import {
   deriveWoofGuideActions,
@@ -379,7 +379,7 @@ export default function WoofGuideScreen() {
                   <ImageBackground
                     source={WOOFGUIDE_STAGE_ROOM}
                     resizeMode="cover"
-                    imageStyle={[s.guideStageImage, pixelImageStyle]}
+                    imageStyle={[stageImageFill, s.guideStageImage, pixelImageStyle]}
                     style={s.guideStage}
                     testID="woofguide-pixel-guidance-stage"
                   >

@@ -91,7 +91,7 @@ import { dayKey, dayLabel } from "@/lib/time";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
-import { pixelImageStyle } from "@/lib/pixelRendering";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
 import { BoardActionButton, BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
@@ -2217,7 +2217,7 @@ export default function LogScreen() {
             <ImageBackground
               source={LOG_COMMAND_STAGE_ROOM}
               resizeMode="cover"
-              imageStyle={[s.logCommandStageImage, pixelImageStyle]}
+              imageStyle={[stageImageFill, s.logCommandStageImage, pixelImageStyle]}
               style={s.logCommandStage}
               testID="quick-log-command-pixel-stage"
             >

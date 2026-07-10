@@ -97,7 +97,7 @@ import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
-import { pixelImageStyle } from "@/lib/pixelRendering";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { BoardCard, BoardMetricTile, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import {
@@ -1502,7 +1502,7 @@ export default function MoreScreen() {
             <ImageBackground
               source={MORE_COMMAND_STAGE_ROOM}
               resizeMode="cover"
-              imageStyle={[s.moreCommandStageImage, pixelImageStyle]}
+              imageStyle={[stageImageFill, s.moreCommandStageImage, pixelImageStyle]}
               style={s.moreCommandStage}
               testID="more-launch-command-pixel-stage"
             >

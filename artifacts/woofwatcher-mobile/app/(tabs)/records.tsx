@@ -79,7 +79,7 @@ import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
-import { pixelImageStyle } from "@/lib/pixelRendering";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import {
   buildReportArtifactExportFilePlan,
   buildReportArtifactShareContent,
@@ -939,7 +939,7 @@ export default function RecordsScreen() {
             <ImageBackground
               source={RECORDS_CREDENTIAL_STAGE_ROOM}
               resizeMode="stretch"
-              imageStyle={[s.recordsCredentialStageImage, pixelImageStyle]}
+              imageStyle={[stageImageFill, s.recordsCredentialStageImage, pixelImageStyle]}
               style={s.recordsCredentialStage}
               testID="records-credential-pixel-stage"
             >

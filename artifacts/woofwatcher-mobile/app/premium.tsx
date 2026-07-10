@@ -31,7 +31,7 @@ import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { notifyDialog } from "@/lib/confirmDialog";
 import { MIN_MOBILE_TOUCH_TARGET, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import { buildPaymentsProviderProofManifest } from "@/lib/paymentsProviderProof";
-import { pixelImageStyle } from "@/lib/pixelRendering";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -143,7 +143,7 @@ function PremiumScreenBody() {
             <ImageBackground
               source={PREMIUM_VALUE_STAGE_ROOM}
               resizeMode="stretch"
-              imageStyle={[s.premiumValueStageImage, pixelImageStyle]}
+              imageStyle={[stageImageFill, s.premiumValueStageImage, pixelImageStyle]}
               style={s.premiumValueStage}
               testID="premium-value-pixel-stage"
             >

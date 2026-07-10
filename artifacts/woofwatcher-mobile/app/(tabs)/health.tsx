@@ -29,7 +29,7 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { resolvePetName } from "@/lib/petIdentity";
-import { pixelImageStyle } from "@/lib/pixelRendering";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -556,7 +556,7 @@ export default function HealthScreen() {
           <ImageBackground
             source={HEALTH_WATCH_STAGE_ROOM}
             resizeMode="cover"
-            imageStyle={[s.healthStageImage, pixelImageStyle]}
+            imageStyle={[stageImageFill, s.healthStageImage, pixelImageStyle]}
             style={s.healthStage}
           >
             <View style={s.healthStageShade} />

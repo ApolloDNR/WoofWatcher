@@ -36,7 +36,7 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
-import { pixelImageStyle } from "@/lib/pixelRendering";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -286,7 +286,7 @@ export default function AdventureScreen() {
         <ImageBackground
           source={ADVENTURE_STAGE_SCENE}
           resizeMode="cover"
-          imageStyle={[s.heroImage, pixelImageStyle]}
+          imageStyle={[stageImageFill, s.heroImage, pixelImageStyle]}
           style={s.hero}
         >
           <View style={s.heroShade} />

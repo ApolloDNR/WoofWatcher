@@ -49,7 +49,7 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
-import { pixelImageStyle } from "@/lib/pixelRendering";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import {
   BoardActionButton,
@@ -798,7 +798,7 @@ export default function CalendarScreen() {
             <ImageBackground
               source={PLANS_COMMAND_STAGE_ROOM}
               resizeMode="cover"
-              imageStyle={[s.commandDeckImage, pixelImageStyle]}
+              imageStyle={[stageImageFill, s.commandDeckImage, pixelImageStyle]}
               style={[s.commandDeckStage, { borderColor: colors.border }]}
               testID="plans-command-pixel-stage"
             >

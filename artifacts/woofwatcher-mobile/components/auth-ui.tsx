@@ -22,7 +22,7 @@ import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import { isClerkConfigured } from "@/lib/auth";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
-import { pixelImageStyle } from "@/lib/pixelRendering";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 
 const PIXEL_ROOM_SOURCE = require("@/assets/avatar/rooms/phoenix-room-day-option-b.png");
 const PIXEL_DOG_SOURCE = require("@/assets/avatar/phoenix/approved/phoenix-main-avatar-v2-crisp.png");
@@ -104,7 +104,7 @@ export function AuthShell({
         <ImageBackground
           source={PIXEL_ROOM_SOURCE}
           resizeMode="cover"
-          imageStyle={[styles.stageImage, pixelImageStyle]}
+          imageStyle={[stageImageFill, styles.stageImage, pixelImageStyle]}
           style={styles.stage}
         >
           <View style={[styles.speechBubble, { backgroundColor: colors.ivory, borderColor: BUBBLE_INK }]}>
