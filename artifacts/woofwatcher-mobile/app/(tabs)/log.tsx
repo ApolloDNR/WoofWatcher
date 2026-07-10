@@ -34,6 +34,7 @@ import {
   type StickyNoteColor,
 } from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
+import { isClerkConfigured } from "@/lib/auth";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
@@ -89,14 +90,16 @@ import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSe
 import { dayKey, dayLabel } from "@/lib/time";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
-import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
 import { BoardActionButton, BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
-const LOG_COMMAND_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.day.source;
+// Wide banner composed for the ~4:1 console stage; the square day-room
+// painting stretched into a squashed wall band here.
+const LOG_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
 const LOG_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("ear-perk");
 const LOG_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["ear-perk"];
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
@@ -547,14 +550,20 @@ const LOG_GUIDANCE: Record<string, string> = {
   note: "Sticky notes keep tiny care details from disappearing.",
 };
 
+// Care data is local-first: without a configured account provider (same gate
+// as auth), device storage IS the success state, so sync/retry affordances and
+// "offline" framing stay hidden instead of implying a cloud that isn't there.
+const SYNC_PROVIDER_CONFIGURED = isClerkConfigured;
+
 function syncLabel(status: Entry["syncStatus"]): string | null {
   if (status === "pending") return "Pending sync";
-  if (status === "local") return "Saved offline";
+  if (status === "local") return SYNC_PROVIDER_CONFIGURED ? "Saved offline" : "Saved on this device";
   if (status === "failed") return "Sync failed";
   return null;
 }
 
 const DETAIL_SKIP_KEYS = new Set([
+  "adventureQuestId",
   "auditAction",
   "auditSubjectId",
   "auditTrail",
@@ -605,6 +614,7 @@ const DETAIL_SKIP_KEYS = new Set([
 ]);
 
 const DETAIL_LABELS: Record<string, string> = {
+  adventureQuestTitle: "Quest",
   amount: "Amount",
   condition: "Condition",
   kind: "Kind",
@@ -665,6 +675,22 @@ function detailValue(value: unknown): string | null {
   return null;
 }
 
+// Detail values like walkStartedAt arrive as ISO strings; render them as a
+// readable local time instead of the raw timestamp.
+const ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+
+function formatDetailTimestamp(value: string): string | null {
+  if (!ISO_TIMESTAMP_PATTERN.test(value)) return null;
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) return null;
+  return new Date(parsed).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function entryTypeLabel(type: string): string {
   const config = TYPE_BY_ID[type as CareEventType];
   return config?.label ?? humanizeKey(type);
@@ -703,7 +729,8 @@ function buildEntryDetailRows(entry: Entry): { label: string; value: string }[] 
     if (DETAIL_SKIP_KEYS.has(key)) return;
     const text = detailValue(value);
     if (!text) return;
-    rows.push({ label: humanizeKey(key), value: humanizeKey(text) });
+    const timestamp = formatDetailTimestamp(text);
+    rows.push({ label: humanizeKey(key), value: timestamp ?? humanizeKey(text) });
   });
 
   return rows;
@@ -1055,6 +1082,9 @@ export default function LogScreen() {
   const [promptMode, setPromptMode] = useState<"post-log" | "sticky">("post-log");
   const promptRef = useRef<TextInput>(null);
   const scrollRef = useRef<ScrollView>(null);
+  // Measured scroll target for the full composer card so "Add Details" and
+  // the Quick Log fallback always land on the composer instead of a guess.
+  const composerSectionY = useRef<number | null>(null);
   const [lastQuickLog, setLastQuickLog] = useState<{ id: string; title: string } | null>(null);
 
   // Entry editor
@@ -1826,13 +1856,21 @@ export default function LogScreen() {
         icon: "restaurant-outline" as const,
         tone: colors.sage,
       },
-      {
-        label: "Sync",
-        value: syncOutbox.total > 0 ? `${syncOutbox.total}` : "Ready",
-        detail: syncOutbox.total > 0 ? "queued safely" : "protected",
-        icon: syncOutbox.total > 0 ? ("cloud-offline-outline" as const) : ("cloud-done-outline" as const),
-        tone: syncOutbox.status === "needs-retry" ? colors.amber : colors.primary,
-      },
+      SYNC_PROVIDER_CONFIGURED
+        ? {
+            label: "Sync",
+            value: syncOutbox.total > 0 ? `${syncOutbox.total}` : "Ready",
+            detail: syncOutbox.total > 0 ? "queued safely" : "protected",
+            icon: syncOutbox.total > 0 ? ("cloud-offline-outline" as const) : ("cloud-done-outline" as const),
+            tone: syncOutbox.status === "needs-retry" ? colors.amber : colors.primary,
+          }
+        : {
+            label: "Saved",
+            value: "On device",
+            detail: "nothing waiting",
+            icon: "shield-checkmark-outline" as const,
+            tone: colors.sage,
+          },
     ],
     [
       colors.amber,
@@ -1960,8 +1998,16 @@ export default function LogScreen() {
     },
     {
       label: "Saved",
-      value: syncOutbox.total > 0 ? `${syncOutbox.total}` : "Ready",
-      tone: syncOutbox.status === "needs-retry" ? colors.amber : colors.primary,
+      value: SYNC_PROVIDER_CONFIGURED
+        ? syncOutbox.total > 0
+          ? `${syncOutbox.total}`
+          : "Ready"
+        : "On device",
+      tone: !SYNC_PROVIDER_CONFIGURED
+        ? colors.sage
+        : syncOutbox.status === "needs-retry"
+          ? colors.amber
+          : colors.primary,
     },
   ];
 
@@ -1975,10 +2021,17 @@ export default function LogScreen() {
     }
   };
 
+  const scrollToComposer = useCallback(() => {
+    scrollRef.current?.scrollTo({
+      y: Math.max((composerSectionY.current ?? 620) - 12, 0),
+      animated: true,
+    });
+  }, []);
+
   const focusFullComposerForLauncherAction = (action: LauncherAction) => {
     selectLauncherAction(action);
     setTimeout(() => {
-      scrollRef.current?.scrollTo({ y: 620, animated: true });
+      scrollToComposer();
     }, 80);
   };
 
@@ -2163,7 +2216,7 @@ export default function LogScreen() {
           <BoardCard padded={false} style={s.logCommandStageCard}>
             <ImageBackground
               source={LOG_COMMAND_STAGE_ROOM}
-              resizeMode="stretch"
+              resizeMode="cover"
               imageStyle={[s.logCommandStageImage, pixelImageStyle]}
               style={s.logCommandStage}
               testID="quick-log-command-pixel-stage"
@@ -2248,7 +2301,7 @@ export default function LogScreen() {
                       return;
                     }
                     Haptics.selectionAsync();
-                    scrollRef.current?.scrollTo({ y: 620, animated: true });
+                    scrollToComposer();
                   }}
                   style={({ pressed }) => [
                     s.logCommandAction,
@@ -2657,11 +2710,11 @@ export default function LogScreen() {
 
             <BoardActionButton
               label="Add Details (optional)"
-              accessibilityLabel="Add details to the selected log"
+              accessibilityLabel={`Add details to the selected ${selectedLabel} log in the full composer`}
               variant="soft"
               onPress={() => {
                 Haptics.selectionAsync();
-                scrollRef.current?.scrollTo({ y: 620, animated: true });
+                scrollToComposer();
               }}
             />
             </View>
@@ -2689,7 +2742,39 @@ export default function LogScreen() {
             ))}
           </View>
 
-          {syncOutbox.total > 0 ? (
+          {!SYNC_PROVIDER_CONFIGURED && state.entries.length > 0 ? (
+            // Local-first build: device storage is the success state, so the
+            // care record card confirms that instead of promising sync.
+            <View
+              style={[
+                s.outboxCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.sage + "33",
+                  shadowColor: colors.sage,
+                },
+              ]}
+            >
+              <View style={s.outboxTop}>
+                <View style={[s.outboxIcon, { backgroundColor: colors.sage + "18" }]}>
+                  <Ionicons name="shield-checkmark-outline" size={18} color={colors.sage} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[s.outboxEyebrow, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    CARE RECORD
+                  </Text>
+                  <Text style={[s.outboxTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    Saved on this device
+                  </Text>
+                  <Text style={[s.outboxMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    Nothing waiting. Phoenix's care record lives safely in this device's local storage.
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ) : null}
+
+          {SYNC_PROVIDER_CONFIGURED && syncOutbox.total > 0 ? (
             <View
               style={[
                 s.outboxCard,
@@ -2790,6 +2875,12 @@ export default function LogScreen() {
           ) : null}
 
           {/* Composer card */}
+          <View
+            style={{ height: 0 }}
+            onLayout={(event) => {
+              composerSectionY.current = event.nativeEvent.layout.y + topPadding;
+            }}
+          />
           <BoardCard style={s.composerHero}>
             <View style={s.quickLogDetailDock}>
             <View style={[s.composerHeroBanner, { backgroundColor: colors.brandNavy, borderColor: colors.shellNavy }]}>
@@ -3654,9 +3745,16 @@ export default function LogScreen() {
                     const compactStatusLabel =
                       statusLabel === "Saved offline"
                         ? "Offline"
-                        : statusLabel === "Pending sync"
-                          ? "Queued"
-                          : statusLabel;
+                        : statusLabel === "Saved on this device"
+                          ? "On device"
+                          : statusLabel === "Pending sync"
+                            ? "Queued"
+                            : statusLabel;
+                    // Without a sync provider, local storage is the success
+                    // state; render it calm instead of as a warning.
+                    const statusSettled =
+                      e.syncStatus === "synced" ||
+                      (!SYNC_PROVIDER_CONFIGURED && e.syncStatus === "local");
                     const stickyNotes = getStickyNotes(e.details);
                     const entryAttentionChips = getCareLogAttentionChips(e);
                     const pendingMeal = isPendingMealEntry(e);
@@ -3706,7 +3804,7 @@ export default function LogScreen() {
                                     backgroundColor:
                                       e.syncStatus === "failed"
                                         ? colors.rose + "14"
-                                        : e.syncStatus === "synced"
+                                        : statusSettled
                                           ? colors.sage + "14"
                                           : colors.amber + "14",
                                   },
@@ -3719,7 +3817,7 @@ export default function LogScreen() {
                                       color:
                                         e.syncStatus === "failed"
                                           ? colors.rose
-                                          : e.syncStatus === "synced"
+                                          : statusSettled
                                             ? colors.sage
                                             : colors.amber,
                                       fontFamily: "Inter_700Bold",

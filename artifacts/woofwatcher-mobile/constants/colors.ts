@@ -29,7 +29,9 @@ const lightTheme = {
   border: "#E4DAC2",
   input: "#E4DAC2",
 
-  amber: "#C98A2D",
+  // Deep amber tuned for small status text: >=4.5:1 (WCAG AA) on cream,
+  // ivory/card, amberSoft, and muted surfaces while staying warm, not muddy.
+  amber: "#8A5A0C",
   amberSoft: "#F6EAD1",
   rose: "#C96358",
   sage: "#4D8A56",

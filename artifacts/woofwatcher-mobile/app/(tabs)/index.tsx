@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
@@ -70,6 +71,7 @@ import {
 } from "@/lib/careCareer";
 import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import {
+  buildWalkSessionFinishPatch,
   buildWalkSessionStartEntry,
   findOpenWalkSession,
 } from "@/lib/walkSession";
@@ -94,7 +96,6 @@ type StatusTileTarget = "mood" | "health" | "diet" | "bond";
 type TodayMetricTarget = "activity" | "meals" | "potty";
 type HomeWatchTarget = "health" | "bile" | "alone";
 type HomePresenceRoute =
-  | "/more?section=household"
   | `/log?entry=${string}`
   | `/log?type=${string}&detail=1&intent=${number}`;
 type HomeNextUpRoute =
@@ -134,6 +135,11 @@ const HOME_IMMERSIVE_ROOM_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-
 // visibly walks it - the room returns when the walk is finished.
 const HOME_IMMERSIVE_PARK_DAY = require("@/assets/avatar/rooms/home-fullbleed-park-day.png");
 const HOME_IMMERSIVE_PARK_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-park-night.png");
+
+// Device-local flag so the first-run welcome card stays dismissed across
+// reloads. It keeps the "woofwatcher" key prefix so the privacy
+// erase-all-data flow removes it with every other WoofWatcher key.
+const HOME_WELCOME_DISMISSED_KEY = "woofwatcher.homeWelcomeDismissed.v1";
 
 export function homeImmersiveRoomIsNight(hour: number): boolean {
   return hour >= 20 || hour < 6;
@@ -332,7 +338,7 @@ export default function HomeScreen() {
   const { width: viewportWidth, height: viewportHeight } =
     useWindowDimensions();
   const router = useRouter();
-  const { state, addEntry, deleteEntry, refresh } = useCare();
+  const { state, addEntry, deleteEntry, updateEntry, refresh } = useCare();
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
 
   const topPadding = getRouteTopPadding({
@@ -423,7 +429,28 @@ export default function HomeScreen() {
   // A brand-new household: no care logged and no profile finished yet. We
   // greet them once (dismissible) and point at setup, without ever blocking
   // the app - guest/preview mode stays fully usable behind the card.
-  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  // `null` means the persisted flag has not hydrated yet, so the card never
+  // flashes for someone who already dismissed it.
+  const [welcomeDismissed, setWelcomeDismissed] = useState<boolean | null>(
+    null,
+  );
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(HOME_WELCOME_DISMISSED_KEY)
+      .then((raw) => {
+        if (!cancelled) setWelcomeDismissed(raw === "true");
+      })
+      .catch(() => {
+        if (!cancelled) setWelcomeDismissed(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const dismissWelcome = () => {
+    setWelcomeDismissed(true);
+    AsyncStorage.setItem(HOME_WELCOME_DISMISSED_KEY, "true").catch(() => {});
+  };
   const isFreshStart =
     !hasCaregivers &&
     state.entries.length === 0 &&
@@ -475,7 +502,7 @@ export default function HomeScreen() {
   const presenceSub = openAloneSession
     ? `${formatDuration(openAloneMinutes)} active - tap I\u2019m Home in Log`
     : openWalkSession
-      ? `${formatDuration(openWalkMinutes)} active - finish in Log`
+      ? `${formatDuration(openWalkMinutes)} active - tap Finish in Next Up`
       : `At home - ${timeLabel}`;
   const presenceRoute: HomePresenceRoute = openAloneSession
     ? openAloneSession.id
@@ -485,12 +512,12 @@ export default function HomeScreen() {
       ? openWalkSession.id
         ? homeLogEntryRoute(openWalkSession.id)
         : homeLogDetailRoute("walk", now)
-      : "/more?section=household";
+      : homeLogDetailRoute("alone", now);
   const presenceActionHint = openAloneSession
     ? "Opens the active Alone Time log so you can complete the return check-in."
     : openWalkSession
       ? "Opens the active walk log so you can finish or edit the walk."
-      : "Opens Household Pulse and care-team status in More.";
+      : "Opens the Alone Time flow to log heading out or time apart.";
 
   const meals = status.counts.meals;
   const fed = meals.target > 0 ? meals.done >= meals.target : true;
@@ -536,27 +563,12 @@ export default function HomeScreen() {
       return [
         {
           label: "Walk active",
-          time: `${formatDuration(openWalkMinutes)} - finish in Log`,
+          time: `${formatDuration(openWalkMinutes)} - tap Finish to complete`,
           icon: "walk" as PixelIconName,
           route: openWalkSession.id
             ? homeLogEntryRoute(openWalkSession.id)
             : homeLogDetailRoute("walk", now),
           meta: "Finish",
-          kind: "open-loop" as const,
-        },
-      ];
-    }
-    if (pendingMeal) {
-      const label = pendingMeal.title.split(" - ")[0] || "Meal";
-      return [
-        {
-          label: `${label} served`,
-          time: "Outcome pending",
-          icon: "meal" as PixelIconName,
-          route: pendingMeal.id
-            ? homeLogEntryRoute(pendingMeal.id)
-            : homeLogDetailRoute("meal", now),
-          meta: "Update",
           kind: "open-loop" as const,
         },
       ];
@@ -615,7 +627,6 @@ export default function HomeScreen() {
     openAloneSession,
     openWalkMinutes,
     openWalkSession,
-    pendingMeal,
     snoozedUntil,
     state.routines,
     caregiver,
@@ -623,26 +634,40 @@ export default function HomeScreen() {
     now,
   ]);
 
+  // Served meal awaiting its outcome: rendered as its own open-loop chip
+  // stacked above the planned Next Up item, so closing the meal loop never
+  // hides the plan (or the "more in Plan" link) from the hero flow.
+  const pendingMealOpenLoop = useMemo(
+    () =>
+      pendingMeal
+        ? {
+            label: `${pendingMeal.title.split(" - ")[0] || "Meal"} served`,
+            time: "Outcome pending",
+            icon: "meal" as PixelIconName,
+            route: pendingMeal.id
+              ? homeLogEntryRoute(pendingMeal.id)
+              : homeLogDetailRoute("meal", now),
+          }
+        : null,
+    [now, pendingMeal],
+  );
+
   const nextPrimary = nextUp[0];
   const nextCount = Math.max(nextUp.length, 1);
-  const nextMeta = pendingMeal
-    ? "Open meal"
-    : openAloneSession
-      ? "I'm Home"
-      : openWalkSession
-        ? "Finish walk"
-        : status.minutesUntilNext !== null
-          ? `In ${formatDuration(status.minutesUntilNext)}`
-          : (nextPrimary?.time ?? "Ready");
-  const nextDetail = pendingMeal
-    ? "Outcome pending - update when Phoenix finishes"
-    : openAloneSession
-      ? `${formatDuration(openAloneMinutes)} active - log return`
-      : openWalkSession
-        ? `${formatDuration(openWalkMinutes)} active - finish in Log`
-        : status.minutesUntilNext !== null
-          ? `${nextMeta} - ${nextPrimary?.time ?? "Scheduled"}`
-          : (nextPrimary?.time ?? "Ready when you are");
+  const nextMeta = openAloneSession
+    ? "I'm Home"
+    : openWalkSession
+      ? "Finish walk"
+      : status.minutesUntilNext !== null
+        ? `In ${formatDuration(status.minutesUntilNext)}`
+        : (nextPrimary?.time ?? "Ready");
+  const nextDetail = openAloneSession
+    ? `${formatDuration(openAloneMinutes)} active - log return`
+    : openWalkSession
+      ? `${formatDuration(openWalkMinutes)} active - tap Finish to complete`
+      : status.minutesUntilNext !== null
+        ? `${nextMeta} - ${nextPrimary?.time ?? "Scheduled"}`
+        : (nextPrimary?.time ?? "Ready when you are");
   const nextUpRoute = nextPrimary?.route ?? "/calendar";
 
   const snoozeNextUp = (item: HomeNextUpItem) => {
@@ -665,7 +690,7 @@ export default function HomeScreen() {
       if (index === 0 && item.kind === "routine" && status.minutesUntilNext !== null) {
         return `${item.label} in ${formatDuration(status.minutesUntilNext)}`;
       }
-      return `${item.label} ${item.time.includes(" - ") ? "" : "at "}${item.time}`.replace(" at Outcome pending", " - outcome pending");
+      return `${item.label} ${item.time.includes(" - ") ? "" : "at "}${item.time}`;
     });
     if (!parts.length) return todayCommand.primaryAction.detail;
     return parts.join(" · ");
@@ -1269,6 +1294,32 @@ export default function HomeScreen() {
     router.push(activeWalkRoute as never);
   };
 
+  // Home's Finish completes the walk right here with the same shared
+  // lifecycle patch /log's "Finish walk session" applies (route, distance,
+  // and notes stay optional and editable from the saved log afterward).
+  const finishWalkFromHome = () => {
+    if (!openWalkSession?.id) return;
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    }
+    const patch = buildWalkSessionFinishPatch(openWalkSession, {
+      caregiver,
+      now: Date.now(),
+    });
+    updateEntry(openWalkSession.id, patch as Partial<Omit<Entry, "id">>);
+    setRoomReaction({
+      id: Date.now(),
+      icon: "walk",
+      label: "Walk completed",
+      detail: `${petName} walked ${formatDuration(patch.durationMinutes)}. Add route or notes from the saved log anytime.`,
+      tone: reactionToneColor("reward"),
+      spriteAction: "celebrate-hop",
+    });
+    showToast(
+      `Walk completed · ${formatDuration(patch.durationMinutes)} logged`,
+    );
+  };
+
   const logQuick = (item: QuickItem) => {
     if (item.route) {
       router.push(item.route);
@@ -1529,13 +1580,13 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          {isFreshStart && !welcomeDismissed ? (
+          {isFreshStart && welcomeDismissed === false ? (
             <View style={[s.welcomeCard, s.softShadow, { backgroundColor: colors.forest }]}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Dismiss welcome"
                 hitSlop={MOBILE_INLINE_HIT_SLOP}
-                onPress={() => setWelcomeDismissed(true)}
+                onPress={dismissWelcome}
                 style={s.welcomeDismiss}
               >
                 <Ionicons name="close" size={16} color={colors.primaryForeground} />
@@ -1570,7 +1621,7 @@ export default function HomeScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Explore first"
-                  onPress={() => setWelcomeDismissed(true)}
+                  onPress={dismissWelcome}
                   style={({ pressed }) => [s.welcomeGhost, { opacity: pressed ? 0.7 : 1 }]}
                 >
                   <Text style={[s.welcomeGhostText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
@@ -1840,6 +1891,66 @@ export default function HomeScreen() {
                   </Pressable>
                 }
               />
+              {pendingMealOpenLoop ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Update ${pendingMealOpenLoop.label}. Outcome pending.`}
+                  accessibilityHint="Opens the served meal log so the outcome can be confirmed."
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    router.push(pendingMealOpenLoop.route as never);
+                  }}
+                  style={({ pressed }) => [
+                    s.nextOpenLoopChip,
+                    {
+                      backgroundColor: pressed
+                        ? colors.secondary
+                        : colors.amberSoft,
+                      borderColor: colors.amber,
+                    },
+                  ]}
+                >
+                  <PixelIcon name={pendingMealOpenLoop.icon} size={20} />
+                  <View style={s.nextOpenLoopCopy}>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.nextOpenLoopTitle,
+                        { color: colors.navy, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
+                      {pendingMealOpenLoop.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.nextOpenLoopMeta,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      {pendingMealOpenLoop.time}
+                    </Text>
+                  </View>
+                  <View
+                    style={[s.nextButton, { backgroundColor: colors.primary }]}
+                  >
+                    <Text
+                      style={[
+                        s.nextButtonText,
+                        {
+                          color: colors.primaryForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      Update
+                    </Text>
+                  </View>
+                </Pressable>
+              ) : null}
               {nextPrimary ? (
                 <View style={s.nextPrimaryRow}>
                   <Image
@@ -1879,7 +1990,26 @@ export default function HomeScreen() {
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel={`${nextPrimary.meta ?? "Start"} ${nextPrimary.label}`}
-                        onPress={() => router.push(nextPrimary.route as never)}
+                        accessibilityHint={
+                          nextPrimary.kind === "open-loop" &&
+                          nextPrimary.icon === "walk"
+                            ? "Completes the active walk now and logs the real duration."
+                            : undefined
+                        }
+                        onPress={() => {
+                          // The active-walk Finish acts here instead of
+                          // deep-linking to /log - same shared lifecycle
+                          // patch, zero extra hunting.
+                          if (
+                            nextPrimary.kind === "open-loop" &&
+                            nextPrimary.icon === "walk" &&
+                            openWalkSession
+                          ) {
+                            finishWalkFromHome();
+                            return;
+                          }
+                          router.push(nextPrimary.route as never);
+                        }}
                         style={({ pressed }) => [
                           s.nextButton,
                           {
@@ -3583,6 +3713,31 @@ const s = StyleSheet.create({
   homeQuickText: {
     fontSize: 9.5,
     textAlign: "center",
+  },
+
+  // Open-loop chip stacked above the planned Next Up item: a served meal
+  // waiting on its outcome never displaces the plan itself.
+  nextOpenLoopChip: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  nextOpenLoopCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  nextOpenLoopTitle: {
+    fontSize: 12.5,
+  },
+  nextOpenLoopMeta: {
+    fontSize: 10.5,
+    marginTop: 1,
   },
 
   // Next Up primary row: thumb + copy + Start/Snooze/Reassign

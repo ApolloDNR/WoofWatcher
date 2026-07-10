@@ -371,7 +371,9 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
       id: `pending-meal:${entry.id ?? entry.occurredAt}`,
       kind: "pending-meal",
       label: "Meal outcome pending",
-      detail: `${entry.title ?? "Meal"} was served. Confirm whether Phoenix ate all, some, refused, or is still grazing.`,
+      // Short enough for clamped mobile cards; the meal log offers the full
+      // ate all / some / refused / grazing outcome choices.
+      detail: `${entry.title ?? "Meal"} served. Confirm how much Phoenix ate.`,
       priority: "medium",
       targetEntryId: entry.id,
     });

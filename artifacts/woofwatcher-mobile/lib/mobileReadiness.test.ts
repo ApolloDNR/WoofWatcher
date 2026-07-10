@@ -1733,7 +1733,7 @@ test("keeps Home presence panel routed to exact household care state", () => {
 
   assert.match(
     home,
-    /type HomePresenceRoute =[\s\S]*"\/more\?section=household"[\s\S]*`\/log\?entry=\$\{string\}`[\s\S]*`\/log\?type=\$\{string\}&detail=1&intent=\$\{number\}`/,
+    /type HomePresenceRoute =[\s\S]*`\/log\?entry=\$\{string\}`[\s\S]*`\/log\?type=\$\{string\}&detail=1&intent=\$\{number\}`/,
   );
   assert.match(
     home,
@@ -1747,7 +1747,10 @@ test("keeps Home presence panel routed to exact household care state", () => {
     home,
     /openWalkSession\.id\s*\?\s*homeLogEntryRoute\(openWalkSession\.id\)\s*:\s*homeLogDetailRoute\("walk", now\)/,
   );
-  assert.match(home, /: "\/more\?section=household";/);
+  // The calm-state presence card opens the Alone Time flow (a real presence
+  // control) instead of dropping the owner in More with nothing to act on.
+  assert.match(home, /: homeLogDetailRoute\("alone", now\);/);
+  assert.doesNotMatch(home, /"\/more\?section=household"/);
   assert.match(home, /const openPresencePanel = \(\) =>/);
   assert.match(home, /router\.push\(presenceRoute as never\)/);
   assert.match(home, /accessibilityHint=\{presenceActionHint\}/);
@@ -2008,7 +2011,9 @@ test("keeps Health Watch as one flagship pixel room with one status panel", () =
   assert.match(health, /Health Snapshot/);
   assert.match(health, /healthStatusTitle/);
   assert.match(health, /healthHeroPanel/);
-  assert.match(health, /resizeMode="stretch"[\s\S]*style=\{s\.healthStage\}/);
+  // Health Watch stage uses "cover": the backing art is a purpose-composed
+  // wide band, so cover keeps it undistorted at any card size (no squash).
+  assert.match(health, /resizeMode="cover"[\s\S]*style=\{s\.healthStage\}/);
   assert.match(health, /width=\{104\}/);
   assert.match(health, /height=\{104\}/);
   assert.match(
@@ -2430,7 +2435,7 @@ test("keeps Quick Log aligned to the mobile design-system recovery recipe", () =
   assert.match(log, /quickLogSupportRail/);
   assert.match(log, /quickLogDetailDock/);
   assert.match(log, /logCommandStage:[\s\S]*width: "100%"[\s\S]*minHeight: 82/);
-  assert.match(log, /resizeMode="stretch"[\s\S]*testID="quick-log-command-pixel-stage"/);
+  assert.match(log, /resizeMode="cover"[\s\S]*testID="quick-log-command-pixel-stage"/);
   assert.match(log, /logCommandBubble:[\s\S]*maxWidth: "68%"/);
   assert.match(log, /logCommandSprite:[\s\S]*right: 12/);
   assert.match(log, /logCommandDock/);
@@ -2588,9 +2593,47 @@ test("keeps WoofGuide prompt, send, and owner-review actions on shared mobile to
     "sendBtn",
     "reviewCancel",
     "reviewApply",
+    "gateLinkRow",
+    "gateComposerLink",
   ]) {
     assertStyleReferencesSharedTouchTarget(guide, styleName);
   }
+});
+
+test("keeps the WoofGuide assistant honestly gated until a provider is configured", () => {
+  const guide = readAppFile("woofguide.tsx");
+  const guideActions = readMobileLibFile("woofGuideActions.ts");
+
+  // The screen must derive availability from the shared provider gate
+  // (structured AI provider proof + care-helper domain), never assume it.
+  assert.match(guide, /resolveWoofGuideAssistantGate/);
+  assert.match(guide, /buildAiProviderProofManifest\(\{\}\)\.liveAiAllowed/);
+  assert.match(guide, /if \(!ASSISTANT_GATE\.enabled\) return;/);
+
+  // The gated state must be honest and must not fake a transient outage.
+  assert.doesNotMatch(
+    guide,
+    /unavailable right now[\s\S]{0,120}try again in a moment/,
+    "WoofGuide must not claim a transient outage when no assistant provider exists",
+  );
+  assert.match(guideActions, /isn't enabled in this build/);
+  assert.match(guideActions, /Nothing you type here is sent anywhere/);
+  assert.match(guideActions, /nothing typed here would be sent/);
+
+  // Ask affordances stay behind the gate; the gated state offers working
+  // destinations instead of dead chat inputs.
+  assert.match(guide, /ASSISTANT_GATE\.enabled \? \(/);
+  assert.match(guide, /WOOFGUIDE_ASSISTANT_FALLBACK_LINKS\.map/);
+  assert.match(guideActions, /route: "\/health"/);
+  assert.match(guideActions, /route: "\/records"/);
+  assert.match(guideActions, /route: "\/",/);
+  assert.match(guide, /accessibilityLabel="Open Health Watch from guidance console"/);
+  assert.match(guide, /accessibilityLabel="Open Health Watch instead of the disabled assistant"/);
+
+  // Health Watch's "Draft vet questions" funnel must land on the existing
+  // deterministic owner-reviewed vet-note draft, not an unanswerable chat.
+  assert.match(guide, /promptParam !== "health-review"/);
+  assert.match(guide, /deriveWoofGuideVetNoteAction\(state\)/);
 });
 
 test("keeps Premium value, plan, and entitlement surfaces on shared board anatomy", () => {
@@ -3786,9 +3829,11 @@ test("keeps Records section status labels as badges instead of passive actions",
 test("keeps Records dog ID heading on shared board section anatomy", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 
+  // The heading stays short and static ("ID Card") so the four inline share
+  // actions never clip it; the resolved pet name renders on the card itself.
   assert.match(
     records,
-    /<BoardSectionHeader[\s\S]*title=\{`\$\{credential\.name\} ID Card`\}/,
+    /<BoardSectionHeader[\s\S]*title="ID Card"/,
   );
   assert.match(
     records,
@@ -4215,7 +4260,7 @@ test("keeps Reminder Center visible in Calendar before push notifications are en
   assert.match(calendar, /saveReminderNotificationPreferences/);
   assert.match(calendar, /Save quiet hours/);
   assert.match(calendar, /Opt out/);
-  assert.match(calendar, /Allow reminders after provider setup/);
+  assert.match(calendar, /Allow future reminders/);
   assert.match(calendar, /openPushNotificationProofMission/);
   assert.match(calendar, /push-notifications-proof/);
   assert.match(calendar, /Open push proof/);
@@ -4300,7 +4345,7 @@ test("keeps Plans schedule rooted in a live pixel command stage", () => {
 
   assert.match(calendar, /ImageBackground/);
   assert.match(calendar, /PLANS_COMMAND_STAGE_ROOM/);
-  assert.match(calendar, /CARE_TWIN_ROOM_VARIANT_ASSETS\.day/);
+  assert.match(calendar, /phoenix-room-day-banner\.png/);
   assert.match(calendar, /SpriteSheetPlayer/);
   assert.match(calendar, /getCareTwinSpriteAsset\("idle-breathe"\)/);
   assert.match(calendar, /CARE_TWIN_SPRITE_MANIFEST\["idle-breathe"\]/);
@@ -4389,7 +4434,7 @@ test("keeps Quick Log rooted in a live pixel composer stage", () => {
 
   assert.match(log, /ImageBackground/);
   assert.match(log, /LOG_COMMAND_STAGE_ROOM/);
-  assert.match(log, /CARE_TWIN_ROOM_VARIANT_ASSETS\.day/);
+  assert.match(log, /require\("@\/assets\/avatar\/rooms\/phoenix-room-day-banner\.png"\)/);
   assert.match(log, /SpriteSheetPlayer/);
   assert.match(log, /getCareTwinSpriteAsset\("ear-perk"\)/);
   assert.match(log, /CARE_TWIN_SPRITE_MANIFEST\["ear-perk"\]/);
@@ -4535,7 +4580,7 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   assert.doesNotMatch(adventure, />Save Memory</);
   assert.match(
     adventure,
-    /const actionLabel = quest\.status === "complete" \? "Open proof" : quest\.status === "locked" \? "Locked" : quest\.actionLabel/,
+    /const actionLabel = quest\.status === "complete" \? "Open proof" : quest\.status === "locked" \? "Locked" : walkInProgress \? "Finish walk" : quest\.actionLabel/,
   );
   assert.doesNotMatch(
     adventure,

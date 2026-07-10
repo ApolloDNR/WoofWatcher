@@ -220,15 +220,23 @@ export default function HealthScreen() {
       const watchSignals = dayEntries.filter((entry) =>
         ["vomit", "symptom", "incident"].includes(normalizeCareEventType(entry.type, entry.details)),
       ).length;
-      const value = Math.max(0.18, Math.min(1, 0.34 + careLogs * 0.1 - watchSignals * 0.18));
+      // Days with zero logs stay neutral: no data should never render as a
+      // full green "all good" bar.
+      const hasData = dayEntries.length > 0;
+      const value = hasData ? Math.max(0.18, Math.min(1, 0.34 + careLogs * 0.1 - watchSignals * 0.18)) : 0;
 
       return {
         label: formatter.format(date).slice(0, 1),
         value,
-        tone: watchSignals ? (watchSignals > 1 ? colors.rose : colors.amber) : colors.sage,
+        hasData,
+        tone: !hasData
+          ? colors.muted
+          : watchSignals
+            ? (watchSignals > 1 ? colors.rose : colors.amber)
+            : colors.sage,
       };
     });
-  }, [colors.amber, colors.rose, colors.sage, now, state.entries]);
+  }, [colors.amber, colors.muted, colors.rose, colors.sage, now, state.entries]);
 
   const bileStatus =
     healthWatch.status === "alert"
@@ -547,7 +555,7 @@ export default function HealthScreen() {
         <BoardCard style={s.heroCard}>
           <ImageBackground
             source={HEALTH_WATCH_STAGE_ROOM}
-            resizeMode="stretch"
+            resizeMode="cover"
             imageStyle={[s.healthStageImage, pixelImageStyle]}
             style={s.healthStage}
           >
@@ -637,9 +645,9 @@ export default function HealthScreen() {
                           style={[
                             s.healthRhythmBar,
                             {
-                              height: 8 + Math.round(day.value * 22),
+                              height: day.hasData ? 8 + Math.round(day.value * 22) : 8,
                               backgroundColor: day.tone,
-                              borderColor: day.tone,
+                              borderColor: day.hasData ? day.tone : colors.border,
                             },
                           ]}
                         />
@@ -699,7 +707,7 @@ export default function HealthScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Log a health note"
-              onPress={() => openHealthStatusRoute("symptom")}
+              onPress={() => openHealthStatusRoute("note")}
               style={({ pressed }) => [
                 s.heroActionPrimary,
                 { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
@@ -843,7 +851,7 @@ export default function HealthScreen() {
                 <HealthHeaderAction
                   label="Owner notes"
                   accessibilityLabel="Open health owner notes"
-                  onPress={() => openHealthStatusRoute("symptom")}
+                  onPress={() => openHealthStatusRoute("note")}
                 />
               ) : undefined
             }

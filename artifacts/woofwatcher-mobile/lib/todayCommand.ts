@@ -6,6 +6,8 @@ import {
   type RoutineBoardItem,
 } from "../../../lib/care-domain/src/index.ts";
 
+import { resolvePetName } from "./petIdentity.ts";
+
 export type TodayCommandUrgency = "normal" | "watch" | "alert";
 
 export type TodayCommandRoute =
@@ -371,10 +373,11 @@ export function deriveTodayCommand(
       primaryAction: {
         kind: "sync",
         label: "Retry care sync",
+        // Short enough for Home's one-line glance without clipping.
         detail:
           sync.failed > 0
             ? "A local care log failed to reach the shared household record."
-            : "New logs are saved safely here and share when connected.",
+            : "Logs save here and share when connected.",
         route: "/log",
         urgency: "watch",
         icon: "bolt",
@@ -406,11 +409,14 @@ export function deriveTodayCommand(
   const pendingMeal = oldestPendingMeal(todays);
   if (pendingMeal) {
     const title = pendingMealTitle(pendingMeal);
+    const petName = resolvePetName(state.profile?.name);
     return {
       primaryAction: {
         kind: "update-meal-outcome",
         label: `Update ${title.toLowerCase()} outcome`,
-        detail: `${title} was served. Confirm whether Phoenix ate all, ate some, refused, or is still grazing.`,
+        // Short enough for Home's clamped lines; the meal log itself offers
+        // the full ate all / some / refused / grazing outcomes.
+        detail: `${title} served. Confirm how much ${petName} ate.`,
         route: entryRoute(pendingMeal.id),
         urgency: "normal",
         icon: "bowl",

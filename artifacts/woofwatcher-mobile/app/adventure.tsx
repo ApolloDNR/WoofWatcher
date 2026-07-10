@@ -134,19 +134,29 @@ export default function AdventureScreen() {
     [state.entries, now],
   );
 
+  const openWalkSession = useMemo(() => findOpenWalkSession(state.entries), [state.entries]);
+  // A quest walk that has started but not finished. The shared adventure lib
+  // grants walk XP from durationMinutes at completion, so an open walk still
+  // reads "available" with 0 XP; the board must say "in progress" instead of
+  // offering to start a second walk.
+  const isWalkQuestInProgress = (quest: AdventureQuest) =>
+    quest.action === "start-walk" && quest.status === "available" && Boolean(openWalkSession);
+
   const availableQuest =
     adventure.quests.find((quest) => quest.status === "available") ?? adventure.quests[0];
   const availableQuestProofEntryId = findQuestProofEntryId(availableQuest, state.entries, now);
+  const availableQuestInProgress = isWalkQuestInProgress(availableQuest);
   const primaryQuestActionLabel =
     availableQuest.status === "complete"
       ? "Open proof"
       : availableQuest.status === "locked"
         ? "Locked"
-        : availableQuest.actionLabel;
+        : availableQuestInProgress
+          ? "Finish walk"
+          : availableQuest.actionLabel;
 
   const caregiver = state.caregivers[0]?.name ?? "Care team";
   const caregiverRole = state.caregivers.find((person) => person.name === caregiver)?.role;
-  const openWalkSession = useMemo(() => findOpenWalkSession(state.entries), [state.entries]);
 
   const saveMemory = (quest: AdventureQuest | null | undefined = availableQuest) => {
     if (quest?.action === "save-memory" && quest.status === "locked") {
@@ -296,7 +306,11 @@ export default function AdventureScreen() {
           </View>
           <View style={s.heroSpeech}>
             <Text style={[s.heroSpeechText, { fontFamily: DISPLAY_SEMI }]}>
-              {availableQuest.status === "locked" ? "Care first, then memory." : "Quest ready!"}
+              {availableQuest.status === "locked"
+                ? "Care first, then memory."
+                : availableQuestInProgress
+                  ? "Walk in progress!"
+                  : "Quest ready!"}
             </Text>
             <Text style={[s.heroSpeechSub, { fontFamily: "Inter_700Bold" }]}>{availableQuest.title}</Text>
             <View style={s.heroSpeechTail} />
@@ -341,7 +355,9 @@ export default function AdventureScreen() {
           />
           <Text style={[s.boardTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{adventure.title}</Text>
           <Text style={[s.boardCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-            {adventure.nextStep}
+            {availableQuestInProgress
+              ? "A walk is in progress. Finish it from the walk log (or Home) to complete this quest and earn its XP."
+              : adventure.nextStep}
           </Text>
           <View style={[s.boundary, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <Ionicons name="lock-closed-outline" size={15} color={colors.sage} />
@@ -393,6 +409,7 @@ export default function AdventureScreen() {
                   quest={quest}
                   colors={colors}
                   proofEntryId={proofEntryId}
+                  walkInProgress={isWalkQuestInProgress(quest)}
                   onQuestAction={() => startQuest(quest, proofEntryId)}
                 />
               );
@@ -607,11 +624,13 @@ function QuestRow({
   quest,
   colors,
   proofEntryId,
+  walkInProgress,
   onQuestAction,
 }: {
   quest: AdventureQuest;
   colors: ReturnType<typeof useColors>;
   proofEntryId: string | null;
+  walkInProgress: boolean;
   onQuestAction: () => void;
 }) {
   const tone =
@@ -619,8 +638,14 @@ function QuestRow({
       ? colors.sage
       : quest.status === "locked"
         ? colors.mutedForeground
-        : colors.copperBright;
-  const actionLabel = quest.status === "complete" ? "Open proof" : quest.status === "locked" ? "Locked" : quest.actionLabel;
+        : walkInProgress
+          ? colors.amber
+          : colors.copperBright;
+  const actionLabel = quest.status === "complete" ? "Open proof" : quest.status === "locked" ? "Locked" : walkInProgress ? "Finish walk" : quest.actionLabel;
+  const statusLabel = walkInProgress ? "in progress" : quest.status;
+  const evidenceLabel = walkInProgress
+    ? "Walk in progress - finish it from the walk log or Home to earn this XP."
+    : quest.evidence;
   return (
     <View style={[s.questRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
       <View style={[s.questIcon, { backgroundColor: tone + "18" }]}>
@@ -629,10 +654,10 @@ function QuestRow({
       <View style={{ flex: 1 }}>
         <Text style={[s.questTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{quest.title}</Text>
         <Text style={[s.questPrompt, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{quest.prompt}</Text>
-        <Text style={[s.questEvidence, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{quest.evidence}</Text>
+        <Text style={[s.questEvidence, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{evidenceLabel}</Text>
       </View>
       <View style={[s.questStatus, { backgroundColor: tone + "16" }]}>
-        <Text style={[s.questStatusText, { color: tone, fontFamily: "Inter_700Bold" }]}>{quest.status}</Text>
+        <Text style={[s.questStatusText, { color: tone, fontFamily: "Inter_700Bold" }]}>{statusLabel}</Text>
       </View>
       <Pressable
         accessibilityRole="button"
@@ -641,7 +666,9 @@ function QuestRow({
             ? `Open proof for ${quest.title}`
             : quest.status === "locked"
               ? `${quest.title} locked. ${quest.evidence}`
-              : `Start quest: ${quest.title}. ${quest.actionLabel}`
+              : walkInProgress
+                ? `${quest.title} walk in progress. Open the walk log to finish it.`
+                : `Start quest: ${quest.title}. ${quest.actionLabel}`
         }
         disabled={quest.status === "locked"}
         onPress={onQuestAction}
@@ -718,7 +745,22 @@ const s = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "rgba(8,26,42,0.34)",
   },
-  heroCopy: { position: "relative", zIndex: 5, marginTop: 96, marginBottom: 76, maxWidth: "58%" },
+  // Dark scrim panel behind the hero text stack so the eyebrow/title/copy stay
+  // readable over bright pixel art; matches the Level/XP chip treatment below.
+  heroCopy: {
+    position: "relative",
+    zIndex: 5,
+    marginTop: 96,
+    marginBottom: 76,
+    maxWidth: "60%",
+    alignSelf: "flex-start",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,249,239,0.22)",
+    backgroundColor: "rgba(8,26,42,0.76)",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   kicker: { fontSize: 11, letterSpacing: 0.8 },
   title: { color: "#FFFFFF", fontSize: 31, letterSpacing: 0, marginTop: 4 },
   subtitle: { color: "rgba(255,255,255,0.9)", fontSize: 13, lineHeight: 18, marginTop: 5, textShadowColor: "rgba(8,26,42,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },

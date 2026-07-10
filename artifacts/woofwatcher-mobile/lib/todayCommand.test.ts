@@ -91,7 +91,8 @@ test("served meal with pending outcome becomes the primary update action", () =>
   assert.equal(command.primaryAction.icon, "bowl");
   assert.match(command.primaryAction.label, /Update breakfast outcome/i);
   assert.match(command.primaryAction.detail, /served/i);
-  assert.match(command.primaryAction.detail, /ate all|some|refused|grazing/i);
+  // Copy stays short so Home's clamped lines never clip it mid-sentence.
+  assert.match(command.primaryAction.detail, /Confirm how much Phoenix ate/i);
   assert.match(command.handoff.detail, /Emma served Breakfast/i);
   assert.match(command.handoff.detail, /outcome pending/i);
   assert.doesNotMatch(command.handoff.detail, /logged Breakfast/i);

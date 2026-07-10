@@ -406,8 +406,10 @@ export default function RecordsScreen() {
   );
   const credential = useMemo(
     () =>
+      // Resolve the placeholder profile name first so shares, exports, and the
+      // ID card all say "Phoenix" (or the real name), never "My Dog Dog ID".
       buildPetCredential({
-        profile: state.profile,
+        profile: { ...state.profile, name: resolvePetName(state.profile.name) },
         caregivers: state.caregivers,
         records: state.records,
       }),
@@ -520,7 +522,7 @@ export default function RecordsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const lines = [
       `WOOFWATCHER PROGRESS REPORT - Last ${period} days`,
-      `${state.profile.name} (${state.profile.breed})`,
+      `${resolvePetName(state.profile.name)} (${state.profile.breed})`,
       "",
       `Total entries logged: ${report.total}`,
       `Meals: ${report.meals}`,
@@ -837,9 +839,11 @@ export default function RecordsScreen() {
   const credentialFieldTotal = 7;
   const credentialReadinessPercent = Math.round((credentialReadyFields / credentialFieldTotal) * 100);
   const recordsVaultScore = Math.round(recordCoveragePercent * 0.65 + credentialReadinessPercent * 0.35);
+  // Missing records for a fresh vault are setup suggestions, not emergencies:
+  // keep the chip and HUD wording calm while the counts stay real.
   const recordsVaultStatus =
     recordVault.missingCritical.length > 0
-      ? "Needs records"
+      ? "Checklist"
       : recordReminders.length > 0
         ? "Review soon"
         : "Vault steady";
@@ -991,7 +995,7 @@ export default function RecordsScreen() {
                 {[
                   { label: "Saved", value: String(recordVault.total) },
                   { label: "Vault", value: `${recordsVaultScore}%` },
-                  { label: "Alerts", value: String(recordReminders.length + recordVault.missingCritical.length) },
+                  { label: "To set up", value: String(recordReminders.length + recordVault.missingCritical.length) },
                 ].map((item) => (
                   <View key={item.label} style={s.recordsCredentialHudCell}>
                     <Text style={[s.recordsCredentialHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>{item.label}</Text>
@@ -1099,9 +1103,11 @@ export default function RecordsScreen() {
             <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{careTrends.nextStep}</Text>
           </BoardCard>
 
-          {/* Dog ID card */}
+          {/* Dog ID card. Short static title: the four share actions leave the
+              heading ~90px, so a name-prefixed title clips. The pet's name is
+              shown large on the card itself right below. */}
           <BoardSectionHeader
-            title={`${credential.name} ID Card`}
+            title="ID Card"
             style={{ marginTop: 28 }}
             accessory={
               <View style={s.shareInlineGroup}>
@@ -1634,13 +1640,13 @@ export default function RecordsScreen() {
               accessory={
                 <BoardPill
                   label={aloneTime.totalSessions ? `${aloneTime.totalSessions} logs` : "No logs"}
-                  tone={aloneTime.distressedCount ? colors.rose : aloneTime.anxiousCount ? colors.amber : colors.secondary}
+                  tone={aloneTime.distressedCount ? colors.rose : aloneTime.anxiousCount ? colors.amber : colors.mutedForeground}
                 />
               }
             />
             <View style={s.hydrationSummary}>
-              <View style={[s.watchSummaryIcon, { backgroundColor: colors.secondary + "18" }]}>
-                <Ionicons name="home-outline" size={18} color={colors.secondary} />
+              <View style={[s.watchSummaryIcon, { backgroundColor: colors.mutedForeground + "18" }]}>
+                <Ionicons name="home-outline" size={18} color={colors.mutedForeground} />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
@@ -1684,7 +1690,7 @@ export default function RecordsScreen() {
             </Text>
             {aloneTime.latest ? (
               <View style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
-                <View style={[s.watchSignalDot, { backgroundColor: aloneTime.distressedCount ? colors.rose : aloneTime.anxiousCount ? colors.amber : colors.secondary }]} />
+                <View style={[s.watchSignalDot, { backgroundColor: aloneTime.distressedCount ? colors.rose : aloneTime.anxiousCount ? colors.amber : colors.mutedForeground }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                     Latest: {aloneTime.latest.label}

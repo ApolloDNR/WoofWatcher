@@ -38,6 +38,21 @@ const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
+// Section names as they read on this screen, keyed by onboarding step id, so
+// the disabled save button can say exactly which cards still need attention.
+const SETUP_SECTION_NAME_BY_STEP_ID: Record<string, string> = {
+  "dog-profile": "Dog profile",
+  "diet-profile": "Diet baseline",
+  "starter-routine": "Starter routine",
+  "household-caregiver": "Household caregiver",
+};
+
+function formatSectionList(names: readonly string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+}
+
 const ROUTINE_TYPES: { label: string; value: string; icon: IoniconName }[] = [
   { label: "Meal", value: "meal", icon: "restaurant-outline" },
   { label: "Walk", value: "walk", icon: "paw-outline" },
@@ -111,8 +126,25 @@ export default function SetupScreen() {
   const householdReady = draft.householdMode !== "join" || draft.inviteCode.trim().length >= 3;
   const canSave = onboarding.isComplete && householdReady;
 
+  // Which sections still block the save, in this screen's own words. Shown
+  // under the CTA and echoed when a blocked save is tapped, so the disabled
+  // state never reads as a dead button.
+  const remainingSections = [
+    ...onboarding.steps
+      .filter((step) => !step.done)
+      .map((step) => SETUP_SECTION_NAME_BY_STEP_ID[step.id] ?? step.title),
+    ...(householdReady ? [] : ["the invite code"]),
+  ];
+  const saveBlockedMessage = remainingSections.length
+    ? `Complete ${formatSectionList(remainingSections)} to save.`
+    : "";
+
   const saveSetup = () => {
-    if (!canSave) return;
+    if (!canSave) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      notifyDialog("Almost there", saveBlockedMessage);
+      return;
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     updateCareDoc((doc) => applySetupWizardDraft(doc, draft));
     // Alert is a no-op on react-native-web, so the confirmation and the
@@ -388,9 +420,9 @@ export default function SetupScreen() {
           <View style={s.actions}>
             <Pressable
               onPress={saveSetup}
-              disabled={!canSave}
               accessibilityRole="button"
               accessibilityLabel={householdReady ? "Save foundation" : "Add invite code"}
+              accessibilityHint={canSave ? undefined : saveBlockedMessage}
               accessibilityState={{ disabled: !canSave }}
               style={({ pressed }) => [
                 s.saveBtn,
@@ -402,6 +434,14 @@ export default function SetupScreen() {
                 {householdReady ? "Save foundation" : "Add invite code"}
               </Text>
             </Pressable>
+            {!canSave && saveBlockedMessage ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                style={[s.saveHint, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+              >
+                {saveBlockedMessage}
+              </Text>
+            ) : null}
             <Pressable
               onPress={finishLater}
               accessibilityRole="button"
@@ -554,6 +594,7 @@ const s = StyleSheet.create({
   actions: { gap: 12, marginTop: 8 },
   saveBtn: { height: 54, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   saveText: { color: "#fff", fontSize: 15.5 },
+  saveHint: { fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: -4, paddingHorizontal: 8 },
   laterBtn: { height: 42, alignItems: "center", justifyContent: "center" },
   laterText: { fontSize: 14 },
   proofBtn: { minHeight: 42, borderRadius: 14, borderWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },

@@ -18,7 +18,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useWoofAuth } from "@/lib/auth";
+import { isClerkConfigured, useWoofAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetMe,
@@ -43,7 +43,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
-import { deriveCareSyncDashboard } from "@/lib/careSync";
+import { deriveCareSyncDashboard, type CareSyncDashboard } from "@/lib/careSync";
 import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
@@ -360,7 +360,7 @@ export default function MoreScreen() {
   const { dietProfile, profile, entries, routines, caregivers, accessPasses } = state;
   const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
 
-  const { signOut } = useWoofAuth();
+  const { signOut, isSignedIn } = useWoofAuth();
   const queryClient = useQueryClient();
   const me = useGetMe();
   const updateHousehold = useUpdateHousehold();
@@ -438,27 +438,55 @@ export default function MoreScreen() {
     [entries],
   );
 
-  const syncDashboard = useMemo(
-    () =>
-      deriveCareSyncDashboard({
-        outbox: syncOutbox,
-        isLoaded,
-        isSyncing,
-        lastUpdatedAt: latestCareUpdate ?? state.updatedAt,
-        householdMemberCount: members.length || (household ? 1 : 0),
-        totalEntries: entries.length,
-      }),
-    [
-      syncOutbox,
+  const syncDashboard = useMemo<CareSyncDashboard>(() => {
+    if (!isClerkConfigured) {
+      // Local-first build: device storage is the success state, so Sync
+      // Health reports the honest on-device record instead of implying a
+      // cloud outbox or retries that no provider can service.
+      return {
+        status: "healthy",
+        title: "Saved on this device",
+        message: "Every care log is stored in this device's local care record. Nothing is waiting.",
+        nextStep: "Household sync stays off until an account provider is enabled for this build.",
+        actionLabel: "Refresh",
+        metrics: [
+          {
+            label: "Care log",
+            value: `${entries.length} ${entries.length === 1 ? "entry" : "entries"}`,
+            detail: "Saved on this device",
+          },
+          {
+            label: "Care team",
+            value: `${caregivers.length} ${caregivers.length === 1 ? "member" : "members"}`,
+            detail: "Household roster",
+          },
+          {
+            label: "Waiting",
+            value: "0",
+            detail: "Nothing to sync",
+          },
+        ],
+      };
+    }
+    return deriveCareSyncDashboard({
+      outbox: syncOutbox,
       isLoaded,
       isSyncing,
-      latestCareUpdate,
-      state.updatedAt,
-      members.length,
-      household,
-      entries.length,
-    ],
-  );
+      lastUpdatedAt: latestCareUpdate ?? state.updatedAt,
+      householdMemberCount: members.length || (household ? 1 : 0),
+      totalEntries: entries.length,
+    });
+  }, [
+    syncOutbox,
+    isLoaded,
+    isSyncing,
+    latestCareUpdate,
+    state.updatedAt,
+    members.length,
+    household,
+    entries.length,
+    caregivers.length,
+  ]);
   const launchProviderSetupPlan = useMemo(
     () => deriveLaunchProviderSetup(state.launchProviderProfile),
     [state.launchProviderProfile],
@@ -507,8 +535,9 @@ export default function MoreScreen() {
       : syncDashboard.status === "syncing" || syncDashboard.status === "loading"
         ? colors.primary
         : colors.sage;
-  const syncIcon: keyof typeof Ionicons.glyphMap =
-    syncDashboard.status === "attention"
+  const syncIcon: keyof typeof Ionicons.glyphMap = !isClerkConfigured
+    ? "phone-portrait-outline"
+    : syncDashboard.status === "attention"
       ? "cloud-offline-outline"
       : syncDashboard.status === "syncing" || syncDashboard.status === "loading"
         ? "cloud-upload-outline"
@@ -907,7 +936,8 @@ export default function MoreScreen() {
       [
         {
           title: "Sign out",
-          message: "You'll need to sign back in to sync care logs.",
+          message:
+            "Care logs stay saved on this device. You'll need to sign back in before future changes can reach the household.",
           confirmLabel: "Sign out",
           destructive: true,
         },
@@ -1818,50 +1848,71 @@ export default function MoreScreen() {
               ))}
             </View>
             <View style={[s.rosterList, { borderTopColor: colors.border }]}>
-              {careTwinRoster.pets.map((pet, index) => (
-                <Pressable
-                  key={pet.id}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    if (!pet.canSwitch) {
+              {careTwinRoster.pets.map((pet, index) => {
+                const rowBorder =
+                  index < careTwinRoster.pets.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border };
+                const rowContent = (
+                  <>
+                    <View style={[s.rosterAvatar, { backgroundColor: pet.isActive ? colors.primary + "18" : colors.background, borderColor: pet.isActive ? colors.primary + "33" : colors.border }]}>
+                      <Text style={[s.rosterAvatarText, { color: pet.isActive ? colors.primary : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                        {pet.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <View style={s.rosterNameLine}>
+                        <Text style={[s.rosterName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{pet.name}</Text>
+                        <View style={[s.rosterBadge, { backgroundColor: pet.isActive ? colors.sage + "18" : colors.amber + "18" }]}>
+                          <Text style={[s.rosterBadgeText, { color: pet.isActive ? colors.sage : colors.amber, fontFamily: "Inter_700Bold" }]}>
+                            {pet.statusLabel}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={[s.rosterMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {pet.breed} - {pet.weightLabel}
+                      </Text>
+                      <Text style={[s.rosterDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {pet.detail}
+                      </Text>
+                    </View>
+                    <Ionicons name={pet.canSwitch ? "checkmark-circle-outline" : "lock-closed-outline"} size={19} color={pet.canSwitch ? colors.sage : colors.amber} />
+                  </>
+                );
+                // The live care twin row is informational: no tap action, so no
+                // button semantics for screen readers to announce. Staged slots
+                // stay pressable to explain the provider gate.
+                if (pet.canSwitch) {
+                  return (
+                    <View
+                      key={pet.id}
+                      accessibilityLabel={`${pet.name}. ${pet.statusLabel}. ${pet.detail}`}
+                      style={[s.rosterRow, rowBorder]}
+                    >
+                      {rowContent}
+                    </View>
+                  );
+                }
+                return (
+                  <Pressable
+                    key={pet.id}
+                    onPress={() => {
+                      Haptics.selectionAsync();
                       notifyDialog(
                         "Multi-dog switching is staged",
                         "This dog is saved as a planned CareTwin slot. Separate logs, routines, records, and reports need provider-backed multi-dog care documents before switching is enabled.",
                       );
-                    }
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${pet.name}. ${pet.statusLabel}. ${pet.detail}`}
-                  style={({ pressed }) => [
-                    s.rosterRow,
-                    index < careTwinRoster.pets.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-                    { opacity: pressed ? 0.72 : 1 },
-                  ]}
-                >
-                  <View style={[s.rosterAvatar, { backgroundColor: pet.isActive ? colors.primary + "18" : colors.background, borderColor: pet.isActive ? colors.primary + "33" : colors.border }]}>
-                    <Text style={[s.rosterAvatarText, { color: pet.isActive ? colors.primary : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                      {pet.name.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <View style={s.rosterNameLine}>
-                      <Text style={[s.rosterName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{pet.name}</Text>
-                      <View style={[s.rosterBadge, { backgroundColor: pet.isActive ? colors.sage + "18" : colors.amber + "18" }]}>
-                        <Text style={[s.rosterBadgeText, { color: pet.isActive ? colors.sage : colors.amber, fontFamily: "Inter_700Bold" }]}>
-                          {pet.statusLabel}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={[s.rosterMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {pet.breed} - {pet.weightLabel}
-                    </Text>
-                    <Text style={[s.rosterDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {pet.detail}
-                    </Text>
-                  </View>
-                  <Ionicons name={pet.canSwitch ? "checkmark-circle-outline" : "lock-closed-outline"} size={19} color={pet.canSwitch ? colors.sage : colors.amber} />
-                </Pressable>
-              ))}
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${pet.name}. ${pet.statusLabel}. ${pet.detail}`}
+                    style={({ pressed }) => [
+                      s.rosterRow,
+                      rowBorder,
+                      { opacity: pressed ? 0.72 : 1 },
+                    ]}
+                  >
+                    {rowContent}
+                  </Pressable>
+                );
+              })}
             </View>
           </BoardCard>
 
@@ -3111,6 +3162,20 @@ export default function MoreScreen() {
                 <Pressable
                   onPress={() => {
                     Haptics.selectionAsync();
+                    if (!isClerkConfigured) {
+                      notifyDialog(
+                        "Saved on this device",
+                        "Everything is saved on this device. Household sync turns on once an account provider is enabled for this build.",
+                      );
+                      return;
+                    }
+                    if (!isSignedIn) {
+                      notifyDialog(
+                        "Sign in to sync",
+                        "Care logs stay saved on this device until you sign in to the household account.",
+                      );
+                      return;
+                    }
                     refresh();
                   }}
                   disabled={isSyncing}
@@ -3287,16 +3352,20 @@ export default function MoreScreen() {
             <Text style={[s.noticeText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{profile.vetBoundary}</Text>
           </View>
 
-          {/* Sign out */}
-          <Pressable
-            onPress={confirmSignOut}
-            accessibilityRole="button"
-            accessibilityLabel="Sign out of WoofWatcher"
-            style={({ pressed }) => [s.signOut, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
-          >
-            <Ionicons name="log-out-outline" size={19} color={colors.rose} />
-            <Text style={[s.signOutText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>Sign out</Text>
-          </Pressable>
+          {/* Sign out renders only when a real account provider is configured
+              and someone is actually signed in; the local-first build has no
+              sign-in, so a sign-out row would be a dead cloud-sync promise. */}
+          {isClerkConfigured && isSignedIn ? (
+            <Pressable
+              onPress={confirmSignOut}
+              accessibilityRole="button"
+              accessibilityLabel="Sign out of WoofWatcher"
+              style={({ pressed }) => [s.signOut, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Ionicons name="log-out-outline" size={19} color={colors.rose} />
+              <Text style={[s.signOutText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>Sign out</Text>
+            </Pressable>
+          ) : null}
 
           <Text style={[s.footer, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             WoofWatcher · Happy dog, simplified care 💚

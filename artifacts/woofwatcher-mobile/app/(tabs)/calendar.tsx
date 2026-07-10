@@ -37,7 +37,7 @@ import { confirmThroughSteps } from "@/lib/confirmDialog";
 import { parseLocalDate } from "@/lib/time";
 import { resolvePetName } from "@/lib/petIdentity";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
-import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import {
   applyReminderNotificationPreferenceDraft,
   buildReminderNotificationPreferencesForCenter,
@@ -60,7 +60,9 @@ import {
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
-const PLANS_COMMAND_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.day.source;
+// Purpose-composed wide banner (1264x383, calm rug/floor band of the storybook
+// day room) so the wide command deck doesn't crop a square room to a mid-wall band.
+const PLANS_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
 const PLANS_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
 const PLANS_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
 
@@ -127,6 +129,21 @@ function routineMinutes(time: string): number {
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * Next full clock hour as "7:00 AM"-style text. Used to prefill the free-text
+ * time fields with a real, immediately-submittable value instead of a grey
+ * placeholder that looks filled but fails validation.
+ */
+function nextRoundHourLabel(now: Date = new Date()): string {
+  const next = new Date(now);
+  next.setMinutes(0, 0, 0);
+  next.setHours(next.getHours() + 1);
+  const hours24 = next.getHours();
+  const period = hours24 >= 12 ? "PM" : "AM";
+  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+  return `${hours12}:00 ${period}`;
 }
 
 function dayLabel(iso: string): string {
@@ -399,6 +416,15 @@ export default function CalendarScreen() {
 
   const [dateError, setDateError] = useState<string | null>(null);
 
+  const openAddEvent = () => {
+    // Prefill real, submittable defaults (today + next round hour) so the
+    // sheet never opens with grey placeholders that look like filled values.
+    if (!parseLocalDate(evDate)) setEvDate(todayISO());
+    if (!evTime.trim()) setEvTime(nextRoundHourLabel());
+    setDateError(null);
+    setAddOpen(true);
+  };
+
   const submitEvent = () => {
     if (!evTitle.trim()) return;
     if (!parseLocalDate(evDate)) {
@@ -427,7 +453,9 @@ export default function CalendarScreen() {
     setRoutineEditId(null);
     setRLabel("");
     setRType("meal");
-    setRTime("");
+    // Real default instead of a placeholder-lookalike so Add Routine works
+    // immediately; owners can still type any "4:00 PM"-style time over it.
+    setRTime(nextRoundHourLabel());
     setROwner("");
     setRNote("");
     setRTimeError(null);
@@ -762,7 +790,7 @@ export default function CalendarScreen() {
             actionLabel="Add plan"
             onAction={() => {
               Haptics.selectionAsync();
-              setAddOpen(true);
+              openAddEvent();
             }}
           />
 
@@ -1311,7 +1339,7 @@ export default function CalendarScreen() {
                 <Pressable
                   onPress={() => saveReminderNotificationPreferences({ pushEnabled: true, optOut: false })}
                   accessibilityRole="button"
-                  accessibilityLabel="Allow reminders after provider setup"
+                  accessibilityLabel="Allow reminders when they arrive in a future update"
                   style={({ pressed }) => [
                     s.reminderPreferenceButton,
                     { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
@@ -1319,7 +1347,7 @@ export default function CalendarScreen() {
                 >
                   <Ionicons name="notifications-outline" size={15} color={colors.primary} />
                   <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                    Allow reminders after provider setup
+                    Allow future reminders
                   </Text>
                 </Pressable>
                 <Pressable
@@ -1368,7 +1396,7 @@ export default function CalendarScreen() {
                 ) : null}
               </View>
               <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Saved locally; delivery still needs provider proof and native notification QA.
+                Your choice is saved on this device. Reminder delivery arrives in a future update.
               </Text>
             </View>
           </BoardCard>
@@ -1679,6 +1707,17 @@ export default function CalendarScreen() {
             <Pressable onPress={submitRoutine} disabled={!rLabel.trim()} style={[s.saveBtn, { backgroundColor: rLabel.trim() ? colors.primary : colors.border }]}>
               <Text style={[s.saveBtnText, { color: rLabel.trim() ? "#fff" : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
             </Pressable>
+            {/* Validation feedback lives next to the submit button so the
+                sheet never looks silently broken when a field above is off. */}
+            {!rLabel.trim() ? (
+              <Text style={[s.sheetSubmitHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Add a label above to save this routine.
+              </Text>
+            ) : rTimeError ? (
+              <Text accessibilityLiveRegion="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
+                {rTimeError}
+              </Text>
+            ) : null}
 
             {routineEditId && (
               <Pressable onPress={() => deleteRoutine(routineEditId)} style={s.deleteBtn}>
@@ -1767,6 +1806,17 @@ export default function CalendarScreen() {
             <Pressable onPress={submitEvent} disabled={!evTitle.trim()} style={[s.saveBtn, { backgroundColor: evTitle.trim() ? colors.primary : colors.border }]}>
               <Text style={[s.saveBtnText, { fontFamily: "Inter_700Bold" }]}>Add to Calendar</Text>
             </Pressable>
+            {/* Validation feedback lives next to the submit button so the
+                sheet never looks silently broken when a field above is off. */}
+            {!evTitle.trim() ? (
+              <Text style={[s.sheetSubmitHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Add a title above to save this event.
+              </Text>
+            ) : dateError ? (
+              <Text accessibilityLiveRegion="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
+                {dateError}
+              </Text>
+            ) : null}
           </Pressable>
         </Pressable>
       </Modal>
@@ -2310,6 +2360,7 @@ const s = StyleSheet.create({
   ownerQuickText: { fontSize: 12.5 },
   saveBtn: { marginTop: 24, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, paddingVertical: 15, alignItems: "center", justifyContent: "center" },
   saveBtnText: { color: "#fff", fontSize: 15.5 },
+  sheetSubmitHint: { fontSize: 12, lineHeight: 16, marginTop: 10, textAlign: "center" },
   deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingVertical: 10 },
   deleteBtnText: { fontSize: 14 },
 });
