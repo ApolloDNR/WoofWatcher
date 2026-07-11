@@ -42,7 +42,13 @@ import { PixelIcon } from "@/components/PixelIcon";
 import { TrailMap } from "@/components/TrailMap";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { careTitleForLevel, deriveCareCareer, deriveCareStreak } from "@/lib/careCareer";
+import {
+  careLevelSpanXp,
+  careTitleForLevel,
+  careXpForEntry,
+  deriveCareCareer,
+  deriveCareStreak,
+} from "@/lib/careCareer";
 import {
   MOBILE_INLINE_HIT_SLOP,
   getRouteTopPadding,
@@ -70,6 +76,11 @@ const STORY_SEGMENTS: readonly { key: StorySegment; label: string }[] = [
   { key: "memories", label: "Memories" },
   { key: "badges", label: "Badges" },
 ];
+
+/** How far up the level curve to scan for distinct badge titles. The top
+ *  title lands at Lv 20 today; scanning past it keeps the ladder complete if
+ *  the shared title table ever grows. */
+const MAX_BADGE_LADDER_LEVEL = 40;
 
 // Mock-board pixel art: the adventure map hero and its trail thumbnails are
 // decorative game art; every name, date, and count layered on top comes from
@@ -241,27 +252,67 @@ export default function StoryScreen() {
   /*
    * There is no separate badge model yet; the evidence-based ladder the app
    * exposes is the care-title track from deriveCareCareer/careTitleForLevel.
-   * Every earned title below is reconstructed from that real model, never
-   * invented: walk the levels actually reached and keep each distinct title.
+   * The full ladder is reconstructed from that real model, never invented:
+   * walk the level curve, keep each distinct title, and pair it with the
+   * real lifetime-XP threshold its unlock level requires.
    */
-  const earnedTitles = useMemo(() => {
-    const ladder: { title: string; unlockedAt: number }[] = [];
-    for (let level = 1; level <= career.level; level += 1) {
+  const badgeLadder = useMemo(() => {
+    const tiers: { title: string; level: number; xpRequired: number }[] = [];
+    let cumulativeXp = 0;
+    for (let level = 1; level <= MAX_BADGE_LADDER_LEVEL; level += 1) {
       const title = careTitleForLevel(level);
-      if (!ladder.length || ladder[ladder.length - 1].title !== title) {
-        ladder.push({ title, unlockedAt: level });
+      if (!tiers.length || tiers[tiers.length - 1].title !== title) {
+        // Lifetime XP needed to reach `level`: the sum of every level span
+        // below it - the same curve deriveCareCareer climbs.
+        tiers.push({ title, level, xpRequired: cumulativeXp });
+      }
+      cumulativeXp += careLevelSpanXp(level);
+    }
+    return tiers;
+  }, []);
+
+  /* Real earn moments: replay the logged care history in order and record the
+     entry whose XP pushed the lifetime total across each tier's threshold. */
+  const badgeEarnDates = useMemo(() => {
+    const ordered = state.entries
+      .filter((entry) => {
+        const occurred = Date.parse(entry.occurredAt);
+        return Number.isFinite(occurred) && occurred <= now;
+      })
+      .sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt));
+    const earnedAt = new Map<string, string>();
+    let cumulativeXp = 0;
+    let index = 0;
+    for (const tier of badgeLadder) {
+      if (tier.xpRequired === 0) {
+        // The starter title is held from the first real log.
+        if (ordered.length > 0) earnedAt.set(tier.title, ordered[0].occurredAt);
+        continue;
+      }
+      while (index < ordered.length && cumulativeXp < tier.xpRequired) {
+        cumulativeXp += careXpForEntry(ordered[index]);
+        index += 1;
+      }
+      if (cumulativeXp >= tier.xpRequired) {
+        earnedAt.set(tier.title, ordered[index - 1].occurredAt);
       }
     }
-    return ladder.reverse();
-  }, [career.level]);
+    return earnedAt;
+  }, [state.entries, now, badgeLadder]);
 
-  const nextTitle = useMemo(() => {
-    for (let level = career.level + 1; level <= career.level + 40; level += 1) {
-      const title = careTitleForLevel(level);
-      if (title !== career.title) return { title, unlocksAt: level };
-    }
-    return null;
-  }, [career.level, career.title]);
+  const earnedTitles = useMemo(
+    () =>
+      badgeLadder
+        .filter((tier) => career.level >= tier.level)
+        .map((tier) => ({ title: tier.title, unlockedAt: tier.level }))
+        .reverse(),
+    [badgeLadder, career.level],
+  );
+
+  const nextLockedTier = useMemo(
+    () => badgeLadder.find((tier) => career.level < tier.level) ?? null,
+    [badgeLadder, career.level],
+  );
 
   const walkStatusLabel =
     walkActivity.status === "active"
@@ -730,15 +781,20 @@ export default function StoryScreen() {
               </View>
             </BoardCard>
 
-            {/* Earned title ladder (the evidence-based badge track today) */}
+            {/* Full badge ladder (the evidence-based title track today):
+                earned tiers in full color with their real earn dates, locked
+                tiers as quiet silhouettes with the real level requirement and
+                lifetime-XP progress toward it. */}
             <BoardCard style={s.board}>
               <BoardSectionHeader
-                title="Earned titles"
-                accessory={<BoardPill label={`${earnedTitles.length} earned`} tone={colors.copper} />}
+                title="Badge ladder"
+                accessory={
+                  <BoardPill label={`${earnedTitles.length} of ${badgeLadder.length} earned`} tone={colors.copper} />
+                }
               />
               <Text style={[s.sectionCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Titles are {petName}'s badge ladder. Every one below was unlocked by real logged
-                care - {career.totalXp.toLocaleString()} lifetime care XP so far.
+                Every badge on {petName}'s ladder is unlocked by real logged care -{" "}
+                {career.totalXp.toLocaleString()} lifetime care XP so far.
               </Text>
               {/* Mock-board badge shelf: one pixel emblem per earned title,
                   the trophy marks the current one. Hidden on the single-title
@@ -761,54 +817,106 @@ export default function StoryScreen() {
                 </View>
               ) : null}
               <View style={s.titleList}>
-                {earnedTitles.map((earned, earnedIndex) => {
-                  const current = earned.title === career.title;
+                {badgeLadder.map((tier, tierIndex) => {
+                  const earned = career.level >= tier.level;
+                  const current = tier.title === career.title;
+                  const earnedDate = badgeEarnDates.get(tier.title);
+
+                  if (earned) {
+                    return (
+                      <View
+                        key={tier.title}
+                        accessible
+                        accessibilityLabel={`${tier.title} badge earned. Unlocked at level ${tier.level}${
+                          earnedDate ? ` on ${formatMemoryDate(earnedDate)}` : ""
+                        }.${current ? " Current title." : ""}`}
+                        style={[
+                          s.titleRow,
+                          {
+                            backgroundColor: current ? colors.sageSoft : colors.background,
+                            borderColor: current ? colors.sage + "66" : colors.border,
+                          },
+                        ]}
+                      >
+                        <Image
+                          source={current ? BADGE_TROPHY_ART : BADGE_ART[tierIndex % BADGE_ART.length]}
+                          style={s.titleBadgeArt}
+                          resizeMode="contain"
+                        />
+                        <View style={s.titleCopy}>
+                          <Text
+                            numberOfLines={1}
+                            style={[s.titleName, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+                          >
+                            {tier.title}
+                          </Text>
+                          <Text style={[s.titleMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                            Unlocked at Lv {tier.level}
+                            {earnedDate ? ` - ${formatMemoryDate(earnedDate)}` : ""}
+                          </Text>
+                        </View>
+                        {current ? <BoardStatusPill label="Current" tone="done" /> : null}
+                      </View>
+                    );
+                  }
+
+                  /* Locked: quiet, never alarming - muted silhouette, the real
+                     unlock level, and honest lifetime-XP progress toward it. */
+                  const progressPct = Math.min(
+                    100,
+                    Math.round((career.totalXp / tier.xpRequired) * 100),
+                  );
                   return (
                     <View
-                      key={earned.title}
-                      style={[
-                        s.titleRow,
-                        {
-                          backgroundColor: current ? colors.sageSoft : colors.background,
-                          borderColor: current ? colors.sage + "66" : colors.border,
-                        },
-                      ]}
+                      key={tier.title}
+                      accessible
+                      accessibilityLabel={`${tier.title} badge locked. Reach level ${tier.level}. ${career.totalXp.toLocaleString()} of ${tier.xpRequired.toLocaleString()} lifetime care XP so far.`}
+                      style={[s.titleRow, s.titleRowLocked, { backgroundColor: colors.background, borderColor: colors.border }]}
                     >
                       <Image
-                        source={
-                          current
-                            ? BADGE_TROPHY_ART
-                            : BADGE_ART[earnedIndex % BADGE_ART.length]
-                        }
-                        style={s.titleBadgeArt}
+                        source={BADGE_ART[tierIndex % BADGE_ART.length]}
+                        style={[s.titleBadgeArt, s.titleBadgeArtLocked, { tintColor: colors.mutedForeground }]}
                         resizeMode="contain"
                       />
                       <View style={s.titleCopy}>
                         <Text
                           numberOfLines={1}
-                          style={[s.titleName, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+                          style={[s.titleName, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}
                         >
-                          {earned.title}
+                          {tier.title}
                         </Text>
                         <Text style={[s.titleMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                          Unlocked at Lv {earned.unlockedAt}
+                          Reach Lv {tier.level} - {career.totalXp.toLocaleString()} of{" "}
+                          {tier.xpRequired.toLocaleString()} XP
                         </Text>
+                        <View style={[s.tierTrack, { backgroundColor: colors.muted }]}>
+                          <View
+                            style={[
+                              s.tierFill,
+                              {
+                                backgroundColor: colors.mutedForeground + "73",
+                                width: `${progressPct}%`,
+                              },
+                            ]}
+                          />
+                        </View>
                       </View>
-                      {current ? <BoardStatusPill label="Current" tone="done" /> : null}
                     </View>
                   );
                 })}
               </View>
               <Text style={[s.nextTitle, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                {nextTitle
-                  ? `Next: ${nextTitle.title} unlocks at Lv ${nextTitle.unlocksAt}.`
+                {nextLockedTier
+                  ? `Next up: ${nextLockedTier.title} at Lv ${nextLockedTier.level} - ${(
+                      nextLockedTier.xpRequired - career.totalXp
+                    ).toLocaleString()} XP of real care to go.`
                   : "Top of the ladder. Keep the real care going."}
               </Text>
               <CareRow
                 icon="note"
                 title="Career & Stats"
                 detail="Logs this week, active days, and streak on More"
-                onPress={() => router.push("/more")}
+                onPress={() => router.push(`/more?section=career&focus=${Date.now()}` as never)}
                 accessibilityLabel="Open Career and Stats on the More screen"
               />
             </BoardCard>
@@ -959,6 +1067,12 @@ const s = StyleSheet.create({
   latestWalkMeta: { fontSize: 11.5, marginTop: 1 },
   titleList: { gap: 8 },
   titleRow: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 9 },
+  // Locked tiers echo the memory-shelf placeholder language: dashed border,
+  // softened contents - waiting, not warning.
+  titleRowLocked: { borderStyle: "dashed" },
+  titleBadgeArtLocked: { opacity: 0.5 },
+  tierTrack: { height: 6, borderRadius: 999, marginTop: 6, overflow: "hidden" },
+  tierFill: { height: "100%", borderRadius: 999 },
   titleIcon: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   titleCopy: { flex: 1, minWidth: 0 },
   titleName: { fontSize: 14 },

@@ -3,11 +3,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Image,
   ImageBackground,
+  type LayoutChangeEvent,
   Modal,
   Platform,
   Pressable,
@@ -355,6 +356,11 @@ export default function MoreScreen() {
     section?: string | string[];
   }>();
   const sectionParam = Array.isArray(routeParams.section) ? routeParams.section[0] : routeParams.section;
+  // `focus` is a navigation nonce (Date.now() at the call site). More stays
+  // mounted between tab visits, so without it a second tap on the same
+  // Pack/Story shortcut would leave `section` unchanged and never re-scroll.
+  const rawFocusParam = (routeParams as Record<string, string | string[] | undefined>).focus;
+  const focusParam = Array.isArray(rawFocusParam) ? rawFocusParam[0] : rawFocusParam;
   const householdFocus = sectionParam === "household";
   const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
   const { dietProfile, profile, entries, routines, caregivers, accessPasses } = state;
@@ -627,6 +633,62 @@ export default function MoreScreen() {
     platform: Platform.OS,
     bottomInset: insets.bottom,
   });
+
+  /**
+   * Anchored deep-links: `/more?section=household|access|care-pass|diet|career`
+   * scrolls the matching board into view, so arrivals from Pack, Home, or
+   * Story land on the section itself instead of the top of this very long
+   * page. Each anchor is a zero-height View that reports its y-offset inside
+   * the scroll content (the health.tsx scrollRef pattern); if the target has
+   * not laid out yet on a cold mount, the scroll settles when it does.
+   */
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionAnchorYRef = useRef<Record<string, number>>({});
+  const pendingAnchorRef = useRef<string | null>(null);
+
+  const scrollToAnchor = useCallback(
+    (key: string): boolean => {
+      const anchorY = sectionAnchorYRef.current[key];
+      if (anchorY == null) return false;
+      // Anchors measure against the content wrapper, which starts below the
+      // ScrollView's own top content padding.
+      scrollRef.current?.scrollTo({ y: Math.max(0, topPadding + anchorY - 8), animated: true });
+      return true;
+    },
+    [topPadding],
+  );
+
+  const registerSectionAnchor = useCallback(
+    (key: string) => (event: LayoutChangeEvent) => {
+      sectionAnchorYRef.current[key] = event.nativeEvent.layout.y;
+      if (pendingAnchorRef.current === key) {
+        pendingAnchorRef.current = null;
+        requestAnimationFrame(() => scrollToAnchor(key));
+      }
+    },
+    [scrollToAnchor],
+  );
+
+  const sectionAnchorTarget =
+    sectionParam === "care-pass" || sectionParam === "carepass"
+      ? "care-pass"
+      : sectionParam === "household" ||
+          sectionParam === "access" ||
+          sectionParam === "diet" ||
+          sectionParam === "career"
+        ? sectionParam
+        : null;
+
+  useEffect(() => {
+    if (!sectionAnchorTarget) return;
+    pendingAnchorRef.current = sectionAnchorTarget;
+    const frame = requestAnimationFrame(() => {
+      if (pendingAnchorRef.current === sectionAnchorTarget && scrollToAnchor(sectionAnchorTarget)) {
+        pendingAnchorRef.current = null;
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [sectionAnchorTarget, focusParam, scrollToAnchor]);
   const modalSheetBottomPadding = getModalSheetBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -1430,6 +1492,9 @@ export default function MoreScreen() {
       tone: responsibilityTone,
       onPress: () => {
         Haptics.selectionAsync();
+        // Already on More, so jump straight to the Care Team board; the push
+        // keeps the section param (and household-focus banner) in sync.
+        scrollToAnchor("household");
         router.push("/more?section=household" as never);
       },
     },
@@ -1483,6 +1548,7 @@ export default function MoreScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
+        ref={scrollRef}
         style={s.container}
         contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
@@ -1622,6 +1688,7 @@ export default function MoreScreen() {
           </BoardCard>
           ) : null}
 
+          <View collapsable={false} onLayout={registerSectionAnchor("career")} />
           <BoardCard style={s.moreDirectoryCard}>
             <BoardSectionHeader
               title="Career & Stats"
@@ -2780,6 +2847,7 @@ export default function MoreScreen() {
           ) : null}
 
           {/* Care Team / Household */}
+          <View collapsable={false} onLayout={registerSectionAnchor("household")} />
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader
               title="Care Team"
@@ -2874,6 +2942,7 @@ export default function MoreScreen() {
             )}
           </BoardCard>
 
+          <View collapsable={false} onLayout={registerSectionAnchor("access")} />
           <BoardCard style={[s.moreBoardCard, { borderColor: accessTone + "44" }]}>
             <BoardSectionHeader
               title="Household Access"
@@ -3278,7 +3347,8 @@ export default function MoreScreen() {
             </Pressable>
           </View>
 
-          {/* Links */}
+          {/* Links (holds the Care Pass build-and-share row) */}
+          <View collapsable={false} onLayout={registerSectionAnchor("care-pass")} />
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader title="Tools & Sharing" />
             {links.map((l, i) => (
@@ -3302,6 +3372,7 @@ export default function MoreScreen() {
           </BoardCard>
 
           {/* Diet profile */}
+          <View collapsable={false} onLayout={registerSectionAnchor("diet")} />
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader
               title="Diet Profile"

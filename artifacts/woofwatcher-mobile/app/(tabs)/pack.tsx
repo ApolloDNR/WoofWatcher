@@ -22,7 +22,11 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetMe } from "@workspace/api-client-react";
-import { buildCarePass, deriveHouseholdAccessPlan } from "@workspace/care-domain";
+import {
+  buildCarePass,
+  deriveAccessPassPlan,
+  deriveHouseholdAccessPlan,
+} from "@workspace/care-domain";
 
 import {
   BoardActionButton,
@@ -50,6 +54,7 @@ import {
 } from "@/lib/mobileLayout";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { resolvePetName } from "@/lib/petIdentity";
+import { relativeTime } from "@/lib/time";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -251,6 +256,13 @@ export default function PackScreen() {
     [household, members, state.caregivers, state.routines],
   );
 
+  /* Same derivation the More console uses, so the Access tab shows the real
+     pass counts instead of pointing at them. */
+  const accessPassPlan = useMemo(
+    () => deriveAccessPassPlan({ passes: state.accessPasses, petName, now }),
+    [state.accessPasses, petName, now],
+  );
+
   const carePass = useMemo(
     () =>
       buildCarePass({
@@ -316,6 +328,17 @@ export default function PackScreen() {
     router.push(route as never);
   };
 
+  /**
+   * Deep-link into a specific board on the ~4800px More page. More honors
+   * `section` with an anchored scroll; the `focus` nonce re-triggers that
+   * scroll when More is already mounted with the same section from a
+   * previous visit.
+   */
+  const openMoreSection = (section: "household" | "access" | "care-pass" | "diet") => {
+    Haptics.selectionAsync();
+    router.push(`/more?section=${section}&focus=${Date.now()}` as never);
+  };
+
   const changeSegment = (key: PackSegment) => {
     Haptics.selectionAsync();
     setSegment(key);
@@ -343,7 +366,7 @@ export default function PackScreen() {
           icon="people-outline"
           actionIcon="key-outline"
           actionLabel="Manage household from Pack"
-          onAction={() => open("/more?section=household")}
+          onAction={() => openMoreSection("household")}
           plain
           style={s.routeHeaderCompact}
         />
@@ -478,7 +501,7 @@ export default function PackScreen() {
                   state.dietProfile.avoid?.trim() ||
                   "None noted"
                 }
-                onPress={() => open("/more?section=diet")}
+                onPress={() => openMoreSection("diet")}
                 accessibilityLabel={`Open diet sensitivities for ${petName} in More`}
               />
             </View>
@@ -500,7 +523,7 @@ export default function PackScreen() {
                 tone={colors.amber}
                 label="Weight"
                 value={weightLabel || "Not set"}
-                onPress={() => open("/more?section=diet")}
+                onPress={() => openMoreSection("diet")}
                 accessibilityLabel={`Open diet and weight details for ${petName} in More`}
               />
             </View>
@@ -618,18 +641,25 @@ export default function PackScreen() {
                 Add the first caregiver to build household access.
               </Text>
             ) : (
-              householdAccess.people.slice(0, 5).map((person, index) => {
-                const tone = memberTone(index);
+              /* Full roster - every person, their sync state, their real log
+                 count, and the routines actually assigned to them. */
+              householdAccess.people.map((person, index) => {
                 const logCount = state.entries.filter(
                   (entry) => entry.caregiver.trim().toLowerCase() === person.name.toLowerCase(),
                 ).length;
                 const isYou = Boolean(myName) && person.name.toLowerCase() === myName.toLowerCase();
+                const routineLine =
+                  person.routineCount > 0
+                    ? `${person.routineCount === 1 ? "Routine" : "Routines"}: ${person.routineLabels
+                        .slice(0, 2)
+                        .join(", ")}${person.routineLabels.length > 2 ? ` +${person.routineLabels.length - 2}` : ""}`
+                    : "";
                 return (
                   <View
                     key={person.id}
                     style={[
                       s.personRow,
-                      index < Math.min(householdAccess.people.length, 5) - 1 && {
+                      index < householdAccess.people.length - 1 && {
                         borderBottomWidth: 1,
                         borderBottomColor: colors.border,
                       },
@@ -658,6 +688,14 @@ export default function PackScreen() {
                       >
                         {person.role} - {person.needsInvite ? "Invite needed" : "Synced"}
                       </Text>
+                      {routineLine ? (
+                        <Text
+                          numberOfLines={1}
+                          style={[s.personMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                        >
+                          {routineLine}
+                        </Text>
+                      ) : null}
                     </View>
                     <View style={s.personSide}>
                       <Text
@@ -690,8 +728,8 @@ export default function PackScreen() {
               label="Manage household"
               icon="key-outline"
               variant="soft"
-              onPress={() => open("/more?section=household")}
-              accessibilityLabel="Manage household in the More tab"
+              onPress={() => openMoreSection("household")}
+              accessibilityLabel="Open the Care Team section in More to manage the household"
               style={s.segmentAction}
             />
           </BoardCard>
@@ -746,12 +784,82 @@ export default function PackScreen() {
               {householdAccess.nextStep}
             </Text>
 
+            {householdAccess.inviteCode ? (
+              <View
+                accessibilityLabel={`Household invite code ${householdAccess.inviteCode}. Share it from the household console in More.`}
+                style={[s.inviteCodeRow, { backgroundColor: colors.background, borderColor: colors.border }]}
+              >
+                <Ionicons name="key-outline" size={15} color={colors.mutedForeground} />
+                <Text style={[s.inviteCodeLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  INVITE CODE
+                </Text>
+                <Text style={[s.inviteCodeValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {householdAccess.inviteCode}
+                </Text>
+              </View>
+            ) : null}
+
+            {/* Temporary helper passes: the same real counts the More console
+                derives, surfaced here so Access reads as a full picture. */}
+            <Text style={[s.accessSubheading, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+              Access Passes
+            </Text>
+            <View style={s.accessMetrics}>
+              {[
+                { label: "Active", value: accessPassPlan.activeCount },
+                { label: "Upcoming", value: accessPassPlan.upcomingCount },
+                { label: "Drafts", value: accessPassPlan.draftCount },
+              ].map((metric) => (
+                <View
+                  key={`pass-${metric.label}`}
+                  style={[s.accessMetric, { backgroundColor: colors.background, borderColor: colors.border }]}
+                >
+                  <Text style={[s.accessMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {metric.value}
+                  </Text>
+                  <Text style={[s.accessMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {metric.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            {accessPassPlan.passes.length > 0 ? (
+              accessPassPlan.passes.slice(0, 2).map((pass) => (
+                <View key={pass.id} style={s.passRow}>
+                  <View style={s.personCopy}>
+                    <Text
+                      numberOfLines={1}
+                      style={[s.personName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                    >
+                      {pass.holderName}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[s.personMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                    >
+                      {pass.role} - {pass.timeLabel}
+                    </Text>
+                  </View>
+                  <BoardStatusPill
+                    label={pass.status}
+                    tone={
+                      pass.status === "active" ? "done" : pass.status === "upcoming" ? "upcoming" : "neutral"
+                    }
+                  />
+                </View>
+              ))
+            ) : (
+              <Text style={[s.accessPassEmpty, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {accessPassPlan.summary}
+              </Text>
+            )}
+
             <BoardActionButton
               label="Open household console"
               icon="key-outline"
               variant="soft"
-              onPress={() => open("/more")}
-              accessibilityLabel="Open the full Household Access console in More"
+              onPress={() => openMoreSection("access")}
+              accessibilityLabel="Open the Household Access section in More"
               style={s.segmentAction}
             />
           </BoardCard>
@@ -775,6 +883,38 @@ export default function PackScreen() {
               {carePass.summary}
             </Text>
 
+            {/* Real section titles from the live pass, so "17 sections" has
+                faces: identity, diet, routines, and the rest. */}
+            <View
+              accessibilityLabel={`Care Pass sections: ${carePass.sections
+                .map((section) => section.title)
+                .join(", ")}`}
+              style={s.passSectionChips}
+            >
+              {carePass.sections.slice(0, 5).map((section) => (
+                <View
+                  key={section.title}
+                  style={[s.passSectionChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+                >
+                  <Text
+                    numberOfLines={1}
+                    style={[s.passSectionChipText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                  >
+                    {section.title}
+                  </Text>
+                </View>
+              ))}
+              {carePass.sections.length > 5 ? (
+                <View style={[s.passSectionChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Text
+                    style={[s.passSectionChipText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                  >
+                    +{carePass.sections.length - 5} more
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
             <View style={s.metricStack}>
               <BoardMetricTile
                 icon="note"
@@ -792,12 +932,41 @@ export default function PackScreen() {
               />
             </View>
 
+            {latestReport ? (
+              /* Freshness of the last built pass - title, age, and its saved
+                 summary, straight from the report artifact. */
+              <View style={[s.lastPassCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <View style={s.lastPassHead}>
+                  <Text style={[s.lastPassKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                    LAST BUILT
+                  </Text>
+                  <Text style={[s.lastPassFreshness, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {relativeTime(latestReport.createdAt, now)}
+                  </Text>
+                </View>
+                <Text
+                  numberOfLines={1}
+                  style={[s.lastPassTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                >
+                  {latestReport.title}
+                </Text>
+                {latestReport.summary ? (
+                  <Text
+                    numberOfLines={2}
+                    style={[s.lastPassSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                  >
+                    {latestReport.summary}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+
             <BoardActionButton
               label="Build & share Care Pass"
               icon="share-outline"
               variant="primary"
-              onPress={() => open("/more")}
-              accessibilityLabel="Build and share a Care Pass from More"
+              onPress={() => openMoreSection("care-pass")}
+              accessibilityLabel="Open the Care Pass builder in More Tools and Sharing"
               style={s.segmentAction}
             />
 
@@ -1101,10 +1270,89 @@ const s = StyleSheet.create({
     lineHeight: 17,
     marginTop: 10,
   },
+  accessSubheading: {
+    fontSize: 15,
+    marginTop: 14,
+  },
+  accessPassEmpty: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 8,
+  },
+  inviteCodeRow: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 10,
+  },
+  inviteCodeLabel: {
+    flex: 1,
+    fontSize: 10,
+    letterSpacing: 0.4,
+  },
+  inviteCodeValue: {
+    fontSize: 15,
+  },
+  passRow: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 8,
+  },
 
   carePassSummary: {
     fontSize: 12.5,
     lineHeight: 18,
+  },
+  passSectionChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 10,
+  },
+  passSectionChip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    maxWidth: "100%",
+  },
+  passSectionChipText: {
+    fontSize: 11,
+  },
+  lastPassCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10,
+  },
+  lastPassHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  lastPassKicker: {
+    fontSize: 10,
+    letterSpacing: 0.4,
+  },
+  lastPassFreshness: {
+    fontSize: 11,
+  },
+  lastPassTitle: {
+    fontSize: 13.5,
+    marginTop: 5,
+  },
+  lastPassSummary: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 3,
   },
 
   boundaryCard: {
