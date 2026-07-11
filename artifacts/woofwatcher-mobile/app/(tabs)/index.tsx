@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
+  Easing,
   Image,
   Platform,
   Pressable,
@@ -67,7 +68,12 @@ import {
   deriveCareCareer,
   deriveCareStreak,
 } from "@/lib/careCareer";
-import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
+import {
+  buildQuickLogEntry,
+  findRecentQuickLogDuplicate,
+  getQuickLogPolicy,
+  QUICK_LOG_DEDUPE_WINDOW_MS,
+} from "@/lib/quickLogEntry";
 import {
   buildWalkSessionFinishPatch,
   buildWalkSessionStartEntry,
@@ -75,7 +81,7 @@ import {
 } from "@/lib/walkSession";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
 import { resolvePetName } from "@/lib/petIdentity";
-import { deriveTodayCommand } from "@/lib/todayCommand";
+import { deriveTodayCommand, findPendingMealOutcome } from "@/lib/todayCommand";
 
 interface QuickItem {
   key: string;
@@ -254,18 +260,6 @@ function careDetails(details: unknown): CareEventDetails {
   if (!details || typeof details !== "object" || Array.isArray(details))
     return undefined;
   return details as CareEventDetails;
-}
-
-function isPendingMealLog(entry: { type: string; details?: unknown }): boolean {
-  const details = careDetails(entry.details);
-  if (normalizeCareEventType(entry.type, details) !== "meal") return false;
-  const completion = String(detailValue(entry.details, "mealCompletion") ?? "");
-  const lifecycle = String(detailValue(entry.details, "mealLifecycle") ?? "");
-  return (
-    lifecycle === "outcome-pending" ||
-    completion === "served" ||
-    completion === "grazing"
-  );
 }
 
 function homeLogEntryRoute(entryId: string): `/log?entry=${string}` {
@@ -453,6 +447,34 @@ export default function HomeScreen() {
     !hasCaregivers &&
     state.entries.length === 0 &&
     !state.profile.breed?.trim();
+
+  // The welcome card leaves by folding shut (height + opacity, ~250ms)
+  // instead of unmounting instantly - the first quick log used to yank the
+  // whole screen up 200+ px right under the finger. The card keeps rendering
+  // through the collapse and is removed only when the fold finishes.
+  const welcomeShouldShow = isFreshStart && welcomeDismissed === false;
+  const [welcomeCollapsed, setWelcomeCollapsed] = useState(false);
+  const welcomeWasShown = useRef(false);
+  const welcomeCollapse = useRef(new Animated.Value(1)).current;
+  const [welcomeCardHeight, setWelcomeCardHeight] = useState(0);
+  useEffect(() => {
+    if (welcomeShouldShow) {
+      welcomeWasShown.current = true;
+      return;
+    }
+    if (!welcomeWasShown.current || welcomeCollapsed) return;
+    Animated.timing(welcomeCollapse, {
+      toValue: 0,
+      duration: 250,
+      easing: Easing.out(Easing.cubic),
+      // Height cannot animate on the native driver; this is a one-off exit.
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (finished) setWelcomeCollapsed(true);
+    });
+  }, [welcomeCollapse, welcomeCollapsed, welcomeShouldShow]);
+  const welcomeVisible =
+    welcomeShouldShow || (welcomeWasShown.current && !welcomeCollapsed);
   const timeLabel = useMemo(
     () => shortTime(new Date(now).toISOString()),
     [now],
@@ -526,15 +548,10 @@ export default function HomeScreen() {
   const bondScore = status.mood === "anxious" ? 70 : 92;
   const moodIcon = MOOD_ICON[status.mood];
 
+  // Shared with Today Command: pending meal outcomes stay actionable across
+  // the midnight rollover (up to 12h) instead of vanishing at 12:00 AM.
   const pendingMeal = useMemo(
-    () =>
-      [...state.entries]
-        .filter(
-          (entry) => isToday(entry.occurredAt, now) && isPendingMealLog(entry),
-        )
-        .sort(
-          (a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt),
-        )[0] ?? null,
+    () => findPendingMealOutcome(state.entries, now),
     [state.entries, now],
   );
 
@@ -639,7 +656,7 @@ export default function HomeScreen() {
     () =>
       pendingMeal
         ? {
-            label: `${pendingMeal.title.split(" - ")[0] || "Meal"} served`,
+            label: `${(pendingMeal.title ?? "Meal").split(" - ")[0] || "Meal"} served`,
             time: "Outcome pending",
             icon: "meal" as PixelIconName,
             route: pendingMeal.id
@@ -1234,6 +1251,25 @@ export default function HomeScreen() {
   );
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // While the actionable toast for a just-served meal is alive, its "Add
+  // details" button opens the exact log the Next Up "Update" chip would.
+  // The chip waits and slides in when the toast fades, so the toast never
+  // floats on top of a live Update button (and the reveal never jumps).
+  const pendingMealChipSuppressed = Boolean(
+    toast &&
+      quickFeedback &&
+      pendingMeal &&
+      quickFeedback.id === pendingMeal.id,
+  );
+  const mealChipReveal = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(mealChipReveal, {
+      toValue: pendingMealChipSuppressed ? 0 : 1,
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [mealChipReveal, pendingMealChipSuppressed]);
   const showToast = (
     msg: string,
     feedback?: { id: string; title: string; type: CareEventType },
@@ -1273,6 +1309,11 @@ export default function HomeScreen() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     void deleteEntry(quickFeedback.id);
     setQuickFeedback(null);
+    // Clear the room bubble in the same commit: the undone log's "Meal
+    // served"/"Walk started" line must not linger over the twin for the
+    // rest of its 3.2s timer after the entry is already gone.
+    if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
+    setRoomSpeechOverride(null);
     showToast(`${title} undone`);
   };
 
@@ -1326,6 +1367,26 @@ export default function HomeScreen() {
     );
   };
 
+  // Double-tap safety: one save per intent on every quick-log surface. The
+  // synchronous ref catches a second press in the same tick (React state
+  // cannot update between the two), and the shared entry-window check covers
+  // slower bounces and cross-surface repeats. A deliberate second log after
+  // the 1.5s window still saves normally.
+  const recentQuickSave = useRef<{ type: CareEventType; at: number } | null>(
+    null,
+  );
+  const isDuplicateQuickTap = (type: CareEventType): boolean => {
+    const prev = recentQuickSave.current;
+    return Boolean(
+      prev &&
+        prev.type === type &&
+        Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
+    );
+  };
+  const markQuickSave = (type: CareEventType) => {
+    recentQuickSave.current = { type, at: Date.now() };
+  };
+
   const logQuick = (item: QuickItem) => {
     if (item.route) {
       router.push(item.route);
@@ -1348,6 +1409,10 @@ export default function HomeScreen() {
         openActiveWalkFromHomeQuickLog();
         return;
       }
+      // A rapid second Walk tap lands before the open session exists in
+      // state; it is the same intent, already answered by the first tap.
+      if (isDuplicateQuickTap("walk")) return;
+      markQuickSave("walk");
       const entry = buildWalkSessionStartEntry({ caregiver, now });
       const id = addEntry(entry as Omit<Entry, "id">);
       const reactionPlan = describeCareTwinReactionForLog({
@@ -1364,6 +1429,18 @@ export default function HomeScreen() {
       });
       return;
     }
+    // Dedupe against the same tick (ref) and the saved timeline (shared
+    // window): the first tap's entry and toast already answered this tap.
+    // The timeline check runs on wall-clock time - the screen's 30s `now`
+    // tick would otherwise make a deliberate second log inside the same
+    // tick look like a bounce forever.
+    if (
+      isDuplicateQuickTap(policy.type) ||
+      findRecentQuickLogDuplicate(state.entries, item.type, Date.now())
+    ) {
+      return;
+    }
+    markQuickSave(policy.type);
     const role = state.caregivers.find(
       (person) => person.name === caregiver,
     )?.role;
@@ -1387,11 +1464,22 @@ export default function HomeScreen() {
       details: entry.details,
     });
     showRoomSpeech(reactionPlan.label);
-    showToast(`${item.title} logged · +${careXpForEntry(entry)} care XP`, {
-      id,
-      title: item.title,
-      type: item.type,
-    });
+    // The served-meal explainer lives in this one toast (with the room
+    // bubble) - no third dark callout over the sprite. The outcome-pending
+    // Next Up chip stays the persistent affordance after the toast fades.
+    const mealOutcomeOpen =
+      entry.type === "meal" &&
+      entry.details?.mealLifecycle === "outcome-pending";
+    showToast(
+      mealOutcomeOpen
+        ? `Meal served · outcome stays open · +${careXpForEntry(entry)} care XP`
+        : `${item.title} logged · +${careXpForEntry(entry)} care XP`,
+      {
+        id,
+        title: item.title,
+        type: item.type,
+      },
+    );
   };
 
   const tapPhoenixRoom = () => {
@@ -1437,6 +1525,29 @@ export default function HomeScreen() {
   // The web preview mirrors the native inset so the room console floats
   // with the same clean margins reviewers see on a real device.
   const routeHorizontalPadding = 16;
+  // Height-based hero clamp for short phones (SE-class, 568-640pt): the
+  // whole stage - room band, roaming twin, bubble - scales down as one
+  // unit, so the fixed 150px twin rig shrinks with its floor instead of
+  // dwarfing the screen or wandering under the floating tab pill.
+  const isShortViewport = viewportHeight > 0 && viewportHeight < 640;
+  // Under 360pt the four recency chips truncate ("Fed No...", "Al... OK"),
+  // so they reflow into a 2x2 grid with room for their real values.
+  const narrowViewport = viewportWidth > 0 && viewportWidth < 360;
+  const heroStageWidth = Math.max(
+    240,
+    viewportWidth - routeHorizontalPadding * 2,
+  );
+  const heroDesignHeight = Math.round(
+    heroStageWidth / homeFirstScreenLayout.heroAspectRatio,
+  );
+  const heroStageScale = isShortViewport
+    ? Math.max(0.72, Math.min(1, viewportHeight / 700))
+    : 1;
+  const heroStageHeight = Math.round(heroDesignHeight * heroStageScale);
+  // On those same short screens the first-run welcome card plus the full
+  // stage cannot both fit above the tab pill, so the room stays folded
+  // behind the welcome card and grows in as the card folds away.
+  const heroDeferredForWelcome = isShortViewport && welcomeVisible;
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
   useEffect(() => {
     if (isWebRoutePreview) return;
@@ -1574,7 +1685,28 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          {isFreshStart && welcomeDismissed === false ? (
+          {welcomeVisible ? (
+            <Animated.View
+              pointerEvents={welcomeShouldShow ? "auto" : "none"}
+              onLayout={(event) => {
+                const measured = Math.round(event.nativeEvent.layout.height);
+                if (welcomeShouldShow && measured > 0) {
+                  setWelcomeCardHeight((prev) => Math.max(prev, measured));
+                }
+              }}
+              style={{
+                opacity: welcomeCollapse,
+                overflow: "hidden",
+                ...(welcomeCardHeight > 0
+                  ? {
+                      maxHeight: welcomeCollapse.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, welcomeCardHeight],
+                      }),
+                    }
+                  : {}),
+              }}
+            >
             <View style={[s.welcomeCard, s.softShadow, { backgroundColor: colors.forest }]}>
               <Pressable
                 accessibilityRole="button"
@@ -1624,20 +1756,53 @@ export default function HomeScreen() {
                 </Pressable>
               </View>
             </View>
+            </Animated.View>
           ) : null}
 
           {/* The room is a framed storybook card: day/night art fills the
               frame and the living twin roams inside it, matching Apollo's
-              storybook mockup Home. */}
+              storybook mockup Home. On short phones the stage height is
+              clamped (uniform scale) and it stays folded while the first-run
+              welcome card is up, growing in as the card folds away. */}
+          <Animated.View
+            pointerEvents={heroDeferredForWelcome ? "none" : "auto"}
+            style={
+              heroDeferredForWelcome
+                ? {
+                    overflow: "hidden",
+                    opacity: welcomeCollapse.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 0],
+                    }),
+                    maxHeight: welcomeCollapse.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [heroStageHeight, 0],
+                    }),
+                  }
+                : null
+            }
+          >
           <View style={s.heroBackdrop}>
             <View
               accessibilityLabel="Phoenix Room"
               accessibilityHint={homeFirstScreenLayout.qaLabel}
               style={[
                 s.heroWrap,
-                { aspectRatio: homeFirstScreenLayout.heroAspectRatio },
+                { height: heroStageHeight, overflow: "hidden" },
               ]}
             >
+             <View
+               style={
+                 heroStageScale < 1
+                   ? {
+                       width: heroStageWidth,
+                       height: heroDesignHeight,
+                       transform: [{ scale: heroStageScale }],
+                       transformOrigin: "top center",
+                     }
+                   : { width: "100%", height: heroDesignHeight }
+               }
+             >
               <LivingPhoenixRoom
                 mood={avatarMotion.avatarMood}
                 motion={avatarMotion}
@@ -1685,6 +1850,8 @@ export default function HomeScreen() {
               <Ionicons name="color-wand-outline" size={17} color={colors.forest} />
             </Pressable>
           </View>
+          </View>
+          </Animated.View>
 
           {/* Mock-board heart status card: "<Pet> is happy." over the real
               next-up glance line. It is still the Today Command surface -
@@ -1746,7 +1913,7 @@ export default function HomeScreen() {
           </Pressable>
 
           {/* Recency chips: Fed · Potty · Walk · Alone Time from real logs. */}
-          <View style={s.recencyRow}>
+          <View style={[s.recencyRow, narrowViewport ? s.recencyRowNarrow : null]}>
             {recencyChips.map((chip) => (
               <Pressable
                 key={chip.key}
@@ -1760,6 +1927,7 @@ export default function HomeScreen() {
                 style={({ pressed }) => [
                   s.recencyChip,
                   s.softShadow,
+                  narrowViewport ? s.recencyChipNarrow : null,
                   {
                     backgroundColor: pressed ? colors.secondary : colors.card,
                     borderColor: colors.border,
@@ -1889,6 +2057,17 @@ export default function HomeScreen() {
                 }
               />
               {pendingMealOpenLoop ? (
+                <Animated.View
+                  pointerEvents={pendingMealChipSuppressed ? "none" : "auto"}
+                  style={{
+                    opacity: mealChipReveal,
+                    overflow: "hidden",
+                    maxHeight: mealChipReveal.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 88],
+                    }),
+                  }}
+                >
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Update ${pendingMealOpenLoop.label}. Outcome pending.`}
@@ -1947,6 +2126,7 @@ export default function HomeScreen() {
                     </Text>
                   </View>
                 </Pressable>
+                </Animated.View>
               ) : null}
               {nextPrimary ? (
                 <View style={s.nextPrimaryRow}>
@@ -2194,6 +2374,7 @@ export default function HomeScreen() {
             </View>
             <View style={s.presenceCopy}>
               <Text
+                numberOfLines={1}
                 style={[
                   s.presenceText,
                   { color: colors.navy, fontFamily: "Inter_700Bold" },
@@ -2206,6 +2387,7 @@ export default function HomeScreen() {
                     : `${petName} is with ${caregiver}`}
               </Text>
               <Text
+                numberOfLines={1}
                 style={[
                   s.presenceSub,
                   {
@@ -2979,8 +3161,8 @@ export default function HomeScreen() {
                     },
                   ]}
                 >
-                  Level {adventureMode.level} - {adventureMode.todayXp} XP today
-                  - {adventureMode.memoriesCount} memories
+                  Quest level {adventureMode.level} - {adventureMode.todayXp}{" "}
+                  quest XP today - {adventureMode.memoriesCount} memories
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.navy} />
@@ -3303,6 +3485,13 @@ const s = StyleSheet.create({
     gap: 6,
     marginTop: 10,
     marginBottom: 4,
+  },
+  // Under-360 reflow: two chips per row so values never truncate.
+  recencyRowNarrow: {
+    flexWrap: "wrap",
+  },
+  recencyChipNarrow: {
+    flexBasis: "48%",
   },
   recencyChip: {
     flex: 1,

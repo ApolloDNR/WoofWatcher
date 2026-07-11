@@ -17,7 +17,12 @@ import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useCare, type Entry } from "@/context/CareContext";
 import { careXpForEntry } from "@/lib/careCareer";
 import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
-import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
+import {
+  buildQuickLogEntry,
+  findRecentQuickLogDuplicate,
+  getQuickLogPolicy,
+  QUICK_LOG_DEDUPE_WINDOW_MS,
+} from "@/lib/quickLogEntry";
 import { MEAL_OUTCOME_UPDATE_OPTIONS } from "@/lib/mealOutcomeUpdate";
 import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 
@@ -160,6 +165,20 @@ export default function FastLogScreen() {
     router.replace(`/log?type=${tile.type}&detail=1&intent=${Date.now()}` as never);
   };
 
+  // Double-tap safety: the ref catches a second press in the same tick
+  // (before React state can update) and the shared window check dedupes
+  // slower bounces against the saved timeline. One entry per intent; a
+  // deliberate second log after the 1.5s window still saves.
+  const recentQuickSave = useRef<{ type: string; at: number } | null>(null);
+  const isDuplicateQuickTap = (type: string): boolean => {
+    const prev = recentQuickSave.current;
+    return Boolean(
+      prev &&
+        prev.type === type &&
+        Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
+    );
+  };
+
   const logTile = (tile: FastLogTile) => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -182,15 +201,25 @@ export default function FastLogScreen() {
         );
         return;
       }
+      if (isDuplicateQuickTap("walk")) return;
+      recentQuickSave.current = { type: "walk", at: Date.now() };
       addEntry(buildWalkSessionStartEntry({ caregiver, now: Date.now() }) as Omit<Entry, "id">);
       flashLogged(tile.key);
       return;
     }
+    const now = Date.now();
+    if (
+      isDuplicateQuickTap(policy.type) ||
+      findRecentQuickLogDuplicate(state.entries, tile.type, now)
+    ) {
+      return;
+    }
+    recentQuickSave.current = { type: policy.type, at: now };
     const role = state.caregivers.find((person) => person.name === caregiver)?.role;
     const entry = buildQuickLogEntry(
       { type: tile.type, title: tile.title },
       state,
-      { caregiver, caregiverRole: role, now: Date.now() },
+      { caregiver, caregiverRole: role, now },
     );
     addEntry(entry);
     flashLogged(tile.key);

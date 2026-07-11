@@ -14,6 +14,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -85,7 +86,9 @@ import {
   buildQuickLogEntry,
   describeQuickLogDetailSheet,
   describeQuickLogLauncherAction,
+  findRecentQuickLogDuplicate,
   getQuickLogPolicy,
+  QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
@@ -992,6 +995,11 @@ export default function LogScreen() {
     const id = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(id);
   }, []);
+  // Under 360pt the console chrome truncates ("Tap saves. Hold o...",
+  // "SAVED On d..."), so narrow screens get shorter honest strings and
+  // drop the decorative under-5-sec pill.
+  const { width: viewportWidth } = useWindowDimensions();
+  const narrowViewport = viewportWidth > 0 && viewportWidth < 360;
 
   const caregiver =
     me.data?.user?.displayName?.trim() || state.caregivers[0]?.name || "You";
@@ -2093,7 +2101,9 @@ export default function LogScreen() {
         ? syncOutbox.total > 0
           ? `${syncOutbox.total}`
           : "Ready"
-        : "On device",
+        : narrowViewport
+          ? "Local"
+          : "On device",
       tone: !SYNC_PROVIDER_CONFIGURED
         ? colors.sage
         : syncOutbox.status === "needs-retry"
@@ -2141,6 +2151,23 @@ export default function LogScreen() {
     openLauncherDetailSheet(action);
   };
 
+  // Double-tap safety shared by every quick save on this screen: the ref
+  // catches a second press in the same tick (React state cannot update in
+  // between), the shared window check dedupes slower bounces against the
+  // saved timeline. A deliberate second log after 1.5s still saves.
+  const recentQuickSave = useRef<{ type: string; at: number } | null>(null);
+  const isDuplicateQuickTap = useCallback((type: string): boolean => {
+    const prev = recentQuickSave.current;
+    return Boolean(
+      prev &&
+        prev.type === type &&
+        Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
+    );
+  }, []);
+  const markQuickSave = useCallback((type: string) => {
+    recentQuickSave.current = { type, at: Date.now() };
+  }, []);
+
   const handleLeavingHome = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (openAloneSession) {
@@ -2149,12 +2176,15 @@ export default function LogScreen() {
       scrollRef.current?.scrollTo({ y: 360, animated: true });
       return;
     }
+    // A rapid second tap lands before the open session exists in state.
+    if (isDuplicateQuickTap("alone")) return;
+    markQuickSave("alone");
     const entry = buildAloneTimeStartEntry({ caregiver, now });
     const id = addEntry(entry);
     setLastQuickLog({ id, title: "Phoenix is home alone" });
     setSelectedType("alone");
     setSelectedLauncherKey("alone:Alone Time");
-  }, [addEntry, caregiver, now, openAloneSession]);
+  }, [addEntry, caregiver, isDuplicateQuickTap, markQuickSave, now, openAloneSession]);
 
   const handleReturnHome = useCallback(
     (outcome: AloneTimeReturnOutcome) => {
@@ -2188,12 +2218,15 @@ export default function LogScreen() {
       scrollRef.current?.scrollTo({ y: 360, animated: true });
       return;
     }
+    // A rapid second tap lands before the open session exists in state.
+    if (isDuplicateQuickTap("walk")) return;
+    markQuickSave("walk");
     const entry = buildWalkSessionStartEntry({ caregiver, now });
     const id = addEntry(entry as Omit<Entry, "id">);
     setLastQuickLog({ id, title: "Walk started" });
     setSelectedType("walk");
     setSelectedLauncherKey("walk:Walk");
-  }, [addEntry, caregiver, now, openWalkSession]);
+  }, [addEntry, caregiver, isDuplicateQuickTap, markQuickSave, now, openWalkSession]);
 
   const handleFinishWalk = useCallback(() => {
     if (!openWalkSession?.id) return;
@@ -2257,6 +2290,17 @@ export default function LogScreen() {
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Dedupe: the first tap already saved this intent and its feedback card
+    // is still up; a bounce inside the shared window must not double-log.
+    // Wall-clock time here - the screen's 30s `now` tick would otherwise
+    // block a deliberate second log inside the same tick.
+    if (
+      isDuplicateQuickTap(policy.type) ||
+      findRecentQuickLogDuplicate(state.entries, action.type, Date.now())
+    ) {
+      return;
+    }
+    markQuickSave(policy.type);
     const role = state.caregivers.find((person) => person.name === caregiver)?.role;
     const entry = buildQuickLogEntry(
       {
@@ -2438,10 +2482,12 @@ export default function LogScreen() {
                     QUICK LOG FLOW
                   </Text>
                   <Text numberOfLines={1} style={[s.quickLogActionSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    Tap saves. Hold opens details.
+                    {narrowViewport ? "Tap saves. Hold: details." : "Tap saves. Hold opens details."}
                   </Text>
                 </View>
-                <BoardPill label="Under 5 sec" icon="flash-outline" tone={colors.sage} />
+                {narrowViewport ? null : (
+                  <BoardPill label="Under 5 sec" icon="flash-outline" tone={colors.sage} />
+                )}
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`How ${selectedLauncherAction?.label ?? selectedLabel} quick logging works`}

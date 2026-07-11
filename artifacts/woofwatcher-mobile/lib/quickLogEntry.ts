@@ -71,6 +71,53 @@ export type CareLogTrustState =
   | "corrected"
   | "rejected";
 
+/**
+ * Double-tap dedupe window for the quick-log save path. A second same-type
+ * quick tap inside this window is treated as the same intent (a bounce or an
+ * accidental double press), so it reuses the already-saved entry instead of
+ * writing a duplicate. A deliberate second log after the window still saves.
+ */
+export const QUICK_LOG_DEDUPE_WINDOW_MS = 1500;
+
+export interface QuickLogDedupeCandidate {
+  id?: string;
+  type: string;
+  occurredAt: string;
+  details?: Record<string, unknown> | null;
+}
+
+/**
+ * Shared dedupe for every quick-log surface (Home tiles, Fast Log sheet,
+ * /log launcher): returns the newest entry of the same normalized care type
+ * saved within the dedupe window, or null when a fresh save is legitimate.
+ */
+export function findRecentQuickLogDuplicate<T extends QuickLogDedupeCandidate>(
+  entries: readonly T[],
+  type: string | null | undefined,
+  now: number,
+  windowMs: number = QUICK_LOG_DEDUPE_WINDOW_MS,
+): T | null {
+  const normalizedType = normalizeCareEventType(type);
+  let newest: T | null = null;
+  let newestAt = Number.NEGATIVE_INFINITY;
+  for (const entry of entries) {
+    const details =
+      entry.details && typeof entry.details === "object" && !Array.isArray(entry.details)
+        ? (entry.details as Parameters<typeof normalizeCareEventType>[1])
+        : undefined;
+    if (normalizeCareEventType(entry.type, details) !== normalizedType) continue;
+    const occurredAt = Date.parse(entry.occurredAt);
+    if (!Number.isFinite(occurredAt)) continue;
+    const age = now - occurredAt;
+    if (age < 0 || age > windowMs) continue;
+    if (occurredAt > newestAt) {
+      newest = entry;
+      newestAt = occurredAt;
+    }
+  }
+  return newest;
+}
+
 export type QuickLogTapBehavior = "quick-log" | "detail-required";
 export type QuickLogLongPressBehavior = "detail-sheet";
 export type QuickLogDetailContract =
