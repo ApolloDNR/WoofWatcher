@@ -7,6 +7,7 @@ import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
 import { deriveIncidentWatch, type IncidentWatchItem } from "./incident-watch.ts";
 import { deriveGroomingCare, type GroomingCareItem } from "./grooming-care.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
+import { resolvePetName } from "./pet-identity.ts";
 import { derivePottyHealth } from "./potty-health.ts";
 import { deriveTrainingProgress, type TrainingProgressItem } from "./training-progress.ts";
 import { deriveWaterHydration } from "./water.ts";
@@ -806,7 +807,10 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const entries = input.entries ?? [];
   const routines = input.routines ?? [];
   const records = input.records ?? [];
-  const name = clean(profile.name) || "Dog";
+  // The share artifact must agree with every app surface: the stored "My Dog"
+  // placeholder (and an empty name) resolve to the same display name the rest
+  // of the app shows, never a raw placeholder in the pass title or Dog card.
+  const name = resolvePetName(clean(profile.name));
   const audienceLabel = AUDIENCE_LABEL[input.audience];
   const generatedAt = formatDateTime(now);
   const health = deriveHealthWatch({ entries, routines, now });
@@ -865,7 +869,9 @@ export function buildCarePass(input: CarePassInput): CarePass {
     ]),
     section("Next Care", [
       handoff.next ? `${handoff.next.label} at ${handoff.next.time}${handoff.next.owner ? ` with ${handoff.next.owner}` : ""}` : "No upcoming routine is currently scheduled.",
-      handoff.sections.needsAttention.map((item) => `${item.label}: ${item.detail}`).join("; "),
+      // Each attention item is its own full sentence; gluing them with "; "
+      // produced machine-joined text like "...still open.; Walk remaining...".
+      ...handoff.sections.needsAttention.map((item) => `${item.label}: ${item.detail}`),
       handoff.message,
     ]),
     section("Handoff Checklist", audienceChecklist(input.audience, name)),

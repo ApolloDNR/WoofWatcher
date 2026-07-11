@@ -49,6 +49,16 @@ export interface CareHandoffSummary {
   caregiverLoad: CaregiverLoad[];
 }
 
+function detailRecord(entry: CareHealthEntry): Record<string, unknown> {
+  return entry.details != null && typeof entry.details === "object" && !Array.isArray(entry.details)
+    ? (entry.details as Record<string, unknown>)
+    : {};
+}
+
+function caregiverKey(value: string | null | undefined): string {
+  return String(value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
 function isSameLocalDay(iso: string, now: number): boolean {
   const d = new Date(iso);
   const n = new Date(now);
@@ -165,12 +175,18 @@ export function deriveCareHandoff(input: CareHandoffInput): CareHandoffSummary {
           },
         ];
 
+  // Each attention item is a hand-crafted full sentence with real
+  // subject-verb agreement; these lines are quoted verbatim in the shared
+  // Care Pass, so machine-glued grammar reads as a broken product.
   const needsAttention: CareHandoffItem[] = [];
   if (pendingMealOutcomes > 0) {
     needsAttention.push({
       kind: "meal",
-      label: "Meal outcome pending",
-      detail: `${pendingMealOutcomes} meal outcome${pendingMealOutcomes === 1 ? "" : "s"} need confirmation: ate all, ate some, refused, or still grazing.`,
+      label: pendingMealOutcomes === 1 ? "Meal outcome pending" : "Meal outcomes pending",
+      detail:
+        pendingMealOutcomes === 1
+          ? "1 meal outcome needs confirmation - ate all, ate some, refused, or still grazing."
+          : `${pendingMealOutcomes} meal outcomes need confirmation - ate all, ate some, refused, or still grazing.`,
       urgency: "watch",
       entryIds: [],
     });
@@ -178,17 +194,39 @@ export function deriveCareHandoff(input: CareHandoffInput): CareHandoffSummary {
   if (missingMealLogs > 0) {
     needsAttention.push({
       kind: "meal",
-      label: "Meal remaining",
-      detail: `${missingMealLogs} meal log${missingMealLogs === 1 ? "" : "s"} still open.`,
+      label: missingMealLogs === 1 ? "Meal remaining" : "Meals remaining",
+      detail: `${missingMealLogs} more meal${missingMealLogs === 1 ? "" : "s"} to log today.`,
       urgency: "watch",
       entryIds: [],
     });
   }
-  if (status.counts.walks.done < status.counts.walks.target) {
+  // A started-but-unfinished walk session is different news than a routine
+  // walk that has not happened yet. "Still open" only fits the in-progress
+  // session (walkLifecycle "in-progress"); a finished walk must never be
+  // described as open just because today's walk target is not met yet.
+  const openWalks = todays.filter((entry) => {
+    if (normalizeCareEventType(entry.type, entry.details) !== "walk") return false;
+    const details = detailRecord(entry);
+    return details.householdVisible !== false && details.walkLifecycle === "in-progress";
+  });
+  if (openWalks.length > 0) {
     needsAttention.push({
       kind: "walk",
-      label: "Walk remaining",
-      detail: `${status.counts.walks.target - status.counts.walks.done} walk still open.`,
+      label: openWalks.length === 1 ? "Walk in progress" : "Walks in progress",
+      detail:
+        openWalks.length === 1
+          ? "1 walk is still in progress - log the finish to close it out."
+          : `${openWalks.length} walks are still in progress - log each finish to close them out.`,
+      urgency: "watch",
+      entryIds: openWalks.map((entry) => entry.id ?? `${entry.type}_${entry.occurredAt}`),
+    });
+  }
+  const walksRemaining = Math.max(status.counts.walks.target - status.counts.walks.done, 0);
+  if (walksRemaining > 0) {
+    needsAttention.push({
+      kind: "walk",
+      label: walksRemaining === 1 ? "Walk remaining" : "Walks remaining",
+      detail: `${walksRemaining} more walk${walksRemaining === 1 ? "" : "s"} to log today.`,
       urgency: "watch",
       entryIds: [],
     });
@@ -196,8 +234,11 @@ export function deriveCareHandoff(input: CareHandoffInput): CareHandoffSummary {
 
   const caregiverLoad = caregivers
     .map((caregiver) => {
+      // Entries only store caregiver display names (there is no caregiver id
+      // in the care doc), so match names case/whitespace-insensitively.
+      const key = caregiverKey(caregiver.name);
       const caregiverEntries = todays
-        .filter((entry) => entry.caregiver === caregiver.name)
+        .filter((entry) => key !== "" && caregiverKey(entry.caregiver) === key)
         .sort(
           (a, b) =>
             new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
@@ -211,10 +252,17 @@ export function deriveCareHandoff(input: CareHandoffInput): CareHandoffSummary {
     })
     .sort((a, b) => b.todayLogs - a.todayLogs);
 
+  // Name-string attribution goes stale after a caregiver rename: today's logs
+  // keep the old name, so the renamed caregiver would truthfully-but-uselessly
+  // read "logged 0 items today". When no listed caregiver matches any of
+  // today's logs, credit the household with the real count instead.
   const topCaregiver = caregiverLoad[0];
-  const message = topCaregiver
-    ? `${topCaregiver.name} logged ${topCaregiver.todayLogs} ${topCaregiver.todayLogs === 1 ? "item" : "items"} today.`
-    : "No caregiver handoff activity logged today.";
+  const message =
+    topCaregiver && topCaregiver.todayLogs > 0
+      ? `${topCaregiver.name} logged ${topCaregiver.todayLogs} ${topCaregiver.todayLogs === 1 ? "item" : "items"} today.`
+      : todays.length > 0
+        ? `The household logged ${todays.length} ${todays.length === 1 ? "item" : "items"} today.`
+        : "No caregiver handoff activity logged today.";
 
   return {
     message,

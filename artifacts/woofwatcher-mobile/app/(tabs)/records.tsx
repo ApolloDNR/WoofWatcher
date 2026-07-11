@@ -193,6 +193,14 @@ function entryType(entry: Entry): string {
   return normalizeCareEventType(entry.type, entry.details);
 }
 
+function countNoun(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+function sentenceCase(value: string): string {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+}
+
 function hasAttachment(record: unknown): boolean {
   const attachment = (record as { attachmentUri?: unknown }).attachmentUri;
   return typeof attachment === "string" && attachment.trim().length > 0;
@@ -294,6 +302,17 @@ export default function RecordsScreen() {
     () => derivePottyHealth({ entries: state.entries, now }),
     [state.entries, now],
   );
+  // The shared summary says "stool normal" whenever nothing needs review, but
+  // quick taps carry no stool detail at all. Until a condition or stool color
+  // is actually recorded, say so instead of claiming a normal outcome.
+  // (derivePottyHealth also feeds Care Pass, so this stays a display-only fix.)
+  const pottyOutcomeRecorded = pottyHealth.items.some(
+    (item) => item.condition !== "not logged" || Boolean(item.stoolColor),
+  );
+  const pottySummary =
+    pottyHealth.total > 0 && pottyHealth.watchCount === 0 && !pottyOutcomeRecorded
+      ? `${countNoun(pottyHealth.total, "potty log")} today - ${pottyHealth.peeCount} pee, ${pottyHealth.poopCount} poop, outcome not recorded`
+      : pottyHealth.summary;
   const trainingProgress = useMemo(
     () => deriveTrainingProgress({ entries: state.entries, now, lookbackDays: 30 }),
     [state.entries, now],
@@ -310,35 +329,20 @@ export default function RecordsScreen() {
     () => deriveWeightTrend({ entries: state.entries, profile: state.profile, goals: state.goals, now, lookbackDays: 90, limit: 8 }),
     [state.entries, state.profile, state.goals, now],
   );
-  const current = weightTrend.currentWeight || state.profile.weight.current;
+  const current = weightTrend.currentWeight;
 
-  // ---- Weight trend (prefer real weight logs, fall back to gentle synthesis) ----
-  const goalWeight = weightTrend.goalWeight || Math.round(current) + 2;
+  // ---- Weight trend (real weigh-ins only; never synthesize a series) ----
+  const goalWeight = weightTrend.goalWeight;
 
-  const { series, labels, isRealWeight } = useMemo(() => {
+  const { series, labels } = useMemo(() => {
     const real = weightTrend.items;
-    if (real.length >= 2) {
-      return {
-        series: real.map((item) => item.weight),
-        labels: real.map((item, i) => (i === real.length - 1 ? "Now" : shortDate(item.occurredAt))),
-        isRealWeight: true,
-      };
-    }
-    const n = 7;
-    const start = current - 1.6;
-    const wobble = [0, 0.25, -0.15, 0.35, 0.1, 0.4, 0];
-    const arr: number[] = [];
-    for (let i = 0; i < n; i++) {
-      const base = start + (current - start) * (i / (n - 1));
-      arr.push(Math.round((base + (i < n - 1 ? wobble[i] : 0)) * 10) / 10);
-    }
-    arr[n - 1] = current;
+    if (real.length < 2) return { series: [] as number[], labels: [] as string[] };
     return {
-      series: arr,
-      labels: arr.map((_, i) => (i === n - 1 ? "Now" : `${n - 1 - i}w`)),
-      isRealWeight: false,
+      series: real.map((item) => item.weight),
+      labels: real.map((item, i) => (i === real.length - 1 ? "Now" : shortDate(item.occurredAt))),
     };
-  }, [weightTrend.items, current]);
+  }, [weightTrend.items]);
+  const hasWeightSeries = series.length >= 2;
 
   // ---- Mood distribution (last 30 days) ----
   const moodStats = useMemo(
@@ -398,6 +402,12 @@ export default function RecordsScreen() {
         .slice(0, 4),
     [state.entries],
   );
+  const dietPrimaryFood = (state.dietProfile.primaryFood ?? "").trim();
+  const dietMeta = [state.dietProfile.normalPortion, state.dietProfile.mealSchedule]
+    .map((value) => (value ?? "").trim())
+    .filter(Boolean)
+    .join(" - ");
+  const hasDietOnFile = Boolean(dietPrimaryFood || dietMeta);
 
   const recordVault = useMemo(() => summarizeRecordVault(state.records), [state.records]);
   const recordReminders = useMemo(
@@ -533,7 +543,9 @@ export default function RecordsScreen() {
       `Health incidents: ${report.incidents}`,
       report.topCaregiver ? `Most active caregiver: ${report.topCaregiver.name} (${report.topCaregiver.count})` : "",
       "",
-      `Current weight: ${current} ${unit} (goal ${goalWeight} ${unit})`,
+      current > 0
+        ? `Current weight: ${current} ${unit}${goalWeight > 0 ? ` (goal ${goalWeight} ${unit})` : ""}`
+        : "",
       moodStats.total ? `Mood average: ${moodStats.averageScore.toFixed(1)}/5 over ${moodStats.total} check-ins` : "",
       "",
       "Shared from WoofWatcher - patterns for caregiver & vet review.",
@@ -778,15 +790,17 @@ export default function RecordsScreen() {
   const plotW = chartW - padL - padR;
   const plotH = chartH - padT - padB;
 
-  const allVals = [...series, goalWeight];
-  const minV = Math.min(...allVals) - 0.6;
-  const maxV = Math.max(...allVals) + 0.6;
+  const allVals = goalWeight > 0 ? [...series, goalWeight] : series;
+  const minV = allVals.length ? Math.min(...allVals) - 0.6 : 0;
+  const maxV = allVals.length ? Math.max(...allVals) + 0.6 : 1;
   const xAt = (i: number) => padL + (i / Math.max(1, series.length - 1)) * plotW;
   const yAt = (v: number) => padT + (1 - (v - minV) / (maxV - minV || 1)) * plotH;
   const linePath = series.map((v, i) => `${i === 0 ? "M" : "L"} ${xAt(i).toFixed(1)} ${yAt(v).toFixed(1)}`).join(" ");
   const areaPath = `${linePath} L ${xAt(series.length - 1).toFixed(1)} ${(padT + plotH).toFixed(1)} L ${xAt(0).toFixed(1)} ${(padT + plotH).toFixed(1)} Z`;
   const goalY = yAt(goalWeight);
-  const remaining = weightTrend.goalWeight ? weightTrend.remainingToGoal : Math.max(0, goalWeight - current);
+  // Goal-distance math only exists once a real current weight and a real goal
+  // are on file (the lib already returns 0 when no goal is set).
+  const remaining = current > 0 ? weightTrend.remainingToGoal : 0;
   const maxBar = Math.max(1, ...moodStats.bars.map((b) => b.count));
   const incidentMax = Math.max(1, incident7, incident30, incident90);
 
@@ -876,7 +890,7 @@ export default function RecordsScreen() {
       id: "record-vault",
       icon: "folder-open-outline",
       eyebrow: "Record vault",
-      label: `${recordVault.total} records saved`,
+      label: `${countNoun(recordVault.total, "record")} saved`,
       detail: recordVault.missingCritical.length
         ? `File ${recordVault.missingCritical[0].toLowerCase()} next.`
         : recordReminders[0]?.label ?? "Vaccines, visits, receipts, insurance, chip, and meds.",
@@ -899,7 +913,7 @@ export default function RecordsScreen() {
       icon: "analytics-outline",
       eyebrow: "Reports",
       label: `${periodLabel} progress`,
-      detail: `${report.total} logs and ${recordReminders.length} record reminders are ready to review.`,
+      detail: `${countNoun(report.total, "log")} and ${countNoun(recordReminders.length, "record reminder")} are ready to review.`,
       actionLabel: "Share",
       tone: colors.primary,
       onPress: shareReport,
@@ -949,7 +963,9 @@ export default function RecordsScreen() {
                   <Text style={[s.recordsCredentialKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
                     Records Command Vault
                   </Text>
-                  <Text style={[s.recordsCredentialSpeech, { color: colors.navy, fontFamily: DISPLAY_SEMI }]}>
+                  {/* brandNavy: constant ink for the fixed-light bubble in both themes
+                      (colors.navy flips to cream in dark mode and disappears). */}
+                  <Text style={[s.recordsCredentialSpeech, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>
                     {recordsVaultSpeech}
                   </Text>
                   <View style={s.recordsCredentialBubbleTail} />
@@ -1103,57 +1119,54 @@ export default function RecordsScreen() {
             <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{careTrends.nextStep}</Text>
           </BoardCard>
 
-          {/* Dog ID card. Short static title: the four share actions leave the
-              heading ~90px, so a name-prefixed title clips. The pet's name is
-              shown large on the card itself right below. */}
-          <BoardSectionHeader
-            title="ID Card"
-            style={{ marginTop: 28 }}
-            accessory={
-              <View style={s.shareInlineGroup}>
-                <Pressable
-                  onPress={shareCredential}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share dog ID card"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  style={s.shareInline}
-                >
-                  <Ionicons name="share-outline" size={15} color={colors.copper} />
-                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
-                </Pressable>
-                <Pressable
-                  onPress={sharePrintableCredential}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share local printable Dog ID source file"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  style={s.shareInline}
-                >
-                  <Ionicons name="print-outline" size={15} color={colors.copper} />
-                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Print</Text>
-                </Pressable>
-                <Pressable
-                  onPress={shareCredentialImageSource}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share local SVG Dog ID image source"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  style={s.shareInline}
-                >
-                  <Ionicons name="image-outline" size={15} color={colors.copper} />
-                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>SVG</Text>
-                </Pressable>
-                <Pressable
-                  onPress={shareCredentialPngArtifact}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share generated Dog ID PNG"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  style={s.shareInline}
-                >
-                  <Ionicons name="download-outline" size={15} color={colors.copper} />
-                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>PNG</Text>
-                </Pressable>
-              </View>
-            }
-          />
+          {/* Dog ID card. The four export actions live on their own wrapping
+              row under the heading so the title and every action stay fully
+              visible at narrow widths (a single header row clipped the title
+              to "ID ..." at 393px). The pet's name is shown large on the card
+              itself right below. */}
+          <BoardSectionHeader title="ID Card" style={{ marginTop: 28, marginBottom: 2 }} />
+          <View style={s.idShareRow}>
+            <Pressable
+              onPress={shareCredential}
+              accessibilityRole="button"
+              accessibilityLabel="Share dog ID card"
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={s.shareInline}
+            >
+              <Ionicons name="share-outline" size={15} color={colors.copper} />
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
+            </Pressable>
+            <Pressable
+              onPress={sharePrintableCredential}
+              accessibilityRole="button"
+              accessibilityLabel="Share local printable Dog ID source file"
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={s.shareInline}
+            >
+              <Ionicons name="print-outline" size={15} color={colors.copper} />
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Print</Text>
+            </Pressable>
+            <Pressable
+              onPress={shareCredentialImageSource}
+              accessibilityRole="button"
+              accessibilityLabel="Share local SVG Dog ID image source"
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={s.shareInline}
+            >
+              <Ionicons name="image-outline" size={15} color={colors.copper} />
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>SVG</Text>
+            </Pressable>
+            <Pressable
+              onPress={shareCredentialPngArtifact}
+              accessibilityRole="button"
+              accessibilityLabel="Share generated Dog ID PNG"
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={s.shareInline}
+            >
+              <Ionicons name="download-outline" size={15} color={colors.copper} />
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>PNG</Text>
+            </Pressable>
+          </View>
           <BoardCard tone="navy" padded={false} style={s.idCard}>
             <View style={s.idCardTop}>
               <View style={[s.idBadge, { backgroundColor: colors.copper }]}>
@@ -1262,63 +1275,103 @@ export default function RecordsScreen() {
             ) : null}
           </BoardCard>
 
-          {/* Weight trend */}
+          {/* Weight trend - charts real weigh-ins only; with fewer than two
+              logged weights it shows an honest empty state instead of a
+              synthesized line, and goal math only appears once a goal is set. */}
           <BoardCard style={[s.recordsBoardCard, { padding: cardPad }]}>
             <BoardSectionHeader
               title="Weight Trend"
               accessory={
                 <BoardPill
-                  label={remaining > 0 ? `${remaining.toFixed(1)} ${unit} ${weightTrend.direction === "reduce" ? "over goal" : "to go"}` : "Goal reached"}
-                  tone={remaining > 0 ? colors.amber : colors.sage}
+                  label={remaining > 0 ? `${remaining.toFixed(1)} ${unit} ${weightTrend.direction === "reduce" ? "over goal" : "to go"}` : goalWeight > 0 ? (current > 0 ? "Goal reached" : `Goal ${goalWeight} ${unit}`) : "No goal set"}
+                  tone={remaining > 0 ? colors.amber : goalWeight > 0 ? colors.sage : colors.mutedForeground}
                 />
               }
             />
-            <View style={s.chartTopRow}>
-              <View>
-                <Text style={[s.chartBig, { color: colors.foreground, fontFamily: DISPLAY }]}>
-                  {current}
-                  <Text style={[s.chartUnit, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}> {unit}</Text>
-                </Text>
-                <Text style={[s.chartCaption, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {isRealWeight ? "From logged weigh-ins" : "Current weight"}
-                </Text>
+            {current > 0 ? (
+              <View style={s.chartTopRow}>
+                <View>
+                  <Text style={[s.chartBig, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                    {current}
+                    <Text style={[s.chartUnit, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}> {unit}</Text>
+                  </Text>
+                  <Text style={[s.chartCaption, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    {hasWeightSeries ? "From logged weigh-ins" : "Current weight on profile"}
+                  </Text>
+                </View>
+                {goalWeight > 0 ? (
+                  <View style={[s.goalPill, { backgroundColor: colors.sage + "16" }]}>
+                    <Ionicons name="flag" size={13} color={colors.sage} />
+                    <Text style={[s.goalPillText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                      Goal {goalWeight} {unit}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
-              <View style={[s.goalPill, { backgroundColor: colors.sage + "16" }]}>
-                <Ionicons name="flag" size={13} color={colors.sage} />
-                <Text style={[s.goalPillText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                  Goal {goalWeight} {unit}
-                </Text>
-              </View>
-            </View>
+            ) : null}
 
-            <Svg width={chartW} height={chartH}>
-              <Defs>
-                <SvgGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={colors.sage} stopOpacity={0.28} />
-                  <Stop offset="1" stopColor={colors.sage} stopOpacity={0.02} />
-                </SvgGradient>
-              </Defs>
-              {[0.25, 0.5, 0.75].map((t) => {
-                const gy = padT + t * plotH;
-                return <Line key={t} x1={padL} y1={gy} x2={padL + plotW} y2={gy} stroke={colors.border} strokeWidth={1} opacity={0.7} />;
-              })}
-              <Line x1={padL} y1={goalY} x2={padL + plotW} y2={goalY} stroke={colors.sage} strokeWidth={1.5} strokeDasharray="5 5" opacity={0.55} />
-              <Path d={areaPath} fill="url(#weightFill)" />
-              <Path d={linePath} fill="none" stroke={colors.primary} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
-              {series.map((v, i) => {
-                const last = i === series.length - 1;
-                return (
-                  <Circle key={i} cx={xAt(i)} cy={yAt(v)} r={last ? 5.5 : 3} fill={last ? colors.copper : colors.card} stroke={last ? colors.card : colors.primary} strokeWidth={last ? 2.5 : 2} />
-                );
-              })}
-              {labels.map((lbl, i) => (
-                <SvgText key={`l${i}`} x={xAt(i)} y={chartH - 8} fill={colors.mutedForeground} fontSize={10} fontFamily="Inter_500Medium" textAnchor="middle">
-                  {lbl}
-                </SvgText>
-              ))}
-            </Svg>
+            {hasWeightSeries ? (
+              <Svg width={chartW} height={chartH}>
+                <Defs>
+                  <SvgGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0" stopColor={colors.sage} stopOpacity={0.28} />
+                    <Stop offset="1" stopColor={colors.sage} stopOpacity={0.02} />
+                  </SvgGradient>
+                </Defs>
+                {[0.25, 0.5, 0.75].map((t) => {
+                  const gy = padT + t * plotH;
+                  return <Line key={t} x1={padL} y1={gy} x2={padL + plotW} y2={gy} stroke={colors.border} strokeWidth={1} opacity={0.7} />;
+                })}
+                {goalWeight > 0 ? (
+                  <Line x1={padL} y1={goalY} x2={padL + plotW} y2={goalY} stroke={colors.sage} strokeWidth={1.5} strokeDasharray="5 5" opacity={0.55} />
+                ) : null}
+                <Path d={areaPath} fill="url(#weightFill)" />
+                <Path d={linePath} fill="none" stroke={colors.primary} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
+                {series.map((v, i) => {
+                  const last = i === series.length - 1;
+                  return (
+                    <Circle key={i} cx={xAt(i)} cy={yAt(v)} r={last ? 5.5 : 3} fill={last ? colors.copper : colors.card} stroke={last ? colors.card : colors.primary} strokeWidth={last ? 2.5 : 2} />
+                  );
+                })}
+                {labels.map((lbl, i) => (
+                  <SvgText
+                    key={`l${i}`}
+                    x={xAt(i)}
+                    y={chartH - 8}
+                    fill={colors.mutedForeground}
+                    fontSize={10}
+                    fontFamily="Inter_500Medium"
+                    // End labels anchor inward so they never clip at the card edges.
+                    textAnchor={i === 0 ? "start" : i === labels.length - 1 ? "end" : "middle"}
+                  >
+                    {lbl}
+                  </SvgText>
+                ))}
+              </Svg>
+            ) : (
+              <View style={[s.weightEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Ionicons name="scale-outline" size={24} color={colors.mutedForeground} />
+                <Text style={[s.weightEmptyTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {weightTrend.totalWeighIns === 1
+                    ? "Log another weigh-in to chart the trend"
+                    : "Log a weight to start the trend"}
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    router.push(`/log?type=weight&detail=1&intent=${Date.now()}` as never);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Log a weight from the Log tab"
+                  style={({ pressed }) => [s.emptyAddBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                >
+                  <Ionicons name="add" size={16} color="#FFFFFF" />
+                  <Text style={[s.emptyAddText, { fontFamily: "Inter_700Bold" }]}>Log weight</Text>
+                </Pressable>
+              </View>
+            )}
             <Text style={[s.chartNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              {isRealWeight ? weightTrend.nextStep : "Gentle, vet-guided pacing - slow and steady."}
+              {weightTrend.nextStep}
             </Text>
           </BoardCard>
 
@@ -1412,7 +1465,7 @@ export default function RecordsScreen() {
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Hydration"
-              accessory={<BoardPill label={waterHydration.total ? `${waterHydration.total} logs` : "No logs"} tone={colors.primary} />}
+              accessory={<BoardPill label={waterHydration.total ? countNoun(waterHydration.total, "log") : "No logs"} tone={colors.primary} />}
             />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.primary + "18" }]}>
@@ -1464,7 +1517,7 @@ export default function RecordsScreen() {
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Walk Activity"
-              accessory={<BoardPill label={walkActivity.total ? `${walkActivity.total} walks` : "No walks"} tone={colors.sage} />}
+              accessory={<BoardPill label={walkActivity.total ? countNoun(walkActivity.total, "walk") : "No walks"} tone={colors.sage} />}
             />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.sage + "18" }]}>
@@ -1490,7 +1543,8 @@ export default function RecordsScreen() {
               ].map((item, index) => (
                 <View key={item.label} style={[s.hydrationStat, index < 2 && { borderRightWidth: 1, borderRightColor: colors.border }]}>
                   <Text style={[s.hydrationValue, { color: colors.foreground, fontFamily: DISPLAY }]}>{item.value}</Text>
-                  <Text style={[s.hydrationLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{item.label}</Text>
+                  {/* sentenceCase keeps "Dog interactions" aligned with its Title-case siblings. */}
+                  <Text style={[s.hydrationLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{sentenceCase(item.label)}</Text>
                 </View>
               ))}
             </View>
@@ -1524,7 +1578,7 @@ export default function RecordsScreen() {
                 <View style={s.routeTemplateHeader}>
                   <Text style={[s.routeTemplateTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Saved Routes</Text>
                   <Text style={[s.routeTemplateCount, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    {walkRouteTemplates.length} templates
+                    {countNoun(walkRouteTemplates.length, "template")}
                   </Text>
                 </View>
                 {walkRouteTemplates.map((template, index) => (
@@ -1564,7 +1618,7 @@ export default function RecordsScreen() {
               title="Training Progress"
               accessory={
                 <BoardPill
-                  label={trainingProgress.totalSessions ? `${trainingProgress.totalSessions} sessions` : "No sessions"}
+                  label={trainingProgress.totalSessions ? countNoun(trainingProgress.totalSessions, "session") : "No sessions"}
                   tone={colors.copper}
                 />
               }
@@ -1639,7 +1693,7 @@ export default function RecordsScreen() {
               title="Alone Time"
               accessory={
                 <BoardPill
-                  label={aloneTime.totalSessions ? `${aloneTime.totalSessions} logs` : "No logs"}
+                  label={aloneTime.totalSessions ? countNoun(aloneTime.totalSessions, "log") : "No logs"}
                   tone={aloneTime.distressedCount ? colors.rose : aloneTime.anxiousCount ? colors.amber : colors.mutedForeground}
                 />
               }
@@ -1718,7 +1772,7 @@ export default function RecordsScreen() {
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Grooming Care"
-              accessory={<BoardPill label={groomingCare.totalSessions ? `${groomingCare.totalSessions} logs` : "No logs"} tone={colors.sage} />}
+              accessory={<BoardPill label={groomingCare.totalSessions ? countNoun(groomingCare.totalSessions, "log") : "No logs"} tone={colors.sage} />}
             />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.sage + "18" }]}>
@@ -1788,7 +1842,7 @@ export default function RecordsScreen() {
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Potty Health"
-              accessory={<BoardPill label={pottyHealth.total ? `${pottyHealth.total} logs` : "No logs"} tone={pottyHealth.watchCount ? colors.amber : colors.sage} />}
+              accessory={<BoardPill label={pottyHealth.total ? countNoun(pottyHealth.total, "log") : "No logs"} tone={pottyHealth.watchCount ? colors.amber : colors.sage} />}
             />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.amber + "18" }]}>
@@ -1799,7 +1853,7 @@ export default function RecordsScreen() {
                   {pottyHealth.status === "watch" ? "Stool watch" : pottyHealth.status === "steady" ? "Potty steady" : "Potty check"}
                 </Text>
                 <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {pottyHealth.summary}
+                  {pottySummary}
                 </Text>
               </View>
             </View>
@@ -1833,7 +1887,7 @@ export default function RecordsScreen() {
                 <View style={[s.watchSignalDot, { backgroundColor: pottyHealth.watchCount ? colors.amber : colors.sage }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                    Latest: {pottyHealth.last.kindLabel}
+                    Latest: {sentenceCase(pottyHealth.last.kindLabel)}
                   </Text>
                   <Text style={[s.watchPatternEvidence, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                     {[
@@ -2028,7 +2082,18 @@ export default function RecordsScreen() {
             />
             <View style={[s.medSummaryRow, { borderBottomColor: colors.border }]}>
               {[
-                { value: `${medicationAdherence.adherencePercent}%`, label: "Logged", color: medicationAdherence.missedCount > 0 ? colors.rose : colors.sage },
+                // With no medications on file there is nothing to have logged,
+                // so show a dash instead of a fabricated 100%.
+                {
+                  value: medicationAdherence.total === 0 ? "—" : `${medicationAdherence.adherencePercent}%`,
+                  label: "Logged",
+                  color:
+                    medicationAdherence.total === 0
+                      ? colors.mutedForeground
+                      : medicationAdherence.missedCount > 0
+                        ? colors.rose
+                        : colors.sage,
+                },
                 { value: String(medicationAdherence.dueCount), label: "Due now", color: medicationAdherence.dueCount > 0 ? colors.amber : colors.sage },
                 { value: String(medicationAdherence.missedCount), label: "Missed", color: medicationAdherence.missedCount > 0 ? colors.rose : colors.sage },
               ].map((item, index) => (
@@ -2110,9 +2175,12 @@ export default function RecordsScreen() {
                 <Text style={[s.medFollowUpTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                   Medication Follow-ups
                 </Text>
-                <Text style={[s.medFollowUpCount, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
-                  {medicationFollowUps.length ? `${medicationFollowUps.length} active` : "Clear"}
-                </Text>
+                {/* Calm pill grammar (matches Incident Watch's green Clear pill)
+                    instead of orange all-caps text that reads as an alert. */}
+                <BoardPill
+                  label={medicationFollowUps.length ? `${medicationFollowUps.length} active` : "Clear"}
+                  tone={medicationFollowUps.length ? colors.copper : colors.sage}
+                />
               </View>
               {medicationFollowUps.length === 0 ? (
                 <Text style={[s.medFollowUpEmpty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
@@ -2153,9 +2221,10 @@ export default function RecordsScreen() {
                 <Text style={[s.medFollowUpTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                   Medication History
                 </Text>
-                <Text style={[s.medFollowUpCount, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
-                  {medicationHistory.total ? `${medicationHistory.total} logs` : "No logs"}
-                </Text>
+                <BoardPill
+                  label={medicationHistory.total ? countNoun(medicationHistory.total, "log") : "No logs"}
+                  tone={medicationHistory.total ? colors.copper : colors.mutedForeground}
+                />
               </View>
               <View style={[s.medSearchCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Ionicons name="search" size={16} color={colors.mutedForeground} />
@@ -2359,7 +2428,7 @@ export default function RecordsScreen() {
                         {artifact.title}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {shortDate(artifact.createdAt)} - {sectionCount} sections - {exportView.sourceStatus === "ready" ? "Print-ready" : "Print restored"}
+                        {shortDate(artifact.createdAt)} - {countNoun(sectionCount, "section")} - {exportView.sourceStatus === "ready" ? "Print-ready" : "Print restored"}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
                         {exportView.fileName}
@@ -2562,7 +2631,7 @@ export default function RecordsScreen() {
                   <Ionicons name="ribbon" size={13} color={colors.sage} />
                   <Text style={[s.topCaregiverInlineText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                     {report.topCaregiver.name}
-                    <Text style={{ fontFamily: "Inter_400Regular", color: colors.mutedForeground }}> - {report.topCaregiver.count} logs</Text>
+                    <Text style={{ fontFamily: "Inter_400Regular", color: colors.mutedForeground }}> - {countNoun(report.topCaregiver.count, "log")}</Text>
                   </Text>
                 </View>
               )}
@@ -2595,9 +2664,13 @@ export default function RecordsScreen() {
                 <PulseIcon name="bowl" size={20} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.rowTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{state.dietProfile.primaryFood}</Text>
+                <Text style={[s.rowTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {hasDietOnFile ? dietPrimaryFood || "Food not set yet" : "No diet set yet"}
+                </Text>
                 <Text style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {state.dietProfile.normalPortion} - {state.dietProfile.mealSchedule}
+                  {hasDietOnFile
+                    ? dietMeta || "Add portion and schedule with Edit."
+                    : "Add food and portion with Edit."}
                 </Text>
               </View>
             </View>
@@ -2850,7 +2923,16 @@ const s = StyleSheet.create({
     paddingHorizontal: 8,
     gap: 4,
   },
-  shareInlineGroup: { flexDirection: "row", alignItems: "center", gap: 14 },
+  // Dog ID export actions: a wrapping row under the section title so all four
+  // actions and the title stay visible at narrow (393px) widths.
+  idShareRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    columnGap: 8,
+    marginLeft: -8,
+    marginBottom: 4,
+  },
 
   recordsCredentialStageCard: {
     alignSelf: "stretch",
@@ -3117,6 +3199,16 @@ const s = StyleSheet.create({
   goalPill: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 13 },
   goalPillText: { fontSize: 12.5 },
   chartNote: { fontSize: 12.5, lineHeight: 18, marginTop: 6 },
+  weightEmpty: {
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  weightEmptyTitle: { fontSize: 14.5, textAlign: "center" },
 
   empty: { fontSize: 14, paddingVertical: 16, textAlign: "center" },
   trendHeroRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 12 },
@@ -3204,7 +3296,6 @@ const s = StyleSheet.create({
   medFollowUps: { borderTopWidth: 1, marginTop: 4, paddingTop: 14 },
   medFollowUpHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 2 },
   medFollowUpTitle: { fontSize: 15 },
-  medFollowUpCount: { fontSize: 11.5, textTransform: "uppercase", letterSpacing: 0.4 },
   medFollowUpEmpty: { fontSize: 12.5, lineHeight: 18, paddingTop: 8 },
   medFollowUpRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 12 },
   medFollowUpAction: { fontSize: 12, lineHeight: 17, marginTop: 5 },

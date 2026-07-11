@@ -1596,7 +1596,10 @@ test("keeps Home Quick Log header action as a real route target", () => {
   assert.match(log, /const routeWantsDetailSheet =/);
   assert.match(log, /const routeDetailIntentKey =/);
   assert.match(log, /findLauncherActionForType\(routeSelectedType\)/);
-  assert.match(log, /setLauncherDetailAction\(routeDetailAction\)/);
+  // Detail-intent routes land directly in the pre-focused composer instead of
+  // auto-opening the policy explainer sheet.
+  assert.match(log, /setTimeout\(\(\) => scrollToComposer\(\), 350\)/);
+  assert.doesNotMatch(log, /setLauncherDetailAction\(routeDetailAction\)/);
   assert.match(log, /const routeEntryParam =/);
   assert.match(log, /setDetailEntryId\(routeEntryParam\)/);
   assert.match(homeMissionDeck, /`\/log\?entry=\$\{string\}`/);
@@ -2370,8 +2373,15 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   assert.match(log, /launcherDetailEditLater/);
   assert.match(log, /launcherDetailPresentation\.editLaterCopy/);
   assert.match(log, /openLauncherDetailSheet/);
+  assert.match(log, /openQuickLogGuide/);
   assert.match(log, /focusFullComposerForLauncherAction/);
+  // "Tap saves. Hold opens details." is literal now: hold lands straight in
+  // the pre-focused composer, and the policy explainer lives behind the "?".
   assert.match(
+    log,
+    /onLongPress=\{\(\) => focusFullComposerForLauncherAction\(action\)\}/,
+  );
+  assert.doesNotMatch(
     log,
     /onLongPress=\{\(\) => openLauncherDetailSheet\(action\)\}/,
   );
@@ -4471,7 +4481,9 @@ test("keeps Log search wired across text query and type filters", () => {
   assert.match(log, /deriveCareLogSearch/);
   assert.match(log, /searchText/);
   assert.match(log, /logSearch/);
-  assert.match(log, /Search notes, caregivers, routes, meds/);
+  // Short placeholder: the longer caregivers/routes copy ellipsized mid-word
+  // ("...routes, med") inside the 393px search field.
+  assert.match(log, /Search notes, people, meds/);
   assert.match(log, /logSearch\.summary/);
   assert.match(log, /logSearch\.emptyMessage/);
 });

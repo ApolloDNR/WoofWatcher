@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -14,15 +15,21 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { deriveOnboardingStatus } from "@workspace/care-domain";
+import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { isClerkConfigured, useWoofAuth } from "@/lib/auth";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
+import {
+  applyBreedTemplateToAvatarConfig,
+  deriveSetupTwinPlan,
+} from "@/lib/breedTemplateMatch";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { notifyDialog } from "@/lib/confirmDialog";
 import {
   getKeyboardAvoidingVerticalOffset,
+  getModalSheetBottomPadding,
   getRouteTopPadding,
   getStandaloneRouteBottomPadding,
 } from "@/lib/mobileLayout";
@@ -35,6 +42,14 @@ import {
 } from "@/lib/setupWizard";
 
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+// Storybook mockup: big warm serif for celebration titles (same face the
+// board route headers use).
+const TITLE_SERIF = "Fraunces_700Bold";
+
+// Placeholders must read as hints, not as filled values: soften the muted
+// foreground token with alpha so an empty form never looks complete while
+// the progress card still says "0/4 ready".
+const PLACEHOLDER_TEXT_ALPHA = "80";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -93,8 +108,21 @@ export default function SetupScreen() {
   const ownerOps = isOwnerOpsBuild();
   const { state, updateCareDoc, isLoaded } = useCare();
   const { isSignedIn } = useWoofAuth();
+  const { avatarConfig, hasConfiguredAvatar, saveAvatarConfig } = useAvatar();
   const [draft, setDraft] = useState<SetupWizardDraft>(() => createSetupWizardDraft(state));
   const [dirty, setDirty] = useState(false);
+  // Confirm toggle for the breed-matched twin swap. hasConfiguredAvatar
+  // already blocks the swap when the owner customized the twin, but it cannot
+  // tell "never opened Avatar Studio" apart from "deliberately re-saved the
+  // default shepherd", so the swap stays owner-confirmable here. Defaults ON.
+  const [matchTwinToBreed, setMatchTwinToBreed] = useState(true);
+  // Snapshot of the save celebration, captured at save time so the sheet
+  // stays stable while care and avatar state update underneath it.
+  const [successMoment, setSuccessMoment] = useState<{
+    dogName: string;
+    twinLine: string;
+    templateLine: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!isLoaded || dirty) return;
@@ -117,6 +145,19 @@ export default function SetupScreen() {
     [isSignedIn, preview],
   );
   const authSetupProofManifest = buildAuthSetupProofManifest();
+  // Breed-matched pixel twin plan: previewed under the breed field so the
+  // template swap on save is never a surprise.
+  const twinPlan = useMemo(
+    () =>
+      deriveSetupTwinPlan({
+        breed: draft.breed,
+        dogName: preview.profile.name,
+        currentTemplateId: avatarConfig.templateId,
+        hasConfiguredAvatar,
+        matchTwinToBreed,
+      }),
+    [avatarConfig.templateId, draft.breed, hasConfiguredAvatar, matchTwinToBreed, preview.profile.name],
+  );
 
   const setField = (key: keyof SetupWizardDraft, value: string) => {
     setDirty(true);
@@ -147,13 +188,39 @@ export default function SetupScreen() {
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     updateCareDoc((doc) => applySetupWizardDraft(doc, draft));
-    // Alert is a no-op on react-native-web, so the confirmation and the
-    // hand-off to Today must both work without it.
-    notifyDialog(
-      "Care foundation saved",
-      `${confirmation.detail}\n\n${confirmation.providerBoundary}`,
-    );
+    if (twinPlan.willSwapTemplate) {
+      // Persist through AvatarContext.saveAvatarConfig - the same state path
+      // Avatar Studio's Save uses - with the template-picker patch, so the
+      // room twin follows the typed breed without duplicating studio logic.
+      void saveAvatarConfig(
+        applyBreedTemplateToAvatarConfig(
+          avatarConfig,
+          twinPlan.resultTemplateId,
+          preview.profile.name,
+        ),
+      ).catch(() => {});
+    }
+    // In-app success sheet (Alert is a no-op on react-native-web); the
+    // hand-off to Today or Plan happens from the sheet's own buttons.
+    setSuccessMoment({
+      dogName: preview.profile.name,
+      twinLine: twinPlan.successLine,
+      templateLine: twinPlan.willSwapTemplate
+        ? `Twin: ${twinPlan.resultTemplateLabel} - change anytime in Avatar Studio.`
+        : twinPlan.previewLine,
+    });
+  };
+
+  const meetDog = () => {
+    Haptics.selectionAsync();
+    setSuccessMoment(null);
     router.replace("/(tabs)");
+  };
+
+  const reviewPlan = () => {
+    Haptics.selectionAsync();
+    setSuccessMoment(null);
+    router.replace("/calendar");
   };
 
   const finishLater = () => {
@@ -178,6 +245,10 @@ export default function SetupScreen() {
     platform: Platform.OS,
     topInset: insets.top,
     surface: "setup",
+  });
+  const modalSheetBottomPadding = getModalSheetBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
   });
 
   return (
@@ -243,6 +314,42 @@ export default function SetupScreen() {
           <Section title="Dog profile" icon="paw-outline">
             <Field label="Name" value={draft.dogName} placeholder="Phoenix" onChangeText={(value) => setField("dogName", value)} />
             <Field label="Breed or mix" value={draft.breed} placeholder="German Shepherd mix" onChangeText={(value) => setField("breed", value)} />
+            <View style={s.twinPreview}>
+              <View style={s.twinLineRow}>
+                <Ionicons name="sparkles-outline" size={14} color={colors.copper} />
+                <Text style={[s.twinLineText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  {twinPlan.previewLine}
+                </Text>
+              </View>
+              {twinPlan.swapAvailable ? (
+                <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Match twin to breed on save"
+                  accessibilityState={{ checked: matchTwinToBreed }}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setMatchTwinToBreed((value) => !value);
+                  }}
+                  style={({ pressed }) => [
+                    s.twinToggle,
+                    {
+                      backgroundColor: matchTwinToBreed ? colors.primary + "14" : colors.background,
+                      borderColor: matchTwinToBreed ? colors.primary : colors.border,
+                      opacity: pressed ? 0.76 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={matchTwinToBreed ? "checkbox" : "square-outline"}
+                    size={17}
+                    color={matchTwinToBreed ? colors.primary : colors.mutedForeground}
+                  />
+                  <Text style={[s.twinToggleText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    Match twin to breed on save
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
             <View style={s.twoCol}>
               <Field label="Weight" value={draft.weight} placeholder="68" keyboardType="decimal-pad" onChangeText={(value) => setField("weight", value)} />
               <Field label="Unit" value={draft.weightUnit} placeholder="lb" onChangeText={(value) => setField("weightUnit", value)} />
@@ -467,6 +574,74 @@ export default function SetupScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Save celebration: an in-app board sheet instead of a native alert,
+          so the success moment works on every platform and hands off to
+          Today or Plan without governance copy. */}
+      <Modal
+        visible={successMoment !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={meetDog}
+      >
+        <Pressable
+          accessibilityLabel="Continue to Today"
+          style={s.sheetBackdrop}
+          onPress={meetDog}
+        >
+          <Pressable onPress={(event) => event.stopPropagation()}>
+            <BoardCard style={[s.sheetCard, { paddingBottom: modalSheetBottomPadding }]}>
+              <View style={[s.sheetHandle, { backgroundColor: colors.border }]} />
+              <View style={[s.sheetBadge, { backgroundColor: colors.primary + "16" }]}>
+                <Ionicons name="sparkles" size={26} color={colors.primary} />
+              </View>
+              <Text style={[s.sheetKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                Care foundation saved
+              </Text>
+              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: TITLE_SERIF }]}>
+                {successMoment?.twinLine}
+              </Text>
+              <Text style={[s.sheetTwinLine, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                {successMoment?.templateLine}
+              </Text>
+              <View style={s.sheetBoundaryRow}>
+                <Ionicons name="lock-closed-outline" size={13} color={colors.mutedForeground} />
+                <Text style={[s.sheetBoundaryText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Everything stays on this device.
+                </Text>
+              </View>
+              <Pressable
+                onPress={meetDog}
+                accessibilityRole="button"
+                accessibilityLabel={`Meet ${successMoment?.dogName ?? "your dog"}`}
+                style={({ pressed }) => [
+                  s.saveBtn,
+                  s.sheetPrimaryBtn,
+                  { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
+                ]}
+              >
+                <Ionicons name="paw" size={17} color="#fff" />
+                <Text style={[s.saveText, { fontFamily: "Inter_700Bold" }]}>
+                  Meet {successMoment?.dogName ?? "your dog"}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={reviewPlan}
+                accessibilityRole="button"
+                accessibilityLabel="Review plan"
+                style={({ pressed }) => [
+                  s.sheetSecondaryBtn,
+                  { borderColor: colors.border, opacity: pressed ? 0.72 : 1 },
+                ]}
+              >
+                <Text style={[s.sheetSecondaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  Review plan
+                </Text>
+              </Pressable>
+            </BoardCard>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </>
   );
 }
@@ -519,7 +694,7 @@ function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={colors.mutedForeground}
+        placeholderTextColor={colors.mutedForeground + PLACEHOLDER_TEXT_ALPHA}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         multiline={multiline}
@@ -561,6 +736,20 @@ const s = StyleSheet.create({
   field: { minHeight: 48, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   fieldMultiline: { minHeight: 76, textAlignVertical: "top" },
   twoCol: { flexDirection: "row", gap: 10 },
+  twinPreview: { gap: 8, marginTop: -3 },
+  twinLineRow: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
+  twinLineText: { flex: 1, fontSize: 11.5, lineHeight: 16 },
+  twinToggle: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderRadius: 13,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  twinToggleText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
   typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 2 },
   typePill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 14, borderWidth: 1 },
   typeText: { fontSize: 12.5 },
@@ -599,4 +788,23 @@ const s = StyleSheet.create({
   laterText: { fontSize: 14 },
   proofBtn: { minHeight: 42, borderRadius: 14, borderWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
   proofText: { fontSize: 12.5 },
+  sheetBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(8, 20, 36, 0.45)" },
+  sheetCard: {
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    paddingHorizontal: 22,
+    paddingTop: 12,
+  },
+  sheetHandle: { alignSelf: "center", width: 42, height: 5, borderRadius: 3, marginBottom: 14 },
+  sheetBadge: { alignSelf: "center", width: 56, height: 56, borderRadius: 20, alignItems: "center", justifyContent: "center", marginBottom: 10 },
+  sheetKicker: { fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase", textAlign: "center" },
+  sheetTitle: { fontSize: 23, lineHeight: 29, textAlign: "center", marginTop: 5 },
+  sheetTwinLine: { fontSize: 12.5, lineHeight: 18, textAlign: "center", marginTop: 8 },
+  sheetBoundaryRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, marginTop: 12 },
+  sheetBoundaryText: { fontSize: 11.5, lineHeight: 16 },
+  sheetPrimaryBtn: { marginTop: 18 },
+  sheetSecondaryBtn: { height: 46, borderRadius: 15, borderWidth: 1, alignItems: "center", justifyContent: "center", marginTop: 10 },
+  sheetSecondaryText: { fontSize: 13.5 },
 });

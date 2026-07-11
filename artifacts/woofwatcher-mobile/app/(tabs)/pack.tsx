@@ -288,7 +288,17 @@ export default function PackScreen() {
 
   const memberTones = [colors.sage, colors.copper, colors.amber, colors.rose];
   const memberTone = (index: number) => memberTones[index % memberTones.length];
-  const accessTone = householdAccess.status === "ready" ? colors.sage : colors.amber;
+  // A pristine household (no synced members, no pending invites, no
+  // routine-only owners) is a not-set-up-yet state, not a problem to review -
+  // amber "Needs review" on an empty board reads as a false alarm.
+  const accessNotSetUp =
+    householdAccess.status === "needs-household" && householdAccess.people.length === 0;
+  const accessTone =
+    householdAccess.status === "ready"
+      ? colors.sage
+      : accessNotSetUp
+        ? colors.mutedForeground
+        : colors.amber;
   const petIdentityLine = [
     state.profile.breed,
     `${avatarTemplate.label} care twin${avatarConfig.scanAssisted ? " (scan-assisted)" : ""}`,
@@ -694,8 +704,16 @@ export default function PackScreen() {
               title="Access"
               accessory={
                 <BoardStatusPill
-                  label={householdAccess.status === "ready" ? "Aligned" : "Needs review"}
-                  tone={householdAccess.status === "ready" ? "done" : "due"}
+                  label={
+                    householdAccess.status === "ready"
+                      ? "Aligned"
+                      : accessNotSetUp
+                        ? "Not set up yet"
+                        : "Needs review"
+                  }
+                  tone={
+                    householdAccess.status === "ready" ? "done" : accessNotSetUp ? "neutral" : "due"
+                  }
                 />
               }
             />

@@ -44,6 +44,7 @@ import {
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   MIN_MOBILE_TOUCH_TARGET,
+  MOBILE_INLINE_HIT_SLOP,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
 } from "@/lib/mobileLayout";
@@ -144,6 +145,10 @@ interface ChoiceGroup {
   key: string;
   label: string;
   options: Choice[];
+  /** Skip preselecting the first option; an unselected group stays out of the saved log. */
+  noDefault?: boolean;
+  /** Block saving until the caregiver actively picks an option. */
+  required?: boolean;
 }
 
 interface LogType {
@@ -387,10 +392,14 @@ const LOG_TYPES: LogType[] = [
     label: "Incident",
     icon: "sad",
     baseTitle: "Incident",
+    // Incidents are safety records: nothing is preselected, so a saved log
+    // only contains facts a caregiver actively chose.
     groups: [
       {
         key: "incidentType",
         label: "What happened?",
+        noDefault: true,
+        required: true,
         options: [
           { id: "rough-greeting", label: "Rough greeting", suffix: "rough greeting", severity: "watch" },
           { id: "dog-conflict", label: "Dog conflict", suffix: "dog conflict", severity: "watch" },
@@ -403,6 +412,7 @@ const LOG_TYPES: LogType[] = [
       {
         key: "incidentSeverity",
         label: "Care level",
+        noDefault: true,
         options: [
           { id: "watch", label: "Watch", severity: "watch" },
           { id: "review", label: "Review", severity: "alert" },
@@ -412,6 +422,7 @@ const LOG_TYPES: LogType[] = [
       {
         key: "incidentOutcome",
         label: "Outcome",
+        noDefault: true,
         options: [
           { id: "recovered", label: "Recovered", suffix: "recovered" },
           { id: "separated", label: "Separated", suffix: "separated", severity: "watch" },
@@ -474,7 +485,9 @@ const LAUNCHER_ACTIONS: LauncherAction[] = [
   { label: "Play", type: "play", icon: "play", tab: "favorites" },
   { label: "Water", type: "water", icon: "bile", tab: "favorites" },
   { label: "Vomit", type: "symptom", icon: "vomit", tab: "health", preset: { what: "vomit", severity: "watch" } },
-  { label: "Incident", type: "incident", icon: "anxious", tab: "health", preset: { incidentSeverity: "watch" } },
+  // Distinct bolt icon (Anxious owns the raincloud) and no preset: incident
+  // facts are never pre-claimed for the caregiver.
+  { label: "Incident", type: "incident", icon: "energy", tab: "health" },
   { label: "Medication", type: "medication", icon: "medication", tab: "health" },
   { label: "Alone Time", type: "alone", icon: "clock", tab: "household" },
   { label: "Anxious", type: "mood", icon: "anxious", tab: "health", preset: { mood: "anxious" } },
@@ -534,6 +547,36 @@ const TYPE_ICON: Record<string, PulseIconName> = {
   medication: "pill",
   meds: "pill",
 };
+
+// Potty always reads as the green leaf pixel icon (matching the launcher
+// tiles), never the blue drop, so it can't be mistaken for Water in the
+// glance chips, filters, timeline, or detail sheet.
+const POTTY_LEAF_TONE = "#7FA34C";
+
+function isPottyType(type: string): boolean {
+  return type === "potty" || type === "pee" || type === "poop";
+}
+
+function careTypeTone(type: string, icon: PulseIconName): string {
+  return isPottyType(type) ? POTTY_LEAF_TONE : PULSE_COLORS[icon];
+}
+
+function CareTypeIcon({
+  type,
+  icon,
+  size,
+  color,
+}: {
+  type: string;
+  icon: PulseIconName;
+  size: number;
+  color?: string;
+}) {
+  if (isPottyType(type)) {
+    return <PixelIcon name="pee" size={size} />;
+  }
+  return <PulseIcon name={icon} size={size} color={color} />;
+}
 
 const LOG_GUIDANCE: Record<string, string> = {
   meal: "Serve it now, then update the outcome when Phoenix finishes.",
@@ -1027,14 +1070,17 @@ export default function LogScreen() {
     setLauncherTab(routeDetailAction.tab === "health" ? "health" : routeDetailAction.tab === "all" ? "all" : "favorites");
     setSelectedLauncherKey(launcherActionKey(routeDetailAction));
     setSelectedType(routeDetailAction.type);
-    setLauncherDetailAction(routeDetailAction);
+    // Detail intents land straight in the pre-focused composer - no
+    // interstitial between "add details" and the real form.
+    setTimeout(() => scrollToComposer(), 350);
     lastRouteDetailIntentKey.current = routeDetailIntentKey;
-  }, [routeDetailIntentKey, routeSelectedType, routeWantsDetailSheet]);
+  }, [routeDetailIntentKey, routeSelectedType, routeWantsDetailSheet]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset contextual controls whenever the type changes.
   useEffect(() => {
     const init: Record<string, string> = {};
     config?.groups?.forEach((g) => {
+      if (g.noDefault) return;
       init[g.key] = g.options[0].id;
     });
     setChoices({ ...init, ...(pendingChoicePreset.current ?? {}) });
@@ -1211,8 +1257,22 @@ export default function LogScreen() {
     let dogInteractions: number | undefined;
     const occurredAt = new Date().toISOString();
 
+    for (const g of config.groups ?? []) {
+      if (g.required && !g.options.some((o) => o.id === choices[g.key])) {
+        notifyDialog(
+          g.label,
+          `Choose ${g.label.replace(/\?$/, "").toLowerCase()} before saving. WoofWatcher never guesses safety facts.`,
+        );
+        return null;
+      }
+    }
+
     config.groups?.forEach((g) => {
-      const opt = g.options.find((o) => o.id === choices[g.key]) ?? g.options[0];
+      const opt =
+        g.options.find((o) => o.id === choices[g.key]) ??
+        (g.noDefault ? undefined : g.options[0]);
+      // Unselected optional facts stay out of the record entirely.
+      if (!opt) return;
       details[g.key] = opt.id;
       if (opt.suffix && !(config.type === "meal" && g.key === "mealCompletion")) {
         parts.push(opt.suffix);
@@ -1416,7 +1476,7 @@ export default function LogScreen() {
       const injury = incidentInjury.trim();
       const action = incidentAction.trim();
       const followUp = incidentFollowUp.trim();
-      const incidentSeverity = String(choices.incidentSeverity ?? "watch").toLowerCase();
+      const incidentSeverity = String(choices.incidentSeverity ?? "").toLowerCase();
 
       details.householdVisible = householdVisible;
       if (trigger) details.incidentTrigger = trigger;
@@ -1914,9 +1974,15 @@ export default function LogScreen() {
   const numericUnit = config?.numeric?.unit === "diet" ? dietProgress.unit : state.profile.weight.unit;
   const selectedMealCompletion = choices.mealCompletion ?? "served";
   const selectedIcon = config?.icon ?? ("paw" as PulseIconName);
-  const selectedTone = PULSE_COLORS[selectedIcon];
+  const selectedTone = careTypeTone(selectedType, selectedIcon);
   const selectedLabel = config?.label ?? "Care";
   const selectedGuidance = LOG_GUIDANCE[selectedType] ?? "Log care once and it becomes part of the shared household record.";
+  // Safety-fact groups (incident "What happened?") gate the save button until
+  // the caregiver actively answers - one tap can never log an unverified claim.
+  const missingRequiredGroup =
+    config?.groups?.find(
+      (g) => g.required && !g.options.some((o) => o.id === choices[g.key]),
+    ) ?? null;
   const selectedTrustLabel =
     selectedType === "symptom"
       ? "Vet-share ready"
@@ -1932,7 +1998,8 @@ export default function LogScreen() {
   const composerTrustItems = [
     {
       icon: "git-branch-outline" as const,
-      label: selectedType === "meal" ? "Routine-aware" : "Pattern-aware",
+      // Short labels: "Routine-aware"/"Pattern-aware" ellipsized on 393px phones.
+      label: selectedType === "meal" ? "Routines" : "Patterns",
       tone: colors.sage,
     },
     {
@@ -1996,7 +2063,7 @@ export default function LogScreen() {
   const logCommandSignal = Math.max(1, Math.min(5, Math.round(careIntelligence.score / 20)));
   const logCommandSpeech = selectedLauncherAction
     ? selectedLauncherRequiresDetail
-      ? `${selectedLauncherAction.label} needs a detail sheet before saving.`
+      ? `${selectedLauncherAction.label} opens the details form before it saves.`
       : `Tap ${selectedLauncherAction.label}. Hold for proof, notes, and corrections.`
     : "Tap fast. Hold for proof, notes, or later updates.";
   const logCommandHud = [
@@ -2059,9 +2126,19 @@ export default function LogScreen() {
     }, 80);
   };
 
+  // The policy explainer is an on-demand guide behind the "?" affordance now;
+  // tap and hold both land straight on real log surfaces.
   const openLauncherDetailSheet = (action: LauncherAction) => {
-    selectLauncherAction(action);
+    Haptics.selectionAsync();
     setLauncherDetailAction(action);
+  };
+
+  const openQuickLogGuide = () => {
+    const action =
+      selectedLauncherAction ??
+      findLauncherActionForType(TYPE_BY_ID[selectedType] ? (selectedType as CareEventType) : null) ??
+      LAUNCHER_ACTIONS[0]!;
+    openLauncherDetailSheet(action);
   };
 
   const handleLeavingHome = useCallback(() => {
@@ -2174,7 +2251,8 @@ export default function LogScreen() {
     }
     const policy = getQuickLogPolicy(action.type);
     if (policy.tapBehavior === "detail-required") {
-      openLauncherDetailSheet(action);
+      // Details-first actions go straight to the pre-focused composer.
+      focusFullComposerForLauncherAction(action);
       return;
     }
 
@@ -2364,6 +2442,21 @@ export default function LogScreen() {
                   </Text>
                 </View>
                 <BoardPill label="Under 5 sec" icon="flash-outline" tone={colors.sage} />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`How ${selectedLauncherAction?.label ?? selectedLabel} quick logging works`}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={openQuickLogGuide}
+                  style={({ pressed }) => [
+                    s.quickLogGuideButton,
+                    {
+                      backgroundColor: pressed ? colors.copper + "18" : colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Ionicons name="help-circle-outline" size={17} color={colors.copper} />
+                </Pressable>
               </View>
 
             <View style={s.launcherTabs}>
@@ -2415,7 +2508,7 @@ export default function LogScreen() {
                     accessibilityHint={launcherPresentation.feedbackHint}
                     accessibilityState={{ selected: active }}
                     onPress={() => handleQuickLauncherAction(action)}
-                    onLongPress={() => openLauncherDetailSheet(action)}
+                    onLongPress={() => focusFullComposerForLauncherAction(action)}
                     style={({ pressed }) => [
                       s.launcherTile,
                       {
@@ -2487,6 +2580,18 @@ export default function LogScreen() {
                   </Pressable>
                 );
               })}
+              {/* Invisible fillers square off the last space-between row so a
+                  partial tab (like Health's 5 tiles) never leaves a mid-row hole. */}
+              {Array.from(
+                { length: (3 - (launcherActions.length % 3)) % 3 },
+                (_, fillerIndex) => (
+                  <View
+                    key={`launcher-filler-${fillerIndex}`}
+                    pointerEvents="none"
+                    style={s.launcherTileGhost}
+                  />
+                ),
+              )}
             </View>
 
             <View style={s.launcherDoctrineRail}>
@@ -2912,7 +3017,7 @@ export default function LogScreen() {
             <View style={s.quickLogDetailDock}>
             <View style={[s.composerHeroBanner, { backgroundColor: colors.brandNavy, borderColor: colors.shellNavy }]}>
               <View style={[s.composerHeroIcon, { backgroundColor: selectedTone + "22", borderColor: selectedTone + "66" }]}>
-                <PulseIcon name={selectedIcon} size={30} />
+                <CareTypeIcon type={selectedType} icon={selectedIcon} size={30} />
               </View>
               <View style={s.composerHeroText}>
                 <Text style={[s.composerKicker, { color: colors.amber, fontFamily: DISPLAY_SEMI }]}>
@@ -2970,7 +3075,7 @@ export default function LogScreen() {
             >
               {LOG_TYPES.map((q) => {
                 const active = selectedType === q.type;
-                const tint = PULSE_COLORS[q.icon];
+                const tint = careTypeTone(q.type, q.icon);
                 return (
                   <Pressable
                     key={q.type}
@@ -2988,7 +3093,7 @@ export default function LogScreen() {
                     ]}
                   >
                     <View style={[s.typeChipIcon, { backgroundColor: active ? "rgba(255,255,255,0.18)" : tint + "1A" }]}>
-                      <PulseIcon name={q.icon} size={15} color={active ? colors.primaryForeground : undefined} />
+                      <CareTypeIcon type={q.type} icon={q.icon} size={15} color={active ? colors.primaryForeground : undefined} />
                     </View>
                     <Text
                       style={[
@@ -3011,7 +3116,10 @@ export default function LogScreen() {
                 </Text>
                 <View style={s.segRow}>
                   {g.options.map((o) => {
-                    const active = (choices[g.key] ?? g.options[0].id) === o.id;
+                    const selectedOptionId = g.noDefault
+                      ? choices[g.key] ?? null
+                      : choices[g.key] ?? g.options[0].id;
+                    const active = selectedOptionId === o.id;
                     const tone =
                       o.severity === "alert" ? colors.rose : o.severity === "watch" ? colors.amber : colors.primary;
                     return (
@@ -3331,7 +3439,7 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Trigger or context</Text>
                   <TextInput
-                    placeholder="Dog at gate, crowded sidewalk, toy guarding, unknown..."
+                    placeholder="Dog at gate, crowded sidewalk..."
                     placeholderTextColor={colors.mutedForeground}
                     value={incidentTrigger}
                     onChangeText={setIncidentTrigger}
@@ -3341,7 +3449,7 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Who or what was involved?</Text>
                   <TextInput
-                    placeholder="Off-leash dog, stranger, puppy, family dog, no exposure..."
+                    placeholder="Off-leash dog, stranger..."
                     placeholderTextColor={colors.mutedForeground}
                     value={incidentExposure}
                     onChangeText={setIncidentExposure}
@@ -3352,7 +3460,7 @@ export default function LogScreen() {
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Injury check</Text>
                     <TextInput
-                      placeholder="None, scratch, limp..."
+                      placeholder="None, scratch..."
                       placeholderTextColor={colors.mutedForeground}
                       value={incidentInjury}
                       onChangeText={setIncidentInjury}
@@ -3362,7 +3470,7 @@ export default function LogScreen() {
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Action taken</Text>
                     <TextInput
-                      placeholder="Separated, left park..."
+                      placeholder="Separated..."
                       placeholderTextColor={colors.mutedForeground}
                       value={incidentAction}
                       onChangeText={setIncidentAction}
@@ -3638,11 +3746,22 @@ export default function LogScreen() {
               </View>
             )}
 
+            {missingRequiredGroup ? (
+              <Text style={[s.requiredChoiceHint, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
+                Pick "{missingRequiredGroup.label}" above to save this {selectedLabel.toLowerCase()} log.
+              </Text>
+            ) : null}
             <BoardActionButton
               label={`Log ${(config?.label ?? "care").toLowerCase()}`}
               icon="checkmark-circle"
               variant="primary"
               onPress={handleLog}
+              disabled={missingRequiredGroup != null}
+              accessibilityLabel={
+                missingRequiredGroup
+                  ? `Log ${(config?.label ?? "care").toLowerCase()}. Disabled until ${missingRequiredGroup.label.replace(/\?$/, "").toLowerCase()} is chosen.`
+                  : `Log ${(config?.label ?? "care").toLowerCase()}`
+              }
               style={s.logSaveAction}
             />
           </BoardCard>
@@ -3661,10 +3780,10 @@ export default function LogScreen() {
                 </View>
                 <View style={s.snapshotIcons}>
                   {todaySnapshot.top.map((t) => {
-                    const tint = PULSE_COLORS[t.icon];
+                    const tint = careTypeTone(t.type, t.icon);
                     return (
                       <View key={t.type} style={[s.snapshotChip, { backgroundColor: tint + "16" }]}>
-                        <PulseIcon name={t.icon} size={13} />
+                        <CareTypeIcon type={t.type} icon={t.icon} size={13} />
                         <Text style={[s.snapshotChipCount, { color: tint, fontFamily: "Inter_700Bold" }]}>{t.count}</Text>
                       </View>
                     );
@@ -3685,7 +3804,7 @@ export default function LogScreen() {
               <TextInput
                 value={searchText}
                 onChangeText={setSearchText}
-                placeholder="Search notes, caregivers, routes, meds..."
+                placeholder="Search notes, people, meds..."
                 placeholderTextColor={colors.mutedForeground}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -3738,7 +3857,7 @@ export default function LogScreen() {
                       }}
                       style={[s.filterChip, { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border }]}
                     >
-                      <PulseIcon name={q.icon} size={14} color={active ? colors.primaryForeground : undefined} />
+                      <CareTypeIcon type={q.type} icon={q.icon} size={14} color={active ? colors.primaryForeground : undefined} />
                       <Text style={[s.filterText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold" }]}>{q.label}</Text>
                     </Pressable>
                   );
@@ -3901,8 +4020,8 @@ export default function LogScreen() {
                             </View>
                           ) : null}
                         </View>
-                        <View style={[s.entryIconChip, { backgroundColor: pendingMeal ? colors.amber + "26" : PULSE_COLORS[icon] + "16" }]}>
-                          <PulseIcon name={icon} size={18} />
+                        <View style={[s.entryIconChip, { backgroundColor: pendingMeal ? colors.amber + "26" : careTypeTone(normalizedType, icon) + "16" }]}>
+                          <CareTypeIcon type={normalizedType} icon={icon} size={18} />
                         </View>
                       </Pressable>
                     );
@@ -4070,8 +4189,8 @@ export default function LogScreen() {
             {detailEntry ? (
               <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
                 <View style={s.detailHeader}>
-                  <View style={[s.detailIcon, { backgroundColor: PULSE_COLORS[detailIcon] + "18" }]}>
-                    <PulseIcon name={detailIcon} size={22} />
+                  <View style={[s.detailIcon, { backgroundColor: careTypeTone(detailType ?? "", detailIcon) + "18" }]}>
+                    <CareTypeIcon type={detailType ?? ""} icon={detailIcon} size={22} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[s.detailType, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{detailTypeText}</Text>
@@ -5052,6 +5171,14 @@ const s = StyleSheet.create({
     lineHeight: 14,
     marginTop: 1,
   },
+  quickLogGuideButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   launcherTabs: {
     flexDirection: "row",
     gap: 6,
@@ -5111,6 +5238,11 @@ const s = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 8,
     position: "relative",
+  },
+  // Zero-height filler that squares off the last space-between grid row.
+  launcherTileGhost: {
+    width: "31.5%",
+    height: 0,
   },
   launcherIconHalo: {
     width: 38,
@@ -5435,6 +5567,7 @@ const s = StyleSheet.create({
   dietHint: { fontSize: 12.5, lineHeight: 17, marginTop: 10 },
 
   logSaveAction: { marginTop: 18, minHeight: 52 },
+  requiredChoiceHint: { fontSize: 12, lineHeight: 16, marginTop: 14, textAlign: "center" },
 
   logBoardCard: { marginTop: 12 },
   searchPanel: {
