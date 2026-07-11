@@ -38,6 +38,7 @@ import {
 import { useCare, Entry } from "@/context/CareContext";
 import { isClerkConfigured } from "@/lib/auth";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
+import { resolvePetName } from "@/lib/petIdentity";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
@@ -102,6 +103,7 @@ import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
 import { BoardActionButton, BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { homeImmersiveRoomIsNight } from "./index";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -611,18 +613,20 @@ function CareTypeIcon({
   return <PulseIcon name={icon} size={size} color={color} />;
 }
 
+// "{petName}" resolves to the dog's real display name at render time (via
+// resolvePetName), so a renamed dog never reads "Phoenix" in guidance copy.
 const LOG_GUIDANCE: Record<string, string> = {
-  meal: "Serve it now, then update the outcome when Phoenix finishes.",
+  meal: "Serve it now, then update the outcome when {petName} finishes.",
   water: "Fresh water keeps hydration and Bile Watch context honest.",
   treat: "Treats stay connected to diet, training, and appetite patterns.",
   walk: "Capture route, duration, distance, and dog interactions in one pass.",
   potty: "Potty is the parent log; pee, poop, accidents, and stool notes live here.",
   play: "Play logs help separate energy from anxiety and boredom.",
   training: "Wins, rough spots, and next practice become trainer-ready handoff notes.",
-  mood: "Mood checks make Phoenix's care twin respond to real daily patterns.",
-  alone: "Track away time, return state, and what helped Phoenix settle.",
+  mood: "Mood checks make {petName}'s care twin respond to real daily patterns.",
+  alone: "Track away time, return state, and what helped {petName} settle.",
   medication: "Medication logs are household-visible by default and audit-friendly.",
-  weight: "Weight logs update Phoenix's living profile.",
+  weight: "Weight logs update {petName}'s living profile.",
   symptom: "Health notes stay non-diagnostic and easy to share with your vet.",
   incident: "Log factual behavior or safety incidents with trigger, exposure, injury check, and follow-up.",
   grooming: "Grooming logs remember coat, paws, ears, products, and next due.",
@@ -1973,8 +1977,15 @@ export default function LogScreen() {
     () => [
       {
         label: "Care IQ",
-        value: `${careIntelligence.score}%`,
-        detail: careIntelligence.status === "needs-attention" ? "review loops" : "day rhythm",
+        // Zero-log day: "--" instead of a fabricated percentage, matching
+        // Home - the score starts with the first real log.
+        value: careIntelligence.visibleLogCount === 0 ? "--" : `${careIntelligence.score}%`,
+        detail:
+          careIntelligence.visibleLogCount === 0
+            ? "starts with first log"
+            : careIntelligence.status === "needs-attention"
+              ? "review loops"
+              : "day rhythm",
         icon: "sparkles-outline" as const,
         tone:
           careIntelligence.status === "needs-attention"
@@ -2020,6 +2031,7 @@ export default function LogScreen() {
       colors.sage,
       careIntelligence.score,
       careIntelligence.status,
+      careIntelligence.visibleLogCount,
       dietProgress.percent,
       dietProgress.targetAmount,
       syncOutbox.status,
@@ -2033,7 +2045,10 @@ export default function LogScreen() {
   const selectedIcon = config?.icon ?? ("paw" as PulseIconName);
   const selectedTone = careTypeTone(selectedType, selectedIcon);
   const selectedLabel = config?.label ?? "Care";
-  const selectedGuidance = LOG_GUIDANCE[selectedType] ?? "Log care once and it becomes part of the shared household record.";
+  const petDisplayName = resolvePetName(state.profile.name);
+  const selectedGuidance = (
+    LOG_GUIDANCE[selectedType] ?? "Log care once and it becomes part of the shared household record."
+  ).replace(/\{petName\}/g, petDisplayName);
   // Safety-fact groups (incident "What happened?") gate the save button until
   // the caregiver actively answers - one tap can never log an unverified claim.
   const missingRequiredGroup =
@@ -2061,7 +2076,11 @@ export default function LogScreen() {
     },
     {
       icon: "bar-chart-outline" as const,
-      label: `${careIntelligence.score}% Care IQ`,
+      // Zero-log day: no fabricated percentage in the composer rail either.
+      label:
+        careIntelligence.visibleLogCount === 0
+          ? "-- Care IQ"
+          : `${careIntelligence.score}% Care IQ`,
       tone:
         careIntelligence.status === "needs-attention"
           ? colors.amber
@@ -2118,6 +2137,11 @@ export default function LogScreen() {
     (openAloneSession ? 1 : 0) +
     (openWalkSession ? 1 : 0);
   const logCommandSignal = Math.max(1, Math.min(5, Math.round(careIntelligence.score / 20)));
+  // Time-aware console stage: same clock rule as Home's immersive room (dark
+  // theme or lamplit hours). There is no night banner art, so a navy tint
+  // over the day painting keeps the hero honest at 23:00 and in dark mode.
+  const logCommandStageIsNight =
+    colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours());
   const logCommandSpeech = selectedLauncherAction
     ? selectedLauncherRequiresDetail
       ? `${selectedLauncherAction.label} opens the details form before it saves.`
@@ -2131,7 +2155,9 @@ export default function LogScreen() {
     },
     {
       label: "Care IQ",
-      value: `${careIntelligence.score}%`,
+      // Zero-log day: "--" like Home instead of "0%" - the console HUD and
+      // the Home quest meta must tell the same first-log story.
+      value: careIntelligence.visibleLogCount === 0 ? "--" : `${careIntelligence.score}%`,
       tone:
         careIntelligence.status === "needs-attention"
           ? colors.amber
@@ -2419,7 +2445,12 @@ export default function LogScreen() {
               style={s.logCommandStage}
               testID="quick-log-command-pixel-stage"
             >
-              <View style={s.logCommandStageShade} />
+              <View
+                style={[
+                  s.logCommandStageShade,
+                  logCommandStageIsNight ? { backgroundColor: "rgba(9,17,32,0.35)" } : null,
+                ]}
+              />
               <View style={s.logCommandStageTop}>
                 <View style={s.logCommandBubble}>
                   <Text style={[s.logCommandKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
@@ -2537,9 +2568,6 @@ export default function LogScreen() {
                     {narrowViewport ? "Tap saves. Hold: details." : "Tap saves. Hold opens details."}
                   </Text>
                 </View>
-                {narrowViewport ? null : (
-                  <BoardPill label="Under 5 sec" icon="flash-outline" tone={colors.sage} />
-                )}
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`How ${selectedLauncherAction?.label ?? selectedLabel} quick logging works`}
@@ -3295,7 +3323,7 @@ export default function LogScreen() {
                       {householdVisible ? "Visible to household" : "Private log"}
                     </Text>
                     <Text style={[s.visibilitySub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      {householdVisible ? "Shared mood logs update Mood Trend, Care Pass, and Phoenix's care twin." : "Private moods stay out of shared trend cards and reports."}
+                      {householdVisible ? `Shared mood logs update Mood Trend, Care Pass, and ${petDisplayName}'s care twin.` : "Private moods stay out of shared trend cards and reports."}
                     </Text>
                   </View>
                 </Pressable>

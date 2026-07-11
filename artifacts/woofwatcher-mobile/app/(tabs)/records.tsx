@@ -302,7 +302,7 @@ export default function RecordsScreen() {
     [state.entries, now],
   );
   const walkActivity = useMemo(
-    () => deriveWalkActivity({ entries: state.entries, now }),
+    () => deriveWalkActivity({ entries: state.entries, now, petName: state.profile.name }),
     [state.entries, now],
   );
   const walkRouteTemplates = useMemo(

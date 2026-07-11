@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
+import { resolvePetName } from "./pet-identity.ts";
 
 export type PottyHealthStatus = "steady" | "watch" | "missing";
 export type PottyKind = "pee" | "poop" | "both" | "unknown";
@@ -17,6 +18,8 @@ export interface PottyHealthEntry {
 export interface PottyHealthInput {
   entries: readonly PottyHealthEntry[];
   now?: number;
+  /** Display name for owner-facing copy; resolved via resolvePetName so renamed dogs never read "Phoenix". */
+  petName?: string | null;
 }
 
 export interface PottyHealthItem {
@@ -170,6 +173,7 @@ function pluralLog(total: number): string {
 
 export function derivePottyHealth(input: PottyHealthInput): PottyHealth {
   const now = input.now ?? Date.now();
+  const petName = resolvePetName(input.petName);
   const items = input.entries
     .filter(isPotty)
     .filter((entry) => sameLocalDay(entry.occurredAt, now))
@@ -222,7 +226,7 @@ export function derivePottyHealth(input: PottyHealthInput): PottyHealth {
     total === 0
       ? "Log the next potty break with pee, poop, and stool detail so the household has context."
       : watchCount > 0
-        ? "Add stool detail, color, hydration, food changes, and energy notes; contact a vet if diarrhea repeats, blood appears, or Phoenix seems painful, weak, or dehydrated."
+        ? `Add stool detail, color, hydration, food changes, and energy notes; contact a vet if diarrhea repeats, blood appears, or ${petName} seems painful, weak, or dehydrated.`
         : "Keep logging pee, poop, stool detail, appetite, and energy so changes are easier to review.";
 
   return {

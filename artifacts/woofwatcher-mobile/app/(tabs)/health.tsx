@@ -167,8 +167,16 @@ export default function HealthScreen() {
   const routeHorizontalPadding = 16;
 
   const healthWatch = useMemo(
-    () => deriveHealthWatch({ entries: state.entries, routines: state.routines, now }),
-    [state.entries, state.routines, now],
+    // petName keeps pattern next steps ("... or <dog> seems painful ...")
+    // on the renamed dog instead of a hardcoded "Phoenix".
+    () =>
+      deriveHealthWatch({
+        entries: state.entries,
+        routines: state.routines,
+        now,
+        petName: state.profile.name,
+      }),
+    [state.entries, state.routines, state.profile.name, now],
   );
 
   const bileEntries = useMemo(
@@ -246,6 +254,15 @@ export default function HealthScreen() {
         : "Low Risk";
   const bileTone =
     bileStatus === "Review" ? colors.rose : bileStatus === "Watch" ? colors.amber : colors.sage;
+  // A fresh profile has no scoring evidence: deriving "94 - Stable right now -
+  // You're on a roll" from zero logs fabricates a result (same dishonesty
+  // class as Care IQ's zero-state). With no entries inside the 30-day scoring
+  // window the score reads "--" and the copy makes the first-log promise
+  // instead of claiming stability that was never observed.
+  const hasHealthSignalData = state.entries.some((entry) => {
+    const age = daysBetween(entry.occurredAt, now);
+    return age >= 0 && age <= 30;
+  });
   const score = healthScore({
     status: healthWatch.status,
     vomit7: healthWatch.counts.vomit7,
@@ -254,20 +271,36 @@ export default function HealthScreen() {
     anxiety7: healthWatch.counts.anxiety7,
     redFlags: healthWatch.redFlags.length,
   });
-  const scoreTone = score >= 88 ? colors.sage : score >= 76 ? colors.amber : colors.rose;
-  const heroTitle =
-    healthWatch.status === "good"
+  const scoreDisplay = hasHealthSignalData ? String(score) : "--";
+  const scoreTone = !hasHealthSignalData
+    ? colors.mutedForeground
+    : score >= 88
+      ? colors.sage
+      : score >= 76
+        ? colors.amber
+        : colors.rose;
+  const heroTitle = !hasHealthSignalData
+    ? "No health logs yet"
+    : healthWatch.status === "good"
       ? "Stable right now"
       : healthWatch.status === "alert"
         ? "Review needed"
         : "Worth watching";
-  const heroCopy =
-    healthWatch.status === "good"
+  const heroCopy = !hasHealthSignalData
+    ? "No score yet - meals, potty, energy, and notes build the picture from your first log."
+    : healthWatch.status === "good"
       ? "No active Health Watch signals are showing in the current window."
       : healthWatch.summary;
-  const statusMedallionLabel = score >= 88 ? "GOOD" : score >= 76 ? "WATCH" : "REVIEW";
-  const statusSupportCopy =
-    healthWatch.status === "good"
+  const statusMedallionLabel = !hasHealthSignalData
+    ? "READY"
+    : score >= 88
+      ? "GOOD"
+      : score >= 76
+        ? "WATCH"
+        : "REVIEW";
+  const statusSupportCopy = !hasHealthSignalData
+    ? "Health Watch starts with your first log."
+    : healthWatch.status === "good"
       ? "You're on a roll. Keep the daily rhythm steady and share patterns when they matter."
       : healthWatch.status === "alert"
         ? "Consider sharing these observations with your vet, especially if patterns repeat."
@@ -282,9 +315,11 @@ export default function HealthScreen() {
     ? bileStatus === "Low Risk"
       ? "Bile looks calm."
       : "Watching bile gently."
-    : healthWatch.status === "good"
-      ? "Feeling steady."
-      : "Let's take it easy.";
+    : !hasHealthSignalData
+      ? "Ready when you are."
+      : healthWatch.status === "good"
+        ? "Feeling steady."
+        : "Let's take it easy.";
   const heroBubbleCopy = isBileTab
     ? "Bile Watch records patterns calmly."
     : "Health Watch records patterns calmly.";
@@ -365,6 +400,16 @@ export default function HealthScreen() {
       actionLabel: statusActionLabel("symptom"),
     },
   ];
+  // Zero-data honesty for the signal rows: "Active daily" / "Eating well"
+  // are observations, and nothing has been observed before the first log.
+  const displayHealthRows = hasHealthSignalData
+    ? healthRows
+    : healthRows.map((row) => ({
+        ...row,
+        status: "No logs",
+        detail: "Starts with your first log",
+        tone: colors.mutedForeground,
+      }));
   const healthReviewPacket = deriveHealthReviewPacket({
     dogName: resolvePetName(state.profile.name),
     healthStatus: healthWatch.status,
@@ -610,7 +655,7 @@ export default function HealthScreen() {
             />
             <View style={s.healthHeroStatusRow}>
               <View style={[s.healthScoreToken, { backgroundColor: scoreTone + "14", borderColor: scoreTone + "66" }]}>
-                <Text style={[s.healthScoreValue, { color: scoreTone, fontFamily: DISPLAY }]}>{score}</Text>
+                <Text style={[s.healthScoreValue, { color: scoreTone, fontFamily: DISPLAY }]}>{scoreDisplay}</Text>
                 <Text style={[s.healthScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_800ExtraBold" }]}>
                   Health score
                 </Text>
@@ -623,7 +668,7 @@ export default function HealthScreen() {
                   {heroPanelCopy}
                 </Text>
                 <View style={[s.statusScoreTrack, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                  <View style={[s.statusScoreFill, { width: `${score}%`, backgroundColor: scoreTone }]} />
+                  <View style={[s.statusScoreFill, { width: `${hasHealthSignalData ? score : 0}%`, backgroundColor: scoreTone }]} />
                 </View>
                 <Text style={[s.statusSupportCopy, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                   {statusSupportCopy}
@@ -664,7 +709,7 @@ export default function HealthScreen() {
                 </View>
 
                 <View style={s.healthSignalList}>
-                  {healthRows.slice(0, 4).map((row) => (
+                  {displayHealthRows.slice(0, 4).map((row) => (
                     <Pressable
                       key={row.label}
                       accessibilityRole="button"

@@ -31,6 +31,7 @@ import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { WalkRouteRecorderBridge } from "@/components/WalkRouteRecorder";
+import { WebDialogHost } from "@/components/WebDialogHost";
 import { CareProvider } from "@/context/CareContext";
 import { AvatarProvider } from "@/context/AvatarContext";
 import { useColors } from "@/hooks/useColors";
@@ -267,6 +268,9 @@ function AppFrame() {
     >
       <View style={[styles.webFrame, { width: frameWidth, maxHeight: frameHeight }]}>
         <RootLayoutNav />
+        {/* Themed notice/confirm dialogs for web builds: notifyDialog and
+            confirmThroughSteps render here instead of raw window.alert. */}
+        <WebDialogHost />
       </View>
     </View>
   );

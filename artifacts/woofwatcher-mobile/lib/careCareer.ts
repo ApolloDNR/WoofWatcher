@@ -15,6 +15,7 @@ import { normalizeCareEventType, type CareEventDetails } from "@workspace/care-d
 export interface CareCareerEntryLike {
   type?: string;
   occurredAt?: string;
+  durationMinutes?: number | null;
   details?: CareEventDetails | { [key: string]: unknown } | null;
 }
 
@@ -72,12 +73,31 @@ const CARE_TITLES: ReadonlyArray<{ level: number; title: string }> = [
   { level: 1, title: "New Paw" },
 ];
 
+/**
+ * Completed walk sessions earn XP scaled by their real duration, matching the
+ * adventure quest track's `min(duration, 45)` rule: a 0-minute instant
+ * start/finish is not care evidence and earns nothing, while any genuine
+ * completed walk (>= 1 minute) earns at least a small floor.
+ */
+const COMPLETED_WALK_XP_CAP = 45;
+const COMPLETED_WALK_XP_FLOOR = 5;
+
 /** Walk-session entries carry `details.walkLifecycle` (see lib/walkSession). */
-function isInProgressWalk(details: CareCareerEntryLike["details"]): boolean {
+function walkLifecycle(details: CareCareerEntryLike["details"]): unknown {
   if (details == null || typeof details !== "object" || Array.isArray(details)) {
-    return false;
+    return undefined;
   }
-  return (details as { walkLifecycle?: unknown }).walkLifecycle === "in-progress";
+  return (details as { walkLifecycle?: unknown }).walkLifecycle;
+}
+
+function walkDurationMinutes(entry: CareCareerEntryLike): number {
+  const details = entry.details;
+  const fromDetails =
+    details != null && typeof details === "object" && !Array.isArray(details)
+      ? (details as { durationMinutes?: unknown }).durationMinutes
+      : undefined;
+  const raw = typeof fromDetails === "number" ? fromDetails : entry.durationMinutes;
+  return typeof raw === "number" && Number.isFinite(raw) ? Math.max(0, Math.round(raw)) : 0;
 }
 
 export function careXpForEntry(entry: CareCareerEntryLike): number {
@@ -85,10 +105,21 @@ export function careXpForEntry(entry: CareCareerEntryLike): number {
     entry.type ?? "",
     entry.details as CareEventDetails,
   );
-  // Walk XP lands only when the walk finishes, matching the shared
-  // adventure lib's completion semantics. An in-progress session is not
-  // yet care evidence, so it earns nothing until it completes.
-  if (normalized === "walk" && isInProgressWalk(entry.details)) return 0;
+  if (normalized === "walk") {
+    const lifecycle = walkLifecycle(entry.details);
+    // Walk XP lands only when the walk finishes, matching the shared
+    // adventure lib's completion semantics. An in-progress session is not
+    // yet care evidence, so it earns nothing until it completes.
+    if (lifecycle === "in-progress") return 0;
+    if (lifecycle === "completed") {
+      // Honest completion XP: scaled by the minutes actually walked, so an
+      // instant start/finish (0 minutes) cannot farm the flat walk award.
+      const minutes = walkDurationMinutes(entry);
+      if (minutes < 1) return 0;
+      return Math.min(COMPLETED_WALK_XP_CAP, Math.max(COMPLETED_WALK_XP_FLOOR, minutes));
+    }
+    // Plain walk logs (no session lifecycle) keep the flat per-type award.
+  }
   return CARE_XP_BY_TYPE[normalized] ?? DEFAULT_EVENT_XP;
 }
 

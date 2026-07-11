@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventDetails, type CareEventType } from "./events.ts";
+import { resolvePetName } from "./pet-identity.ts";
 import { deriveRoutineBoard, type RoutineBoardCaregiver, type RoutineBoardRoutine } from "./routine-board.ts";
 import { deriveCareDayStatus } from "./status.ts";
 
@@ -26,6 +27,8 @@ export interface CareIntelligenceInput {
   routines?: readonly RoutineBoardRoutine[];
   caregivers?: readonly RoutineBoardCaregiver[];
   now?: number;
+  /** Display name for owner-facing copy; resolved via resolvePetName so renamed dogs never read "Phoenix". */
+  petName?: string | null;
 }
 
 export interface CareIntelligenceMetric {
@@ -263,9 +266,9 @@ function titleFor(status: CareIntelligenceStatus): string {
   return "Care record is building";
 }
 
-function subtitleFor(status: CareIntelligenceStatus, nextAction: CareIntelligenceNextAction): string {
+function subtitleFor(status: CareIntelligenceStatus, nextAction: CareIntelligenceNextAction, petName: string): string {
   if (status === "excellent") return "Routines, logs, and proof are lining up today.";
-  if (status === "steady") return "Phoenix has a strong record today; keep closing the open loops.";
+  if (status === "steady") return `${petName} has a strong record today; keep closing the open loops.`;
   if (status === "needs-attention") return nextAction.detail;
   return "Log the next real care moment and the day will sharpen fast.";
 }
@@ -333,6 +336,7 @@ function nextActionFromLoops(
 export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntelligence {
   const now = input.now ?? Date.now();
   const routines = input.routines ?? [];
+  const petName = resolvePetName(input.petName);
   const visibleToday = input.entries.filter((entry) => isSameLocalDay(entry.occurredAt, now) && isHouseholdVisible(entry));
   const status = deriveCareDayStatus(visibleToday, routines, now);
   const board = deriveRoutineBoard({
@@ -398,7 +402,7 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
       // before midnight owns the rollover honestly in its copy.
       detail: servedEarlierDay
         ? `Last night's ${clean(entry.title) || "meal"} - how did it go?`
-        : `${entry.title ?? "Meal"} served. Confirm how much Phoenix ate.`,
+        : `${entry.title ?? "Meal"} served. Confirm how much ${petName} ate.`,
       priority: "medium",
       targetEntryId: entry.id,
     });
@@ -458,7 +462,7 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
     score,
     status: intelligenceStatus,
     title: titleFor(intelligenceStatus),
-    subtitle: subtitleFor(intelligenceStatus, nextAction),
+    subtitle: subtitleFor(intelligenceStatus, nextAction, petName),
     coreProgress,
     routineProgress,
     confidenceScore,

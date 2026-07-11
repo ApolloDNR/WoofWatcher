@@ -813,7 +813,9 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const name = resolvePetName(clean(profile.name));
   const audienceLabel = AUDIENCE_LABEL[input.audience];
   const generatedAt = formatDateTime(now);
-  const health = deriveHealthWatch({ entries, routines, now });
+  // Every derive helper that writes dog-name copy gets the same resolved name,
+  // so a renamed dog never reads "Phoenix" anywhere in the shared pass.
+  const health = deriveHealthWatch({ entries, routines, now, petName: name });
   const handoff = deriveCareHandoff({
     entries,
     routines,
@@ -823,16 +825,16 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const medication = deriveMedicationAdherence({ entries, routines, now });
   const medicationFollowUps = deriveMedicationFollowUps({ entries, routines, records, now }).slice(0, 4);
   const hydration = deriveWaterHydration({ entries, now });
-  const walkActivity = deriveWalkActivity({ entries, now });
+  const walkActivity = deriveWalkActivity({ entries, now, petName: name });
   const walkRouteTemplates = deriveWalkRouteTemplates({ entries, now, limit: 3 });
-  const pottyHealth = derivePottyHealth({ entries, now });
+  const pottyHealth = derivePottyHealth({ entries, now, petName: name });
   const careTrends = deriveCareTrends({ entries, now, windowDays: 7 });
   const dietProgress = deriveDietProgress({ dietProfile: diet, entries, now });
   const trainingProgress = deriveTrainingProgress({ entries, now, lookbackDays: 30 });
   const aloneTime = deriveAloneTime({ entries, now, lookbackDays: 30 });
-  const weightTrend = deriveWeightTrend({ entries, profile, goals: input.goals ?? [], now, lookbackDays: 90 });
+  const weightTrend = deriveWeightTrend({ entries, profile, goals: input.goals ?? [], now, lookbackDays: 90, petName: name });
   const groomingCare = deriveGroomingCare({ entries, now, lookbackDays: 45 });
-  const incidentWatch = deriveIncidentWatch({ entries, now, lookbackDays: 90 });
+  const incidentWatch = deriveIncidentWatch({ entries, now, lookbackDays: 90, petName: name });
 
   const latestMeals = latestEntries(entries, "meal", 2);
   const latestWalks = latestEntries(entries, "walk", 2);

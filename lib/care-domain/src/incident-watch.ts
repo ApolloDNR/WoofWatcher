@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
+import { resolvePetName } from "./pet-identity.ts";
 
 export type IncidentWatchStatus = "clear" | "watch" | "review";
 export type IncidentWatchTrendDirection = "clear" | "improving" | "steady" | "rising";
@@ -20,6 +21,8 @@ export interface IncidentWatchInput {
   now?: number;
   lookbackDays?: number;
   limit?: number;
+  /** Display name for owner-facing copy; resolved via resolvePetName so renamed dogs never read "Phoenix". */
+  petName?: string | null;
 }
 
 export interface IncidentWatchItem {
@@ -188,14 +191,14 @@ function statusFor(total: number, alertCount: number, followUpCount: number): In
   return "watch";
 }
 
-function nextStepFor(status: IncidentWatchStatus): string {
+function nextStepFor(status: IncidentWatchStatus, petName: string): string {
   if (status === "clear") {
     return "If an altercation, bite, escape, rough greeting, or unusual reaction happens, log the trigger, exposure, injury check, and follow-up so the household has a trustworthy record.";
   }
   if (status === "review") {
     return "Review the latest incident with the household, add any missing injury or trigger notes, and consider sharing the pattern with a trainer or vet when safety, injury, or repeated reactions are involved.";
   }
-  return "Watch for repeated triggers, keep notes factual, and use future walks or training sessions to capture what helps Phoenix recover calmly.";
+  return `Watch for repeated triggers, keep notes factual, and use future walks or training sessions to capture what helps ${petName} recover calmly.`;
 }
 
 function trendWindow(label: string, days: number, items: readonly IncidentWatchItem[], now: number): IncidentTrendWindow {
@@ -209,7 +212,7 @@ function trendWindow(label: string, days: number, items: readonly IncidentWatchI
   };
 }
 
-function deriveTrend(items: readonly IncidentWatchItem[], now: number, lookbackDays: number): IncidentWatchTrend {
+function deriveTrend(items: readonly IncidentWatchItem[], now: number, lookbackDays: number, petName: string): IncidentWatchTrend {
   const current7 = itemsInWindow(items, now, 7).length;
   const previous7 = itemsBetween(items, now, 7, 14).length;
   const current30 = itemsInWindow(items, now, 30).length;
@@ -230,7 +233,7 @@ function deriveTrend(items: readonly IncidentWatchItem[], now: number, lookbackD
   } else if ((current7 === 0 && previous7 > 0) || (current30 < previous30 && previous30 > 0)) {
     direction = "improving";
     label = "Improving";
-    detail = "Recent incident volume is lower than the prior window. Keep noting what helped Phoenix recover calmly.";
+    detail = `Recent incident volume is lower than the prior window. Keep noting what helped ${petName} recover calmly.`;
   }
 
   return {
@@ -340,6 +343,7 @@ function deriveTrainerGoals(input: {
   exposures: readonly string[];
   dogExposureCount: number;
   injuryCount: number;
+  petName: string;
 }): IncidentTrainerGoal[] {
   const goals: IncidentTrainerGoal[] = [];
   const evidenceBase = `${countLabel(input.items.length, "incident")} in the review window`;
@@ -388,7 +392,7 @@ function deriveTrainerGoals(input: {
     goals.push({
       id: "recovery-baseline",
       label: "Recovery baseline",
-      detail: "Track what helped Phoenix settle after each reaction so the care team can repeat what works.",
+      detail: `Track what helped ${input.petName} settle after each reaction so the care team can repeat what works.`,
       evidence: evidenceBase,
       status: "suggested",
     });
@@ -401,6 +405,7 @@ export function deriveIncidentWatch(input: IncidentWatchInput): IncidentWatch {
   const now = input.now ?? Date.now();
   const lookbackDays = input.lookbackDays ?? 90;
   const limit = input.limit ?? 6;
+  const petName = resolvePetName(input.petName);
   const allItems = input.entries
     .filter((entry) => normalizeCareEventType(entry.type, entry.details) === "incident")
     .filter(isVisible)
@@ -437,7 +442,7 @@ export function deriveIncidentWatch(input: IncidentWatchInput): IncidentWatch {
   const status = statusFor(totalIncidents, alertCount, followUpCount);
   const triggers = unique(allItems.map((item) => item.trigger));
   const exposures = unique(allItems.map((item) => item.exposure));
-  const trend = deriveTrend(allItems, now, lookbackDays);
+  const trend = deriveTrend(allItems, now, lookbackDays, petName);
   const latest = allItems[0] ?? null;
 
   return {
@@ -455,10 +460,10 @@ export function deriveIncidentWatch(input: IncidentWatchInput): IncidentWatch {
       totalIncidents === 0
         ? `No household-visible incidents logged in the last ${lookbackDays} days.`
         : `${countLabel(totalIncidents, "incident")} in the last ${lookbackDays} days - ${countLabel(alertCount, "review alert")}, ${countLabel(followUpCount, "follow-up")}.`,
-    nextStep: nextStepFor(status),
+    nextStep: nextStepFor(status, petName),
     latest,
     trend,
     followUpTasks: deriveFollowUpTasks({ status, latest, alertCount, followUpCount, dogExposureCount, injuryCount, triggers, trend }),
-    trainerGoals: deriveTrainerGoals({ items: allItems, triggers, exposures, dogExposureCount, injuryCount }),
+    trainerGoals: deriveTrainerGoals({ items: allItems, triggers, exposures, dogExposureCount, injuryCount, petName }),
   };
 }

@@ -42,24 +42,74 @@ test("in-progress walk sessions earn no XP until they finish", () => {
   assert.equal(started.details?.walkLifecycle, "in-progress");
   assert.equal(careXpForEntry(started), 0);
 
-  // The same entry finished flips to completed and earns the full walk XP,
-  // matching the shared adventure lib's completion semantics.
+  // The same entry finished flips to completed and earns duration-scaled XP
+  // (30 real minutes -> 30 XP), matching the adventure quest track's
+  // min(duration, 45) rule instead of a flat award.
   const patch = buildWalkSessionFinishPatch(started, {
     caregiver: "Apollo",
     now: "2026-07-06T09:30:00.000Z",
   });
   const finished = { ...started, ...patch };
   assert.equal(finished.details.walkLifecycle, "completed");
-  assert.equal(careXpForEntry(finished), 20);
+  assert.equal(finished.durationMinutes, 30);
+  assert.equal(careXpForEntry(finished), 30);
 
   // Home's career card derives from this model: a walk that only just
-  // started adds nothing today; finishing it lands the +20.
+  // started adds nothing today; finishing it lands the real minutes.
   const whileWalking = deriveCareCareer([started], NOW);
   assert.equal(whileWalking.totalXp, 0);
   assert.equal(whileWalking.todayXp, 0);
   const afterWalk = deriveCareCareer([finished], NOW);
-  assert.equal(afterWalk.totalXp, 20);
-  assert.equal(afterWalk.todayXp, 20);
+  assert.equal(afterWalk.totalXp, 30);
+  assert.equal(afterWalk.todayXp, 30);
+});
+
+test("completed-walk XP is honest: 0-minute farming earns nothing, real walks scale", () => {
+  const started = buildWalkSessionStartEntry({
+    caregiver: "Apollo",
+    now: "2026-07-06T09:00:00.000Z",
+  });
+
+  // Instant start/finish (0 minutes walked) is not care evidence: 0 XP,
+  // so tapping start+finish repeatedly can never farm the walk award.
+  const instant = { ...started, ...buildWalkSessionFinishPatch(started, {
+    caregiver: "Apollo",
+    now: "2026-07-06T09:00:10.000Z",
+  }) };
+  assert.equal(instant.durationMinutes, 0);
+  assert.equal(careXpForEntry(instant), 0);
+  assert.equal(deriveCareCareer([instant], NOW).totalXp, 0);
+
+  // A genuine 1-minute walk earns the small floor (5 XP).
+  const oneMinute = { ...started, ...buildWalkSessionFinishPatch(started, {
+    caregiver: "Apollo",
+    now: "2026-07-06T09:01:00.000Z",
+  }) };
+  assert.equal(oneMinute.durationMinutes, 1);
+  assert.equal(careXpForEntry(oneMinute), 5);
+
+  // A 30-minute walk earns its real minutes.
+  const thirtyMinutes = { ...started, ...buildWalkSessionFinishPatch(started, {
+    caregiver: "Apollo",
+    now: "2026-07-06T09:30:00.000Z",
+  }) };
+  assert.equal(careXpForEntry(thirtyMinutes), 30);
+
+  // Long walks cap at 45, same ceiling as the adventure quest track.
+  const marathon = { ...started, ...buildWalkSessionFinishPatch(started, {
+    caregiver: "Apollo",
+    now: "2026-07-06T11:00:00.000Z",
+  }) };
+  assert.equal(marathon.durationMinutes, 120);
+  assert.equal(careXpForEntry(marathon), 45);
+
+  // The Home finish toast computes its "+N care XP" from the finish patch
+  // details, so the number a caregiver sees is this same honest value.
+  const toastShape = { type: "walk", occurredAt: started.occurredAt, details: instant.details };
+  assert.equal(careXpForEntry(toastShape), 0);
+
+  // Plain walk logs without a session lifecycle keep the flat award.
+  assert.equal(careXpForEntry(entry("walk", "2026-07-06T08:00:00.000Z")), 20);
 });
 
 test("aliased event types normalize before XP weighting", () => {

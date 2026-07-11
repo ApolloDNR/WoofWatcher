@@ -130,6 +130,34 @@ test("resolves the stored pet-name placeholder so the pass matches the app", () 
   assert.equal(empty.title, "Phoenix Sitter Care Pass");
 });
 
+test("a renamed dog's care pass never reads Phoenix in derived copy", () => {
+  // Zero entries steer several derive helpers into their name-bearing
+  // branches (walk nextStep, weight baseline prompt), and the watch-stool
+  // entry exercises the potty/health branches. If any sibling module still
+  // hardcodes "Phoenix", this catches the leak at the shared-artifact level.
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    profile: { ...baseInput().profile, name: "Biscuit", weight: { current: 0, unit: "lb" } },
+    entries: [
+      {
+        id: "potty_watch",
+        type: "potty",
+        title: "Potty - poop",
+        caregiver: "Emma",
+        occurredAt: new Date(NOW - 60 * 60 * 1000).toISOString(),
+        details: { kind: "poop", condition: "diarrhea" },
+      },
+    ],
+  });
+
+  assert.equal(pass.title, "Biscuit Sitter Care Pass");
+  assert.match(pass.message, /Log the walk when Biscuit gets outside/);
+  assert.match(pass.message, /Add Biscuit's current weight/);
+  assert.match(pass.message, /Biscuit seems painful/);
+  assert.doesNotMatch(pass.message, /Phoenix/);
+});
+
 test("keeps each Next Care attention item as its own sentence line", () => {
   const pass = buildCarePass({
     ...baseInput(),
