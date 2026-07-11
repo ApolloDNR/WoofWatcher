@@ -86,8 +86,11 @@ import {
   describeQuickLogLauncherAction,
   getQuickLogPolicy,
 } from "@/lib/quickLogEntry";
+import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
+import { TrailMap } from "@/components/TrailMap";
+import { useWalkRouteCaptureStatus } from "@/components/WalkRouteRecorder";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
@@ -586,6 +589,9 @@ const DETAIL_SKIP_KEYS = new Set([
   "routineId",
   "routineTime",
   "logInteraction",
+  // Rendered as the walk detail's trail map, not as raw detail rows.
+  "route",
+  "routeDistanceM",
   "trustState",
   "confirmationRequired",
   "confirmationReason",
@@ -1168,6 +1174,15 @@ export default function LogScreen() {
   const detailType = detailEntry ? normalizeCareEventType(detailEntry.type, detailEntry.details) : null;
   const detailIcon = detailType ? TYPE_ICON[detailType] ?? "paw" : "paw";
   const detailTypeText = detailType ? entryTypeLabel(detailType) : "";
+  // Recorded walk route (if this walk captured one): shown as a real map.
+  const detailRoute = useMemo(
+    () => (detailType === "walk" ? parseWalkRoute(detailEntry?.details?.route) : null),
+    [detailEntry, detailType],
+  );
+  const detailRouteDistanceM =
+    detailRoute && typeof detailEntry?.details?.routeDistanceM === "number"
+      ? detailEntry.details.routeDistanceM
+      : null;
   const [pottyDetailDraft, setPottyDetailDraft] = useState<PottyDetailDraft>(() => pottyDraftFromEntry(null));
 
   useEffect(() => {
@@ -1722,6 +1737,15 @@ export default function LogScreen() {
     if (!Number.isFinite(startedAt)) return 0;
     return Math.max(0, Math.round((now - startedAt) / 60000));
   }, [now, openWalkStartedAt]);
+  // Honest route-recorder state: only ever says "recording" while location
+  // fixes are actually landing; otherwise it explains what would enable it.
+  const walkRouteCapture = useWalkRouteCaptureStatus();
+  const walkRouteStatusText =
+    walkRouteCapture.status === "recording"
+      ? "Recording the route for this walk's map · stays in your care log"
+      : walkRouteCapture.status === "starting"
+        ? "Getting location for the route map…"
+        : "Route recording available when location is permitted";
 
   const shareEntryHandoff = useCallback((e: Entry) => {
     const message = buildEntryHandoffMessage(e);
@@ -2546,6 +2570,9 @@ export default function LogScreen() {
                     </Text>
                     <Text style={[s.aloneActiveMeta, { color: colors.ivory + "B8", fontFamily: "Inter_500Medium" }]}>
                       Started by {openWalkSession.caregiver || "household"} - {formatAloneDuration(openWalkMinutes)}
+                    </Text>
+                    <Text style={[s.walkRouteStatus, { color: colors.ivory + "8C", fontFamily: "Inter_500Medium" }]}>
+                      {walkRouteStatusText}
                     </Text>
                   </View>
                 </View>
@@ -4491,6 +4518,24 @@ export default function LogScreen() {
                   </View>
                 ) : null}
 
+                {detailRoute ? (
+                  <View style={s.detailTrailBlock}>
+                    <TrailMap
+                      route={detailRoute}
+                      height={160}
+                      accessibilityLabel="Map of this walk's recorded route"
+                    />
+                    <Text style={[s.detailTrailCaption, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {[
+                        detailRouteDistanceM != null
+                          ? `Route · ${formatRouteDistanceMiles(detailRouteDistanceM)}`
+                          : "Recorded route",
+                        "saved in this walk's log",
+                      ].join(" · ")}
+                    </Text>
+                  </View>
+                ) : null}
+
                 <View style={s.detailGrid}>
                   {detailRows.length > 0 ? (
                     detailRows.map((row) => (
@@ -5208,6 +5253,11 @@ const s = StyleSheet.create({
     lineHeight: 16,
     marginTop: 3,
   },
+  walkRouteStatus: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 4,
+  },
   returnCheckTitle: {
     fontSize: 12,
     textTransform: "uppercase",
@@ -5751,6 +5801,8 @@ const s = StyleSheet.create({
     textAlign: "center",
   },
   detailGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 4 },
+  detailTrailBlock: { marginTop: 4, marginBottom: 6 },
+  detailTrailCaption: { fontSize: 11, lineHeight: 15, marginTop: 6 },
   detailField: { width: "48%", borderWidth: 1, borderRadius: 15, padding: 12 },
   detailFieldWide: { width: "100%", borderWidth: 1, borderRadius: 15, padding: 12 },
   detailFieldLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },

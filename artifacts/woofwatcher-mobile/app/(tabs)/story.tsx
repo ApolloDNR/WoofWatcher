@@ -39,11 +39,18 @@ import {
   CareRow,
 } from "@/components/board/BoardPrimitives";
 import { PixelIcon } from "@/components/PixelIcon";
-import { useCare } from "@/context/CareContext";
+import { TrailMap } from "@/components/TrailMap";
+import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { careTitleForLevel, deriveCareCareer, deriveCareStreak } from "@/lib/careCareer";
 import { getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
 import { resolvePetName } from "@/lib/petIdentity";
+import {
+  formatRouteDistanceMiles,
+  parseWalkRoute,
+  routeDistanceMeters,
+  type WalkRoutePoint,
+} from "@/lib/walkRoute";
 
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 // Storybook mockup: serif reserved for the route title, hero copy, and the
@@ -193,6 +200,37 @@ export default function StoryScreen() {
     [state.entries, now],
   );
 
+  /* Real trail map: the most recent household-visible walk with a recorded
+     route. When it exists, the Adventures hero shows the actual map; the
+     illustrated map remains the empty state until the first routed walk. */
+  const routedWalk = useMemo(() => {
+    const routed: { entry: Entry; route: WalkRoutePoint[] }[] = [];
+    for (const entry of state.entries) {
+      if (entry.details?.householdVisible === false) continue;
+      if (normalizeCareEventType(entry.type, entry.details) !== "walk") continue;
+      const route = parseWalkRoute(entry.details?.route);
+      if (route) routed.push({ entry, route });
+    }
+    routed.sort((a, b) => Date.parse(b.entry.occurredAt) - Date.parse(a.entry.occurredAt));
+    return routed[0] ?? null;
+  }, [state.entries]);
+
+  const routedWalkChip = useMemo(() => {
+    if (!routedWalk) return "";
+    const details = routedWalk.entry.details ?? {};
+    const distanceM =
+      typeof details.routeDistanceM === "number" && Number.isFinite(details.routeDistanceM)
+        ? details.routeDistanceM
+        : routeDistanceMeters(routedWalk.route);
+    const duration =
+      routedWalk.entry.durationMinutes != null && routedWalk.entry.durationMinutes > 0
+        ? `${routedWalk.entry.durationMinutes} min`
+        : "";
+    return ["Latest walk", formatRouteDistanceMiles(distanceM), duration]
+      .filter(Boolean)
+      .join(" · ");
+  }, [routedWalk]);
+
   /*
    * There is no separate badge model yet; the evidence-based ladder the app
    * exposes is the care-title track from deriveCareCareer/careTitleForLevel.
@@ -256,8 +294,40 @@ export default function StoryScreen() {
 
         {segment === "adventures" ? (
           <>
-            {/* Adventure map hero: mock-board pixel map with the latest real
-                trail stop layered on top. */}
+            {routedWalk ? (
+              /* Real trail map hero: OSM tiles + the recorded route of the
+                 most recent routed walk. Tapping opens that walk's log. */
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Trail map of the latest recorded walk. ${routedWalkChip}. Open the walk log.`}
+                onPress={() =>
+                  router.push(`/log?entry=${encodeURIComponent(routedWalk.entry.id)}` as never)
+                }
+                style={({ pressed }) => [s.trailHeroPress, { opacity: pressed ? 0.92 : 1 }]}
+              >
+                <TrailMap
+                  route={routedWalk.route}
+                  aspectRatio={5 / 4}
+                  style={s.trailHeroMap}
+                  accessibilityLabel="Map of the latest recorded walk route"
+                >
+                  <View
+                    style={[s.trailHeroChip, { backgroundColor: colors.card + "F0", borderColor: colors.border }]}
+                  >
+                    <View style={[s.trailHeroChipDot, { backgroundColor: colors.sage }]} />
+                    <Text
+                      numberOfLines={1}
+                      style={[s.trailHeroChipText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                    >
+                      {routedWalkChip}
+                    </Text>
+                  </View>
+                </TrailMap>
+              </Pressable>
+            ) : (
+            /* Adventure map hero (empty state until a walk records a route):
+                mock-board pixel map with the latest real trail stop layered
+                on top. */
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={
@@ -327,6 +397,7 @@ export default function StoryScreen() {
                 )}
               </QuestMarkerPulse>
             </Pressable>
+            )}
 
             {/* Recent adventures: real visited places from logged walks. */}
             <BoardCard style={s.board}>
@@ -736,6 +807,23 @@ const s = StyleSheet.create({
     marginBottom: 12,
     aspectRatio: 5 / 4,
   },
+  trailHeroPress: { marginBottom: 12 },
+  trailHeroMap: { borderRadius: 22 },
+  trailHeroChip: {
+    position: "absolute",
+    left: 12,
+    top: 12,
+    maxWidth: "86%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+  },
+  trailHeroChipDot: { width: 8, height: 8, borderRadius: 4 },
+  trailHeroChipText: { fontSize: 12, flexShrink: 1 },
   mapArt: {
     ...StyleSheet.absoluteFillObject,
     width: "100%",

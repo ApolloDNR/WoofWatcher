@@ -30,6 +30,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { WalkRouteRecorderBridge } from "@/components/WalkRouteRecorder";
 import { CareProvider } from "@/context/CareContext";
 import { AvatarProvider } from "@/context/AvatarContext";
 import { useColors } from "@/hooks/useColors";
@@ -296,6 +297,9 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <AuthBridge />
             <CareProvider>
+              {/* Follows the shared walk lifecycle: starts route capture when
+                  any surface opens a walk session, persists it on finish. */}
+              <WalkRouteRecorderBridge />
               <AvatarProvider>
                 <GestureHandlerRootView style={{ flex: 1 }}>
                   <KeyboardProvider>

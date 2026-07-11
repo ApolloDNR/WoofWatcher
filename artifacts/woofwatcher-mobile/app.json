@@ -64,9 +64,7 @@
         "backgroundColor": "#2E5B3C"
       },
       "blockedPermissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION"
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -81,6 +79,13 @@
         {
           "cameraPermission": "WoofWatcher uses the camera when you choose to capture Phoenix photos for avatar, care log, or record updates.",
           "photosPermission": "WoofWatcher lets you choose Phoenix photos and care documents for avatar, log, record, and Care Pass updates."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "WoofWatcher uses your location only while you record a walk, to draw the route on the walk map. Routes stay in your care log on this device.",
+          "isAndroidBackgroundLocationEnabled": false
         }
       ],
       "expo-web-browser"
