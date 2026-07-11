@@ -80,6 +80,7 @@ import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
+import { homeImmersiveRoomIsNight } from "./index";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import {
   buildReportArtifactExportFilePlan,
@@ -102,6 +103,10 @@ const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
 const RECORDS_CREDENTIAL_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-pixellab-400x300.png");
+// Night sibling for the credential stage: the storybook night render of the
+// same Phoenix room (identical 4:3 frame), picked with the same clock rule
+// Home's immersive room uses so Records never shows daylight at night.
+const RECORDS_CREDENTIAL_STAGE_ROOM_NIGHT = require("@/assets/avatar/rooms/phoenix-room-night.png");
 const RECORDS_CREDENTIAL_STAGE_SPRITE = getCareTwinSpriteAsset("tail-wag");
 const RECORDS_CREDENTIAL_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["tail-wag"];
 
@@ -243,6 +248,11 @@ export default function RecordsScreen() {
     const id = setInterval(() => setNow(Date.now()), 60000);
     return () => clearInterval(id);
   }, []);
+  // Time-aware credential stage: same clock rule as Home's immersive room
+  // (dark theme or lamplit hours), so Records follows the household's real
+  // day instead of staying frozen in daylight.
+  const recordsStageIsNight =
+    colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours());
 
   const unit = state.profile.weight.unit;
 
@@ -1017,7 +1027,11 @@ export default function RecordsScreen() {
 
           <BoardCard padded={false} style={s.recordsCredentialStageCard}>
             <ImageBackground
-              source={RECORDS_CREDENTIAL_STAGE_ROOM}
+              source={
+                recordsStageIsNight
+                  ? RECORDS_CREDENTIAL_STAGE_ROOM_NIGHT
+                  : RECORDS_CREDENTIAL_STAGE_ROOM
+              }
               resizeMode="stretch"
               imageStyle={[stageImageFill, s.recordsCredentialStageImage, pixelImageStyle]}
               style={s.recordsCredentialStage}

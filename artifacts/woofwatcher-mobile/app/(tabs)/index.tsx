@@ -1387,6 +1387,40 @@ export default function HomeScreen() {
     recentQuickSave.current = { type, at: Date.now() };
   };
 
+  // One shared start path for every Home surface that begins a real walk
+  // session (Quick Log tile and Next Up's walk "Start"): same lifecycle
+  // entry, same dedupe guard, same toast. Returns the started entry id, or
+  // null when the tap was a duplicate already answered by the first tap.
+  const startWalkSessionFromHome = (options?: {
+    routineId?: string;
+    routineLabel?: string;
+  }): string | null => {
+    // A rapid second Walk tap lands before the open session exists in
+    // state; it is the same intent, already answered by the first tap.
+    if (isDuplicateQuickTap("walk")) return null;
+    markQuickSave("walk");
+    const entry = buildWalkSessionStartEntry({
+      caregiver,
+      now,
+      routineId: options?.routineId,
+      routineLabel: options?.routineLabel,
+    });
+    const id = addEntry(entry as Omit<Entry, "id">);
+    const reactionPlan = describeCareTwinReactionForLog({
+      type: "walk",
+      label: "Walk",
+      title: "Walk started",
+      details: entry.details,
+    });
+    showRoomSpeech(reactionPlan.label);
+    showToast("Walk started · care XP lands when you finish", {
+      id,
+      title: "Walk started",
+      type: "walk",
+    });
+    return id;
+  };
+
   const logQuick = (item: QuickItem) => {
     if (item.route) {
       router.push(item.route);
@@ -1409,24 +1443,7 @@ export default function HomeScreen() {
         openActiveWalkFromHomeQuickLog();
         return;
       }
-      // A rapid second Walk tap lands before the open session exists in
-      // state; it is the same intent, already answered by the first tap.
-      if (isDuplicateQuickTap("walk")) return;
-      markQuickSave("walk");
-      const entry = buildWalkSessionStartEntry({ caregiver, now });
-      const id = addEntry(entry as Omit<Entry, "id">);
-      const reactionPlan = describeCareTwinReactionForLog({
-        type: "walk",
-        label: "Walk",
-        title: "Walk started",
-        details: entry.details,
-      });
-      showRoomSpeech(reactionPlan.label);
-      showToast("Walk started · care XP lands when you finish", {
-        id,
-        title: "Walk started",
-        type: "walk",
-      });
+      startWalkSessionFromHome();
       return;
     }
     // Dedupe against the same tick (ref) and the saved timeline (shared
@@ -2171,7 +2188,10 @@ export default function HomeScreen() {
                           nextPrimary.kind === "open-loop" &&
                           nextPrimary.icon === "walk"
                             ? "Completes the active walk now and logs the real duration."
-                            : undefined
+                            : nextPrimary.icon === "walk" &&
+                                nextPrimary.kind !== "open-loop"
+                              ? "Starts the walk session now. Finish it from here or the walk log."
+                              : undefined
                         }
                         onPress={() => {
                           // The active-walk Finish acts here instead of
@@ -2183,6 +2203,30 @@ export default function HomeScreen() {
                             openWalkSession
                           ) {
                             finishWalkFromHome();
+                            return;
+                          }
+                          // "Start" on a planned or suggested walk starts
+                          // the real session right here - same shared start
+                          // path and dedupe guard as the Quick Log walk
+                          // tile - so the button does what it says instead
+                          // of deep-linking to /log with Walk preselected.
+                          if (
+                            nextPrimary.icon === "walk" &&
+                            nextPrimary.kind !== "open-loop" &&
+                            !openWalkSession
+                          ) {
+                            if (Platform.OS !== "web") {
+                              Haptics.impactAsync(
+                                Haptics.ImpactFeedbackStyle.Light,
+                              );
+                            }
+                            startWalkSessionFromHome({
+                              routineId: nextPrimary.routineId,
+                              routineLabel:
+                                nextPrimary.kind === "routine"
+                                  ? nextPrimary.label
+                                  : undefined,
+                            });
                             return;
                           }
                           router.push(nextPrimary.route as never);
@@ -3008,7 +3052,11 @@ export default function HomeScreen() {
                   { color: colors.navy, fontFamily: "Inter_700Bold" },
                 ]}
               >
-                {careIntelligence.score}% Care IQ
+                {/* Zero-log day: "--" instead of a fabricated percentage -
+                    the score starts with the first real log. */}
+                {careIntelligence.visibleLogCount === 0
+                  ? "-- Care IQ"
+                  : `${careIntelligence.score}% Care IQ`}
               </Text>
               <Text
                 style={[
@@ -3019,7 +3067,9 @@ export default function HomeScreen() {
                   },
                 ]}
               >
-                {careIntelligence.confidenceScore}% log confidence
+                {careIntelligence.visibleLogCount === 0
+                  ? "Starts with your first log"
+                  : `${careIntelligence.confidenceScore}% log confidence`}
               </Text>
             </View>
             <Pressable

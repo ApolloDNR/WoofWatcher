@@ -163,6 +163,36 @@ test("expires a previous-day pending meal outcome after 12 hours", () => {
   );
 });
 
+test("keeps a zero-log day at an honest 0 Care IQ instead of sync filler", () => {
+  // Fresh profile / empty day: nothing has been logged, so the score must
+  // read 0 - not the ~9% the perfect-sync term would fabricate. The record
+  // starts with the first real log (in lockstep with Home's "--" zero state).
+  const intelligence = deriveCareIntelligence({ now: NOW, entries: [] });
+
+  assert.equal(intelligence.score, 0);
+  assert.equal(intelligence.visibleLogCount, 0);
+  assert.equal(intelligence.status, "building");
+  assert.ok(intelligence.openLoops.some((loop) => loop.kind === "missing-care"));
+
+  // A single private (household-hidden) log is still an empty household
+  // record - the honest zero holds.
+  const privateOnly = deriveCareIntelligence({
+    now: NOW,
+    entries: [
+      {
+        id: "hidden",
+        type: "note",
+        title: "Private note",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T15:00:00.000Z",
+        details: { householdVisible: false },
+        syncStatus: "synced",
+      },
+    ],
+  });
+  assert.equal(privateOnly.score, 0);
+});
+
 test("penalizes sparse, private, failed, and overdue care records", () => {
   const intelligence = deriveCareIntelligence({
     now: NOW,

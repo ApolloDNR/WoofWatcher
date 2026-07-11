@@ -770,7 +770,10 @@ export default function WoofGuideScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   emptyArea: { alignItems: "center", paddingTop: 20, gap: 10 },
-  guideStageCard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 4, overflow: "hidden" },
+  // Gutter rhythm: the list already pads 16 (the shared tab gutter), so the
+  // cards keep no extra side margin - they used to stack margin 12 on top of
+  // the padding and sit at a 28px gutter no other screen uses.
+  guideStageCard: { alignSelf: "stretch", marginTop: 4, overflow: "hidden" },
   guideStage: { minHeight: 294, overflow: "hidden", justifyContent: "space-between" },
   guideStageImage: { borderRadius: 8 },
   guideStageShade: {
@@ -893,7 +896,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
   },
   guideStageActionText: { color: "#FFF9EF", fontSize: 11, lineHeight: 14 },
-  guideIntroCard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 8 },
+  guideIntroCard: { alignSelf: "stretch", marginTop: 8 },
   guideIntroRow: { flexDirection: "row", alignItems: "center", gap: 11 },
   guideIntroIcon: {
     width: 48,
@@ -907,7 +910,7 @@ const s = StyleSheet.create({
   guideIntroKicker: { fontSize: 10, lineHeight: 13, textTransform: "uppercase" },
   guideIntroTitle: { fontSize: 17, lineHeight: 20, marginTop: 1 },
   guideIntroCopy: { fontSize: 11.5, lineHeight: 16, marginTop: 3 },
-  quickQuestionBoard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 6 },
+  quickQuestionBoard: { alignSelf: "stretch", marginTop: 6 },
   quickQuestionGrid: { gap: 10 },
   quickChip: { borderRadius: 14, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, padding: 14 },
   quickText: { fontSize: 14, lineHeight: 20 },
@@ -920,7 +923,7 @@ const s = StyleSheet.create({
   gateComposerText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
   gateComposerLink: { minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
   gateComposerLinkText: { color: "#fff", fontSize: 13 },
-  actionBoard: { alignSelf: "stretch", marginHorizontal: 12, marginTop: 8 },
+  actionBoard: { alignSelf: "stretch", marginTop: 8 },
   guideActionList: { gap: 10 },
   actionRow: { flexDirection: "row", alignItems: "center", gap: 11, borderRadius: 16, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, padding: 13 },
   actionIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
@@ -933,7 +936,7 @@ const s = StyleSheet.create({
   bubbleText: { fontSize: 15, lineHeight: 22 },
   typingBubble: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 20, borderWidth: 1, padding: 12, marginBottom: 8 },
   typingText: { fontSize: 14 },
-  inputArea: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 14, paddingTop: 8, borderTopWidth: 1 },
+  inputArea: { flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 16, paddingTop: 8, borderTopWidth: 1 },
   input: { flex: 1, borderRadius: 18, borderWidth: 1, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 10, fontSize: 15, maxHeight: 112, minHeight: 48 },
   sendBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 24, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   reviewBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(10, 16, 24, 0.42)" },

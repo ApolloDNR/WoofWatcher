@@ -1860,6 +1860,12 @@ test("keeps care intelligence wired across Home, Log, More, and the shared domai
   assert.match(home, /deriveCareIntelligence/);
   assert.match(home, /careIntelligence\.score/);
   assert.match(home, /Care IQ/);
+  // Zero-log honesty, in lockstep with the domain: an empty day derives a
+  // real 0 (never sync filler) and Home frames it as "--" with the
+  // first-log promise instead of a fabricated percentage.
+  assert.match(domain, /visibleToday\.length === 0 \? 0 :/);
+  assert.match(home, /careIntelligence\.visibleLogCount === 0\s*\?\s*"-- Care IQ"/);
+  assert.match(home, /Starts with your first log/);
   assert.match(log, /deriveCareIntelligence/);
   assert.match(log, /Care IQ/);
   assert.match(log, /careIntelligence\.status/);
@@ -4434,6 +4440,11 @@ test("keeps Records rooted in a live pixel credential stage", () => {
   assert.match(records, /ImageBackground/);
   assert.match(records, /RECORDS_CREDENTIAL_STAGE_ROOM/);
   assert.match(records, /phoenix-room-day-pixellab-400x300\.png/);
+  // The stage is time-aware in lockstep with Home's immersive room: same
+  // clock rule, night sibling of the same 4:3 room.
+  assert.match(records, /RECORDS_CREDENTIAL_STAGE_ROOM_NIGHT/);
+  assert.match(records, /phoenix-room-night\.png/);
+  assert.match(records, /homeImmersiveRoomIsNight\(new Date\(now\)\.getHours\(\)\)/);
   assert.match(records, /SpriteSheetPlayer/);
   assert.match(records, /getCareTwinSpriteAsset\("tail-wag"\)/);
   assert.match(records, /CARE_TWIN_SPRITE_MANIFEST\["tail-wag"\]/);

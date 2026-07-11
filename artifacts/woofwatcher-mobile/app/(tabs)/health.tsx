@@ -928,9 +928,13 @@ const s = StyleSheet.create({
     padding: 8,
     marginBottom: 10,
   },
+  // Radius rhythm: nested panels, rows, and buttons inside the 20-radius
+  // BoardCards sit on the shared 12 chip radius (the BoardMetricTile norm)
+  // instead of the old 8px one-off; the pixel look stays in the art and
+  // borders.
   healthStage: {
     minHeight: 168,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: "rgba(8,26,42,0.42)",
     overflow: "hidden",
@@ -938,7 +942,7 @@ const s = StyleSheet.create({
     marginBottom: 8,
   },
   healthStageImage: {
-    borderRadius: 8,
+    borderRadius: 12,
   },
   healthStageShade: {
     ...StyleSheet.absoluteFillObject,
@@ -1018,7 +1022,7 @@ const s = StyleSheet.create({
   },
   healthHeroPanel: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 11,
     gap: 11,
   },
@@ -1030,7 +1034,7 @@ const s = StyleSheet.create({
   healthScoreToken: {
     width: 78,
     minHeight: 84,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -1069,7 +1073,7 @@ const s = StyleSheet.create({
   },
   healthRhythmPanel: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 8,
     marginTop: 7,
   },
@@ -1146,7 +1150,7 @@ const s = StyleSheet.create({
   heroActionPrimary: {
     flex: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1154,7 +1158,7 @@ const s = StyleSheet.create({
   heroActionSecondary: {
     minWidth: 92,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -1170,7 +1174,7 @@ const s = StyleSheet.create({
   },
   healthStatusSummary: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 8,
     flexDirection: "row",
     alignItems: "center",
@@ -1194,7 +1198,7 @@ const s = StyleSheet.create({
   boardSectionTop: { flex: 1, marginBottom: 0 },
   healthHeaderAction: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -1229,7 +1233,7 @@ const s = StyleSheet.create({
   },
   reviewPromptRow: {
     minHeight: 44,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 9,
     paddingVertical: 7,
@@ -1252,7 +1256,7 @@ const s = StyleSheet.create({
     lineHeight: 16,
   },
   reviewChecklistPanel: {
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     padding: 9,
     marginTop: 9,
@@ -1285,7 +1289,7 @@ const s = StyleSheet.create({
   reviewPacketBoundary: {
     minHeight: 44,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 9,
     paddingVertical: 7,
     marginTop: 9,
@@ -1301,7 +1305,7 @@ const s = StyleSheet.create({
   },
   reviewPacketShare: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -1320,7 +1324,7 @@ const s = StyleSheet.create({
   reviewPacketPrimary: {
     flex: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 10,
@@ -1333,7 +1337,7 @@ const s = StyleSheet.create({
   reviewPacketSecondary: {
     flex: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -1356,7 +1360,7 @@ const s = StyleSheet.create({
 
   bilePanel: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 10,
     marginBottom: 10,
     flexDirection: "row",
@@ -1366,7 +1370,7 @@ const s = StyleSheet.create({
   bileMedallion: {
     width: 82,
     minHeight: 92,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -1404,7 +1408,7 @@ const s = StyleSheet.create({
   healthSignalRow: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 6,
     flexDirection: "row",
@@ -1470,7 +1474,7 @@ const s = StyleSheet.create({
   },
 
   reviewPanel: {
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     padding: 12,
     marginBottom: 2,
@@ -1488,7 +1492,7 @@ const s = StyleSheet.create({
   patternCopy: { fontSize: 12.5, lineHeight: 18, marginTop: 6 },
   patternStep: { fontSize: 12.5, lineHeight: 18, marginTop: 6 },
   boundaryCard: {
-    borderRadius: 8,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 12,
     marginTop: 14,

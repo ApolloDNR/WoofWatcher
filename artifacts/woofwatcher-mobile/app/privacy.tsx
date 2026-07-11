@@ -35,7 +35,6 @@ import {
 } from "@/lib/privacySafety";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { resolvePetName } from "@/lib/petIdentity";
-import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import { shareTextPayload } from "@/lib/shareText";
 import {
@@ -237,45 +236,74 @@ export default function PrivacyScreen() {
     router.push("/legal" as never);
   };
 
+  // Themed two-step delete-all confirmation: the native confirm()/alert()
+  // fallback read as browser chrome on web, so the flow now runs in the
+  // app's own board-style sheet on every platform. Semantics are unchanged:
+  // two explicit confirmations, then a completion notice after the wipe.
+  const [eraseStage, setEraseStage] = useState<
+    "confirm" | "confirm-final" | "done" | null
+  >(null);
+  const [erasing, setErasing] = useState(false);
+
+  const eraseSteps = {
+    confirm: {
+      title: "Delete all data on this device?",
+      message: `This permanently removes every log, routine, record, memory, report, and avatar for ${resolvePetName(state.profile.name)} from this device. WoofWatcher keeps no copy anywhere else. Export first if you want a backup.`,
+      confirmLabel: "Delete everything",
+      cancelLabel: "Cancel",
+    },
+    "confirm-final": {
+      title: "This cannot be undone",
+      message: "Delete all WoofWatcher data from this device now?",
+      confirmLabel: "Yes, delete it all",
+      cancelLabel: "Keep my data",
+    },
+    done: {
+      title: "All data deleted",
+      message: "WoofWatcher has been reset to a fresh household on this device.",
+    },
+  } as const;
+
   const confirmEraseAllLocalData = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    confirmThroughSteps(
-      [
-        {
-          title: "Delete all data on this device?",
-          message: `This permanently removes every log, routine, record, memory, report, and avatar for ${resolvePetName(state.profile.name)} from this device. WoofWatcher keeps no copy anywhere else. Export first if you want a backup.`,
-          confirmLabel: "Delete everything",
-          destructive: true,
+    setEraseStage("confirm");
+  };
+
+  const cancelEraseFlow = () => {
+    if (erasing) return;
+    setEraseStage(null);
+  };
+
+  const advanceEraseFlow = () => {
+    if (eraseStage === "confirm") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setEraseStage("confirm-final");
+      return;
+    }
+    if (eraseStage === "confirm-final") {
+      if (erasing) return;
+      setErasing(true);
+      // The avatar contexts hold hydrated in-memory state, so the wipe
+      // must reset them too or the custom twin would survive on screen
+      // (and a later Studio save would re-persist deleted data).
+      void Promise.all([eraseAllLocalData(), clearAvatarSet(), resetAvatarConfig()]).then(
+        () => {
+          setErasing(false);
+          setEraseStage("done");
         },
-        {
-          title: "This cannot be undone",
-          message: "Delete all WoofWatcher data from this device now?",
-          confirmLabel: "Yes, delete it all",
-          cancelLabel: "Keep my data",
-          destructive: true,
-        },
-      ],
-      () => {
-        // The avatar contexts hold hydrated in-memory state, so the wipe
-        // must reset them too or the custom twin would survive on screen
-        // (and a later Studio save would re-persist deleted data).
-        void Promise.all([eraseAllLocalData(), clearAvatarSet(), resetAvatarConfig()]).then(
-          () => {
-            notifyDialog(
-              "All data deleted",
-              "WoofWatcher has been reset to a fresh household on this device.",
-            );
-          },
-        );
-      },
-    );
+      );
+      return;
+    }
+    setEraseStage(null);
   };
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 20, paddingBottom: bottomPadding }}
+        // 16 matches the tab screens' shared side gutter (Home/Log/Records
+        // all use 16), so modal routes stop sitting 4px narrower.
+        contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 16, paddingBottom: bottomPadding }}
       >
         <LinearGradient
           colors={[colors.midnight, colors.primary]}
@@ -526,6 +554,124 @@ export default function PrivacyScreen() {
           </>
         ) : null}
       </ScrollView>
+      <Modal
+        visible={eraseStage !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelEraseFlow}
+      >
+        <Pressable
+          style={s.modalBackdrop}
+          onPress={eraseStage === "done" ? advanceEraseFlow : cancelEraseFlow}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss delete confirmation"
+        >
+          <Pressable
+            style={[
+              s.confirmSheet,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                paddingBottom: Math.max(modalSheetBottomPadding, 18),
+              },
+            ]}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <View style={s.modalHandle} />
+            {eraseStage ? (
+              <>
+                <View style={s.confirmHeader}>
+                  <View
+                    style={[
+                      s.confirmIcon,
+                      {
+                        backgroundColor:
+                          eraseStage === "done" ? colors.sage + "16" : colors.rose + "14",
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={eraseStage === "done" ? "checkmark-circle-outline" : "trash-bin-outline"}
+                      size={20}
+                      color={eraseStage === "done" ? colors.sage : colors.rose}
+                    />
+                  </View>
+                  <Text style={[s.confirmTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                    {eraseSteps[eraseStage].title}
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    s.confirmMessage,
+                    { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                  ]}
+                >
+                  {eraseSteps[eraseStage].message}
+                </Text>
+                {eraseStage === "done" ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Close data deletion notice"
+                    onPress={advanceEraseFlow}
+                    style={({ pressed }) => [
+                      s.confirmPrimaryBtn,
+                      s.confirmDoneBtn,
+                      { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 },
+                    ]}
+                  >
+                    <Text style={[s.confirmPrimaryText, { fontFamily: "Inter_800ExtraBold" }]}>
+                      Done
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <View style={s.confirmActions}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={eraseSteps[eraseStage].cancelLabel}
+                      disabled={erasing}
+                      onPress={cancelEraseFlow}
+                      style={({ pressed }) => [
+                        s.confirmCancelBtn,
+                        {
+                          borderColor: colors.border,
+                          backgroundColor: colors.background,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.confirmCancelText,
+                          { color: colors.foreground, fontFamily: "Inter_800ExtraBold" },
+                        ]}
+                      >
+                        {eraseSteps[eraseStage].cancelLabel}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={eraseSteps[eraseStage].confirmLabel}
+                      disabled={erasing}
+                      onPress={advanceEraseFlow}
+                      style={({ pressed }) => [
+                        s.confirmPrimaryBtn,
+                        {
+                          backgroundColor: colors.rose,
+                          opacity: erasing ? 0.6 : pressed ? 0.84 : 1,
+                        },
+                      ]}
+                    >
+                      <Text style={[s.confirmPrimaryText, { fontFamily: "Inter_800ExtraBold" }]}>
+                        {erasing ? "Deleting..." : eraseSteps[eraseStage].confirmLabel}
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
+              </>
+            ) : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
       <Modal visible={launchEditorOpen} transparent animationType="slide" onRequestClose={() => setLaunchEditorOpen(false)}>
         <Pressable style={s.modalBackdrop} onPress={() => setLaunchEditorOpen(false)}>
           <Pressable
@@ -912,6 +1058,45 @@ const s = StyleSheet.create({
     justifyContent: "flex-end",
     backgroundColor: "rgba(8, 26, 42, 0.42)",
   },
+  confirmSheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  confirmHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  confirmIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmTitle: { flex: 1, fontSize: 20, lineHeight: 25 },
+  confirmMessage: { fontSize: 13.5, lineHeight: 20, marginTop: 12 },
+  confirmActions: { flexDirection: "row", gap: 10, marginTop: 18 },
+  confirmCancelBtn: {
+    flex: 1,
+    minHeight: 50,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  confirmCancelText: { fontSize: 13 },
+  confirmPrimaryBtn: {
+    flex: 1.2,
+    minHeight: 50,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    marginTop: 0,
+  },
+  confirmPrimaryText: { color: "#FFFFFF", fontSize: 13 },
+  confirmDoneBtn: { flex: 0, marginTop: 18 },
   launchModal: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,

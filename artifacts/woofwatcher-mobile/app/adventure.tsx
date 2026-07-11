@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Stack, useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   ImageBackground,
   Pressable,
@@ -28,7 +28,11 @@ import { useColors } from "@/hooks/useColors";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { notifyDialog } from "@/lib/confirmDialog";
-import { buildQuickLogEntry } from "@/lib/quickLogEntry";
+import {
+  buildQuickLogEntry,
+  findRecentQuickLogDuplicate,
+  QUICK_LOG_DEDUPE_WINDOW_MS,
+} from "@/lib/quickLogEntry";
 import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import {
   getRouteTopPadding,
@@ -181,6 +185,26 @@ export default function AdventureScreen() {
     notifyDialog("Memory saved", "Saved as a private household memory on this device. Cloud photo backup isn't available yet.");
   };
 
+  // Double-tap safety, exactly like Home's quick log: the synchronous ref
+  // catches a second press in the same tick (React state cannot update
+  // between the two), and the shared entry-window check covers slower
+  // bounces and cross-surface repeats. A deliberate second log after the
+  // 1.5s window still saves normally.
+  const recentQuestSave = useRef<{ type: CareEventType; at: number } | null>(
+    null,
+  );
+  const isDuplicateQuestTap = (type: CareEventType): boolean => {
+    const prev = recentQuestSave.current;
+    return Boolean(
+      prev &&
+        prev.type === type &&
+        Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
+    );
+  };
+  const markQuestSave = (type: CareEventType) => {
+    recentQuestSave.current = { type, at: Date.now() };
+  };
+
   const startQuest = (quest: AdventureQuest, proofEntryId: string | null) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (quest.status === "locked") {
@@ -205,6 +229,10 @@ export default function AdventureScreen() {
         router.push(`/log?entry=${encodeURIComponent(openWalkSession.id)}` as never);
         return;
       }
+      // A rapid second tap lands before the open session exists in state;
+      // it is the same intent, already answered by the first tap.
+      if (isDuplicateQuestTap("walk")) return;
+      markQuestSave("walk");
       const entry = buildWalkSessionStartEntry({ caregiver, now, routineLabel: quest.title });
       const id = addEntry({
         ...entry,
@@ -216,6 +244,15 @@ export default function AdventureScreen() {
 
     const careType = questCareType(quest);
     if (!careType) return;
+    // Dedupe against the same tick (ref) and the saved timeline (shared
+    // window): the first tap's entry and feedback already answered this tap.
+    if (
+      isDuplicateQuestTap(careType) ||
+      findRecentQuickLogDuplicate(state.entries, careType, Date.now())
+    ) {
+      return;
+    }
+    markQuestSave(careType);
     const entry = buildQuickLogEntry(
       { type: careType, title: quest.title },
       state,
@@ -285,7 +322,9 @@ export default function AdventureScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 20, paddingBottom: bottomPadding }}
+        // 16 matches the tab screens' shared side gutter (Home/Log/Records
+        // all use 16), so modal routes stop sitting 4px narrower.
+        contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 16, paddingBottom: bottomPadding }}
       >
         <ImageBackground
           source={ADVENTURE_STAGE_SCENE}
@@ -710,8 +749,11 @@ function QuestRow({
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  hero: { minHeight: 360, borderRadius: 8, padding: 16, marginBottom: 14, overflow: "hidden", borderWidth: 2, borderColor: "rgba(8,26,42,0.48)" },
-  heroImage: { borderRadius: 8 },
+  // Card-stack rhythm: the hero shares the BoardCard radius (20) so it reads
+  // as part of the same stack; the pixel frame stays in the 2px border. The
+  // image radius is concentric (20 - 2 border).
+  hero: { minHeight: 360, borderRadius: 20, padding: 16, marginBottom: 14, overflow: "hidden", borderWidth: 2, borderColor: "rgba(8,26,42,0.48)" },
+  heroImage: { borderRadius: 18 },
   heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(8, 26, 42, 0.22)" },
   heroTop: { position: "relative", zIndex: 5, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   heroIcon: { width: 38, height: 38, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(8,26,42,0.68)", borderWidth: 1, borderColor: "rgba(255,249,239,0.24)" },
@@ -795,12 +837,14 @@ const s = StyleSheet.create({
   board: { marginBottom: 12 },
   boardTitle: { fontSize: 17 },
   boardCopy: { fontSize: 13, lineHeight: 19, marginTop: 5 },
-  boundary: { flexDirection: "row", gap: 8, alignItems: "flex-start", borderRadius: 8, borderWidth: 1, padding: 11, marginTop: 12 },
+  // Rows, panels, and buttons inside BoardCards sit on the shared 12 chip
+  // radius (the BoardMetricTile norm) instead of the old 8px one-off.
+  boundary: { flexDirection: "row", gap: 8, alignItems: "flex-start", borderRadius: 12, borderWidth: 1, padding: 11, marginTop: 12 },
   boundaryText: { flex: 1, fontSize: 11.5, lineHeight: 16 },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 13 },
-  primaryBtn: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 8, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
+  primaryBtn: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
   primaryBtnText: { color: "#FFFFFF", fontSize: 13.5 },
-  secondaryBtn: { width: 50, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  secondaryBtn: { width: 50, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   questList: { gap: 10 },
   trailList: { gap: 4 },
   trailRow: {
@@ -823,20 +867,20 @@ const s = StyleSheet.create({
   trailName: { fontSize: 15 },
   trailMeta: { fontSize: 11.5, marginTop: 1 },
   trailEmpty: { fontSize: 12.5, lineHeight: 18 },
-  questRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 8, padding: 11 },
+  questRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 12, padding: 11 },
   // Keeps the copy column readable at phone widths: it never shrinks below
   // 160pt, so the status pill and action button wrap to a second line
   // instead of crushing the text into one-character columns.
   questCopy: { flexGrow: 1, flexShrink: 1, flexBasis: 180, minWidth: 160 },
-  questIcon: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  questIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   questTitle: { fontSize: 13.5 },
   questPrompt: { fontSize: 12, lineHeight: 16, marginTop: 2 },
   questEvidence: { fontSize: 11.2, lineHeight: 15, marginTop: 5 },
-  questStatus: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8 },
+  questStatus: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 5, borderRadius: 12 },
   questStatusText: { fontSize: 10, textTransform: "capitalize" },
   questActionButton: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 10,
     flexDirection: "row",
@@ -849,7 +893,7 @@ const s = StyleSheet.create({
   questActionText: { fontSize: 11, textTransform: "uppercase" },
   questFeedback: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     marginTop: 12,
     padding: 11,
     gap: 10,
@@ -861,7 +905,7 @@ const s = StyleSheet.create({
   questFeedbackButton: {
     flex: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -875,7 +919,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -883,8 +927,8 @@ const s = StyleSheet.create({
   proofMeta: { flexDirection: "row", alignItems: "center", gap: 6 },
   proofXp: { fontSize: 13 },
   memoryList: { gap: 8 },
-  memoryRow: { minHeight: MIN_MOBILE_TOUCH_TARGET, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 8, borderWidth: 1, padding: 10 },
-  memoryIcon: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  memoryRow: { minHeight: MIN_MOBILE_TOUCH_TARGET, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, borderWidth: 1, padding: 10 },
+  memoryIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   memoryTitle: { fontSize: 13 },
   memoryMeta: { fontSize: 11.5, marginTop: 1, textTransform: "capitalize" },
   memoryAction: { flexDirection: "row", alignItems: "center", gap: 4 },

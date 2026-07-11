@@ -446,7 +446,10 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
   const rawScore = round(coreProgress * 0.38 + routineProgress * 0.25 + confidenceScore * 0.25 + syncScore * 0.12);
   const loopPenalty = Math.min(openLoopCount * 3, 12);
   const healthPenalty = status.healthAlert ? 8 : 0;
-  const score = clamp(rawScore - loopPenalty - healthPenalty);
+  // With zero household-visible logs today nothing has been earned yet: the
+  // day's Care IQ is honestly 0, not the ~9% the perfect-sync term would
+  // invent for an empty record. The score starts with the first real log.
+  const score = visibleToday.length === 0 ? 0 : clamp(rawScore - loopPenalty - healthPenalty);
   const nextAction = nextActionFromLoops(loops, coreProgress);
   const hasAttentionLoop = failedSyncEntries.length > 0 || status.healthAlert || overdueRoutines.length > 1;
   const intelligenceStatus = scoreStatus(score, hasAttentionLoop);
