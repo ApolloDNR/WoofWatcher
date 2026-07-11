@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
+  Easing,
   Platform,
   Pressable,
   ScrollView,
@@ -144,12 +146,46 @@ export default function FastLogScreen() {
     [state.entries],
   );
 
-  const close = () => {
+  // The native stack animates this modal on iOS/Android, but on web the
+  // route mounts as a single-frame hard cut - so the sheet runs its own
+  // ~220ms fade/rise in, and eases back out before dismissing. Native keeps
+  // its real modal transition and skips the double animation.
+  const animatesInternally = Platform.OS === "web";
+  const sheetProgress = useRef(
+    new Animated.Value(animatesInternally ? 0 : 1),
+  ).current;
+  const dismissing = useRef(false);
+  useEffect(() => {
+    if (!animatesInternally) return;
+    Animated.timing(sheetProgress, {
+      toValue: 1,
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [animatesInternally, sheetProgress]);
+
+  const navigateBack = () => {
     if (router.canGoBack()) {
       router.back();
       return;
     }
     router.replace("/(tabs)" as never);
+  };
+
+  const close = () => {
+    if (!animatesInternally) {
+      navigateBack();
+      return;
+    }
+    if (dismissing.current) return;
+    dismissing.current = true;
+    Animated.timing(sheetProgress, {
+      toValue: 0,
+      duration: 160,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: false,
+    }).start(() => navigateBack());
   };
 
   const flashLogged = (key: string) => {
@@ -226,7 +262,37 @@ export default function FastLogScreen() {
   };
 
   return (
-    <View style={[s.root, { paddingTop: Math.max(insets.top, 14) }]}>
+    <Animated.View
+      style={[
+        s.root,
+        {
+          paddingTop: Math.max(insets.top, 14),
+          // Web only (progress is pinned to 1 on native): the sheet washes
+          // from the app's cream field into the night-forest surface while
+          // the content rises, instead of flipping dark in a single frame.
+          backgroundColor: sheetProgress.interpolate({
+            inputRange: [0, 1],
+            outputRange: ["#FFF9EF", SHEET_BG],
+          }),
+        },
+      ]}
+    >
+      <Animated.View
+        style={[
+          s.sheetBody,
+          {
+            opacity: sheetProgress,
+            transform: [
+              {
+                translateY: sheetProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [26, 0],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
@@ -325,7 +391,8 @@ export default function FastLogScreen() {
           <Text style={[s.fullLogText, { fontFamily: "Inter_700Bold" }]}>View Full Log</Text>
         </Pressable>
       </ScrollView>
-    </View>
+      </Animated.View>
+    </Animated.View>
   );
 }
 
@@ -333,6 +400,9 @@ const s = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: SHEET_BG,
+  },
+  sheetBody: {
+    flex: 1,
   },
   closeButton: {
     width: 38,

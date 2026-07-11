@@ -149,6 +149,11 @@ function RootLayoutNav() {
         options={{
           headerShown: false,
           presentation: "modal",
+          // iOS modals slide by default; this keeps Android's native
+          // transition matching instead of a platform-default cut. The web
+          // build ignores it, so the fastlog screen runs its own mount
+          // fade/rise there.
+          animation: "slide_from_bottom",
           contentStyle: { backgroundColor: "#32362B" },
         }}
       />

@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Animated,
   ImageBackground,
+  InteractionManager,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -109,6 +110,35 @@ const DISPLAY_SEMI = "Fredoka_600SemiBold";
 const LOG_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
 const LOG_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("ear-perk");
 const LOG_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["ear-perk"];
+
+// Warm the console stage art when the bundle loads, not when the Log tab
+// first mounts: on web the metro asset resolves to `{ uri }`, and holding a
+// decoded HTMLImageElement here means the hero paints with the tab's first
+// frame instead of popping in a few frames after the switch. Native bundles
+// the PNGs locally, so only web needs the warm-up (kept referenced so the
+// decoded bitmap is not garbage collected).
+const WARMED_LOG_STAGE_ART: unknown[] = [];
+if (Platform.OS === "web") {
+  const WebImage = (
+    globalThis as {
+      Image?: new () => { src: string; decode?: () => Promise<void> };
+    }
+  ).Image;
+  for (const assetModule of [
+    LOG_COMMAND_STAGE_ROOM,
+    LOG_COMMAND_STAGE_SPRITE?.source,
+  ]) {
+    const uri =
+      assetModule && typeof assetModule === "object"
+        ? (assetModule as { uri?: string }).uri
+        : null;
+    if (!uri || !WebImage) continue;
+    const image = new WebImage();
+    image.src = uri;
+    image.decode?.().catch(() => {});
+    WARMED_LOG_STAGE_ART.push(image);
+  }
+}
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 const QUICK_LOG_DOCTRINE: Array<{
@@ -1256,6 +1286,25 @@ export default function LogScreen() {
     ]).start();
   }, [fade, isWebRoutePreview, slide]);
 
+  // Two-phase mount: the console stage and quick-log launcher (the whole
+  // first screenful) render on the tab-press frame; the composer, search,
+  // and timeline - all below the fold - mount right after the transition
+  // settles. Rendering everything at once blocked the switch-to-Log frame
+  // for ~80-100ms.
+  const [belowFoldReady, setBelowFoldReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    const interaction = InteractionManager.runAfterInteractions(() => {
+      requestAnimationFrame(() => {
+        if (!cancelled) setBelowFoldReady(true);
+      });
+    });
+    return () => {
+      cancelled = true;
+      interaction.cancel();
+    };
+  }, []);
+
   const buildEntry = useCallback((): Omit<Entry, "id"> | null => {
     if (!config) return null;
     const parts: string[] = [];
@@ -2363,6 +2412,9 @@ export default function LogScreen() {
             <ImageBackground
               source={LOG_COMMAND_STAGE_ROOM}
               resizeMode="cover"
+              // Android fades images in over 300ms by default, which reads
+              // as the hero art popping in after the tab switch.
+              fadeDuration={0}
               imageStyle={[stageImageFill, s.logCommandStageImage, pixelImageStyle]}
               style={s.logCommandStage}
               testID="quick-log-command-pixel-stage"
@@ -3059,6 +3111,10 @@ export default function LogScreen() {
               composerSectionY.current = event.nativeEvent.layout.y + topPadding;
             }}
           />
+          {/* Everything from the composer down is below the fold and mounts
+              one frame after the tab switch (two-phase render). */}
+          {belowFoldReady ? (
+            <>
           <BoardCard style={s.composerHero}>
             <View style={s.quickLogDetailDock}>
             <View style={[s.composerHeroBanner, { backgroundColor: colors.brandNavy, borderColor: colors.shellNavy }]}>
@@ -4076,6 +4132,8 @@ export default function LogScreen() {
               </BoardCard>
             ))
           )}
+            </>
+          ) : null}
         </Animated.View>
       </ScrollView>
 
