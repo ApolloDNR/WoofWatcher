@@ -1246,7 +1246,11 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(home, /avatarMotion\.speech/);
   assert.match(home, /setRoomReaction/);
   assert.match(home, /describeCareTwinReactionForLog/);
-  assert.match(home, /reactionToneColor/);
+  // Quick logs acknowledge through the room's own speech bubble plus one
+  // actionable toast above the tab bar; the dark reaction card is reserved
+  // for level-ups and room taps so feedback never triple-stacks.
+  assert.match(home, /showRoomSpeech\(reactionPlan\.label\)/);
+  assert.match(home, /roomSpeechOverride/);
   assert.match(home, /roomTapChoreography/);
   assert.match(home, /tapReaction\.action/);
   assert.match(
@@ -3721,6 +3725,17 @@ test("keeps Records organized around a vault command hierarchy", () => {
   assert.match(records, /style=\{s\.recordsCommandCard\}/);
   assert.match(records, /s\.recordsCommandRow/);
   assert.match(records, /accessibilityLabel=\{`\$\{item\.label\}\. \$\{item\.detail\}\. \$\{item\.actionLabel\}`\}/);
+  // Vault readiness has exactly one source: filed-section coverage feeds
+  // both the stage HUD and the Vault Command pill from the same variable,
+  // and the Dog ID row is worded as "N of 7 ID fields" so it can never read
+  // as a second, contradicting vault percent (the retired blended 65/35
+  // score showed "Vault 5%" beside "14% ready").
+  assert.match(
+    records,
+    /ID fields ready for sitter, vet, and emergency handoff/,
+  );
+  assert.doesNotMatch(records, /credentialReadinessPercent/);
+  assert.doesNotMatch(records, /\* 0\.65 \+/);
 });
 
 test("keeps Records Care Pass and reports on shared board card anatomy", () => {
@@ -3802,6 +3817,25 @@ test("keeps Records trend sections on shared board card anatomy", () => {
     records,
     /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Hydration"/,
   );
+  // Zero-data trend sections consolidate into one tappable Baselines
+  // Checklist row each (icon, label, real zero status, Log tap-through)
+  // instead of a corridor of near-identical all-zero cards; each full card
+  // renders only once its section has real logs in its own window.
+  assert.match(records, /Baselines Checklist/);
+  assert.match(records, /const baselineChecklist: BaselineChecklistRow\[\]/);
+  assert.match(records, /onPress=\{\(\) => openBaselineLog\(row\.type\)\}/);
+  assert.match(
+    records,
+    /router\.push\(`\/log\?type=\$\{type\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/,
+  );
+  assert.match(records, /\{weightTrend\.totalWeighIns > 0 \|\| current > 0 \? \(/);
+  assert.match(records, /\{moodStats\.total > 0 \? \(/);
+  assert.match(records, /\{waterHydration\.total > 0 \? \(/);
+  assert.match(records, /\{walkActivity\.total > 0 \? \(/);
+  assert.match(records, /\{trainingProgress\.totalSessions > 0 \? \(/);
+  assert.match(records, /\{aloneTime\.totalSessions > 0 \? \(/);
+  assert.match(records, /\{groomingCare\.totalSessions > 0 \? \(/);
+  assert.match(records, /\{pottyHealth\.total > 0 \? \(/);
 });
 
 test("keeps Records section status labels as badges instead of passive actions", () => {

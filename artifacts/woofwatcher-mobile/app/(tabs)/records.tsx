@@ -56,6 +56,7 @@ import {
   getRecordDueStatus,
   normalizeCareEventType,
   summarizeRecordVault,
+  type CareEventType,
   type CarePass,
   type CarePassAudience,
   type CarePassArtifact,
@@ -410,9 +411,17 @@ export default function RecordsScreen() {
   const hasDietOnFile = Boolean(dietPrimaryFood || dietMeta);
 
   const recordVault = useMemo(() => summarizeRecordVault(state.records), [state.records]);
-  const recordReminders = useMemo(
-    () => deriveRecordReminders(state.records, { now }).slice(0, 4),
+  // One reminder derivation feeds both surfaces: the HUD counts every open
+  // setup item exactly once (missing-critical records are already reminders,
+  // so adding missingCritical on top double-counted them), while the visible
+  // checklist shows the top four.
+  const recordRemindersAll = useMemo(
+    () => deriveRecordReminders(state.records, { now }),
     [state.records, now],
+  );
+  const recordReminders = useMemo(
+    () => recordRemindersAll.slice(0, 4),
+    [recordRemindersAll],
   );
   const credential = useMemo(
     () =>
@@ -840,7 +849,18 @@ export default function RecordsScreen() {
   );
   const recordList = recordVault.priorityRecords;
   const filedRecordSections = recordSections.filter((section) => section.count > 0).length;
-  const recordCoveragePercent = Math.round((filedRecordSections / Math.max(1, recordSections.length)) * 100);
+  // One readiness number per measure, each verifiable on this screen:
+  // - Vault readiness is filed-section coverage, matching the Record Vault
+  //   grid below; the stage HUD and the Vault Command pill show this same
+  //   value from this same variable.
+  // - Dog ID readiness is "N of M ID fields" from the same credential that
+  //   renders the ID card, and it is worded as ID fields so it can never
+  //   read as a second, contradicting vault percent. (The old blended
+  //   65/35 score put "Vault 5%" beside "14% ready" with no visible source
+  //   for either number.)
+  const recordsVaultScore = Math.round(
+    (filedRecordSections / Math.max(1, recordSections.length)) * 100,
+  );
   const credentialReadyFields = [
     credential.breed,
     credential.weight,
@@ -851,8 +871,6 @@ export default function RecordsScreen() {
     credential.vaccines,
   ].filter(credentialFieldReady).length;
   const credentialFieldTotal = 7;
-  const credentialReadinessPercent = Math.round((credentialReadyFields / credentialFieldTotal) * 100);
-  const recordsVaultScore = Math.round(recordCoveragePercent * 0.65 + credentialReadinessPercent * 0.35);
   // Missing records for a fresh vault are setup suggestions, not emergencies:
   // keep the chip and HUD wording calm while the counts stay real.
   const recordsVaultStatus =
@@ -881,7 +899,7 @@ export default function RecordsScreen() {
       icon: "card-outline",
       eyebrow: "Dog ID",
       label: `${resolvePetName(credential.name)} credential`,
-      detail: `${credentialReadinessPercent}% ready for sitter, vet, and emergency handoff.`,
+      detail: `${credentialReadyFields} of ${credentialFieldTotal} ID fields ready for sitter, vet, and emergency handoff.`,
       actionLabel: "Share",
       tone: recordsVaultTone,
       onPress: shareCredential,
@@ -933,6 +951,54 @@ export default function RecordsScreen() {
         ]
       : []),
   ];
+
+  // Trend sections with zero logs in their own window fold into one compact
+  // Baselines Checklist row each instead of a corridor of near-identical
+  // all-zero cards. A section gets its full trend card back the moment it
+  // has real data, and every row routes to the same Log composer flow that
+  // starts that baseline. Each status states the section's real derivation
+  // window (today / 30 days / 45 days) so the zero is verifiable.
+  const openBaselineLog = (type: CareEventType) => {
+    Haptics.selectionAsync();
+    router.push(`/log?type=${type}&detail=1&intent=${Date.now()}` as never);
+  };
+  interface BaselineChecklistRow {
+    key: string;
+    icon: IoniconName;
+    label: string;
+    status: string;
+    type: CareEventType;
+  }
+  const baselineChecklistCandidates: (BaselineChecklistRow | null)[] = [
+    weightTrend.totalWeighIns === 0 && current <= 0
+      ? { key: "weight", icon: "scale-outline" as const, label: "Weight Trend", status: "No weight on file", type: "weight" as const }
+      : null,
+    moodStats.total === 0
+      ? { key: "mood", icon: "heart-circle-outline" as const, label: "Mood Trend", status: "0 check-ins in 30 days", type: "mood" as const }
+      : null,
+    waterHydration.total === 0
+      ? { key: "water", icon: "water-outline" as const, label: "Hydration", status: "0 water logs today", type: "water" as const }
+      : null,
+    walkActivity.total === 0
+      ? { key: "walk", icon: "walk-outline" as const, label: "Walk Activity", status: "0 walks today", type: "walk" as const }
+      : null,
+    trainingProgress.totalSessions === 0
+      ? { key: "training", icon: "school-outline" as const, label: "Training Progress", status: "0 sessions in 30 days", type: "training" as const }
+      : null,
+    aloneTime.totalSessions === 0
+      ? { key: "alone", icon: "home-outline" as const, label: "Alone Time", status: "0 logs in 30 days", type: "alone" as const }
+      : null,
+    groomingCare.totalSessions === 0
+      ? { key: "grooming", icon: "sparkles-outline" as const, label: "Grooming Care", status: "0 logs in 45 days", type: "grooming" as const }
+      : null,
+    pottyHealth.total === 0
+      ? { key: "potty", icon: "medical-outline" as const, label: "Potty Health", status: "0 potty logs today", type: "potty" as const }
+      : null,
+  ];
+  const baselineChecklist: BaselineChecklistRow[] =
+    baselineChecklistCandidates.filter(
+      (row): row is BaselineChecklistRow => row !== null,
+    );
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -1011,7 +1077,7 @@ export default function RecordsScreen() {
                 {[
                   { label: "Saved", value: String(recordVault.total) },
                   { label: "Vault", value: `${recordsVaultScore}%` },
-                  { label: "To set up", value: String(recordReminders.length + recordVault.missingCritical.length) },
+                  { label: "To set up", value: String(recordRemindersAll.length) },
                 ].map((item) => (
                   <View key={item.label} style={s.recordsCredentialHudCell}>
                     <Text style={[s.recordsCredentialHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>{item.label}</Text>
@@ -1275,9 +1341,58 @@ export default function RecordsScreen() {
             ) : null}
           </BoardCard>
 
+          {/* Baselines checklist - every zero-data trend section as one
+              tappable row; full cards below render only with real data. */}
+          {baselineChecklist.length > 0 ? (
+            <BoardCard style={s.recordsBoardCard}>
+              <BoardSectionHeader
+                title="Baselines Checklist"
+                accessory={
+                  <BoardPill
+                    label={`${baselineChecklist.length} to start`}
+                    tone={colors.mutedForeground}
+                  />
+                }
+              />
+              <Text style={[s.baselineIntro, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Nothing logged in these sections yet. Tap one to log its first
+                entry; each grows into a full trend card with real data.
+              </Text>
+              {baselineChecklist.map((row, index) => (
+                <Pressable
+                  key={row.key}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${row.label}. ${row.status}. Log the first entry.`}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={() => openBaselineLog(row.type)}
+                  style={({ pressed }) => [
+                    s.baselineRow,
+                    {
+                      backgroundColor: pressed ? colors.secondary : "transparent",
+                      borderTopColor: colors.border,
+                      borderTopWidth: index > 0 ? 1 : 0,
+                    },
+                  ]}
+                >
+                  <View style={[s.baselineIcon, { backgroundColor: colors.mutedForeground + "14" }]}>
+                    <Ionicons name={row.icon} size={17} color={colors.mutedForeground} />
+                  </View>
+                  <Text style={[s.baselineLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {row.label}
+                  </Text>
+                  <Text style={[s.baselineStatus, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {row.status}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+                </Pressable>
+              ))}
+            </BoardCard>
+          ) : null}
+
           {/* Weight trend - charts real weigh-ins only; with fewer than two
               logged weights it shows an honest empty state instead of a
               synthesized line, and goal math only appears once a goal is set. */}
+          {weightTrend.totalWeighIns > 0 || current > 0 ? (
           <BoardCard style={[s.recordsBoardCard, { padding: cardPad }]}>
             <BoardSectionHeader
               title="Weight Trend"
@@ -1374,8 +1489,10 @@ export default function RecordsScreen() {
               {weightTrend.nextStep}
             </Text>
           </BoardCard>
+          ) : null}
 
           {/* Mood trend */}
+          {moodStats.total > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Mood Trend"
@@ -1460,8 +1577,10 @@ export default function RecordsScreen() {
               </>
             )}
           </BoardCard>
+          ) : null}
 
           {/* Hydration */}
+          {waterHydration.total > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Hydration"
@@ -1512,8 +1631,10 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Walk activity */}
+          {walkActivity.total > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Walk Activity"
@@ -1611,8 +1732,10 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Training progress */}
+          {trainingProgress.totalSessions > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Training Progress"
@@ -1686,8 +1809,10 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Alone time */}
+          {aloneTime.totalSessions > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Alone Time"
@@ -1767,8 +1892,10 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Grooming care */}
+          {groomingCare.totalSessions > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Grooming Care"
@@ -1837,8 +1964,10 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Potty health */}
+          {pottyHealth.total > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Potty Health"
@@ -1902,6 +2031,7 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Incident lookback */}
           <BoardCard style={s.recordsBoardCard}>
@@ -3335,6 +3465,24 @@ const s = StyleSheet.create({
   medHistoryNote: { fontSize: 12.2, lineHeight: 17, marginTop: 5 },
 
   recordsBoardCard: { marginTop: 20 },
+  baselineIntro: { fontSize: 12.5, lineHeight: 18, marginBottom: 6 },
+  baselineRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  baselineIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  baselineLabel: { flex: 1, minWidth: 0, fontSize: 13.5 },
+  baselineStatus: { fontSize: 11.5 },
   carePassList: { gap: 9 },
   carePassRow: {
     flexDirection: "row",

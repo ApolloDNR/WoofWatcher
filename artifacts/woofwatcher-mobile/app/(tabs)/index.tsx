@@ -44,6 +44,7 @@ import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import {
+  getFloatingFeedbackBottomOffset,
   getFloatingTabChromeMetrics,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
@@ -53,10 +54,7 @@ import {
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import { deriveCareTwinScene } from "@/lib/avatarLifeEngine";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
-import {
-  describeCareTwinReactionForLog,
-  type CareTwinReactionToneRole,
-} from "@/lib/careTwinReactionPolicy";
+import { describeCareTwinReactionForLog } from "@/lib/careTwinReactionPolicy";
 import {
   buildHomeMissionDeck,
   type HomeMissionTone,
@@ -1172,13 +1170,6 @@ export default function HomeScreen() {
     if (tone === "navy") return colors.blueSignal;
     return colors.sage;
   };
-  const reactionToneColor = (tone: CareTwinReactionToneRole) => {
-    if (tone === "health") return colors.rose;
-    if (tone === "reward") return colors.copper;
-    if (tone === "hydration") return colors.blueSignal;
-    if (tone === "soft") return colors.sage;
-    return colors.brandNavy;
-  };
 
   const [toast, setToast] = useState<string | null>(null);
   const [quickFeedback, setQuickFeedback] = useState<{
@@ -1219,6 +1210,28 @@ export default function HomeScreen() {
     }
     prevCareLevel.current = careCareer.level;
   }, [careCareer.level, careCareer.title, colors.amber, petName]);
+  // Quick logs acknowledge through the room's own speech bubble (the charm
+  // layer) instead of stacking a dark reaction card over the dog. Feedback
+  // stays two layers total: bubble in the room + one actionable toast above
+  // the tab bar carrying XP, Undo, and Add details.
+  const [roomSpeechOverride, setRoomSpeechOverride] = useState<string | null>(
+    null,
+  );
+  const roomSpeechTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showRoomSpeech = (line: string) => {
+    setRoomSpeechOverride(line);
+    if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
+    roomSpeechTimer.current = setTimeout(
+      () => setRoomSpeechOverride(null),
+      3200,
+    );
+  };
+  useEffect(
+    () => () => {
+      if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
+    },
+    [],
+  );
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = (
@@ -1307,14 +1320,7 @@ export default function HomeScreen() {
       now: Date.now(),
     });
     updateEntry(openWalkSession.id, patch as Partial<Omit<Entry, "id">>);
-    setRoomReaction({
-      id: Date.now(),
-      icon: "walk",
-      label: "Walk completed",
-      detail: `${petName} walked ${formatDuration(patch.durationMinutes)}. Add route or notes from the saved log anytime.`,
-      tone: reactionToneColor("reward"),
-      spriteAction: "celebrate-hop",
-    });
+    showRoomSpeech("Walk completed");
     showToast(
       `Walk completed · ${formatDuration(patch.durationMinutes)} logged · +${careXpForEntry({ ...openWalkSession, details: patch.details })} care XP`,
     );
@@ -1350,14 +1356,7 @@ export default function HomeScreen() {
         title: "Walk started",
         details: entry.details,
       });
-      setRoomReaction({
-        id: Date.now(),
-        icon: reactionPlan.icon,
-        label: reactionPlan.label,
-        detail: reactionPlan.detail,
-        tone: reactionToneColor(reactionPlan.toneRole),
-        spriteAction: reactionPlan.spriteAction,
-      });
+      showRoomSpeech(reactionPlan.label);
       showToast("Walk started · care XP lands when you finish", {
         id,
         title: "Walk started",
@@ -1387,18 +1386,7 @@ export default function HomeScreen() {
       severity: entry.severity,
       details: entry.details,
     });
-    setRoomReaction({
-      id: Date.now(),
-      icon: reactionPlan.icon,
-      label: reactionPlan.label,
-      detail:
-        avatarMotion.cue === "health-watch" &&
-        reactionPlan.toneRole !== "health"
-          ? "Main Phoenix stays gentle while health context remains visible."
-          : reactionPlan.detail,
-      tone: reactionToneColor(reactionPlan.toneRole),
-      spriteAction: reactionPlan.spriteAction,
-    });
+    showRoomSpeech(reactionPlan.label);
     showToast(`${item.title} logged · +${careXpForEntry(entry)} care XP`, {
       id,
       title: item.title,
@@ -1653,7 +1641,10 @@ export default function HomeScreen() {
               <LivingPhoenixRoom
                 mood={avatarMotion.avatarMood}
                 motion={avatarMotion}
-                speech={avatarMotion.speech || SPEECH_BY_MOOD[status.mood]}
+                speech={
+                  roomSpeechOverride ??
+                  (avatarMotion.speech || SPEECH_BY_MOOD[status.mood])
+                }
                 energy={status.energy}
                 presenceLabel={presenceLabel}
                 nextLabel={
@@ -3006,7 +2997,13 @@ export default function HomeScreen() {
             {
               backgroundColor: colors.brandNavy,
               opacity: toastOpacity,
-              bottom: insets.bottom + 96,
+              // The one feedback toast anchors just above the floating tab
+              // bar through the shared chrome metric, never mid-screen.
+              bottom: getFloatingFeedbackBottomOffset({
+                platform: Platform.OS,
+                bottomInset: insets.bottom,
+                surface: "tabbed",
+              }),
             },
           ]}
         >

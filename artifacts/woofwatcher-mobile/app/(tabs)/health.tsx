@@ -452,8 +452,12 @@ export default function HealthScreen() {
                 style={[
                   s.tabPill,
                   {
-                    backgroundColor: active ? colors.brandNavy : "transparent",
-                    borderColor: active ? colors.brandNavy : "transparent",
+                    // primary/primaryForeground is the app's selected-segment
+                    // pair (Log filters, Calendar chips, Records med filters):
+                    // it stays readable in dark mode, where brandNavy matches
+                    // the navy card rail and made the active pill invisible.
+                    backgroundColor: active ? colors.primary : "transparent",
+                    borderColor: active ? colors.primary : "transparent",
                   },
                 ]}
               >
@@ -461,7 +465,7 @@ export default function HealthScreen() {
                   style={[
                     s.tabText,
                     {
-                      color: active ? colors.ivory : colors.navy,
+                      color: active ? colors.primaryForeground : colors.navy,
                       fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold",
                     },
                   ]}
