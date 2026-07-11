@@ -367,6 +367,13 @@ export default function HomeScreen() {
   }, []);
 
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  // Session-scoped reaction gate: the room only reacts to care logged in
+  // THIS session. Without the floor, a meal logged minutes before an app
+  // reload replayed "Meal logged. Tail wag." plus the eat loop on mount -
+  // reactions arrived from storage instead of being earned live. Entries
+  // already on disk when Home mounts derive the standing scene (quiet-hours
+  // sleep, routine pressure, steady) instead of a reaction state.
+  const reactionSessionFloor = useRef(now);
   const avatarMotion = useMemo(
     () =>
       deriveAvatarMotion({
@@ -375,9 +382,28 @@ export default function HomeScreen() {
         caregivers: state.caregivers,
         now,
         energy: status.energy,
+        reactionsSince: reactionSessionFloor.current,
       }),
     [state.entries, state.routines, state.caregivers, now, status.energy],
   );
+  // The heart status line and the living room must tell one story: the room
+  // scheduler can have the twin asleep (quiet hours, low energy) while the
+  // day's walk math still reads "excited" - and "Phoenix is excited." over
+  // a sleeping dog looks broken. Upbeat words defer to rest; concern moods
+  // (anxious, unwell) keep their honest care signal.
+  const restWord =
+    avatarMotion.state === "sleeping"
+      ? "snoozing"
+      : avatarMotion.state === "tired"
+        ? "resting"
+        : null;
+  const homeMoodWord =
+    restWord &&
+    (status.mood === "happy" ||
+      status.mood === "excited" ||
+      status.mood === "calm")
+      ? restWord
+      : HOME_MOOD_WORD[status.mood];
   const careIntelligence = useMemo(
     () =>
       deriveCareIntelligence({
@@ -1875,7 +1901,7 @@ export default function HomeScreen() {
               tapping opens the recommended care workflow. */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Today Command. ${petName} is ${HOME_MOOD_WORD[status.mood]}. ${glanceLine}`}
+            accessibilityLabel={`Today Command. ${petName} is ${homeMoodWord}. ${glanceLine}`}
             accessibilityHint="Opens the exact care workflow behind today's recommended action."
             hitSlop={MOBILE_INLINE_HIT_SLOP}
             onPress={() =>
@@ -1910,7 +1936,7 @@ export default function HomeScreen() {
                     { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
                   ]}
                 >
-                  {petName} is {HOME_MOOD_WORD[status.mood]}.
+                  {petName} is {homeMoodWord}.
                 </Text>
               </View>
               <Text

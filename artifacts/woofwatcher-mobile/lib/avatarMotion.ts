@@ -72,6 +72,15 @@ export interface AvatarMotionInput {
   caregivers?: readonly AvatarMotionCaregiver[];
   now?: number;
   energy?: number | null;
+  /**
+   * Session gate for reaction states: recent-entry reactions (eating,
+   * drinking, walking, treat, ...) only play for entries logged at or after
+   * this timestamp. Home passes its mount time so an app reload never
+   * replays a pre-reload log's reaction; standing derivations (health
+   * watch, quiet hours, routine pressure, energy) ignore the gate. Omit to
+   * react to any entry inside the recent-action window.
+   */
+  reactionsSince?: number;
 }
 
 export interface AvatarMotionModel {
@@ -311,7 +320,11 @@ export function deriveAvatarMotion(input: AvatarMotionInput): AvatarMotionModel 
   }
 
   const recent = latestRecentEntry(input.entries, now);
-  if (recent) {
+  const recentIsFresh =
+    recent !== null &&
+    (input.reactionsSince === undefined ||
+      new Date(recent.occurredAt).getTime() >= input.reactionsSince);
+  if (recent && recentIsFresh) {
     const recentMotion = motionForRecentEntry(recent);
     if (recentMotion) return recentMotion;
   }

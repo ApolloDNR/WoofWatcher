@@ -1244,6 +1244,10 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(home, /avatarConfig=\{avatarConfig\}/);
   assert.match(home, /deriveAvatarMotion/);
   assert.match(home, /avatarMotion\.speech/);
+  // Reactions are earned live, never replayed from storage: Home passes its
+  // session floor so a reload does not re-play a pre-reload log's reaction.
+  assert.match(home, /const reactionSessionFloor = useRef\(now\)/);
+  assert.match(home, /reactionsSince: reactionSessionFloor\.current/);
   assert.match(home, /setRoomReaction/);
   assert.match(home, /describeCareTwinReactionForLog/);
   // Quick logs acknowledge through the room's own speech bubble plus one
@@ -1555,6 +1559,19 @@ test("keeps Home room animation alive without duplicate first-screen HUD chrome"
   assert.match(room, /testID="care-twin-roaming-sprite-player"/);
   assert.match(room, /roamFlipMirrored/);
   assert.match(room, /overrideAction \?\? \(moving \? "walk-loop" : dwellAction\)/);
+  // One-way care-event lifecycle: a fresh care log plays its event loop for
+  // one short window and settles to the idle track (no eat/idle flip-flop),
+  // and it never replays from a scene derived out of stored history.
+  assert.match(room, /const CARE_EVENT_WINDOW_MS = 8000/);
+  assert.match(room, /function settledCareEventPlan/);
+  assert.match(room, /const careEventSignatureRef = useRef\(careEventSignature\)/);
+  assert.match(room, /if \(careEventActive\) return;/);
+  // Stage-rig pose swaps ride the same settle trough as the roaming rig:
+  // dip out, swap at the bottom, ease back — never a single-frame hard cut.
+  assert.match(room, /const POSE_SETTLE_OUT_MS = 70/);
+  assert.match(room, /const POSE_SETTLE_IN_MS = 110/);
+  assert.match(room, /displayedStagePose/);
+  assert.match(room, /styles\.poseSettleFade, stagePoseFadeStyle/);
   assert.match(
     room,
     /plan\.scenePhase === "idle" \|\| plan\.scenePhase === "routine"/,
@@ -1869,6 +1886,15 @@ test("keeps care intelligence wired across Home, Log, More, and the shared domai
   assert.match(log, /deriveCareIntelligence/);
   assert.match(log, /Care IQ/);
   assert.match(log, /careIntelligence\.status/);
+  // /log tells the same zero-state story as Home: the console HUD, the
+  // signal card, and the composer trust rail all read "--" with the
+  // first-log promise instead of a fabricated "0%".
+  assert.match(
+    log,
+    /careIntelligence\.visibleLogCount === 0 \? "--" : `\$\{careIntelligence\.score\}%`/,
+  );
+  assert.match(log, /"-- Care IQ"/);
+  assert.match(log, /starts with first log/);
   assert.match(more, /deriveCareIntelligence/);
   assert.match(more, /Care Intelligence/);
   assert.match(more, /careIntelligence\.metrics/);
@@ -1896,6 +1922,60 @@ test("keeps care intelligence wired across Home, Log, More, and the shared domai
   assertStyleUsesSharedTouchTarget(home, "questNextAction");
 });
 
+test("keeps Health Watch and the Quick Care Console honest at zero data and at night", () => {
+  const health = readAppFile(join("(tabs)", "health.tsx"));
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+
+  // A fresh profile must never read "94 / Stable right now / You're on a
+  // roll": with no entries in the scoring window the score is "--" and the
+  // copy makes the first-log promise (non-diagnostic, no fabricated result).
+  assert.match(health, /const hasHealthSignalData = state\.entries\.some/);
+  assert.match(health, /const scoreDisplay = hasHealthSignalData \? String\(score\) : "--";/);
+  assert.match(health, /\{scoreDisplay\}/);
+  assert.match(health, /Health Watch starts with your first log\./);
+  // The signal rows ("Active daily", "Eating well") are observations, so
+  // they also fall back to the first-log promise before any log exists.
+  assert.match(health, /displayHealthRows\.slice\(0, 4\)/);
+
+  // The decorative "Under 5 sec" speed pill is removed at every width, not
+  // just under 360px.
+  assert.doesNotMatch(log, /Under 5 sec/);
+
+  // The Quick Care Console day banner follows Home's clock rule (dark theme
+  // or lamplit hours) with a navy tint instead of staying frozen in daylight.
+  assert.match(log, /const logCommandStageIsNight =/);
+  assert.match(log, /homeImmersiveRoomIsNight\(new Date\(now\)\.getHours\(\)\)/);
+  assert.match(log, /logCommandStageIsNight \? \{ backgroundColor: "rgba\(9,17,32,0\.35\)" \} : null/);
+});
+
+test("web notices and confirms use the themed dialog host, not raw window.alert chrome", () => {
+  const dialogLib = readMobileLibFile("confirmDialog.ts");
+  const host = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "WebDialogHost.tsx"),
+    "utf8",
+  );
+  const layout = readAppFile("_layout.tsx");
+
+  // notifyDialog and confirmThroughSteps route web requests through the
+  // registered host; window.alert/confirm survive only as a no-host fallback
+  // so nothing silently no-ops in tests or very early calls.
+  assert.match(dialogLib, /registerWebDialogPresenter/);
+  assert.match(dialogLib, /if \(webDialogPresenter\)/);
+  assert.match(dialogLib, /cancelLabel: null/);
+  assert.match(dialogLib, /onConfirm: \(\) => confirmThroughSteps\(rest, onConfirmed\)/);
+
+  // The host is themed (board card + palette tokens), accessible, and queued
+  // so chained confirm steps are never lost.
+  assert.match(host, /registerWebDialogPresenter\(/);
+  assert.match(host, /useColors\(\)/);
+  assert.match(host, /accessibilityRole="alert"/);
+  assert.match(host, /setQueue\(\(current\) => \[\.\.\.current, request\]\)/);
+  assert.match(host, /current\.cancelLabel != null/);
+
+  // Mounted once inside the web frame so dialogs overlay the app shell.
+  assert.match(layout, /<WebDialogHost \/>/);
+});
+
 test("renders Today Command on Home as a real care workflow control", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 
@@ -1904,7 +1984,7 @@ test("renders Today Command on Home as a real care workflow control", () => {
   assert.match(home, /Today Command/);
   assert.match(
     home,
-    /accessibilityLabel=\{`Today Command\. \$\{petName\} is \$\{HOME_MOOD_WORD\[status\.mood\]\}\. \$\{glanceLine\}`\}/,
+    /accessibilityLabel=\{`Today Command\. \$\{petName\} is \$\{homeMoodWord\}\. \$\{glanceLine\}`\}/,
   );
   assert.match(
     home,
@@ -1914,6 +1994,12 @@ test("renders Today Command on Home as a real care workflow control", () => {
     home,
     /router\.push\(todayCommand\.primaryAction\.route as never\)/,
   );
+  // The heart line must tell the same story as the room animation: when the
+  // motion scheduler has the twin asleep or winding down, the upbeat mood
+  // words defer to a rest word instead of "excited" over a sleeping dog.
+  assert.match(home, /const homeMoodWord =/);
+  assert.match(home, /avatarMotion\.state === "sleeping"[\s\S]*?"snoozing"/);
+  assert.match(home, /avatarMotion\.state === "tired"[\s\S]*?"resting"/);
   assert.match(home, /HOME_MOOD_WORD\[status\.mood\]/);
   assert.match(home, /const glanceLine = useMemo/);
   assertStyleUsesSharedTouchTarget(home, "moodCard");

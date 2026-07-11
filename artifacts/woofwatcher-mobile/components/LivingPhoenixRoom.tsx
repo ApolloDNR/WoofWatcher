@@ -41,6 +41,7 @@ import {
 import {
   CARE_TWIN_SPRITE_MANIFEST,
   deriveCareTwinScene,
+  type AvatarLifePlan,
   type AvatarRoomZone,
   type CareTwinHudTone,
   type CareTwinSpriteAction,
@@ -291,6 +292,39 @@ function stepAmbient(value: number): number {
   return Math.round(value * AMBIENT_STEPS) / AMBIENT_STEPS;
 }
 
+/**
+ * How long a care-event scene (a fresh meal/water/treat/walk log deriving a
+ * "care-action" or "celebration" plan) owns the stage before the twin
+ * settles back onto the idle track. Without this window the event loop was
+ * pinned for the whole 45-minute recent-entry derivation window while the
+ * ambient scheduler kept interleaving idle strips over it — the post-meal
+ * eat/wag flip-flop (a hard swap every ~1s, 21 in 24s, never settling).
+ */
+const CARE_EVENT_WINDOW_MS = 8000;
+
+// Pose swaps on BOTH twin rigs (anchored stage and roaming) ride through a
+// brief opacity settle (dip out, swap at the trough, ease back) so a
+// behavior change reads as a beat instead of a hard sprite cut.
+const POSE_SETTLE_OUT_MS = 70;
+const POSE_SETTLE_IN_MS = 110;
+
+/**
+ * The settled shape of a care-event plan: same zone, copy, and care cues
+ * (the meal-outcome prompt stays honest), but the motion rests on the calm
+ * idle track until a NEW event re-opens the window.
+ */
+function settledCareEventPlan(plan: AvatarLifePlan): AvatarLifePlan {
+  return {
+    ...plan,
+    animation: "idle",
+    spriteAction: "tail-wag",
+    spriteTrack: CARE_TWIN_SPRITE_MANIFEST["tail-wag"],
+    breathLift: 5,
+    breathScale: 0.018,
+    paceMs: 2800,
+  };
+}
+
 export function LivingPhoenixRoom({
   mood,
   motion,
@@ -313,7 +347,55 @@ export function LivingPhoenixRoom({
 }: Props) {
   const colors = useColors();
   const theme = MOOD_THEME[mood];
-  const plan = useMemo(() => deriveCareTwinScene(motion), [motion]);
+  const scenePlan = useMemo(() => deriveCareTwinScene(motion), [motion]);
+
+  // --- One-way care-event lifecycle ---------------------------------------
+  // A care-event scene (eat/drink/celebrate/walk from a fresh log) plays its
+  // loop for one short reaction window and then settles to the idle track
+  // until a NEW event. The transition is one-way per event: the signature
+  // ref only re-opens the window when the derived event actually changes,
+  // and it initializes to the mount-time signature so a scene derived from
+  // stored history (an app reload minutes after a meal) never replays.
+  // An open walk session is a live activity, not a past event, so the away
+  // scene keeps walking for as long as the session runs.
+  const careEventSignature =
+    !awayOnWalk &&
+    (scenePlan.scenePhase === "care-action" ||
+      scenePlan.scenePhase === "celebration")
+      ? `${scenePlan.scenePhase}:${scenePlan.spriteAction}`
+      : null;
+  const [careEventSettled, setCareEventSettled] = useState(true);
+  const careEventSignatureRef = useRef(careEventSignature);
+  const careEventTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (careEventSignature === careEventSignatureRef.current) return;
+    careEventSignatureRef.current = careEventSignature;
+    if (careEventTimer.current) clearTimeout(careEventTimer.current);
+    if (!careEventSignature) {
+      setCareEventSettled(true);
+      return;
+    }
+    setCareEventSettled(false);
+    careEventTimer.current = setTimeout(
+      () => setCareEventSettled(true),
+      CARE_EVENT_WINDOW_MS,
+    );
+  }, [careEventSignature]);
+  useEffect(
+    () => () => {
+      if (careEventTimer.current) clearTimeout(careEventTimer.current);
+    },
+    [],
+  );
+  const careEventActive = Boolean(careEventSignature) && !careEventSettled;
+  const plan = useMemo(
+    () =>
+      careEventSignature && careEventSettled
+        ? settledCareEventPlan(scenePlan)
+        : scenePlan,
+    [careEventSettled, careEventSignature, scenePlan],
+  );
+
   const choreography = useMemo(() => deriveCareTwinChoreography(plan), [plan]);
   const isStudio = presentation === "studio";
   const compactChrome = chromeDensity === "compact";
@@ -334,14 +416,63 @@ export function LivingPhoenixRoom({
   // (no full-screen backdrop) pin the twin to a calm tail wag.
   const stageSpriteAction: CareTwinSpriteAction =
     compactChrome && !transparentScene ? "tail-wag" : activeSpriteAction;
+
+  // Stage pose settle: anchored-rig sprite swaps ride the same short
+  // opacity trough the roaming rig uses — dip out, swap the strip (and the
+  // restart key) at the bottom of the dip, ease back in — so a post-meal
+  // eat-to-idle handoff or a night sleep-to-eat wake-up reads as the dog
+  // settling into the next beat instead of a single-frame hard cut. The
+  // whole visual stack (sprite, accessory layers, zone pin) derives from
+  // the displayed pose, so position re-pins land in lockstep with the swap
+  // at the trough; only the pose stack fades — the ground shadow stays
+  // planted so the beat reads as settling, not blinking.
+  const stageReactionKey = activeReaction?.spriteAction
+    ? `${activeReaction.id}-${activeReaction.spriteAction}`
+    : null;
+  const [displayedStagePose, setDisplayedStagePose] = useState<{
+    action: CareTwinSpriteAction;
+    reactionKey: string | null;
+  }>({ action: stageSpriteAction, reactionKey: stageReactionKey });
+  const stagePoseOpacity = useSharedValue(1);
+  const stagePoseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (
+      displayedStagePose.action === stageSpriteAction &&
+      displayedStagePose.reactionKey === stageReactionKey
+    ) {
+      stagePoseOpacity.value = withTiming(1, {
+        duration: POSE_SETTLE_IN_MS,
+        easing: Easing.out(Easing.quad),
+      });
+      return;
+    }
+    stagePoseOpacity.value = withTiming(0, {
+      duration: POSE_SETTLE_OUT_MS,
+      easing: Easing.in(Easing.quad),
+    });
+    stagePoseTimer.current = setTimeout(() => {
+      setDisplayedStagePose({
+        action: stageSpriteAction,
+        reactionKey: stageReactionKey,
+      });
+    }, POSE_SETTLE_OUT_MS);
+    return () => {
+      if (stagePoseTimer.current) clearTimeout(stagePoseTimer.current);
+    };
+  }, [displayedStagePose, stagePoseOpacity, stageReactionKey, stageSpriteAction]);
+  const stagePoseAction = displayedStagePose.action;
+  const stagePoseFadeStyle = useAnimatedStyle(() => ({
+    opacity: stagePoseOpacity.value,
+  }));
+
   const shouldUseAvatarRuntime =
     Boolean(avatarConfig) && (!compactChrome || transparentScene);
   const avatarRoomRuntime = useMemo(
     () =>
       shouldUseAvatarRuntime && avatarConfig
-        ? deriveAvatarRoomRuntime(avatarConfig, stageSpriteAction)
+        ? deriveAvatarRoomRuntime(avatarConfig, stagePoseAction)
         : null,
-    [avatarConfig, shouldUseAvatarRuntime, stageSpriteAction],
+    [avatarConfig, shouldUseAvatarRuntime, stagePoseAction],
   );
   const avatarAccessoryCount = avatarRoomRuntime?.activeSlots.length ?? 0;
   const roomLiveTitle = isStudio ? "STUDIO RIG" : "PHOENIX TWIN";
@@ -353,7 +484,7 @@ export function LivingPhoenixRoom({
   const activeZoneKey =
     compactChrome && !transparentScene
       ? "rug"
-      : zoneForSpriteAction(stageSpriteAction, plan.zone);
+      : zoneForSpriteAction(stagePoseAction, plan.zone);
   const zone = ROOM_ZONES[activeZoneKey];
   const focusSpot = FOCUS_SPOTS[activeZoneKey];
   const spriteZone = SPRITE_STAGE_ZONES[activeZoneKey];
@@ -365,20 +496,20 @@ export function LivingPhoenixRoom({
   const spriteAsset = useMemo(
     () =>
       avatarRoomRuntime?.spriteAsset ??
-      getCareTwinSpriteAsset(stageSpriteAction),
-    [avatarRoomRuntime?.spriteAsset, stageSpriteAction],
+      getCareTwinSpriteAsset(stagePoseAction),
+    [avatarRoomRuntime?.spriteAsset, stagePoseAction],
   );
   const roomLayer = useMemo(
-    () => getCareTwinRoomLayer(mood, stageSpriteAction),
-    [mood, stageSpriteAction],
+    () => getCareTwinRoomLayer(mood, stagePoseAction),
+    [mood, stagePoseAction],
   );
   const layerReadiness = useMemo(
-    () => getCareTwinLayerReadiness(stageSpriteAction, mood),
-    [mood, stageSpriteAction],
+    () => getCareTwinLayerReadiness(stagePoseAction, mood),
+    [mood, stagePoseAction],
   );
   const activeSpriteTrack =
     avatarRoomRuntime?.spriteTrack ??
-    CARE_TWIN_SPRITE_MANIFEST[stageSpriteAction] ??
+    CARE_TWIN_SPRITE_MANIFEST[stagePoseAction] ??
     plan.spriteTrack;
   // Accessory art is fitted to the template sprite-pack geometry; over the
   // Phoenix action strips it lands at the wrong scale, so it only renders
@@ -387,7 +518,7 @@ export function LivingPhoenixRoom({
     avatarRoomRuntime?.spriteMode === "template-idle-walk-pack";
   const activeSpriteAsset =
     avatarRoomRuntime?.spriteAsset ??
-    getCareTwinSpriteAsset(stageSpriteAction) ??
+    getCareTwinSpriteAsset(stagePoseAction) ??
     spriteAsset;
   const layeredStageReady =
     (!compactChrome || transparentScene) &&
@@ -438,8 +569,8 @@ export function LivingPhoenixRoom({
     ],
   );
   const motionRecipe = useMemo(
-    () => motionRecipeForSpriteAction(stageSpriteAction),
-    [stageSpriteAction],
+    () => motionRecipeForSpriteAction(stagePoseAction),
+    [stagePoseAction],
   );
 
   // Roam mode: on the immersive Home stage the twin physically walks the
@@ -588,6 +719,10 @@ export function LivingPhoenixRoom({
     if (ambientTimer.current) clearTimeout(ambientTimer.current);
     setAmbientSpriteAction(null);
     if (!choreography.ambient.length || plan.scenePhase === "rest") return;
+    // A live care-event beat owns the stage: ambient micro-loops hold until
+    // the event settles so eat/drink/celebrate plays unbroken instead of
+    // flip-flopping against idle strips every scheduler tick.
+    if (careEventActive) return;
 
     const shortestCadence = choreography.ambientCadenceMs ?? 2600;
     const id = setInterval(
@@ -615,6 +750,7 @@ export function LivingPhoenixRoom({
     };
   }, [
     activeReaction,
+    careEventActive,
     choreography.ambient,
     choreography.ambientCadenceMs,
     plan.scenePhase,
@@ -913,56 +1049,57 @@ export function LivingPhoenixRoom({
               spriteShadowStyle,
             ]}
           />
-          {showStageAccessoryLayers
-            ? avatarRoomRuntime?.underlayLayers.map((layer) =>
-                layer.source ? (
-                  <Animated.Image
-                    key={`avatar-underlay-${layer.id}`}
-                    source={layer.source}
-                    resizeMode="contain"
-                    style={[
-                      styles.avatarAccessoryLayer,
-                      styles.avatarAccessoryUnderlay,
-                      pixelImageStyle,
-                    ]}
-                    testID={`care-twin-avatar-underlay-${layer.id}`}
-                  />
-                ) : null,
-              )
-            : null}
-          <SpriteSheetPlayer
-            key={
-              activeReaction?.spriteAction
-                ? `${activeReaction.id}-${activeReaction.spriteAction}`
-                : activeSpriteTrack.key
-            }
-            asset={activeSpriteAsset}
-            height={activeSpriteZone.height}
-            testID={
-              avatarRoomRuntime?.spriteMode === "template-idle-walk-pack"
-                ? "care-twin-template-sprite-player"
-                : "care-twin-sprite-player"
-            }
-            track={activeSpriteTrack}
-            width={activeSpriteZone.width}
-          />
-          {showStageAccessoryLayers
-            ? avatarRoomRuntime?.overlayLayers.map((layer) =>
-                layer.source ? (
-                  <Animated.Image
-                    key={`avatar-overlay-${layer.id}`}
-                    source={layer.source}
-                    resizeMode="contain"
-                    style={[
-                      styles.avatarAccessoryLayer,
-                      styles.avatarAccessoryOverlay,
-                      pixelImageStyle,
-                    ]}
-                    testID={`care-twin-avatar-overlay-${layer.id}`}
-                  />
-                ) : null,
-              )
-            : null}
+          {/* The settle dip wraps the pose stack only — the ground shadow
+              above stays put so a swap reads as the dog settling into the
+              next beat, not blinking out of the room. */}
+          <Animated.View style={[styles.poseSettleFade, stagePoseFadeStyle]}>
+            {showStageAccessoryLayers
+              ? avatarRoomRuntime?.underlayLayers.map((layer) =>
+                  layer.source ? (
+                    <Animated.Image
+                      key={`avatar-underlay-${layer.id}`}
+                      source={layer.source}
+                      resizeMode="contain"
+                      style={[
+                        styles.avatarAccessoryLayer,
+                        styles.avatarAccessoryUnderlay,
+                        pixelImageStyle,
+                      ]}
+                      testID={`care-twin-avatar-underlay-${layer.id}`}
+                    />
+                  ) : null,
+                )
+              : null}
+            <SpriteSheetPlayer
+              key={displayedStagePose.reactionKey ?? activeSpriteTrack.key}
+              asset={activeSpriteAsset}
+              height={activeSpriteZone.height}
+              testID={
+                avatarRoomRuntime?.spriteMode === "template-idle-walk-pack"
+                  ? "care-twin-template-sprite-player"
+                  : "care-twin-sprite-player"
+              }
+              track={activeSpriteTrack}
+              width={activeSpriteZone.width}
+            />
+            {showStageAccessoryLayers
+              ? avatarRoomRuntime?.overlayLayers.map((layer) =>
+                  layer.source ? (
+                    <Animated.Image
+                      key={`avatar-overlay-${layer.id}`}
+                      source={layer.source}
+                      resizeMode="contain"
+                      style={[
+                        styles.avatarAccessoryLayer,
+                        styles.avatarAccessoryOverlay,
+                        pixelImageStyle,
+                      ]}
+                      testID={`care-twin-avatar-overlay-${layer.id}`}
+                    />
+                  ) : null,
+                )
+              : null}
+          </Animated.View>
         </Animated.View>
       ) : null}
 
@@ -1363,11 +1500,6 @@ export function LivingPhoenixRoom({
 
 const ROAM_RIG_SIZE = 150;
 const ROAM_BOB_MS = 340;
-// Pose swaps ride through a brief opacity settle (dip out, swap at the
-// trough, ease back) so a behavior change reads as a beat instead of a
-// hard sprite cut mid-walk.
-const ROAM_POSE_SETTLE_OUT_MS = 70;
-const ROAM_POSE_SETTLE_IN_MS = 110;
 
 /**
  * Duration for a non-walk position correction (plan re-anchor, dwell pin):
@@ -1572,19 +1704,19 @@ function RoamingTwinRig({
   useEffect(() => {
     if (activeAction === displayedAction) {
       poseOpacity.value = withTiming(1, {
-        duration: ROAM_POSE_SETTLE_IN_MS,
+        duration: POSE_SETTLE_IN_MS,
         easing: Easing.out(Easing.quad),
       });
       return;
     }
     poseOpacity.value = withTiming(0, {
-      duration: ROAM_POSE_SETTLE_OUT_MS,
+      duration: POSE_SETTLE_OUT_MS,
       easing: Easing.in(Easing.quad),
     });
     settleTimer.current = setTimeout(() => {
       setDisplayedAction(activeAction);
       setFacing(facingTarget.current);
-    }, ROAM_POSE_SETTLE_OUT_MS);
+    }, POSE_SETTLE_OUT_MS);
     return () => {
       if (settleTimer.current) clearTimeout(settleTimer.current);
     };
@@ -1656,7 +1788,7 @@ function RoamingTwinRig({
       >
         {/* The settle dip wraps the pose stack only - the ground shadow
             stays put so the beat reads as the dog settling, not blinking. */}
-        <Animated.View style={[styles.roamPoseFade, poseFadeStyle]}>
+        <Animated.View style={[styles.poseSettleFade, poseFadeStyle]}>
           {showAccessoryLayers
             ? runtime?.underlayLayers.map((layer) =>
                 layer.source ? (
@@ -1802,7 +1934,7 @@ const styles = StyleSheet.create({
   roamFlipMirrored: {
     transform: [{ scaleX: -1 }],
   },
-  roamPoseFade: {
+  poseSettleFade: {
     width: "100%",
     height: "100%",
     alignItems: "center",
