@@ -383,7 +383,7 @@ function queueDetail(total: number, labels: readonly string[]): string {
 }
 
 function reviewStatusLabel(status: AttachmentManifestStatus): string {
-  if (status === "provider-required") return "Waiting for storage rules";
+  if (status === "provider-required") return "On this device";
   if (status === "upload-ready") return "Ready for provider upload";
   if (status === "synced") return "Provider saved";
   return "No files waiting";
@@ -408,7 +408,7 @@ function reviewDetail(kind: AttachmentManifestKind, count: number, status: Attac
     return `${files} of ${label} are saved with the provider. Keep them included in owner export and deletion audit trails.`;
   }
 
-  return `${files} of ${label} stay local until storage, signed access, retention, export, and deletion rules are approved.`;
+  return `${files} of ${label} ${count === 1 ? "stays" : "stay"} on this device for now - cloud storage isn't available yet.`;
 }
 
 function plural(value: number, singular: string, pluralLabel = `${singular}s`): string {
@@ -456,7 +456,7 @@ export function deriveAttachmentManifest(
 export function formatAttachmentManifestSummary(manifest: AttachmentManifest): string {
   if (manifest.total === 0) return "No local files are waiting for storage.";
   if (manifest.status === "provider-required") {
-    return `${fileLabel(manifest.localOnly)} waiting for approved storage rules.`;
+    return `${fileLabel(manifest.localOnly)} ${manifest.localOnly === 1 ? "stays" : "stay"} on this device for now - cloud storage isn't available yet.`;
   }
   if (manifest.status === "upload-ready") {
     return `${fileLabel(manifest.uploadReady)} ready for provider upload.`;

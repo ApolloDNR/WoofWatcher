@@ -70,6 +70,122 @@ test("keeps Adventure Mode private and calm when no outings are logged", () => {
   assert.equal(adventure.privacyBoundary, "Adventure memories are private to the household unless an owner shares them.");
 });
 
+test("credits a completed under-threshold walk as near-miss progress and unlocks the memory quest", () => {
+  const adventure = deriveAdventureMode({
+    now: NOW,
+    petName: "Phoenix",
+    entries: [
+      {
+        id: "walk_short",
+        type: "walk",
+        title: "Walk - Completed",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-11T09:00:00-07:00",
+        durationMinutes: 9,
+        details: { householdVisible: true, walkLifecycle: "completed" },
+      },
+    ],
+    memories: [],
+  });
+
+  // XP semantics unchanged: 9 real minutes earn 9 XP, credited at completion.
+  assert.equal(adventure.todayXp, 9);
+  assert.equal(adventure.completedProof.length, 1);
+  assert.equal(adventure.completedProof[0].xp, 9);
+  assert.equal(adventure.status, "quest-ready");
+
+  // The 10-minute bar does not move, but the finished walk is acknowledged.
+  const walkQuest = adventure.quests.find((quest) => quest.id === "sniffari-walk");
+  assert.equal(walkQuest?.status, "available");
+  assert.match(walkQuest?.evidence ?? "", /9 of 10 min walked today - so close!/);
+  assert.doesNotMatch(walkQuest?.evidence ?? "", /No walk adventure is logged yet/);
+
+  // Any completed real outing (walk, training, or play) unlocks the memory quest.
+  const memoryQuest = adventure.quests.find((quest) => quest.id === "memory-photo");
+  assert.equal(memoryQuest?.status, "available");
+  assert.match(memoryQuest?.evidence ?? "", /ready to save/);
+  assert.equal(adventure.quests[0].id, "memory-photo");
+  assert.match(adventure.nextStep, /Save a private memory/);
+});
+
+test("keeps near-miss walk copy honest for much shorter completed walks", () => {
+  const adventure = deriveAdventureMode({
+    now: NOW,
+    petName: "Phoenix",
+    entries: [
+      {
+        id: "walk_tiny",
+        type: "walk",
+        title: "Walk - Completed",
+        occurredAt: "2026-06-11T09:00:00-07:00",
+        durationMinutes: 4,
+        details: { householdVisible: true, walkLifecycle: "completed" },
+      },
+    ],
+    memories: [],
+  });
+
+  const walkQuest = adventure.quests.find((quest) => quest.id === "sniffari-walk");
+  assert.equal(walkQuest?.status, "available");
+  assert.match(walkQuest?.evidence ?? "", /4 of 10 min walked today\./);
+  assert.doesNotMatch(walkQuest?.evidence ?? "", /so close/);
+  const memoryQuest = adventure.quests.find((quest) => quest.id === "memory-photo");
+  assert.equal(memoryQuest?.status, "available");
+});
+
+test("keeps XP and the memory quest gated on walk completion", () => {
+  const adventure = deriveAdventureMode({
+    now: NOW,
+    petName: "Phoenix",
+    entries: [
+      {
+        id: "walk_open",
+        type: "walk",
+        title: "Walk - In progress",
+        occurredAt: "2026-06-11T16:50:00-07:00",
+        durationMinutes: 0,
+        details: { householdVisible: true, walkLifecycle: "in-progress" },
+      },
+    ],
+    memories: [],
+  });
+
+  // Walk XP lands only at completion; an open session earns nothing yet.
+  assert.equal(adventure.todayXp, 0);
+  assert.equal(adventure.status, "needs-outing");
+  const walkQuest = adventure.quests.find((quest) => quest.id === "sniffari-walk");
+  assert.match(walkQuest?.evidence ?? "", /No walk adventure is logged yet/);
+  const memoryQuest = adventure.quests.find((quest) => quest.id === "memory-photo");
+  assert.equal(memoryQuest?.status, "locked");
+  assert.match(memoryQuest?.evidence ?? "", /Complete a care outing first/);
+  assert.match(adventure.nextStep, /Start with a calm 10-20 minute walk/);
+});
+
+test("does not point at the locked memory quest when XP came without an outing", () => {
+  const adventure = deriveAdventureMode({
+    now: NOW,
+    petName: "Phoenix",
+    entries: [
+      {
+        id: "alone_1",
+        type: "alone",
+        title: "Alone time",
+        occurredAt: "2026-06-11T12:00:00-07:00",
+        durationMinutes: 45,
+        details: { householdVisible: true },
+      },
+    ],
+    memories: [],
+  });
+
+  // Alone time earns real XP but is not a care outing.
+  assert.equal(adventure.todayXp, 8);
+  assert.equal(adventure.status, "quest-ready");
+  const memoryQuest = adventure.quests.find((quest) => quest.id === "memory-photo");
+  assert.equal(memoryQuest?.status, "locked");
+  assert.match(adventure.nextStep, /Start with a calm 10-20 minute walk/);
+});
+
 test("builds a local Adventure memory draft without claiming cloud media storage", () => {
   const memory = buildAdventureMemoryDraft({
     petName: "Phoenix",

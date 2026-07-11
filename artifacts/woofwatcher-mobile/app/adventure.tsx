@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   ImageBackground,
@@ -178,7 +178,7 @@ export default function AdventureScreen() {
         ...(doc.adventureMemories ?? []),
       ],
     }));
-    notifyDialog("Memory saved", "Saved as a local private household memory. Cloud photo storage is still provider-gated.");
+    notifyDialog("Memory saved", "Saved as a private household memory on this device. Cloud photo backup isn't available yet.");
   };
 
   const startQuest = (quest: AdventureQuest, proofEntryId: string | null) => {
@@ -271,7 +271,7 @@ export default function AdventureScreen() {
       `Care XP: +${memory.xp}`,
       "",
       `Storage: ${memory.storageStatus}. Media: ${memory.mediaStatus}.`,
-      "Photos and provider sync stay private/local until storage rules are approved.",
+      "Photos and memories stay private on this device - cloud backup isn't available yet.",
     ].join("\n");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     void shareTextPayload({ message, title: `WoofWatcher Memory - ${memory.petName}` });
@@ -279,6 +279,10 @@ export default function AdventureScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
+      {/* The hero owns the header row (back chevron left, Private RPG badge
+          right), so the navigator's duplicate "Adventure Mode" title bar is
+          hidden and the hero title stays the single primary title. */}
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 20, paddingBottom: bottomPadding }}
@@ -577,7 +581,7 @@ export default function AdventureScreen() {
           />
           {adventure.memories.length === 0 ? (
             <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              Saved adventure memories will appear here. Photos remain local/provider-gated until storage rules are approved.
+              Saved adventure memories will appear here. Photos stay on this device for now - cloud backup isn't available yet.
             </Text>
           ) : (
             <View style={s.memoryList}>
@@ -727,12 +731,15 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(255,249,239,0.94)",
     transform: [{ rotate: "-45deg" }],
   },
+  // The walking sprite stays under heroCopy (zIndex 5) and levelRow (zIndex 6),
+  // and its bottom edge sits above the Level/XP tile band (tiles top out around
+  // 72 from the hero bottom), so paws never dangle over the stat tiles.
   heroSpriteStage: {
     position: "absolute",
     right: -6,
-    bottom: 54,
+    bottom: 88,
     width: 190,
-    height: 190,
+    height: 172,
     zIndex: 4,
     alignItems: "center",
     justifyContent: "flex-end",

@@ -447,7 +447,7 @@ export default function MoreScreen() {
         status: "healthy",
         title: "Saved on this device",
         message: "Every care log is stored in this device's local care record. Nothing is waiting.",
-        nextStep: "Household sync stays off until an account provider is enabled for this build.",
+        nextStep: "Household sync is coming soon - every care log stays on this device for now.",
         actionLabel: "Refresh",
         metrics: [
           {
@@ -1491,7 +1491,7 @@ export default function MoreScreen() {
           <BoardRouteHeader
             kicker="WOOFWATCHER"
             title="More"
-            subtitle={`${petName}'s care tools, records, household, and launch gates.`}
+            subtitle={`${petName}'s care tools, records, household, and settings.`}
             centered
             plain
             style={s.moreRouteHeader}
@@ -1839,7 +1839,7 @@ export default function MoreScreen() {
               {[
                 { label: "Live", value: careTwinRoster.liveCount, tone: colors.sage },
                 { label: "Future", value: careTwinRoster.futureCount, tone: colors.copper },
-                { label: "Gated", value: careTwinRoster.providerGatedCount, tone: colors.amber },
+                { label: "Locked", value: careTwinRoster.providerGatedCount, tone: colors.amber },
               ].map((metric) => (
                 <View key={metric.label} style={[s.rosterMetric, { backgroundColor: metric.tone + "12", borderColor: metric.tone + "26" }]}>
                   <Text style={[s.rosterMetricValue, { color: metric.tone, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
@@ -1897,8 +1897,8 @@ export default function MoreScreen() {
                     onPress={() => {
                       Haptics.selectionAsync();
                       notifyDialog(
-                        "Multi-dog switching is staged",
-                        "This dog is saved as a planned CareTwin slot. Separate logs, routines, records, and reports need provider-backed multi-dog care documents before switching is enabled.",
+                        "Multi-dog switching is coming soon",
+                        "This dog is saved as a planned slot. Separate logs, routines, records, and reports aren't ready yet - for now everything stays with your current dog on this device.",
                       );
                     }}
                     accessibilityRole="button"
@@ -3165,7 +3165,7 @@ export default function MoreScreen() {
                     if (!isClerkConfigured) {
                       notifyDialog(
                         "Saved on this device",
-                        "Everything is saved on this device. Household sync turns on once an account provider is enabled for this build.",
+                        "Everything is saved on this device. Household sync is coming soon - nothing is waiting to upload.",
                       );
                       return;
                     }
@@ -3477,7 +3477,7 @@ export default function MoreScreen() {
               <View style={s.modalHandle} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Add future dog</Text>
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                This stages a CareTwin slot only. Separate logs, routines, and records stay locked until multi-dog storage is approved.
+                This saves a planned slot for a future dog. Multi-dog logs, routines, and records are coming soon - everything stays on this device for now.
               </Text>
 
               <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NAME</Text>
@@ -3518,7 +3518,7 @@ export default function MoreScreen() {
               <View style={s.modalHandle} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Create Access Pass</Text>
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Stage temporary helper permissions locally. Remote access stays locked until provider-backed sharing is approved.
+                Save helper permissions as a local draft. Remote sharing is coming soon - passes stay on this device for now.
               </Text>
 
               <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>HELPER NAME</Text>

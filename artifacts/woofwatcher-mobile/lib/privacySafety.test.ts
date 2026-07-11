@@ -143,7 +143,7 @@ test("builds an owner export bundle with counts and care data", () => {
     bundle.storage.attachmentReviewRows.map((row) => row.label),
     ["Record documents", "Care Pass reports"],
   );
-  assert.equal(bundle.storage.attachmentReviewRows[0]?.statusLabel, "Waiting for storage rules");
+  assert.equal(bundle.storage.attachmentReviewRows[0]?.statusLabel, "On this device");
   assert.equal(bundle.care.profile?.name, "Phoenix");
   assert.equal(bundle.care.activePetId, "primary");
   assert.equal(bundle.care.pets[0]?.name, "London");
@@ -156,7 +156,7 @@ test("builds an owner export bundle with counts and care data", () => {
   assert.equal(bundle.care.entries[0]?.id, "meal_1");
   assert.deepEqual(bundle.care.reportArtifacts[0], state.reportArtifacts[0]);
   assert.match(bundle.disclosures.ai, /not a veterinary diagnosis/i);
-  assert.match(bundle.disclosures.documents, /2 local files waiting/i);
+  assert.match(bundle.disclosures.documents, /2 local files stay on this device/i);
 });
 
 test("uses saved structured storage proof for owner export attachment queue", () => {
@@ -247,7 +247,7 @@ test("derives launch safety plan before storage, deletion, AI, and payments are 
   assert.equal(plan.accountDeletion.status, "manual_required");
   assert.equal(plan.aiDisclosure.status, "limited");
   assert.equal(plan.documentStorage.status, "blocked");
-  assert.match(plan.documentStorage.detail, /2 local files waiting/i);
+  assert.match(plan.documentStorage.detail, /2 local files stay on this device/i);
   assert.equal(plan.payments.status, "blocked");
   assert.ok(plan.launchBlockers.some((blocker) => /account deletion/i.test(blocker)));
   assert.ok(plan.launchBlockers.some((blocker) => /document storage/i.test(blocker)));
@@ -361,5 +361,5 @@ test("uses saved structured storage proof in deletion request attachment summary
   );
 
   assert.match(request.body, /2 local files ready for provider upload/);
-  assert.doesNotMatch(request.body, /2 local files waiting/);
+  assert.doesNotMatch(request.body, /2 local files stay on this device/);
 });

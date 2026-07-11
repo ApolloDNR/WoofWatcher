@@ -116,7 +116,10 @@ test("builds one local attachment queue across proof, records, memories, reports
     ["Heartgard", "Rabies Certificate", "Wildflower Trail", "Vet Care Pass", "ios-home.png"],
   );
   assert.match(manifest.launchQueue.detail, /care-log proof, record document, adventure memory, report artifact, qa screenshot/i);
-  assert.equal(formatAttachmentManifestSummary(manifest), "5 local files waiting for approved storage rules.");
+  assert.equal(
+    formatAttachmentManifestSummary(manifest),
+    "5 local files stay on this device for now - cloud storage isn't available yet.",
+  );
 });
 
 test("keeps local attachments blocked when storage rules lack structured proof evidence", () => {
@@ -128,7 +131,7 @@ test("keeps local attachments blocked when storage rules lack structured proof e
   assert.equal(manifest.status, "provider-required");
   assert.equal(manifest.launchQueue.total, 5);
   assert.equal(manifest.launchQueue.uploadReady, 0);
-  assert.match(formatAttachmentManifestSummary(manifest), /waiting for approved storage rules/i);
+  assert.match(formatAttachmentManifestSummary(manifest), /stay on this device for now/i);
 });
 
 test("marks local attachments upload-ready only with complete structured provider proof", () => {
@@ -164,10 +167,10 @@ test("builds owner-facing attachment review rows by source kind", () => {
     ["Care proof photos", "Record documents", "Adventure memories", "Care Pass reports", "QA screenshots"],
   );
   assert.equal(rows[0]?.count, 1);
-  assert.equal(rows[0]?.statusLabel, "Waiting for storage rules");
+  assert.equal(rows[0]?.statusLabel, "On this device");
   assert.equal(rows[0]?.actionLabel, "Keep local");
   assert.deepEqual(rows[0]?.sampleFileNames, ["heartgard-proof.jpg"]);
-  assert.match(rows[0]?.detail ?? "", /signed access, retention, export, and deletion/i);
+  assert.match(rows[0]?.detail ?? "", /stays on this device for now - cloud storage isn't available yet/i);
 });
 
 test("marks attachment review rows upload-ready after provider storage is configured", () => {

@@ -663,11 +663,11 @@ export default function StoryScreen() {
               Save and share private household memories in Adventure Mode.
             </Text>
             <BoardActionButton
-              label="Open the memory shelf"
+              label="Save a memory in Adventure"
               variant="soft"
               icon="images-outline"
               onPress={openAdventure}
-              accessibilityLabel="Open the memory shelf in Adventure Mode"
+              accessibilityLabel="Save a memory in Adventure Mode"
               style={s.cardButton}
             />
           </BoardCard>

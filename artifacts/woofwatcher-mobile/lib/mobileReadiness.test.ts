@@ -4621,7 +4621,7 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   );
   assert.match(
     adventure,
-    /Photos and provider sync stay private\/local until storage rules are approved/,
+    /Photos and memories stay private on this device - cloud backup isn't available yet/,
   );
   assert.match(adventure, /onPress=\{\(\) => shareAdventureMemory\(memory\)\}/);
   assert.match(
@@ -4633,7 +4633,7 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
     /accessibilityHint="Shares a private text summary of this saved Adventure memory\."/,
   );
   assert.match(adventure, /deleteEntry\(questFeedback\.id\)/);
-  assert.match(adventure, /provider-gated/);
+  assert.match(adventure, /stay on this device for now - cloud backup isn't available yet/);
   assert.match(more, /Adventure Mode/);
   assert.match(more, /router\.push\("\/adventure"( as never)?\)/);
 });
@@ -4672,8 +4672,8 @@ test("keeps CareTwin roster readiness visible without fake multi-dog switching",
   assert.match(more, /buildCareTwinRosterDraft/);
   assert.match(more, /CareTwin Roster/);
   assert.match(more, /Add future dog/);
-  assert.match(more, /provider-backed multi-dog care documents/);
-  assert.match(more, /Multi-dog switching is staged/);
+  assert.match(more, /stays with your current dog on this device/);
+  assert.match(more, /Multi-dog switching is coming soon/);
 });
 
 test("keeps More organized around a grouped command directory", () => {
@@ -4706,7 +4706,7 @@ test("keeps More organized around a grouped command directory", () => {
   assert.match(more, /s\.moreDirectoryRow/);
   assert.match(more, /accessibilityLabel=\{`\$\{item\.eyebrow\}: \$\{item\.label\}\. \$\{item\.detail\}`\}/);
   assert.match(more, /style=\{s\.moreRouteHeader\}/);
-  assert.match(more, /\$\{petName\}'s care tools, records, household, and launch gates\./);
+  assert.match(more, /\$\{petName\}'s care tools, records, household, and settings\./);
   assert.match(
     getStyleBlock(more, "moreRouteHeader"),
     /paddingHorizontal:\s*20/,

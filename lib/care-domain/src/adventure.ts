@@ -188,8 +188,19 @@ export function deriveAdventureMode(input: AdventureInput): AdventureMode {
     .filter((proof): proof is AdventureProof => Boolean(proof));
   const todayXp = completedProof.reduce((sum, proof) => sum + proof.xp, 0);
   const level = Math.max(1, Math.floor(todayXp / 50) + 1);
-  const hasWalk = walkEntries.some((entry) => duration(entry) >= 10);
+  // Walk XP lands at completion (durationMinutes is written when the walk
+  // finishes), so any walk with real minutes is a completed outing even when
+  // it misses the quest's 10-minute bar. The bar itself never moves; a short
+  // finished walk reads as honest near-miss progress instead of "not logged".
+  const longestWalkMinutes = walkEntries.reduce((max, entry) => Math.max(max, duration(entry)), 0);
+  const hasWalk = longestWalkMinutes >= 10;
+  const hasNearMissWalk = !hasWalk && longestWalkMinutes > 0;
   const hasTraining = trainingEntries.length > 0;
+  const hasPlay = playEntries.length > 0;
+  // A completed care outing is any finished walk (whatever its length), a
+  // training win, or a play reset today. This is what unlocks the memory
+  // quest; an in-progress walk has no minutes yet, so it does not count.
+  const hasCareOuting = longestWalkMinutes > 0 || hasTraining || hasPlay;
   const hasMemoryToday = memories.some((memory) => isSameLocalDay(memory.createdAt, now));
 
   const quests: AdventureQuest[] = [
@@ -201,7 +212,11 @@ export function deriveAdventureMode(input: AdventureInput): AdventureMode {
       hasWalk ? "complete" : "available",
       "start-walk",
       "Start walk",
-      hasWalk ? "A household-visible walk is logged today." : "No walk adventure is logged yet.",
+      hasWalk
+        ? "A household-visible walk is logged today."
+        : hasNearMissWalk
+          ? `${longestWalkMinutes} of 10 min walked today${10 - longestWalkMinutes <= 3 ? " - so close!" : "."} A 10-minute walk completes this quest.`
+          : "No walk adventure is logged yet.",
     ),
     quest(
       "training-win",
@@ -218,20 +233,24 @@ export function deriveAdventureMode(input: AdventureInput): AdventureMode {
       "Play Reset",
       "Add a short play or decompression moment if the day needs a softer mood.",
       10,
-      playEntries.length > 0 ? "complete" : "available",
+      hasPlay ? "complete" : "available",
       "log-play",
       "Log play",
-      playEntries.length > 0 ? "Play is logged today." : "No play memory is logged yet.",
+      hasPlay ? "Play is logged today." : "No play memory is logged yet.",
     ),
     quest(
       "memory-photo",
       "Save today's memory",
       "Add one private note or photo caption so the care story grows from real life.",
       18,
-      hasMemoryToday ? "complete" : hasWalk || hasTraining || playEntries.length > 0 ? "available" : "locked",
+      hasMemoryToday ? "complete" : hasCareOuting ? "available" : "locked",
       "save-memory",
       "Save memory",
-      hasMemoryToday ? "A memory is saved today." : "Complete a care outing first, then save the memory.",
+      hasMemoryToday
+        ? "A memory is saved today."
+        : hasCareOuting
+          ? "A real care outing is complete - today's memory is ready to save."
+          : "Complete a care outing first, then save the memory.",
       "Do not share location or photos publicly unless every owner agrees.",
     ),
   ].sort((a, b) => {
@@ -259,7 +278,11 @@ export function deriveAdventureMode(input: AdventureInput): AdventureMode {
         ? "Start with a calm 10-20 minute walk, training win, or play reset."
         : hasMemoryToday
           ? "A private memory is saved today. Keep the next quest small and real."
-          : "Save a private memory from today's care before the moment disappears.",
+          : hasCareOuting
+            ? "Save a private memory from today's care before the moment disappears."
+            // XP without an outing (e.g. alone time) keeps the memory quest
+            // locked, so do not point at a step that is not unlocked yet.
+            : "Start with a calm 10-20 minute walk, training win, or play reset.",
     privacyBoundary: "Adventure memories are private to the household unless an owner shares them.",
     todayXp,
     level,
