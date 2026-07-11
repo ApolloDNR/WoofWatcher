@@ -63,7 +63,18 @@ export interface AdventureMode {
   summary: string;
   nextStep: string;
   privacyBoundary: string;
+  /**
+   * Quest XP earned today on the Adventure track. This is a separate,
+   * daily-resetting track from the lifetime care XP in careCareer; every
+   * surface must label these numbers "quest XP", never bare "XP" or
+   * "care XP", so they cannot be confused with the canonical care level.
+   */
   todayXp: number;
+  /**
+   * Quest level for today's Adventure track (from today's quest XP only).
+   * Not the user-facing care level: the canonical "Lv" badge on Pack, More,
+   * and Story comes from careCareer. Render this as "Quest level".
+   */
   level: number;
   memoriesCount: number;
   completedProof: AdventureProof[];
@@ -271,7 +282,7 @@ export function deriveAdventureMode(input: AdventureInput): AdventureMode {
     title: status === "needs-outing" ? "Adventure starts with real care" : "Adventure Mode is ready",
     summary:
       todayXp > 0
-        ? `${petName} earned ${todayXp} care XP from ${completedProof.length} real care moment${completedProof.length === 1 ? "" : "s"} today.`
+        ? `${petName} earned ${todayXp} quest XP from ${completedProof.length} real care moment${completedProof.length === 1 ? "" : "s"} today.`
         : `${petName}'s adventure log is waiting for a calm real-world care moment.`,
     nextStep:
       status === "needs-outing"

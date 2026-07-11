@@ -41,6 +41,11 @@ test("derives private adventure quests from real care evidence", () => {
   assert.equal(adventure.status, "quest-ready");
   assert.equal(adventure.todayXp, 56);
   assert.equal(adventure.level, 2);
+  // Vocabulary pin: Adventure's daily track speaks in "quest XP" so its
+  // numbers can never be read as the canonical careCareer "care XP"/"Lv"
+  // that Pack, More, Story, and Home's Today's Story render.
+  assert.match(adventure.summary, /earned 56 quest XP/);
+  assert.doesNotMatch(adventure.summary, /care XP/);
   assert.equal(adventure.completedProof.length, 2);
   assert.equal(adventure.quests[0].id, "memory-photo");
   assert.equal(adventure.quests[0].action, "save-memory");

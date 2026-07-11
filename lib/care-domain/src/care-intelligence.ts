@@ -175,6 +175,23 @@ function isPendingMeal(entry: CareIntelligenceEntry): boolean {
     ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(lifecycle);
 }
 
+/**
+ * Same cross-midnight window as lib/todayCommand's pending-meal outcome: a
+ * meal served on the current local day always keeps its open loop, and a
+ * previous day's served meal (e.g. dinner at 23:58, now 00:02) stays
+ * actionable for 12 hours before it quietly expires. Keep these two windows
+ * in lockstep so Home's command card and the Care IQ open loops never
+ * disagree about whether an outcome is still owed.
+ */
+const PENDING_MEAL_OUTCOME_WINDOW_MS = 12 * 60 * 60 * 1000;
+
+function isPendingMealActionable(entry: CareIntelligenceEntry, now: number): boolean {
+  if (!isPendingMeal(entry)) return false;
+  if (isSameLocalDay(entry.occurredAt, now)) return true;
+  const occurred = new Date(entry.occurredAt).getTime();
+  return Number.isFinite(occurred) && occurred <= now && now - occurred <= PENDING_MEAL_OUTCOME_WINDOW_MS;
+}
+
 function mealCarePoint(entry: CareIntelligenceEntry): number {
   const details = asObject(entry.details);
   const completion = lower(details.mealCompletion ?? details.completion ?? details.outcome ?? details.portion);
@@ -350,7 +367,11 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
         ? 90
         : 100;
 
-  const pendingMeals = mealEntries.filter(isPendingMeal);
+  // Pending outcomes span the midnight rollover (not just visibleToday), so
+  // an unresolved late-night meal still counts as an open loop after 00:00.
+  const pendingMeals = input.entries.filter(
+    (entry) => isHouseholdVisible(entry) && isPendingMealActionable(entry, now),
+  );
   const overdueRoutines = board.items.filter((item) => item.status === "overdue");
   const dueRoutines = board.items.filter((item) => item.status === "due");
   const lowConfidenceCount = confidenceScores.filter((score) => score > 0 && score < 58).length;
@@ -367,13 +388,17 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
     });
   }
   for (const entry of pendingMeals.slice(0, 3)) {
+    const servedEarlierDay = !isSameLocalDay(entry.occurredAt, now);
     loops.push({
       id: `pending-meal:${entry.id ?? entry.occurredAt}`,
       kind: "pending-meal",
       label: "Meal outcome pending",
       // Short enough for clamped mobile cards; the meal log offers the full
-      // ate all / some / refused / grazing outcome choices.
-      detail: `${entry.title ?? "Meal"} served. Confirm how much Phoenix ate.`,
+      // ate all / some / refused / grazing outcome choices. A meal served
+      // before midnight owns the rollover honestly in its copy.
+      detail: servedEarlierDay
+        ? `Last night's ${clean(entry.title) || "meal"} - how did it go?`
+        : `${entry.title ?? "Meal"} served. Confirm how much Phoenix ate.`,
       priority: "medium",
       targetEntryId: entry.id,
     });

@@ -5,6 +5,11 @@ import { normalizeCareEventType, type CareEventDetails } from "@workspace/care-d
  * real logged care evidence only. There is no purchasable currency and no
  * way to advance without actual care logs, which keeps the game layer inside
  * the evidence-based achievements boundary.
+ *
+ * This care level is the ONE canonical user-facing "Lv" (Pack, More, Story
+ * badges, Home's Today's Story). Adventure Mode's numbers are a separate
+ * daily quest track and must always render as "Quest XP" / "Quest level" so
+ * the two systems never share one vocabulary with different values.
  */
 
 export interface CareCareerEntryLike {

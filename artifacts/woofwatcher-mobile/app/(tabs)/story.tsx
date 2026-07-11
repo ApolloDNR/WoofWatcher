@@ -679,7 +679,7 @@ export default function StoryScreen() {
                         numberOfLines={1}
                         style={[s.memoryMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
                       >
-                        {formatMemoryDate(memory.createdAt)} - +{memory.xp} care XP
+                        {formatMemoryDate(memory.createdAt)} - +{memory.xp} quest XP
                       </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />

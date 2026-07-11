@@ -1137,7 +1137,7 @@ export default function MoreScreen() {
       icon: "star",
       iconName: "map-outline",
       label: "Adventure Mode",
-      sub: "Private care quests, XP, and memories from real walks and wins",
+      sub: "Private quests, quest XP, and memories from real walks and wins",
       onPress: () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.push("/adventure" as never);

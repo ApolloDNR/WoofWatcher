@@ -246,7 +246,7 @@ export default function AdventureScreen() {
       `WoofWatcher Adventure Mode - ${adventure.petName}`,
       "",
       adventure.summary,
-      `Level ${adventure.level} - ${adventure.todayXp} care XP today`,
+      `Quest level ${adventure.level} - ${adventure.todayXp} quest XP today`,
       "",
       "Next:",
       adventure.nextStep,
@@ -268,7 +268,7 @@ export default function AdventureScreen() {
       "",
       `Saved: ${formatMemoryDate(memory.createdAt)}`,
       `With: ${humans}`,
-      `Care XP: +${memory.xp}`,
+      `Quest XP: +${memory.xp}`,
       "",
       `Storage: ${memory.storageStatus}. Media: ${memory.mediaStatus}.`,
       "Photos and memories stay private on this device - cloud backup isn't available yet.",
@@ -333,17 +333,24 @@ export default function AdventureScreen() {
             <Text style={[s.kicker, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>REAL CARE ADVENTURE</Text>
             <Text style={[s.title, { fontFamily: DISPLAY }]}>Adventure Mode</Text>
             <Text style={[s.subtitle, { fontFamily: "Inter_700Bold" }]}>
-              Real walks become private quests, memories, and care XP.
+              Real walks become private quests, memories, and quest XP.
             </Text>
           </View>
-          <View style={s.levelRow}>
+          {/* Quest track only: these are today's Adventure numbers, labeled
+              "Quest level"/"Quest XP" so they never read as the canonical
+              care level ("Lv" + title) that Pack, More, and Story show. */}
+          <View
+            style={s.levelRow}
+            accessible
+            accessibilityLabel={`Quest level ${adventure.level} today. ${adventure.todayXp} quest XP today. ${adventure.memoriesCount} ${adventure.memoriesCount === 1 ? "memory" : "memories"}. The quest track resets daily and is separate from ${petName}'s lifetime care level.`}
+          >
             <View style={s.levelTile}>
               <Text style={[s.levelValue, { fontFamily: DISPLAY }]}>{adventure.level}</Text>
-              <Text style={[s.levelLabel, { fontFamily: "Inter_700Bold" }]}>Level</Text>
+              <Text style={[s.levelLabel, { fontFamily: "Inter_700Bold" }]}>Quest level</Text>
             </View>
             <View style={s.levelTile}>
               <Text style={[s.levelValue, { fontFamily: DISPLAY }]}>{adventure.todayXp}</Text>
-              <Text style={[s.levelLabel, { fontFamily: "Inter_700Bold" }]}>XP today</Text>
+              <Text style={[s.levelLabel, { fontFamily: "Inter_700Bold" }]}>Quest XP today</Text>
             </View>
             <View style={s.levelTile}>
               <Text style={[s.levelValue, { fontFamily: DISPLAY }]}>{adventure.memoriesCount}</Text>
@@ -351,6 +358,13 @@ export default function AdventureScreen() {
             </View>
           </View>
         </ImageBackground>
+
+        {/* Honest track note: quest numbers reset each day; the lifetime care
+            level ("Lv" + title) lives on Pack, More, and Story badges. */}
+        <Text style={[s.trackNote, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+          Quest level and quest XP track today's adventures and reset daily.{" "}
+          {petName}'s lifetime care level lives on Pack and More.
+        </Text>
 
         <BoardCard style={s.board}>
           <BoardSectionHeader
@@ -360,7 +374,7 @@ export default function AdventureScreen() {
           <Text style={[s.boardTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{adventure.title}</Text>
           <Text style={[s.boardCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             {availableQuestInProgress
-              ? "A walk is in progress. Finish it from the walk log (or Home) to complete this quest and earn its XP."
+              ? "A walk is in progress. Finish it from the walk log (or Home) to complete this quest and earn its quest XP."
               : adventure.nextStep}
           </Text>
           <View style={[s.boundary, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -565,7 +579,7 @@ export default function AdventureScreen() {
                 >
                   <Text style={[s.proofLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{proof.label}</Text>
                   <View style={s.proofMeta}>
-                    <Text style={[s.proofXp, { color: colors.copperBright, fontFamily: DISPLAY_SEMI }]}>+{proof.xp} XP</Text>
+                    <Text style={[s.proofXp, { color: colors.copperBright, fontFamily: DISPLAY_SEMI }]}>+{proof.xp} quest XP</Text>
                     <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
                   </View>
                 </Pressable>
@@ -648,7 +662,7 @@ function QuestRow({
   const actionLabel = quest.status === "complete" ? "Open proof" : quest.status === "locked" ? "Locked" : walkInProgress ? "Finish walk" : quest.actionLabel;
   const statusLabel = walkInProgress ? "in progress" : quest.status;
   const evidenceLabel = walkInProgress
-    ? "Walk in progress - finish it from the walk log or Home to earn this XP."
+    ? "Walk in progress - finish it from the walk log or Home to earn this quest XP."
     : quest.evidence;
   return (
     <View style={[s.questRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
@@ -774,7 +788,10 @@ const s = StyleSheet.create({
   levelRow: { position: "absolute", zIndex: 6, left: 14, right: 14, bottom: 14, flexDirection: "row", gap: 8 },
   levelTile: { flex: 1, minHeight: 58, borderRadius: 8, backgroundColor: "rgba(8,26,42,0.76)", borderWidth: 1, borderColor: "rgba(255,249,239,0.22)", alignItems: "center", justifyContent: "center", padding: 8 },
   levelValue: { color: "#FFFFFF", fontSize: 23 },
-  levelLabel: { color: "rgba(255,255,255,0.76)", fontSize: 10.5, marginTop: 2 },
+  // Centered so the longer "Quest level"/"Quest XP today" labels stay tidy
+  // when they wrap inside the narrow hero tiles on small phones.
+  levelLabel: { color: "rgba(255,255,255,0.76)", fontSize: 10.5, marginTop: 2, textAlign: "center" },
+  trackNote: { fontSize: 11.5, lineHeight: 16, marginTop: -6, marginBottom: 14, paddingHorizontal: 2 },
   board: { marginBottom: 12 },
   boardTitle: { fontSize: 17 },
   boardCopy: { fontSize: 13, lineHeight: 19, marginTop: 5 },
