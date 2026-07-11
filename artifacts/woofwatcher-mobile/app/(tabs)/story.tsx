@@ -43,7 +43,11 @@ import { TrailMap } from "@/components/TrailMap";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { careTitleForLevel, deriveCareCareer, deriveCareStreak } from "@/lib/careCareer";
-import { getRouteTopPadding, getTabbedRouteBottomPadding } from "@/lib/mobileLayout";
+import {
+  MOBILE_INLINE_HIT_SLOP,
+  getRouteTopPadding,
+  getTabbedRouteBottomPadding,
+} from "@/lib/mobileLayout";
 import { resolvePetName } from "@/lib/petIdentity";
 import {
   formatRouteDistanceMiles,
@@ -146,6 +150,9 @@ export default function StoryScreen() {
   const { state } = useCare();
   const now = Date.now();
   const [segment, setSegment] = useState<StorySegment>("adventures");
+  /* Adventures hero map style: the drawn storybook world by default, with a
+     toggle back to the real raster tiles. Session-only choice (v1). */
+  const [heroMapStyle, setHeroMapStyle] = useState<"storybook" | "real">("storybook");
 
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
@@ -308,8 +315,13 @@ export default function StoryScreen() {
                 <TrailMap
                   route={routedWalk.route}
                   aspectRatio={5 / 4}
+                  mapStyle={heroMapStyle}
                   style={s.trailHeroMap}
-                  accessibilityLabel="Map of the latest recorded walk route"
+                  accessibilityLabel={
+                    heroMapStyle === "storybook"
+                      ? "Storybook map of the latest recorded walk route"
+                      : "Map of the latest recorded walk route"
+                  }
                 >
                   <View
                     style={[s.trailHeroChip, { backgroundColor: colors.card + "F0", borderColor: colors.border }]}
@@ -322,6 +334,40 @@ export default function StoryScreen() {
                       {routedWalkChip}
                     </Text>
                   </View>
+                  {/* Map style toggle: Storybook <-> Real. Nested Pressable
+                      claims the touch, so the hero press-through to the walk
+                      log never fires when flipping styles. */}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      heroMapStyle === "storybook"
+                        ? "Map style: Storybook. Switch to Real."
+                        : "Map style: Real. Switch to Storybook."
+                    }
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() =>
+                      setHeroMapStyle((prev) => (prev === "storybook" ? "real" : "storybook"))
+                    }
+                    style={({ pressed }) => [
+                      s.trailStyleToggle,
+                      {
+                        backgroundColor: colors.card + "F0",
+                        borderColor: colors.border,
+                        opacity: pressed ? 0.82 : 1,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={heroMapStyle === "storybook" ? "color-palette-outline" : "map-outline"}
+                      size={13}
+                      color={colors.forest}
+                    />
+                    <Text
+                      style={[s.trailStyleToggleText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                    >
+                      {heroMapStyle === "storybook" ? "Storybook" : "Real"}
+                    </Text>
+                  </Pressable>
                 </TrailMap>
               </Pressable>
             ) : (
@@ -824,6 +870,23 @@ const s = StyleSheet.create({
   },
   trailHeroChipDot: { width: 8, height: 8, borderRadius: 4 },
   trailHeroChipText: { fontSize: 12, flexShrink: 1 },
+  // 28px pill + MOBILE_INLINE_HIT_SLOP (10) per side = a 48px touch target.
+  // Bottom-left: clear of the walk chip (top-left) and the OSM attribution
+  // (bottom-right).
+  trailStyleToggle: {
+    position: "absolute",
+    left: 12,
+    bottom: 12,
+    minHeight: 28,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+  },
+  trailStyleToggleText: { fontSize: 11.5 },
   mapArt: {
     ...StyleSheet.absoluteFillObject,
     width: "100%",

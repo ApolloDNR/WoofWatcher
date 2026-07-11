@@ -106,11 +106,17 @@ export function routeDistanceMeters(points: readonly WalkRoutePoint[]): number {
   return total;
 }
 
+/** Any lat/lon vertex — walk routes and storybook map geometry both qualify. */
+interface GeoVertex {
+  lat: number;
+  lon: number;
+}
+
 /** Perpendicular distance (meters, planar approximation) from a point to a segment. */
 function pointToSegmentMeters(
-  point: WalkRoutePoint,
-  start: WalkRoutePoint,
-  end: WalkRoutePoint,
+  point: GeoVertex,
+  start: GeoVertex,
+  end: GeoVertex,
   lonScale: number,
 ): number {
   const px = point.lon * lonScale;
@@ -128,11 +134,11 @@ function pointToSegmentMeters(
   return Math.hypot(px - (ax + along * dx), py - (ay + along * dy));
 }
 
-function douglasPeucker(
-  points: readonly WalkRoutePoint[],
+function douglasPeucker<T extends GeoVertex>(
+  points: readonly T[],
   toleranceM: number,
   lonScale: number,
-): WalkRoutePoint[] {
+): T[] {
   if (points.length <= 2) return [...points];
   const keep = new Array<boolean>(points.length).fill(false);
   keep[0] = true;
@@ -200,6 +206,29 @@ export function simplifyRoute(
     simplified = sampled;
   }
   return simplified;
+}
+
+/**
+ * Simplify an arbitrary lat/lon path (storybook map geometry — road, shore,
+ * building outline) with the same Douglas-Peucker core the walk route uses.
+ * Pure addition for the drawn map; the walk-route pipeline is unchanged.
+ * Keeps input point identity, so closed rings stay closed.
+ */
+export function simplifyGeoPath<T extends GeoVertex>(
+  points: readonly T[],
+  toleranceM: number,
+): T[] {
+  const clean = points.filter(
+    (point) =>
+      Number.isFinite(point.lat) &&
+      Math.abs(point.lat) <= 90 &&
+      Number.isFinite(point.lon) &&
+      Math.abs(point.lon) <= 180,
+  );
+  if (clean.length <= 2 || !(toleranceM > 0)) return clean;
+  const midLat = clean.reduce((sum, point) => sum + point.lat, 0) / clean.length;
+  const lonScale = METERS_PER_DEGREE * Math.cos(midLat * DEG_TO_RAD);
+  return douglasPeucker(clean, toleranceM, lonScale);
 }
 
 /**
