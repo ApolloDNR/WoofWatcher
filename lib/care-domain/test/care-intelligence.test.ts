@@ -97,6 +97,72 @@ test("blends routines, logs, evidence, and sync into care intelligence", () => {
   assert.match(intelligence.subtitle, /care|confirm|outcome|record/i);
 });
 
+test("keeps a pre-midnight pending meal outcome open just after the rollover", () => {
+  // Dinner served 23:58 local, checked 00:02: the open loop survives the
+  // local-day rollover with copy that owns it ("Last night's ...") - in
+  // lockstep with lib/todayCommand's PENDING_MEAL_OUTCOME_WINDOW_MS.
+  // Local Date constructors keep this timezone-agnostic on any runner.
+  const servedLateNight = new Date(2026, 5, 6, 23, 58);
+  const justPastMidnight = new Date(2026, 5, 7, 0, 2).getTime();
+  const intelligence = deriveCareIntelligence({
+    now: justPastMidnight,
+    entries: [
+      {
+        id: "dinner-late",
+        type: "meal",
+        title: "Dinner",
+        caregiver: "Emma",
+        occurredAt: servedLateNight.toISOString(),
+        details: {
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 1,
+          servedUnit: "cup",
+        },
+        syncStatus: "synced",
+      },
+    ],
+  });
+
+  assert.equal(intelligence.pendingOutcomeCount, 1);
+  assert.equal(intelligence.nextAction.kind, "update-meal-outcome");
+  assert.equal(intelligence.nextAction.targetEntryId, "dinner-late");
+  const loop = intelligence.openLoops.find((item) => item.kind === "pending-meal");
+  assert.ok(loop);
+  assert.match(loop.detail, /Last night's Dinner - how did it go\?/);
+});
+
+test("expires a previous-day pending meal outcome after 12 hours", () => {
+  // Served 10:00 local yesterday, checked 00:02: 14h old is past the 12h
+  // carryover window, so the stale loop no longer surfaces.
+  const servedMidMorning = new Date(2026, 5, 6, 10, 0);
+  const justPastMidnight = new Date(2026, 5, 7, 0, 2).getTime();
+  const intelligence = deriveCareIntelligence({
+    now: justPastMidnight,
+    entries: [
+      {
+        id: "stale-meal",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Emma",
+        occurredAt: servedMidMorning.toISOString(),
+        details: {
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+        },
+        syncStatus: "synced",
+      },
+    ],
+  });
+
+  assert.equal(intelligence.pendingOutcomeCount, 0);
+  assert.notEqual(intelligence.nextAction.kind, "update-meal-outcome");
+  assert.equal(
+    intelligence.openLoops.some((loop) => loop.kind === "pending-meal"),
+    false,
+  );
+});
+
 test("penalizes sparse, private, failed, and overdue care records", () => {
   const intelligence = deriveCareIntelligence({
     now: NOW,
