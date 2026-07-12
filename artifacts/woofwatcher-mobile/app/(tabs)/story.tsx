@@ -9,6 +9,7 @@ import {
   StyleSheet,
   type StyleProp,
   Text,
+  useWindowDimensions,
   View,
   type ViewStyle,
 } from "react-native";
@@ -38,6 +39,7 @@ import {
   BoardStatusPill,
   CareRow,
 } from "@/components/board/BoardPrimitives";
+import { enterUp, PressScale, ProgressFill } from "@/components/motion/GameFeel";
 import { PixelIcon } from "@/components/PixelIcon";
 import { TrailMap } from "@/components/TrailMap";
 import { useCare, type Entry } from "@/context/CareContext";
@@ -121,6 +123,44 @@ function formatWalkTime(iso: string): string {
   });
 }
 
+/** Mock-board month header for the memories grid: "May 2026". */
+function formatMemoryMonth(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Recently";
+  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
+function sentenceCase(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  return trimmed[0].toUpperCase() + trimmed.slice(1);
+}
+
+function entryPhotoUri(details: { [key: string]: unknown } | undefined): string {
+  const uri = details?.photoProofAttachmentUri;
+  return typeof uri === "string" ? uri.trim() : "";
+}
+
+/** One tile in the mock-board memories grid: a real saved adventure memory or
+ *  a real care-log proof photo, never a placeholder image. */
+type MemoryGridItem = {
+  id: string;
+  kind: "memory" | "entry";
+  title: string;
+  dateIso: string;
+  photoUri?: string;
+  entryId?: string;
+};
+
+/** A real walk log with journal-worthy content (note, mood, or photo). */
+type WalkJournalStory = {
+  id: string;
+  occurredAt: string;
+  text: string;
+  mood?: string;
+  photoUri?: string;
+};
+
 /**
  * Gentle idle pulse for the adventure map's quest-marker card: a 2.5s
  * opacity/scale breathe (1.0 -> 1.01, opacity dips to 0.96) in the
@@ -158,8 +198,12 @@ export default function StoryScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const { state } = useCare();
   const now = Date.now();
+  /* Mock-board memories grid: 3 columns on the parchment background - 16px
+     screen gutters and two 8px gaps between rounded tiles. */
+  const memoryTile = Math.floor((windowWidth - 32 - 16) / 3);
   const [segment, setSegment] = useState<StorySegment>("adventures");
   /* Adventures hero map style: the drawn storybook world by default, with a
      toggle back to the real raster tiles. Session-only choice (v1). */
@@ -200,7 +244,71 @@ export default function StoryScreen() {
     () => adventure.quests.filter((quest) => quest.status === "complete").length,
     [adventure.quests],
   );
-  const recentMemories = useMemo(() => adventure.memories.slice(0, 3), [adventure.memories]);
+
+  /* Mock-board memories grid: every tile is a real saved adventure memory or
+     a real care-log proof photo, grouped by month, newest first. Memories
+     without a photo yet render as quiet note tiles - never stock imagery. */
+  const memoryMonths = useMemo(() => {
+    const items: MemoryGridItem[] = [];
+    for (const memory of adventure.memories) {
+      items.push({
+        id: `memory-${memory.id}`,
+        kind: "memory",
+        title: memory.title,
+        dateIso: memory.createdAt,
+        photoUri: memory.photoUri?.trim() || undefined,
+      });
+    }
+    for (const entry of state.entries) {
+      if (entry.details?.householdVisible === false) continue;
+      const uri = entryPhotoUri(entry.details);
+      if (!uri) continue;
+      items.push({
+        id: `entry-${entry.id}`,
+        kind: "entry",
+        title: entry.title || "Care log photo",
+        dateIso: entry.occurredAt,
+        photoUri: uri,
+        entryId: entry.id,
+      });
+    }
+    items.sort((a, b) => (Date.parse(b.dateIso) || 0) - (Date.parse(a.dateIso) || 0));
+    const months: { key: string; label: string; items: MemoryGridItem[] }[] = [];
+    for (const item of items) {
+      const label = formatMemoryMonth(item.dateIso);
+      const last = months[months.length - 1];
+      if (last && last.label === label) last.items.push(item);
+      else months.push({ key: `${label}-${months.length}`, label, items: [item] });
+    }
+    return months;
+  }, [adventure.memories, state.entries]);
+
+  /* Walk journal: real walk logs that carry journal content (a note, a mood,
+     or a proof photo), told as mock-board story cards. There is no reaction
+     or heart model in the care data, so the cards show no heart counts -
+     counts are never invented. */
+  const walkJournal = useMemo(() => {
+    const stories: WalkJournalStory[] = [];
+    for (const entry of state.entries) {
+      if (entry.details?.householdVisible === false) continue;
+      if (normalizeCareEventType(entry.type, entry.details) !== "walk") continue;
+      const occurred = Date.parse(entry.occurredAt);
+      if (!Number.isFinite(occurred) || occurred > now) continue;
+      const note = (entry.note ?? "").trim();
+      const mood = (entry.mood ?? "").trim();
+      const photoUri = entryPhotoUri(entry.details);
+      if (!note && !mood && !photoUri) continue;
+      stories.push({
+        id: entry.id,
+        occurredAt: entry.occurredAt,
+        text: note || entry.title || "Walk",
+        mood: mood || undefined,
+        photoUri: photoUri || undefined,
+      });
+    }
+    stories.sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt));
+    return stories.slice(0, 3);
+  }, [state.entries, now]);
 
   /* Walk story: today's derived walk activity plus a real trailing-week count. */
   const walkActivity = useMemo(
@@ -321,7 +429,6 @@ export default function StoryScreen() {
         ? "Light"
         : "Needs walk";
   const walkStatusTone = walkActivity.status === "needs-walk" ? "due" : "done";
-  const levelProgressPct = Math.round(career.levelProgress * 100);
 
   const openAdventure = () => router.push("/adventure" as never);
   const openWalkLog = () =>
@@ -497,17 +604,18 @@ export default function StoryScreen() {
             )}
 
             {/* Recent adventures: real visited places from logged walks. */}
-            <BoardCard style={s.board}>
+            <BoardCard style={s.board} enter={0}>
               <BoardSectionHeader title="Recent Adventures" />
               {trailStops.length > 0 ? (
                 <View style={s.trailList}>
                   {trailStops.map((stop, index) => (
-                    <Pressable
+                    <PressScale
                       key={stop.id}
                       accessibilityRole="button"
                       accessibilityLabel={`Open Adventure Trail: ${stop.name}, ${stop.visits} ${stop.visits === 1 ? "visit" : "visits"}.`}
                       onPress={openAdventure}
-                      style={({ pressed }) => [s.trailRow, { opacity: pressed ? 0.72 : 1 }]}
+                      scaleTo={0.97}
+                      style={s.trailRow}
                     >
                       <Image
                         source={TRAIL_THUMBS[index % TRAIL_THUMBS.length]}
@@ -536,7 +644,7 @@ export default function StoryScreen() {
                         </Text>
                       </View>
                       <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
-                    </Pressable>
+                    </PressScale>
                   ))}
                 </View>
               ) : (
@@ -556,7 +664,7 @@ export default function StoryScreen() {
             </BoardCard>
 
             {/* Walk story: today's activity plus the trailing week, all real. */}
-            <BoardCard style={s.board}>
+            <BoardCard style={s.board} enter={1}>
               <BoardSectionHeader
                 title="Walk story"
                 accessory={<BoardStatusPill label={walkStatusLabel} tone={walkStatusTone} />}
@@ -630,114 +738,203 @@ export default function StoryScreen() {
                 accessibilityLabel="Open walk records"
               />
             </BoardCard>
+
+            {/* Walk journal: real walk logs with notes, moods, or proof
+                photos as mock-board story cards - date header, story text,
+                photo thumb, and soft activity tags. No heart counts: there is
+                no reaction model in the care data, and counts are never
+                invented. */}
+            {walkJournal.length > 0 ? (
+              <>
+                <Animated.View entering={enterUp(2)}>
+                  <Text style={[s.quietLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    Walk journal
+                  </Text>
+                </Animated.View>
+                {walkJournal.map((story, index) => (
+                  <BoardCard key={story.id} style={s.board} padded={false} enter={3 + index}>
+                    <PressScale
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open walk story from ${formatMemoryDate(story.occurredAt)}: ${story.text}`}
+                      accessibilityHint="Opens this walk in the care log."
+                      onPress={() =>
+                        router.push(`/log?entry=${encodeURIComponent(story.id)}` as never)
+                      }
+                      scaleTo={0.97}
+                      style={s.journalCard}
+                    >
+                      <View style={s.journalBody}>
+                        <View style={s.journalCopy}>
+                          <Text style={[s.journalDate, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                            {formatMemoryDate(story.occurredAt)}
+                          </Text>
+                          <Text
+                            numberOfLines={3}
+                            style={[s.journalText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                          >
+                            {story.text}
+                          </Text>
+                          <View style={s.journalChips}>
+                            <View style={[s.journalChip, { backgroundColor: colors.sageSoft }]}>
+                              <Text style={[s.journalChipText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
+                                Walk
+                              </Text>
+                            </View>
+                            {story.mood ? (
+                              <View style={[s.journalChip, { backgroundColor: colors.amberSoft }]}>
+                                <Text style={[s.journalChipText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                                  {sentenceCase(story.mood)}
+                                </Text>
+                              </View>
+                            ) : null}
+                          </View>
+                        </View>
+                        {story.photoUri ? (
+                          <Image
+                            source={{ uri: story.photoUri }}
+                            style={[s.journalThumb, { backgroundColor: colors.muted }]}
+                            resizeMode="cover"
+                            accessibilityIgnoresInvertColors
+                          />
+                        ) : null}
+                      </View>
+                    </PressScale>
+                  </BoardCard>
+                ))}
+              </>
+            ) : null}
           </>
         ) : null}
 
         {segment === "memories" ? (
-          <BoardCard style={s.board}>
-            <BoardSectionHeader
-              title="Memory shelf"
-              accessory={
-                <BoardStatusPill
-                  label={
-                    adventure.memoriesCount > 0
-                      ? `${adventure.memoriesCount} ${adventure.memoriesCount === 1 ? "memory" : "memories"}`
-                      : "Empty"
-                  }
-                  tone={adventure.memoriesCount > 0 ? "done" : "neutral"}
-                />
-              }
-            />
-            {recentMemories.length > 0 ? (
-              <View style={s.memoryList}>
-                {recentMemories.map((memory) => (
-                  <Pressable
-                    key={memory.id}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Open Adventure memory: ${memory.title}`}
-                    accessibilityHint="Opens Adventure Mode, where memories are saved and shared."
-                    onPress={openAdventure}
-                    style={({ pressed }) => [
-                      s.memoryRow,
-                      {
-                        backgroundColor: pressed ? colors.amber + "10" : colors.background,
-                        borderColor: pressed ? colors.amber : colors.border,
-                      },
-                    ]}
-                  >
-                    <View style={[s.memoryIcon, { backgroundColor: colors.amberSoft }]}>
-                      <Ionicons name="images-outline" size={16} color={colors.amber} />
-                    </View>
-                    <View style={s.memoryCopy}>
-                      <Text
-                        numberOfLines={1}
-                        style={[s.memoryTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+          memoryMonths.length > 0 ? (
+            <>
+              {/* Mock-board memories grid: quiet month headers over 3-column
+                  rounded tiles, straight on the parchment background. Every
+                  tile is a real saved memory or care-log proof photo. */}
+              {memoryMonths.map((month, monthIndex) => (
+                <Animated.View key={month.key} entering={enterUp(monthIndex)} style={s.memoryMonth}>
+                  <Text style={[s.quietLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {month.label}
+                  </Text>
+                  <View style={s.memoryGrid}>
+                    {month.items.map((item) => (
+                      <PressScale
+                        key={item.id}
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          item.kind === "memory"
+                            ? `Open adventure memory: ${item.title}, ${formatMemoryDate(item.dateIso)}.`
+                            : `Open care log photo: ${item.title}, ${formatMemoryDate(item.dateIso)}.`
+                        }
+                        accessibilityHint={
+                          item.kind === "memory"
+                            ? "Opens Adventure Mode, where memories are saved and shared."
+                            : "Opens the care log this photo belongs to."
+                        }
+                        onPress={() =>
+                          item.kind === "entry" && item.entryId
+                            ? router.push(`/log?entry=${encodeURIComponent(item.entryId)}` as never)
+                            : openAdventure()
+                        }
+                        scaleTo={0.95}
+                        containerStyle={{ width: memoryTile }}
                       >
-                        {memory.title}
-                      </Text>
-                      <Text
-                        numberOfLines={1}
-                        style={[s.memoryMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-                      >
-                        {formatMemoryDate(memory.createdAt)} - +{memory.xp} quest XP
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
-                  </Pressable>
-                ))}
-              </View>
-            ) : (
-              <View style={s.memoryEmpty}>
-                <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Saved adventure memories will appear here. Photos stay on this device for now -
+                        {item.photoUri ? (
+                          <Image
+                            source={{ uri: item.photoUri }}
+                            style={[
+                              s.memoryPhoto,
+                              {
+                                width: memoryTile,
+                                height: Math.round(memoryTile * (4 / 3)),
+                                backgroundColor: colors.muted,
+                              },
+                            ]}
+                            resizeMode="cover"
+                            accessibilityIgnoresInvertColors
+                          />
+                        ) : (
+                          /* A real memory saved without a photo yet: a quiet
+                             note tile, never a stand-in image. */
+                          <View
+                            style={[
+                              s.memoryNoteTile,
+                              {
+                                width: memoryTile,
+                                height: Math.round(memoryTile * (4 / 3)),
+                                backgroundColor: colors.card,
+                                borderColor: colors.border,
+                              },
+                            ]}
+                          >
+                            <View style={[s.memoryNoteIcon, { backgroundColor: colors.sageSoft }]}>
+                              <Ionicons name="book-outline" size={14} color={colors.forest} />
+                            </View>
+                            <Text
+                              numberOfLines={3}
+                              style={[s.memoryNoteTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                            >
+                              {item.title}
+                            </Text>
+                          </View>
+                        )}
+                      </PressScale>
+                    ))}
+                  </View>
+                </Animated.View>
+              ))}
+              <BoardCard style={s.board} enter={Math.min(memoryMonths.length, 8)}>
+                <Text style={[s.footnote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Memories stay private to the household. Photos stay on this device for now -
                   cloud backup isn't available yet.
                 </Text>
-                <View style={s.memoryPlaceholderList} accessibilityElementsHidden>
-                  {[0, 1, 2].map((slot) => (
-                    <View
-                      key={`memory-locked-${slot}`}
-                      style={[s.memoryPlaceholderRow, { borderColor: colors.border }]}
-                    >
-                      <View style={[s.memoryPlaceholderIcon, { backgroundColor: colors.muted }]}>
-                        <Ionicons name="lock-closed" size={14} color={colors.mutedForeground} />
-                      </View>
-                      <View style={s.memoryPlaceholderCopy}>
-                        <View style={[s.memoryPlaceholderBar, { backgroundColor: colors.muted, width: "62%" }]} />
-                        <View style={[s.memoryPlaceholderBar, { backgroundColor: colors.muted, width: "40%" }]} />
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-            <Text style={[s.footnote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              Save and share private household memories in Adventure Mode.
-            </Text>
-            <BoardActionButton
-              label="Save a memory in Adventure"
-              variant="soft"
-              icon="images-outline"
-              onPress={openAdventure}
-              accessibilityLabel="Save a memory in Adventure Mode"
-              style={s.cardButton}
-            />
-          </BoardCard>
+                <BoardActionButton
+                  label="Save a memory in Adventure"
+                  variant="soft"
+                  icon="images-outline"
+                  onPress={openAdventure}
+                  accessibilityLabel="Save a memory in Adventure Mode"
+                  style={s.cardButton}
+                />
+              </BoardCard>
+            </>
+          ) : (
+            /* Honest empty state: no saved memories or proof photos yet. */
+            <BoardCard style={s.board} enter={0}>
+              <BoardSectionHeader title="Memories" />
+              <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Photos from walks and stories land here.
+              </Text>
+              <Text style={[s.footnote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Photos stay on this device for now - cloud backup isn't available yet.
+              </Text>
+              <BoardActionButton
+                label="Save a memory in Adventure"
+                variant="soft"
+                icon="images-outline"
+                onPress={openAdventure}
+                accessibilityLabel="Save a memory in Adventure Mode"
+                style={s.cardButton}
+              />
+            </BoardCard>
+          )
         ) : null}
 
         {segment === "badges" ? (
           <>
             {/* Care career: level, XP, and streak from real logged care only. */}
-            <BoardCard style={s.board}>
+            <BoardCard style={s.board} enter={0}>
               <BoardSectionHeader
                 title="Care career"
-                accessory={<BoardPill label={career.levelLabel} tone={colors.amber} />}
+                accessory={<BoardPill label={career.levelLabel} tone={colors.sage} />}
               />
               <View style={s.levelStrip}>
-                <View style={[s.levelBadge, { backgroundColor: colors.amberSoft, borderColor: colors.amber + "55" }]}>
-                  <Text style={[s.levelBadgeValue, { color: colors.amber, fontFamily: TITLE_SERIF }]}>
+                <View style={[s.levelBadge, { backgroundColor: colors.sageSoft, borderColor: colors.sage + "55" }]}>
+                  <Text style={[s.levelBadgeValue, { color: colors.forest, fontFamily: TITLE_SERIF }]}>
                     {career.level}
                   </Text>
-                  <Text style={[s.levelBadgeLabel, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                  <Text style={[s.levelBadgeLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                     Level
                   </Text>
                 </View>
@@ -745,14 +942,13 @@ export default function StoryScreen() {
                   <Text style={[s.levelTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                     {career.title}
                   </Text>
-                  <View style={[s.xpTrack, { backgroundColor: colors.muted }]}>
-                    <View
-                      style={[
-                        s.xpFill,
-                        { backgroundColor: colors.copperBright, width: `${Math.max(2, levelProgressPct)}%` },
-                      ]}
-                    />
-                  </View>
+                  <ProgressFill
+                    ratio={Math.max(0.02, career.levelProgress)}
+                    color={colors.forest}
+                    trackColor={colors.muted}
+                    height={10}
+                    style={s.xpTrack}
+                  />
                   <Text style={[s.levelMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                     {career.levelXp.toLocaleString()} / {career.levelSpanXp.toLocaleString()} XP -{" "}
                     {career.xpToNextLevel.toLocaleString()} XP to Lv {career.level + 1}
@@ -785,11 +981,11 @@ export default function StoryScreen() {
                 earned tiers in full color with their real earn dates, locked
                 tiers as quiet silhouettes with the real level requirement and
                 lifetime-XP progress toward it. */}
-            <BoardCard style={s.board}>
+            <BoardCard style={s.board} enter={1}>
               <BoardSectionHeader
                 title="Badge ladder"
                 accessory={
-                  <BoardPill label={`${earnedTitles.length} of ${badgeLadder.length} earned`} tone={colors.copper} />
+                  <BoardPill label={`${earnedTitles.length} of ${badgeLadder.length} earned`} tone={colors.sage} />
                 }
               />
               <Text style={[s.sectionCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -823,6 +1019,7 @@ export default function StoryScreen() {
                   const earnedDate = badgeEarnDates.get(tier.title);
 
                   if (earned) {
+                    /* Earned: cream tile, full-color badge art, sage pill. */
                     return (
                       <View
                         key={tier.title}
@@ -833,7 +1030,7 @@ export default function StoryScreen() {
                         style={[
                           s.titleRow,
                           {
-                            backgroundColor: current ? colors.sageSoft : colors.background,
+                            backgroundColor: colors.background,
                             borderColor: current ? colors.sage + "66" : colors.border,
                           },
                         ]}
@@ -855,13 +1052,14 @@ export default function StoryScreen() {
                             {earnedDate ? ` - ${formatMemoryDate(earnedDate)}` : ""}
                           </Text>
                         </View>
-                        {current ? <BoardStatusPill label="Current" tone="done" /> : null}
+                        <BoardStatusPill label={current ? "Current" : "Earned"} tone="done" />
                       </View>
                     );
                   }
 
-                  /* Locked: quiet, never alarming - muted silhouette, the real
-                     unlock level, and honest lifetime-XP progress toward it. */
+                  /* Locked: quiet, never alarming - muted tile with a lock,
+                     the real unlock level, and honest lifetime-XP progress
+                     toward it. */
                   const progressPct = Math.min(
                     100,
                     Math.round((career.totalXp / tier.xpRequired) * 100),
@@ -873,11 +1071,9 @@ export default function StoryScreen() {
                       accessibilityLabel={`${tier.title} badge locked. Reach level ${tier.level}. ${career.totalXp.toLocaleString()} of ${tier.xpRequired.toLocaleString()} lifetime care XP so far.`}
                       style={[s.titleRow, s.titleRowLocked, { backgroundColor: colors.background, borderColor: colors.border }]}
                     >
-                      <Image
-                        source={BADGE_ART[tierIndex % BADGE_ART.length]}
-                        style={[s.titleBadgeArt, s.titleBadgeArtLocked, { tintColor: colors.mutedForeground }]}
-                        resizeMode="contain"
-                      />
+                      <View style={[s.titleLockIcon, { backgroundColor: colors.muted }]}>
+                        <Ionicons name="lock-closed" size={14} color={colors.mutedForeground} />
+                      </View>
                       <View style={s.titleCopy}>
                         <Text
                           numberOfLines={1}
@@ -934,20 +1130,13 @@ const s = StyleSheet.create({
   emptyText: { fontSize: 12.5, lineHeight: 18, marginBottom: 6 },
   footnote: { fontSize: 11.5, lineHeight: 16, marginTop: 2 },
   cardButton: { marginTop: 10 },
-  heroTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 },
-  heroKicker: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0.8 },
-  heroChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  heroChipText: { fontSize: 10.5, letterSpacing: 0.2 },
-  heroSummary: { fontSize: 19, lineHeight: 26 },
-  heroMeta: { fontSize: 11.5, marginTop: 10 },
   levelStrip: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
   levelBadge: { width: 64, height: 64, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   levelBadgeValue: { fontSize: 26, lineHeight: 30 },
-  levelBadgeLabel: { fontSize: 9, textTransform: "uppercase", letterSpacing: 0.4 },
+  levelBadgeLabel: { fontSize: 9, textTransform: "uppercase", letterSpacing: 1.1 },
   levelCopy: { flex: 1, minWidth: 0 },
   levelTitle: { fontSize: 17 },
-  xpTrack: { height: 10, borderRadius: 999, marginTop: 7, overflow: "hidden" },
-  xpFill: { height: "100%", borderRadius: 999 },
+  xpTrack: { marginTop: 7 },
   levelMeta: { fontSize: 11, marginTop: 6 },
   statPairRow: { flexDirection: "row", gap: 8, marginBottom: 6 },
   statPairTile: { flex: 1, borderWidth: 1, borderRadius: 10, padding: 11, gap: 3 },
@@ -1035,31 +1224,36 @@ const s = StyleSheet.create({
   },
   badgeShelfArt: { width: 58, height: 58 },
   titleBadgeArt: { width: 34, height: 34 },
-  trailIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   trailCopy: { flex: 1, minWidth: 0 },
   trailName: { fontSize: 14 },
   trailMeta: { fontSize: 11.5, marginTop: 2 },
-  memoryList: { gap: 8, marginBottom: 6 },
-  memoryEmpty: { marginBottom: 6 },
-  memoryPlaceholderList: { gap: 8, marginTop: 10, opacity: 0.55 },
-  memoryPlaceholderRow: {
-    minHeight: 48,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderRadius: 10,
+  /* Mock-board memories grid: quiet month headers over 3-column rounded
+     tiles on the parchment background. */
+  quietLabel: { fontSize: 14, marginBottom: 8, marginLeft: 2, marginTop: 2 },
+  memoryMonth: { marginBottom: 14 },
+  memoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  memoryPhoto: { borderRadius: 14 },
+  memoryNoteTile: {
+    borderRadius: 14,
     borderWidth: 1,
-    borderStyle: "dashed",
-    padding: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 8,
+    gap: 6,
   },
-  memoryPlaceholderIcon: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  memoryPlaceholderCopy: { flex: 1, minWidth: 0, gap: 6 },
-  memoryPlaceholderBar: { height: 8, borderRadius: 999 },
-  memoryRow: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 10, borderWidth: 1, padding: 10 },
-  memoryIcon: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  memoryCopy: { flex: 1, minWidth: 0 },
-  memoryTitle: { fontSize: 13 },
-  memoryMeta: { fontSize: 11.5, marginTop: 1 },
+  memoryNoteIcon: { width: 26, height: 26, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  memoryNoteTitle: { fontSize: 10, lineHeight: 13, textAlign: "center" },
+  /* Mock-board story cards: date header, story text, photo thumb right,
+     soft activity tag chips. */
+  journalCard: { padding: 14 },
+  journalBody: { flexDirection: "row", gap: 12 },
+  journalCopy: { flex: 1, minWidth: 0 },
+  journalDate: { fontSize: 11.5 },
+  journalText: { fontSize: 13, lineHeight: 19, marginTop: 4 },
+  journalChips: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 9 },
+  journalChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  journalChipText: { fontSize: 10.5, letterSpacing: 0.2 },
+  journalThumb: { width: 72, height: 72, borderRadius: 14 },
   latestWalk: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 10, padding: 11, marginBottom: 2 },
   latestWalkDot: { width: 8, height: 8, borderRadius: 4 },
   latestWalkCopy: { flex: 1, minWidth: 0 },
@@ -1067,13 +1261,12 @@ const s = StyleSheet.create({
   latestWalkMeta: { fontSize: 11.5, marginTop: 1 },
   titleList: { gap: 8 },
   titleRow: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 9 },
-  // Locked tiers echo the memory-shelf placeholder language: dashed border,
-  // softened contents - waiting, not warning.
+  // Locked tiers stay quiet: dashed border, muted lock - waiting, not
+  // warning.
   titleRowLocked: { borderStyle: "dashed" },
-  titleBadgeArtLocked: { opacity: 0.5 },
+  titleLockIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   tierTrack: { height: 6, borderRadius: 999, marginTop: 6, overflow: "hidden" },
   tierFill: { height: "100%", borderRadius: 999 },
-  titleIcon: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   titleCopy: { flex: 1, minWidth: 0 },
   titleName: { fontSize: 14 },
   titleMeta: { fontSize: 11, marginTop: 1 },

@@ -1,16 +1,27 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ImageBackground, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { deriveHealthWatch, normalizeCareEventType } from "@workspace/care-domain";
+import {
+  deriveCareReminderCenter,
+  deriveHealthWatch,
+  deriveMedicationAdherence,
+  deriveWeightTrend,
+  getRecordDueStatus,
+  normalizeCareEventType,
+  summarizeRecordVault,
+} from "@workspace/care-domain";
 
 import {
+  BoardActionButton,
   BoardCard,
   BoardMetricTile,
   BoardPill,
   BoardRouteHeader,
   BoardSectionHeader,
 } from "@/components/board/BoardPrimitives";
+import { PressScale } from "@/components/motion/GameFeel";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { useCare } from "@/context/CareContext";
@@ -145,6 +156,81 @@ function statusActionLabel(type: string): string {
   return "Log details";
 }
 
+function shortDate(iso: string): string {
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return iso;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function signedChange(value: number, unit: string): string {
+  return `${value > 0 ? "+" : ""}${value} ${unit}`;
+}
+
+// Reminder Center kinds -> pixel icon chips (same truth Calendar's Reminder
+// Center derives; only the soonest candidate surfaces on Health).
+const REMINDER_KIND_ICON: Record<string, PixelIconName> = {
+  medication: "medication",
+  routine: "clock",
+  record: "note",
+  grooming: "heart",
+};
+
+/**
+ * Mockup-board Health Summary row: pixel icon chip + ink label + muted real
+ * value + chevron. Every row routes to the screen that owns the real detail,
+ * and every value is either logged data or an honest "Not on file".
+ */
+function HealthSummaryRow({
+  icon,
+  label,
+  value,
+  detail,
+  accessory,
+  onPress,
+  accessibilityLabel,
+  accessibilityHint,
+}: {
+  icon: PixelIconName;
+  label: string;
+  value: string;
+  detail?: string;
+  accessory?: ReactNode;
+  onPress: () => void;
+  accessibilityLabel: string;
+  accessibilityHint?: string;
+}) {
+  const colors = useColors();
+  return (
+    <PressScale
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      onPress={onPress}
+      scaleTo={0.97}
+      style={[s.summaryRow, { backgroundColor: colors.background, borderColor: colors.border }]}
+    >
+      <View style={[s.summaryRowIcon, { backgroundColor: colors.sageSoft }]}>
+        <PixelIcon name={icon} size={22} />
+      </View>
+      <View style={s.summaryRowText}>
+        <Text numberOfLines={1} style={[s.summaryRowLabel, { color: colors.ink, fontFamily: "Inter_700Bold" }]}>
+          {label}
+        </Text>
+        {detail ? (
+          <Text numberOfLines={1} style={[s.summaryRowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            {detail}
+          </Text>
+        ) : null}
+      </View>
+      {accessory}
+      <Text numberOfLines={1} style={[s.summaryRowValue, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        {value}
+      </Text>
+      <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+    </PressScale>
+  );
+}
+
 export default function HealthScreen() {
   const colors = useColors();
   const router = useRouter();
@@ -186,6 +272,85 @@ export default function HealthScreen() {
         .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()),
     [state.entries, now],
   );
+
+  // Mockup-board Overview data: every value below is derived from persisted
+  // household state (routines, entries, records, diet profile) - nothing is
+  // invented, and each absent value renders an honest "Not on file".
+  const careReminderCenter = useMemo(
+    () =>
+      deriveCareReminderCenter({
+        routines: state.routines,
+        entries: state.entries,
+        records: state.records,
+        caregivers: state.caregivers,
+        now,
+        limit: 3,
+      }),
+    [state.routines, state.entries, state.records, state.caregivers, now],
+  );
+  const nextReminder = careReminderCenter.items[0] ?? null;
+
+  const weightTrend = useMemo(
+    () =>
+      deriveWeightTrend({
+        entries: state.entries,
+        profile: state.profile,
+        goals: state.goals,
+        now,
+        lookbackDays: 90,
+        limit: 8,
+        petName: state.profile.name,
+      }),
+    [state.entries, state.profile, state.goals, now],
+  );
+  const weightOnFile = weightTrend.currentWeight > 0;
+  const weightValue = weightOnFile ? `${weightTrend.currentWeight} ${weightTrend.unit}` : "Not on file";
+  const weightDetail = !weightOnFile
+    ? "Log a weigh-in to start the trend"
+    : weightTrend.totalWeighIns >= 2 && weightTrend.changeFromPrevious !== 0
+      ? `${signedChange(weightTrend.changeFromPrevious, weightTrend.unit)} since previous weigh-in`
+      : weightTrend.latest
+        ? `Logged ${shortDate(weightTrend.latest.occurredAt)}`
+        : "Profile weight - no weigh-ins in 90 days";
+  const sparkWeights = weightTrend.items.map((item) => item.weight);
+  const sparkMin = sparkWeights.length ? Math.min(...sparkWeights) : 0;
+  const sparkMax = sparkWeights.length ? Math.max(...sparkWeights) : 0;
+  const sparkRange = Math.max(0.1, sparkMax - sparkMin);
+
+  const medicationAdherence = useMemo(
+    () => deriveMedicationAdherence({ entries: state.entries, routines: state.routines, now }),
+    [state.entries, state.routines, now],
+  );
+
+  const recordVault = useMemo(() => summarizeRecordVault(state.records), [state.records]);
+  const vaccineSection = recordVault.sections.find((section) => section.kind === "vaccine");
+  const vetSection = recordVault.sections.find((section) => section.kind === "vet");
+  const vaccineCount = vaccineSection?.count ?? 0;
+  const expiredVaccineCount = useMemo(
+    () =>
+      (vaccineSection?.records ?? []).filter(
+        (record) => getRecordDueStatus(record, now).status === "expired",
+      ).length,
+    [vaccineSection, now],
+  );
+  // "Last vet visit" reads straight from the vet section of the record vault:
+  // the most recent dated visit that is not in the future, else the filed
+  // record's title, else "None on file". No date is ever synthesized.
+  const lastVetVisit = useMemo(() => {
+    const vetRecords = vetSection?.records ?? [];
+    if (!vetRecords.length) return null;
+    const dated = vetRecords
+      .map((record) => ({ record, status: getRecordDueStatus(record, now) }))
+      .filter((item) => Boolean(item.status.date) && (item.status.daysUntil ?? 1) <= 0)
+      .sort((a, b) => (b.status.daysUntil ?? 0) - (a.status.daysUntil ?? 0));
+    if (dated[0]) {
+      return { value: dated[0].status.date ?? dated[0].record.due ?? "", detail: dated[0].record.title };
+    }
+    const first = vetRecords[0];
+    return { value: first.due?.trim() || first.title, detail: first.due?.trim() ? first.title : "Visit record on file" };
+  }, [vetSection, now]);
+
+  const sensitivitiesOnFile = (state.dietProfile.sensitivities ?? "").trim();
 
   const mealGaps = useMemo(() => {
     const meals = state.entries
@@ -523,7 +688,7 @@ export default function HealthScreen() {
         </View>
 
         {isBileTab ? (
-          <BoardCard style={s.bileCard}>
+          <BoardCard style={s.bileCard} enter={0}>
             <View style={s.sectionTop}>
               <BoardSectionHeader title="Bile Watch" style={s.boardSectionTop} />
               <BoardPill label={bileStatus} icon="water-outline" tone={bileTone} />
@@ -619,9 +784,9 @@ export default function HealthScreen() {
                 </Text>
                 <View style={s.healthStageBubbleTail} />
               </View>
-              <View style={[s.healthStageChip, { backgroundColor: colors.brandNavy + "DD", borderColor: colors.ivory + "55" }]}>
+              <View style={[s.healthStageChip, { backgroundColor: colors.sageSoft, borderColor: colors.sage + "55" }]}>
                 <PixelIcon name="health" size={16} />
-                <Text style={[s.healthStageChipText, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
+                <Text style={[s.healthStageChipText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
                   {statusMedallionLabel}
                 </Text>
               </View>
@@ -656,13 +821,13 @@ export default function HealthScreen() {
             <View style={s.healthHeroStatusRow}>
               <View style={[s.healthScoreToken, { backgroundColor: scoreTone + "14", borderColor: scoreTone + "66" }]}>
                 <Text style={[s.healthScoreValue, { color: scoreTone, fontFamily: DISPLAY }]}>{scoreDisplay}</Text>
-                <Text style={[s.healthScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_800ExtraBold" }]}>
+                <Text style={[s.healthScoreLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                   Health score
                 </Text>
               </View>
 
               <View style={s.healthHeroCopyStack}>
-                <Text style={[s.heroLabel, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>{heroStatusKicker}</Text>
+                <Text style={[s.heroLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{heroStatusKicker}</Text>
                 <Text style={[s.heroTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>{heroPanelTitle}</Text>
                 <Text style={[s.heroCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                   {heroPanelCopy}
@@ -680,7 +845,7 @@ export default function HealthScreen() {
               <>
                 <View style={[s.healthRhythmPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
                   <View style={s.healthRhythmHeader}>
-                    <Text style={[s.healthRhythmTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    <Text style={[s.healthRhythmTitle, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                       7-day rhythm
                     </Text>
                     <Text style={[s.healthRhythmMeta, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
@@ -710,16 +875,17 @@ export default function HealthScreen() {
 
                 <View style={s.healthSignalList}>
                   {displayHealthRows.slice(0, 4).map((row) => (
-                    <Pressable
+                    <PressScale
                       key={row.label}
                       accessibilityRole="button"
                       accessibilityLabel={`${row.label}. ${row.status}. ${row.detail}. ${row.actionLabel}`}
                       onPress={() => openHealthStatusRoute(row.routeType)}
-                      style={({ pressed }) => [
+                      scaleTo={0.97}
+                      style={[
                         s.healthSignalRow,
                         {
-                          backgroundColor: pressed ? row.tone + "10" : colors.background,
-                          borderColor: pressed ? row.tone + "77" : colors.border,
+                          backgroundColor: colors.background,
+                          borderColor: colors.border,
                         },
                       ]}
                     >
@@ -745,7 +911,7 @@ export default function HealthScreen() {
                           {">"}
                         </Text>
                       </View>
-                    </Pressable>
+                    </PressScale>
                   ))}
                 </View>
               </>
@@ -782,6 +948,235 @@ export default function HealthScreen() {
             </Pressable>
           </View>
         </BoardCard>
+
+        {!isBileTab ? (
+          <>
+            {/* Mockup-board rhythm: Next reminder -> Health summary ->
+                Medications. Every row is real persisted data or an honest
+                empty state; nothing here is decorative or invented. */}
+            <BoardCard style={s.summaryCard} enter={1}>
+              <BoardSectionHeader
+                title="Next reminder"
+                accessory={
+                  nextReminder ? (
+                    <BoardPill
+                      label={
+                        nextReminder.daysUntil != null
+                          ? nextReminder.daysUntil <= 0
+                            ? "Now"
+                            : `In ${nextReminder.daysUntil}d`
+                          : nextReminder.time || "Review"
+                      }
+                      tone={
+                        nextReminder.urgency === "alert"
+                          ? colors.rose
+                          : nextReminder.urgency === "watch"
+                            ? colors.amber
+                            : colors.sage
+                      }
+                    />
+                  ) : undefined
+                }
+              />
+              {nextReminder ? (
+                <PressScale
+                  accessibilityRole="button"
+                  accessibilityLabel={`Next reminder: ${nextReminder.label}. ${nextReminder.detail} Opens Plans.`}
+                  accessibilityHint="Opens the reminder center on the Plans tab."
+                  onPress={() => router.push("/calendar")}
+                  scaleTo={0.97}
+                  style={[s.summaryRow, { backgroundColor: colors.background, borderColor: colors.border }]}
+                >
+                  <View style={[s.summaryRowIcon, { backgroundColor: colors.sageSoft }]}>
+                    <PixelIcon name={REMINDER_KIND_ICON[nextReminder.kind] ?? "clock"} size={22} />
+                  </View>
+                  <View style={s.summaryRowText}>
+                    <Text numberOfLines={1} style={[s.summaryRowLabel, { color: colors.ink, fontFamily: "Inter_700Bold" }]}>
+                      {nextReminder.label}
+                    </Text>
+                    <Text numberOfLines={2} style={[s.summaryRowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {nextReminder.detail}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+                </PressScale>
+              ) : (
+                <View style={[s.summaryEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Text style={[s.summaryEmptyTitle, { color: colors.ink, fontFamily: DISPLAY_SEMI }]}>
+                    No reminders set
+                  </Text>
+                  <Text style={[s.summaryEmptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    Medication schedules, routines, and record renewals surface here once they exist.
+                  </Text>
+                  <BoardActionButton
+                    label="Add in Plans"
+                    icon="add"
+                    variant="soft"
+                    accessibilityLabel="Add a reminder from the Plans tab"
+                    onPress={() => router.push("/calendar")}
+                    style={s.summaryEmptyAction}
+                  />
+                </View>
+              )}
+            </BoardCard>
+
+            <BoardCard style={s.summaryCard} enter={2}>
+              <BoardSectionHeader title="Health summary" />
+              <View style={s.summaryList}>
+                <HealthSummaryRow
+                  icon="health"
+                  label="Weight"
+                  value={weightValue}
+                  detail={weightDetail}
+                  accessory={
+                    weightTrend.items.length >= 2 ? (
+                      <View style={s.summarySpark} accessibilityLabel={`Weight trend across ${weightTrend.totalWeighIns} logged weigh-ins`}>
+                        {weightTrend.items.map((item, index) => (
+                          <View
+                            key={`${item.id}-${index}`}
+                            style={[
+                              s.summarySparkBar,
+                              {
+                                backgroundColor: colors.sage,
+                                height: 6 + Math.round(((item.weight - sparkMin) / sparkRange) * 12),
+                              },
+                            ]}
+                          />
+                        ))}
+                      </View>
+                    ) : undefined
+                  }
+                  onPress={() => router.push("/records")}
+                  accessibilityLabel={`Weight. ${weightValue}. ${weightDetail}. Opens the weight trend in Records.`}
+                />
+                <HealthSummaryRow
+                  icon="note"
+                  label="Last vet visit"
+                  value={lastVetVisit ? lastVetVisit.value : "None on file"}
+                  detail={lastVetVisit ? lastVetVisit.detail : "Add a vet visit record to the vault"}
+                  onPress={() => router.push("/records")}
+                  accessibilityLabel={`Last vet visit. ${lastVetVisit ? `${lastVetVisit.detail}, ${lastVetVisit.value}` : "None on file"}. Opens Records.`}
+                />
+                <HealthSummaryRow
+                  icon="medication"
+                  label="Vaccinations"
+                  value={vaccineCount > 0 ? `${vaccineCount} filed` : "None filed"}
+                  detail={
+                    expiredVaccineCount > 0
+                      ? `${expiredVaccineCount} expired - worth review`
+                      : vaccineCount > 0
+                        ? "In the record vault"
+                        : "Add vaccine records to the vault"
+                  }
+                  onPress={() => router.push("/records")}
+                  accessibilityLabel={`Vaccinations. ${vaccineCount > 0 ? `${vaccineCount} filed` : "None filed"}${expiredVaccineCount > 0 ? `, ${expiredVaccineCount} expired` : ""}. Opens Records.`}
+                />
+                <HealthSummaryRow
+                  icon="meal"
+                  label="Sensitivities"
+                  value={sensitivitiesOnFile || "Not on file"}
+                  detail={sensitivitiesOnFile ? "Owner notes, not a diagnosis" : "Add in the diet profile"}
+                  onPress={() => router.push("/more")}
+                  accessibilityLabel={`Sensitivities. ${sensitivitiesOnFile || "Not on file"}. Opens the diet profile in More.`}
+                />
+              </View>
+            </BoardCard>
+
+            <BoardCard style={s.summaryCard} enter={3}>
+              <BoardSectionHeader
+                title="Medications"
+                accessory={
+                  <BoardPill
+                    label={
+                      medicationAdherence.total > 0
+                        ? `${medicationAdherence.takenCount}/${medicationAdherence.total} today`
+                        : "None on file"
+                    }
+                    tone={
+                      medicationAdherence.total === 0
+                        ? colors.mutedForeground
+                        : medicationAdherence.missedCount > 0
+                          ? colors.rose
+                          : medicationAdherence.dueCount > 0
+                            ? colors.amber
+                            : colors.sage
+                    }
+                  />
+                }
+              />
+              {medicationAdherence.total === 0 ? (
+                <View style={[s.summaryEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Text style={[s.summaryEmptyTitle, { color: colors.ink, fontFamily: DISPLAY_SEMI }]}>
+                    No medications on file
+                  </Text>
+                  <Text style={[s.summaryEmptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    Medication routines added in Plans show their schedule and next dose here.
+                  </Text>
+                  <BoardActionButton
+                    label="Add medication routine"
+                    icon="add"
+                    variant="soft"
+                    accessibilityLabel="Add a medication routine from the Plans tab"
+                    onPress={() => router.push("/calendar")}
+                    style={s.summaryEmptyAction}
+                  />
+                </View>
+              ) : (
+                <View style={s.summaryList}>
+                  {medicationAdherence.items.slice(0, 4).map((item) => {
+                    const medTone =
+                      item.status === "taken"
+                        ? colors.sage
+                        : item.status === "missed"
+                          ? colors.rose
+                          : item.status === "due"
+                            ? colors.amber
+                            : colors.mutedForeground;
+                    const medStatusLabel =
+                      item.status === "taken"
+                        ? "Taken"
+                        : item.status === "missed"
+                          ? "Missed"
+                          : item.status === "due"
+                            ? "Due now"
+                            : "Upcoming";
+                    return (
+                      <PressScale
+                        key={item.id}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${item.label}. ${item.dose}, ${item.time}. ${medStatusLabel}. Opens the medication plan in Records.`}
+                        onPress={() => router.push("/records")}
+                        scaleTo={0.97}
+                        style={[s.summaryRow, { backgroundColor: colors.background, borderColor: colors.border }]}
+                      >
+                        <View style={[s.summaryRowIcon, { backgroundColor: colors.sageSoft }]}>
+                          <PixelIcon name="medication" size={22} />
+                        </View>
+                        <View style={s.summaryRowText}>
+                          <Text numberOfLines={1} style={[s.summaryRowLabel, { color: colors.ink, fontFamily: "Inter_700Bold" }]}>
+                            {item.label}
+                          </Text>
+                          <Text numberOfLines={1} style={[s.summaryRowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                            {item.dose} - {item.time}
+                          </Text>
+                        </View>
+                        <Text style={[s.summaryRowStatus, { color: medTone, fontFamily: "Inter_700Bold" }]}>
+                          {medStatusLabel}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+                      </PressScale>
+                    );
+                  })}
+                  {medicationAdherence.next ? (
+                    <Text style={[s.summaryFootnote, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      Next: {medicationAdherence.next.label} at {medicationAdherence.next.time}
+                    </Text>
+                  ) : null}
+                </View>
+              )}
+            </BoardCard>
+          </>
+        ) : null}
 
         <BoardCard style={s.sectionCard}>
           <View style={s.reviewPacketTop}>
@@ -935,7 +1330,7 @@ export default function HealthScreen() {
         </BoardCard>
 
         <View style={[s.boundaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[s.boundaryLabel, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>CARE BOUNDARY</Text>
+          <Text style={[s.boundaryLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>CARE BOUNDARY</Text>
           <Text style={[s.boundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             {healthWatch.vetBoundary} Not veterinary advice.
           </Text>
@@ -1032,11 +1427,13 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(255,249,239,0.95)",
     transform: [{ rotate: "-45deg" }],
   },
+  // Mockup parity: the stage status chip is a soft sage pill (sageSoft fill,
+  // forest text), never a dark navy HUD element.
   healthStageChip: {
     minHeight: 34,
-    borderRadius: 7,
+    borderRadius: 999,
     borderWidth: 1,
-    paddingHorizontal: 9,
+    paddingHorizontal: 11,
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
@@ -1092,7 +1489,7 @@ const s = StyleSheet.create({
   healthScoreLabel: {
     fontSize: 9,
     lineHeight: 12,
-    letterSpacing: 0.4,
+    letterSpacing: 1.1,
     textAlign: "center",
     textTransform: "uppercase",
   },
@@ -1128,14 +1525,16 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     gap: 10,
   },
+  // Parchment strip: quiet sage caps labels over cream, ink values below.
   healthRhythmTitle: {
-    fontSize: 13,
+    fontSize: 9,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1.1,
   },
   healthRhythmMeta: {
-    fontSize: 10.5,
+    fontSize: 9,
     textTransform: "uppercase",
+    letterSpacing: 1.1,
   },
   healthRhythmBars: {
     minHeight: 36,
@@ -1173,7 +1572,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   heroText: { flex: 1, minWidth: 0 },
-  heroLabel: { fontSize: 10.5, letterSpacing: 0.4 },
+  heroLabel: { fontSize: 9, letterSpacing: 1.1, textTransform: "uppercase" },
   heroTitle: { color: "#FFF9EF", fontSize: 24, lineHeight: 27, marginTop: 1 },
   heroCopy: { color: "rgba(255,249,239,0.72)", fontSize: 12.5, lineHeight: 18, marginTop: 5 },
   scoreBadge: {
@@ -1213,6 +1612,88 @@ const s = StyleSheet.create({
 
   sectionCard: { marginTop: 10 },
   bileCard: { marginBottom: 10 },
+
+  // Mockup-board Overview cards: Next reminder / Health summary /
+  // Medications. Cream rows on parchment cards - no dark strips.
+  summaryCard: { marginTop: 10 },
+  summaryList: {
+    gap: 6,
+  },
+  summaryRow: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+  summaryRowIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  summaryRowText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  summaryRowLabel: {
+    fontSize: 12.5,
+    lineHeight: 16,
+  },
+  summaryRowDetail: {
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: 1,
+  },
+  summaryRowValue: {
+    maxWidth: "38%",
+    fontSize: 12,
+    lineHeight: 16,
+    textAlign: "right",
+  },
+  summaryRowStatus: {
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  summarySpark: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 2,
+    height: 18,
+  },
+  summarySparkBar: {
+    width: 4,
+    borderRadius: 2,
+  },
+  summaryEmpty: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    alignItems: "flex-start",
+    gap: 4,
+  },
+  summaryEmptyTitle: {
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  summaryEmptyCopy: {
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  summaryEmptyAction: {
+    alignSelf: "flex-start",
+    marginTop: 6,
+  },
+  summaryFootnote: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 3,
+  },
   healthSnapshotHeader: {
     marginBottom: 8,
     paddingBottom: 6,
@@ -1542,6 +2023,6 @@ const s = StyleSheet.create({
     padding: 12,
     marginTop: 14,
   },
-  boundaryLabel: { fontSize: 10.5, letterSpacing: 0.5 },
+  boundaryLabel: { fontSize: 9, letterSpacing: 1.1, textTransform: "uppercase" },
   boundary: { fontSize: 12, lineHeight: 18, marginTop: 5 },
 });

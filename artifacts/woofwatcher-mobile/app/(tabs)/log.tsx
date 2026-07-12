@@ -103,6 +103,7 @@ import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
 import { BoardActionButton, BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { PressScale } from "@/components/motion/GameFeel";
 import { homeImmersiveRoomIsNight } from "./index";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -2136,7 +2137,6 @@ export default function LogScreen() {
     state.entries.filter(isPendingMealEntry).length +
     (openAloneSession ? 1 : 0) +
     (openWalkSession ? 1 : 0);
-  const logCommandSignal = Math.max(1, Math.min(5, Math.round(careIntelligence.score / 20)));
   // Time-aware console stage: same clock rule as Home's immersive room (dark
   // theme or lamplit hours). There is no night banner art, so a navy tint
   // over the day painting keeps the hero honest at 23:00 and in dark mode.
@@ -2453,20 +2453,28 @@ export default function LogScreen() {
               />
               <View style={s.logCommandStageTop}>
                 <View style={s.logCommandBubble}>
-                  <Text style={[s.logCommandKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                  <Text style={[s.logCommandKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                     Quick Care Console
                   </Text>
                   <Text
                     numberOfLines={2}
-                    style={[s.logCommandSpeech, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
+                    style={[s.logCommandSpeech, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
                   >
                     {logCommandSpeech}
                   </Text>
                   <View style={s.logCommandBubbleTail} />
                 </View>
-                <View style={[s.logCommandChip, { backgroundColor: colors.brandNavy + "E8", borderColor: colors.ivory + "55" }]}>
+                <View style={[s.logCommandChip, { backgroundColor: colors.ivory + "F2", borderColor: colors.border }]}>
                   <PixelIcon name={selectedLauncherAction?.icon ?? "heart"} size={17} />
-                  <Text style={[s.logCommandChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                  <Text
+                    style={[
+                      s.logCommandChipText,
+                      {
+                        color: selectedLauncherRequiresDetail ? colors.amber : colors.forest,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
                     {selectedLauncherRequiresDetail ? "Details" : "Ready"}
                   </Text>
                 </View>
@@ -2485,75 +2493,45 @@ export default function LogScreen() {
 
             </ImageBackground>
             <View style={[s.logCommandDock, { backgroundColor: colors.ivory + "F3", borderColor: colors.border }]}>
-              <View style={[s.logCommandHud, { backgroundColor: colors.brandNavy, borderColor: colors.brandNavy + "22" }]}>
+              <View style={s.logCommandHud}>
                 {logCommandHud.map((metric) => (
-                  <View key={metric.label} style={s.logCommandHudCell}>
-                    <Text style={[s.logCommandHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>
+                  <View
+                    key={metric.label}
+                    style={[s.logCommandHudCell, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  >
+                    <Text style={[s.logCommandHudLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                       {metric.label}
                     </Text>
                     <Text
                       numberOfLines={1}
                       adjustsFontSizeToFit
-                      style={[s.logCommandHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}
+                      style={[s.logCommandHudValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
                     >
                       {metric.value}
                     </Text>
-                    <View style={s.logCommandSignalRow}>
-                      {[0, 1, 2, 3, 4].map((bar) => (
-                        <View
-                          key={bar}
-                          style={[
-                            s.logCommandSignalBar,
-                            {
-                              height: 5 + bar * 2,
-                              backgroundColor: bar < logCommandSignal ? metric.tone : colors.ivory + "2F",
-                            },
-                          ]}
-                        />
-                      ))}
-                    </View>
                   </View>
                 ))}
               </View>
-
-              <View style={s.logCommandFooter}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    selectedLauncherAction
-                      ? `${selectedLauncherRequiresDetail ? "Open details for" : "Quick log"} ${selectedLauncherAction.label}`
-                      : "Open full Quick Log composer"
+            </View>
+            <View style={s.logCommandActionRow}>
+              <BoardActionButton
+                label={selectedLauncherRequiresDetail ? "Add details" : "Quick Log"}
+                icon={selectedLauncherRequiresDetail ? "reader-outline" : "flash-outline"}
+                variant="primary"
+                accessibilityLabel={
+                  selectedLauncherAction
+                    ? `${selectedLauncherRequiresDetail ? "Open details for" : "Quick log"} ${selectedLauncherAction.label}`
+                    : "Open full Quick Log composer"
+                }
+                onPress={() => {
+                  if (selectedLauncherAction) {
+                    handleQuickLauncherAction(selectedLauncherAction);
+                    return;
                   }
-                  onPress={() => {
-                    if (selectedLauncherAction) {
-                      handleQuickLauncherAction(selectedLauncherAction);
-                      return;
-                    }
-                    Haptics.selectionAsync();
-                    scrollToComposer();
-                  }}
-                  style={({ pressed }) => [
-                    s.logCommandAction,
-                    {
-                      backgroundColor: selectedLauncherRequiresDetail ? colors.amber : colors.primary,
-                      opacity: pressed ? 0.82 : 1,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={selectedLauncherRequiresDetail ? "reader-outline" : "flash-outline"}
-                    size={15}
-                    color={colors.ivory}
-                  />
-                  <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    style={[s.logCommandActionText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}
-                  >
-                    {selectedLauncherRequiresDetail ? "Add Details" : "Quick Log"}
-                  </Text>
-                </Pressable>
-              </View>
+                  Haptics.selectionAsync();
+                  scrollToComposer();
+                }}
+              />
             </View>
           </BoardCard>
 
@@ -2561,7 +2539,7 @@ export default function LogScreen() {
             <View style={s.quickLogActionConsole}>
               <View style={s.quickLogActionConsoleHeader}>
                 <View style={s.quickLogActionTitleBlock}>
-                  <Text style={[s.quickLogActionKicker, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                  <Text style={[s.quickLogActionKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                     QUICK LOG FLOW
                   </Text>
                   <Text numberOfLines={1} style={[s.quickLogActionSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -2576,12 +2554,12 @@ export default function LogScreen() {
                   style={({ pressed }) => [
                     s.quickLogGuideButton,
                     {
-                      backgroundColor: pressed ? colors.copper + "18" : colors.background,
+                      backgroundColor: pressed ? colors.secondary : colors.background,
                       borderColor: colors.border,
                     },
                   ]}
                 >
-                  <Ionicons name="help-circle-outline" size={17} color={colors.copper} />
+                  <Ionicons name="help-circle-outline" size={17} color={colors.sage} />
                 </Pressable>
               </View>
 
@@ -2627,7 +2605,7 @@ export default function LogScreen() {
                 const active = selectedLauncherKey === launcherActionKey(action);
                 const launcherPresentation = describeQuickLogLauncherAction(action.type, action.label);
                 return (
-                  <Pressable
+                  <PressScale
                     key={`${action.label}-${action.type}`}
                     accessibilityRole="button"
                     accessibilityLabel={launcherPresentation.accessibilityLabel}
@@ -2635,21 +2613,23 @@ export default function LogScreen() {
                     accessibilityState={{ selected: active }}
                     onPress={() => handleQuickLauncherAction(action)}
                     onLongPress={() => focusFullComposerForLauncherAction(action)}
-                    style={({ pressed }) => [
+                    scaleTo={0.94}
+                    haptic="none"
+                    containerStyle={s.launcherTileLayout}
+                    style={[
                       s.launcherTile,
                       {
                         backgroundColor: active ? colors.ivory : colors.background,
                         borderColor: launcherPresentation.detailRequired
-                          ? colors.amber + "88"
+                          ? colors.amber + "66"
                           : active
-                            ? colors.copper
+                            ? colors.primary
                             : colors.border,
-                        shadowColor: launcherPresentation.detailRequired ? colors.amber : active ? colors.copper : colors.navy,
+                        shadowColor: launcherPresentation.detailRequired ? colors.amber : active ? colors.primary : colors.navy,
                         shadowOpacity: active ? 0.13 : 0,
                         shadowRadius: active ? 10 : 0,
                         shadowOffset: { width: 0, height: active ? 5 : 0 },
                         elevation: active ? 2 : 0,
-                        transform: [{ scale: pressed ? 0.97 : 1 }],
                       },
                     ]}
                   >
@@ -2657,45 +2637,37 @@ export default function LogScreen() {
                       style={[
                         s.launcherIconHalo,
                         {
-                          backgroundColor: active ? colors.copper + "12" : colors.card,
-                          borderColor: active ? colors.copper + "55" : colors.border,
+                          backgroundColor: active ? colors.sageSoft : colors.card,
+                          borderColor: active ? colors.primary + "55" : colors.border,
                         },
                       ]}
                     >
                       <PixelIcon name={action.icon} size={30} />
                     </View>
                     {active ? (
-                      <View style={[s.launcherSelectedMark, { backgroundColor: colors.copper }]}>
-                        <Ionicons name="checkmark" size={12} color={colors.ivory} />
+                      <View style={[s.launcherSelectedMark, { backgroundColor: colors.primary }]}>
+                        <Ionicons name="checkmark" size={12} color={colors.primaryForeground} />
                       </View>
                     ) : null}
                     <Text
                       numberOfLines={1}
                       adjustsFontSizeToFit
-                      style={[s.launcherTileText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}
+                      style={[s.launcherTileText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
                     >
                       {action.label}
                     </Text>
                     {/* Only detail-required tiles carry a pill: a quiet
                         differentiator instead of twelve identical labels. */}
                     {launcherPresentation.detailRequired ? (
-                      <View
-                        style={[
-                          s.launcherTileMode,
-                          {
-                            backgroundColor: colors.amber + "18",
-                            borderColor: colors.amber + "55",
-                          },
-                        ]}
-                      >
+                      <View style={[s.launcherTileMode, { backgroundColor: colors.amberSoft }]}>
                         <Text
                           numberOfLines={1}
                           adjustsFontSizeToFit
                           style={[
                             s.launcherTileModeText,
                             {
-                              color: colors.copper,
-                              fontFamily: "Inter_800ExtraBold",
+                              color: colors.amber,
+                              fontFamily: "Inter_700Bold",
                             },
                           ]}
                         >
@@ -2703,7 +2675,7 @@ export default function LogScreen() {
                         </Text>
                       </View>
                     ) : null}
-                  </Pressable>
+                  </PressScale>
                 );
               })}
               {/* Invisible fillers square off the last space-between row so a
@@ -2787,27 +2759,27 @@ export default function LogScreen() {
             ) : null}
 
             {openWalkSession ? (
-              <View style={[s.aloneActivePanel, { backgroundColor: colors.brandNavy, borderColor: colors.sage + "66" }]}>
+              <View style={[s.aloneActivePanel, { backgroundColor: colors.card, borderColor: colors.sage + "55" }]}>
                 <View style={s.aloneActiveTop}>
-                  <View style={[s.aloneActiveIcon, { backgroundColor: colors.sage + "22", borderColor: colors.sage + "77" }]}>
+                  <View style={[s.aloneActiveIcon, { backgroundColor: colors.sageSoft, borderColor: colors.sage + "55" }]}>
                     <PixelIcon name="walk" size={34} />
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[s.aloneActiveKicker, { color: colors.sageSoft, fontFamily: "Inter_700Bold" }]}>
+                    <Text style={[s.aloneActiveKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                       WALK ACTIVE
                     </Text>
-                    <Text style={[s.aloneActiveTitle, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>
+                    <Text style={[s.aloneActiveTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                       Phoenix is on a walk
                     </Text>
-                    <Text style={[s.aloneActiveMeta, { color: colors.ivory + "B8", fontFamily: "Inter_500Medium" }]}>
+                    <Text style={[s.aloneActiveMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       Started by {openWalkSession.caregiver || "household"} - {formatAloneDuration(openWalkMinutes)}
                     </Text>
-                    <Text style={[s.walkRouteStatus, { color: colors.ivory + "8C", fontFamily: "Inter_500Medium" }]}>
+                    <Text style={[s.walkRouteStatus, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       {walkRouteStatusText}
                     </Text>
                   </View>
                 </View>
-                <Text style={[s.returnCheckTitle, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
+                <Text style={[s.returnCheckTitle, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                   Finish details
                 </Text>
                 <View style={s.returnDetailRow}>
@@ -2815,16 +2787,16 @@ export default function LogScreen() {
                     value={walkFinishRouteName}
                     onChangeText={setWalkFinishRouteName}
                     placeholder="Route or place"
-                    placeholderTextColor={colors.ivory + "99"}
-                    style={[s.returnInput, s.returnInputNote, { color: colors.ivory, borderColor: colors.ivory + "30", fontFamily: "Inter_500Medium" }]}
+                    placeholderTextColor={colors.mutedForeground}
+                    style={[s.returnInput, s.returnInputNote, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
                     value={walkFinishDistanceMiles}
                     onChangeText={setWalkFinishDistanceMiles}
                     placeholder="Miles"
-                    placeholderTextColor={colors.ivory + "99"}
+                    placeholderTextColor={colors.mutedForeground}
                     keyboardType="decimal-pad"
-                    style={[s.returnInput, { color: colors.ivory, borderColor: colors.ivory + "30", fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
                 <View style={s.returnDetailRow}>
@@ -2832,24 +2804,24 @@ export default function LogScreen() {
                     value={walkFinishDogInteractions}
                     onChangeText={setWalkFinishDogInteractions}
                     placeholder="Dogs met"
-                    placeholderTextColor={colors.ivory + "99"}
+                    placeholderTextColor={colors.mutedForeground}
                     keyboardType="number-pad"
-                    style={[s.returnInput, { color: colors.ivory, borderColor: colors.ivory + "30", fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
                     value={walkFinishSocialOutcome}
                     onChangeText={setWalkFinishSocialOutcome}
                     placeholder="Social outcome"
-                    placeholderTextColor={colors.ivory + "99"}
-                    style={[s.returnInput, s.returnInputNote, { color: colors.ivory, borderColor: colors.ivory + "30", fontFamily: "Inter_500Medium" }]}
+                    placeholderTextColor={colors.mutedForeground}
+                    style={[s.returnInput, s.returnInputNote, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
                 <TextInput
                   value={walkFinishNote}
                   onChangeText={setWalkFinishNote}
                   placeholder="Anything notable?"
-                  placeholderTextColor={colors.ivory + "99"}
-                  style={[s.returnInput, { color: colors.ivory, borderColor: colors.ivory + "30", fontFamily: "Inter_500Medium" }]}
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[s.returnInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                 />
                 <Pressable
                   accessibilityRole="button"
@@ -2858,38 +2830,38 @@ export default function LogScreen() {
                   style={({ pressed }) => [
                     s.walkFinishButton,
                     {
-                      backgroundColor: pressed ? colors.sageSoft : colors.sage,
-                      borderColor: colors.sageSoft,
+                      backgroundColor: pressed ? colors.forestBright : colors.primary,
+                      borderColor: colors.primary,
                     },
                   ]}
                 >
-                  <Text style={[s.walkFinishText, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
+                  <Text style={[s.walkFinishText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
                     Finish walk
                   </Text>
-                  <Ionicons name="checkmark-circle-outline" size={18} color={colors.brandNavy} />
+                  <Ionicons name="checkmark-circle-outline" size={18} color={colors.primaryForeground} />
                 </Pressable>
               </View>
             ) : null}
 
             {openAloneSession ? (
-              <View style={[s.aloneActivePanel, { backgroundColor: colors.brandNavy, borderColor: colors.copper + "66" }]}>
+              <View style={[s.aloneActivePanel, { backgroundColor: colors.card, borderColor: colors.amber + "55" }]}>
                 <View style={s.aloneActiveTop}>
-                  <View style={[s.aloneActiveIcon, { backgroundColor: colors.copper + "22", borderColor: colors.copper + "66" }]}>
+                  <View style={[s.aloneActiveIcon, { backgroundColor: colors.amberSoft, borderColor: colors.amber + "44" }]}>
                     <PixelIcon name="clock" size={34} />
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[s.aloneActiveKicker, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                    <Text style={[s.aloneActiveKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                       HOME ALONE ACTIVE
                     </Text>
-                    <Text style={[s.aloneActiveTitle, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>
+                    <Text style={[s.aloneActiveTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                       Phoenix is home alone
                     </Text>
-                    <Text style={[s.aloneActiveMeta, { color: colors.ivory + "B8", fontFamily: "Inter_500Medium" }]}>
+                    <Text style={[s.aloneActiveMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       Started by {openAloneSession.caregiver || "household"} - {formatAloneDuration(openAloneMinutes)}
                     </Text>
                   </View>
                 </View>
-                <Text style={[s.returnCheckTitle, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
+                <Text style={[s.returnCheckTitle, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                   Return check-in
                 </Text>
                 <View style={s.returnOutcomeGrid}>
@@ -2902,12 +2874,12 @@ export default function LogScreen() {
                       style={({ pressed }) => [
                         s.returnOutcomeButton,
                         {
-                          backgroundColor: pressed ? colors.ivory + "28" : colors.ivory + "12",
-                          borderColor: colors.ivory + "30",
+                          backgroundColor: pressed ? colors.secondary : colors.background,
+                          borderColor: colors.border,
                         },
                       ]}
                     >
-                      <Text style={[s.returnOutcomeText, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
+                      <Text style={[s.returnOutcomeText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                         {option.label}
                       </Text>
                     </Pressable>
@@ -2918,23 +2890,23 @@ export default function LogScreen() {
                     value={returnRecoveryMinutes}
                     onChangeText={setReturnRecoveryMinutes}
                     placeholder="Recovery min"
-                    placeholderTextColor={colors.ivory + "99"}
+                    placeholderTextColor={colors.mutedForeground}
                     keyboardType="number-pad"
-                    style={[s.returnInput, { color: colors.ivory, borderColor: colors.ivory + "30", fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
                     value={returnNote}
                     onChangeText={setReturnNote}
                     placeholder="What helped?"
-                    placeholderTextColor={colors.ivory + "99"}
-                    style={[s.returnInput, s.returnInputNote, { color: colors.ivory, borderColor: colors.ivory + "30", fontFamily: "Inter_500Medium" }]}
+                    placeholderTextColor={colors.mutedForeground}
+                    style={[s.returnInput, s.returnInputNote, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
               </View>
             ) : null}
 
             <View style={[s.moodPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <Text style={[s.moodQuestion, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+              <Text style={[s.moodQuestion, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                 How is Phoenix feeling?
               </Text>
               <View style={s.moodRow}>
@@ -2950,14 +2922,14 @@ export default function LogScreen() {
                       style={({ pressed }) => [
                         s.moodOption,
                         {
-                          backgroundColor: active ? colors.amber + "16" : "transparent",
-                          borderColor: active ? colors.amber + "66" : "transparent",
+                          backgroundColor: active ? colors.sageSoft : "transparent",
+                          borderColor: active ? colors.primary + "66" : "transparent",
                           opacity: pressed ? 0.72 : 1,
                         },
                       ]}
                     >
                       <PixelIcon name={mood.icon} size={30} />
-                      <Text style={[s.moodOptionText, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
+                      <Text style={[s.moodOptionText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                         {mood.label}
                       </Text>
                     </Pressable>
@@ -2967,7 +2939,7 @@ export default function LogScreen() {
             </View>
 
             <BoardActionButton
-              label="Add Details (optional)"
+              label="Add details (optional)"
               accessibilityLabel={`Add details to the selected ${selectedLabel} log in the full composer`}
               variant="soft"
               onPress={() => {
@@ -2987,7 +2959,7 @@ export default function LogScreen() {
                 <View style={[s.signalIcon, { backgroundColor: card.tone + "18" }]}>
                   <Ionicons name={card.icon} size={16} color={card.tone} />
                 </View>
-                <Text style={[s.signalLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                <Text style={[s.signalLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                   {card.label}
                 </Text>
                 <Text style={[s.signalValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
@@ -3018,7 +2990,7 @@ export default function LogScreen() {
                   <Ionicons name="shield-checkmark-outline" size={18} color={colors.sage} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[s.outboxEyebrow, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  <Text style={[s.outboxEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                     CARE RECORD
                   </Text>
                   <Text style={[s.outboxTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
@@ -3072,7 +3044,7 @@ export default function LogScreen() {
                   />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[s.outboxEyebrow, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  <Text style={[s.outboxEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                     SYNC STATUS
                   </Text>
                   <Text style={[s.outboxTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
@@ -3145,23 +3117,23 @@ export default function LogScreen() {
             <>
           <BoardCard style={s.composerHero}>
             <View style={s.quickLogDetailDock}>
-            <View style={[s.composerHeroBanner, { backgroundColor: colors.brandNavy, borderColor: colors.shellNavy }]}>
+            <View style={[s.composerHeroBanner, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <View style={[s.composerHeroIcon, { backgroundColor: selectedTone + "22", borderColor: selectedTone + "66" }]}>
                 <CareTypeIcon type={selectedType} icon={selectedIcon} size={30} />
               </View>
               <View style={s.composerHeroText}>
-                <Text style={[s.composerKicker, { color: colors.amber, fontFamily: DISPLAY_SEMI }]}>
+                <Text style={[s.composerKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                   Now logging
                 </Text>
-                <Text style={[s.composerTitle, { fontFamily: DISPLAY }]}>
+                <Text style={[s.composerTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
                   {selectedLabel}
                 </Text>
-                <Text style={[s.composerHint, { fontFamily: "Inter_500Medium" }]}>
+                <Text style={[s.composerHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                   {selectedGuidance}
                 </Text>
               </View>
-              <View style={[s.composerBadge, { backgroundColor: "rgba(255,249,239,0.1)", borderColor: "rgba(255,249,239,0.18)" }]}>
-                <Text style={[s.composerBadgeText, { fontFamily: "Inter_700Bold" }]}>
+              <View style={[s.composerBadge, { backgroundColor: colors.sageSoft, borderColor: colors.sage + "33" }]}>
+                <Text style={[s.composerBadgeText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
                   {selectedTrustLabel}
                 </Text>
               </View>
@@ -3194,7 +3166,7 @@ export default function LogScreen() {
 
             <BoardSectionHeader
               title="Choose care type"
-              accessory={<BoardPill label="Fast tap" icon="flash-outline" tone={colors.copper} />}
+              accessory={<BoardPill label="Fast tap" icon="flash-outline" tone={colors.sage} />}
               style={s.composerSectionHeader}
             />
             <ScrollView
@@ -3241,7 +3213,7 @@ export default function LogScreen() {
             {/* Contextual controls */}
             {config?.groups?.map((g) => (
               <View key={g.key} style={s.fieldBlock}>
-                <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                   {g.label}
                 </Text>
                 <View style={s.segRow}>
@@ -3250,8 +3222,6 @@ export default function LogScreen() {
                       ? choices[g.key] ?? null
                       : choices[g.key] ?? g.options[0].id;
                     const active = selectedOptionId === o.id;
-                    const tone =
-                      o.severity === "alert" ? colors.rose : o.severity === "watch" ? colors.amber : colors.primary;
                     return (
                       <Pressable
                         key={o.id}
@@ -3262,15 +3232,15 @@ export default function LogScreen() {
                         style={[
                           s.segPill,
                           {
-                            backgroundColor: active ? tone : colors.background,
-                            borderColor: active ? tone : colors.border,
+                            backgroundColor: active ? colors.primary : colors.card,
+                            borderColor: active ? colors.primary : colors.border,
                           },
                         ]}
                       >
                         <Text
                           style={[
                             s.segText,
-                            { color: active ? "#FFFFFF" : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_500Medium" },
+                            { color: active ? colors.primaryForeground : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_500Medium" },
                           ]}
                         >
                           {o.label}
@@ -3285,7 +3255,7 @@ export default function LogScreen() {
             {selectedType === "mood" && (
               <View style={[s.moodDetailPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <View>
-                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Care context</Text>
+                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Care context</Text>
                   <TextInput
                     placeholder="After breakfast, visitor came over, slept poorly, great walk..."
                     placeholderTextColor={colors.mutedForeground}
@@ -3332,7 +3302,7 @@ export default function LogScreen() {
 
             {config?.stepper && (
               <View style={s.fieldBlock}>
-                <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                   {config.stepper.label}
                 </Text>
                 <View style={s.segRow}>
@@ -3347,13 +3317,13 @@ export default function LogScreen() {
                         }}
                         style={[
                           s.segPill,
-                          { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border },
+                          { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
                         ]}
                       >
                         <Text
                           style={[
                             s.segText,
-                            { color: active ? "#FFFFFF" : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_500Medium" },
+                            { color: active ? colors.primaryForeground : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_500Medium" },
                           ]}
                         >
                           {v} {config.stepper!.unit}
@@ -3367,7 +3337,7 @@ export default function LogScreen() {
 
             {config?.numeric && (
               <View style={s.fieldBlock}>
-                <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                   {config.numeric.label} ({numericUnit}{config.numeric.optional ? ", optional" : ""})
                 </Text>
                 <TextInput
@@ -3384,7 +3354,7 @@ export default function LogScreen() {
             {selectedType === "walk" && (
               <View style={s.mealFields}>
                 <View>
-                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Route or place</Text>
+                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Route or place</Text>
                   <TextInput
                     placeholder="Neighborhood Loop, Dog park, River trail..."
                     placeholderTextColor={colors.mutedForeground}
@@ -3395,7 +3365,7 @@ export default function LogScreen() {
                 </View>
                 <View style={s.mealFieldRow}>
                   <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Distance mi</Text>
+                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Distance mi</Text>
                     <TextInput
                       placeholder="1.2"
                       placeholderTextColor={colors.mutedForeground}
@@ -3406,7 +3376,7 @@ export default function LogScreen() {
                     />
                   </View>
                   <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Dog interactions</Text>
+                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Dog interactions</Text>
                     <TextInput
                       placeholder="0"
                       placeholderTextColor={colors.mutedForeground}
@@ -3418,7 +3388,7 @@ export default function LogScreen() {
                   </View>
                 </View>
                 <View>
-                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Social outcome</Text>
+                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Social outcome</Text>
                   <TextInput
                     placeholder="Calm greeting, no dogs seen, barked near the gate..."
                     placeholderTextColor={colors.mutedForeground}
@@ -3457,7 +3427,7 @@ export default function LogScreen() {
             {selectedType === "training" && (
               <View style={s.mealFields}>
                 <View>
-                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Skill or cue</Text>
+                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Skill or cue</Text>
                   <TextInput
                     placeholder="Leash manners, recall, calm greeting..."
                     placeholderTextColor={colors.mutedForeground}
@@ -3467,7 +3437,7 @@ export default function LogScreen() {
                   />
                 </View>
                 <View>
-                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Next practice</Text>
+                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Next practice</Text>
                   <TextInput
                     placeholder="Practice calm passes, repeat place cue, shorten distance..."
                     placeholderTextColor={colors.mutedForeground}
@@ -3506,7 +3476,7 @@ export default function LogScreen() {
             {selectedType === "alone" && (
               <View style={s.mealFields}>
                 <View>
-                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Trigger or context</Text>
+                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Trigger or context</Text>
                   <TextInput
                     placeholder="Leaving after breakfast, doorbell, both owners out..."
                     placeholderTextColor={colors.mutedForeground}
@@ -3517,7 +3487,7 @@ export default function LogScreen() {
                 </View>
                 <View style={s.mealFieldRow}>
                   <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Recovery min</Text>
+                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Recovery min</Text>
                     <TextInput
                       placeholder="15"
                       placeholderTextColor={colors.mutedForeground}
@@ -3528,7 +3498,7 @@ export default function LogScreen() {
                     />
                   </View>
                   <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Support</Text>
+                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Support</Text>
                     <TextInput
                       placeholder="Puzzle toy"
                       placeholderTextColor={colors.mutedForeground}
@@ -3567,7 +3537,7 @@ export default function LogScreen() {
             {selectedType === "incident" && (
               <View style={s.mealFields}>
                 <View>
-                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Trigger or context</Text>
+                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Trigger or context</Text>
                   <TextInput
                     placeholder="Dog at gate, crowded sidewalk..."
                     placeholderTextColor={colors.mutedForeground}
@@ -3577,7 +3547,7 @@ export default function LogScreen() {
                   />
                 </View>
                 <View>
-                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Who or what was involved?</Text>
+                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Who or what was involved?</Text>
                   <TextInput
                     placeholder="Off-leash dog, stranger..."
                     placeholderTextColor={colors.mutedForeground}
@@ -3588,7 +3558,7 @@ export default function LogScreen() {
                 </View>
                 <View style={s.mealFieldRow}>
                   <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Injury check</Text>
+                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Injury check</Text>
                     <TextInput
                       placeholder="None, scratch..."
                       placeholderTextColor={colors.mutedForeground}
@@ -3598,7 +3568,7 @@ export default function LogScreen() {
                     />
                   </View>
                   <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Action taken</Text>
+                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Action taken</Text>
                     <TextInput
                       placeholder="Separated..."
                       placeholderTextColor={colors.mutedForeground}
@@ -3609,7 +3579,7 @@ export default function LogScreen() {
                   </View>
                 </View>
                 <View>
-                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Follow-up</Text>
+                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Follow-up</Text>
                   <TextInput
                     placeholder="Watch tonight, trainer note, vet call, avoid gate route..."
                     placeholderTextColor={colors.mutedForeground}
@@ -3648,7 +3618,7 @@ export default function LogScreen() {
             {selectedType === "grooming" && (
               <View style={s.mealFields}>
                 <View>
-                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Coat or skin note</Text>
+                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Coat or skin note</Text>
                   <TextInput
                     placeholder="Light shedding, mats behind ears, paws looked good..."
                     placeholderTextColor={colors.mutedForeground}
@@ -3659,7 +3629,7 @@ export default function LogScreen() {
                 </View>
                 <View style={s.mealFieldRow}>
                   <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Products</Text>
+                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Products</Text>
                     <TextInput
                       placeholder="Slicker brush"
                       placeholderTextColor={colors.mutedForeground}
@@ -3669,7 +3639,7 @@ export default function LogScreen() {
                     />
                   </View>
                   <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Next due</Text>
+                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Next due</Text>
                     <TextInput
                       placeholder="2026-06-18"
                       placeholderTextColor={colors.mutedForeground}
@@ -3709,7 +3679,7 @@ export default function LogScreen() {
               <View style={s.mealFields}>
                 <View style={s.mealFieldRow}>
                   <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                       Expected portion
                     </Text>
                     <TextInput
@@ -3721,7 +3691,7 @@ export default function LogScreen() {
                     />
                   </View>
                   <View style={s.mealField}>
-                    <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                       Eaten amount {mealOutcomeNeedsEatenAmount(selectedMealCompletion) ? "(required)" : "(optional)"}
                     </Text>
                     <TextInput
@@ -3804,7 +3774,7 @@ export default function LogScreen() {
                   </View>
                 ) : null}
                 <View>
-                  <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Dose</Text>
+                  <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Dose</Text>
                   <TextInput
                     placeholder={medicationDefault?.dose && medicationDefault.dose !== "Dose not set" ? medicationDefault.dose : "1 tablet"}
                     placeholderTextColor={colors.mutedForeground}
@@ -3877,7 +3847,7 @@ export default function LogScreen() {
             )}
 
             {missingRequiredGroup ? (
-              <Text style={[s.requiredChoiceHint, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
+              <Text style={[s.requiredChoiceHint, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
                 Pick "{missingRequiredGroup.label}" above to save this {selectedLabel.toLowerCase()} log.
               </Text>
             ) : null}
@@ -3927,7 +3897,7 @@ export default function LogScreen() {
           <BoardCard style={s.logBoardCard}>
             <BoardSectionHeader
               title="Find care logs"
-              accessory={logSearch.hasActiveFilters ? <BoardPill label="Filtered" icon="funnel-outline" tone={colors.copper} /> : undefined}
+              accessory={logSearch.hasActiveFilters ? <BoardPill label="Filtered" icon="funnel-outline" tone={colors.sage} /> : undefined}
             />
             <View style={[s.searchPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <Ionicons name="search" size={18} color={colors.mutedForeground} />
@@ -4181,11 +4151,11 @@ export default function LogScreen() {
             {launcherDetailAction && launcherDetailPresentation ? (
               <>
                 <View style={s.launcherDetailTop}>
-                  <View style={[s.launcherDetailIcon, { backgroundColor: colors.brandNavy }]}>
+                  <View style={[s.launcherDetailIcon, { backgroundColor: colors.secondary, borderWidth: 1, borderColor: colors.border }]}>
                     <PixelIcon name={launcherDetailAction.icon} size={34} />
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[s.launcherDetailKicker, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                    <Text style={[s.launcherDetailKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                       QUICK LOG FLOW
                     </Text>
                     <Text style={[s.launcherDetailTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
@@ -4198,7 +4168,7 @@ export default function LogScreen() {
                 </View>
 
                 <View style={[s.launcherDetailSummary, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Ionicons name="flash-outline" size={16} color={colors.copper} />
+                  <Ionicons name="flash-outline" size={16} color={colors.sage} />
                   <Text style={[s.launcherDetailSummaryText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                     {launcherDetailPresentation.quickSummary}
                   </Text>
@@ -4241,15 +4211,15 @@ export default function LogScreen() {
                 </View>
 
                 <View style={[s.launcherDetailEditLater, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Ionicons name="create-outline" size={16} color={colors.brandNavy} />
+                  <Ionicons name="create-outline" size={16} color={colors.sage} />
                   <Text style={[s.launcherDetailEditLaterText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                     {launcherDetailPresentation.editLaterCopy}
                   </Text>
                 </View>
 
                 {launcherDetailPresentation.safetyBoundary ? (
-                  <View style={[s.launcherDetailBoundary, { backgroundColor: colors.amber + "13", borderColor: colors.amber + "55" }]}>
-                    <Ionicons name="shield-checkmark-outline" size={16} color={colors.copper} />
+                  <View style={[s.launcherDetailBoundary, { backgroundColor: colors.amberSoft, borderColor: colors.amber + "44" }]}>
+                    <Ionicons name="shield-checkmark-outline" size={16} color={colors.amber} />
                     <Text style={[s.launcherDetailBoundaryText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                       {launcherDetailPresentation.safetyBoundary}
                     </Text>
@@ -4297,7 +4267,7 @@ export default function LogScreen() {
                     style={({ pressed }) => [
                       s.launcherDetailSecondary,
                       {
-                        backgroundColor: pressed ? colors.copper + "14" : colors.background,
+                        backgroundColor: pressed ? colors.secondary : colors.background,
                         borderColor: colors.border,
                       },
                     ]}
@@ -4316,7 +4286,7 @@ export default function LogScreen() {
       {/* Entry detail modal */}
       <Modal visible={detailEntry !== null} transparent animationType="slide" onRequestClose={() => setDetailEntryId(null)}>
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDetailEntryId(null)}>
-          <Pressable style={[s.detailSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[s.detailSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.editHandle} />
             {detailEntry ? (
               <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
@@ -4325,7 +4295,7 @@ export default function LogScreen() {
                     <CareTypeIcon type={detailType ?? ""} icon={detailIcon} size={22} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.detailType, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{detailTypeText}</Text>
+                    <Text style={[s.detailType, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{detailTypeText}</Text>
                     <Text style={[s.detailTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{detailEntry.title}</Text>
                     <Text style={[s.detailMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       {detailEntry.caregiver || "Care team"} - {new Date(detailEntry.occurredAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
@@ -4394,14 +4364,14 @@ export default function LogScreen() {
                   >
                     <View style={s.trustReviewHeader}>
                       <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[s.detailSectionLabel, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+                        <Text style={[s.detailSectionLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                           Trust review
                         </Text>
                         <Text style={[s.trustReviewTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                           {detailTrustReview.statusLabel}
                         </Text>
                       </View>
-                      <View style={[s.trustBadge, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <View style={[s.trustBadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
                         <Text style={[s.trustBadgeText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                           {detailTrustReview.reasonLabel}
                         </Text>
@@ -4411,8 +4381,8 @@ export default function LogScreen() {
                       {detailTrustReview.helperText}
                     </Text>
                     {detailTrustReview.proofStatus ? (
-                      <View style={[s.trustProofRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                        <Ionicons name="camera-outline" size={15} color={colors.copper} />
+                      <View style={[s.trustProofRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Ionicons name="camera-outline" size={15} color={colors.sage} />
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <Text style={[s.trustProofText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                             Proof status: {humanizeKey(detailTrustReview.proofStatus)}
@@ -4423,7 +4393,7 @@ export default function LogScreen() {
                             </Text>
                           ) : null}
                           {detailTrustReview.proofStorageStatus === "local-only" ? (
-                            <Text style={[s.trustProofMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
+                            <Text style={[s.trustProofMeta, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
                               Local-only proof saved. Cloud storage is not enabled yet.
                             </Text>
                           ) : null}
@@ -4438,12 +4408,12 @@ export default function LogScreen() {
                         style={({ pressed }) => [
                           s.trustProofAttachButton,
                           {
-                            backgroundColor: pressed ? colors.copper + "1F" : colors.background,
-                            borderColor: colors.copper + "44",
+                            backgroundColor: pressed ? colors.secondary : colors.card,
+                            borderColor: colors.border,
                           },
                         ]}
                       >
-                        <Ionicons name="image-outline" size={15} color={colors.copper} />
+                        <Ionicons name="image-outline" size={15} color={colors.sage} />
                         <Text style={[s.trustProofAttachText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                           Attach proof photo
                         </Text>
@@ -4473,7 +4443,7 @@ export default function LogScreen() {
                               style={({ pressed }) => [
                                 s.trustActionButton,
                                 {
-                                  backgroundColor: pressed ? actionColor + "1F" : colors.background,
+                                  backgroundColor: pressed ? actionColor + "1F" : colors.card,
                                   borderColor: actionColor + "44",
                                 },
                               ]}
@@ -4487,7 +4457,7 @@ export default function LogScreen() {
                         })}
                       </View>
                     ) : (
-                      <View style={[s.trustLockedRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <View style={[s.trustLockedRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
                         <Ionicons name="lock-closed-outline" size={15} color={colors.mutedForeground} />
                         <Text style={[s.trustLockedText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                           Adult owner review required.
@@ -4502,7 +4472,7 @@ export default function LogScreen() {
                     <View style={s.mealOutcomeHeader}>
                       <View style={{ flex: 1, minWidth: 0 }}>
                         <Text style={[s.detailSectionLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                          UPDATE OUTCOME
+                          Update outcome
                         </Text>
                         <Text style={[s.mealOutcomeHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                           Close this open meal loop when Phoenix finishes or refuses.
@@ -4510,25 +4480,45 @@ export default function LogScreen() {
                       </View>
                     </View>
                     <View style={s.mealOutcomeActions}>
-                      {DETAIL_MEAL_OUTCOMES.map((outcome) => (
-                        <Pressable
-                          key={outcome.id}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Update meal outcome: ${outcome.label}`}
-                          onPress={() => updateMealOutcomeFromDetail(detailEntry, outcome.id)}
-                          style={({ pressed }) => [
-                            s.mealOutcomeButton,
-                            {
-                              backgroundColor: pressed ? colors.sage + "22" : colors.background,
-                              borderColor: colors.sage + "44",
-                            },
-                          ]}
-                        >
-                          <Text style={[s.mealOutcomeButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                            {outcome.label}
-                          </Text>
-                        </Pressable>
-                      ))}
+                      {DETAIL_MEAL_OUTCOMES.map((outcome) => {
+                        // Real state only: the chip fills forest when the log
+                        // already records this outcome (e.g. still grazing).
+                        const active =
+                          isDetailRecord(detailEntry.details) &&
+                          String(detailEntry.details.mealCompletion ?? "") === outcome.id;
+                        return (
+                          <Pressable
+                            key={outcome.id}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Update meal outcome: ${outcome.label}`}
+                            accessibilityState={{ selected: active }}
+                            onPress={() => updateMealOutcomeFromDetail(detailEntry, outcome.id)}
+                            style={({ pressed }) => [
+                              s.mealOutcomeButton,
+                              {
+                                backgroundColor: active
+                                  ? colors.primary
+                                  : pressed
+                                    ? colors.secondary
+                                    : colors.card,
+                                borderColor: active ? colors.primary : colors.border,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                s.mealOutcomeButtonText,
+                                {
+                                  color: active ? colors.primaryForeground : colors.foreground,
+                                  fontFamily: "Inter_700Bold",
+                                },
+                              ]}
+                            >
+                              {outcome.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
                     </View>
                   </View>
                 ) : null}
@@ -4537,7 +4527,7 @@ export default function LogScreen() {
                   <View style={[s.pottyDetailPanel, { backgroundColor: colors.secondary + "14", borderColor: colors.secondary + "55" }]}>
                     <View style={s.mealOutcomeHeader}>
                       <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[s.detailSectionLabel, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
+                        <Text style={[s.detailSectionLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                           Clarify potty log
                         </Text>
                         <Text style={[s.mealOutcomeHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -4547,7 +4537,7 @@ export default function LogScreen() {
                     </View>
 
                     <View style={s.pottyDetailGroup}>
-                      <Text style={[s.pottyDetailLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Outcome</Text>
+                      <Text style={[s.pottyDetailLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Outcome</Text>
                       <View style={s.pottyOptionGrid}>
                         {POTTY_DETAIL_OUTCOMES.map((option) => {
                           const active = pottyDetailDraft.outcome === option.id;
@@ -4560,7 +4550,7 @@ export default function LogScreen() {
                               style={({ pressed }) => [
                                 s.pottyOptionButton,
                                 {
-                                  backgroundColor: active ? colors.primary : pressed ? colors.primary + "18" : colors.background,
+                                  backgroundColor: active ? colors.primary : pressed ? colors.secondary : colors.card,
                                   borderColor: active ? colors.primary : colors.border,
                                 },
                               ]}
@@ -4568,7 +4558,7 @@ export default function LogScreen() {
                               <Text
                                 style={[
                                   s.pottyOptionText,
-                                  { color: active ? colors.ivory : colors.foreground, fontFamily: "Inter_700Bold" },
+                                  { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" },
                                 ]}
                               >
                                 {option.label}
@@ -4580,7 +4570,7 @@ export default function LogScreen() {
                     </View>
 
                     <View style={s.pottyDetailGroup}>
-                      <Text style={[s.pottyDetailLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Where</Text>
+                      <Text style={[s.pottyDetailLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Where</Text>
                       <View style={s.pottyOptionGrid}>
                         {POTTY_LOCATION_OPTIONS.map((option) => {
                           const active = pottyDetailDraft.location === option.id;
@@ -4593,15 +4583,15 @@ export default function LogScreen() {
                               style={({ pressed }) => [
                                 s.pottyOptionButton,
                                 {
-                                  backgroundColor: active ? colors.sage : pressed ? colors.sage + "18" : colors.background,
-                                  borderColor: active ? colors.sage : colors.border,
+                                  backgroundColor: active ? colors.primary : pressed ? colors.secondary : colors.card,
+                                  borderColor: active ? colors.primary : colors.border,
                                 },
                               ]}
                             >
                               <Text
                                 style={[
                                   s.pottyOptionText,
-                                  { color: active ? colors.ivory : colors.foreground, fontFamily: "Inter_700Bold" },
+                                  { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" },
                                 ]}
                               >
                                 {option.label}
@@ -4614,7 +4604,7 @@ export default function LogScreen() {
 
                     {pottyOutcomeHasPee(pottyDetailDraft.outcome) ? (
                       <View style={s.pottyDetailGroup}>
-                        <Text style={[s.pottyDetailLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Pee detail</Text>
+                        <Text style={[s.pottyDetailLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Pee detail</Text>
                         <View style={s.pottyOptionGrid}>
                           {POTTY_PEE_DETAIL_OPTIONS.map((option) => {
                             const active = pottyDetailDraft.peeDetail === option.id;
@@ -4627,15 +4617,15 @@ export default function LogScreen() {
                                 style={({ pressed }) => [
                                   s.pottyOptionButton,
                                   {
-                                    backgroundColor: active ? colors.copper : pressed ? colors.copper + "18" : colors.background,
-                                    borderColor: active ? colors.copper : colors.border,
+                                    backgroundColor: active ? colors.primary : pressed ? colors.secondary : colors.card,
+                                    borderColor: active ? colors.primary : colors.border,
                                   },
                                 ]}
                               >
                                 <Text
                                   style={[
                                     s.pottyOptionText,
-                                    { color: active ? colors.ivory : colors.foreground, fontFamily: "Inter_700Bold" },
+                                    { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" },
                                   ]}
                                 >
                                   {option.label}
@@ -4650,7 +4640,7 @@ export default function LogScreen() {
                     {pottyOutcomeHasStool(pottyDetailDraft.outcome) ? (
                       <>
                         <View style={s.pottyDetailGroup}>
-                          <Text style={[s.pottyDetailLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                          <Text style={[s.pottyDetailLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                             Stool consistency
                           </Text>
                           <View style={s.pottyOptionGrid}>
@@ -4665,15 +4655,15 @@ export default function LogScreen() {
                                   style={({ pressed }) => [
                                     s.pottyOptionButton,
                                     {
-                                      backgroundColor: active ? colors.copper : pressed ? colors.copper + "18" : colors.background,
-                                      borderColor: active ? colors.copper : colors.border,
+                                      backgroundColor: active ? colors.primary : pressed ? colors.secondary : colors.card,
+                                      borderColor: active ? colors.primary : colors.border,
                                     },
                                   ]}
                                 >
                                   <Text
                                     style={[
                                       s.pottyOptionText,
-                                      { color: active ? colors.ivory : colors.foreground, fontFamily: "Inter_700Bold" },
+                                      { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" },
                                     ]}
                                   >
                                     {option.label}
@@ -4684,7 +4674,7 @@ export default function LogScreen() {
                           </View>
                         </View>
                         <View style={s.pottyDetailGroup}>
-                          <Text style={[s.pottyDetailLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Stool color</Text>
+                          <Text style={[s.pottyDetailLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Stool color</Text>
                           <View style={s.pottyOptionGrid}>
                             {POTTY_STOOL_COLOR_OPTIONS.map((option) => {
                               const active = pottyDetailDraft.stoolColor === option.id;
@@ -4697,15 +4687,15 @@ export default function LogScreen() {
                                   style={({ pressed }) => [
                                     s.pottyOptionButton,
                                     {
-                                      backgroundColor: active ? colors.copper : pressed ? colors.copper + "18" : colors.background,
-                                      borderColor: active ? colors.copper : colors.border,
+                                      backgroundColor: active ? colors.primary : pressed ? colors.secondary : colors.card,
+                                      borderColor: active ? colors.primary : colors.border,
                                     },
                                   ]}
                                 >
                                   <Text
                                     style={[
                                       s.pottyOptionText,
-                                      { color: active ? colors.ivory : colors.foreground, fontFamily: "Inter_700Bold" },
+                                      { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" },
                                     ]}
                                   >
                                     {option.label}
@@ -4719,7 +4709,7 @@ export default function LogScreen() {
                     ) : null}
 
                     <View style={s.pottyDetailGroup}>
-                      <Text style={[s.pottyDetailLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Context</Text>
+                      <Text style={[s.pottyDetailLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Context</Text>
                       <View style={s.pottyOptionGrid}>
                         {POTTY_CONTEXT_DRAFT_OPTIONS.map((option) => {
                           const active = pottyDetailDraft.context === option.id;
@@ -4732,15 +4722,15 @@ export default function LogScreen() {
                               style={({ pressed }) => [
                                 s.pottyOptionButton,
                                 {
-                                  backgroundColor: active ? colors.sage : pressed ? colors.sage + "18" : colors.background,
-                                  borderColor: active ? colors.sage : colors.border,
+                                  backgroundColor: active ? colors.primary : pressed ? colors.secondary : colors.card,
+                                  borderColor: active ? colors.primary : colors.border,
                                 },
                               ]}
                             >
                               <Text
                                 style={[
                                   s.pottyOptionText,
-                                  { color: active ? colors.ivory : colors.foreground, fontFamily: "Inter_700Bold" },
+                                  { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" },
                                 ]}
                               >
                                 {option.label}
@@ -4763,8 +4753,8 @@ export default function LogScreen() {
                         },
                       ]}
                     >
-                      <Text style={[s.pottySaveText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>Save potty details</Text>
-                      <Ionicons name="checkmark-circle-outline" size={18} color={colors.ivory} />
+                      <Text style={[s.pottySaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save potty details</Text>
+                      <Ionicons name="checkmark-circle-outline" size={18} color={colors.primaryForeground} />
                     </Pressable>
                   </View>
                 ) : null}
@@ -4790,21 +4780,21 @@ export default function LogScreen() {
                 <View style={s.detailGrid}>
                   {detailRows.length > 0 ? (
                     detailRows.map((row) => (
-                      <View key={`${row.label}:${row.value}`} style={[s.detailField, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <View key={`${row.label}:${row.value}`} style={[s.detailField, { backgroundColor: colors.card, borderColor: colors.border }]}>
                         <Text style={[s.detailFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{row.label}</Text>
                         <Text style={[s.detailFieldValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{row.value}</Text>
                       </View>
                     ))
                   ) : (
-                    <View style={[s.detailFieldWide, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <View style={[s.detailFieldWide, { backgroundColor: colors.card, borderColor: colors.border }]}>
                       <Text style={[s.detailFieldValue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>No extra detail fields yet.</Text>
                     </View>
                   )}
                 </View>
 
                 {detailEntry.note ? (
-                  <View style={[s.detailNote, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                    <Text style={[s.detailSectionLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Note</Text>
+                  <View style={[s.detailNote, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Text style={[s.detailSectionLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Note</Text>
                     <Text style={[s.detailBodyText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>{detailEntry.note}</Text>
                   </View>
                 ) : null}
@@ -4828,7 +4818,7 @@ export default function LogScreen() {
                     })}
                   </View>
                 ) : (
-                  <View style={[s.detailFieldWide, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={[s.detailFieldWide, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <Text style={[s.detailFieldValue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>No sticky notes attached.</Text>
                   </View>
                 )}
@@ -4840,7 +4830,7 @@ export default function LogScreen() {
                   </Text>
                 </View>
                 {detailAuditSummary ? (
-                  <View style={[s.correctionCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={[s.correctionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <View style={s.correctionCardTop}>
                       <View style={[s.correctionIcon, { backgroundColor: colors.copper + "16", borderColor: colors.copper + "44" }]}>
                         <Ionicons name="git-commit-outline" size={17} color={colors.copper} />
@@ -4860,7 +4850,7 @@ export default function LogScreen() {
                     {detailAuditSummary.changeLabels.length ? (
                       <View style={s.correctionChipRow}>
                         {detailAuditSummary.changeLabels.map((label) => (
-                          <View key={label} style={[s.correctionChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                          <View key={label} style={[s.correctionChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
                             <Text style={[s.correctionChipText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                               {label}
                             </Text>
@@ -4870,7 +4860,7 @@ export default function LogScreen() {
                     ) : null}
                   </View>
                 ) : (
-                  <View style={[s.detailFieldWide, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={[s.detailFieldWide, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <Text style={[s.detailFieldValue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       No corrections yet. New edits, proof, and outcome updates will appear here.
                     </Text>
@@ -4884,7 +4874,7 @@ export default function LogScreen() {
                 {detailAuditTrail.length > 0 ? (
                   <View style={s.auditStack}>
                     {detailAuditTrail.map((event) => (
-                      <View key={event.id} style={[s.auditRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <View key={event.id} style={[s.auditRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
                         <View style={[s.auditDot, { backgroundColor: event.action === "deleted" ? colors.rose : colors.copper }]} />
                         <View style={{ flex: 1 }}>
                           <Text style={[s.auditSummary, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{event.summary}</Text>
@@ -4899,14 +4889,14 @@ export default function LogScreen() {
                     ))}
                   </View>
                 ) : (
-                  <View style={[s.detailFieldWide, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View style={[s.detailFieldWide, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <Text style={[s.detailFieldValue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       Original log, no later changes recorded.
                     </Text>
                   </View>
                 )}
 
-                <Text style={[s.detailSectionLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold", marginTop: 18 }]}>
+                <Text style={[s.detailSectionLabel, { color: colors.sage, fontFamily: "Inter_700Bold", marginTop: 18 }]}>
                   Record controls
                 </Text>
                 <View style={s.detailActions}>
@@ -4916,8 +4906,8 @@ export default function LogScreen() {
                     onPress={() => shareEntryHandoff(detailEntry)}
                     style={({ pressed }) => [s.detailPrimaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                   >
-                    <Ionicons name="share-outline" size={17} color="#fff" />
-                    <Text style={[s.detailPrimaryText, { fontFamily: "Inter_700Bold" }]}>Share handoff</Text>
+                    <Ionicons name="share-outline" size={17} color={colors.primaryForeground} />
+                    <Text style={[s.detailPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Share handoff</Text>
                   </Pressable>
                   <View style={s.detailIconActions}>
                     <Pressable
@@ -4927,7 +4917,7 @@ export default function LogScreen() {
                         setDetailEntryId(null);
                         openStickyPrompt(detailEntry);
                       }}
-                      style={[s.detailIconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                      style={[s.detailIconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
                     >
                       <Ionicons name="document-text-outline" size={17} color={colors.primary} />
                     </Pressable>
@@ -4938,20 +4928,24 @@ export default function LogScreen() {
                         setDetailEntryId(null);
                         openEditEntry(detailEntry);
                       }}
-                      style={[s.detailIconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                      style={[s.detailIconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
                     >
                       <Ionicons name="pencil-outline" size={17} color={colors.primary} />
                     </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Delete care log"
-                      onPress={() => handleDelete(detailEntry.id, detailEntry.title, () => setDetailEntryId(null))}
-                      style={[s.detailIconBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
-                    >
-                      <Ionicons name="trash-outline" size={17} color={colors.rose} />
-                    </Pressable>
                   </View>
                 </View>
+                {/* Mockup Log Detail bottom row: destructive delete is a
+                    plain red text button, never a filled control. */}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete care log"
+                  onPress={() => handleDelete(detailEntry.id, detailEntry.title, () => setDetailEntryId(null))}
+                  style={({ pressed }) => [s.detailDeleteBtn, { opacity: pressed ? 0.6 : 1 }]}
+                >
+                  <Text style={[s.detailDeleteText, { color: colors.destructive, fontFamily: "Inter_700Bold" }]}>
+                    Delete
+                  </Text>
+                </Pressable>
               </ScrollView>
             ) : null}
           </Pressable>
@@ -4961,24 +4955,24 @@ export default function LogScreen() {
       {/* Entry editor modal */}
       <Modal visible={editEntry !== null} transparent animationType="slide" onRequestClose={() => setEditEntry(null)}>
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setEditEntry(null)}>
-          <Pressable style={[s.editSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[s.editSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.editHandle} />
-            <Text style={[s.editSheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Edit Entry</Text>
-            <Text style={[s.editFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TITLE</Text>
+            <Text style={[s.editSheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Edit entry</Text>
+            <Text style={[s.editFieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Title</Text>
             <TextInput
               value={editTitle}
               onChangeText={setEditTitle}
               placeholderTextColor={colors.mutedForeground}
-              style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+              style={[s.input, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
             />
-            <Text style={[s.editFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NOTE (OPTIONAL)</Text>
+            <Text style={[s.editFieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Note (optional)</Text>
             <TextInput
               value={editNote}
               onChangeText={setEditNote}
               placeholder="Add or update a note..."
               placeholderTextColor={colors.mutedForeground}
               multiline
-              style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
+              style={[s.input, s.inputMulti, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
             />
             <BoardActionButton
               label="Save changes"
@@ -5091,8 +5085,9 @@ const s = StyleSheet.create({
     paddingVertical: 6,
   },
   logCommandKicker: {
-    fontSize: 8.4,
-    lineHeight: 10,
+    fontSize: 9,
+    lineHeight: 11,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
   },
   logCommandSpeech: {
@@ -5124,9 +5119,8 @@ const s = StyleSheet.create({
     gap: 5,
   },
   logCommandChipText: {
-    fontSize: 9.2,
+    fontSize: 10,
     lineHeight: 13,
-    textTransform: "uppercase",
   },
   logCommandSprite: {
     position: "absolute",
@@ -5147,63 +5141,39 @@ const s = StyleSheet.create({
   },
   logCommandDock: {
     borderTopWidth: 1,
-    paddingHorizontal: 6,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
     gap: 6,
     flexDirection: "row",
     alignItems: "stretch",
   },
   logCommandHud: {
     flex: 1,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
     flexDirection: "row",
-    gap: 4,
+    gap: 6,
   },
   logCommandHudCell: {
     flex: 1,
     minWidth: 0,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
   },
   logCommandHudLabel: {
-    fontSize: 7.6,
-    lineHeight: 9,
+    fontSize: 9,
+    lineHeight: 11,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
   },
   logCommandHudValue: {
-    fontSize: 10,
-    lineHeight: 12,
-    marginTop: 1,
-  },
-  logCommandSignalRow: {
-    height: 8,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 2,
+    fontSize: 13.5,
+    lineHeight: 17,
     marginTop: 2,
   },
-  logCommandSignalBar: {
-    width: 3,
-    borderRadius: 1.5,
-  },
-  logCommandFooter: {
-    width: 96,
-    flexShrink: 0,
-  },
-  logCommandAction: {
-    flex: 1,
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
-    paddingHorizontal: 7,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  logCommandActionText: {
-    fontSize: 10.4,
-    lineHeight: 14,
+  logCommandActionRow: {
+    paddingHorizontal: 8,
+    paddingBottom: 8,
   },
 
   quickLogSupportRail: {
@@ -5230,8 +5200,8 @@ const s = StyleSheet.create({
     marginBottom: 4,
   },
   signalLabel: {
-    fontSize: 9.5,
-    letterSpacing: 0.4,
+    fontSize: 9,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
   },
   signalValue: {
@@ -5255,7 +5225,7 @@ const s = StyleSheet.create({
   },
   outboxTop: { flexDirection: "row", alignItems: "center", gap: 10 },
   outboxIcon: { width: 38, height: 38, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  outboxEyebrow: { fontSize: 10.5 },
+  outboxEyebrow: { fontSize: 9, letterSpacing: 1.1, textTransform: "uppercase" },
   outboxTitle: { fontSize: 15.5, marginTop: 2 },
   outboxMessage: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
   outboxButton: {
@@ -5288,10 +5258,10 @@ const s = StyleSheet.create({
     minWidth: 0,
   },
   quickLogActionKicker: {
-    fontSize: 9.5,
+    fontSize: 9,
     lineHeight: 12,
     textTransform: "uppercase",
-    letterSpacing: 0.35,
+    letterSpacing: 1.1,
   },
   quickLogActionTitle: {
     fontSize: 18,
@@ -5359,11 +5329,14 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     rowGap: 10,
   },
-  launcherTile: {
+  launcherTileLayout: {
     width: "31.5%",
+  },
+  launcherTile: {
+    width: "100%",
     minHeight: 76,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
@@ -5401,16 +5374,14 @@ const s = StyleSheet.create({
   launcherTileMode: {
     minHeight: 18,
     maxWidth: "100%",
-    borderRadius: 6,
-    borderWidth: 1,
-    paddingHorizontal: 6,
+    borderRadius: 999,
+    paddingHorizontal: 8,
     alignItems: "center",
     justifyContent: "center",
   },
   launcherTileModeText: {
-    fontSize: 8.5,
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
+    fontSize: 10,
+    letterSpacing: 0.2,
   },
   moodPanel: {
     borderWidth: 1,
@@ -5480,14 +5451,14 @@ const s = StyleSheet.create({
   },
   aloneActivePanel: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 13,
     gap: 11,
     shadowColor: "#081424",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
-    elevation: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 2,
   },
   aloneActiveTop: {
     flexDirection: "row",
@@ -5503,8 +5474,8 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   aloneActiveKicker: {
-    fontSize: 10,
-    letterSpacing: 0.4,
+    fontSize: 9,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
   },
   aloneActiveTitle: {
@@ -5523,9 +5494,9 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   returnCheckTitle: {
-    fontSize: 12,
+    fontSize: 9,
     textTransform: "uppercase",
-    letterSpacing: 0.35,
+    letterSpacing: 1.1,
   },
   returnOutcomeGrid: {
     flexDirection: "row",
@@ -5537,7 +5508,7 @@ const s = StyleSheet.create({
     flexBasis: "31%",
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
-    borderRadius: 9,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 8,
@@ -5563,7 +5534,7 @@ const s = StyleSheet.create({
   walkFinishButton: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
-    borderRadius: 9,
+    borderRadius: 999,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -5603,19 +5574,18 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   composerHeroText: { flex: 1, minWidth: 0 },
-  composerKicker: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0 },
-  composerTitle: { color: "#FFF9EF", fontSize: 22, lineHeight: 25, marginTop: 1 },
-  composerHint: { color: "rgba(255,249,239,0.72)", fontSize: 12, lineHeight: 17, marginTop: 3 },
+  composerKicker: { fontSize: 9, textTransform: "uppercase", letterSpacing: 1.1 },
+  composerTitle: { fontSize: 22, lineHeight: 25, marginTop: 1 },
+  composerHint: { fontSize: 12, lineHeight: 17, marginTop: 3 },
   composerBadge: {
     alignSelf: "flex-start",
     borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 8,
+    borderRadius: 999,
+    paddingHorizontal: 9,
     paddingVertical: 5,
     maxWidth: 118,
   },
   composerBadgeText: {
-    color: "#FFF9EF",
     fontSize: 10,
     lineHeight: 13,
     textAlign: "center",
@@ -5660,9 +5630,17 @@ const s = StyleSheet.create({
   typeChipLabel: { fontSize: 13.5 },
 
   fieldBlock: { marginTop: 16 },
-  fieldLabel: { fontSize: 11.5, textTransform: "uppercase", letterSpacing: 0, marginBottom: 8 },
+  fieldLabel: { fontSize: 12, letterSpacing: 0, marginBottom: 8 },
   segRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  segPill: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 8, borderWidth: 1 },
+  segPill: {
+    minHeight: 40,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   segText: { fontSize: 13.5 },
 
   input: { borderRadius: 8, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
@@ -5796,7 +5774,7 @@ const s = StyleSheet.create({
   launcherDetailSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, gap: 14 },
   launcherDetailTop: { flexDirection: "row", alignItems: "center", gap: 13 },
   launcherDetailIcon: { width: 58, height: 58, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  launcherDetailKicker: { fontSize: 10.5, letterSpacing: 0.8 },
+  launcherDetailKicker: { fontSize: 9, letterSpacing: 1.1 },
   launcherDetailTitle: { fontSize: 23, marginTop: 2 },
   launcherDetailSubtitle: { fontSize: 13, lineHeight: 18, marginTop: 3 },
   launcherDetailSummary: { borderWidth: 1, borderRadius: 17, padding: 13, flexDirection: "row", gap: 10, alignItems: "flex-start" },
@@ -5860,7 +5838,7 @@ const s = StyleSheet.create({
   detailSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", padding: 22 },
   detailHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
   detailIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  detailType: { fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 },
+  detailType: { fontSize: 9, textTransform: "uppercase", letterSpacing: 1.1 },
   detailTitle: { fontSize: 21, marginTop: 2 },
   detailMeta: { fontSize: 12.5, marginTop: 3 },
   detailCommandRail: {
@@ -6003,14 +5981,12 @@ const s = StyleSheet.create({
     marginTop: 10,
   },
   mealOutcomeButton: {
-    flexGrow: 1,
-    flexBasis: "47%",
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
   },
   mealOutcomeButtonText: {
     fontSize: 12.5,
@@ -6027,9 +6003,8 @@ const s = StyleSheet.create({
     gap: 7,
   },
   pottyDetailLabel: {
-    fontSize: 10.5,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    fontSize: 12,
+    letterSpacing: 0,
   },
   pottyOptionGrid: {
     flexDirection: "row",
@@ -6041,7 +6016,7 @@ const s = StyleSheet.create({
     flexBasis: "30%",
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 8,
@@ -6054,7 +6029,7 @@ const s = StyleSheet.create({
   pottySaveButton: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 999,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -6073,7 +6048,7 @@ const s = StyleSheet.create({
   detailFieldLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
   detailFieldValue: { fontSize: 13.5, lineHeight: 18 },
   detailNote: { borderWidth: 1, borderRadius: 16, padding: 13, marginTop: 12 },
-  detailSectionLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
+  detailSectionLabel: { fontSize: 9, textTransform: "uppercase", letterSpacing: 1.1, marginBottom: 6 },
   detailBodyText: { fontSize: 13.5, lineHeight: 19 },
   detailSectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 8 },
   detailSectionTitle: { fontSize: 16 },
@@ -6097,14 +6072,23 @@ const s = StyleSheet.create({
   detailPrimaryBtn: {
     flex: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
+    borderRadius: 999,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 7,
   },
-  detailPrimaryText: { color: "#fff", fontSize: 14.5 },
+  detailPrimaryText: { fontSize: 14.5 },
   detailIconActions: { flexDirection: "row", gap: 7 },
+  detailDeleteBtn: {
+    alignSelf: "center",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18,
+    marginTop: 4,
+  },
+  detailDeleteText: { fontSize: 13.5 },
   detailIconBtn: {
     minWidth: MIN_MOBILE_TOUCH_TARGET,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -6116,7 +6100,7 @@ const s = StyleSheet.create({
   editSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
   editHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
   editSheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
-  editFieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 14 },
+  editFieldLabel: { fontSize: 12, letterSpacing: 0, marginBottom: 7, marginTop: 14 },
   editSaveAction: { marginTop: 20 },
 
   emptyPanel: {
