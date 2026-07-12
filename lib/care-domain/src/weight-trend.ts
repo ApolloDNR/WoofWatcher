@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
+import { resolvePetName } from "./pet-identity.ts";
 
 export type WeightTrendStatus = "needs-baseline" | "needs-log" | "tracking" | "steady";
 export type WeightTrendDirection = "baseline" | "gain" | "reduce" | "hold";
@@ -35,6 +36,8 @@ export interface WeightTrendInput {
   now?: number;
   lookbackDays?: number;
   limit?: number;
+  /** Display name for owner-facing copy; resolved via resolvePetName so renamed dogs never read "Phoenix". */
+  petName?: string | null;
 }
 
 export interface WeightTrendItem {
@@ -159,9 +162,9 @@ function summaryFor(
   return `${parts.join(", ")}.`;
 }
 
-function nextStepFor(status: WeightTrendStatus, direction: WeightTrendDirection): string {
+function nextStepFor(status: WeightTrendStatus, direction: WeightTrendDirection, petName: string): string {
   if (status === "needs-baseline") {
-    return "Add Phoenix's current weight and goal range so Records and Care Pass reports have a baseline.";
+    return `Add ${petName}'s current weight and goal range so Records and Care Pass reports have a baseline.`;
   }
   if (status === "needs-log") {
     return "Log the next weigh-in from the Log tab so the household and vet have dated weight context.";
@@ -179,6 +182,7 @@ export function deriveWeightTrend(input: WeightTrendInput): WeightTrend {
   const now = input.now ?? Date.now();
   const lookbackDays = input.lookbackDays ?? 90;
   const limit = input.limit ?? 8;
+  const petName = resolvePetName(input.petName);
   const unit = clean(input.profile?.weight?.unit) || "lb";
   const items = input.entries
     .filter(isWeight)
@@ -224,7 +228,7 @@ export function deriveWeightTrend(input: WeightTrendInput): WeightTrend {
     direction,
     status,
     summary: summaryFor(status, totalWeighIns, currentWeight, unit, goal, remainingToGoal, changeFromPrevious, lookbackDays),
-    nextStep: nextStepFor(status, direction),
+    nextStep: nextStepFor(status, direction, petName),
     latest,
     previous,
     caregivers,

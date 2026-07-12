@@ -3,10 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   deriveCareDayStatus,
-  deriveMoodEnergyReportSnapshot,
   deriveMoodTrend,
-  deriveMoodTrendPeriods,
-  deriveMoodTrendSparkline,
   getCareEventDefinition,
   normalizeCareEventType,
 } from "../src/index.ts";
@@ -74,7 +71,7 @@ test("derives day status from normalized care entries", () => {
     NOW,
   );
 
-  assert.deepEqual(status.counts.meals, { done: 1, target: 2 });
+  assert.deepEqual(status.counts.meals, { done: 1, target: 2, pending: 0 });
   assert.deepEqual(status.counts.walks, { done: 1, target: 1 });
   assert.deepEqual(status.counts.potty, { done: 1, target: 3 });
   assert.equal(status.counts.training, 0);
@@ -83,6 +80,67 @@ test("derives day status from normalized care entries", () => {
   assert.equal(status.counts.anxiety, 1);
   assert.equal(status.counts.walkMinutes, 30);
   assert.equal(status.healthAlert, true);
+});
+
+test("keeps served meal outcomes open until the household records what was eaten", () => {
+  const status = deriveCareDayStatus(
+    [
+      {
+        type: "meal",
+        occurredAt: "2026-06-06T07:00:00.000Z",
+        details: {
+          routineId: "breakfast",
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 1,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        type: "meal",
+        occurredAt: "2026-06-06T12:00:00.000Z",
+        details: {
+          routineId: "snack",
+          mealCompletion: "grazing",
+          servedAmount: 0.25,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        type: "meal",
+        occurredAt: "2026-06-06T14:00:00.000Z",
+        details: {
+          routineId: "lunch",
+          mealCompletion: "ate most",
+          servedAmount: 1,
+          eatenAmount: 0.8,
+          householdVisible: true,
+        },
+      },
+      {
+        type: "meal",
+        occurredAt: "2026-06-06T18:00:00.000Z",
+        details: {
+          routineId: "dinner",
+          mealCompletion: "skipped",
+          servedAmount: 1,
+          eatenAmount: 0,
+          householdVisible: true,
+        },
+      },
+    ],
+    [
+      { type: "meal" },
+      { type: "meal" },
+      { type: "meal" },
+      { type: "meal" },
+    ],
+    NOW,
+  );
+
+  assert.deepEqual(status.counts.meals, { done: 2, target: 4, pending: 2 });
 });
 
 test("derives mood trend from shared mood and energy check-ins", () => {
@@ -147,320 +205,4 @@ test("derives mood trend from shared mood and energy check-ins", () => {
   assert.equal(trend.latest?.context, "Visitors came by");
   assert.match(trend.summary, /2 shared mood check-ins/);
   assert.match(trend.nextStep, /Visitors came by/);
-});
-
-test("derives mood trend period summaries from the same shared evidence boundary", () => {
-  const periods = deriveMoodTrendPeriods({
-    now: NOW,
-    selectedLookbackDays: 30,
-    periods: [
-      { label: "Week", lookbackDays: 7 },
-      { label: "Month", lookbackDays: 30 },
-      { label: "Quarter", lookbackDays: 90 },
-    ],
-    entries: [
-      {
-        id: "week_low",
-        type: "mood",
-        occurredAt: "2026-06-06T12:00:00.000Z",
-        caregiver: "Emma",
-        mood: "anxious",
-        details: {
-          energyLevel: "low",
-          moodContext: "Visitors",
-          householdVisible: true,
-        },
-      },
-      {
-        id: "month_calm",
-        type: "mood",
-        occurredAt: "2026-05-20T12:00:00.000Z",
-        caregiver: "Apollo",
-        mood: "calm",
-        details: {
-          energyLevel: "steady",
-          householdVisible: true,
-        },
-      },
-      {
-        id: "quarter_happy",
-        type: "mood",
-        occurredAt: "2026-04-15T12:00:00.000Z",
-        caregiver: "Maya",
-        mood: "happy",
-        details: {
-          energyLevel: "high",
-          householdVisible: true,
-        },
-      },
-      {
-        id: "private_week",
-        type: "mood",
-        occurredAt: "2026-06-06T13:00:00.000Z",
-        mood: "happy",
-        details: {
-          householdVisible: false,
-        },
-      },
-    ],
-  });
-
-  assert.deepEqual(
-    periods.map((period) => ({
-      label: period.label,
-      lookbackDays: period.lookbackDays,
-      total: period.trend.total,
-      selected: period.isSelected,
-    })),
-    [
-      { label: "Week", lookbackDays: 7, total: 1, selected: false },
-      { label: "Month", lookbackDays: 30, total: 2, selected: true },
-      { label: "Quarter", lookbackDays: 90, total: 3, selected: false },
-    ],
-  );
-  assert.equal(periods[0].trend.energy.low, 1);
-  assert.equal(periods[1].trend.energy.steady, 1);
-  assert.equal(periods[2].trend.energy.high, 1);
-});
-
-test("filters mood trend by caregiver and care context without widening shared evidence", () => {
-  const trend = deriveMoodTrend({
-    now: NOW,
-    caregiver: "Emma",
-    context: "Visitors",
-    entries: [
-      {
-        id: "emma_visitors_low",
-        type: "mood",
-        occurredAt: "2026-06-06T12:00:00.000Z",
-        caregiver: "Emma",
-        mood: "anxious",
-        details: {
-          energyLevel: "low",
-          moodContext: "Visitors",
-          householdVisible: true,
-        },
-      },
-      {
-        id: "emma_walk_high",
-        type: "mood",
-        occurredAt: "2026-06-06T11:00:00.000Z",
-        caregiver: "Emma",
-        mood: "happy",
-        details: {
-          energyLevel: "high",
-          moodContext: "After walk",
-          householdVisible: true,
-        },
-      },
-      {
-        id: "apollo_visitors_steady",
-        type: "mood",
-        occurredAt: "2026-06-06T10:00:00.000Z",
-        caregiver: "Apollo",
-        mood: "calm",
-        details: {
-          energyLevel: "steady",
-          moodContext: "Visitors",
-          householdVisible: true,
-        },
-      },
-      {
-        id: "private_match",
-        type: "mood",
-        occurredAt: "2026-06-06T09:00:00.000Z",
-        caregiver: "Emma",
-        mood: "happy",
-        details: {
-          energyLevel: "high",
-          moodContext: "Visitors",
-          householdVisible: false,
-        },
-      },
-      {
-        id: "old_match",
-        type: "mood",
-        occurredAt: "2026-04-01T12:00:00.000Z",
-        caregiver: "Emma",
-        mood: "unwell",
-        details: {
-          energyLevel: "low",
-          moodContext: "Visitors",
-          householdVisible: true,
-        },
-      },
-    ],
-  });
-
-  assert.equal(trend.total, 1);
-  assert.deepEqual(trend.items.map((item) => item.id), ["emma_visitors_low"]);
-  assert.deepEqual(trend.caregivers, ["Emma"]);
-  assert.deepEqual(trend.contexts, ["Visitors"]);
-  assert.equal(trend.energy.low, 1);
-  assert.equal(trend.energy.steady, 0);
-  assert.equal(trend.energy.high, 0);
-  assert.match(trend.summary, /1 shared mood check-ins/);
-  assert.match(trend.nextStep, /Visitors/);
-});
-
-test("derives mood trend sparkline buckets from filtered shared evidence", () => {
-  const sparkline = deriveMoodTrendSparkline({
-    now: NOW,
-    bucketCount: 4,
-    lookbackDays: 28,
-    caregiver: "Emma",
-    context: "Visitors",
-    entries: [
-      {
-        id: "oldest_low",
-        type: "mood",
-        occurredAt: "2026-05-12T12:00:00.000Z",
-        caregiver: "Emma",
-        mood: "anxious",
-        details: {
-          energyLevel: "low",
-          moodContext: "Visitors",
-          householdVisible: true,
-        },
-      },
-      {
-        id: "middle_calm",
-        type: "mood",
-        occurredAt: "2026-05-26T12:00:00.000Z",
-        caregiver: "Emma",
-        mood: "calm",
-        details: {
-          energyLevel: "steady",
-          moodContext: "Visitors",
-          householdVisible: true,
-        },
-      },
-      {
-        id: "latest_happy",
-        type: "mood",
-        occurredAt: "2026-06-06T12:00:00.000Z",
-        caregiver: "Emma",
-        mood: "happy",
-        details: {
-          energyLevel: "high",
-          moodContext: "Visitors",
-          householdVisible: true,
-        },
-      },
-      {
-        id: "other_context",
-        type: "mood",
-        occurredAt: "2026-06-06T11:00:00.000Z",
-        caregiver: "Emma",
-        mood: "unwell",
-        details: {
-          energyLevel: "low",
-          moodContext: "After walk",
-          householdVisible: true,
-        },
-      },
-      {
-        id: "private_match",
-        type: "mood",
-        occurredAt: "2026-06-06T10:00:00.000Z",
-        caregiver: "Emma",
-        mood: "happy",
-        details: {
-          energyLevel: "high",
-          moodContext: "Visitors",
-          householdVisible: false,
-        },
-      },
-    ],
-  });
-
-  assert.deepEqual(
-    sparkline.map((bucket) => ({
-      index: bucket.index,
-      count: bucket.count,
-      averageScore: bucket.averageScore,
-      watchCount: bucket.watchCount,
-      tone: bucket.tone,
-      label: bucket.label,
-    })),
-    [
-      { index: 0, count: 1, averageScore: 2, watchCount: 1, tone: "watch", label: "4w ago" },
-      { index: 1, count: 0, averageScore: 0, watchCount: 0, tone: "empty", label: "3w ago" },
-      { index: 2, count: 1, averageScore: 4, watchCount: 0, tone: "steady", label: "2w ago" },
-      { index: 3, count: 1, averageScore: 5, watchCount: 0, tone: "good", label: "Now" },
-    ],
-  );
-});
-
-test("builds a report-ready mood energy snapshot from shared evidence only", () => {
-  const snapshot = deriveMoodEnergyReportSnapshot({
-    now: NOW,
-    lookbackDays: 30,
-    entries: [
-      {
-        id: "recent_low",
-        type: "mood",
-        occurredAt: "2026-06-06T12:00:00.000Z",
-        caregiver: "Emma",
-        mood: "anxious",
-        details: {
-          energyLevel: "low",
-          moodContext: "Visitors",
-          householdVisible: true,
-        },
-      },
-      {
-        id: "recent_happy",
-        type: "mood",
-        occurredAt: "2026-06-05T12:00:00.000Z",
-        caregiver: "Apollo",
-        mood: "happy",
-        details: {
-          energyLevel: "high",
-          moodContext: "After walk",
-          householdVisible: true,
-        },
-      },
-      {
-        id: "private_match",
-        type: "mood",
-        occurredAt: "2026-06-06T10:00:00.000Z",
-        caregiver: "Emma",
-        mood: "happy",
-        details: {
-          energyLevel: "high",
-          moodContext: "Visitors",
-          householdVisible: false,
-        },
-      },
-      {
-        id: "stale_match",
-        type: "mood",
-        occurredAt: "2026-04-01T12:00:00.000Z",
-        caregiver: "Emma",
-        mood: "unwell",
-        details: {
-          energyLevel: "low",
-          moodContext: "Visitors",
-          householdVisible: true,
-        },
-      },
-    ],
-  });
-
-  assert.equal(snapshot.available, true);
-  assert.equal(snapshot.total, 2);
-  assert.equal(snapshot.averageLabel, "3.5/5");
-  assert.equal(snapshot.statusLabel, "Worth watching");
-  assert.equal(snapshot.energyLine, "Energy: 1 low, 0 steady, 1 high.");
-  assert.equal(snapshot.latestLine, "Latest: Anxious with low energy by Emma after Visitors.");
-  assert.match(snapshot.summaryLine, /2 shared mood check-ins/);
-  assert.match(snapshot.boundaryLine, /owner-reported mood and energy context/i);
-  assert.match(snapshot.boundaryLine, /not a diagnosis/i);
-  assert.deepEqual(snapshot.shareLines, [
-    "Mood & Energy snapshot: 2 shared mood check-ins, 3.5/5 average with something worth watching.",
-    "Energy: 1 low, 0 steady, 1 high.",
-    "Latest: Anxious with low energy by Emma after Visitors.",
-    "Owner-reported mood and energy context only; not a diagnosis or emergency triage.",
-  ]);
 });

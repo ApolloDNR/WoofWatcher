@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
+import { resolvePetName } from "./pet-identity.ts";
 
 export type WalkActivityStatus = "active" | "light" | "needs-walk";
 
@@ -18,6 +19,12 @@ export interface WalkActivityInput {
   entries: readonly WalkActivityEntry[];
   now?: number;
   targetMinutes?: number;
+  /**
+   * Display name used in owner-facing copy (nextStep). Resolved through
+   * resolvePetName so renamed dogs never see "Phoenix" in Care Pass or
+   * app surfaces; omitted/placeholder names keep the Phoenix default.
+   */
+  petName?: string | null;
 }
 
 export interface WalkRouteTemplateInput {
@@ -184,6 +191,7 @@ function routeSuggestedUse(template: Pick<WalkRouteTemplate, "visits" | "average
 export function deriveWalkActivity(input: WalkActivityInput): WalkActivity {
   const now = input.now ?? Date.now();
   const targetMinutes = input.targetMinutes ?? 45;
+  const petName = resolvePetName(input.petName);
   const items = input.entries
     .filter(isWalk)
     .filter((entry) => sameLocalDay(entry.occurredAt, now))
@@ -229,7 +237,7 @@ export function deriveWalkActivity(input: WalkActivityInput): WalkActivity {
         : `${total} ${total === 1 ? "walk" : "walks"} today - ${minutesLabel(totalMinutes)}, ${interactionsLabel(dogInteractions)}`,
     nextStep:
       total === 0
-        ? "Log the walk when Phoenix gets outside so the household can see activity and recovery context."
+        ? `Log the walk when ${petName} gets outside so the household can see activity and recovery context.`
         : dogInteractions > 0 || places.length > 0
           ? "Keep noting routes, duration, and social outcomes so sitters and trainers can spot patterns."
           : "Add route or dog-interaction notes when they matter for handoff context.",

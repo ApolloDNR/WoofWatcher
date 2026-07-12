@@ -1,18 +1,14 @@
 import { normalizeCareEventType } from "./events.ts";
 import { deriveAloneTime, type AloneTimeItem } from "./alone-time.ts";
 import { deriveCareTrends, type CareTrendSignal } from "./care-trends.ts";
+import { deriveDietProgress } from "./diet-progress.ts";
 import { deriveCareHandoff, type CareHandoffCaregiver, type CareHandoffRoutine } from "./handoff.ts";
 import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
+import { deriveIncidentWatch, type IncidentWatchItem } from "./incident-watch.ts";
 import { deriveGroomingCare, type GroomingCareItem } from "./grooming-care.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
-import { deriveMoodTrend, type MoodTrendItem } from "./mood-trend.ts";
+import { resolvePetName } from "./pet-identity.ts";
 import { derivePottyHealth } from "./potty-health.ts";
-import {
-  derivePetCredentialReadiness,
-  getPetCredentialPrintView,
-  summarizeRecordVault,
-  type PetCredential,
-} from "./record-vault.ts";
 import { deriveTrainingProgress, type TrainingProgressItem } from "./training-progress.ts";
 import { deriveWaterHydration } from "./water.ts";
 import { deriveWalkActivity, deriveWalkRouteTemplates, type WalkRouteTemplate } from "./walk-activity.ts";
@@ -25,11 +21,6 @@ export interface CarePassProfile {
   breed?: string;
   careFocus?: string;
   vetBoundary?: string;
-  microchipNumber?: string;
-  insuranceProvider?: string;
-  insurancePolicy?: string;
-  primaryVet?: string;
-  emergencyContact?: string;
   weight?: {
     current?: number;
     goal?: string;
@@ -64,8 +55,6 @@ export interface CarePassRecord {
   title: string;
   due?: string;
   note?: string;
-  attachmentUri?: string;
-  attachmentName?: string;
 }
 
 export interface CarePassInput {
@@ -106,97 +95,67 @@ export interface CarePassArtifact {
   message: string;
   printFileName?: string;
   printHtml?: string;
+  storageStatus?: CarePassArtifactStorageStatus;
 }
 
-export interface ProgressReportSection {
-  title: string;
-  lines: string[];
-}
-
-export interface ProgressReportArtifactInput {
-  dogName: string;
-  periodDays: number;
-  generatedAt: string;
-  createdAt?: string;
-  summary: string;
-  sections: readonly ProgressReportSection[];
-}
-
-export interface ProgressReportArtifact {
-  id: string;
-  kind: "progress_report";
-  title: string;
-  generatedAt: string;
-  createdAt: string;
-  summary: string;
-  sections?: ProgressReportSection[];
-  sectionTitles: string[];
-  message: string;
-  periodDays: number;
-  dogName: string;
-  printFileName?: string;
-  printHtml?: string;
-}
-
-export interface PetCredentialArtifact {
-  id: string;
-  kind: "pet_credential";
-  title: string;
-  generatedAt: string;
-  createdAt: string;
-  summary: string;
-  sectionTitles: string[];
-  message: string;
-  dogName: string;
-  printFileName?: string;
-  printHtml?: string;
-}
-
-export type ReportArtifact = CarePassArtifact | ProgressReportArtifact | PetCredentialArtifact;
-
-export interface ReportArtifactPrintView {
+export interface CarePassArtifactPrintView {
   fileName: string;
   html: string;
   status: "ready" | "restored";
 }
 
-export type CarePassArtifactPrintView = ReportArtifactPrintView;
-
-export interface PetCredentialArtifactSummary {
-  total: number;
-  latest: PetCredentialArtifact | null;
-  summary: string;
-  latestLine: string;
-  action: string;
-  boundaryLine: string;
+export interface CarePassArtifactExportManifestRow {
+  label: string;
+  value: string;
+  detail: string;
 }
 
-export interface ReportArtifactSummary {
-  total: number;
-  carePassCount: number;
-  progressReportCount: number;
-  petCredentialCount: number;
-  latest: ReportArtifact | null;
-  summary: string;
-  latestLine: string;
-  action: string;
-  reviewLine: string;
-  cleanupLine: string;
-  boundaryLine: string;
+export interface CarePassArtifactExportView {
+  fileName: string;
+  mimeType: "text/html";
+  formatLabel: "Printable HTML";
+  sourceStatus: CarePassArtifactPrintView["status"];
+  byteSize: number;
+  pdfStatus: "not-generated";
+  pdfDetail: string;
+  storage: CarePassArtifactStorageView;
+  providerBacked: boolean;
+  manifestRows: CarePassArtifactExportManifestRow[];
 }
 
-export interface ReportArtifactSourceDescription {
-  kindLabel: string;
-  metadataLine: string;
-  fileLine: string;
-  lifecycleLine: string;
+export type CarePassArtifactStorageStatus = "local-only" | "upload-ready" | "uploaded" | "failed";
+
+export interface CarePassArtifactStorageView {
+  status: CarePassArtifactStorageStatus;
+  label: string;
+  detail: string;
+  providerBacked: boolean;
 }
 
-export interface ReportArtifactRemovalCopy {
-  title: string;
-  body: string;
-  confirmLabel: string;
-  accessibilityLabel: string;
+export interface CarePassStorageProviderEvidence {
+  fileName?: string | null;
+  uri?: string | null;
+  mimeType?: string | null;
+  byteSize?: number | null;
+  bucketNames?: readonly string[] | null;
+  signedUploadPolicy?: string | null;
+  signedDownloadPolicy?: string | null;
+  householdScopePolicy?: string | null;
+  retentionPolicy?: string | null;
+  exportPolicy?: string | null;
+  deletionPolicy?: string | null;
+  qaEvidenceStoragePolicy?: string | null;
+  apolloApprovalOwner?: string | null;
+  signedAccessApproved?: boolean | null;
+  householdScopeApproved?: boolean | null;
+  retentionExportDeletionApproved?: boolean | null;
+  qaEvidenceStorageApproved?: boolean | null;
+  apolloApproved?: boolean | null;
+}
+
+export interface CarePassArtifactStorageOptions {
+  storageProviderConfigured?: boolean;
+  storageProviderEvidence?: CarePassStorageProviderEvidence | null;
 }
 
 const AUDIENCE_LABEL: Record<CarePassAudience, string> = {
@@ -253,18 +212,70 @@ function formatDateTime(ms: number): string {
   });
 }
 
-function formatDate(ms: number): string {
-  return new Date(ms).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 function printDateStamp(createdAt: string): string {
   const parsed = new Date(createdAt);
   if (Number.isNaN(parsed.getTime())) return "saved";
   return parsed.toISOString().slice(0, 10);
+}
+
+function utf8ByteLength(value: string): number {
+  let bytes = 0;
+  for (const char of value) {
+    const codePoint = char.codePointAt(0) ?? 0;
+    if (codePoint <= 0x7f) bytes += 1;
+    else if (codePoint <= 0x7ff) bytes += 2;
+    else if (codePoint <= 0xffff) bytes += 3;
+    else bytes += 4;
+  }
+  return bytes;
+}
+
+function hasText(value: unknown): boolean {
+  return clean(value).length > 0;
+}
+
+function hasProofMime(value: unknown): boolean {
+  const mime = lower(value);
+  return mime === "application/json" || mime === "application/pdf" || mime === "text/markdown" || mime === "text/plain";
+}
+
+function hasPositiveByteSize(value: unknown): boolean {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function hasEnoughBuckets(value: unknown): boolean {
+  return Array.isArray(value) && value.map(clean).filter(Boolean).length >= 3;
+}
+
+export function isCarePassStorageProviderProofReady(options: CarePassArtifactStorageOptions = {}): boolean {
+  const evidence = options.storageProviderEvidence;
+  if (!options.storageProviderConfigured || !evidence) return false;
+
+  const locator = `${lower(evidence.fileName)} ${lower(evidence.uri)}`;
+  const namesStorageProof =
+    locator.includes("storage") &&
+    locator.includes("proof") &&
+    (locator.includes("attachment") || locator.includes("care-pass") || locator.includes("report"));
+
+  return Boolean(
+    namesStorageProof &&
+      hasProofMime(evidence.mimeType) &&
+      hasPositiveByteSize(evidence.byteSize) &&
+      hasEnoughBuckets(evidence.bucketNames) &&
+      hasText(evidence.signedUploadPolicy) &&
+      hasText(evidence.signedDownloadPolicy) &&
+      hasText(evidence.householdScopePolicy) &&
+      hasText(evidence.retentionPolicy) &&
+      hasText(evidence.exportPolicy) &&
+      hasText(evidence.deletionPolicy) &&
+      hasText(evidence.qaEvidenceStoragePolicy) &&
+      hasText(evidence.apolloApprovalOwner) &&
+      evidence.signedAccessApproved === true &&
+      evidence.householdScopeApproved === true &&
+      evidence.retentionExportDeletionApproved === true &&
+      evidence.qaEvidenceStorageApproved === true &&
+      evidence.apolloApproved === true,
+  );
 }
 
 function entryLabel(entry: CareHealthEntry): string {
@@ -287,6 +298,64 @@ function latestEntries(
     .sort(
       (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
     )
+    .slice(0, limit);
+}
+
+function detailRecord(entry: CareHealthEntry): Record<string, unknown> {
+  return entry.details != null && typeof entry.details === "object" && !Array.isArray(entry.details)
+    ? entry.details
+    : {};
+}
+
+function lower(value: unknown): string {
+  return clean(value).toLowerCase();
+}
+
+function isHouseholdVisible(entry: CareHealthEntry): boolean {
+  return detailRecord(entry).householdVisible !== false;
+}
+
+function isPendingMeal(entry: CareHealthEntry): boolean {
+  const details = detailRecord(entry);
+  const completion = lower(details.mealCompletion ?? details.completion ?? details.outcome);
+  const lifecycle = lower(details.mealLifecycle);
+  return ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(completion) ||
+    ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(lifecycle);
+}
+
+function hasExactEatenAmount(details: Record<string, unknown>): boolean {
+  return Number.isFinite(Number(details.eatenAmount ?? details.amountEaten ?? details.eatenQuantity));
+}
+
+function isEstimatedMeal(entry: CareHealthEntry): boolean {
+  const details = detailRecord(entry);
+  const completion = lower(details.mealCompletion ?? details.completion ?? details.outcome);
+  if (details.eatenAmountEstimated === true) return true;
+  return ["partial", "ate some", "some"].includes(completion) && !hasExactEatenAmount(details);
+}
+
+function hasCorrectionAudit(entry: CareHealthEntry): boolean {
+  const details = detailRecord(entry);
+  if (lower(details.trustState) === "corrected") return true;
+  const auditTrail = Array.isArray(details.auditTrail) ? details.auditTrail : [];
+  return auditTrail.some((event) => {
+    if (event == null || typeof event !== "object" || Array.isArray(event)) return false;
+    const record = event as Record<string, unknown>;
+    return lower(record.action) === "corrected" || lower(record.summary).includes("corrected");
+  });
+}
+
+function mealFollowUpLines(entries: readonly CareHealthEntry[], limit = 6): string[] {
+  return entries
+    .filter((entry) => normalizeCareEventType(entry.type, entry.details) === "meal" && isHouseholdVisible(entry))
+    .flatMap((entry) => {
+      const label = entryLabel(entry);
+      return [
+        isPendingMeal(entry) ? `Outcome pending: ${label} - update eaten amount before sharing.` : "",
+        isEstimatedMeal(entry) ? `Estimated amount: ${label} - confirm exact eaten amount if possible.` : "",
+        hasCorrectionAudit(entry) ? `Corrected outcome: ${label} - review audit history before sharing.` : "",
+      ].filter(notEmpty);
+    })
     .slice(0, limit);
 }
 
@@ -331,43 +400,15 @@ function groomingLatestLine(item: GroomingCareItem | null): string {
   return `Latest: ${item.label} - ${item.kindLabel} with ${item.caregiver}`;
 }
 
-function moodLatestLine(item: MoodTrendItem | null): string {
+function incidentLatestLine(item: IncidentWatchItem | null): string {
   if (!item) return "";
-  const energy = item.energyLevel ? `, ${item.energyLevel} energy` : "";
-  const context = item.context ? ` - ${item.context}` : "";
-  return `Latest: ${item.moodLabel}${energy} by ${item.caregiver}${context}`;
-}
-
-function recordAttachmentPrepLines(records: readonly CarePassRecord[]): string[] {
-  const vault = summarizeRecordVault(records);
-  const summary = vault.localAttachmentSummary;
-  if (summary.totalAttachable === 0) return [];
-  return [
-    `Local files: ${summary.withAttachment}/${summary.totalAttachable} receipts or documents attached.`,
-    summary.missingAttachment > 0 && summary.missingAttachmentTitles.length
-      ? `Needs local file: ${summary.missingAttachmentTitles.join(", ")}.`
-      : "Receipts and documents in this report have local files ready on this device.",
-    summary.boundaryLine,
-  ];
-}
-
-function petCredentialPrepLines(input: {
-  profile?: CarePassProfile;
-  caregivers?: readonly CareHandoffCaregiver[];
-  records?: readonly CarePassRecord[];
-}): string[] {
-  const readiness = derivePetCredentialReadiness(input);
-  if (readiness.readyCount === 0 && readiness.missingLabels.length === readiness.totalCount) {
-    return [];
-  }
-  return [
-    `Dog ID fields: ${readiness.readyCount}/${readiness.totalCount} ready.`,
-    readiness.availableLabels.length ? `Ready: ${readiness.availableLabels.join(", ")}.` : "",
-    readiness.missingLabels.length
-      ? `Needs Dog ID ${readiness.missingLabels.length === 1 ? "field" : "fields"}: ${readiness.missingLabels.join(", ")}.`
-      : "Dog ID fields are ready for review before sharing.",
-    readiness.boundaryLine,
-  ];
+  const parts = [
+    item.kind,
+    item.trigger ? `trigger: ${item.trigger}` : "",
+    item.exposure ? `exposure: ${item.exposure}` : "",
+    item.injuryLevel ? `injury: ${item.injuryLevel}` : "",
+  ].filter(Boolean);
+  return `Latest: ${item.label} - ${parts.join(", ")} with ${item.caregiver}`;
 }
 
 function audienceChecklist(audience: CarePassAudience, name: string): string[] {
@@ -658,381 +699,8 @@ ${sections}
 </html>`;
 }
 
-function progressReportMessage(artifact: {
-  title: string;
-  summary: string;
-  generatedAt: string;
-  sections: readonly ProgressReportSection[];
-}): string {
-  return [
-    artifact.title,
-    artifact.summary,
-    `Generated: ${artifact.generatedAt}`,
-    "",
-    ...artifact.sections.flatMap((item) => [
-      item.title,
-      ...item.lines.map((line) => `- ${line}`),
-      "",
-    ]),
-  ].join("\n").trim();
-}
-
-export function renderProgressReportPrintHtml(artifact: ProgressReportArtifact): string {
-  const sections = (artifact.sections?.length
-    ? artifact.sections
-    : artifact.sectionTitles.map((title) => ({ title, lines: [] })))
-    .map((item) => {
-      const escapedTitle = escapeHtml(item.title);
-      const escapedLines = item.lines
-        .map((line) => `<li>${escapeHtml(line)}</li>`)
-        .join("\n          ");
-      return `
-      <section class="section">
-        <h2>${escapedTitle}</h2>
-        ${escapedLines ? `<ul>\n          ${escapedLines}\n        </ul>` : ""}
-      </section>`;
-    })
-    .join("\n");
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(artifact.title)}</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --ink: #1a2332;
-      --muted: #5f6f63;
-      --line: #d4cfc4;
-      --wash: #f7f5f1;
-      --accent: #2e5846;
-      --copper: #c87a3a;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--wash);
-      color: var(--ink);
-      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.48;
-    }
-    main {
-      max-width: 820px;
-      margin: 0 auto;
-      padding: 40px 32px;
-      background: #ffffff;
-      min-height: 100vh;
-    }
-    header {
-      border-bottom: 2px solid var(--line);
-      padding-bottom: 18px;
-      margin-bottom: 22px;
-    }
-    .brand {
-      color: var(--copper);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    h1 {
-      font-family: "Playfair Display", Georgia, serif;
-      font-size: 34px;
-      line-height: 1.08;
-      margin: 0;
-    }
-    .summary {
-      color: var(--muted);
-      font-size: 14px;
-      margin: 10px 0 0;
-    }
-    .generated {
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 6px;
-    }
-    .section {
-      break-inside: avoid;
-      border-bottom: 1px solid var(--line);
-      padding: 16px 0;
-    }
-    h2 {
-      color: var(--accent);
-      font-size: 15px;
-      letter-spacing: 0.02em;
-      margin: 0 0 8px;
-    }
-    ul {
-      margin: 0;
-      padding-left: 18px;
-    }
-    li {
-      margin: 5px 0;
-      font-size: 13.5px;
-    }
-    footer {
-      color: var(--muted);
-      font-size: 11.5px;
-      padding-top: 18px;
-    }
-    @media print {
-      body { background: #ffffff; }
-      main { max-width: none; padding: 24px; }
-      header { margin-bottom: 16px; }
-      .section { page-break-inside: avoid; }
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <header>
-      <div class="brand">WoofWatcher Progress Report</div>
-      <h1>${escapeHtml(artifact.title)}</h1>
-      <p class="summary">${escapeHtml(artifact.summary)}</p>
-      <div class="generated">Generated ${escapeHtml(artifact.generatedAt)}</div>
-    </header>
-${sections}
-    <footer>
-      WoofWatcher organizes owner-reported care context for household, caregiver, and veterinarian review. It does not diagnose or replace veterinary care.
-    </footer>
-  </main>
-</body>
-</html>`;
-}
-
-function renderLegacyProgressReportPrintHtml(artifact: ProgressReportArtifact): string {
-  const sections = artifact.sectionTitles
-    .map(clean)
-    .filter(notEmpty)
-    .map((title) => `
-      <section class="section">
-        <h2>${escapeHtml(title)}</h2>
-      </section>`)
-    .join("\n");
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(artifact.title)}</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --ink: #1a2332;
-      --muted: #5f6f63;
-      --line: #d4cfc4;
-      --wash: #f7f5f1;
-      --accent: #2e5846;
-      --copper: #c87a3a;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--wash);
-      color: var(--ink);
-      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.48;
-    }
-    main {
-      max-width: 820px;
-      margin: 0 auto;
-      padding: 40px 32px;
-      background: #ffffff;
-      min-height: 100vh;
-    }
-    header {
-      border-bottom: 2px solid var(--line);
-      padding-bottom: 18px;
-      margin-bottom: 22px;
-    }
-    .brand {
-      color: var(--copper);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    h1 {
-      font-family: "Playfair Display", Georgia, serif;
-      font-size: 34px;
-      line-height: 1.08;
-      margin: 0;
-    }
-    .summary {
-      color: var(--muted);
-      font-size: 14px;
-      margin: 10px 0 0;
-    }
-    .generated {
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 6px;
-    }
-    .section {
-      break-inside: avoid;
-      border-bottom: 1px solid var(--line);
-      padding: 16px 0;
-    }
-    h2 {
-      color: var(--accent);
-      font-size: 15px;
-      letter-spacing: 0.02em;
-      margin: 0;
-    }
-    pre {
-      white-space: pre-wrap;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: var(--wash);
-      padding: 16px;
-      font: 13.5px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    footer {
-      color: var(--muted);
-      font-size: 11.5px;
-      padding-top: 18px;
-    }
-    @media print {
-      body { background: #ffffff; }
-      main { max-width: none; padding: 24px; }
-      header { margin-bottom: 16px; }
-      .section { page-break-inside: avoid; }
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <header>
-      <div class="brand">WoofWatcher Progress Report</div>
-      <h1>${escapeHtml(artifact.title)}</h1>
-      <p class="summary">${escapeHtml(artifact.summary || "Saved progress report.")}</p>
-      <div class="generated">Generated ${escapeHtml(artifact.generatedAt)}</div>
-    </header>
-${sections}
-    <section class="section">
-      <h2>Saved Report Text</h2>
-      <pre>${escapeHtmlBlock(artifact.message)}</pre>
-    </section>
-    <footer>
-      WoofWatcher organizes owner-reported care context for household, caregiver, and veterinarian review. It does not diagnose or replace veterinary care.
-    </footer>
-  </main>
-</body>
-</html>`;
-}
-
-function renderLegacyPetCredentialPrintHtml(artifact: PetCredentialArtifact): string {
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(artifact.title)}</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --ink: #1a2332;
-      --muted: #5f6f63;
-      --line: #d4cfc4;
-      --wash: #f7f5f1;
-      --accent: #2e5846;
-      --copper: #c87a3a;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--wash);
-      color: var(--ink);
-      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.48;
-    }
-    main {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 40px 28px;
-      background: #ffffff;
-      min-height: 100vh;
-    }
-    header {
-      border-bottom: 2px solid var(--line);
-      padding-bottom: 18px;
-      margin-bottom: 22px;
-    }
-    .brand {
-      color: var(--copper);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    h1 {
-      font-family: "Playfair Display", Georgia, serif;
-      font-size: 34px;
-      line-height: 1.08;
-      margin: 0;
-    }
-    .summary {
-      color: var(--muted);
-      font-size: 14px;
-      margin: 10px 0 0;
-    }
-    pre {
-      white-space: pre-wrap;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: var(--wash);
-      padding: 16px;
-      font: 13.5px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    footer {
-      color: var(--muted);
-      font-size: 11.5px;
-      padding-top: 18px;
-    }
-    @media print {
-      body { background: #ffffff; }
-      main { max-width: none; padding: 24px; }
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <header>
-      <div class="brand">WoofWatcher Dog ID</div>
-      <h1>${escapeHtml(artifact.title)}</h1>
-      <p class="summary">${escapeHtml(artifact.summary || "Saved Dog ID credential source.")}</p>
-    </header>
-    <pre>${escapeHtmlBlock(artifact.message)}</pre>
-    <footer>
-      WoofWatcher organizes owner-reported credential context for handoff and veterinarian review. It does not replace veterinary care or official records.
-    </footer>
-  </main>
-</body>
-</html>`;
-}
-
-export function getReportArtifactPrintView(artifact: ReportArtifact): ReportArtifactPrintView {
+export function getCarePassArtifactPrintView(artifact: CarePassArtifact): CarePassArtifactPrintView {
   const storedHtml = typeof artifact.printHtml === "string" && artifact.printHtml.trim().length > 0;
-  if (artifact.kind === "progress_report") {
-    return {
-      fileName: clean(artifact.printFileName) || `${slugify(artifact.title)}-${printDateStamp(artifact.createdAt)}.html`,
-      html: storedHtml ? artifact.printHtml as string : renderLegacyProgressReportPrintHtml(artifact),
-      status: storedHtml ? "ready" : "restored",
-    };
-  }
-  if (artifact.kind === "pet_credential") {
-    return {
-      fileName: clean(artifact.printFileName) || `${slugify(artifact.title)}-${printDateStamp(artifact.createdAt)}.html`,
-      html: storedHtml ? artifact.printHtml as string : renderLegacyPetCredentialPrintHtml(artifact),
-      status: storedHtml ? "ready" : "restored",
-    };
-  }
   return {
     fileName: clean(artifact.printFileName) || `${slugify(artifact.title)}-${printDateStamp(artifact.createdAt)}.html`,
     html: storedHtml ? artifact.printHtml as string : renderLegacyArtifactPrintHtml(artifact),
@@ -1040,37 +708,95 @@ export function getReportArtifactPrintView(artifact: ReportArtifact): ReportArti
   };
 }
 
-export function getCarePassArtifactPrintView(artifact: CarePassArtifact): CarePassArtifactPrintView {
-  return getReportArtifactPrintView(artifact);
-}
-
-export function describeReportArtifactSource(artifact: ReportArtifact): ReportArtifactSourceDescription {
-  const printable = getReportArtifactPrintView(artifact);
-  const sectionCount = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles.length : 0;
-  const kindLabel =
-    artifact.kind === "progress_report"
-      ? "Progress Report"
-      : artifact.kind === "pet_credential"
-        ? "Dog ID Credential"
-        : "Care Pass";
-  const sectionLabel = `${sectionCount} ${sectionCount === 1 ? "section" : "sections"}`;
-  const printStatus = printable.status === "ready" ? "Print-ready source" : "Restored printable source";
-
+export function describeCarePassArtifactStorage(
+  artifact: Pick<CarePassArtifact, "storageStatus">,
+  options: CarePassArtifactStorageOptions = {},
+): CarePassArtifactStorageView {
+  const baseStatus = artifact.storageStatus ?? "local-only";
+  const storageProviderProofReady = isCarePassStorageProviderProofReady(options);
+  const status =
+    baseStatus === "uploaded" || baseStatus === "failed"
+      ? baseStatus
+      : storageProviderProofReady
+        ? "upload-ready"
+        : "local-only";
+  const missingStructuredProof =
+    (options.storageProviderConfigured === true || baseStatus === "upload-ready") && !storageProviderProofReady;
+  if (status === "uploaded") {
+    return {
+      status,
+      label: "Provider stored",
+      detail: "Uploaded to provider storage for account-backed resend.",
+      providerBacked: true,
+    };
+  }
+  if (status === "upload-ready") {
+    return {
+      status,
+      label: "Ready to upload",
+      detail: "Print source is saved locally and ready for provider storage once signed access, retention, export, and deletion rules are approved.",
+      providerBacked: false,
+    };
+  }
+  if (status === "failed") {
+    return {
+      status,
+      label: "Upload needs retry",
+      detail: "Local report copy is safe; provider upload needs a retry.",
+      providerBacked: false,
+    };
+  }
   return {
-    kindLabel,
-    metadataLine: `${kindLabel} - ${sectionLabel} - ${printStatus}`,
-    fileLine: `Printable source: ${printable.fileName}`,
-    lifecycleLine: "Local printable source only; native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are not enabled.",
+    status: "local-only",
+    label: "Saved locally",
+    detail: missingStructuredProof
+      ? "Provider storage is staged, but this report stays saved locally until structured storage proof covers buckets, signed access, household scope, retention, export, deletion, QA evidence storage, and Apollo approval."
+      : "Cloud storage pending - saved on this device as text and print-ready HTML source.",
+    providerBacked: false,
   };
 }
 
-export function describeReportArtifactRemoval(artifact: ReportArtifact): ReportArtifactRemovalCopy {
-  const source = describeReportArtifactSource(artifact);
+export function describeCarePassArtifactExport(
+  artifact: CarePassArtifact,
+  options: CarePassArtifactStorageOptions = {},
+): CarePassArtifactExportView {
+  const printable = getCarePassArtifactPrintView(artifact);
+  const storage = describeCarePassArtifactStorage(artifact, options);
+  const sourceLabel = printable.status === "ready" ? "Print-ready" : "Print restored";
+  const byteSize = utf8ByteLength(printable.html);
+  const pdfDetail = "PDF export still needs native or provider-backed generation; share the printable HTML source until that is configured.";
   return {
-    title: `Remove ${source.kindLabel} source?`,
-    body: `Remove "${artifact.title}" from local Report History. This only removes the local reusable source on this care document; it does not delete anything from cloud storage, revoke a share, or change provider-backed retention because those lifecycle controls are not enabled yet.`,
-    confirmLabel: "Remove local source",
-    accessibilityLabel: `Remove local ${source.kindLabel} source for ${artifact.title}`,
+    fileName: printable.fileName,
+    mimeType: "text/html",
+    formatLabel: "Printable HTML",
+    sourceStatus: printable.status,
+    byteSize,
+    pdfStatus: "not-generated",
+    pdfDetail,
+    storage,
+    providerBacked: storage.providerBacked,
+    manifestRows: [
+      {
+        label: "Format",
+        value: "Printable HTML",
+        detail: `${Math.max(1, Math.ceil(byteSize / 1024))} KB source for print/share.`,
+      },
+      {
+        label: "Source",
+        value: sourceLabel,
+        detail: printable.status === "ready" ? "Saved from the generated Care Pass." : "Restored from saved report text.",
+      },
+      {
+        label: "PDF",
+        value: "PDF pending",
+        detail: pdfDetail,
+      },
+      {
+        label: "Storage",
+        value: storage.label,
+        detail: storage.detail,
+      },
+    ],
   };
 }
 
@@ -1081,10 +807,15 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const entries = input.entries ?? [];
   const routines = input.routines ?? [];
   const records = input.records ?? [];
-  const name = clean(profile.name) || "Dog";
+  // The share artifact must agree with every app surface: the stored "My Dog"
+  // placeholder (and an empty name) resolve to the same display name the rest
+  // of the app shows, never a raw placeholder in the pass title or Dog card.
+  const name = resolvePetName(clean(profile.name));
   const audienceLabel = AUDIENCE_LABEL[input.audience];
   const generatedAt = formatDateTime(now);
-  const health = deriveHealthWatch({ entries, routines, now });
+  // Every derive helper that writes dog-name copy gets the same resolved name,
+  // so a renamed dog never reads "Phoenix" anywhere in the shared pass.
+  const health = deriveHealthWatch({ entries, routines, now, petName: name });
   const handoff = deriveCareHandoff({
     entries,
     routines,
@@ -1094,21 +825,16 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const medication = deriveMedicationAdherence({ entries, routines, now });
   const medicationFollowUps = deriveMedicationFollowUps({ entries, routines, records, now }).slice(0, 4);
   const hydration = deriveWaterHydration({ entries, now });
-  const walkActivity = deriveWalkActivity({ entries, now });
+  const walkActivity = deriveWalkActivity({ entries, now, petName: name });
   const walkRouteTemplates = deriveWalkRouteTemplates({ entries, now, limit: 3 });
-  const pottyHealth = derivePottyHealth({ entries, now });
+  const pottyHealth = derivePottyHealth({ entries, now, petName: name });
   const careTrends = deriveCareTrends({ entries, now, windowDays: 7 });
+  const dietProgress = deriveDietProgress({ dietProfile: diet, entries, now });
   const trainingProgress = deriveTrainingProgress({ entries, now, lookbackDays: 30 });
   const aloneTime = deriveAloneTime({ entries, now, lookbackDays: 30 });
-  const weightTrend = deriveWeightTrend({ entries, profile, goals: input.goals ?? [], now, lookbackDays: 90 });
+  const weightTrend = deriveWeightTrend({ entries, profile, goals: input.goals ?? [], now, lookbackDays: 90, petName: name });
   const groomingCare = deriveGroomingCare({ entries, now, lookbackDays: 45 });
-  const moodTrend = deriveMoodTrend({ entries, now, lookbackDays: 30, limit: 3 });
-  const recordAttachmentPrep = recordAttachmentPrepLines(records);
-  const petCredentialPrep = petCredentialPrepLines({
-    profile,
-    caregivers: input.caregivers ?? [],
-    records,
-  });
+  const incidentWatch = deriveIncidentWatch({ entries, now, lookbackDays: 90, petName: name });
 
   const latestMeals = latestEntries(entries, "meal", 2);
   const latestWalks = latestEntries(entries, "walk", 2);
@@ -1127,7 +853,15 @@ export function buildCarePass(input: CarePassInput): CarePass {
       ? `${name} health and care context for veterinarian review.`
       : input.audience === "trainer"
         ? `${name} behavior, routine, and activity context for training.`
-        : `${name} care handoff for ${audienceLabel.toLowerCase()} support.`;
+      : `${name} care handoff for ${audienceLabel.toLowerCase()} support.`;
+  const mealAmountNotes = [
+    dietProgress.pendingMealCount
+      ? `${dietProgress.pendingMealCount} outcome${dietProgress.pendingMealCount === 1 ? "" : "s"} pending`
+      : "",
+    dietProgress.estimatedMealCount
+      ? `${dietProgress.estimatedMealCount} estimated partial amount${dietProgress.estimatedMealCount === 1 ? "" : "s"}`
+      : "",
+  ].filter(notEmpty).join("; ");
 
   const sections = [
     section("Dog", [
@@ -1137,7 +871,9 @@ export function buildCarePass(input: CarePassInput): CarePass {
     ]),
     section("Next Care", [
       handoff.next ? `${handoff.next.label} at ${handoff.next.time}${handoff.next.owner ? ` with ${handoff.next.owner}` : ""}` : "No upcoming routine is currently scheduled.",
-      handoff.sections.needsAttention.map((item) => `${item.label}: ${item.detail}`).join("; "),
+      // Each attention item is its own full sentence; gluing them with "; "
+      // produced machine-joined text like "...still open.; Walk remaining...".
+      ...handoff.sections.needsAttention.map((item) => `${item.label}: ${item.detail}`),
       handoff.message,
     ]),
     section("Handoff Checklist", audienceChecklist(input.audience, name)),
@@ -1145,7 +881,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
       `${careTrends.windowDays}-day trends`,
       careTrends.summary,
       careTrends.current.meals.total
-        ? `Meals: ${careTrends.current.meals.complete} complete, ${careTrends.current.meals.partial} partial, ${careTrends.current.meals.skipped} skipped`
+        ? `Meals: ${careTrends.current.meals.complete} complete, ${careTrends.current.meals.partial} partial, ${careTrends.current.meals.skipped} skipped${careTrends.current.meals.pending ? `, ${careTrends.current.meals.pending} pending outcome${careTrends.current.meals.pending === 1 ? "" : "s"}` : ""}`
         : "",
       careTrends.current.walks.count
         ? `Walks: ${careTrends.current.walks.totalMinutes} min${careTrends.deltas.walkMinutes ? ` (${careTrends.deltas.walkMinutes > 0 ? "+" : ""}${careTrends.deltas.walkMinutes} vs prior window)` : ""}`
@@ -1159,11 +895,16 @@ export function buildCarePass(input: CarePassInput): CarePass {
       diet.primaryFood ? `Food: ${diet.primaryFood}` : "",
       diet.normalPortion ? `Portion: ${diet.normalPortion}` : "",
       diet.mealSchedule ? `Schedule: ${diet.mealSchedule}` : "",
+      dietProgress.targetAmount != null || dietProgress.mealCount
+        ? `Daily food: ${dietProgress.summary}`
+        : "",
+      mealAmountNotes ? `Meal amount note: ${mealAmountNotes}` : "",
       diet.bedtimeSnack ? `Bedtime snack: ${diet.bedtimeSnack}` : "",
       diet.avoid ? `Avoid: ${diet.avoid}` : "",
       diet.sensitivities ? `Sensitivities: ${diet.sensitivities}` : "",
       diet.appetiteQuirks ? `Appetite notes: ${diet.appetiteQuirks}` : "",
     ]),
+    section("Meal Follow-ups", mealFollowUpLines(entries)),
     section("Weight Trend", [
       weightTrend.summary,
       weightTrend.goalWeight ? `Goal: ${weightTrend.goalWeight} ${weightTrend.unit}` : "",
@@ -1185,16 +926,6 @@ export function buildCarePass(input: CarePassInput): CarePass {
       walkRouteTemplates.length ? `Saved routes: ${walkRouteTemplates.map(walkRouteTemplateLine).join("; ")}` : "",
       walkActivity.nextStep,
     ]),
-    moodTrend.total
-      ? section("Mood & Energy", [
-          moodTrend.summary,
-          `Energy: ${moodTrend.energy.low} low, ${moodTrend.energy.steady} steady, ${moodTrend.energy.high} high`,
-          moodTrend.caregivers.length ? `Caregivers: ${moodTrend.caregivers.slice(0, 5).join(", ")}` : "",
-          moodLatestLine(moodTrend.latest),
-          moodTrend.nextStep,
-          "Mood and energy are owner-reported care context for household handoff, training, and veterinarian review, not a diagnosis.",
-        ])
-      : null,
     section("Training Progress", [
       trainingProgress.summary,
       trainingProgress.focusSkills.length ? `Skills: ${trainingProgress.focusSkills.slice(0, 5).join(", ")}` : "",
@@ -1229,6 +960,27 @@ export function buildCarePass(input: CarePassInput): CarePass {
       groomingCare.nextStep,
       "Grooming is owner-reported coat and grooming context for handoff and veterinarian review, not a diagnosis.",
     ]),
+    section("Incident Watch", [
+      incidentWatch.summary,
+      incidentWatch.totalIncidents
+        ? `Outcomes: ${incidentWatch.watchCount} watch, ${incidentWatch.alertCount} review alerts, ${incidentWatch.followUpCount} follow-ups`
+        : "",
+      `Trend: ${incidentWatch.trend.label} - ${incidentWatch.trend.detail}`,
+      incidentWatch.triggers.length ? `Triggers: ${incidentWatch.triggers.slice(0, 5).join(", ")}` : "",
+      incidentWatch.exposures.length ? `Exposure/context: ${incidentWatch.exposures.slice(0, 5).join(", ")}` : "",
+      incidentWatch.injuryCount ? `Injury checks: ${incidentWatch.injuryCount} noted` : "",
+      incidentLatestLine(incidentWatch.latest),
+      incidentWatch.latest?.actionTaken ? `Action taken: ${incidentWatch.latest.actionTaken}` : "",
+      incidentWatch.latest?.followUp ? `Follow-up: ${incidentWatch.latest.followUp}` : "",
+      incidentWatch.followUpTasks.length
+        ? `Owner follow-ups: ${incidentWatch.followUpTasks.map((task) => task.label).join("; ")}`
+        : "",
+      incidentWatch.trainerGoals.length
+        ? `Trainer goal ideas: ${incidentWatch.trainerGoals.map((goal) => `${goal.label} (${goal.evidence})`).join("; ")}`
+        : "",
+      incidentWatch.nextStep,
+      "Incident Watch is factual owner-reported context for household, trainer, sitter, or veterinarian review; it does not diagnose behavior or medical issues.",
+    ]),
     section("Potty Health", [
       pottyHealth.summary,
       pottyHealth.conditions.length ? `Conditions: ${pottyHealth.conditions.join(", ")}` : "",
@@ -1251,8 +1003,6 @@ export function buildCarePass(input: CarePassInput): CarePass {
       )),
       ...medicationFollowUps.map((item) => `${item.label}: ${item.detail} Action: ${item.action}`),
     ]),
-    section("Dog ID Prep", petCredentialPrep),
-    section("Records Attachment Prep", recordAttachmentPrep),
     section(
       "Health Pattern Review",
       health.patterns.slice(0, 4).map((pattern) => (
@@ -1316,150 +1066,6 @@ export function createCarePassArtifact(
     message: pass.message,
     printFileName: `${slugify(pass.title)}-${dateStamp}.html`,
     printHtml: renderCarePassPrintHtml(pass),
-  };
-}
-
-export function createProgressReportArtifact(input: ProgressReportArtifactInput): ProgressReportArtifact {
-  const createdAt = input.createdAt ?? new Date().toISOString();
-  const safeStamp = clean(createdAt).replace(/[^0-9A-Za-z]+/g, "-").replace(/^-|-$/g, "");
-  const dateStamp = new Date(createdAt).toISOString().slice(0, 10);
-  const periodDays = Math.max(1, Math.floor(input.periodDays));
-  const dogName = clean(input.dogName) || "Dog";
-  const title = `${dogName} ${periodDays}-day Progress Report`;
-  const sections = input.sections
-    .map((item) => section(item.title, item.lines))
-    .filter((item): item is CarePassSection => item !== null);
-  const message = progressReportMessage({
-    title,
-    summary: input.summary,
-    generatedAt: input.generatedAt,
-    sections,
-  });
-  const artifact: ProgressReportArtifact = {
-    id: `progress_report_${periodDays}d_${safeStamp}`,
-    kind: "progress_report",
-    title,
-    generatedAt: input.generatedAt,
-    createdAt,
-    summary: clean(input.summary),
-    sections,
-    sectionTitles: sections.map((item) => item.title),
-    message,
-    periodDays,
-    dogName,
-    printFileName: `${slugify(title)}-${dateStamp}.html`,
-  };
-
-  return {
-    ...artifact,
-    printHtml: renderProgressReportPrintHtml(artifact),
-  };
-}
-
-export function createPetCredentialArtifact(
-  credential: PetCredential,
-  createdAt: string = new Date().toISOString(),
-): PetCredentialArtifact {
-  const safeStamp = clean(createdAt).replace(/[^0-9A-Za-z]+/g, "-").replace(/^-|-$/g, "");
-  const title = `${credential.name} Dog ID`;
-  const printable = getPetCredentialPrintView(credential);
-  return {
-    id: `pet_credential_${safeStamp}`,
-    kind: "pet_credential",
-    title,
-    generatedAt: credential.generatedAt,
-    createdAt,
-    summary: "Local Dog ID credential source for caregiver and veterinarian review.",
-    sectionTitles: ["Dog ID"],
-    message: credential.message,
-    dogName: credential.name,
-    printFileName: printable.fileName,
-    printHtml: printable.html,
-  };
-}
-
-export function summarizePetCredentialArtifacts(
-  artifacts: readonly ReportArtifact[] = [],
-): PetCredentialArtifactSummary {
-  const credentials = artifacts
-    .filter((artifact): artifact is PetCredentialArtifact => artifact.kind === "pet_credential")
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const latest = credentials[0] ?? null;
-  const total = credentials.length;
-  const fallback: PetCredentialArtifactSummary = {
-    total,
-    latest,
-    summary: "No local Dog ID credential source has been saved yet.",
-    latestLine: "",
-    action: "Share the Dog ID card or printable source from Records to save a local credential source in Report History.",
-    boundaryLine: "Dog ID credentials remain local printable sources until provider-backed credential storage, native PDF/image export, and cloud sharing are approved.",
-  };
-  if (!latest) return fallback;
-
-  const created = new Date(latest.createdAt).getTime();
-  const latestDate = Number.isNaN(created) ? clean(latest.generatedAt) || "saved locally" : formatDate(created);
-  return {
-    total,
-    latest,
-    summary: `${total} local Dog ID credential ${total === 1 ? "source" : "sources"} saved for resend or printable-source sharing.`,
-    latestLine: `Latest Dog ID Credential saved ${latestDate}${latest.printFileName ? ` as ${latest.printFileName}` : ""}.`,
-    action: "Open Records Report History to resend the Dog ID text or share the printable source before handing it to a sitter, trainer, caregiver, or vet.",
-    boundaryLine: "Saved Dog ID artifacts are local credential sources; provider-backed credential storage, native PDF/image export, cloud sharing, retention, and deletion policy are not enabled.",
-  };
-}
-
-export function summarizeReportArtifacts(
-  artifacts: readonly ReportArtifact[] = [],
-): ReportArtifactSummary {
-  const saved = artifacts
-    .filter((artifact): artifact is ReportArtifact => Boolean(artifact?.id && artifact.kind))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const latest = saved[0] ?? null;
-  const carePassCount = saved.filter((artifact) => artifact.kind === "care_pass").length;
-  const progressReportCount = saved.filter((artifact) => artifact.kind === "progress_report").length;
-  const petCredentialCount = saved.filter((artifact) => artifact.kind === "pet_credential").length;
-  const total = saved.length;
-
-  const fallback: ReportArtifactSummary = {
-    total,
-    carePassCount,
-    progressReportCount,
-    petCredentialCount,
-    latest,
-    summary: "No local report source has been saved yet.",
-    latestLine: "",
-    action: "Share a Care Pass, Progress Report, or Dog ID from Records to save a reusable local source here.",
-    reviewLine: "Review guidance appears after local report sources are saved.",
-    cleanupLine: "Cleanup appears after local report sources are saved; provider-backed lifecycle controls remain gated.",
-    boundaryLine: "Report History is local until native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are approved.",
-  };
-  if (!latest) return fallback;
-
-  const kindLabel =
-    latest.kind === "progress_report"
-      ? "Progress Report"
-      : latest.kind === "pet_credential"
-        ? "Dog ID Credential"
-        : "Care Pass";
-  const parsed = new Date(latest.createdAt).getTime();
-  const latestDate = Number.isNaN(parsed) ? clean(latest.generatedAt) || "saved locally" : formatDate(parsed);
-  const mix = [
-    carePassCount ? `${carePassCount} Care ${carePassCount === 1 ? "Pass" : "Passes"}` : "",
-    progressReportCount ? `${progressReportCount} Progress ${progressReportCount === 1 ? "Report" : "Reports"}` : "",
-    petCredentialCount ? `${petCredentialCount} Dog ID ${petCredentialCount === 1 ? "source" : "sources"}` : "",
-  ].filter(Boolean);
-
-  return {
-    total,
-    carePassCount,
-    progressReportCount,
-    petCredentialCount,
-    latest,
-    summary: `${total} local report ${total === 1 ? "source" : "sources"} saved for handoff reuse${mix.length ? `: ${mix.join(", ")}.` : "."}`,
-    latestLine: `Latest saved source: ${kindLabel} saved ${latestDate}${latest.printFileName ? ` as ${latest.printFileName}` : ""}.`,
-    action: "Resend or share printable source from Report History before handing care context to a sitter, trainer, caregiver, or vet.",
-    reviewLine: "Review the latest local source for stale routines, medications, records, and audience before resending.",
-    cleanupLine: "Remove obsolete local sources only after review; this updates local Report History and does not revoke shares or change provider retention.",
-    boundaryLine: "Saved report artifacts are local reusable sources; native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are not enabled.",
+    storageStatus: "local-only",
   };
 }

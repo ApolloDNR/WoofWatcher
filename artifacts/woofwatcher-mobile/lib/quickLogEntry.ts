@@ -39,6 +39,7 @@ export interface QuickLogState {
 
 export interface QuickLogBuildOptions {
   caregiver: string;
+  caregiverRole?: CareLogActorRole;
   now?: number;
 }
 
@@ -51,6 +52,114 @@ export interface QuickLogBuiltEntry {
   mood?: string;
   severity?: string;
   details?: Record<string, unknown>;
+}
+
+export type CareLogActorRole =
+  | "Adult Admin"
+  | "Adult"
+  | "Teen"
+  | "Kid"
+  | "Sitter"
+  | "Trainer"
+  | "Vet Viewer"
+  | string;
+
+export type CareLogTrustState =
+  | "confirmed"
+  | "pending-confirmation"
+  | "estimated"
+  | "corrected"
+  | "rejected";
+
+/**
+ * Double-tap dedupe window for the quick-log save path. A second same-type
+ * quick tap inside this window is treated as the same intent (a bounce or an
+ * accidental double press), so it reuses the already-saved entry instead of
+ * writing a duplicate. A deliberate second log after the window still saves.
+ */
+export const QUICK_LOG_DEDUPE_WINDOW_MS = 1500;
+
+export interface QuickLogDedupeCandidate {
+  id?: string;
+  type: string;
+  occurredAt: string;
+  details?: Record<string, unknown> | null;
+}
+
+/**
+ * Shared dedupe for every quick-log surface (Home tiles, Fast Log sheet,
+ * /log launcher): returns the newest entry of the same normalized care type
+ * saved within the dedupe window, or null when a fresh save is legitimate.
+ */
+export function findRecentQuickLogDuplicate<T extends QuickLogDedupeCandidate>(
+  entries: readonly T[],
+  type: string | null | undefined,
+  now: number,
+  windowMs: number = QUICK_LOG_DEDUPE_WINDOW_MS,
+): T | null {
+  const normalizedType = normalizeCareEventType(type);
+  let newest: T | null = null;
+  let newestAt = Number.NEGATIVE_INFINITY;
+  for (const entry of entries) {
+    const details =
+      entry.details && typeof entry.details === "object" && !Array.isArray(entry.details)
+        ? (entry.details as Parameters<typeof normalizeCareEventType>[1])
+        : undefined;
+    if (normalizeCareEventType(entry.type, details) !== normalizedType) continue;
+    const occurredAt = Date.parse(entry.occurredAt);
+    if (!Number.isFinite(occurredAt)) continue;
+    const age = now - occurredAt;
+    if (age < 0 || age > windowMs) continue;
+    if (occurredAt > newestAt) {
+      newest = entry;
+      newestAt = occurredAt;
+    }
+  }
+  return newest;
+}
+
+export type QuickLogTapBehavior = "quick-log" | "detail-required";
+export type QuickLogLongPressBehavior = "detail-sheet";
+export type QuickLogDetailContract =
+  | "simple"
+  | "served-outcome"
+  | "parent-outcome"
+  | "safety-critical"
+  | "health-context";
+
+export interface QuickLogPolicy {
+  type: CareEventType;
+  tapBehavior: QuickLogTapBehavior;
+  longPressBehavior: QuickLogLongPressBehavior;
+  detailContract: QuickLogDetailContract;
+  quickLabel: string;
+  requiresConfirmation: boolean;
+}
+
+export interface QuickLogLauncherPresentation {
+  modeLabel: "Tap log" | "Details";
+  accessibilityLabel: string;
+  feedbackHint: string;
+  detailRequired: boolean;
+}
+
+export interface QuickLogInteractionRailItem {
+  label: "Tap" | "Details first" | "Hold" | "Edit later";
+  detail: string;
+  tone: "quick" | "detail" | "edit";
+}
+
+export interface QuickLogDetailSheetPresentation {
+  title: string;
+  subtitle: string;
+  quickSummary: string;
+  interactionRail: QuickLogInteractionRailItem[];
+  editLaterCopy: string;
+  detailChecklist: string[];
+  canQuickLog: boolean;
+  primaryActionLabel: "Quick log now" | "Open full details";
+  secondaryActionLabel: "Open full details" | "Cancel";
+  safetyBoundary?: string;
 }
 
 function statusRank(routine: RoutineBoardItem): number {
@@ -116,6 +225,200 @@ function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
 
+function normalizeRole(role: CareLogActorRole | null | undefined): string {
+  return clean(role).toLowerCase();
+}
+
+function roleRequiresConfirmation(role: CareLogActorRole | null | undefined): "kid-log" | "helper-log" | null {
+  const normalized = normalizeRole(role);
+  if (normalized === "kid") return "kid-log";
+  if (normalized === "sitter" || normalized === "trainer") return "helper-log";
+  return null;
+}
+
+export function getQuickLogPolicy(type: string | null | undefined): QuickLogPolicy {
+  const normalizedType = normalizeCareEventType(type);
+  if (normalizedType === "meal") {
+    return {
+      type: normalizedType,
+      tapBehavior: "quick-log",
+      longPressBehavior: "detail-sheet",
+      detailContract: "served-outcome",
+      quickLabel: "usual meal served",
+      requiresConfirmation: false,
+    };
+  }
+  if (normalizedType === "potty") {
+    return {
+      type: normalizedType,
+      tapBehavior: "quick-log",
+      longPressBehavior: "detail-sheet",
+      detailContract: "parent-outcome",
+      quickLabel: "potty attempt",
+      requiresConfirmation: false,
+    };
+  }
+  if (normalizedType === "medication") {
+    return {
+      type: normalizedType,
+      tapBehavior: "detail-required",
+      longPressBehavior: "detail-sheet",
+      detailContract: "safety-critical",
+      quickLabel: "medication detail",
+      requiresConfirmation: true,
+    };
+  }
+  if (normalizedType === "vomit" || normalizedType === "symptom" || normalizedType === "incident") {
+    return {
+      type: normalizedType,
+      tapBehavior: "detail-required",
+      longPressBehavior: "detail-sheet",
+      detailContract: "health-context",
+      quickLabel: normalizedType === "incident" ? "incident detail" : "health detail",
+      requiresConfirmation: true,
+    };
+  }
+  return {
+    type: normalizedType,
+    tapBehavior: "quick-log",
+    longPressBehavior: "detail-sheet",
+    detailContract: "simple",
+    quickLabel: "quick log",
+    requiresConfirmation: false,
+  };
+}
+
+export function describeQuickLogLauncherAction(
+  type: string | null | undefined,
+  label: string,
+): QuickLogLauncherPresentation {
+  const policy = getQuickLogPolicy(type);
+  const safeLabel = clean(label) || policy.type;
+  if (policy.tapBehavior === "detail-required") {
+    return {
+      modeLabel: "Details",
+      detailRequired: true,
+      accessibilityLabel: `Open ${safeLabel} details. This log needs context before saving.`,
+      feedbackHint: "Details first for health, medication, and incident logs.",
+    };
+  }
+
+  return {
+    modeLabel: "Tap log",
+    detailRequired: false,
+    accessibilityLabel: `Quick log ${safeLabel}. Long press for details.`,
+    feedbackHint: "Tap saves the usual log. Long press opens more fields.",
+  };
+}
+
+export function describeQuickLogDetailSheet(
+  type: string | null | undefined,
+  label: string,
+): QuickLogDetailSheetPresentation {
+  const policy = getQuickLogPolicy(type);
+  const safeLabel = clean(label) || policy.type;
+  const title = `${safeLabel} details`;
+  const canQuickLog = policy.tapBehavior === "quick-log";
+  const interactionRail: QuickLogInteractionRailItem[] = [
+    {
+      label: canQuickLog ? "Tap" : "Details first",
+      detail: canQuickLog ? "safe default" : "before saving",
+      tone: canQuickLog ? "quick" : "detail",
+    },
+    { label: "Hold", detail: "add context", tone: "detail" },
+    { label: "Edit later", detail: "Timeline", tone: "edit" },
+  ];
+  const base = {
+    title,
+    canQuickLog,
+    interactionRail,
+    editLaterCopy:
+      "Timeline stays editable, so a fast log can be updated, corrected, confirmed, or given sticky notes later.",
+    primaryActionLabel: canQuickLog ? ("Quick log now" as const) : ("Open full details" as const),
+    secondaryActionLabel: canQuickLog ? ("Open full details" as const) : ("Cancel" as const),
+  };
+
+  if (policy.detailContract === "served-outcome") {
+    return {
+      ...base,
+      subtitle: "Fast bowl drop now, accurate outcome later.",
+      quickSummary: "Quick tap serves the usual meal and keeps the meal outcome pending until someone confirms what Phoenix ate.",
+      detailChecklist: [
+        "Meal uses a served -> outcome lifecycle so a bowl on the floor is not treated as eaten.",
+        "Track portion offered, expected portion, and food notes before saving.",
+        "Update later with Ate all, Ate most, Ate some, Refused, or Still grazing.",
+      ],
+    };
+  }
+
+  if (policy.detailContract === "parent-outcome") {
+    return {
+      ...base,
+      subtitle: "One bathroom log, clear outcomes inside.",
+      quickSummary: "Quick tap records a bathroom attempt without pretending pee or poop happened.",
+      detailChecklist: [
+        "Potty stays the parent event; Pee, poop, both, accident, or tried-nothing are outcomes.",
+        "Set outside or inside, then add stool consistency or pee notes only when relevant.",
+        "Save details afterward so Health Watch, Timeline, and handoffs read the same record.",
+      ],
+    };
+  }
+
+  if (policy.detailContract === "safety-critical") {
+    return {
+      ...base,
+      subtitle: "Medication needs context before it enters the household record.",
+      quickSummary: "This action opens details first so the dose, status, caregiver, and proof need are clear.",
+      detailChecklist: [
+        "Confirm medication name, dose, and whether it was taken or skipped.",
+        "Keep household visibility on unless the owner intentionally changes it.",
+        "Adult review and photo proof can be requested from the saved log when needed.",
+      ],
+      safetyBoundary: "Medication requires context before saving; WoofWatcher will not treat it like a casual tap log.",
+    };
+  }
+
+  if (policy.detailContract === "health-context") {
+    return {
+      ...base,
+      subtitle: "Health and incident notes stay factual and review-ready.",
+      quickSummary: "This action opens details first so the record includes context instead of a vague alert.",
+      detailChecklist: [
+        "Capture what happened, severity, trigger or context, and any immediate follow-up.",
+        "Keep language observational and non-diagnostic for vet, trainer, or sitter review.",
+        "Attach proof or request adult confirmation later if the household needs it.",
+      ],
+      safetyBoundary: "Health context is not veterinary advice. Use it to organize facts and share patterns with a vet.",
+    };
+  }
+
+  return {
+    ...base,
+    subtitle: "Fast when it is routine, detailed when it matters.",
+    quickSummary: `Quick tap saves a useful ${safeLabel.toLowerCase()} log with household-safe defaults.`,
+    detailChecklist: [
+      "Open full details for duration, notes, route, mood, or household visibility.",
+      "Saved logs can be edited, corrected, shared, or given sticky notes later.",
+      "Every detail becomes part of Timeline, reports, and household handoffs.",
+    ],
+  };
+}
+
+function trustDetails(policy: QuickLogPolicy, role: CareLogActorRole | null | undefined): Record<string, unknown> {
+  const roleReason = roleRequiresConfirmation(role);
+  const confirmationRequired = Boolean(roleReason) || policy.requiresConfirmation;
+  return {
+    logInteraction: policy.tapBehavior === "detail-required" ? "detail-sheet" : "quick-tap",
+    trustState: roleReason ? "pending-confirmation" : "confirmed",
+    confirmationRequired,
+    ...(roleReason
+      ? { confirmationReason: roleReason }
+      : policy.requiresConfirmation
+        ? { confirmationReason: "safety-critical" }
+        : {}),
+  };
+}
+
 export function buildQuickLogEntry(
   item: QuickLogConfig,
   state: QuickLogState,
@@ -124,12 +427,17 @@ export function buildQuickLogEntry(
   const now = options.now ?? Date.now();
   const normalizedType = normalizeCareEventType(item.type);
   const routine = nextOpenRoutineOfType(state, normalizedType, now);
-  const details: Record<string, unknown> = routineDetails(routine);
+  const policy = getQuickLogPolicy(normalizedType);
+  const details: Record<string, unknown> = {
+    ...routineDetails(routine),
+    ...trustDetails(policy, options.caregiverRole),
+  };
   let amount: string | undefined;
 
   if (normalizedType === "meal") {
     const expectedPortion = state.dietProfile.normalPortion?.trim() ?? "";
-    details.mealCompletion = "complete";
+    details.mealCompletion = "served";
+    details.mealLifecycle = "outcome-pending";
     details.householdVisible = true;
     if (expectedPortion) details.expectedPortion = expectedPortion;
 
@@ -137,8 +445,6 @@ export function buildQuickLogEntry(
     if (parsed) {
       details.servedAmount = parsed.amount;
       details.servedUnit = parsed.unit;
-      details.eatenAmount = parsed.amount;
-      details.eatenUnit = parsed.unit;
       amount = portionAmountText(parsed.amount);
     }
   }
@@ -160,6 +466,7 @@ export function buildQuickLogEntry(
   }
 
   if (normalizedType === "potty") {
+    details.pottyOutcome = "attempt";
     details.householdVisible = true;
   }
 

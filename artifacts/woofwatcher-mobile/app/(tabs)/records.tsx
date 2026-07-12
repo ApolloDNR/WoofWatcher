@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
+  ImageBackground,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -32,39 +33,35 @@ import {
   buildPetCredential,
   buildCarePass,
   createCarePassArtifact,
-  createPetCredentialArtifact,
-  createProgressReportArtifact,
+  describeCarePassArtifactExport,
   deriveAloneTime,
   deriveCareTrends,
   deriveGroomingCare,
   deriveHealthWatch,
+  deriveIncidentWatch,
   deriveMedicationAdherence,
   deriveMedicationFollowUps,
   deriveMedicationHistory,
-  deriveMoodEnergyReportSnapshot,
   deriveMoodTrend,
-  deriveMoodTrendPeriods,
-  deriveMoodTrendSparkline,
-  derivePetCredentialReadiness,
   derivePottyHealth,
   deriveRecordReminders,
-  describeReportArtifactRemoval,
-  describeReportArtifactSource,
   deriveTrainingProgress,
   deriveWalkActivity,
   deriveWalkRouteTemplates,
   deriveWaterHydration,
   deriveWeightTrend,
-  getReportArtifactPrintView,
+  getCarePassArtifactPrintView,
+  getPetCredentialImageView,
+  getPetCredentialPrintView,
   getRecordDueStatus,
   normalizeCareEventType,
-  summarizeReportArtifacts,
   summarizeRecordVault,
+  type CareEventType,
   type CarePass,
   type CarePassAudience,
+  type CarePassArtifact,
   type MedicationHistoryOutcomeFilter,
   type RecordKind,
-  type ReportArtifact,
 } from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
@@ -77,16 +74,59 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
-import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
+import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
+import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
+import { homeImmersiveRoomIsNight } from "./index";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
+import {
+  buildReportArtifactExportFilePlan,
+  buildReportArtifactShareContent,
+  type ReportArtifactPrintableSource,
+} from "@/lib/reportArtifactExportFile";
+import {
+  buildCarePassPdfArtifactSource,
+  buildDogIdPngArtifactSource,
+  buildGeneratedBinaryArtifactFilePlan,
+  buildGeneratedBinaryArtifactShareContent,
+  type GeneratedBinaryArtifactSource,
+} from "@/lib/reportGeneratedBinaryArtifact";
+import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
+import { resolvePetName } from "@/lib/petIdentity";
+import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
+import { shareTextPayload } from "@/lib/shareText";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
+const RECORDS_CREDENTIAL_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-pixellab-400x300.png");
+// Night sibling for the credential stage: the storybook night render of the
+// same Phoenix room (identical 4:3 frame), picked with the same clock rule
+// Home's immersive room uses so Records never shows daylight at night.
+const RECORDS_CREDENTIAL_STAGE_ROOM_NIGHT = require("@/assets/avatar/rooms/phoenix-room-night.png");
+const RECORDS_CREDENTIAL_STAGE_SPRITE = getCareTwinSpriteAsset("tail-wag");
+const RECORDS_CREDENTIAL_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["tail-wag"];
+
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+interface RecordsCommandItem {
+  id: string;
+  icon: IoniconName;
+  eyebrow: string;
+  label: string;
+  detail: string;
+  actionLabel: string;
+  tone: string;
+  onPress: () => void;
+}
 
 const HEALTH_ICON: Record<string, PulseIconName> = {
   vomit: "vomit",
   symptom: "vomit",
+  incident: "sad",
   health: "heart",
   vet: "heart",
   mood: "sad",
@@ -99,12 +139,6 @@ const PERIODS = [
   { key: 7, label: "Week" },
   { key: 30, label: "Month" },
   { key: 90, label: "Quarter" },
-] as const;
-
-const MOOD_PERIODS = [
-  { lookbackDays: 7, label: "Week" },
-  { lookbackDays: 30, label: "Month" },
-  { lookbackDays: 90, label: "Quarter" },
 ] as const;
 
 const CARE_PASS_OPTIONS: {
@@ -165,34 +199,64 @@ function entryType(entry: Entry): string {
   return normalizeCareEventType(entry.type, entry.details);
 }
 
+function countNoun(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+function sentenceCase(value: string): string {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+}
+
 function hasAttachment(record: unknown): boolean {
   const attachment = (record as { attachmentUri?: unknown }).attachmentUri;
   return typeof attachment === "string" && attachment.trim().length > 0;
+}
+
+function credentialFieldReady(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  return normalized.length > 0 && normalized !== "not on file" && normalized !== "not set" && normalized !== "none";
 }
 
 export default function RecordsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const ownerOps = isOwnerOpsBuild();
   const { state, updateCareDoc } = useCare();
-  const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
-  const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
-  const keyboardVerticalOffset = getKeyboardAvoidingVerticalOffset(insets.top, "tabbed", Platform.OS === "web");
   const { width } = useWindowDimensions();
 
-  const topScrollPadding = getRouteTopPadding(insets.top, "tabbed", Platform.OS === "web");
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
+  });
+  const bottomPadding = getTabbedRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
+  const modalSheetBottomPadding = getModalSheetBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
+  const keyboardOffset = getKeyboardAvoidingVerticalOffset({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
+  });
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 60000);
     return () => clearInterval(id);
   }, []);
+  // Time-aware credential stage: same clock rule as Home's immersive room
+  // (dark theme or lamplit hours), so Records follows the household's real
+  // day instead of staying frozen in daylight.
+  const recordsStageIsNight =
+    colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours());
 
   const unit = state.profile.weight.unit;
 
   const [period, setPeriod] = useState<number>(30);
-  const [moodPeriod, setMoodPeriod] = useState<number>(30);
-  const [moodCaregiver, setMoodCaregiver] = useState<string>("all");
-  const [moodContext, setMoodContext] = useState<string>("all");
   const [recordOpen, setRecordOpen] = useState(false);
   const [recordType, setRecordType] = useState<RecordKind>("vaccine");
   const [recordTitle, setRecordTitle] = useState("");
@@ -204,10 +268,18 @@ export default function RecordsScreen() {
   const [medicationOutcomeFilter, setMedicationOutcomeFilter] = useState<MedicationHistoryOutcomeFilter>("all");
 
   const recordOption = RECORD_OPTIONS.find((option) => option.kind === recordType) ?? RECORD_OPTIONS[0];
+  const launchProviderSetupPlan = useMemo(
+    () => deriveLaunchProviderSetup(state.launchProviderProfile),
+    [state.launchProviderProfile],
+  );
 
   const healthWatch = useMemo(
     () => deriveHealthWatch({ entries: state.entries, routines: state.routines, now }),
     [state.entries, state.routines, now],
+  );
+  const incidentWatch = useMemo(
+    () => deriveIncidentWatch({ entries: state.entries, now, lookbackDays: 90 }),
+    [state.entries, now],
   );
   const careTrends = useMemo(
     () => deriveCareTrends({ entries: state.entries, now, windowDays: 7 }),
@@ -230,7 +302,7 @@ export default function RecordsScreen() {
     [state.entries, now],
   );
   const walkActivity = useMemo(
-    () => deriveWalkActivity({ entries: state.entries, now }),
+    () => deriveWalkActivity({ entries: state.entries, now, petName: state.profile.name }),
     [state.entries, now],
   );
   const walkRouteTemplates = useMemo(
@@ -241,6 +313,17 @@ export default function RecordsScreen() {
     () => derivePottyHealth({ entries: state.entries, now }),
     [state.entries, now],
   );
+  // The shared summary says "stool normal" whenever nothing needs review, but
+  // quick taps carry no stool detail at all. Until a condition or stool color
+  // is actually recorded, say so instead of claiming a normal outcome.
+  // (derivePottyHealth also feeds Care Pass, so this stays a display-only fix.)
+  const pottyOutcomeRecorded = pottyHealth.items.some(
+    (item) => item.condition !== "not logged" || Boolean(item.stoolColor),
+  );
+  const pottySummary =
+    pottyHealth.total > 0 && pottyHealth.watchCount === 0 && !pottyOutcomeRecorded
+      ? `${countNoun(pottyHealth.total, "potty log")} today - ${pottyHealth.peeCount} pee, ${pottyHealth.poopCount} poop, outcome not recorded`
+      : pottyHealth.summary;
   const trainingProgress = useMemo(
     () => deriveTrainingProgress({ entries: state.entries, now, lookbackDays: 30 }),
     [state.entries, now],
@@ -257,119 +340,43 @@ export default function RecordsScreen() {
     () => deriveWeightTrend({ entries: state.entries, profile: state.profile, goals: state.goals, now, lookbackDays: 90, limit: 8 }),
     [state.entries, state.profile, state.goals, now],
   );
-  const current = weightTrend.currentWeight || state.profile.weight.current;
+  const current = weightTrend.currentWeight;
 
-  // ---- Weight trend (prefer real weight logs, fall back to gentle synthesis) ----
-  const goalWeight = weightTrend.goalWeight || Math.round(current) + 2;
+  // ---- Weight trend (real weigh-ins only; never synthesize a series) ----
+  const goalWeight = weightTrend.goalWeight;
 
-  const { series, labels, isRealWeight } = useMemo(() => {
+  const { series, labels } = useMemo(() => {
     const real = weightTrend.items;
-    if (real.length >= 2) {
-      return {
-        series: real.map((item) => item.weight),
-        labels: real.map((item, i) => (i === real.length - 1 ? "Now" : shortDate(item.occurredAt))),
-        isRealWeight: true,
-      };
-    }
-    const n = 7;
-    const start = current - 1.6;
-    const wobble = [0, 0.25, -0.15, 0.35, 0.1, 0.4, 0];
-    const arr: number[] = [];
-    for (let i = 0; i < n; i++) {
-      const base = start + (current - start) * (i / (n - 1));
-      arr.push(Math.round((base + (i < n - 1 ? wobble[i] : 0)) * 10) / 10);
-    }
-    arr[n - 1] = current;
+    if (real.length < 2) return { series: [] as number[], labels: [] as string[] };
     return {
-      series: arr,
-      labels: arr.map((_, i) => (i === n - 1 ? "Now" : `${n - 1 - i}w`)),
-      isRealWeight: false,
+      series: real.map((item) => item.weight),
+      labels: real.map((item, i) => (i === real.length - 1 ? "Now" : shortDate(item.occurredAt))),
     };
-  }, [weightTrend.items, current]);
+  }, [weightTrend.items]);
+  const hasWeightSeries = series.length >= 2;
 
-  const moodFilterSource = useMemo(
-    () => deriveMoodTrend({ entries: state.entries, now, lookbackDays: 90, limit: 20 }),
-    [state.entries, now],
-  );
-  const moodCaregiverFilter = moodCaregiver === "all" ? undefined : moodCaregiver;
-  const moodContextFilter = moodContext === "all" ? undefined : moodContext;
-  const moodCaregiverOptions = ["all", ...moodFilterSource.caregivers];
-  const moodContextOptions = ["all", ...moodFilterSource.contexts];
-
-  useEffect(() => {
-    if (moodCaregiver !== "all" && !moodFilterSource.caregivers.includes(moodCaregiver)) {
-      setMoodCaregiver("all");
-    }
-    if (moodContext !== "all" && !moodFilterSource.contexts.includes(moodContext)) {
-      setMoodContext("all");
-    }
-  }, [moodCaregiver, moodContext, moodFilterSource.caregivers, moodFilterSource.contexts]);
-
+  // ---- Mood distribution (last 30 days) ----
   const moodStats = useMemo(
-    () =>
-      deriveMoodTrend({
-        entries: state.entries,
-        now,
-        lookbackDays: moodPeriod,
-        limit: 3,
-        caregiver: moodCaregiverFilter,
-        context: moodContextFilter,
-      }),
-    [state.entries, now, moodPeriod, moodCaregiverFilter, moodContextFilter],
-  );
-  const moodPeriodSummaries = useMemo(
-    () =>
-      deriveMoodTrendPeriods({
-        entries: state.entries,
-        now,
-        selectedLookbackDays: moodPeriod,
-        periods: MOOD_PERIODS,
-        limit: 3,
-        caregiver: moodCaregiverFilter,
-        context: moodContextFilter,
-      }),
-    [state.entries, now, moodPeriod, moodCaregiverFilter, moodContextFilter],
-  );
-  const moodSparkline = useMemo(
-    () =>
-      deriveMoodTrendSparkline({
-        entries: state.entries,
-        now,
-        lookbackDays: moodPeriod,
-        bucketCount: 8,
-        caregiver: moodCaregiverFilter,
-        context: moodContextFilter,
-      }),
-    [state.entries, now, moodPeriod, moodCaregiverFilter, moodContextFilter],
-  );
-  const moodTimeline = useMemo(
-    () =>
-      deriveMoodTrend({
-        entries: state.entries,
-        now,
-        lookbackDays: 90,
-        limit: 8,
-        caregiver: moodCaregiverFilter,
-        context: moodContextFilter,
-      }),
-    [state.entries, now, moodCaregiverFilter, moodContextFilter],
+    () => deriveMoodTrend({ entries: state.entries, now, lookbackDays: 30, limit: 3 }),
+    [state.entries, now],
   );
 
   // ---- Incident lookback ----
   const incidents = useMemo(
     () =>
-      state.entries
-        .filter((e) => entryType(e) === "vomit" || entryType(e) === "symptom")
+      [...incidentWatch.items]
         .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()),
-    [state.entries],
+    [incidentWatch.items],
   );
-  const incident7 = incidents.filter((e) => daysBetween(e.occurredAt, now) <= 7).length;
-  const incident30 = incidents.filter((e) => daysBetween(e.occurredAt, now) <= 30).length;
-  const incident90 = incidents.filter((e) => daysBetween(e.occurredAt, now) <= 90).length;
-  const healthTone =
-    healthWatch.status === "alert"
+  const incidentWindow = (days: number) => incidentWatch.trend.windows.find((item) => item.days === days)?.count ?? 0;
+  const incident7 = incidentWindow(7);
+  const incident30 = incidentWindow(30);
+  const incidentLookbackWindow = incidentWatch.trend.windows[incidentWatch.trend.windows.length - 1];
+  const incident90 = incidentLookbackWindow?.count ?? incidentWindow(90);
+  const incidentTone =
+    incidentWatch.status === "review"
       ? colors.rose
-      : healthWatch.status === "watch"
+      : incidentWatch.status === "watch"
         ? colors.amber
         : colors.sage;
 
@@ -393,20 +400,10 @@ export default function RecordsScreen() {
       play: count(["play", "training"]),
       potty: count(["potty"]),
       treats: count(["treat"]),
-      incidents: count(["vomit", "symptom"]),
+      incidents: count(["incident"]),
       topCaregiver: topCaregiver ? { name: topCaregiver[0], count: topCaregiver[1] } : null,
     };
   }, [state.entries, period, now]);
-  const moodReportSnapshot = useMemo(
-    () =>
-      deriveMoodEnergyReportSnapshot({
-        entries: state.entries,
-        now,
-        lookbackDays: period,
-        dogName: state.profile.name,
-      }),
-    [state.entries, now, period, state.profile.name],
-  );
 
   const dietHistory = useMemo(
     () =>
@@ -416,31 +413,65 @@ export default function RecordsScreen() {
         .slice(0, 4),
     [state.entries],
   );
+  const dietPrimaryFood = (state.dietProfile.primaryFood ?? "").trim();
+  const dietMeta = [state.dietProfile.normalPortion, state.dietProfile.mealSchedule]
+    .map((value) => (value ?? "").trim())
+    .filter(Boolean)
+    .join(" - ");
+  const hasDietOnFile = Boolean(dietPrimaryFood || dietMeta);
 
   const recordVault = useMemo(() => summarizeRecordVault(state.records), [state.records]);
-  const recordReminders = useMemo(
-    () => deriveRecordReminders(state.records, { now }).slice(0, 4),
+  // One reminder derivation feeds both surfaces: the HUD counts every open
+  // setup item exactly once (missing-critical records are already reminders,
+  // so adding missingCritical on top double-counted them), while the visible
+  // checklist shows the top four.
+  const recordRemindersAll = useMemo(
+    () => deriveRecordReminders(state.records, { now }),
     [state.records, now],
+  );
+  const recordReminders = useMemo(
+    () => recordRemindersAll.slice(0, 4),
+    [recordRemindersAll],
   );
   const credential = useMemo(
     () =>
+      // Resolve the placeholder profile name first so shares, exports, and the
+      // ID card all say "Phoenix" (or the real name), never "My Dog Dog ID".
       buildPetCredential({
-        profile: state.profile,
+        profile: { ...state.profile, name: resolvePetName(state.profile.name) },
         caregivers: state.caregivers,
         records: state.records,
       }),
     [state.profile, state.caregivers, state.records],
   );
-  const credentialReadiness = useMemo(
+  const credentialImageView = useMemo(() => getPetCredentialImageView(credential), [credential]);
+  const credentialPngArtifactSource = useMemo(
     () =>
-      derivePetCredentialReadiness({
-        profile: state.profile,
-        caregivers: state.caregivers,
-        records: state.records,
+      buildDogIdPngArtifactSource({
+        fileName: credentialImageView.fileName,
+        title: `${credential.name} Dog ID`,
+        lines: [
+          `Breed: ${credential.breed}`,
+          `Weight: ${credential.weight}`,
+          `Care focus: ${credential.careFocus}`,
+          `Primary vet: ${credential.primaryVet}`,
+          `Emergency: ${credential.emergencyContact}`,
+          `Microchip: ${credential.microchip}`,
+          `Insurance: ${credential.insurance}`,
+        ],
       }),
-    [state.profile, state.caregivers, state.records],
+    [
+      credential.breed,
+      credential.careFocus,
+      credential.emergencyContact,
+      credential.insurance,
+      credential.microchip,
+      credential.name,
+      credential.primaryVet,
+      credential.weight,
+      credentialImageView.fileName,
+    ],
   );
-  const showCredentialReportPrep = credentialReadiness.readyCount > 0;
 
   const openRecordForm = (kind: RecordKind = "vaccine") => {
     setRecordType(kind);
@@ -462,14 +493,14 @@ export default function RecordsScreen() {
         setRecordAttachmentUri(result.assets[0].uri);
       }
     } catch {
-      Alert.alert("Attachment unavailable", "Choose the file details manually for now.");
+      notifyDialog("Attachment unavailable", "Choose the file details manually for now.");
     }
   };
 
   const saveRecord = () => {
     const title = recordTitle.trim();
     if (!title) {
-      Alert.alert("Add a title", `Name this ${recordOption.label.toLowerCase()} record.`);
+      notifyDialog("Add a title", `Name this ${recordOption.label.toLowerCase()} record.`);
       return;
     }
     const id = `record_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -498,133 +529,172 @@ export default function RecordsScreen() {
 
   const deleteRecord = (id: string | undefined, title: string) => {
     if (!id) return;
-    Alert.alert("Delete record", `Remove "${title}" from ${state.profile.name}'s vault?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          updateCareDoc((doc) => ({ ...doc, records: doc.records.filter((record) => record.id !== id) }));
+    confirmThroughSteps(
+      [
+        {
+          title: "Delete record",
+          message: `Remove "${title}" from ${resolvePetName(state.profile.name)}'s vault?`,
+          confirmLabel: "Delete",
+          destructive: true,
         },
+      ],
+      () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        updateCareDoc((doc) => ({ ...doc, records: doc.records.filter((record) => record.id !== id) }));
       },
-    ]);
+    );
   };
 
   const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? "Month";
 
   const shareReport = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const artifact = createProgressReportArtifact({
-      dogName: state.profile.name,
-      periodDays: period,
-      generatedAt: new Date(now).toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      }),
-      summary: `${periodLabel} progress report for caregiver and vet review.`,
-      sections: [
-        {
-          title: "Care Summary",
-          lines: [
-            `Total entries logged: ${report.total}`,
-            `Meals: ${report.meals}`,
-            `Walks: ${report.walks} (${report.walkMinutes} min)`,
-            `Play & training: ${report.play}`,
-            `Potty breaks: ${report.potty}`,
-            `Treats: ${report.treats}`,
-            `Health incidents: ${report.incidents}`,
-            report.topCaregiver ? `Most active caregiver: ${report.topCaregiver.name} (${report.topCaregiver.count})` : "",
-          ],
-        },
-        {
-          title: "Weight",
-          lines: [`Current weight: ${current} ${unit} (goal ${goalWeight} ${unit})`],
-        },
-        ...(moodReportSnapshot.available
-          ? [
-              {
-                title: "Mood & Energy",
-                lines: moodReportSnapshot.shareLines,
-              },
-            ]
-          : []),
-        ...(showCredentialReportPrep
-          ? [
-              {
-                title: "Dog ID Prep",
-                lines: [
-                  `Dog ID fields: ${credentialReadiness.readyCount}/${credentialReadiness.totalCount} ready.`,
-                  credentialReadiness.availableLabels.length ? `Ready: ${credentialReadiness.availableLabels.join(", ")}.` : "",
-                  credentialReadiness.missingLabels.length
-                    ? `Needs Dog ID ${credentialReadiness.missingLabels.length === 1 ? "field" : "fields"}: ${credentialReadiness.missingLabels.join(", ")}.`
-                    : "Dog ID fields are ready for review before sharing.",
-                  credentialReadiness.boundaryLine,
-                ],
-              },
-            ]
-          : []),
-        ...(recordVault.localAttachmentSummary.totalAttachable > 0
-          ? [
-              {
-                title: "Records Attachment Prep",
-                lines: [
-                  `Local files: ${recordVault.localAttachmentSummary.withAttachment}/${recordVault.localAttachmentSummary.totalAttachable} receipts or documents attached.`,
-                  recordVault.localAttachmentSummary.missingAttachment > 0 && recordVault.localAttachmentSummary.missingAttachmentTitles.length
-                    ? `Needs local file: ${recordVault.localAttachmentSummary.missingAttachmentTitles.join(", ")}.`
-                    : "Receipts and documents in this report have local files ready on this device.",
-                  recordVault.localAttachmentSummary.boundaryLine,
-                ],
-              },
-            ]
-          : []),
-        {
-          title: "Boundary",
-          lines: ["Shared from WoofWatcher - patterns for caregiver and vet review."],
-        },
-      ],
-    });
-    updateCareDoc((doc) => ({
-      ...doc,
-      reportArtifacts: [
-        artifact,
-        ...doc.reportArtifacts.filter((item) => item.id !== artifact.id),
-      ].slice(0, 12),
-    }));
-    Share.share({ message: artifact.message, title: artifact.title }).catch(() =>
-      Alert.alert("Progress report", artifact.message),
-    );
-  };
-
-  const saveCredentialArtifact = () => {
-    const artifact = createPetCredentialArtifact(credential);
-    updateCareDoc((doc) => ({
-      ...doc,
-      reportArtifacts: [
-        artifact,
-        ...doc.reportArtifacts.filter((item) => item.id !== artifact.id),
-      ].slice(0, 12),
-    }));
-    return artifact;
+    const lines = [
+      `WOOFWATCHER PROGRESS REPORT - Last ${period} days`,
+      `${resolvePetName(state.profile.name)} (${state.profile.breed})`,
+      "",
+      `Total entries logged: ${report.total}`,
+      `Meals: ${report.meals}`,
+      `Walks: ${report.walks} (${report.walkMinutes} min)`,
+      `Play & training: ${report.play}`,
+      `Potty breaks: ${report.potty}`,
+      `Treats: ${report.treats}`,
+      `Health incidents: ${report.incidents}`,
+      report.topCaregiver ? `Most active caregiver: ${report.topCaregiver.name} (${report.topCaregiver.count})` : "",
+      "",
+      current > 0
+        ? `Current weight: ${current} ${unit}${goalWeight > 0 ? ` (goal ${goalWeight} ${unit})` : ""}`
+        : "",
+      moodStats.total ? `Mood average: ${moodStats.averageScore.toFixed(1)}/5 over ${moodStats.total} check-ins` : "",
+      "",
+      "Shared from WoofWatcher - patterns for caregiver & vet review.",
+    ]
+      .filter(Boolean)
+      .join("\n");
+    void shareTextPayload({ message: lines, title: `${resolvePetName(state.profile.name)} - ${periodLabel} report` });
   };
 
   const shareCredential = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const artifact = saveCredentialArtifact();
-    Share.share({ message: artifact.message, title: artifact.title }).catch(() =>
-      Alert.alert(artifact.title, artifact.message),
+    void shareTextPayload({ message: credential.message, title: `${credential.name} Dog ID` });
+  };
+
+  const sharePrintableSourceFile = async (
+    printable: ReportArtifactPrintableSource,
+    options: { directoryName?: string; printableLabel?: string; title: string },
+  ) => {
+    const plan = buildReportArtifactExportFilePlan(printable, {
+      directoryName: options.directoryName,
+      documentDirectory: Platform.OS === "web" ? null : FileSystem.documentDirectory,
+      printableLabel: options.printableLabel,
+      title: options.title,
+    });
+
+    const shareFallback = async () => {
+      const fallbackPlan = buildReportArtifactExportFilePlan(printable, {
+        directoryName: options.directoryName,
+        documentDirectory: null,
+        printableLabel: options.printableLabel,
+        title: options.title,
+      });
+      const fallbackContent = buildReportArtifactShareContent(fallbackPlan);
+      await shareTextPayload({ title: fallbackContent.title, message: fallbackContent.message });
+    };
+
+    if (plan.canWriteLocalFile && plan.directoryUri && plan.fileUri) {
+      try {
+        await FileSystem.makeDirectoryAsync(plan.directoryUri, { intermediates: true });
+        await FileSystem.writeAsStringAsync(plan.fileUri, printable.html, { encoding: FileSystem.EncodingType.UTF8 });
+        const shareUri =
+          Platform.OS === "android"
+            ? await FileSystem.getContentUriAsync(plan.fileUri).catch(() => plan.fileUri)
+            : plan.fileUri;
+        await Share.share(buildReportArtifactShareContent(plan, { shareUri }));
+        return;
+      } catch {
+        await shareFallback();
+        return;
+      }
+    }
+
+    await shareFallback();
+  };
+
+  const shareGeneratedBinaryArtifactFile = async (
+    source: GeneratedBinaryArtifactSource,
+    options: { directoryName?: string; title: string },
+  ) => {
+    const plan = buildGeneratedBinaryArtifactFilePlan(source, {
+      directoryName: options.directoryName,
+      documentDirectory: Platform.OS === "web" ? null : FileSystem.documentDirectory,
+      title: options.title,
+    });
+
+    const shareFallback = async () => {
+      const fallbackPlan = buildGeneratedBinaryArtifactFilePlan(source, {
+        directoryName: options.directoryName,
+        documentDirectory: null,
+        title: options.title,
+      });
+      const fallbackContent = buildGeneratedBinaryArtifactShareContent(fallbackPlan);
+      await shareTextPayload({ title: fallbackContent.title, message: fallbackContent.message });
+    };
+
+    if (plan.canWriteLocalFile && plan.directoryUri && plan.fileUri) {
+      try {
+        await FileSystem.makeDirectoryAsync(plan.directoryUri, { intermediates: true });
+        await FileSystem.writeAsStringAsync(plan.fileUri, plan.contentBase64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const shareUri =
+          Platform.OS === "android"
+            ? await FileSystem.getContentUriAsync(plan.fileUri).catch(() => plan.fileUri)
+            : plan.fileUri;
+        await Share.share(buildGeneratedBinaryArtifactShareContent(plan, { shareUri }));
+        return;
+      } catch {
+        await shareFallback();
+        return;
+      }
+    }
+
+    await shareFallback();
+  };
+
+  const sharePrintableCredential = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const printable = getPetCredentialPrintView(credential);
+    await sharePrintableSourceFile(printable, {
+      directoryName: "WoofWatcherCredentials",
+      printableLabel: "Dog ID credential source",
+      title: `${credential.name} Dog ID`,
+    });
+  };
+
+  const shareCredentialImageSource = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await sharePrintableSourceFile(
+      {
+        fileName: credentialImageView.fileName,
+        html: credentialImageView.svg,
+        mimeType: credentialImageView.mimeType,
+        formatLabel: credentialImageView.formatLabel,
+        boundary: credentialImageView.boundary,
+      },
+      {
+        directoryName: "WoofWatcherCredentials",
+        printableLabel: "Dog ID SVG image source",
+        title: `${credential.name} Dog ID`,
+      },
     );
   };
 
-  const sharePrintableCredential = () => {
+  const shareCredentialPngArtifact = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const artifact = saveCredentialArtifact();
-    const printable = getReportArtifactPrintView(artifact);
-    Share.share({ message: printable.html, title: printable.fileName }).catch(() =>
-      Alert.alert(printable.fileName, printable.html),
-    );
+    await shareGeneratedBinaryArtifactFile(credentialPngArtifactSource, {
+      directoryName: "WoofWatcherCredentials",
+      title: `${credential.name} Dog ID`,
+    });
   };
 
   const buildCarePassFor = (audience: CarePassAudience) =>
@@ -645,15 +715,24 @@ export default function RecordsScreen() {
     setCarePassPreview(buildCarePassFor(audience));
   };
 
+  const openIncidentFollowUp = (route: "log-incident" | "review-latest" | "trainer-care-pass") => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (route === "trainer-care-pass") {
+      setCarePassPreview(buildCarePassFor("trainer"));
+      return;
+    }
+    if (route === "review-latest" && incidentWatch.latest?.id) {
+      router.push(`/log?entry=${encodeURIComponent(incidentWatch.latest.id)}` as never);
+      return;
+    }
+    router.push(`/log?type=incident&detail=1&intent=${Date.now()}` as never);
+  };
+
   const reportArtifacts = useMemo(
     () =>
       [...state.reportArtifacts]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5),
-    [state.reportArtifacts],
-  );
-  const reportHistorySummary = useMemo(
-    () => summarizeReportArtifacts(state.reportArtifacts),
     [state.reportArtifacts],
   );
 
@@ -667,56 +746,59 @@ export default function RecordsScreen() {
         ...doc.reportArtifacts.filter((item) => item.id !== artifact.id),
       ].slice(0, 12),
     }));
-    Share.share({ message: pass.message, title: pass.title }).catch(() =>
-      Alert.alert(pass.title, pass.message),
-    );
+    void shareTextPayload({ message: pass.message, title: pass.title });
   };
 
-  const shareReportArtifact = (artifact: ReportArtifact) => {
+  const shareReportArtifact = (artifact: CarePassArtifact) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message: artifact.message, title: artifact.title }).catch(() =>
-      Alert.alert(artifact.title, artifact.message),
-    );
+    void shareTextPayload({ message: artifact.message, title: artifact.title });
   };
 
-  const sharePrintableReportArtifact = (artifact: ReportArtifact) => {
+  const sharePrintableReportArtifact = async (artifact: CarePassArtifact) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const printable = getReportArtifactPrintView(artifact);
-    Share.share({ message: printable.html, title: printable.fileName }).catch(() =>
-      Alert.alert(printable.fileName, printable.html),
-    );
+    const printable = getCarePassArtifactPrintView(artifact);
+    await sharePrintableSourceFile(printable, { title: artifact.title });
   };
 
-  const removeReportArtifact = (artifact: ReportArtifact) => {
-    const removal = describeReportArtifactRemoval(artifact);
-    Alert.alert(removal.title, removal.body, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: removal.confirmLabel,
-        style: "destructive",
-        onPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          updateCareDoc((doc) => ({
-            ...doc,
-            reportArtifacts: doc.reportArtifacts.filter((item) => item.id !== artifact.id),
-          }));
-        },
-      },
-    ]);
+  const shareGeneratedCarePassPdfArtifact = async (artifact: CarePassArtifact) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const printable = getCarePassArtifactPrintView(artifact);
+    const source = buildCarePassPdfArtifactSource({
+      fileName: printable.fileName,
+      title: artifact.title,
+      summary: artifact.summary,
+      message: artifact.message,
+    });
+    await shareGeneratedBinaryArtifactFile(source, {
+      directoryName: "WoofWatcherReports",
+      title: artifact.title,
+    });
+  };
+
+  const openRecordsFileProofMission = () => {
+    Haptics.selectionAsync();
+    router.push("/care-twin-qa?qaSurface=records-local-file-handoff" as never);
+  };
+
+  const openReportBinaryExportProofMission = () => {
+    Haptics.selectionAsync();
+    router.push("/care-twin-qa?qaSurface=report-binary-export-proof" as never);
   };
 
   // Mount animation
-  const fade = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(16)).current;
+  const isWebRoutePreview = (Platform.OS as string) === "web";
+  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
+  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
   useEffect(() => {
+    if (isWebRoutePreview) return;
     Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: Platform.OS !== "web" }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: Platform.OS !== "web" }),
+      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
+      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
     ]).start();
-  }, [fade, slide]);
+  }, [fade, isWebRoutePreview, slide]);
 
   // Chart geometry
-  const H_PAD = 20;
+  const H_PAD = 16;
   const cardPad = 18;
   const chartW = width - H_PAD * 2 - cardPad * 2;
   const chartH = 140;
@@ -727,18 +809,18 @@ export default function RecordsScreen() {
   const plotW = chartW - padL - padR;
   const plotH = chartH - padT - padB;
 
-  const allVals = [...series, goalWeight];
-  const minV = Math.min(...allVals) - 0.6;
-  const maxV = Math.max(...allVals) + 0.6;
+  const allVals = goalWeight > 0 ? [...series, goalWeight] : series;
+  const minV = allVals.length ? Math.min(...allVals) - 0.6 : 0;
+  const maxV = allVals.length ? Math.max(...allVals) + 0.6 : 1;
   const xAt = (i: number) => padL + (i / Math.max(1, series.length - 1)) * plotW;
   const yAt = (v: number) => padT + (1 - (v - minV) / (maxV - minV || 1)) * plotH;
   const linePath = series.map((v, i) => `${i === 0 ? "M" : "L"} ${xAt(i).toFixed(1)} ${yAt(v).toFixed(1)}`).join(" ");
   const areaPath = `${linePath} L ${xAt(series.length - 1).toFixed(1)} ${(padT + plotH).toFixed(1)} L ${xAt(0).toFixed(1)} ${(padT + plotH).toFixed(1)} Z`;
   const goalY = yAt(goalWeight);
-  const remaining = weightTrend.goalWeight ? weightTrend.remainingToGoal : Math.max(0, goalWeight - current);
+  // Goal-distance math only exists once a real current weight and a real goal
+  // are on file (the lib already returns 0 when no goal is set).
+  const remaining = current > 0 ? weightTrend.remainingToGoal : 0;
   const maxBar = Math.max(1, ...moodStats.bars.map((b) => b.count));
-  const maxMoodPeriodTotal = Math.max(1, ...moodPeriodSummaries.map((period) => period.trend.total));
-  const maxMoodSparklineCount = Math.max(1, ...moodSparkline.map((bucket) => bucket.count));
   const incidentMax = Math.max(1, incident7, incident30, incident90);
 
   const streak = useMemo(() => {
@@ -770,26 +852,283 @@ export default function RecordsScreen() {
   const trendSignals = careTrends.signals.slice(0, 3);
   const walkMinutes = careTrends.current.walks.totalMinutes;
   const mealCompletion = careTrends.current.meals.completionPercent;
+  const mealPendingOutcomes = careTrends.current.meals.pending;
 
   const recordSections = recordVault.sections.filter((section) =>
     ["vaccine", "vet", "receipt", "insurance", "microchip", "document"].includes(section.kind),
   );
   const recordList = recordVault.priorityRecords;
+  const filedRecordSections = recordSections.filter((section) => section.count > 0).length;
+  // One readiness number per measure, each verifiable on this screen:
+  // - Vault readiness is filed-section coverage, matching the Record Vault
+  //   grid below; the stage HUD and the Vault Command pill show this same
+  //   value from this same variable.
+  // - Dog ID readiness is "N of M ID fields" from the same credential that
+  //   renders the ID card, and it is worded as ID fields so it can never
+  //   read as a second, contradicting vault percent. (The old blended
+  //   65/35 score put "Vault 5%" beside "14% ready" with no visible source
+  //   for either number.)
+  const recordsVaultScore = Math.round(
+    (filedRecordSections / Math.max(1, recordSections.length)) * 100,
+  );
+  const credentialReadyFields = [
+    credential.breed,
+    credential.weight,
+    credential.microchip,
+    credential.insurance,
+    credential.primaryVet,
+    credential.emergencyContact,
+    credential.vaccines,
+  ].filter(credentialFieldReady).length;
+  const credentialFieldTotal = 7;
+  // Missing records for a fresh vault are setup suggestions, not emergencies:
+  // keep the chip and HUD wording calm while the counts stay real.
+  const recordsVaultStatus =
+    recordVault.missingCritical.length > 0
+      ? "Checklist"
+      : recordReminders.length > 0
+        ? "Review soon"
+        : "Vault steady";
+  const recordsVaultSpeech =
+    recordVault.missingCritical.length > 0
+      ? `Let's file ${recordVault.missingCritical[0].toLowerCase()} next.`
+      : recordReminders.length > 0
+        ? `${recordReminders[0].label} is worth checking.`
+        : recordVault.total > 0
+          ? "Dog ID and care files are ready."
+          : "Let's build Phoenix's care vault.";
+  const recordsVaultTone =
+    recordVault.missingCritical.length > 0
+      ? colors.amber
+      : recordReminders.length > 0
+        ? colors.copper
+        : colors.sage;
+  const recordsCommandItems: RecordsCommandItem[] = [
+    {
+      id: "dog-id",
+      icon: "card-outline",
+      eyebrow: "Dog ID",
+      label: `${resolvePetName(credential.name)} credential`,
+      detail: `${credentialReadyFields} of ${credentialFieldTotal} ID fields ready for sitter, vet, and emergency handoff.`,
+      actionLabel: "Share",
+      tone: recordsVaultTone,
+      onPress: shareCredential,
+    },
+    {
+      id: "record-vault",
+      icon: "folder-open-outline",
+      eyebrow: "Record vault",
+      label: `${countNoun(recordVault.total, "record")} saved`,
+      detail: recordVault.missingCritical.length
+        ? `File ${recordVault.missingCritical[0].toLowerCase()} next.`
+        : recordReminders[0]?.label ?? "Vaccines, visits, receipts, insurance, chip, and meds.",
+      actionLabel: "Add",
+      tone: recordVault.missingCritical.length ? colors.amber : colors.sage,
+      onPress: () => openRecordForm("document"),
+    },
+    {
+      id: "care-pass",
+      icon: "document-text-outline",
+      eyebrow: "Care Pass",
+      label: "Vet or sitter packet",
+      detail: "Generate owner-reviewed care summaries from records and logs.",
+      actionLabel: "Build",
+      tone: colors.copper,
+      onPress: () => openCarePassPreview("vet"),
+    },
+    {
+      id: "reports",
+      icon: "analytics-outline",
+      eyebrow: "Reports",
+      label: `${periodLabel} progress`,
+      detail: `${countNoun(report.total, "log")} and ${countNoun(recordReminders.length, "record reminder")} are ready to review.`,
+      actionLabel: "Share",
+      tone: colors.primary,
+      onPress: shareReport,
+    },
+    ...(ownerOps
+      ? [
+          {
+            id: "proof",
+            icon: "shield-checkmark-outline" as const,
+            eyebrow: "Native proof",
+            label: "Records file handoff",
+            detail: "Capture Care Pass local HTML, Dog ID HTML/SVG, share-sheet behavior, and fallback copy.",
+            actionLabel: "Proof",
+            tone: colors.amber,
+            onPress: openRecordsFileProofMission,
+          },
+        ]
+      : []),
+  ];
+
+  // Trend sections with zero logs in their own window fold into one compact
+  // Baselines Checklist row each instead of a corridor of near-identical
+  // all-zero cards. A section gets its full trend card back the moment it
+  // has real data, and every row routes to the same Log composer flow that
+  // starts that baseline. Each status states the section's real derivation
+  // window (today / 30 days / 45 days) so the zero is verifiable.
+  const openBaselineLog = (type: CareEventType) => {
+    Haptics.selectionAsync();
+    router.push(`/log?type=${type}&detail=1&intent=${Date.now()}` as never);
+  };
+  interface BaselineChecklistRow {
+    key: string;
+    icon: IoniconName;
+    label: string;
+    status: string;
+    type: CareEventType;
+  }
+  const baselineChecklistCandidates: (BaselineChecklistRow | null)[] = [
+    weightTrend.totalWeighIns === 0 && current <= 0
+      ? { key: "weight", icon: "scale-outline" as const, label: "Weight Trend", status: "No weight on file", type: "weight" as const }
+      : null,
+    moodStats.total === 0
+      ? { key: "mood", icon: "heart-circle-outline" as const, label: "Mood Trend", status: "0 check-ins in 30 days", type: "mood" as const }
+      : null,
+    waterHydration.total === 0
+      ? { key: "water", icon: "water-outline" as const, label: "Hydration", status: "0 water logs today", type: "water" as const }
+      : null,
+    walkActivity.total === 0
+      ? { key: "walk", icon: "walk-outline" as const, label: "Walk Activity", status: "0 walks today", type: "walk" as const }
+      : null,
+    trainingProgress.totalSessions === 0
+      ? { key: "training", icon: "school-outline" as const, label: "Training Progress", status: "0 sessions in 30 days", type: "training" as const }
+      : null,
+    aloneTime.totalSessions === 0
+      ? { key: "alone", icon: "home-outline" as const, label: "Alone Time", status: "0 logs in 30 days", type: "alone" as const }
+      : null,
+    groomingCare.totalSessions === 0
+      ? { key: "grooming", icon: "sparkles-outline" as const, label: "Grooming Care", status: "0 logs in 45 days", type: "grooming" as const }
+      : null,
+    pottyHealth.total === 0
+      ? { key: "potty", icon: "medical-outline" as const, label: "Potty Health", status: "0 potty logs today", type: "potty" as const }
+      : null,
+  ];
+  const baselineChecklist: BaselineChecklistRow[] =
+    baselineChecklistCandidates.filter(
+      (row): row is BaselineChecklistRow => row !== null,
+    );
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
         style={s.container}
-        contentContainerStyle={{ paddingTop: topScrollPadding, paddingBottom: bottomScrollPadding, paddingHorizontal: H_PAD }}
+        contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           <BoardRouteHeader
             kicker="Records"
             title="Records"
-            subtitle={`${state.profile.name}'s file cabinet - trends, incidents & reports`}
+            subtitle={`${resolvePetName(state.profile.name)}'s file cabinet - trends, incidents & reports`}
             icon="folder-open-outline"
           />
+
+          <BoardCard padded={false} style={s.recordsCredentialStageCard}>
+            <ImageBackground
+              source={
+                recordsStageIsNight
+                  ? RECORDS_CREDENTIAL_STAGE_ROOM_NIGHT
+                  : RECORDS_CREDENTIAL_STAGE_ROOM
+              }
+              resizeMode="stretch"
+              imageStyle={[stageImageFill, s.recordsCredentialStageImage, pixelImageStyle]}
+              style={s.recordsCredentialStage}
+              testID="records-credential-pixel-stage"
+            >
+              <View style={s.recordsCredentialStageShade} />
+              <View style={s.recordsCredentialStageTop}>
+                <View style={s.recordsCredentialBubble}>
+                  <Text style={[s.recordsCredentialKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                    Records Command Vault
+                  </Text>
+                  {/* brandNavy: constant ink for the fixed-light bubble in both themes
+                      (colors.navy flips to cream in dark mode and disappears). */}
+                  <Text style={[s.recordsCredentialSpeech, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>
+                    {recordsVaultSpeech}
+                  </Text>
+                  <View style={s.recordsCredentialBubbleTail} />
+                </View>
+                <View style={[s.recordsCredentialChip, { backgroundColor: colors.brandNavy + "DD", borderColor: colors.ivory + "55" }]}>
+                  <Ionicons name={recordsVaultScore >= 80 ? "shield-checkmark" : "folder-open"} size={16} color={colors.ivory} />
+                  <Text style={[s.recordsCredentialChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                    {recordsVaultStatus}
+                  </Text>
+                </View>
+              </View>
+
+              <View pointerEvents="none" style={s.recordsCredentialSprite}>
+                <View style={s.recordsCredentialSpriteShadow} />
+                <SpriteSheetPlayer
+                  asset={RECORDS_CREDENTIAL_STAGE_SPRITE}
+                  track={RECORDS_CREDENTIAL_STAGE_TRACK}
+                  width={108}
+                  height={108}
+                  testID="records-credential-pixel-sprite"
+                />
+              </View>
+            </ImageBackground>
+            <View style={[s.recordsCredentialDock, { backgroundColor: colors.ivory + "F4", borderColor: colors.border }]}>
+              <View style={[s.recordsCredentialIdPlate, { backgroundColor: colors.ivory, borderColor: colors.navy + "22" }]}>
+                <View style={[s.recordsCredentialIdBadge, { backgroundColor: recordsVaultTone + "1F" }]}>
+                  <Ionicons name="paw" size={16} color={recordsVaultTone} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[s.recordsCredentialIdLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                    WOOFWATCHER DOG ID
+                  </Text>
+                  <Text numberOfLines={1} style={[s.recordsCredentialIdName, { color: colors.brandNavy, fontFamily: DISPLAY }]}>
+                    {resolvePetName(credential.name)}
+                  </Text>
+                  <Text numberOfLines={1} style={[s.recordsCredentialIdMeta, { color: colors.brandNavy + "99", fontFamily: "Inter_600SemiBold" }]}>
+                    {credential.breed} - {credential.weight}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[s.recordsCredentialHud, { backgroundColor: colors.brandNavy, borderColor: colors.brandNavy + "22" }]}>
+                {[
+                  { label: "Saved", value: String(recordVault.total) },
+                  { label: "Vault", value: `${recordsVaultScore}%` },
+                  { label: "To set up", value: String(recordRemindersAll.length) },
+                ].map((item) => (
+                  <View key={item.label} style={s.recordsCredentialHudCell}>
+                    <Text style={[s.recordsCredentialHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>{item.label}</Text>
+                    <Text style={[s.recordsCredentialHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>{item.value}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </BoardCard>
+
+          <BoardCard style={s.recordsCommandCard}>
+            <BoardSectionHeader title="Vault Command" accessory={<BoardPill label={`${recordsVaultScore}% ready`} tone={recordsVaultTone} />} />
+            <View style={s.recordsCommandList}>
+              {recordsCommandItems.map((item) => (
+                <Pressable
+                  key={item.id}
+                  onPress={item.onPress}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  style={[s.recordsCommandRow, { borderColor: colors.border }]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.label}. ${item.detail}. ${item.actionLabel}`}
+                >
+                  <View style={[s.recordsCommandIcon, { backgroundColor: item.tone + "18" }]}>
+                    <Ionicons name={item.icon} size={18} color={item.tone} />
+                  </View>
+                  <View style={s.recordsCommandCopy}>
+                    <Text style={[s.recordsCommandEyebrow, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}>{item.eyebrow}</Text>
+                    <Text style={[s.recordsCommandTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{item.label}</Text>
+                    <Text style={[s.recordsCommandDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{item.detail}</Text>
+                  </View>
+                  <View style={[s.recordsCommandAction, { backgroundColor: item.tone + "14" }]}>
+                    <Text style={[s.recordsCommandActionText, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}>{item.actionLabel}</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </BoardCard>
 
           {/* Care highlights strip */}
           <View style={[s.highlightStrip, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
@@ -807,7 +1146,7 @@ export default function RecordsScreen() {
 
           {/* Care trends */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Care Trends" action="7 days" />
+            <BoardSectionHeader title="Care Trends" accessory={<BoardPill label="7 days" tone={colors.primary} />} />
             <View style={s.trendHeroRow}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.primary + "14" }]}>
                 <Ionicons name="analytics-outline" size={18} color={colors.primary} />
@@ -825,6 +1164,7 @@ export default function RecordsScreen() {
               {[
                 { label: "Logs", value: String(careTrends.current.totalLogs), color: colors.primary },
                 { label: "Meal %", value: careTrends.current.meals.total ? `${mealCompletion}%` : "--", color: colors.copper },
+                { label: "Meal open", value: mealPendingOutcomes ? String(mealPendingOutcomes) : "--", color: mealPendingOutcomes ? colors.amber : colors.sage },
                 { label: "Walk min", value: String(walkMinutes), color: colors.sage },
               ].map((item) => (
                 <View key={item.label} style={s.trendStatCell}>
@@ -859,35 +1199,54 @@ export default function RecordsScreen() {
             <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{careTrends.nextStep}</Text>
           </BoardCard>
 
-          {/* Dog ID card */}
-          <BoardSectionHeader
-            title={`${credential.name} ID Card`}
-            style={{ marginTop: 28 }}
-            accessory={
-              <View style={s.shareInlineGroup}>
-                <Pressable
-                  onPress={shareCredential}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share dog ID card"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  style={s.shareInline}
-                >
-                  <Ionicons name="share-outline" size={15} color={colors.copper} />
-                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
-                </Pressable>
-                <Pressable
-                  onPress={sharePrintableCredential}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share printable dog ID source"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  style={s.shareInline}
-                >
-                  <Ionicons name="print-outline" size={15} color={colors.copper} />
-                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Print</Text>
-                </Pressable>
-              </View>
-            }
-          />
+          {/* Dog ID card. The four export actions live on their own wrapping
+              row under the heading so the title and every action stay fully
+              visible at narrow widths (a single header row clipped the title
+              to "ID ..." at 393px). The pet's name is shown large on the card
+              itself right below. */}
+          <BoardSectionHeader title="ID Card" style={{ marginTop: 28, marginBottom: 2 }} />
+          <View style={s.idShareRow}>
+            <Pressable
+              onPress={shareCredential}
+              accessibilityRole="button"
+              accessibilityLabel="Share dog ID card"
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={s.shareInline}
+            >
+              <Ionicons name="share-outline" size={15} color={colors.copper} />
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
+            </Pressable>
+            <Pressable
+              onPress={sharePrintableCredential}
+              accessibilityRole="button"
+              accessibilityLabel="Share local printable Dog ID source file"
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={s.shareInline}
+            >
+              <Ionicons name="print-outline" size={15} color={colors.copper} />
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Print</Text>
+            </Pressable>
+            <Pressable
+              onPress={shareCredentialImageSource}
+              accessibilityRole="button"
+              accessibilityLabel="Share local SVG Dog ID image source"
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={s.shareInline}
+            >
+              <Ionicons name="image-outline" size={15} color={colors.copper} />
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>SVG</Text>
+            </Pressable>
+            <Pressable
+              onPress={shareCredentialPngArtifact}
+              accessibilityRole="button"
+              accessibilityLabel="Share generated Dog ID PNG"
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={s.shareInline}
+            >
+              <Ionicons name="download-outline" size={15} color={colors.copper} />
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>PNG</Text>
+            </Pressable>
+          </View>
           <BoardCard tone="navy" padded={false} style={s.idCard}>
             <View style={s.idCardTop}>
               <View style={[s.idBadge, { backgroundColor: colors.copper }]}>
@@ -917,37 +1276,6 @@ export default function RecordsScreen() {
               <Text numberOfLines={2} style={[s.idFooterText, { color: colors.cream, fontFamily: "Inter_500Medium" }]}>
                 Vaccines: {credential.vaccines}
               </Text>
-            </View>
-            <View
-              style={[
-                s.credentialReadiness,
-                {
-                  backgroundColor: credentialReadiness.status === "ready" ? "rgba(109,163,111,0.18)" : "rgba(216,168,82,0.18)",
-                  borderColor: credentialReadiness.status === "ready" ? "rgba(109,163,111,0.45)" : "rgba(216,168,82,0.45)",
-                },
-              ]}
-            >
-              <Ionicons
-                name={credentialReadiness.status === "ready" ? "checkmark-circle-outline" : "alert-circle-outline"}
-                size={17}
-                color={credentialReadiness.status === "ready" ? colors.sage : colors.amber}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={[s.credentialReadinessTitle, { color: "#FFFFFF", fontFamily: "Inter_700Bold" }]}>
-                  {credentialReadiness.readyCount}/{credentialReadiness.totalCount} Dog ID fields ready
-                </Text>
-                <Text style={[s.credentialReadinessText, { color: colors.cream, fontFamily: "Inter_500Medium" }]}>
-                  {credentialReadiness.summary}
-                </Text>
-                {credentialReadiness.missingLabels.length ? (
-                  <Text style={[s.credentialReadinessText, { color: colors.cream, fontFamily: "Inter_400Regular" }]}>
-                    Needs: {credentialReadiness.missingLabels.join(", ")}
-                  </Text>
-                ) : null}
-                <Text style={[s.credentialReadinessBoundary, { color: colors.cream, fontFamily: "Inter_400Regular" }]}>
-                  {credentialReadiness.boundaryLine}
-                </Text>
-              </View>
             </View>
           </BoardCard>
 
@@ -983,11 +1311,7 @@ export default function RecordsScreen() {
                     </View>
                     <Text style={[s.vaultLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{section.label}</Text>
                     <Text style={[s.vaultMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {section.count > 0
-                        ? section.attachmentCount > 0
-                          ? `${section.count} on file, ${section.attachmentCount} attached`
-                          : `${section.count} on file`
-                        : "Add now"}
+                      {section.count > 0 ? `${section.count} on file` : "Add now"}
                     </Text>
                   </Pressable>
                 );
@@ -999,24 +1323,6 @@ export default function RecordsScreen() {
                 <Text style={[s.vaultNoticeText, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
                   Missing: {recordVault.missingCritical.join(", ")}
                 </Text>
-              </View>
-            ) : null}
-            {recordVault.localAttachmentSummary.totalAttachable > 0 ? (
-              <View style={[s.vaultNotice, { backgroundColor: colors.primary + "10", borderColor: colors.primary + "33" }]}>
-                <Ionicons name="folder-open-outline" size={16} color={colors.primary} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.vaultNoticeText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                    Local files: {recordVault.localAttachmentSummary.withAttachment}/{recordVault.localAttachmentSummary.totalAttachable} receipts or documents attached
-                  </Text>
-                  {recordVault.localAttachmentSummary.missingAttachment > 0 ? (
-                    <Text style={[s.vaultNoticeSubText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      Needs file: {recordVault.localAttachmentSummary.missingAttachmentTitles.join(", ")}
-                    </Text>
-                  ) : null}
-                  <Text style={[s.vaultNoticeSubText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                    {recordVault.localAttachmentSummary.boundaryLine}
-                  </Text>
-                </View>
               </View>
             ) : null}
             {recordReminders.length > 0 ? (
@@ -1047,267 +1353,202 @@ export default function RecordsScreen() {
                 })}
               </View>
             ) : null}
-            {showCredentialReportPrep ? (
-              <View
-                accessible
-                accessibilityLabel={`Dog ID report prep. ${credentialReadiness.summary} ${credentialReadiness.boundaryLine}`}
-                style={[s.reportMoodSnapshot, { backgroundColor: colors.background, borderColor: colors.border }]}
-              >
-                <View style={s.reportMoodSnapshotHeader}>
-                  <View>
-                    <Text style={[s.reportMoodSnapshotTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Dog ID report prep</Text>
-                    <Text style={[s.reportMoodSnapshotMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {credentialReadiness.readyCount}/{credentialReadiness.totalCount} fields ready
-                    </Text>
-                  </View>
-                  <View style={[s.reportMoodSnapshotBadge, { backgroundColor: colors.sage + "18" }]}>
-                    <Text style={[s.reportMoodSnapshotBadgeText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                      Local source
-                    </Text>
-                  </View>
-                </View>
-                <Text style={[s.reportMoodSnapshotLine, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                  {credentialReadiness.missingLabels.length
-                    ? `Needs Dog ID ${credentialReadiness.missingLabels.length === 1 ? "field" : "fields"}: ${credentialReadiness.missingLabels.join(", ")}.`
-                    : "Dog ID fields are ready for review before sharing."}
-                </Text>
-                <Text style={[s.reportMoodSnapshotBoundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {credentialReadiness.boundaryLine}
-                </Text>
-              </View>
-            ) : null}
           </BoardCard>
 
-          {/* Weight trend */}
+          {/* Baselines checklist - every zero-data trend section as one
+              tappable row; full cards below render only with real data. */}
+          {baselineChecklist.length > 0 ? (
+            <BoardCard style={s.recordsBoardCard}>
+              <BoardSectionHeader
+                title="Baselines Checklist"
+                accessory={
+                  <BoardPill
+                    label={`${baselineChecklist.length} to start`}
+                    tone={colors.mutedForeground}
+                  />
+                }
+              />
+              <Text style={[s.baselineIntro, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Nothing logged in these sections yet. Tap one to log its first
+                entry; each grows into a full trend card with real data.
+              </Text>
+              {baselineChecklist.map((row, index) => (
+                <Pressable
+                  key={row.key}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${row.label}. ${row.status}. Log the first entry.`}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={() => openBaselineLog(row.type)}
+                  style={({ pressed }) => [
+                    s.baselineRow,
+                    {
+                      backgroundColor: pressed ? colors.secondary : "transparent",
+                      borderTopColor: colors.border,
+                      borderTopWidth: index > 0 ? 1 : 0,
+                    },
+                  ]}
+                >
+                  <View style={[s.baselineIcon, { backgroundColor: colors.mutedForeground + "14" }]}>
+                    <Ionicons name={row.icon} size={17} color={colors.mutedForeground} />
+                  </View>
+                  <Text style={[s.baselineLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {row.label}
+                  </Text>
+                  <Text style={[s.baselineStatus, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {row.status}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+                </Pressable>
+              ))}
+            </BoardCard>
+          ) : null}
+
+          {/* Weight trend - charts real weigh-ins only; with fewer than two
+              logged weights it shows an honest empty state instead of a
+              synthesized line, and goal math only appears once a goal is set. */}
+          {weightTrend.totalWeighIns > 0 || current > 0 ? (
           <BoardCard style={[s.recordsBoardCard, { padding: cardPad }]}>
             <BoardSectionHeader
               title="Weight Trend"
-              action={remaining > 0 ? `${remaining.toFixed(1)} ${unit} ${weightTrend.direction === "reduce" ? "over goal" : "to go"}` : "Goal reached"}
+              accessory={
+                <BoardPill
+                  label={remaining > 0 ? `${remaining.toFixed(1)} ${unit} ${weightTrend.direction === "reduce" ? "over goal" : "to go"}` : goalWeight > 0 ? (current > 0 ? "Goal reached" : `Goal ${goalWeight} ${unit}`) : "No goal set"}
+                  tone={remaining > 0 ? colors.amber : goalWeight > 0 ? colors.sage : colors.mutedForeground}
+                />
+              }
             />
-            <View style={s.chartTopRow}>
-              <View>
-                <Text style={[s.chartBig, { color: colors.foreground, fontFamily: DISPLAY }]}>
-                  {current}
-                  <Text style={[s.chartUnit, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}> {unit}</Text>
-                </Text>
-                <Text style={[s.chartCaption, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {isRealWeight ? "From logged weigh-ins" : "Current weight"}
-                </Text>
+            {current > 0 ? (
+              <View style={s.chartTopRow}>
+                <View>
+                  <Text style={[s.chartBig, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                    {current}
+                    <Text style={[s.chartUnit, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}> {unit}</Text>
+                  </Text>
+                  <Text style={[s.chartCaption, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    {hasWeightSeries ? "From logged weigh-ins" : "Current weight on profile"}
+                  </Text>
+                </View>
+                {goalWeight > 0 ? (
+                  <View style={[s.goalPill, { backgroundColor: colors.sage + "16" }]}>
+                    <Ionicons name="flag" size={13} color={colors.sage} />
+                    <Text style={[s.goalPillText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                      Goal {goalWeight} {unit}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
-              <View style={[s.goalPill, { backgroundColor: colors.sage + "16" }]}>
-                <Ionicons name="flag" size={13} color={colors.sage} />
-                <Text style={[s.goalPillText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                  Goal {goalWeight} {unit}
-                </Text>
-              </View>
-            </View>
+            ) : null}
 
-            <Svg width={chartW} height={chartH}>
-              <Defs>
-                <SvgGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={colors.sage} stopOpacity={0.28} />
-                  <Stop offset="1" stopColor={colors.sage} stopOpacity={0.02} />
-                </SvgGradient>
-              </Defs>
-              {[0.25, 0.5, 0.75].map((t) => {
-                const gy = padT + t * plotH;
-                return <Line key={t} x1={padL} y1={gy} x2={padL + plotW} y2={gy} stroke={colors.border} strokeWidth={1} opacity={0.7} />;
-              })}
-              <Line x1={padL} y1={goalY} x2={padL + plotW} y2={goalY} stroke={colors.sage} strokeWidth={1.5} strokeDasharray="5 5" opacity={0.55} />
-              <Path d={areaPath} fill="url(#weightFill)" />
-              <Path d={linePath} fill="none" stroke={colors.primary} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
-              {series.map((v, i) => {
-                const last = i === series.length - 1;
-                return (
-                  <Circle key={i} cx={xAt(i)} cy={yAt(v)} r={last ? 5.5 : 3} fill={last ? colors.copper : colors.card} stroke={last ? colors.card : colors.primary} strokeWidth={last ? 2.5 : 2} />
-                );
-              })}
-              {labels.map((lbl, i) => (
-                <SvgText key={`l${i}`} x={xAt(i)} y={chartH - 8} fill={colors.mutedForeground} fontSize={10} fontFamily="Inter_500Medium" textAnchor="middle">
-                  {lbl}
-                </SvgText>
-              ))}
-            </Svg>
+            {hasWeightSeries ? (
+              <Svg width={chartW} height={chartH}>
+                <Defs>
+                  <SvgGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0" stopColor={colors.sage} stopOpacity={0.28} />
+                    <Stop offset="1" stopColor={colors.sage} stopOpacity={0.02} />
+                  </SvgGradient>
+                </Defs>
+                {[0.25, 0.5, 0.75].map((t) => {
+                  const gy = padT + t * plotH;
+                  return <Line key={t} x1={padL} y1={gy} x2={padL + plotW} y2={gy} stroke={colors.border} strokeWidth={1} opacity={0.7} />;
+                })}
+                {goalWeight > 0 ? (
+                  <Line x1={padL} y1={goalY} x2={padL + plotW} y2={goalY} stroke={colors.sage} strokeWidth={1.5} strokeDasharray="5 5" opacity={0.55} />
+                ) : null}
+                <Path d={areaPath} fill="url(#weightFill)" />
+                <Path d={linePath} fill="none" stroke={colors.primary} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
+                {series.map((v, i) => {
+                  const last = i === series.length - 1;
+                  return (
+                    <Circle key={i} cx={xAt(i)} cy={yAt(v)} r={last ? 5.5 : 3} fill={last ? colors.copper : colors.card} stroke={last ? colors.card : colors.primary} strokeWidth={last ? 2.5 : 2} />
+                  );
+                })}
+                {labels.map((lbl, i) => (
+                  <SvgText
+                    key={`l${i}`}
+                    x={xAt(i)}
+                    y={chartH - 8}
+                    fill={colors.mutedForeground}
+                    fontSize={10}
+                    fontFamily="Inter_500Medium"
+                    // End labels anchor inward so they never clip at the card edges.
+                    textAnchor={i === 0 ? "start" : i === labels.length - 1 ? "end" : "middle"}
+                  >
+                    {lbl}
+                  </SvgText>
+                ))}
+              </Svg>
+            ) : (
+              <View style={[s.weightEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Ionicons name="scale-outline" size={24} color={colors.mutedForeground} />
+                <Text style={[s.weightEmptyTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {weightTrend.totalWeighIns === 1
+                    ? "Log another weigh-in to chart the trend"
+                    : "Log a weight to start the trend"}
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    router.push(`/log?type=weight&detail=1&intent=${Date.now()}` as never);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Log a weight from the Log tab"
+                  style={({ pressed }) => [s.emptyAddBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                >
+                  <Ionicons name="add" size={16} color="#FFFFFF" />
+                  <Text style={[s.emptyAddText, { fontFamily: "Inter_700Bold" }]}>Log weight</Text>
+                </Pressable>
+              </View>
+            )}
             <Text style={[s.chartNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              {isRealWeight ? weightTrend.nextStep : "Gentle, vet-guided pacing - slow and steady."}
+              {weightTrend.nextStep}
             </Text>
           </BoardCard>
+          ) : null}
 
           {/* Mood trend */}
+          {moodStats.total > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Mood Trend" action={moodStats.total > 0 ? `${moodStats.averageScore.toFixed(1)}/5 avg` : undefined} />
-            <View style={s.moodPeriodTabs}>
-              {moodPeriodSummaries.map((period) => {
-                const selected = period.isSelected;
-                const tone = period.trend.status === "watch" ? colors.amber : colors.sage;
-                return (
-                  <Pressable
-                    key={period.lookbackDays}
-                    onPress={() => {
-                      setMoodPeriod(period.lookbackDays);
-                      Haptics.selectionAsync();
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Show Mood Trend for ${period.label}`}
-                    accessibilityState={{ selected }}
-                    hitSlop={MOBILE_INLINE_HIT_SLOP}
-                    style={({ pressed }) => [
-                      s.moodPeriodTab,
-                      {
-                        backgroundColor: selected ? tone + "18" : pressed ? colors.secondary : colors.background,
-                        borderColor: selected ? tone : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text style={[s.moodPeriodLabel, { color: selected ? tone : colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      {period.label}
-                    </Text>
-                    <Text style={[s.moodPeriodCount, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {period.trend.total} shared
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <View style={s.moodFilterGroup}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.moodFilterRow}>
-                {moodCaregiverOptions.map((caregiver) => {
-                  const selected = moodCaregiver === caregiver;
-                  const label = caregiver === "all" ? "All caregivers" : caregiver;
-                  return (
-                    <Pressable
-                      key={caregiver}
-                      onPress={() => {
-                        setMoodCaregiver(caregiver);
-                        Haptics.selectionAsync();
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Filter Mood Trend by caregiver: ${label}`}
-                      accessibilityState={{ selected }}
-                      hitSlop={MOBILE_INLINE_HIT_SLOP}
-                      style={({ pressed }) => [
-                        s.moodFilterChip,
-                        {
-                          backgroundColor: selected ? colors.primary + "18" : pressed ? colors.secondary : colors.background,
-                          borderColor: selected ? colors.primary : colors.border,
-                        },
-                      ]}
-                    >
-                      <Text style={[s.moodFilterText, { color: selected ? colors.primary : colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        {label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.moodFilterRow}>
-                {moodContextOptions.map((context) => {
-                  const selected = moodContext === context;
-                  const label = context === "all" ? "All context" : context;
-                  return (
-                    <Pressable
-                      key={context}
-                      onPress={() => {
-                        setMoodContext(context);
-                        Haptics.selectionAsync();
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Filter Mood Trend by care context: ${label}`}
-                      accessibilityState={{ selected }}
-                      hitSlop={MOBILE_INLINE_HIT_SLOP}
-                      style={({ pressed }) => [
-                        s.moodFilterChip,
-                        {
-                          backgroundColor: selected ? colors.sage + "18" : pressed ? colors.secondary : colors.background,
-                          borderColor: selected ? colors.sage : colors.border,
-                        },
-                      ]}
-                    >
-                      <Text style={[s.moodFilterText, { color: selected ? colors.sage : colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        {label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
+            <BoardSectionHeader
+              title="Mood Trend"
+              accessory={
+                <BoardPill
+                  label={moodStats.total > 0 ? `${moodStats.averageScore.toFixed(1)}/5 avg` : "No mood logs"}
+                  tone={moodStats.status === "watch" ? colors.amber : colors.sage}
+                />
+              }
+            />
             {moodStats.bars.length === 0 ? (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                {moodFilterSource.total > 0 ? "No shared mood check-ins match these filters." : "No mood check-ins yet. Log a mood to see trends."}
+                No shared mood check-ins yet. Log mood with energy and care context to see trends.
               </Text>
             ) : (
               <>
-                <Text style={[s.moodSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {moodStats.summary}
-                </Text>
-                <View
-                  accessibilityLabel={`Mood sparkline. ${moodStats.summary}`}
-                  accessible
-                  style={[s.moodSparklineCard, { backgroundColor: colors.background }]}
-                >
-                  <View style={s.moodSparklineHeader}>
-                    <Text style={[s.moodSparklineTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Mood sparkline</Text>
-                    <Text style={[s.moodSparklineCaption, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      Shared check-ins across this {moodPeriod === 7 ? "week" : moodPeriod === 30 ? "month" : "quarter"}
+                <View style={s.moodSummary}>
+                  <View style={[s.watchSummaryIcon, { backgroundColor: (moodStats.status === "watch" ? colors.amber : colors.sage) + "18" }]}>
+                    <Ionicons
+                      name={moodStats.status === "watch" ? "alert-circle-outline" : "heart-circle-outline"}
+                      size={18}
+                      color={moodStats.status === "watch" ? colors.amber : colors.sage}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                      {moodStats.status === "watch" ? "Worth watching" : "Mood steady"}
+                    </Text>
+                    <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      {moodStats.summary}
                     </Text>
                   </View>
-                  <View style={s.moodSparkline}>
-                    {moodSparkline.map((bucket) => {
-                      const tone =
-                        bucket.tone === "watch"
-                          ? colors.amber
-                          : bucket.tone === "good"
-                            ? colors.sage
-                            : bucket.tone === "steady"
-                              ? colors.copper
-                              : colors.border;
-                      const height = bucket.count ? Math.max(12, Math.round((bucket.count / maxMoodSparklineCount) * 42)) : 8;
-                      return (
-                        <View key={bucket.index} style={s.moodSparklineBucket}>
-                          <View style={[s.moodSparklineTrack, { backgroundColor: colors.card }]}>
-                            <View style={[s.moodSparklineBar, { backgroundColor: tone, height }]} />
-                          </View>
-                          <Text style={[s.moodSparklineLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                            {bucket.label}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </View>
-                <View style={s.moodPeriodVisuals}>
-                  {moodPeriodSummaries.map((period) => {
-                    const tone =
-                      period.trend.status === "watch"
-                        ? colors.amber
-                        : period.trend.total > 0
-                          ? colors.sage
-                          : colors.border;
-                    const widthPct = Math.max(8, Math.round((period.trend.total / maxMoodPeriodTotal) * 100));
-                    return (
-                      <View key={period.lookbackDays} style={s.moodPeriodVisualRow}>
-                        <Text style={[s.moodPeriodVisualLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                          {period.label}
-                        </Text>
-                        <View style={[s.moodPeriodVisualTrack, { backgroundColor: colors.background }]}>
-                          <View style={[s.moodPeriodVisualFill, { backgroundColor: tone, width: `${widthPct}%` }]} />
-                        </View>
-                        <Text style={[s.moodPeriodVisualValue, { color: tone, fontFamily: "Inter_700Bold" }]}>
-                          {period.trend.averageScore ? period.trend.averageScore.toFixed(1) : "-"}
-                        </Text>
-                      </View>
-                    );
-                  })}
                 </View>
                 <View style={s.moodEnergyRow}>
                   {[
-                    { label: "Low", value: moodStats.energy.low, tone: colors.amber },
-                    { label: "Steady", value: moodStats.energy.steady, tone: colors.sage },
-                    { label: "High", value: moodStats.energy.high, tone: colors.copper },
+                    { label: "Low", value: moodStats.energy.low, color: colors.amber },
+                    { label: "Steady", value: moodStats.energy.steady, color: colors.sage },
+                    { label: "High", value: moodStats.energy.high, color: colors.primary },
                   ].map((item) => (
-                    <View key={item.label} style={[s.moodEnergyPill, { backgroundColor: item.tone + "18" }]}>
-                      <Text style={[s.moodEnergyValue, { color: item.tone, fontFamily: DISPLAY }]}>{item.value}</Text>
-                      <Text style={[s.moodEnergyLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{item.label} energy</Text>
+                    <View key={item.label} style={[s.moodEnergyPill, { backgroundColor: item.color + "14", borderColor: item.color + "33" }]}>
+                      <Text style={[s.moodEnergyValue, { color: item.color, fontFamily: DISPLAY_SEMI }]}>{item.value}</Text>
+                      <Text style={[s.moodEnergyLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
                     </View>
                   ))}
                 </View>
@@ -1327,98 +1568,38 @@ export default function RecordsScreen() {
                 })}
                 {moodStats.latest ? (
                   <View style={[s.moodLatest, { borderTopColor: colors.border }]}>
-                    <View style={[s.watchSignalDot, { backgroundColor: moodStats.status === "watch" ? colors.amber : colors.sage }]} />
+                    <View style={[s.watchSignalDot, { backgroundColor: moodStats.latest.tone === "alert" ? colors.rose : moodStats.latest.tone === "watch" ? colors.amber : colors.sage }]} />
                     <View style={{ flex: 1 }}>
                       <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                         Latest: {moodStats.latest.moodLabel}
-                        {moodStats.latest.energyLevel ? `, ${moodStats.latest.energyLevel} energy` : ""}
+                        {moodStats.latest.energyLevel ? ` - ${moodStats.latest.energyLevel} energy` : ""}
                       </Text>
                       <Text style={[s.watchPatternEvidence, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                         {moodStats.latest.caregiver} - {relativeDay(moodStats.latest.occurredAt, now)}
-                        {moodStats.latest.context ? ` - ${moodStats.latest.context}` : ""}
                       </Text>
-                      <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                        {moodStats.nextStep}
-                      </Text>
+                      {moodStats.latest.context ? (
+                        <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                          {moodStats.latest.context}
+                        </Text>
+                      ) : null}
                     </View>
                   </View>
                 ) : null}
-              </>
-            )}
-          </BoardCard>
-
-          <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader
-              title="Mood Timeline"
-              action={moodTimeline.total ? `${moodTimeline.total} shared` : "No shared"}
-            />
-            {moodTimeline.items.length === 0 ? (
-              <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                {moodFilterSource.total > 0
-                  ? "Matching shared mood check-ins over the last 90 days will appear here."
-                  : "Shared mood check-ins over the last 90 days will appear here with energy and care context."}
-              </Text>
-            ) : (
-              <>
-                <View style={s.moodTimelineSummary}>
-                  <View style={[s.watchSummaryIcon, { backgroundColor: (moodTimeline.status === "watch" ? colors.amber : colors.sage) + "18" }]}>
-                    <Ionicons name="pulse-outline" size={18} color={moodTimeline.status === "watch" ? colors.amber : colors.sage} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                      {moodTimeline.status === "watch" ? "Pattern worth watching" : "Shared mood baseline"}
-                    </Text>
-                    <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      {moodTimeline.summary}
-                    </Text>
-                  </View>
-                </View>
-                <View style={s.moodTimelineList}>
-                  {moodTimeline.items.map((item, index) => {
-                    const tone = item.tone === "alert" ? colors.rose : item.tone === "watch" ? colors.amber : colors.sage;
-                    return (
-                      <View
-                        key={item.id}
-                        style={[
-                          s.moodTimelineItem,
-                          index > 0 && { borderTopWidth: 1, borderTopColor: colors.border },
-                        ]}
-                      >
-                        <View style={[s.moodTimelineDot, { backgroundColor: tone }]} />
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <View style={s.moodTimelineHeader}>
-                            <Text style={[s.moodTimelineTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                              {item.moodLabel}
-                              {item.energyLevel ? `, ${item.energyLevel} energy` : ""}
-                            </Text>
-                            <Text style={[s.moodTimelineDate, { color: tone, fontFamily: "Inter_700Bold" }]}>
-                              {relativeDay(item.occurredAt, now)}
-                            </Text>
-                          </View>
-                          <Text style={[s.moodTimelineMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                            {item.caregiver}
-                            {item.context ? ` - ${item.context}` : ""}
-                          </Text>
-                          {item.note ? (
-                            <Text numberOfLines={2} style={[s.moodTimelineNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                              {item.note}
-                            </Text>
-                          ) : null}
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-                <Text style={[s.moodBoundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Mood and energy are owner-reported care context, not a diagnosis.
+                <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {moodStats.nextStep}
                 </Text>
               </>
             )}
           </BoardCard>
+          ) : null}
 
           {/* Hydration */}
+          {waterHydration.total > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Hydration" action={waterHydration.total ? `${waterHydration.total} logs` : "No logs"} />
+            <BoardSectionHeader
+              title="Hydration"
+              accessory={<BoardPill label={waterHydration.total ? countNoun(waterHydration.total, "log") : "No logs"} tone={colors.primary} />}
+            />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.primary + "18" }]}>
                 <Ionicons name="water-outline" size={18} color={colors.primary} />
@@ -1464,10 +1645,15 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Walk activity */}
+          {walkActivity.total > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Walk Activity" action={walkActivity.total ? `${walkActivity.total} walks` : "No walks"} />
+            <BoardSectionHeader
+              title="Walk Activity"
+              accessory={<BoardPill label={walkActivity.total ? countNoun(walkActivity.total, "walk") : "No walks"} tone={colors.sage} />}
+            />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.sage + "18" }]}>
                 <Ionicons name="walk-outline" size={18} color={colors.sage} />
@@ -1492,7 +1678,8 @@ export default function RecordsScreen() {
               ].map((item, index) => (
                 <View key={item.label} style={[s.hydrationStat, index < 2 && { borderRightWidth: 1, borderRightColor: colors.border }]}>
                   <Text style={[s.hydrationValue, { color: colors.foreground, fontFamily: DISPLAY }]}>{item.value}</Text>
-                  <Text style={[s.hydrationLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{item.label}</Text>
+                  {/* sentenceCase keeps "Dog interactions" aligned with its Title-case siblings. */}
+                  <Text style={[s.hydrationLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{sentenceCase(item.label)}</Text>
                 </View>
               ))}
             </View>
@@ -1526,7 +1713,7 @@ export default function RecordsScreen() {
                 <View style={s.routeTemplateHeader}>
                   <Text style={[s.routeTemplateTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Saved Routes</Text>
                   <Text style={[s.routeTemplateCount, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    {walkRouteTemplates.length} templates
+                    {countNoun(walkRouteTemplates.length, "template")}
                   </Text>
                 </View>
                 {walkRouteTemplates.map((template, index) => (
@@ -1559,12 +1746,19 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Training progress */}
+          {trainingProgress.totalSessions > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Training Progress"
-              action={trainingProgress.totalSessions ? `${trainingProgress.totalSessions} sessions` : "No sessions"}
+              accessory={
+                <BoardPill
+                  label={trainingProgress.totalSessions ? countNoun(trainingProgress.totalSessions, "session") : "No sessions"}
+                  tone={colors.copper}
+                />
+              }
             />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.copper + "18" }]}>
@@ -1629,13 +1823,23 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Alone time */}
+          {aloneTime.totalSessions > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Alone Time" action={aloneTime.totalSessions ? `${aloneTime.totalSessions} logs` : "No logs"} />
+            <BoardSectionHeader
+              title="Alone Time"
+              accessory={
+                <BoardPill
+                  label={aloneTime.totalSessions ? countNoun(aloneTime.totalSessions, "log") : "No logs"}
+                  tone={aloneTime.distressedCount ? colors.rose : aloneTime.anxiousCount ? colors.amber : colors.mutedForeground}
+                />
+              }
+            />
             <View style={s.hydrationSummary}>
-              <View style={[s.watchSummaryIcon, { backgroundColor: colors.secondary + "18" }]}>
-                <Ionicons name="home-outline" size={18} color={colors.secondary} />
+              <View style={[s.watchSummaryIcon, { backgroundColor: colors.mutedForeground + "18" }]}>
+                <Ionicons name="home-outline" size={18} color={colors.mutedForeground} />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
@@ -1679,7 +1883,7 @@ export default function RecordsScreen() {
             </Text>
             {aloneTime.latest ? (
               <View style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
-                <View style={[s.watchSignalDot, { backgroundColor: aloneTime.distressedCount ? colors.rose : aloneTime.anxiousCount ? colors.amber : colors.secondary }]} />
+                <View style={[s.watchSignalDot, { backgroundColor: aloneTime.distressedCount ? colors.rose : aloneTime.anxiousCount ? colors.amber : colors.mutedForeground }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                     Latest: {aloneTime.latest.label}
@@ -1702,10 +1906,15 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Grooming care */}
+          {groomingCare.totalSessions > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Grooming Care" action={groomingCare.totalSessions ? `${groomingCare.totalSessions} logs` : "No logs"} />
+            <BoardSectionHeader
+              title="Grooming Care"
+              accessory={<BoardPill label={groomingCare.totalSessions ? countNoun(groomingCare.totalSessions, "log") : "No logs"} tone={colors.sage} />}
+            />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.sage + "18" }]}>
                 <Ionicons name="sparkles-outline" size={18} color={colors.sage} />
@@ -1769,10 +1978,15 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Potty health */}
+          {pottyHealth.total > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Potty Health" action={pottyHealth.total ? `${pottyHealth.total} logs` : "No logs"} />
+            <BoardSectionHeader
+              title="Potty Health"
+              accessory={<BoardPill label={pottyHealth.total ? countNoun(pottyHealth.total, "log") : "No logs"} tone={pottyHealth.watchCount ? colors.amber : colors.sage} />}
+            />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.amber + "18" }]}>
                 <Ionicons name="medical-outline" size={18} color={colors.amber} />
@@ -1782,7 +1996,7 @@ export default function RecordsScreen() {
                   {pottyHealth.status === "watch" ? "Stool watch" : pottyHealth.status === "steady" ? "Potty steady" : "Potty check"}
                 </Text>
                 <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {pottyHealth.summary}
+                  {pottySummary}
                 </Text>
               </View>
             </View>
@@ -1816,7 +2030,7 @@ export default function RecordsScreen() {
                 <View style={[s.watchSignalDot, { backgroundColor: pottyHealth.watchCount ? colors.amber : colors.sage }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                    Latest: {pottyHealth.last.kindLabel}
+                    Latest: {sentenceCase(pottyHealth.last.kindLabel)}
                   </Text>
                   <Text style={[s.watchPatternEvidence, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                     {[
@@ -1831,85 +2045,155 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Incident lookback */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Incident Lookback" />
+            <BoardSectionHeader title="Incident Watch" />
             <View style={s.watchSummary}>
-              <View style={[s.watchSummaryIcon, { backgroundColor: healthTone + "18" }]}>
+              <View style={[s.watchSummaryIcon, { backgroundColor: incidentTone + "18" }]}>
                 <Ionicons
-                  name={healthWatch.status === "good" ? "heart" : "alert-circle"}
+                  name={incidentWatch.status === "clear" ? "shield-checkmark" : "alert-circle"}
                   size={18}
-                  color={healthTone}
+                  color={incidentTone}
                 />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {healthWatch.status === "good"
-                    ? "Health steady"
-                    : healthWatch.status === "alert"
-                      ? "Health alert"
-                      : "Health watch"}
+                  {incidentWatch.status === "clear"
+                    ? "No incidents logged"
+                    : incidentWatch.status === "review"
+                      ? "Review incident"
+                      : "Watch incident pattern"}
                 </Text>
                 <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {healthWatch.summary}
+                  {incidentWatch.summary}
                 </Text>
               </View>
             </View>
-            {healthWatch.patterns.slice(0, 3).map((pattern) => {
-              const tone = pattern.status === "alert" ? colors.rose : pattern.status === "watch" ? colors.amber : colors.sage;
-              return (
-                <View key={pattern.kind} style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
-                  <View style={[s.watchSignalDot, { backgroundColor: tone }]} />
-                  <View style={{ flex: 1 }}>
-                    <View style={s.watchPatternTop}>
-                      <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        {pattern.label}
-                      </Text>
-                      <Text style={[s.watchPatternWindow, { color: tone, fontFamily: "Inter_700Bold" }]}>
-                        {pattern.window}
-                      </Text>
-                    </View>
-                    <Text style={[s.watchPatternEvidence, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                      {pattern.evidence}
+            <View style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
+              <View style={[s.watchSignalDot, { backgroundColor: incidentTone }]} />
+              <View style={{ flex: 1 }}>
+                <View style={s.watchPatternTop}>
+                  <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Trend signal
+                  </Text>
+                  <Text style={[s.watchPatternWindow, { color: incidentTone, fontFamily: "Inter_700Bold" }]}>
+                    {incidentWatch.trend.label}
+                  </Text>
+                </View>
+                <Text style={[s.watchPatternEvidence, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                  {incidentWatch.trend.windows.map((item) => `${item.label}: ${item.count}`).join(" - ")}
+                </Text>
+                <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {incidentWatch.trend.detail}
+                </Text>
+              </View>
+            </View>
+            {incidentWatch.triggers.length || incidentWatch.exposures.length ? (
+              <View style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
+                <View style={[s.watchSignalDot, { backgroundColor: incidentTone }]} />
+                <View style={{ flex: 1 }}>
+                  <View style={s.watchPatternTop}>
+                    <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      Incident context
                     </Text>
-                    <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      {pattern.nextStep}
+                    <Text style={[s.watchPatternWindow, { color: incidentTone, fontFamily: "Inter_700Bold" }]}>
+                      {incidentLookbackWindow?.label ?? "Lookback"}
                     </Text>
                   </View>
+                  <Text style={[s.watchPatternEvidence, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                    {[incidentWatch.triggers.length ? `Triggers: ${incidentWatch.triggers.slice(0, 3).join(", ")}` : "", incidentWatch.exposures.length ? `Exposure: ${incidentWatch.exposures.slice(0, 3).join(", ")}` : ""].filter(Boolean).join(" - ")}
+                  </Text>
+                  <Text style={[s.watchPatternNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    {incidentWatch.nextStep}
+                  </Text>
                 </View>
-              );
-            })}
+              </View>
+            ) : null}
+            {incidentWatch.followUpTasks.length > 0 && (
+              <View style={[s.incidentActionList, { borderTopColor: colors.border }]}>
+                <View style={s.incidentActionHeader}>
+                  <Text style={[s.incidentActionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    Follow-up plan
+                  </Text>
+                  <Text style={[s.incidentActionCount, { color: incidentTone, fontFamily: "Inter_700Bold" }]}>
+                    {incidentWatch.followUpTasks.length} action{incidentWatch.followUpTasks.length === 1 ? "" : "s"}
+                  </Text>
+                </View>
+                {incidentWatch.followUpTasks.map((task) => {
+                  const taskTone = task.tone === "review" ? colors.rose : task.tone === "watch" ? colors.amber : colors.sage;
+                  return (
+                    <Pressable
+                      key={task.id}
+                      onPress={() => openIncidentFollowUp(task.route)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open Incident Watch follow-up: ${task.label}`}
+                      style={[s.incidentActionRow, { borderColor: colors.border, backgroundColor: taskTone + "0F" }]}
+                    >
+                      <View style={[s.incidentActionIcon, { backgroundColor: taskTone + "1F" }]}>
+                        <Ionicons name={task.route === "trainer-care-pass" ? "document-text-outline" : "clipboard-outline"} size={15} color={taskTone} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.incidentActionLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{task.label}</Text>
+                        <Text style={[s.incidentActionDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{task.detail}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+            {incidentWatch.trainerGoals.length > 0 && (
+              <View style={[s.incidentGoalList, { borderTopColor: colors.border }]}>
+                <View style={s.incidentActionHeader}>
+                  <Text style={[s.incidentActionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    Trainer goals
+                  </Text>
+                  <Text style={[s.incidentActionCount, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    Review
+                  </Text>
+                </View>
+                {incidentWatch.trainerGoals.map((goal) => (
+                  <View key={goal.id} style={[s.incidentGoalRow, { borderColor: colors.border }]}>
+                    <View style={[s.incidentActionIcon, { backgroundColor: colors.sage + "1A" }]}>
+                      <Ionicons name={goal.status === "review" ? "shield-outline" : "flag-outline"} size={15} color={colors.sage} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.incidentActionLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{goal.label}</Text>
+                      <Text style={[s.incidentActionDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{goal.detail}</Text>
+                      <Text style={[s.incidentGoalEvidence, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{goal.evidence}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
             <Text style={[s.watchBoundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              {healthWatch.vetBoundary}
+              Incident Watch keeps factual household context for trainer, sitter, and veterinarian review; it does not diagnose behavior or medical issues.
             </Text>
             <View style={s.incidentRow}>
-              {[
-                { label: "7 days", value: incident7 },
-                { label: "30 days", value: incident30 },
-                { label: "90 days", value: incident90 },
-              ].map((b, i) => (
+              {incidentWatch.trend.windows.map((b, i) => (
                 <View key={b.label} style={[s.incidentCol, i < 2 && { borderRightWidth: 1, borderRightColor: colors.border }]}>
-                  <Text style={[s.incidentValue, { color: b.value > 0 ? colors.rose : colors.sage, fontFamily: DISPLAY }]}>{b.value}</Text>
+                  <Text style={[s.incidentValue, { color: b.count > 0 ? colors.rose : colors.sage, fontFamily: DISPLAY }]}>{b.count}</Text>
                   <Text style={[s.incidentLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{b.label}</Text>
                   <View style={[s.incidentBarTrack, { backgroundColor: colors.background }]}>
-                    <View style={[s.incidentBarFill, { backgroundColor: b.value > 0 ? colors.rose : colors.sage, width: `${(b.value / incidentMax) * 100}%` }]} />
+                    <View style={[s.incidentBarFill, { backgroundColor: b.count > 0 ? colors.rose : colors.sage, width: `${(b.count / incidentMax) * 100}%` }]} />
                   </View>
                 </View>
               ))}
             </View>
             {incidents.slice(0, 4).map((e, i) => (
               <View key={e.id} style={[s.row, { borderTopWidth: 1, borderTopColor: colors.border }]}>
-                <View style={[s.rowIconWrap, { backgroundColor: PULSE_COLORS[HEALTH_ICON[entryType(e)] ?? "vomit"] + "16" }]}>
-                  <PulseIcon name={HEALTH_ICON[entryType(e)] ?? "vomit"} size={18} />
+                <View style={[s.rowIconWrap, { backgroundColor: PULSE_COLORS.sad + "16" }]}>
+                  <PulseIcon name="sad" size={18} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text numberOfLines={1} style={[s.rowTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{e.title}</Text>
+                  <Text numberOfLines={1} style={[s.rowTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{e.label}</Text>
                   <Text style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {e.caregiver} - {relativeDay(e.occurredAt, now)}
+                    {[e.caregiver, e.trigger || e.exposure || e.kind, relativeDay(e.occurredAt, now)].filter(Boolean).join(" - ")}
                   </Text>
                 </View>
-                {e.severity && e.severity !== "normal" && (
+                {e.severity && (
                   <View style={[s.sevBadge, { backgroundColor: (e.severity === "alert" ? colors.rose : colors.amber) + "1A" }]}>
                     <Text style={[s.sevText, { color: e.severity === "alert" ? colors.rose : colors.amber, fontFamily: "Inter_700Bold" }]}>{e.severity}</Text>
                   </View>
@@ -1918,7 +2202,7 @@ export default function RecordsScreen() {
             ))}
             {incidents.length === 0 && (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                No incidents logged. Tail wags all around.
+                No incidents logged. If something happens, record the trigger, exposure, injury check, and follow-up here.
               </Text>
             )}
           </BoardCard>
@@ -1942,7 +2226,18 @@ export default function RecordsScreen() {
             />
             <View style={[s.medSummaryRow, { borderBottomColor: colors.border }]}>
               {[
-                { value: `${medicationAdherence.adherencePercent}%`, label: "Logged", color: medicationAdherence.missedCount > 0 ? colors.rose : colors.sage },
+                // With no medications on file there is nothing to have logged,
+                // so show a dash instead of a fabricated 100%.
+                {
+                  value: medicationAdherence.total === 0 ? "—" : `${medicationAdherence.adherencePercent}%`,
+                  label: "Logged",
+                  color:
+                    medicationAdherence.total === 0
+                      ? colors.mutedForeground
+                      : medicationAdherence.missedCount > 0
+                        ? colors.rose
+                        : colors.sage,
+                },
                 { value: String(medicationAdherence.dueCount), label: "Due now", color: medicationAdherence.dueCount > 0 ? colors.amber : colors.sage },
                 { value: String(medicationAdherence.missedCount), label: "Missed", color: medicationAdherence.missedCount > 0 ? colors.rose : colors.sage },
               ].map((item, index) => (
@@ -2024,9 +2319,12 @@ export default function RecordsScreen() {
                 <Text style={[s.medFollowUpTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                   Medication Follow-ups
                 </Text>
-                <Text style={[s.medFollowUpCount, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
-                  {medicationFollowUps.length ? `${medicationFollowUps.length} active` : "Clear"}
-                </Text>
+                {/* Calm pill grammar (matches Incident Watch's green Clear pill)
+                    instead of orange all-caps text that reads as an alert. */}
+                <BoardPill
+                  label={medicationFollowUps.length ? `${medicationFollowUps.length} active` : "Clear"}
+                  tone={medicationFollowUps.length ? colors.copper : colors.sage}
+                />
               </View>
               {medicationFollowUps.length === 0 ? (
                 <Text style={[s.medFollowUpEmpty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
@@ -2067,9 +2365,10 @@ export default function RecordsScreen() {
                 <Text style={[s.medFollowUpTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                   Medication History
                 </Text>
-                <Text style={[s.medFollowUpCount, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
-                  {medicationHistory.total ? `${medicationHistory.total} logs` : "No logs"}
-                </Text>
+                <BoardPill
+                  label={medicationHistory.total ? countNoun(medicationHistory.total, "log") : "No logs"}
+                  tone={medicationHistory.total ? colors.copper : colors.mutedForeground}
+                />
               </View>
               <View style={[s.medSearchCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Ionicons name="search" size={16} color={colors.mutedForeground} />
@@ -2181,7 +2480,7 @@ export default function RecordsScreen() {
 
           {/* Care pass */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Care Pass" action="Preview" />
+            <BoardSectionHeader title="Care Pass" accessory={<BoardPill label="Preview" tone={colors.copper} />} />
             <View style={s.carePassList}>
               {CARE_PASS_OPTIONS.map((option) => (
                 <Pressable
@@ -2215,50 +2514,48 @@ export default function RecordsScreen() {
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Report History"
-              action={reportArtifacts.length ? `${reportArtifacts.length} saved` : "No saved"}
+              accessory={<BoardPill label={reportArtifacts.length ? `${reportArtifacts.length} saved` : "No saved"} tone={colors.primary} />}
             />
-            <View
-              accessibilityRole="summary"
-              accessibilityLabel={`Report History readiness. ${reportHistorySummary.summary} ${reportHistorySummary.boundaryLine}`}
-              style={[s.reportHistorySummary, { backgroundColor: colors.sage + "10", borderColor: colors.sage + "24" }]}
-            >
-              <Text style={[s.reportHistorySummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                Local handoff sources
-              </Text>
-              <Text style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                {reportHistorySummary.summary}
-              </Text>
-              {reportHistorySummary.latestLine ? (
-                <Text style={[s.rowMeta, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                  {reportHistorySummary.latestLine}
-                </Text>
-              ) : null}
-              <Text style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-                {reportHistorySummary.action}
-              </Text>
-              <Text style={[s.rowMeta, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                {reportHistorySummary.reviewLine}
-              </Text>
-              <Text style={[s.rowMeta, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                {reportHistorySummary.cleanupLine}
-              </Text>
-              <Text style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                {reportHistorySummary.boundaryLine}
-              </Text>
-            </View>
             {reportArtifacts.length === 0 ? (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                Shared Care Passes, Progress Reports, and Dog ID sources will appear here for quick resend.
+                Shared Care Passes will appear here for quick resend.
               </Text>
             ) : (
               reportArtifacts.map((artifact, index) => {
-                const sourceDescriptor = describeReportArtifactSource(artifact);
-                const artifactLabel =
-                  artifact.kind === "care_pass"
-                    ? artifact.audience
-                    : artifact.kind === "pet_credential"
-                      ? "dog id"
-                      : "progress";
+                const exportView = describeCarePassArtifactExport(artifact, {
+                  storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
+                  storageProviderEvidence: launchProviderSetupPlan.providerInput.storageProviderEvidence,
+                });
+                const printable = getCarePassArtifactPrintView(artifact);
+                const generatedCarePassPdf = buildCarePassPdfArtifactSource({
+                  fileName: printable.fileName,
+                  title: artifact.title,
+                  summary: artifact.summary,
+                  message: artifact.message,
+                });
+                const binaryProofManifest = buildReportBinaryExportProofManifest({
+                  carePassHtmlFileName: exportView.fileName,
+                  dogIdSvgFileName: credentialImageView.fileName,
+                  generatedCarePassPdf: {
+                    fileName: generatedCarePassPdf.fileName,
+                    mimeType: generatedCarePassPdf.mimeType,
+                    byteSize: generatedCarePassPdf.byteSize,
+                  },
+                  generatedDogIdPng: {
+                    fileName: credentialPngArtifactSource.fileName,
+                    mimeType: credentialPngArtifactSource.mimeType,
+                    byteSize: credentialPngArtifactSource.byteSize,
+                  },
+                  storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
+                  providerStorageEvidence: launchProviderSetupPlan.providerInput.storageProviderEvidence
+                    ? [launchProviderSetupPlan.providerInput.storageProviderEvidence]
+                    : [],
+                  pdfGeneratorApproved: false,
+                  pngRendererApproved: false,
+                  nativeArtifactEvidenceApproved: false,
+                });
+                const storage = exportView.storage;
+                const sectionCount = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles.length : 0;
                 return (
                   <View
                     key={artifact.id}
@@ -2275,19 +2572,108 @@ export default function RecordsScreen() {
                         {artifact.title}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {shortDate(artifact.createdAt)} - {sourceDescriptor.metadataLine}
+                        {shortDate(artifact.createdAt)} - {countNoun(sectionCount, "section")} - {exportView.sourceStatus === "ready" ? "Print-ready" : "Print restored"}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-                        {sourceDescriptor.fileLine}
+                        {exportView.fileName}
                       </Text>
-                      <Text numberOfLines={2} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {sourceDescriptor.lifecycleLine}
+                      <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {exportView.formatLabel} local file - PDF pending
                       </Text>
+                      <Text numberOfLines={1} style={[s.rowMeta, { color: colors.sage, fontFamily: "Inter_600SemiBold" }]}>
+                        Generated PDF local file - native proof pending
+                      </Text>
+                      <View style={s.artifactStorageRow}>
+                        <View
+                          style={[
+                            s.artifactStoragePill,
+                            { backgroundColor: (storage.providerBacked ? colors.sage : colors.amber) + "18" },
+                          ]}
+                        >
+                          <Ionicons
+                            name={storage.providerBacked ? "cloud-done-outline" : "phone-portrait-outline"}
+                            size={12}
+                            color={storage.providerBacked ? colors.sage : colors.amber}
+                          />
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              s.artifactStorageText,
+                              {
+                                color: storage.providerBacked ? colors.sage : colors.amber,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            {storage.label}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text numberOfLines={2} style={[s.artifactStorageDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                        {storage.detail}
+                      </Text>
+                      <Text numberOfLines={2} style={[s.artifactStorageDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                        {exportView.pdfDetail}
+                      </Text>
+                      <Text style={[s.artifactManifestTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        Export manifest
+                      </Text>
+                      <View style={s.artifactManifestGrid}>
+                        {exportView.manifestRows.map((row) => (
+                          <View key={row.label} style={[s.artifactManifestCell, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                            <Text style={[s.artifactManifestLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                              {row.label}
+                            </Text>
+                            <Text numberOfLines={1} style={[s.artifactManifestValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                              {row.value}
+                            </Text>
+                            <Text numberOfLines={2} style={[s.artifactManifestDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                              {row.detail}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                      <Text style={[s.artifactManifestTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        Binary proof manifest
+                      </Text>
+                      <View style={s.artifactManifestGrid}>
+                        {binaryProofManifest.rows.map((row) => (
+                          <View key={row.label} style={[s.artifactManifestCell, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                            <Text style={[s.artifactManifestLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                              {row.label}
+                            </Text>
+                            <Text
+                              numberOfLines={1}
+                              style={[
+                                s.artifactManifestValue,
+                                {
+                                  color: row.status === "ready" ? colors.sage : colors.amber,
+                                  fontFamily: "Inter_700Bold",
+                                },
+                              ]}
+                            >
+                              {row.value}
+                            </Text>
+                            <Text numberOfLines={2} style={[s.artifactManifestDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                              {row.detail}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                      {binaryProofManifest.blockers.map((blocker) => (
+                        <Text
+                          key={blocker}
+                          numberOfLines={2}
+                          style={[s.artifactManifestDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                        >
+                          - {blocker}
+                        </Text>
+                      ))}
                     </View>
                     <View style={s.reportArtifactActions}>
                       <View style={[s.artifactBadge, { backgroundColor: colors.sage + "14" }]}>
                         <Text style={[s.artifactBadgeText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                          {artifactLabel}
+                          {artifact.audience}
                         </Text>
                       </View>
                       <View style={s.reportArtifactButtonRow}>
@@ -2306,7 +2692,7 @@ export default function RecordsScreen() {
                         <Pressable
                           onPress={() => sharePrintableReportArtifact(artifact)}
                           accessibilityRole="button"
-                          accessibilityLabel={`Share printable report source for ${artifact.title}`}
+                          accessibilityLabel={`Share local printable report source file for ${artifact.title}`}
                           hitSlop={MOBILE_INLINE_HIT_SLOP}
                           style={({ pressed }) => [
                             s.artifactIconButton,
@@ -2316,18 +2702,31 @@ export default function RecordsScreen() {
                           <Ionicons name="print-outline" size={15} color={colors.copper} />
                         </Pressable>
                         <Pressable
-                          onPress={() => removeReportArtifact(artifact)}
+                          onPress={() => shareGeneratedCarePassPdfArtifact(artifact)}
                           accessibilityRole="button"
-                          accessibilityLabel={describeReportArtifactRemoval(artifact).accessibilityLabel}
-                          accessibilityHint="Removes only the local reusable report source from this care document."
+                          accessibilityLabel={`Share generated Care Pass PDF for ${artifact.title}`}
                           hitSlop={MOBILE_INLINE_HIT_SLOP}
                           style={({ pressed }) => [
                             s.artifactIconButton,
-                            { backgroundColor: colors.rose + "14", opacity: pressed ? 0.75 : 1 },
+                            { backgroundColor: colors.sage + "14", opacity: pressed ? 0.75 : 1 },
                           ]}
                         >
-                          <Ionicons name="trash-outline" size={15} color={colors.rose} />
+                          <Ionicons name="download-outline" size={15} color={colors.sage} />
                         </Pressable>
+                        {ownerOps ? (
+                          <Pressable
+                            onPress={openReportBinaryExportProofMission}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Open report binary export proof mission for ${artifact.title}`}
+                            hitSlop={MOBILE_INLINE_HIT_SLOP}
+                            style={({ pressed }) => [
+                              s.artifactIconButton,
+                              { backgroundColor: colors.amber + "14", opacity: pressed ? 0.75 : 1 },
+                            ]}
+                          >
+                            <Ionicons name="shield-checkmark-outline" size={15} color={colors.amber} />
+                          </Pressable>
+                        ) : null}
                       </View>
                     </View>
                   </View>
@@ -2376,7 +2775,7 @@ export default function RecordsScreen() {
                   <Ionicons name="ribbon" size={13} color={colors.sage} />
                   <Text style={[s.topCaregiverInlineText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                     {report.topCaregiver.name}
-                    <Text style={{ fontFamily: "Inter_400Regular", color: colors.mutedForeground }}> - {report.topCaregiver.count} logs</Text>
+                    <Text style={{ fontFamily: "Inter_400Regular", color: colors.mutedForeground }}> - {countNoun(report.topCaregiver.count, "log")}</Text>
                   </Text>
                 </View>
               )}
@@ -2392,36 +2791,6 @@ export default function RecordsScreen() {
                 </View>
               ))}
             </View>
-            {moodReportSnapshot.available ? (
-              <View
-                accessible
-                accessibilityLabel={`Mood and Energy report snapshot. ${moodReportSnapshot.summaryLine} ${moodReportSnapshot.energyLine} ${moodReportSnapshot.boundaryLine}`}
-                style={[s.reportMoodSnapshot, { backgroundColor: colors.background, borderColor: colors.border }]}
-              >
-                <View style={s.reportMoodSnapshotHeader}>
-                  <View>
-                    <Text style={[s.reportMoodSnapshotTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Mood & Energy snapshot</Text>
-                    <Text style={[s.reportMoodSnapshotMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {moodReportSnapshot.statusLabel} - {moodReportSnapshot.averageLabel}
-                    </Text>
-                  </View>
-                  <View style={[s.reportMoodSnapshotBadge, { backgroundColor: colors.amber + "18" }]}>
-                    <Text style={[s.reportMoodSnapshotBadgeText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
-                      {moodReportSnapshot.total} shared
-                    </Text>
-                  </View>
-                </View>
-                <Text style={[s.reportMoodSnapshotLine, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                  {moodReportSnapshot.energyLine}
-                </Text>
-                <Text style={[s.reportMoodSnapshotLine, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {moodReportSnapshot.latestLine}
-                </Text>
-                <Text style={[s.reportMoodSnapshotBoundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {moodReportSnapshot.boundaryLine}
-                </Text>
-              </View>
-            ) : null}
           </BoardCard>
 
           {/* Diet folder */}
@@ -2439,9 +2808,13 @@ export default function RecordsScreen() {
                 <PulseIcon name="bowl" size={20} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.rowTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{state.dietProfile.primaryFood}</Text>
+                <Text style={[s.rowTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {hasDietOnFile ? dietPrimaryFood || "Food not set yet" : "No diet set yet"}
+                </Text>
                 <Text style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {state.dietProfile.normalPortion} - {state.dietProfile.mealSchedule}
+                  {hasDietOnFile
+                    ? dietMeta || "Add portion and schedule with Edit."
+                    : "Add food and portion with Edit."}
                 </Text>
               </View>
             </View>
@@ -2463,7 +2836,7 @@ export default function RecordsScreen() {
 
           {/* Records cabinet */}
           <BoardCard style={s.recordsBoardCard}>
-            <BoardSectionHeader title="Records Cabinet" action={`${recordVault.total} saved`} />
+            <BoardSectionHeader title="Records Cabinet" accessory={<BoardPill label={`${recordVault.total} saved`} tone={colors.primary} />} />
             {recordList.length === 0 ? (
               <View style={s.recordEmpty}>
                 <Ionicons name="folder-open-outline" size={28} color={colors.mutedForeground} />
@@ -2534,7 +2907,7 @@ export default function RecordsScreen() {
 
       <Modal visible={carePassPreview !== null} transparent animationType="slide" onRequestClose={() => setCarePassPreview(null)}>
         <Pressable style={s.modalBackdrop} onPress={() => setCarePassPreview(null)}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardVerticalOffset} style={s.modalDock}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
             <Pressable style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
               <View style={s.sheetHandle} />
               {carePassPreview ? (
@@ -2582,7 +2955,7 @@ export default function RecordsScreen() {
 
       <Modal visible={recordOpen} transparent animationType="slide" onRequestClose={() => setRecordOpen(false)}>
         <Pressable style={s.modalBackdrop} onPress={() => setRecordOpen(false)}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardVerticalOffset} style={s.modalDock}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
             <Pressable style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={() => {}}>
               <View style={s.sheetHandle} />
               <View style={s.sheetHeader}>
@@ -2686,8 +3059,243 @@ const s = StyleSheet.create({
   subtitle: { fontSize: 14, marginTop: 2 },
 
   sectionLink: { fontSize: 14 },
-  shareInline: { flexDirection: "row", alignItems: "center", gap: 4 },
-  shareInlineGroup: { flexDirection: "row", alignItems: "center", gap: 14 },
+  shareInline: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    paddingHorizontal: 8,
+    gap: 4,
+  },
+  // Dog ID export actions: a wrapping row under the section title so all four
+  // actions and the title stay visible at narrow (393px) widths.
+  idShareRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    columnGap: 8,
+    marginLeft: -8,
+    marginBottom: 4,
+  },
+
+  recordsCredentialStageCard: {
+    alignSelf: "stretch",
+    width: "100%",
+    maxWidth: "100%",
+    marginTop: 2,
+    marginBottom: 14,
+    padding: 0,
+    overflow: "hidden",
+  },
+  recordsCredentialStage: {
+    width: "100%",
+    minHeight: 190,
+    overflow: "hidden",
+    justifyContent: "flex-start",
+  },
+  recordsCredentialStageImage: {
+    borderRadius: 22,
+  },
+  recordsCredentialStageShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(4, 16, 28, 0.12)",
+  },
+  recordsCredentialStageTop: {
+    zIndex: 3,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 8,
+    padding: 10,
+  },
+  recordsCredentialBubble: {
+    maxWidth: "61%",
+    borderWidth: 2,
+    borderColor: "#18314A",
+    backgroundColor: "rgba(255,249,239,0.96)",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    shadowColor: "#071523",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  recordsCredentialKicker: {
+    fontSize: 9,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+    marginBottom: 2,
+  },
+  recordsCredentialSpeech: {
+    fontSize: 13,
+    lineHeight: 17,
+  },
+  recordsCredentialBubbleTail: {
+    position: "absolute",
+    left: 42,
+    bottom: -10,
+    width: 14,
+    height: 14,
+    backgroundColor: "rgba(255,249,239,0.96)",
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: "#18314A",
+    transform: [{ rotate: "45deg" }],
+  },
+  recordsCredentialChip: {
+    maxWidth: 104,
+    flexShrink: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 13,
+    paddingHorizontal: 9,
+    paddingVertical: 7,
+  },
+  recordsCredentialChipText: {
+    flexShrink: 1,
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  recordsCredentialSprite: {
+    position: "absolute",
+    right: 22,
+    bottom: 8,
+    zIndex: 2,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  recordsCredentialSpriteShadow: {
+    position: "absolute",
+    bottom: 3,
+    width: 78,
+    height: 13,
+    borderRadius: 999,
+    backgroundColor: "rgba(7, 18, 30, 0.25)",
+  },
+  recordsCredentialDock: {
+    borderTopWidth: 1,
+    paddingHorizontal: 9,
+    paddingTop: 8,
+    paddingBottom: 9,
+    gap: 7,
+  },
+  recordsCredentialIdPlate: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 17,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    shadowColor: "#071523",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    elevation: 5,
+  },
+  recordsCredentialIdBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  recordsCredentialIdLabel: {
+    fontSize: 9.8,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  recordsCredentialIdName: {
+    fontSize: 21,
+    letterSpacing: -0.2,
+    marginTop: 1,
+  },
+  recordsCredentialIdMeta: {
+    fontSize: 11.5,
+    marginTop: 2,
+  },
+  recordsCredentialHud: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  recordsCredentialHudCell: {
+    flex: 1,
+    alignItems: "center",
+    gap: 2,
+  },
+  recordsCredentialHudLabel: {
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  recordsCredentialHudValue: {
+    fontSize: 16,
+  },
+
+  recordsCommandCard: {
+    marginTop: 0,
+    marginBottom: 14,
+  },
+  recordsCommandList: {
+    gap: 9,
+  },
+  recordsCommandRow: {
+    minHeight: 84,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 11,
+    paddingVertical: 11,
+  },
+  recordsCommandIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  recordsCommandCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  recordsCommandEyebrow: {
+    fontSize: 9.5,
+    lineHeight: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+  },
+  recordsCommandTitle: {
+    fontSize: 14.6,
+    lineHeight: 19,
+    marginTop: 2,
+  },
+  recordsCommandDetail: {
+    fontSize: 11.7,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  recordsCommandAction: {
+    width: 58,
+    flexShrink: 0,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 9,
+  },
+  recordsCommandActionText: {
+    fontSize: 10.5,
+    lineHeight: 14,
+  },
 
   idCard: {
     borderRadius: 22,
@@ -2707,10 +3315,6 @@ const s = StyleSheet.create({
   idFieldValue: { fontSize: 13.5, lineHeight: 18, marginTop: 3 },
   idFooter: { borderTopWidth: 1, marginTop: 16, paddingTop: 12 },
   idFooterText: { fontSize: 12.5, lineHeight: 17 },
-  credentialReadiness: { flexDirection: "row", alignItems: "flex-start", gap: 9, borderWidth: 1, borderRadius: 16, padding: 12, marginTop: 12 },
-  credentialReadinessTitle: { fontSize: 12.8, lineHeight: 17 },
-  credentialReadinessText: { fontSize: 11.8, lineHeight: 16, marginTop: 3 },
-  credentialReadinessBoundary: { fontSize: 11.2, lineHeight: 15, marginTop: 5, opacity: 0.82 },
 
   vaultGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   vaultCard: {
@@ -2725,7 +3329,6 @@ const s = StyleSheet.create({
   vaultMeta: { fontSize: 12.5, marginTop: 3 },
   vaultNotice: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 16, padding: 12, marginTop: 10 },
   vaultNoticeText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
-  vaultNoticeSubText: { fontSize: 11.8, lineHeight: 16, marginTop: 4 },
   reminderList: { borderWidth: 1, borderRadius: 18, marginTop: 12, overflow: "hidden" },
   reminderRow: { flexDirection: "row", gap: 10, padding: 12 },
   reminderIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
@@ -2740,6 +3343,16 @@ const s = StyleSheet.create({
   goalPill: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 13 },
   goalPillText: { fontSize: 12.5 },
   chartNote: { fontSize: 12.5, lineHeight: 18, marginTop: 6 },
+  weightEmpty: {
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  weightEmptyTitle: { fontSize: 14.5, textAlign: "center" },
 
   empty: { fontSize: 14, paddingVertical: 16, textAlign: "center" },
   trendHeroRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 12 },
@@ -2752,74 +3365,18 @@ const s = StyleSheet.create({
   trendSignalTitle: { fontSize: 12.8 },
   trendSignalDetail: { fontSize: 12.3, lineHeight: 17, marginTop: 3 },
 
-  moodRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
-  moodSummary: { fontSize: 12.8, lineHeight: 18, marginBottom: 10 },
-  moodPeriodTabs: { flexDirection: "row", gap: 8, marginBottom: 12 },
-  moodPeriodTab: {
-    flex: 1,
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  moodPeriodLabel: { fontSize: 12.2, lineHeight: 16 },
-  moodPeriodCount: { fontSize: 10.5, lineHeight: 14, marginTop: 1 },
-  moodPeriodVisuals: { gap: 8, marginBottom: 12 },
-  moodPeriodVisualRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  moodPeriodVisualLabel: { width: 54, fontSize: 11.4, lineHeight: 15 },
-  moodPeriodVisualTrack: { flex: 1, height: 10, borderRadius: 5, overflow: "hidden" },
-  moodPeriodVisualFill: { height: "100%", borderRadius: 5 },
-  moodPeriodVisualValue: { width: 28, textAlign: "right", fontSize: 11.8, lineHeight: 15 },
-  moodSparklineCard: { borderRadius: 8, padding: 10, marginBottom: 12 },
-  moodSparklineHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 },
-  moodSparklineTitle: { fontSize: 12.4, lineHeight: 16 },
-  moodSparklineCaption: { flex: 1, textAlign: "right", fontSize: 10.8, lineHeight: 14 },
-  moodSparkline: { height: 66, flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 6 },
-  moodSparklineBucket: { flex: 1, minWidth: 0, alignItems: "center", gap: 4 },
-  moodSparklineTrack: {
-    width: "100%",
-    maxWidth: 28,
-    height: 46,
-    borderRadius: 6,
-    overflow: "hidden",
-    justifyContent: "flex-end",
-  },
-  moodSparklineBar: { width: "100%", borderRadius: 6 },
-  moodSparklineLabel: { fontSize: 9.4, lineHeight: 12, textAlign: "center" },
-  moodFilterGroup: { gap: 7, marginBottom: 12 },
-  moodFilterRow: { gap: 7, paddingRight: 4 },
-  moodFilterChip: {
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  moodFilterText: { fontSize: 11.6, lineHeight: 15 },
+  moodSummary: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 10 },
   moodEnergyRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
-  moodEnergyPill: { flex: 1, borderRadius: 13, paddingVertical: 9, paddingHorizontal: 6, alignItems: "center" },
+  moodEnergyPill: { flex: 1, borderWidth: 1, borderRadius: 13, alignItems: "center", paddingVertical: 8, paddingHorizontal: 6 },
   moodEnergyValue: { fontSize: 18, letterSpacing: 0 },
-  moodEnergyLabel: { fontSize: 10.2, textAlign: "center", marginTop: 1 },
+  moodEnergyLabel: { fontSize: 10.5, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.4 },
+  moodRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
   moodLabel: { fontSize: 14, width: 64 },
   moodTrack: { flex: 1, height: 12, borderRadius: 6, overflow: "hidden" },
   moodFill: { height: "100%", borderRadius: 6 },
   moodPct: { fontSize: 12.5, width: 34, textAlign: "right" },
   moodCount: { fontSize: 12, width: 28 },
-  moodLatest: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderTopWidth: 1, paddingTop: 10, marginTop: 10 },
-  moodTimelineSummary: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 6 },
-  moodTimelineList: { marginTop: 4 },
-  moodTimelineItem: { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingVertical: 10 },
-  moodTimelineDot: { width: 9, height: 9, borderRadius: 4.5, marginTop: 5 },
-  moodTimelineHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
-  moodTimelineTitle: { flex: 1, minWidth: 0, fontSize: 13.2, lineHeight: 17 },
-  moodTimelineDate: { fontSize: 11.4, lineHeight: 15 },
-  moodTimelineMeta: { marginTop: 2, fontSize: 11.6, lineHeight: 16 },
-  moodTimelineNote: { marginTop: 4, fontSize: 11.5, lineHeight: 16 },
-  moodBoundary: { marginTop: 6, fontSize: 11.4, lineHeight: 16 },
+  moodLatest: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderTopWidth: 1, paddingTop: 10, marginTop: 8 },
 
   hydrationSummary: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
   hydrationMeter: { height: 8, borderRadius: 4, overflow: "hidden", marginBottom: 12 },
@@ -2855,6 +3412,17 @@ const s = StyleSheet.create({
   watchPatternEvidence: { fontSize: 12.5, lineHeight: 18, marginTop: 3 },
   watchPatternNext: { fontSize: 12, lineHeight: 17, marginTop: 4 },
   watchBoundary: { fontSize: 11.5, lineHeight: 16, marginTop: 12, marginBottom: 10 },
+  incidentActionList: { borderTopWidth: 1, marginTop: 12, paddingTop: 12, gap: 9 },
+  incidentGoalList: { borderTopWidth: 1, marginTop: 12, paddingTop: 12, gap: 9 },
+  incidentActionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  incidentActionTitle: { fontSize: 15 },
+  incidentActionCount: { fontSize: 11.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  incidentActionRow: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 10 },
+  incidentGoalRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderWidth: 1, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 10 },
+  incidentActionIcon: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  incidentActionLabel: { fontSize: 12.8 },
+  incidentActionDetail: { fontSize: 12, lineHeight: 16, marginTop: 2 },
+  incidentGoalEvidence: { fontSize: 11.2, lineHeight: 15, marginTop: 5 },
   incidentCol: { flex: 1, alignItems: "center", paddingHorizontal: 10, paddingBottom: 14 },
   incidentValue: { fontSize: 26, letterSpacing: -0.4 },
   incidentLabel: { fontSize: 12, marginTop: 1 },
@@ -2872,7 +3440,6 @@ const s = StyleSheet.create({
   medFollowUps: { borderTopWidth: 1, marginTop: 4, paddingTop: 14 },
   medFollowUpHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 2 },
   medFollowUpTitle: { fontSize: 15 },
-  medFollowUpCount: { fontSize: 11.5, textTransform: "uppercase", letterSpacing: 0.4 },
   medFollowUpEmpty: { fontSize: 12.5, lineHeight: 18, paddingTop: 8 },
   medFollowUpRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 12 },
   medFollowUpAction: { fontSize: 12, lineHeight: 17, marginTop: 5 },
@@ -2889,9 +3456,22 @@ const s = StyleSheet.create({
     marginTop: 6,
   },
   medSearchInput: { flex: 1, fontSize: 13.5, minHeight: 26, paddingVertical: 0 },
-  medSearchClear: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  medSearchClear: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   medFilterRow: { gap: 7, paddingVertical: 9 },
-  medFilterPill: { borderWidth: 1, borderRadius: 13, paddingHorizontal: 13, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
+  medFilterPill: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 13,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    justifyContent: "center",
+  },
   medFilterText: { fontSize: 11.5 },
   medHistorySummary: { fontSize: 12, lineHeight: 17, marginBottom: 1 },
   medHistoryRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 12 },
@@ -2899,10 +3479,29 @@ const s = StyleSheet.create({
   medHistoryNote: { fontSize: 12.2, lineHeight: 17, marginTop: 5 },
 
   recordsBoardCard: { marginTop: 20 },
+  baselineIntro: { fontSize: 12.5, lineHeight: 18, marginBottom: 6 },
+  baselineRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  baselineIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  baselineLabel: { flex: 1, minWidth: 0, fontSize: 13.5 },
+  baselineStatus: { fontSize: 11.5 },
   carePassList: { gap: 9 },
   carePassRow: {
     flexDirection: "row",
     alignItems: "center",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     gap: 12,
     borderWidth: 1,
     borderRadius: 14,
@@ -2912,12 +3511,32 @@ const s = StyleSheet.create({
   carePassIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   carePassLabel: { fontSize: 15 },
   carePassDetail: { fontSize: 12, lineHeight: 16, marginTop: 2, paddingRight: 14 },
-  reportHistorySummary: { borderWidth: 1, borderRadius: 14, padding: 12, marginBottom: 8 },
-  reportHistorySummaryTitle: { fontSize: 14.5, marginBottom: 2 },
   reportArtifactRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13 },
   reportArtifactActions: { alignItems: "flex-end", gap: 8 },
   reportArtifactButtonRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  artifactIconButton: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  artifactStorageRow: { flexDirection: "row", alignItems: "center", marginTop: 7 },
+  artifactStoragePill: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 10, maxWidth: 170 },
+  artifactStorageText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4, flexShrink: 1 },
+  artifactStorageDetail: { fontSize: 11.5, lineHeight: 15, marginTop: 5 },
+  artifactManifestTitle: { fontSize: 11.5, marginTop: 10, textTransform: "uppercase", letterSpacing: 0.4 },
+  artifactManifestGrid: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 7 },
+  artifactManifestCell: {
+    width: "48%",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
+  },
+  artifactManifestLabel: { fontSize: 9.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  artifactManifestValue: { fontSize: 11.5, marginTop: 3 },
+  artifactManifestDetail: { fontSize: 10.5, lineHeight: 14, marginTop: 3 },
+  artifactIconButton: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   artifactBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
   artifactBadgeText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
 
@@ -2932,9 +3551,24 @@ const s = StyleSheet.create({
   duePill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
   dueText: { fontSize: 11.5 },
   recordDueRef: { fontSize: 10.5, maxWidth: 96 },
-  deleteRecordBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  deleteRecordBtn: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 4,
+  },
   recordEmpty: { alignItems: "center", gap: 8, paddingVertical: 10 },
-  emptyAddBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 14, paddingHorizontal: 14, minHeight: MIN_MOBILE_TOUCH_TARGET },
+  emptyAddBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    gap: 6,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
   emptyAddText: { color: "#FFFFFF", fontSize: 13.5 },
 
   highlightStrip: {
@@ -2969,6 +3603,7 @@ const s = StyleSheet.create({
   segPill: {
     flex: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
+    paddingVertical: 9,
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
@@ -2982,14 +3617,6 @@ const s = StyleSheet.create({
   reportIcon: { width: 32, height: 32, borderRadius: 11, alignItems: "center", justifyContent: "center", marginBottom: 7 },
   reportValue: { fontSize: 18, letterSpacing: -0.3 },
   reportLabel: { fontSize: 11, marginTop: 2 },
-  reportMoodSnapshot: { borderWidth: 1, borderRadius: 16, padding: 13, marginTop: 12 },
-  reportMoodSnapshotHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 8 },
-  reportMoodSnapshotTitle: { fontSize: 14.5, lineHeight: 18 },
-  reportMoodSnapshotMeta: { fontSize: 11.6, lineHeight: 15, marginTop: 2 },
-  reportMoodSnapshotBadge: { borderRadius: 11, paddingHorizontal: 9, paddingVertical: 6 },
-  reportMoodSnapshotBadgeText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.3 },
-  reportMoodSnapshotLine: { fontSize: 12.4, lineHeight: 17, marginTop: 4 },
-  reportMoodSnapshotBoundary: { fontSize: 11.4, lineHeight: 16, marginTop: 8 },
   dietHead: { flexDirection: "row", alignItems: "center", gap: 12, paddingBottom: 6 },
   subHeading: { fontSize: 11, letterSpacing: 0.6, marginTop: 10, marginBottom: 4 },
   dietNoteRow: { flexDirection: "row", gap: 10, paddingVertical: 7, alignItems: "flex-start" },
@@ -3013,16 +3640,35 @@ const s = StyleSheet.create({
   passDot: { width: 6, height: 6, borderRadius: 3, marginTop: 7 },
   passLine: { flex: 1, fontSize: 12.8, lineHeight: 18 },
   recordTypeRow: { gap: 8, paddingVertical: 4 },
-  recordTypePill: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8 },
+  recordTypePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
   recordTypeText: { fontSize: 12.5 },
   editFieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 14 },
   recordInput: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14.5 },
   recordInputMulti: { minHeight: 76, textAlignVertical: "top" },
-  attachmentBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderRadius: 14, paddingVertical: 12, marginTop: 14 },
+  attachmentBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 12,
+    marginTop: 14,
+  },
   attachmentText: { fontSize: 13.5 },
   sheetActions: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 },
-  sheetCancel: { flex: 1, height: 48, alignItems: "center", justifyContent: "center" },
+  sheetCancel: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   sheetCancelText: { fontSize: 15 },
-  sheetSave: { flex: 2, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  sheetSave: { flex: 2, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   sheetSaveText: { color: "#FFFFFF", fontSize: 15 },
 });

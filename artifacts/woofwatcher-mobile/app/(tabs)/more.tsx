@@ -1,53 +1,93 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   Image,
+  ImageBackground,
+  type LayoutChangeEvent,
   Modal,
   Platform,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useWoofAuth } from "@/lib/auth";
+import { isClerkConfigured, useWoofAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetMe,
   useUpdateHousehold,
   useJoinHousehold,
-  useListHouseholdAuditEvents,
-  useSetActiveHousehold,
-  useUpdateHouseholdMember,
   useUpdateMe,
   getGetMeQueryKey,
-  getListHouseholdAuditEventsQueryKey,
-  type HouseholdAuditEvent,
-  type Member,
-  type UpdateHouseholdMemberBody,
 } from "@workspace/api-client-react";
 import {
+  buildAccessPassDraft,
   deriveCareIntelligence,
+  deriveAccessPassPlan,
   deriveHouseholdAccessPlan,
   deriveHouseholdResponsibility,
+  deriveMyCareToday,
   getCareEventDefinition,
+  type AccessPassKind,
 } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
 import { useAvatar } from "@/context/AvatarContext";
+import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
-import { deriveCareSyncDashboard } from "@/lib/careSync";
+import { deriveCareSyncDashboard, type CareSyncDashboard } from "@/lib/careSync";
+import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
+import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
-  getCenteredModalBackdropPadding,
+  buildBetaHandoffPacketShareText,
+  RECORDED_LIVE_PREVIEW_HANDOFF_PROOF,
+  RECORDED_MOBILE_BETA_CI_PROOF,
+} from "@/lib/betaHandoffPacket";
+import {
+  deriveLaunchReadiness,
+  type LaunchReadinessNativeQaSummary,
+  type LaunchReadinessNextGateAction,
+  type LaunchReadinessOverallStatus,
+  type LaunchReadinessTileKey,
+  type LaunchReadinessTileStatus,
+} from "@/lib/launchReadiness";
+import {
+  buildLaunchProviderSetupShareText,
+  deriveLaunchProviderSetup,
+  normalizeLaunchProviderProfile,
+  type LaunchProviderSetupKey,
+  type LaunchProviderProfile,
+} from "@/lib/launchProviderSetup";
+import {
+  buildMobileLaunchQaCapturePlan,
+  buildMobileLaunchQaCaptureShareText,
+  buildMobileLaunchQaFixBriefShareText,
+  deriveNativeQaSummaryFromMobileQaSession,
+  mobileLaunchQaCaptureTargetStatusLabel,
+  type MobileLaunchQaCapturePlan,
+  type MobileLaunchQaCaptureTarget,
+} from "@/lib/mobileLaunchQaEvidence";
+import {
+  MOBILE_QA_SESSION_STORAGE_KEY,
+  buildMobileQaSessionProofManifest,
+  buildMobileQaSessionSnapshot,
+  parseMobileQaSessionSnapshot,
+  type MobileQaSessionProofManifest,
+} from "@/lib/mobileQaSession";
+import { buildReleasePacket, buildReleasePacketShareText } from "@/lib/releasePacket";
+import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from "@/lib/storeSubmissionPacket";
+import { deriveSupportRunbookPlan } from "@/lib/supportRunbook";
+import { shareTextPayload } from "@/lib/shareText";
+import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
@@ -55,185 +95,303 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
-import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
+import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
+import { BoardCard, BoardMetricTile, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
+import {
+  deriveCareCareer,
+  deriveCareerWeek,
+  deriveCareStreak,
+} from "@/lib/careCareer";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+const MORE_COMMAND_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.night.source;
+const MORE_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
+const MORE_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
 
-const AUDIT_ACTION_FILTERS = [
-  { label: "All", value: "all" },
-  { label: "Created", value: "household.created" },
-  { label: "Renamed", value: "household.renamed" },
-  { label: "Active", value: "household.active_changed" },
-  { label: "Joined", value: "household.member_joined" },
-  { label: "Roles", value: "household.member_role_changed" },
-] as const;
+type HouseholdMemberSummary = {
+  displayName?: string | null;
+  email?: string | null;
+  role?: string | null;
+};
 
-const ROLE_UPDATE_OPTIONS: Array<{ label: string; role: UpdateHouseholdMemberBody["role"] }> = [
-  { label: "Admin", role: "admin" },
-  { label: "Member", role: "member" },
-  { label: "Sitter", role: "sitter" },
-  { label: "Trainer", role: "trainer" },
-  { label: "Vet viewer", role: "vet_viewer" },
+interface MoreDirectoryItem {
+  id: string;
+  iconName: keyof typeof Ionicons.glyphMap;
+  eyebrow: string;
+  label: string;
+  detail: string;
+  actionLabel: string;
+  tone: string;
+  onPress: () => void;
+}
+
+type LaunchProviderFlagKey = keyof Pick<
+  LaunchProviderProfile,
+  | "authConfigured"
+  | "databaseConfigured"
+  | "storageProviderConfigured"
+  | "aiProviderConfigured"
+  | "paymentsEnabled"
+  | "pushNotificationsConfigured"
+  | "appStoreAccountsReady"
+  | "accountDeletionEnabled"
+>;
+
+type LaunchProviderProofFlagKey = keyof Pick<
+  LaunchProviderProfile,
+  | "authProviderProofReady"
+  | "databaseProviderProofReady"
+  | "storageProviderProofReady"
+  | "aiProviderProofReady"
+  | "paymentsProviderProofReady"
+  | "pushNotificationsProofReady"
+  | "storeAccountsProofReady"
+  | "accountDeletionProofReady"
+>;
+
+const PROVIDER_SETUP_FIELDS: Array<{
+  key: LaunchProviderFlagKey;
+  proofKey: LaunchProviderProofFlagKey;
+  label: string;
+  detail: string;
+}> = [
+  {
+    key: "authConfigured",
+    proofKey: "authProviderProofReady",
+    label: "Production auth",
+    detail: "Clerk keys, redirects, household sign-in, and session rules.",
+  },
+  {
+    key: "databaseConfigured",
+    proofKey: "databaseProviderProofReady",
+    label: "Household database",
+    detail: "Supabase/Postgres tables, RLS, backups, and migrations.",
+  },
+  {
+    key: "storageProviderConfigured",
+    proofKey: "storageProviderProofReady",
+    label: "Records storage",
+    detail: "Signed uploads/downloads, retention, export, and deletion rules.",
+  },
+  {
+    key: "aiProviderConfigured",
+    proofKey: "aiProviderProofReady",
+    label: "WoofGuide AI",
+    detail: "Provider key, model policy, owner review, and vet boundary.",
+  },
+  {
+    key: "paymentsEnabled",
+    proofKey: "paymentsProviderProofReady",
+    label: "Plus payments",
+    detail: "Subscription tiers, app-store billing, refunds, and entitlement checks.",
+  },
+  {
+    key: "pushNotificationsConfigured",
+    proofKey: "pushNotificationsProofReady",
+    label: "Push reminders",
+    detail: "Expo push, APNs/FCM, permission copy, quiet hours, and opt-out.",
+  },
+  {
+    key: "appStoreAccountsReady",
+    proofKey: "storeAccountsProofReady",
+    label: "Store accounts",
+    detail: "Apple Developer, App Store Connect, Google Play Console, bundle ids.",
+  },
+  {
+    key: "accountDeletionEnabled",
+    proofKey: "accountDeletionProofReady",
+    label: "Account deletion",
+    detail: "Self-serve deletion, export warning, provider deletion, and audit receipt.",
+  },
 ];
 
-const AUDIT_LIFECYCLE_FILTERS = [
-  { label: "All states", value: "all" },
-  { label: "Active", value: "active" },
-  { label: "Retained", value: "retained" },
-] as const;
-
-type SetupHandoffIntent = "start_pack" | "join_pack";
-
-function auditEventLabel(event: HouseholdAuditEvent): string {
-  switch (event.action) {
-    case "household.created":
-      return "Pack created";
-    case "household.renamed":
-      return "Pack renamed";
-    case "household.active_changed":
-      return "Active pack changed";
-    case "household.member_joined":
-      return "Caregiver joined";
-    case "household.member_role_changed":
-      return "Role changed";
-    default:
-      return event.action
-        .split(".")
-        .filter(Boolean)
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).replace(/_/g, " "))
-        .join(" ");
+function launchTileIcon(
+  key: LaunchReadinessTileKey,
+  syncIcon: keyof typeof Ionicons.glyphMap,
+): keyof typeof Ionicons.glyphMap {
+  switch (key) {
+    case "native-qa":
+      return "phone-portrait-outline";
+    case "care-sync":
+      return syncIcon;
+    case "storage":
+      return "folder-open-outline";
+    case "woofguide-ai":
+      return "sparkles-outline";
+    case "plus-payments":
+      return "diamond-outline";
+    case "store-approval":
+      return "shield-checkmark-outline";
   }
 }
 
-function getAuditDetailValue(event: HouseholdAuditEvent, key: string): string {
-  const value = event.details?.[key];
-  return typeof value === "string" && value.trim() ? value.trim() : "";
-}
-
-function getAuditDetailBoolean(event: HouseholdAuditEvent, key: string): boolean | null {
-  const value = event.details?.[key];
-  return typeof value === "boolean" ? value : null;
-}
-
-function formatHouseholdRoleLabel(role: string): string {
-  const normalized = role.trim().toLowerCase();
-  return ROLE_UPDATE_OPTIONS.find((option) => option.role === normalized)?.label ?? role.replace(/_/g, " ");
-}
-
-function getAuditTargetName(event: HouseholdAuditEvent): string {
-  const displayName = getAuditDetailValue(event, "targetDisplayName");
-  if (displayName) return displayName;
-  const email = getAuditDetailValue(event, "targetEmail");
-  if (email) return email.split("@")[0]?.trim() || email;
-  return "";
-}
-
-function auditEventDetail(event: HouseholdAuditEvent): string {
-  const target = event.targetType ? event.targetType.replace(/_/g, " ") : "household";
-  const lifecycle = event.lifecycleState.replace(/_/g, " ");
-  const state = `${target} - ${lifecycle}`;
-  switch (event.action) {
-    case "household.created": {
-      const name = getAuditDetailValue(event, "name");
-      return name ? `Created ${name} - ${state}` : state;
-    }
-    case "household.renamed": {
-      const newName = getAuditDetailValue(event, "newName");
-      return newName ? `Renamed to ${newName} - ${state}` : state;
-    }
-    case "household.active_changed": {
-      const selectedHouseholdId = getAuditDetailValue(event, "selectedHouseholdId");
-      return selectedHouseholdId ? `Sync target switched - ${state}` : state;
-    }
-    case "household.member_joined": {
-      const membershipCreated = getAuditDetailBoolean(event, "membershipCreated");
-      if (membershipCreated === true) return `New caregiver membership - ${state}`;
-      if (membershipCreated === false) return `Existing caregiver rejoined - ${state}`;
-      return state;
-    }
-    case "household.member_role_changed": {
-      const previousRole = formatHouseholdRoleLabel(getAuditDetailValue(event, "previousRole"));
-      const newRole = formatHouseholdRoleLabel(getAuditDetailValue(event, "newRole"));
-      const targetName = getAuditTargetName(event);
-      if (targetName && previousRole && newRole) return `${targetName}: ${previousRole} to ${newRole} - ${state}`;
-      if (targetName && newRole) return `${targetName}: role changed to ${newRole} - ${state}`;
-      if (previousRole && newRole) return `Role changed from ${previousRole} to ${newRole} - ${state}`;
-      return newRole ? `Role changed to ${newRole} - ${state}` : state;
-    }
+function launchStatusTone(
+  status: LaunchReadinessTileStatus,
+  colors: ReturnType<typeof useColors>,
+): string {
+  switch (status) {
+    case "ready":
+      return colors.sage;
+    case "blocked":
+      return colors.rose;
+    case "local":
+      return colors.copper;
     default:
-      return state;
+      return colors.amber;
   }
 }
 
-function memberDisplayName(member: Member): string {
-  return member.displayName?.trim() || member.email?.split("@")[0]?.trim() || "Caregiver";
+function launchBadgeTone(
+  status: LaunchReadinessOverallStatus,
+  colors: ReturnType<typeof useColors>,
+): string {
+  if (status === "store-ready") return colors.sage;
+  if (status === "approval-required") return colors.copper;
+  if (status === "provider-gated") return colors.rose;
+  return colors.amber;
 }
 
-function formatAuditEventTime(value: string): string {
-  const parsed = Date.parse(value);
-  if (!Number.isFinite(parsed)) return "Recent";
-  return new Date(parsed).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+function launchNextGateIcon(action: LaunchReadinessNextGateAction): keyof typeof Ionicons.glyphMap {
+  switch (action) {
+    case "open-native-qa":
+    case "share-native-qa-fix-brief":
+      return "phone-portrait-outline";
+    case "open-provider-setup":
+      return "construct-outline";
+    case "open-privacy":
+      return "shield-checkmark-outline";
+    case "open-premium":
+      return "diamond-outline";
+    case "open-woofguide":
+      return "sparkles-outline";
+    case "open-avatar-studio":
+      return "color-palette-outline";
+    case "share-beta-handoff":
+      return "rocket-outline";
+    case "share-launch-packet":
+      return "share-social-outline";
+    case "share-store-packet":
+      return "storefront-outline";
+  }
+}
+
+function buildCareTwinQaFocusRoute(target: Pick<MobileLaunchQaCaptureTarget, "surfaceId"> | null | undefined): string {
+  if (!target) return "/care-twin-qa";
+  return `/care-twin-qa?qaSurface=${encodeURIComponent(target.surfaceId)}`;
+}
+
+type ProviderRowQaTarget = Pick<MobileLaunchQaCaptureTarget, "surfaceId"> & {
+  detail: string;
+  iconName: keyof typeof Ionicons.glyphMap;
+};
+
+function providerRowQaTarget(key: LaunchProviderSetupKey): ProviderRowQaTarget | null {
+  switch (key) {
+    case "auth":
+      return {
+        surfaceId: "auth-setup-onboarding-proof",
+        detail: "Auth and Setup native proof",
+        iconName: "log-in-outline",
+      };
+    case "database":
+      return {
+        surfaceId: "care-entry-provider-sync-proof",
+        detail: "Care-entry Provider Sync Proof",
+        iconName: "server-outline",
+      };
+    case "storage":
+      return {
+        surfaceId: "report-binary-export-proof",
+        detail: "Report Binary Export Proof",
+        iconName: "document-attach-outline",
+      };
+    case "ai":
+      return {
+        surfaceId: "woofguide-ai-provider-proof",
+        detail: "WoofGuide AI Provider Proof",
+        iconName: "chatbubbles-outline",
+      };
+    case "push":
+      return {
+        surfaceId: "push-notifications-proof",
+        detail: "Push Notifications Proof",
+        iconName: "notifications-outline",
+      };
+    case "payments":
+      return {
+        surfaceId: "payments-provider-proof",
+        detail: "Payments Provider Proof",
+        iconName: "card-outline",
+      };
+    case "storeAccounts":
+      return {
+        surfaceId: "store-accounts-proof",
+        detail: "Store Accounts Proof",
+        iconName: "storefront-outline",
+      };
+    case "accountDeletion":
+      return {
+        surfaceId: "account-deletion-proof",
+        detail: "Account Deletion Proof",
+        iconName: "trash-outline",
+      };
+    default:
+      return null;
+  }
 }
 
 export default function MoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const routeParams = useLocalSearchParams<{ setupHandoff?: string | string[] }>();
-  const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
-  const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
-  const centeredModalBackdropPadding = getCenteredModalBackdropPadding(insets.top, insets.bottom);
+  // Owner launch tooling renders in development/internal builds only; store
+  // production builds keep More to household care surfaces.
+  const ownerOps = isOwnerOpsBuild();
+  const routeParams = useLocalSearchParams<{
+    section?: string | string[];
+  }>();
+  const sectionParam = Array.isArray(routeParams.section) ? routeParams.section[0] : routeParams.section;
+  // `focus` is a navigation nonce (Date.now() at the call site). More stays
+  // mounted between tab visits, so without it a second tap on the same
+  // Pack/Story shortcut would leave `section` unchanged and never re-scroll.
+  const rawFocusParam = (routeParams as Record<string, string | string[] | undefined>).focus;
+  const focusParam = Array.isArray(rawFocusParam) ? rawFocusParam[0] : rawFocusParam;
+  const householdFocus = sectionParam === "household";
   const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
-  const { dietProfile, profile, entries, routines, caregivers } = state;
+  const { dietProfile, profile, entries, routines, caregivers, accessPasses } = state;
   const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
 
-  const { signOut } = useWoofAuth();
+  const { signOut, isSignedIn } = useWoofAuth();
   const queryClient = useQueryClient();
   const me = useGetMe();
   const updateHousehold = useUpdateHousehold();
   const joinHousehold = useJoinHousehold();
-  const setActiveHousehold = useSetActiveHousehold();
-  const updateHouseholdMember = useUpdateHouseholdMember();
   const updateMe = useUpdateMe();
 
   const household = me.data?.household;
-  const activeDisplayNamePack = household?.name?.trim() || "this pack";
-  const setupHandoffValue = Array.isArray(routeParams.setupHandoff)
-    ? routeParams.setupHandoff[0]
-    : routeParams.setupHandoff;
-  const setupHandoffIntent: SetupHandoffIntent | null =
-    setupHandoffValue === "start_pack" || setupHandoffValue === "join_pack" ? setupHandoffValue : null;
-  const [completedSetupHandoffIntent, setCompletedSetupHandoffIntent] = useState<SetupHandoffIntent | null>(null);
-  const visibleSetupHandoffIntent =
-    setupHandoffIntent && setupHandoffIntent !== completedSetupHandoffIntent ? setupHandoffIntent : null;
-  const [selectedAuditAction, setSelectedAuditAction] = useState<(typeof AUDIT_ACTION_FILTERS)[number]["value"]>("all");
-  const [selectedAuditLifecycle, setSelectedAuditLifecycle] = useState<(typeof AUDIT_LIFECYCLE_FILTERS)[number]["value"]>("all");
-  const householdAuditParams = {
-    limit: 8,
-    action: selectedAuditAction === "all" ? undefined : selectedAuditAction,
-    lifecycleState: selectedAuditLifecycle === "all" ? undefined : selectedAuditLifecycle,
-  };
-  const householdAudit = useListHouseholdAuditEvents(
-    householdAuditParams,
-    {
-      query: {
-        queryKey: getListHouseholdAuditEventsQueryKey(householdAuditParams),
-        enabled: Boolean(household?.id),
-      },
-    },
-  );
-  const households = me.data?.households ?? (household ? [household] : []);
-  const members = me.data?.members ?? [];
+  const members: HouseholdMemberSummary[] = me.data?.members ?? [];
   const myName = me.data?.user?.displayName?.trim() || "";
+  const currentHuman = myName || caregivers[0]?.name || "Apollo";
 
   const now = Date.now();
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  const moreCareCareer = useMemo(
+    () => deriveCareCareer(state.entries, now),
+    [state.entries, now],
+  );
+  const moreCareStreak = useMemo(
+    () => deriveCareStreak(state.entries, now),
+    [state.entries, now],
+  );
+  const moreCareerWeek = useMemo(
+    () => deriveCareerWeek(state.entries, now),
+    [state.entries, now],
+  );
   const careIntelligence = useMemo(
     () =>
       deriveCareIntelligence({
@@ -248,6 +406,10 @@ export default function MoreScreen() {
     profile.name && profile.name !== "My Dog"
       ? profile.name
       : "Phoenix";
+  const careTwinRoster = useMemo(
+    () => deriveCareTwinRoster(state),
+    [state.activePetId, state.profile, state.pets],
+  );
   const avatarTemplate = useMemo(
     () => getAvatarTemplate(avatarConfig.templateId),
     [avatarConfig.templateId],
@@ -282,27 +444,96 @@ export default function MoreScreen() {
     [entries],
   );
 
-  const syncDashboard = useMemo(
-    () =>
-      deriveCareSyncDashboard({
-        outbox: syncOutbox,
-        isLoaded,
-        isSyncing,
-        lastUpdatedAt: latestCareUpdate ?? state.updatedAt,
-        householdMemberCount: members.length || (household ? 1 : 0),
-        totalEntries: entries.length,
-      }),
-    [
-      syncOutbox,
+  const syncDashboard = useMemo<CareSyncDashboard>(() => {
+    if (!isClerkConfigured) {
+      // Local-first build: device storage is the success state, so Sync
+      // Health reports the honest on-device record instead of implying a
+      // cloud outbox or retries that no provider can service.
+      return {
+        status: "healthy",
+        title: "Saved on this device",
+        message: "Every care log is stored in this device's local care record. Nothing is waiting.",
+        nextStep: "Household sync is coming soon - every care log stays on this device for now.",
+        actionLabel: "Refresh",
+        metrics: [
+          {
+            label: "Care log",
+            value: `${entries.length} ${entries.length === 1 ? "entry" : "entries"}`,
+            detail: "Saved on this device",
+          },
+          {
+            label: "Care team",
+            value: `${caregivers.length} ${caregivers.length === 1 ? "member" : "members"}`,
+            detail: "Household roster",
+          },
+          {
+            label: "Waiting",
+            value: "0",
+            detail: "Nothing to sync",
+          },
+        ],
+      };
+    }
+    return deriveCareSyncDashboard({
+      outbox: syncOutbox,
       isLoaded,
       isSyncing,
-      latestCareUpdate,
-      state.updatedAt,
-      members.length,
-      household,
-      entries.length,
+      lastUpdatedAt: latestCareUpdate ?? state.updatedAt,
+      householdMemberCount: members.length || (household ? 1 : 0),
+      totalEntries: entries.length,
+    });
+  }, [
+    syncOutbox,
+    isLoaded,
+    isSyncing,
+    latestCareUpdate,
+    state.updatedAt,
+    members.length,
+    household,
+    entries.length,
+    caregivers.length,
+  ]);
+  const launchProviderSetupPlan = useMemo(
+    () => deriveLaunchProviderSetup(state.launchProviderProfile),
+    [state.launchProviderProfile],
+  );
+  const attachmentManifest = useMemo(
+    () =>
+      deriveAttachmentManifest(
+        {
+          entries,
+          records: state.records,
+          adventureMemories: state.adventureMemories,
+          reportArtifacts: state.reportArtifacts,
+        },
+        {
+          storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
+          storageProviderEvidence: launchProviderSetupPlan.providerInput.storageProviderEvidence,
+        },
+      ),
+    [
+      entries,
+      launchProviderSetupPlan.providerInput.storageProviderConfigured,
+      launchProviderSetupPlan.providerInput.storageProviderEvidence,
+      state.adventureMemories,
+      state.records,
+      state.reportArtifacts,
     ],
   );
+  const launchSupportPlan = useMemo(
+    () => deriveSupportRunbookPlan(state.launchSupportProfile),
+    [state.launchSupportProfile],
+  );
+  const supportRunbookOwnerReviewed =
+    state.launchSupportProfile.providerStatus === "owner-reviewed" && launchSupportPlan.supportRunbookApproved;
+  const privacyLegalOwnerReviewed =
+    state.launchSupportProfile.providerStatus === "owner-reviewed" && launchSupportPlan.privacyLegalApproved;
+  const supportRunbookApproved =
+    state.launchSupportProfile.providerStatus === "provider-approved" && launchSupportPlan.supportRunbookApproved;
+  const privacyLegalApproved =
+    state.launchSupportProfile.providerStatus === "provider-approved" && launchSupportPlan.privacyLegalApproved;
+  const supportRunbookProofReady = supportRunbookApproved;
+  const privacyLegalProofReady = privacyLegalApproved;
 
   const syncTone =
     syncDashboard.status === "attention"
@@ -310,8 +541,9 @@ export default function MoreScreen() {
       : syncDashboard.status === "syncing" || syncDashboard.status === "loading"
         ? colors.primary
         : colors.sage;
-  const syncIcon: keyof typeof Ionicons.glyphMap =
-    syncDashboard.status === "attention"
+  const syncIcon: keyof typeof Ionicons.glyphMap = !isClerkConfigured
+    ? "phone-portrait-outline"
+    : syncDashboard.status === "attention"
       ? "cloud-offline-outline"
       : syncDashboard.status === "syncing" || syncDashboard.status === "loading"
         ? "cloud-upload-outline"
@@ -349,28 +581,26 @@ export default function MoreScreen() {
       }),
     [household, members, caregivers, routines],
   );
-  const householdChoices = useMemo(
+  const accessPassPlan = useMemo(
     () =>
-      households
-        .filter((choice) => choice.id && choice.name)
-        .map((choice) => ({
-          ...choice,
-          isActive: choice.id === household?.id,
-        })),
-    [households, household?.id],
+      deriveAccessPassPlan({
+        passes: accessPasses,
+        petName,
+        now,
+      }),
+    [accessPasses, petName, now],
   );
-  const roleUpdateTargets = useMemo(
+  const myCareToday = useMemo(
     () =>
-      members
-        .filter((member) => member.id && member.role.toLowerCase() !== "owner")
-        .map((member) => ({
-          member,
-          name: memberDisplayName(member),
-          role: member.role.toLowerCase(),
-        })),
-    [members],
+      deriveMyCareToday({
+        personName: currentHuman,
+        petName,
+        routines,
+        entries,
+        now,
+      }),
+    [currentHuman, petName, routines, entries, now],
   );
-  const auditEvents = householdAudit.data ?? [];
   const responsibilityTone =
     householdResponsibility.status === "needs-care"
       ? colors.rose
@@ -394,7 +624,75 @@ export default function MoreScreen() {
 
   const energyDots = Math.round(((status.energy - 35) / (96 - 35)) * 4) + 1;
 
-  const topScrollPadding = getRouteTopPadding(insets.top, "tabbed", Platform.OS === "web");
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
+  });
+  const bottomPadding = getTabbedRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
+
+  /**
+   * Anchored deep-links: `/more?section=household|access|care-pass|diet|career`
+   * scrolls the matching board into view, so arrivals from Pack, Home, or
+   * Story land on the section itself instead of the top of this very long
+   * page. Each anchor is a zero-height View that reports its y-offset inside
+   * the scroll content (the health.tsx scrollRef pattern); if the target has
+   * not laid out yet on a cold mount, the scroll settles when it does.
+   */
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionAnchorYRef = useRef<Record<string, number>>({});
+  const pendingAnchorRef = useRef<string | null>(null);
+
+  const scrollToAnchor = useCallback(
+    (key: string): boolean => {
+      const anchorY = sectionAnchorYRef.current[key];
+      if (anchorY == null) return false;
+      // Anchors measure against the content wrapper, which starts below the
+      // ScrollView's own top content padding.
+      scrollRef.current?.scrollTo({ y: Math.max(0, topPadding + anchorY - 8), animated: true });
+      return true;
+    },
+    [topPadding],
+  );
+
+  const registerSectionAnchor = useCallback(
+    (key: string) => (event: LayoutChangeEvent) => {
+      sectionAnchorYRef.current[key] = event.nativeEvent.layout.y;
+      if (pendingAnchorRef.current === key) {
+        pendingAnchorRef.current = null;
+        requestAnimationFrame(() => scrollToAnchor(key));
+      }
+    },
+    [scrollToAnchor],
+  );
+
+  const sectionAnchorTarget =
+    sectionParam === "care-pass" || sectionParam === "carepass"
+      ? "care-pass"
+      : sectionParam === "household" ||
+          sectionParam === "access" ||
+          sectionParam === "diet" ||
+          sectionParam === "career"
+        ? sectionParam
+        : null;
+
+  useEffect(() => {
+    if (!sectionAnchorTarget) return;
+    pendingAnchorRef.current = sectionAnchorTarget;
+    const frame = requestAnimationFrame(() => {
+      if (pendingAnchorRef.current === sectionAnchorTarget && scrollToAnchor(sectionAnchorTarget)) {
+        pendingAnchorRef.current = null;
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [sectionAnchorTarget, focusParam, scrollToAnchor]);
+  const modalSheetBottomPadding = getModalSheetBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
 
   const [dietOpen, setDietOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
@@ -404,6 +702,12 @@ export default function MoreScreen() {
   const [nameOpen, setNameOpen] = useState(false);
   const [nameValue, setNameValue] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [petRosterOpen, setPetRosterOpen] = useState(false);
+  const [petRosterName, setPetRosterName] = useState("");
+  const [petRosterBreed, setPetRosterBreed] = useState("");
+  const [accessPassOpen, setAccessPassOpen] = useState(false);
+  const [accessPassName, setAccessPassName] = useState("");
+  const [accessPassKind, setAccessPassKind] = useState<AccessPassKind>("sitter");
   const [pName, setPName] = useState("");
   const [pBreed, setPBreed] = useState("");
   const [pWeight, setPWeight] = useState("");
@@ -416,6 +720,10 @@ export default function MoreScreen() {
   const [pInsurancePolicy, setPInsurancePolicy] = useState("");
 
   const [dietEditOpen, setDietEditOpen] = useState(false);
+
+  useEffect(() => {
+    if (sectionParam === "diet") setDietOpen(true);
+  }, [sectionParam]);
   const [dPrimaryFood, setDPrimaryFood] = useState("");
   const [dNormalPortion, setDNormalPortion] = useState("");
   const [dMealSchedule, setDMealSchedule] = useState("");
@@ -427,6 +735,46 @@ export default function MoreScreen() {
   const [dAppetiteQuirks, setDAppetiteQuirks] = useState("");
   const [dVetNotes, setDVetNotes] = useState("");
   const [dSupplements, setDSupplements] = useState("");
+  const [savedNativeQaSummary, setSavedNativeQaSummary] =
+    useState<LaunchReadinessNativeQaSummary | null>(null);
+  const [nativeQaCapturePlan, setNativeQaCapturePlan] =
+    useState<MobileLaunchQaCapturePlan>(() => buildMobileLaunchQaCapturePlan(null));
+  const [savedQaProofManifest, setSavedQaProofManifest] =
+    useState<MobileQaSessionProofManifest | null>(null);
+  const [providerSetupOpen, setProviderSetupOpen] = useState(false);
+  const [providerDraft, setProviderDraft] = useState<LaunchProviderProfile>(() =>
+    normalizeLaunchProviderProfile(state.launchProviderProfile),
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let cancelled = false;
+
+      AsyncStorage.getItem(MOBILE_QA_SESSION_STORAGE_KEY)
+        .then((raw) => {
+          if (cancelled) return;
+          const savedSession = parseMobileQaSessionSnapshot(raw);
+          setSavedNativeQaSummary(deriveNativeQaSummaryFromMobileQaSession(savedSession));
+          setNativeQaCapturePlan(buildMobileLaunchQaCapturePlan(savedSession));
+          setSavedQaProofManifest(
+            savedSession
+              ? buildMobileQaSessionProofManifest(buildMobileQaSessionSnapshot(savedSession, savedSession.savedAtIso))
+              : null,
+          );
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setSavedNativeQaSummary(null);
+            setNativeQaCapturePlan(buildMobileLaunchQaCapturePlan(null));
+            setSavedQaProofManifest(null);
+          }
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
 
   const memberColor = (idx: number) => {
     const palette = [colors.primary, colors.copper, colors.sage, colors.amber, colors.rose];
@@ -434,15 +782,87 @@ export default function MoreScreen() {
   };
 
   const refreshMe = () => queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-  const completeSetupHandoff = (intent: SetupHandoffIntent) => setCompletedSetupHandoffIntent(intent);
 
   const shareInvite = () => {
     if (!household) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({
+    void shareTextPayload({
       message: `Join our ${household.name} on WoofWatcher to help care for ${petName}. Invite code: ${household.inviteCode}`,
       title: "WoofWatcher invite",
-    }).catch(() => Alert.alert("Invite code", household.inviteCode));
+    });
+  };
+
+  const openFuturePetSheet = () => {
+    setPetRosterName("");
+    setPetRosterBreed("");
+    setPetRosterOpen(true);
+  };
+
+  const saveFuturePet = () => {
+    const draft = buildCareTwinRosterDraft({
+      name: petRosterName,
+      breed: petRosterBreed,
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    updateCareDoc((doc) => ({
+      ...doc,
+      activePetId: "primary",
+      pets: [
+        ...(doc.pets ?? []),
+        draft,
+      ],
+    }));
+    setPetRosterOpen(false);
+  };
+
+  const openAccessPassSheet = () => {
+    setAccessPassName("");
+    setAccessPassKind("sitter");
+    setAccessPassOpen(true);
+  };
+
+  const saveAccessPassDraft = () => {
+    const draft = buildAccessPassDraft({
+      holderName: accessPassName,
+      kind: accessPassKind,
+      petName,
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    updateCareDoc((doc) => ({
+      ...doc,
+      accessPasses: [
+        ...(doc.accessPasses ?? []),
+        draft,
+      ],
+    }));
+    setAccessPassOpen(false);
+  };
+
+  const shareAccessPassSummary = () => {
+    const pass = accessPassPlan.passes[0];
+    if (!pass) {
+      notifyDialog("Access Pass", "Create a local Access Pass draft before sharing helper instructions.");
+      return;
+    }
+    const message = [
+      `WoofWatcher Access Pass draft for ${pass.petName}`,
+      "",
+      `Helper: ${pass.holderName}`,
+      `Role: ${pass.role}`,
+      `Status: ${pass.status}`,
+      `Time: ${pass.timeLabel}`,
+      "",
+      "Allowed:",
+      ...pass.permissions.map((permission) => `- ${permission}`),
+      "",
+      "Not allowed:",
+      ...pass.blockedPermissions.map((permission) => `- ${permission}`),
+      "",
+      accessPassPlan.permissionBoundary,
+      "Provider-backed sharing is not live yet; review this before granting real access.",
+    ].join("\n");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void shareTextPayload({ message, title: `WoofWatcher Access Pass - ${pass.holderName}` });
   };
 
   const submitJoin = () => {
@@ -451,58 +871,14 @@ export default function MoreScreen() {
     joinHousehold.mutate(
       { data: { inviteCode: code } },
       {
-        onSuccess: (joinedMe) => {
-          const joinedPackName = joinedMe.household?.name?.trim() || "The joined pack";
+        onSuccess: () => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           setJoinOpen(false);
           setJoinCode("");
-          Alert.alert(
-            "Pack joined",
-            `${joinedPackName} is now the active care sync pack. More keeps switching, Household Access, and Sync Health here while provider-backed invite approval is still gated.`,
-          );
           refreshMe();
           refresh();
         },
-        onError: () => Alert.alert("Couldn't join", "That invite code didn't match a household."),
-      },
-    );
-  };
-
-  const switchHousehold = (householdId: string) => {
-    if (!householdId || householdId === household?.id || setActiveHousehold.isPending) return;
-    setActiveHousehold.mutate(
-      { data: { householdId } },
-      {
-        onSuccess: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          refreshMe();
-          refresh();
-        },
-        onError: () =>
-          Alert.alert(
-            "Couldn't switch household",
-            "WoofWatcher only switches to packs where your account is already a member.",
-          ),
-      },
-    );
-  };
-
-  const updateMemberRole = (target: (typeof roleUpdateTargets)[number], role: UpdateHouseholdMemberBody["role"]) => {
-    if (!target.member.id || target.role === role || updateHouseholdMember.isPending) return;
-    updateHouseholdMember.mutate(
-      { memberId: target.member.id, data: { role } },
-      {
-        onSuccess: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Alert.alert("Role update saved", `${target.name}'s pack role is now ${formatHouseholdRoleLabel(role)}.`);
-          refreshMe();
-          householdAudit.refetch();
-        },
-        onError: () =>
-          Alert.alert(
-            "Couldn't update role",
-            "Only pack owners and admins can update existing caregiver roles.",
-          ),
+        onError: () => notifyDialog("Couldn't join", "That invite code didn't match a household."),
       },
     );
   };
@@ -518,7 +894,7 @@ export default function MoreScreen() {
           setRenameOpen(false);
           refreshMe();
         },
-        onError: () => Alert.alert("Couldn't rename", "Please try again."),
+        onError: () => notifyDialog("Couldn't rename", "Please try again."),
       },
     );
   };
@@ -532,10 +908,9 @@ export default function MoreScreen() {
         onSuccess: () => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           setNameOpen(false);
-          Alert.alert("Name saved", `You'll appear as ${name} in ${activeDisplayNamePack}.`);
           refreshMe();
         },
-        onError: () => Alert.alert("Couldn't update name", "Please try again."),
+        onError: () => notifyDialog("Couldn't update name", "Please try again."),
       },
     );
   };
@@ -619,28 +994,34 @@ export default function MoreScreen() {
   };
 
   const confirmSignOut = () => {
-    Alert.alert("Sign out", "You'll need to sign back in to sync care logs.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign out",
-        style: "destructive",
-        onPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          signOut();
+    confirmThroughSteps(
+      [
+        {
+          title: "Sign out",
+          message:
+            "Care logs stay saved on this device. You'll need to sign back in before future changes can reach the household.",
+          confirmLabel: "Sign out",
+          destructive: true,
         },
+      ],
+      () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        signOut();
       },
-    ]);
+    );
   };
 
   // Mount animation
-  const fade = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(16)).current;
+  const isWebRoutePreview = (Platform.OS as string) === "web";
+  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
+  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
   useEffect(() => {
+    if (isWebRoutePreview) return;
     Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: Platform.OS !== "web" }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: Platform.OS !== "web" }),
+      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
+      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
     ]).start();
-  }, [fade, slide]);
+  }, [fade, isWebRoutePreview, slide]);
 
   const generateCarePass = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -676,9 +1057,7 @@ export default function MoreScreen() {
       `Care boundary: ${profile.vetBoundary}`,
     ].join("\n");
 
-    Share.share({ message: pass, title: `WoofWatcher Care Pass - ${petName}` }).catch(() =>
-      Alert.alert("Care Pass", pass),
-    );
+    void shareTextPayload({ message: pass, title: `WoofWatcher Care Pass - ${petName}` });
   };
 
   const dietItems: { icon: PulseIconName; label: string; value: string }[] = [
@@ -690,6 +1069,24 @@ export default function MoreScreen() {
     { icon: "bone", label: "Treats", value: dietProfile.treatsAllowed },
     { icon: "vomit", label: "Avoid", value: dietProfile.avoid },
   ];
+  const nativeQaPrimaryMission = nativeQaCapturePlan.primaryMission;
+  const nativeQaPrimaryMissionTarget =
+    nativeQaPrimaryMission.target ??
+    nativeQaCapturePlan.nextTargets[0] ??
+    nativeQaCapturePlan.storeScreenshotProofStatus.nextTarget;
+  const routeVisualConsistencyTarget =
+    nativeQaCapturePlan.nextTargets.find((target) => target.surfaceId === "route-visual-consistency") ??
+    ({ surfaceId: "route-visual-consistency" } as Pick<MobileLaunchQaCaptureTarget, "surfaceId">);
+  const routeVisualConsistencyDetail =
+    nativeQaCapturePlan.nextTargets.find((target) => target.surfaceId === "route-visual-consistency")?.missingEvidence[0] ??
+    "Run the six-route design pass before native screenshots.";
+  const careEntryProviderSyncProofTarget = {
+    surfaceId: "care-entry-provider-sync-proof",
+  } as Pick<MobileLaunchQaCaptureTarget, "surfaceId">;
+  const openCareEntryProviderSyncProofMission = () => {
+    Haptics.selectionAsync();
+    router.push(buildCareTwinQaFocusRoute(careEntryProviderSyncProofTarget) as never);
+  };
 
   const links: { icon: PulseIconName; iconName: keyof typeof Ionicons.glyphMap; label: string; sub: string; onPress: () => void }[] = [
     {
@@ -712,16 +1109,20 @@ export default function MoreScreen() {
         router.push("/woofguide");
       },
     },
-    {
-      icon: "star",
-      iconName: "diamond-outline",
-      label: "WoofWatcher Plus",
-      sub: "Preview Plus, Family, and paid-value packaging",
-      onPress: () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push("/premium");
-      },
-    },
+    ...(ownerOps
+      ? [
+          {
+            icon: "star" as PulseIconName,
+            iconName: "diamond-outline" as keyof typeof Ionicons.glyphMap,
+            label: "WoofWatcher Plus",
+            sub: "Preview Plus, Family, and paid-value packaging",
+            onPress: () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/premium");
+            },
+          },
+        ]
+      : []),
     {
       icon: "heart",
       iconName: "shield-checkmark-outline",
@@ -734,6 +1135,16 @@ export default function MoreScreen() {
     },
     {
       icon: "star",
+      iconName: "map-outline",
+      label: "Adventure Mode",
+      sub: "Private quests, quest XP, and memories from real walks and wins",
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.push("/adventure" as never);
+      },
+    },
+    {
+      icon: "star",
       iconName: "color-palette",
       label: "Avatar Studio",
       sub: "Create a scan-assisted pixel care twin",
@@ -742,6 +1153,20 @@ export default function MoreScreen() {
         router.push("/portrait");
       },
     },
+    ...(ownerOps
+      ? [
+          {
+            icon: "star" as PulseIconName,
+            iconName: "phone-portrait-outline" as keyof typeof Ionicons.glyphMap,
+            label: "Care Twin QA",
+            sub: "Internal device review for Phoenix room states and sprite loops",
+            onPress: () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+            },
+          },
+        ]
+      : []),
     {
       icon: "paw",
       iconName: "card",
@@ -751,58 +1176,621 @@ export default function MoreScreen() {
     },
   ];
 
-  const launchReadiness: {
-    iconName: keyof typeof Ionicons.glyphMap;
-    label: string;
-    value: string;
-    tone: string;
-    onPress?: () => void;
-  }[] = [
+  const launchReadinessPlan = useMemo(
+    () =>
+      deriveLaunchReadiness({
+        nativeQa: savedNativeQaSummary,
+        local: {
+          careWorkflowsReady: true,
+          easProfilesReady: true,
+          pixelAssetsReady: true,
+          privacyExportReady: true,
+        },
+        provider: {
+          authConfigured: Boolean(launchProviderSetupPlan.providerInput.authConfigured),
+          authProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.authProviderProofReady),
+          databaseConfigured: Boolean(launchProviderSetupPlan.providerInput.databaseConfigured),
+          databaseProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.databaseProviderProofReady),
+          storageProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.storageProviderConfigured),
+          storageProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.storageProviderProofReady),
+          storageQueue: attachmentManifest.launchQueue,
+          aiProviderConfigured: Boolean(launchProviderSetupPlan.providerInput.aiProviderConfigured),
+          aiProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.aiProviderProofReady),
+          paymentsEnabled: Boolean(launchProviderSetupPlan.providerInput.paymentsEnabled),
+          paymentsProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.paymentsProviderProofReady),
+          accountDeletionEnabled: Boolean(launchProviderSetupPlan.providerInput.accountDeletionEnabled),
+          accountDeletionProofReady: Boolean(launchProviderSetupPlan.providerInput.accountDeletionProofReady),
+          pushNotificationsConfigured: Boolean(launchProviderSetupPlan.providerInput.pushNotificationsConfigured),
+          pushNotificationsProofReady: Boolean(launchProviderSetupPlan.providerInput.pushNotificationsProofReady),
+          appStoreAccountsReady: Boolean(launchProviderSetupPlan.providerInput.appStoreAccountsReady),
+          storeAccountsProofReady: Boolean(launchProviderSetupPlan.providerInput.storeAccountsProofReady),
+          privacyLegalApproved,
+          privacyLegalOwnerReviewed,
+          privacyLegalProofReady,
+          supportRunbookApproved,
+          supportRunbookOwnerReviewed,
+          supportRunbookProofReady,
+        },
+        syncStatus: syncDashboard.status,
+      }),
+    [
+      attachmentManifest.launchQueue,
+      launchProviderSetupPlan.providerInput,
+      privacyLegalOwnerReviewed,
+      privacyLegalApproved,
+      privacyLegalProofReady,
+      savedNativeQaSummary,
+      supportRunbookApproved,
+      supportRunbookOwnerReviewed,
+      supportRunbookProofReady,
+      syncDashboard.status,
+    ],
+  );
+  const launchReadiness = launchReadinessPlan.tiles.map((tile) => ({
+    ...tile,
+    iconName: launchTileIcon(tile.key, syncIcon),
+    tone: launchStatusTone(tile.status, colors),
+    onPress:
+      tile.key === "native-qa"
+        ? () => router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never)
+        : tile.key === "storage" || tile.key === "store-approval"
+          ? () => router.push("/privacy")
+          : tile.key === "woofguide-ai"
+            ? () => router.push("/woofguide")
+            : tile.key === "plus-payments"
+              ? () => router.push("/premium")
+              : tile.status === "review"
+                ? () => refresh()
+                : undefined,
+  }));
+  const readinessBadgeTone = launchBadgeTone(launchReadinessPlan.status, colors);
+  const launchNextGateIconName = launchNextGateIcon(launchReadinessPlan.nextGate.action);
+  const launchReleasePacket = useMemo(
+    () =>
+      buildReleasePacket(launchReadinessPlan, {
+        appName: "WoofWatcher",
+        buildName: "premium mobile candidate",
+        generatedAtIso: new Date(now).toISOString(),
+      }),
+    [launchReadinessPlan, now],
+  );
+  const launchStoreSubmissionPacket = useMemo(
+    () => buildStoreSubmissionPacket(launchReleasePacket),
+    [launchReleasePacket],
+  );
+  const storeSubmissionTone = launchStoreSubmissionPacket.submissionReady ? colors.sage : colors.amber;
+  const betaShipTone =
+    launchReleasePacket.betaShipStatus === "ready"
+      ? colors.sage
+      : launchReleasePacket.betaShipStatus === "qa-first"
+        ? colors.amber
+        : colors.rose;
+  const providerSetupTone =
+    launchProviderSetupPlan.status === "provider-approved"
+      ? colors.sage
+      : launchProviderSetupPlan.status === "owner-reviewed"
+        ? colors.copper
+        : colors.rose;
+  const providerSetupVisibleRows = useMemo(() => {
+    const openRows = launchProviderSetupPlan.rows.filter((row) => row.status !== "ready");
+    return (openRows.length ? openRows : launchProviderSetupPlan.rows).slice(0, 4);
+  }, [launchProviderSetupPlan.rows]);
+
+  const openProviderSetup = () => {
+    setProviderDraft(normalizeLaunchProviderProfile(state.launchProviderProfile));
+    setProviderSetupOpen(true);
+  };
+
+  const toggleProviderDraft = (key: LaunchProviderFlagKey) => {
+    Haptics.selectionAsync();
+    setProviderDraft((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const saveProviderSetup = () => {
+    const reviewedAt = new Date(now).toISOString();
+    const normalized = normalizeLaunchProviderProfile(providerDraft);
+    const allProviderGatesReady = PROVIDER_SETUP_FIELDS.every(
+      (field) => normalized[field.key] && normalized[field.proofKey],
+    );
+    const providerStatus =
+      normalized.providerStatus === "provider-approved" && !allProviderGatesReady
+        ? "owner-reviewed"
+        : normalized.providerStatus;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    updateCareDoc((doc) => ({
+      ...doc,
+      launchProviderProfile: {
+        ...normalized,
+        ownerReviewedAt: reviewedAt,
+        providerStatus,
+      },
+    }));
+    setProviderSetupOpen(false);
+  };
+
+  const shareProviderSetupPlan = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void shareTextPayload({
+      message: buildLaunchProviderSetupShareText(launchProviderSetupPlan, new Date(now).toISOString()),
+      title: launchProviderSetupPlan.title,
+    });
+  };
+
+  const shareLaunchPacket = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void shareTextPayload({ message: buildReleasePacketShareText(launchReleasePacket), title: launchReleasePacket.title });
+  };
+
+  const shareBetaHandoffPacket = () => {
+    const generatedAtIso = new Date(now).toISOString();
+    const message = buildBetaHandoffPacketShareText(launchReleasePacket, nativeQaCapturePlan, {
+      generatedAtIso,
+      ciProof: RECORDED_MOBILE_BETA_CI_PROOF,
+      livePreviewProof: RECORDED_LIVE_PREVIEW_HANDOFF_PROOF,
+      providerSetupPlan: launchProviderSetupPlan,
+      proofManifest: savedQaProofManifest,
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void shareTextPayload({ message, title: "WoofWatcher 48-Hour Beta Handoff" });
+  };
+
+  const shareStoreSubmissionPacket = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void shareTextPayload({ message: buildStoreSubmissionPacketShareText(launchStoreSubmissionPacket), title: launchStoreSubmissionPacket.title });
+  };
+
+  const shareNativeQaCapturePlan = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void shareTextPayload({
+      message: buildMobileLaunchQaCaptureShareText(nativeQaCapturePlan, new Date(now).toISOString()),
+      title: "WoofWatcher Native QA Plan",
+    });
+  };
+
+  const shareNativeQaFixBrief = () => {
+    const message = buildMobileLaunchQaFixBriefShareText(nativeQaCapturePlan, new Date(now).toISOString());
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void shareTextPayload({
+      message,
+      title: "WoofWatcher Needs Tune Fix Brief",
+    });
+  };
+
+  const openLaunchNextGate = () => {
+    switch (launchReadinessPlan.nextGate.action) {
+      case "open-native-qa":
+        Haptics.selectionAsync();
+        router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+        return;
+      case "share-native-qa-fix-brief":
+        shareNativeQaFixBrief();
+        return;
+      case "open-provider-setup":
+        Haptics.selectionAsync();
+        openProviderSetup();
+        return;
+      case "open-privacy":
+        Haptics.selectionAsync();
+        router.push("/privacy" as never);
+        return;
+      case "open-premium":
+        Haptics.selectionAsync();
+        router.push("/premium" as never);
+        return;
+      case "open-woofguide":
+        Haptics.selectionAsync();
+        router.push("/woofguide" as never);
+        return;
+      case "open-avatar-studio":
+        Haptics.selectionAsync();
+        router.push("/portrait" as never);
+        return;
+      case "share-beta-handoff":
+        shareBetaHandoffPacket();
+        return;
+      case "share-store-packet":
+        shareStoreSubmissionPacket();
+        return;
+      case "share-launch-packet":
+        shareLaunchPacket();
+        return;
+    }
+  };
+
+  const nativeQaCaptureNeedsTuneTarget = nativeQaCapturePlan.firstNeedsTuneTarget;
+  const ownerPreviewProofStatus = nativeQaCapturePlan.ownerPreviewProofStatus;
+  const storeScreenshotProofStatus = nativeQaCapturePlan.storeScreenshotProofStatus;
+  const ownerPreviewProofHasPending = ownerPreviewProofStatus.statusLabel === "Pass pending proof";
+  const ownerPreviewProofSummary =
+    ownerPreviewProofStatus.missingEvidence[0] ?? "Owner preview proof is complete for the saved QA session.";
+  const storeScreenshotProofHasPending = storeScreenshotProofStatus.statusLabel !== "Store proof complete";
+  const storeScreenshotProofSummary =
+    storeScreenshotProofStatus.missingEvidence[0] ?? "Store screenshot proof is complete for the saved QA session.";
+  const nativeQaCaptureHasProofPending = nativeQaCapturePlan.nextTargets.some(
+    (target) => mobileLaunchQaCaptureTargetStatusLabel(target) === "Pass pending proof",
+  ) || ownerPreviewProofHasPending || storeScreenshotProofStatus.statusLabel === "Pass pending proof";
+  const nativeQaCaptureCockpitActionLabel = nativeQaCaptureHasProofPending ? "Finish Proof" : "Open QA Cockpit";
+  const moreCommandOpenGates = launchReadinessPlan.tiles.filter((tile) => tile.status !== "ready").length;
+  const moreCommandProviderOpen = launchProviderSetupPlan.rows.filter((row) => row.status !== "ready").length;
+  const moreCommandSignal = Math.max(1, Math.min(5, Math.round(launchReleasePacket.readinessScore / 20)));
+  const moreCommandStatusLabel =
+    launchReadinessPlan.status === "store-ready"
+      ? "Store Ready"
+      : launchReadinessPlan.status === "approval-required"
+        ? "Owner Review"
+        : launchReadinessPlan.status === "provider-gated"
+          ? "Provider Gates"
+          : "QA First";
+  const moreCommandSpeech =
+    launchReleasePacket.betaShipStatus === "ready"
+      ? "Beta packet is ready. Review, then share."
+      : launchReleasePacket.betaShipStatus === "qa-first"
+        ? "Capture native QA proof before launch."
+        : launchReadinessPlan.nextGate.detail;
+  const moreCommandHud = [
     {
-      iconName: "phone-portrait-outline",
-      label: "iOS + Android",
-      value: "Expo/EAS profiles ready",
-      tone: colors.sage,
+      label: "Launch",
+      value: `${launchReleasePacket.readinessScore}%`,
+      tone: betaShipTone,
     },
     {
-      iconName: "shield-checkmark-outline",
-      label: "Safety Gates",
-      value: "Privacy review open",
-      tone: colors.amber,
-      onPress: () => router.push("/privacy"),
+      label: "QA",
+      value: `${nativeQaCapturePlan.completeSurfaces}/${nativeQaCapturePlan.totalSurfaces}`,
+      tone: nativeQaCapturePlan.openSurfaces === 0 ? colors.sage : colors.amber,
     },
     {
-      iconName: syncIcon,
-      label: "Care Sync",
-      value: syncDashboard.status === "attention" ? "Needs review" : syncDashboard.title,
+      label: "Sync",
+      value: syncDashboard.status === "healthy" ? "Current" : syncDashboard.actionLabel,
       tone: syncTone,
     },
     {
-      iconName: "diamond-outline",
-      label: "Plus",
-      value: "Checkout gated",
-      tone: colors.copper,
-      onPress: () => router.push("/premium"),
+      label: "Roster",
+      value: `${careTwinRoster.liveCount}/${careTwinRoster.pets.length}`,
+      tone: careTwinRoster.providerGatedCount > 0 ? colors.amber : colors.sage,
     },
   ];
 
-  const H_PAD = 20;
+  const openCareIntelligenceNextAction = () => {
+    Haptics.selectionAsync();
+    if (careIntelligence.nextAction.kind === "retry-sync") {
+      refresh();
+      return;
+    }
+    if (careIntelligence.nextAction.targetEntryId) {
+      router.push(`/log?entry=${encodeURIComponent(careIntelligence.nextAction.targetEntryId)}` as never);
+      return;
+    }
+    if (careIntelligence.nextAction.kind === "handle-routine" || careIntelligence.nextAction.targetRoutineId) {
+      router.push("/calendar");
+      return;
+    }
+    if (careIntelligence.nextAction.kind === "update-meal-outcome") {
+      router.push(`/log?type=meal&detail=1&intent=${Date.now()}` as never);
+      return;
+    }
+    router.push("/log");
+  };
+
+  const moreDirectoryItems: MoreDirectoryItem[] = [
+    {
+      id: "care-today",
+      iconName: "sparkles-outline",
+      eyebrow: "Care today",
+      label: careIntelligence.nextAction.label,
+      detail: careIntelligence.subtitle,
+      actionLabel: "Open",
+      tone: intelligenceTone,
+      onPress: openCareIntelligenceNextAction,
+    },
+    {
+      id: "household",
+      iconName: "people-outline",
+      eyebrow: "Household",
+      label: householdResponsibility.title,
+      detail: householdResponsibility.nextStep,
+      actionLabel: "Review",
+      tone: responsibilityTone,
+      onPress: () => {
+        Haptics.selectionAsync();
+        // Already on More, so jump straight to the Care Team board; the push
+        // keeps the section param (and household-focus banner) in sync.
+        scrollToAnchor("household");
+        router.push("/more?section=household" as never);
+      },
+    },
+    {
+      id: "records-passes",
+      iconName: "folder-open-outline",
+      eyebrow: "Records & passes",
+      label: "Care vault",
+      detail: "Records, reports, Care Pass, and export-ready handoffs.",
+      actionLabel: "Open",
+      tone: colors.primary,
+      onPress: () => {
+        Haptics.selectionAsync();
+        router.push("/records" as never);
+      },
+    },
+    ...(ownerOps
+      ? [
+          {
+            id: "design-qa",
+            iconName: "color-palette-outline" as const,
+            eyebrow: "Design QA",
+            label: "Route polish pass",
+            detail: routeVisualConsistencyDetail,
+            actionLabel: "Review",
+            tone: colors.copper,
+            onPress: () => {
+              Haptics.selectionAsync();
+              router.push(buildCareTwinQaFocusRoute(routeVisualConsistencyTarget) as never);
+            },
+          },
+          {
+            id: "launch-qa",
+            iconName: "phone-portrait-outline" as const,
+            eyebrow: "Launch QA",
+            label: nativeQaPrimaryMission.label,
+            detail: nativeQaPrimaryMission.detail,
+            actionLabel: nativeQaCaptureCockpitActionLabel,
+            tone: betaShipTone,
+            onPress: () => {
+              Haptics.selectionAsync();
+              router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+            },
+          },
+        ]
+      : []),
+  ];
+
+  const H_PAD = 16;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
+        ref={scrollRef}
         style={s.container}
-        contentContainerStyle={{ paddingTop: topScrollPadding, paddingBottom: bottomScrollPadding, paddingHorizontal: H_PAD }}
+        contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           <BoardRouteHeader
             kicker="WOOFWATCHER"
             title="More"
-            subtitle={`Profile, household, launch gates, and every care tool for ${petName}`}
+            subtitle={`${petName}'s care tools, records, household, and settings.`}
             centered
             plain
+            style={s.moreRouteHeader}
           />
+
+          {ownerOps ? (
+          <BoardCard padded={false} style={s.moreCommandStageCard}>
+            <ImageBackground
+              source={MORE_COMMAND_STAGE_ROOM}
+              resizeMode="cover"
+              imageStyle={[stageImageFill, s.moreCommandStageImage, pixelImageStyle]}
+              style={s.moreCommandStage}
+              testID="more-launch-command-pixel-stage"
+            >
+              <View style={s.moreCommandStageShade} />
+              <View style={s.moreCommandStageTop}>
+                <View style={s.moreCommandBubble}>
+                  <Text style={[s.moreCommandKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                    Launch Command Hub
+                  </Text>
+                  <Text
+                    numberOfLines={3}
+                    style={[s.moreCommandSpeech, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
+                  >
+                    {moreCommandSpeech}
+                  </Text>
+                  <View style={s.moreCommandBubbleTail} />
+                </View>
+                <View style={[s.moreCommandChip, { backgroundColor: colors.brandNavy + "E8", borderColor: colors.ivory + "55" }]}>
+                  <Ionicons name="rocket-outline" size={15} color={readinessBadgeTone} />
+                  <Text style={[s.moreCommandChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                    {moreCommandStatusLabel}
+                  </Text>
+                </View>
+              </View>
+
+              <View pointerEvents="none" style={s.moreCommandSprite}>
+                <View style={s.moreCommandSpriteShadow} />
+                <SpriteSheetPlayer
+                  asset={MORE_COMMAND_STAGE_SPRITE}
+                  track={MORE_COMMAND_STAGE_TRACK}
+                  width={112}
+                  height={112}
+                  testID="more-launch-command-pixel-sprite"
+                />
+              </View>
+
+              <View style={[s.moreCommandHud, { backgroundColor: colors.brandNavy + "DF", borderColor: colors.ivory + "44" }]}>
+                {moreCommandHud.map((metric) => (
+                  <View key={metric.label} style={s.moreCommandHudCell}>
+                    <Text style={[s.moreCommandHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>
+                      {metric.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      style={[s.moreCommandHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}
+                    >
+                      {metric.value}
+                    </Text>
+                    <View style={s.moreCommandSignalRow}>
+                      {[0, 1, 2, 3, 4].map((bar) => (
+                        <View
+                          key={bar}
+                          style={[
+                            s.moreCommandSignalBar,
+                            {
+                              height: 5 + bar * 2,
+                              backgroundColor: bar < moreCommandSignal ? metric.tone : colors.ivory + "2F",
+                            },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <View style={s.moreCommandFooter}>
+                <View style={[s.moreCommandMission, { backgroundColor: colors.ivory + "E8", borderColor: colors.ivory + "AA" }]}>
+                  <Text style={[s.moreCommandMissionLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                    Open gates
+                  </Text>
+                  <Text style={[s.moreCommandMissionValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>
+                    {moreCommandOpenGates} launch / {moreCommandProviderOpen} provider
+                  </Text>
+                </View>
+                {ownerOps ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      launchReleasePacket.betaShipStatus === "qa-first"
+                        ? "Open native QA cockpit from launch command hub"
+                        : "Share WoofWatcher beta handoff packet from launch command hub"
+                    }
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      if (launchReleasePacket.betaShipStatus === "qa-first") {
+                        router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+                        return;
+                      }
+                      shareBetaHandoffPacket();
+                    }}
+                    style={({ pressed }) => [
+                      s.moreCommandAction,
+                      {
+                        backgroundColor: launchReleasePacket.betaShipStatus === "qa-first" ? colors.amber : colors.sage,
+                        opacity: pressed ? 0.82 : 1,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
+                      size={15}
+                      color={colors.ivory}
+                    />
+                    <Text
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      style={[s.moreCommandActionText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}
+                    >
+                      {launchReleasePacket.betaShipStatus === "qa-first" ? "QA Cockpit" : "Beta Packet"}
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </ImageBackground>
+          </BoardCard>
+          ) : null}
+
+          <View collapsable={false} onLayout={registerSectionAnchor("career")} />
+          <BoardCard style={s.moreDirectoryCard}>
+            <BoardSectionHeader
+              title="Career & Stats"
+              accessory={
+                <BoardPill
+                  label={`Lv ${moreCareCareer.level} ${moreCareCareer.title}`}
+                  tone={colors.amber}
+                />
+              }
+            />
+            <View style={{ gap: 8 }}>
+              <BoardMetricTile
+                icon="note"
+                label="Logs this week"
+                value={String(moreCareerWeek.logsThisWeek)}
+                detail={`${moreCareCareer.levelXp.toLocaleString()} / ${moreCareCareer.levelSpanXp.toLocaleString()} XP toward Lv ${moreCareCareer.level + 1}`}
+                tone={colors.sage}
+              />
+              <BoardMetricTile
+                icon="clock"
+                label="Active days"
+                value={`${moreCareerWeek.activeDays}/7`}
+                detail="Days with at least one real care log this week"
+                tone={colors.blueSignal}
+              />
+              <BoardMetricTile
+                icon="energy"
+                label="Care streak"
+                value={
+                  moreCareStreak > 0
+                    ? `${moreCareStreak} day${moreCareStreak === 1 ? "" : "s"}`
+                    : "Start today"
+                }
+                detail="Consecutive days of logged care"
+                tone={colors.amber}
+              />
+            </View>
+          </BoardCard>
+
+          <BoardCard style={s.moreDirectoryCard}>
+            <BoardSectionHeader
+              title="Command Directory"
+              accessory={<BoardPill label={`${moreDirectoryItems.length} hubs`} tone={colors.copper} />}
+            />
+            <View style={s.moreDirectoryList}>
+              {moreDirectoryItems.map((item, index) => (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.eyebrow}: ${item.label}. ${item.detail}`}
+                  onPress={item.onPress}
+                  style={({ pressed }) => [
+                    s.moreDirectoryRow,
+                    index < moreDirectoryItems.length - 1 && {
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                    },
+                    {
+                      opacity: pressed ? 0.72 : 1,
+                    },
+                  ]}
+                >
+                  <View style={[s.moreDirectoryIcon, { backgroundColor: item.tone + "18" }]}>
+                    <Ionicons name={item.iconName} size={19} color={item.tone} />
+                  </View>
+                  <View style={s.moreDirectoryCopy}>
+                    <Text style={[s.moreDirectoryEyebrow, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                      {item.eyebrow}
+                    </Text>
+                    <Text numberOfLines={1} style={[s.moreDirectoryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                      {item.label}
+                    </Text>
+                    <Text numberOfLines={2} style={[s.moreDirectoryDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      {item.detail}
+                    </Text>
+                  </View>
+                  <View style={[s.moreDirectoryAction, { borderColor: item.tone + "35", backgroundColor: item.tone + "10" }]}>
+                    <Text
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      style={[s.moreDirectoryActionText, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}
+                    >
+                      {item.actionLabel}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={14} color={item.tone} />
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </BoardCard>
+
+          {householdFocus && (
+            <BoardCard style={[s.moreBoardCard, { borderColor: colors.sage + "66", backgroundColor: colors.sage + "10" }]}>
+              <BoardSectionHeader
+                title="Household focus"
+                accessory={<BoardPill label="Presence route" tone={colors.sage} />}
+              />
+              <Text style={[s.responsibilitySummary, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                Review Care Team, Household Access, and Household Pulse below for who is with {petName}, what is open, and who can help next.
+              </Text>
+            </BoardCard>
+          )}
 
           {/* Profile header card */}
           <View style={[s.profileCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
@@ -884,6 +1872,117 @@ export default function MoreScreen() {
             </View>
           </View>
 
+          <BoardCard style={s.moreBoardCard}>
+            <BoardSectionHeader
+              title="CareTwin Roster"
+              accessory={
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    openFuturePetSheet();
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add future dog to CareTwin roster"
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                >
+                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Add future dog</Text>
+                </Pressable>
+              }
+            />
+            <View style={[s.rosterSummary, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View style={[s.rosterSummaryIcon, { backgroundColor: colors.primary + "16" }]}>
+                <Ionicons name="paw-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.rosterSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {careTwinRoster.summary}
+                </Text>
+                <Text style={[s.rosterSummaryText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {careTwinRoster.nextStep}
+                </Text>
+              </View>
+            </View>
+            <View style={s.rosterMetrics}>
+              {[
+                { label: "Live", value: careTwinRoster.liveCount, tone: colors.sage },
+                { label: "Future", value: careTwinRoster.futureCount, tone: colors.copper },
+                { label: "Locked", value: careTwinRoster.providerGatedCount, tone: colors.amber },
+              ].map((metric) => (
+                <View key={metric.label} style={[s.rosterMetric, { backgroundColor: metric.tone + "12", borderColor: metric.tone + "26" }]}>
+                  <Text style={[s.rosterMetricValue, { color: metric.tone, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
+                  <Text style={[s.rosterMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{metric.label}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={[s.rosterList, { borderTopColor: colors.border }]}>
+              {careTwinRoster.pets.map((pet, index) => {
+                const rowBorder =
+                  index < careTwinRoster.pets.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border };
+                const rowContent = (
+                  <>
+                    <View style={[s.rosterAvatar, { backgroundColor: pet.isActive ? colors.primary + "18" : colors.background, borderColor: pet.isActive ? colors.primary + "33" : colors.border }]}>
+                      <Text style={[s.rosterAvatarText, { color: pet.isActive ? colors.primary : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                        {pet.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <View style={s.rosterNameLine}>
+                        <Text style={[s.rosterName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{pet.name}</Text>
+                        <View style={[s.rosterBadge, { backgroundColor: pet.isActive ? colors.sage + "18" : colors.amber + "18" }]}>
+                          <Text style={[s.rosterBadgeText, { color: pet.isActive ? colors.sage : colors.amber, fontFamily: "Inter_700Bold" }]}>
+                            {pet.statusLabel}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={[s.rosterMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {pet.breed} - {pet.weightLabel}
+                      </Text>
+                      <Text style={[s.rosterDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {pet.detail}
+                      </Text>
+                    </View>
+                    <Ionicons name={pet.canSwitch ? "checkmark-circle-outline" : "lock-closed-outline"} size={19} color={pet.canSwitch ? colors.sage : colors.amber} />
+                  </>
+                );
+                // The live care twin row is informational: no tap action, so no
+                // button semantics for screen readers to announce. Staged slots
+                // stay pressable to explain the provider gate.
+                if (pet.canSwitch) {
+                  return (
+                    <View
+                      key={pet.id}
+                      accessibilityLabel={`${pet.name}. ${pet.statusLabel}. ${pet.detail}`}
+                      style={[s.rosterRow, rowBorder]}
+                    >
+                      {rowContent}
+                    </View>
+                  );
+                }
+                return (
+                  <Pressable
+                    key={pet.id}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      notifyDialog(
+                        "Multi-dog switching is coming soon",
+                        "This dog is saved as a planned slot. Separate logs, routines, records, and reports aren't ready yet - for now everything stays with your current dog on this device.",
+                      );
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${pet.name}. ${pet.statusLabel}. ${pet.detail}`}
+                    style={({ pressed }) => [
+                      s.rosterRow,
+                      rowBorder,
+                      { opacity: pressed ? 0.72 : 1 },
+                    ]}
+                  >
+                    {rowContent}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </BoardCard>
+
           <BoardCard style={[s.moreBoardCard, { borderColor: intelligenceTone + "44" }]}>
             <BoardSectionHeader
               title="Care Intelligence"
@@ -934,16 +2033,7 @@ export default function MoreScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Care Intelligence next action: ${careIntelligence.nextAction.label}`}
-              onPress={() => {
-                Haptics.selectionAsync();
-                if (careIntelligence.nextAction.kind === "retry-sync") {
-                  refresh();
-                } else if (careIntelligence.nextAction.kind === "handle-routine") {
-                  router.push("/calendar");
-                } else {
-                  router.push("/log");
-                }
-              }}
+              onPress={openCareIntelligenceNextAction}
               style={({ pressed }) => [
                 s.intelligenceAction,
                 { backgroundColor: intelligenceTone, opacity: pressed ? 0.82 : 1 },
@@ -956,13 +2046,15 @@ export default function MoreScreen() {
             </Pressable>
           </BoardCard>
 
+          {ownerOps ? (
+            <>
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader
               title="Launch Readiness"
               accessory={
-                <View style={[s.launchBadge, { backgroundColor: colors.sage + "18" }]}>
-                  <Text style={[s.launchBadgeText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                    INTERNAL PREVIEW
+                <View style={[s.launchBadge, { backgroundColor: readinessBadgeTone + "18" }]}>
+                  <Text style={[s.launchBadgeText, { color: readinessBadgeTone, fontFamily: "Inter_700Bold" }]}>
+                    {launchReadinessPlan.badgeLabel}
                   </Text>
                 </View>
               }
@@ -991,7 +2083,7 @@ export default function MoreScreen() {
                         item.onPress?.();
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={`${item.label}. ${item.value}`}
+                      accessibilityLabel={`${item.label}. ${item.value}. ${item.detail}`}
                       style={({ pressed }) => [
                         s.launchTile,
                         { backgroundColor: colors.background, borderColor: colors.border, opacity: pressed ? 0.72 : 1 },
@@ -1008,12 +2100,720 @@ export default function MoreScreen() {
                 );
               })}
             </View>
-            <View style={[s.launchNotice, { backgroundColor: colors.amber + "12", borderColor: colors.amber + "33" }]}>
-              <Ionicons name="lock-closed-outline" size={15} color={colors.amber} />
+            <View style={[s.launchNotice, { backgroundColor: readinessBadgeTone + "12", borderColor: readinessBadgeTone + "33" }]}>
+              <Ionicons name="lock-closed-outline" size={15} color={readinessBadgeTone} />
               <Text style={[s.launchNoticeText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                Store submission waits on Apple, Google, Expo, privacy/legal, and Apollo approval. This build is being hardened for internal review first.
+                {launchReadinessPlan.summary} {launchReadinessPlan.nextActions[0] ?? "Prepare the final store packet after Apollo approval."}
               </Text>
             </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Next launch gate: ${launchReadinessPlan.nextGate.label}. ${launchReadinessPlan.nextGate.detail}`}
+              onPress={openLaunchNextGate}
+              style={({ pressed }) => [
+                s.launchNextGate,
+                {
+                  backgroundColor: readinessBadgeTone + "10",
+                  borderColor: readinessBadgeTone + "3D",
+                  opacity: pressed ? 0.78 : 1,
+                },
+              ]}
+            >
+              <View style={[s.launchNextGateIcon, { backgroundColor: readinessBadgeTone + "18" }]}>
+                <Ionicons name={launchNextGateIconName} size={18} color={readinessBadgeTone} />
+              </View>
+              <View style={s.launchNextGateBody}>
+                <Text style={[s.launchNextGateKicker, { color: readinessBadgeTone, fontFamily: "Inter_800ExtraBold" }]}>
+                  Next launch gate
+                </Text>
+                <Text style={[s.launchNextGateTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {launchReadinessPlan.nextGate.label}
+                </Text>
+                <Text style={[s.launchNextGateDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  {launchReadinessPlan.nextGate.detail}
+                </Text>
+                <View style={s.launchNextGateCta}>
+                  <Text style={[s.launchNextGateCtaText, { color: readinessBadgeTone, fontFamily: "Inter_800ExtraBold" }]}>
+                    {launchReadinessPlan.nextGate.ctaLabel}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={15} color={readinessBadgeTone} />
+                </View>
+              </View>
+            </Pressable>
+            <View style={[s.providerSetupPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View style={s.providerSetupHeader}>
+                <View style={[s.providerSetupScore, { backgroundColor: providerSetupTone + "16" }]}>
+                  <Text style={[s.providerSetupScoreValue, { color: providerSetupTone, fontFamily: DISPLAY_SEMI }]}>
+                    {launchProviderSetupPlan.percent}%
+                  </Text>
+                  <Text style={[s.providerSetupScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    providers
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.providerSetupTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                    Provider Launch Setup
+                  </Text>
+                  <Text style={[s.providerSetupSub, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {launchProviderSetupPlan.headline}. {launchProviderSetupPlan.statusLabel}.
+                  </Text>
+                  <Text style={[s.providerSetupCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {launchProviderSetupPlan.summary}
+                  </Text>
+                </View>
+              </View>
+              {launchProviderSetupPlan.nextGate ? (
+                <View
+                  style={[
+                    s.providerNextGate,
+                    {
+                      backgroundColor: providerSetupTone + "10",
+                      borderColor: providerSetupTone + "30",
+                    },
+                  ]}
+                >
+                  <View style={s.providerNextGateHeader}>
+                    <Ionicons name="flag-outline" size={15} color={providerSetupTone} />
+                    <Text style={[s.providerNextGateKicker, { color: providerSetupTone, fontFamily: "Inter_800ExtraBold" }]}>
+                      Next provider gate
+                    </Text>
+                  </View>
+                  <Text style={[s.providerNextGateTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {launchProviderSetupPlan.nextGate.label}
+                  </Text>
+                  <Text style={[s.providerNextGateMeta, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    Owner: {launchProviderSetupPlan.nextGate.owner}
+                  </Text>
+                  <Text style={[s.providerNextGateCopy, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                    {launchProviderSetupPlan.nextGate.nextAction}
+                  </Text>
+                  <Text style={[s.providerNextGateProof, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    Proof: {launchProviderSetupPlan.nextGate.proofRequired}
+                  </Text>
+                  {launchProviderSetupPlan.nextGate.proofChecklist.length ? (
+                    <View style={s.providerSetupProofChecklist}>
+                      {launchProviderSetupPlan.nextGate.proofChecklist.slice(0, 4).map((proofItem) => (
+                        <Text
+                          key={proofItem}
+                          numberOfLines={2}
+                          style={[s.providerSetupProofItem, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                        >
+                          - {proofItem}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : null}
+                </View>
+              ) : (
+                <View
+                  style={[
+                    s.providerNextGate,
+                    {
+                      backgroundColor: colors.sage + "12",
+                      borderColor: colors.sage + "35",
+                    },
+                  ]}
+                >
+                  <View style={s.providerNextGateHeader}>
+                    <Ionicons name="checkmark-circle-outline" size={15} color={colors.sage} />
+                    <Text style={[s.providerNextGateKicker, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
+                      Provider gates ready for owner approval
+                    </Text>
+                  </View>
+                  <Text style={[s.providerNextGateCopy, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                    Run native QA, confirm legal/support/store approvals, and keep this as a final review state until Apollo approves submission.
+                  </Text>
+                </View>
+              )}
+              <View style={s.providerSetupRows}>
+                {providerSetupVisibleRows.map((row) => {
+                  const rowTone = row.status === "ready" ? colors.sage : colors.amber;
+                  const rowQaTarget = providerRowQaTarget(row.key);
+                  return (
+                    <View key={row.key} style={[s.providerSetupRow, { borderTopColor: colors.border }]}>
+                      <Ionicons
+                        name={row.status === "ready" ? "checkmark-circle" : "ellipse-outline"}
+                        size={16}
+                        color={rowTone}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.providerSetupRowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          {row.label}
+                        </Text>
+                        <Text
+                          numberOfLines={2}
+                          style={[s.providerSetupRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                        >
+                          {row.status === "blocked" ? row.nextAction : row.detail}
+                        </Text>
+                        <Text
+                          numberOfLines={2}
+                          style={[s.providerSetupRowProof, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                        >
+                          Proof needed: {row.proofRequired}
+                        </Text>
+                        {row.proofChecklist.length ? (
+                          <View style={s.providerSetupProofChecklist}>
+                            {row.proofChecklist.slice(0, 3).map((proofItem) => (
+                              <Text
+                                key={proofItem}
+                                numberOfLines={2}
+                                style={[s.providerSetupProofItem, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                              >
+                                - {proofItem}
+                              </Text>
+                            ))}
+                            {row.proofChecklist.length > 3 ? (
+                              <Text
+                                numberOfLines={1}
+                                style={[s.providerSetupProofItem, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}
+                              >
+                                More proof steps: {row.proofChecklist.length - 3} in Share Provider Plan
+                              </Text>
+                            ) : null}
+                          </View>
+                        ) : null}
+                        {rowQaTarget ? (
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Open proof mission for ${row.label}: ${rowQaTarget.detail}`}
+                            onPress={() => {
+                              Haptics.selectionAsync();
+                              router.push(buildCareTwinQaFocusRoute({ surfaceId: rowQaTarget.surfaceId }) as never);
+                            }}
+                            style={({ pressed }) => [
+                              s.providerSetupRowAction,
+                              {
+                                backgroundColor: rowTone + "12",
+                                borderColor: rowTone + "45",
+                                opacity: pressed ? 0.74 : 1,
+                              },
+                            ]}
+                          >
+                            <Ionicons name={rowQaTarget.iconName} size={13} color={rowTone} />
+                            <Text style={[s.providerSetupRowActionText, { color: rowTone, fontFamily: "Inter_800ExtraBold" }]}>
+                              Open proof mission
+                            </Text>
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+              <View style={s.providerSetupActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit WoofWatcher provider launch setup"
+                  onPress={openProviderSetup}
+                  style={({ pressed }) => [
+                    s.providerSetupButton,
+                    { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 },
+                  ]}
+                >
+                  <Ionicons name="construct-outline" size={15} color="#FFFFFF" />
+                  <Text style={[s.providerSetupButtonText, { fontFamily: "Inter_800ExtraBold" }]}>Edit Provider Plan</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Share WoofWatcher provider setup plan"
+                  onPress={shareProviderSetupPlan}
+                  style={({ pressed }) => [
+                    s.providerSetupButton,
+                    { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
+                  ]}
+                >
+                  <Ionicons name="share-social-outline" size={15} color="#FFFFFF" />
+                  <Text style={[s.providerSetupButtonText, { fontFamily: "Inter_800ExtraBold" }]}>Share Provider Plan</Text>
+                </Pressable>
+              </View>
+            </View>
+            {nativeQaCapturePlan.nextTargets.length > 0 ? (
+              <View style={[s.nativeQaCapturePanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <View style={s.nativeQaCaptureHeader}>
+                  <View style={[s.nativeQaCaptureIcon, { backgroundColor: colors.primary + "14" }]}>
+                    <Ionicons name="camera-outline" size={17} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.nativeQaCaptureTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                      Native QA Next Captures
+                    </Text>
+                    <Text style={[s.nativeQaCaptureSub, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      {nativeQaCapturePlan.completeSurfaces}/{nativeQaCapturePlan.totalSurfaces} surfaces complete.
+                      {" "}
+                      {nativeQaCapturePlan.openSurfaces} still open.
+                    </Text>
+                  </View>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open primary Native QA mission: ${nativeQaPrimaryMission.label}. ${nativeQaPrimaryMission.detail}`}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+                  }}
+                  style={({ pressed }) => [
+                    s.nativeQaOwnerProofRow,
+                    {
+                      borderColor: colors.primary + "66",
+                      backgroundColor: pressed ? colors.primary + "18" : colors.primary + "10",
+                      opacity: pressed ? 0.76 : 1,
+                    },
+                  ]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.nativeQaOwnerProofLabel, { color: colors.primary, fontFamily: "Inter_800ExtraBold" }]}>
+                      Primary mission
+                    </Text>
+                    <Text style={[s.nativeQaOwnerProofTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                      {nativeQaPrimaryMission.label}
+                    </Text>
+                    <Text
+                      numberOfLines={2}
+                      style={[s.nativeQaOwnerProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                    >
+                      {nativeQaPrimaryMission.detail}
+                    </Text>
+                  </View>
+                  <Ionicons name="locate-outline" size={17} color={colors.primary} />
+                </Pressable>
+                {savedQaProofManifest ? (
+                  <Pressable
+                    accessibilityLabel={`Share beta handoff proof manifest ${savedQaProofManifest.proofId}`}
+                    accessibilityRole="button"
+                    onPress={shareBetaHandoffPacket}
+                    style={[
+                      s.nativeQaOwnerProofRow,
+                      {
+                        borderColor: colors.primary + "44",
+                        backgroundColor: colors.primary + "0D",
+                      },
+                    ]}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.nativeQaOwnerProofLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                        Proof manifest
+                      </Text>
+                      <Text style={[s.nativeQaOwnerProofTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                        {savedQaProofManifest.proofId}
+                      </Text>
+                      <Text
+                        numberOfLines={2}
+                        style={[s.nativeQaOwnerProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                      >
+                        {savedQaProofManifest.totalEvidenceFiles} files. {savedQaProofManifest.platformEvidenceLabel}. Local metadata only.
+                      </Text>
+                    </View>
+                    <Ionicons name="share-social-outline" size={17} color={colors.primary} />
+                  </Pressable>
+                ) : null}
+                <View
+                  style={[
+                    s.nativeQaOwnerProofRow,
+                    {
+                      borderColor: ownerPreviewProofHasPending ? colors.amber + "66" : colors.border,
+                      backgroundColor: ownerPreviewProofHasPending ? colors.amber + "12" : colors.card,
+                    },
+                  ]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.nativeQaOwnerProofLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      Owner preview proof
+                    </Text>
+                    <Text
+                      style={[
+                        s.nativeQaOwnerProofTitle,
+                        {
+                          color: ownerPreviewProofHasPending ? colors.amber : colors.foreground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      {ownerPreviewProofStatus.statusLabel}
+                    </Text>
+                    <Text
+                      numberOfLines={2}
+                      style={[s.nativeQaOwnerProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                    >
+                      {ownerPreviewProofStatus.evidenceAttached} attached. {ownerPreviewProofSummary}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={ownerPreviewProofHasPending ? "lock-closed-outline" : "shield-checkmark-outline"}
+                    size={17}
+                    color={ownerPreviewProofHasPending ? colors.amber : colors.sage}
+                  />
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open store screenshot QA proof. ${storeScreenshotProofStatus.statusLabel}. ${storeScreenshotProofStatus.nextTarget ? `Next store screenshot: ${storeScreenshotProofStatus.nextTarget.title}. ${storeScreenshotProofSummary}` : storeScreenshotProofSummary}`}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    router.push(buildCareTwinQaFocusRoute(storeScreenshotProofStatus.nextTarget) as never);
+                  }}
+                  style={({ pressed }) => [
+                    s.nativeQaOwnerProofRow,
+                    {
+                      borderColor: storeScreenshotProofHasPending ? colors.copper + "66" : colors.border,
+                      backgroundColor: storeScreenshotProofHasPending ? colors.copper + "12" : colors.card,
+                      opacity: pressed ? 0.76 : 1,
+                    },
+                  ]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.nativeQaOwnerProofLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      Store screenshot proof
+                    </Text>
+                    <Text
+                      style={[
+                        s.nativeQaOwnerProofTitle,
+                        {
+                          color: storeScreenshotProofHasPending ? colors.copper : colors.foreground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      {storeScreenshotProofStatus.statusLabel}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[s.nativeQaOwnerProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                    >
+                      {storeScreenshotProofStatus.complete}/{storeScreenshotProofStatus.total} complete. {storeScreenshotProofStatus.open} open.
+                    </Text>
+                    {storeScreenshotProofStatus.nextTarget ? (
+                      <Text
+                        numberOfLines={2}
+                        style={[s.nativeQaOwnerProofDetail, { color: colors.copper, fontFamily: "Inter_700Bold" }]}
+                      >
+                        Next store screenshot: {storeScreenshotProofStatus.nextTarget.title} - {storeScreenshotProofSummary}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Ionicons
+                    name={storeScreenshotProofHasPending ? "storefront-outline" : "shield-checkmark-outline"}
+                    size={17}
+                    color={storeScreenshotProofHasPending ? colors.copper : colors.sage}
+                  />
+                </Pressable>
+                <View style={s.nativeQaCaptureActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Share Native QA capture plan"
+                    onPress={shareNativeQaCapturePlan}
+                    style={({ pressed }) => [
+                      s.nativeQaCaptureShare,
+                      { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
+                    ]}
+                  >
+                    <Ionicons name="share-social-outline" size={15} color="#FFFFFF" />
+                    <Text style={[s.nativeQaCaptureShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share QA Plan</Text>
+                  </Pressable>
+                  {nativeQaCaptureNeedsTuneTarget ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open first Native QA Needs tune target: ${nativeQaCaptureNeedsTuneTarget.title}`}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        router.push(buildCareTwinQaFocusRoute(nativeQaCaptureNeedsTuneTarget) as never);
+                      }}
+                      style={({ pressed }) => [
+                        s.nativeQaCaptureNeedsTuneAction,
+                        {
+                          borderColor: colors.rose + "66",
+                          backgroundColor: pressed ? colors.rose + "21" : colors.rose + "14",
+                        },
+                      ]}
+                    >
+                      <Ionicons name="locate-outline" size={15} color={colors.rose} />
+                      <Text style={[s.nativeQaCaptureCockpitActionText, { color: colors.rose, fontFamily: "Inter_800ExtraBold" }]}>
+                        Open Needs Tune
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                  {nativeQaCaptureNeedsTuneTarget ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Share first Native QA Needs tune fix brief"
+                      onPress={shareNativeQaFixBrief}
+                      style={({ pressed }) => [
+                        s.nativeQaCaptureFixBrief,
+                        {
+                          borderColor: colors.amber + "66",
+                          backgroundColor: pressed ? colors.amber + "21" : colors.amber + "14",
+                        },
+                      ]}
+                    >
+                      <Ionicons name="construct-outline" size={15} color={colors.amber} />
+                      <Text style={[s.nativeQaCaptureCockpitActionText, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+                        Share Fix Brief
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      nativeQaCaptureHasProofPending
+                        ? "Open QA Cockpit to finish pending Native QA proof"
+                        : "Open QA Cockpit for Native QA capture"
+                    }
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+                    }}
+                    style={({ pressed }) => [
+                      s.nativeQaCaptureCockpitAction,
+                      {
+                        borderColor: nativeQaCaptureHasProofPending ? colors.amber + "66" : colors.border,
+                        backgroundColor: nativeQaCaptureHasProofPending ? colors.amber + "14" : colors.card,
+                        opacity: pressed ? 0.78 : 1,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={nativeQaCaptureHasProofPending ? "shield-checkmark-outline" : "clipboard-outline"}
+                      size={15}
+                      color={nativeQaCaptureHasProofPending ? colors.amber : colors.foreground}
+                    />
+                    <Text
+                      style={[
+                        s.nativeQaCaptureCockpitActionText,
+                        {
+                          color: nativeQaCaptureHasProofPending ? colors.amber : colors.foreground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      {nativeQaCaptureCockpitActionLabel}
+                    </Text>
+                  </Pressable>
+                </View>
+                {nativeQaCapturePlan.nextTargets.map((target) => {
+                  const targetStatusLabel = mobileLaunchQaCaptureTargetStatusLabel(target);
+                  const targetStatusTone =
+                    targetStatusLabel === "Pass pending proof"
+                      ? colors.amber
+                      : target.status === "needs-review"
+                        ? colors.amber
+                        : target.status === "pass"
+                          ? colors.sage
+                          : colors.mutedForeground;
+
+                  return (
+                    <Pressable
+                      key={target.surfaceId}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open ${target.title} QA capture. Status: ${targetStatusLabel}. ${target.missingEvidence.join(" ")} ${target.setupSteps[0] ?? ""} ${target.verificationSteps[0] ?? ""} ${target.acceptanceCriteria[0] ?? ""} ${target.failureEscalation}`}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        router.push(buildCareTwinQaFocusRoute(target) as never);
+                      }}
+                      style={({ pressed }) => [
+                        s.nativeQaCaptureRow,
+                        { borderTopColor: colors.border, opacity: pressed ? 0.72 : 1 },
+                      ]}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.nativeQaCaptureRowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          {target.title}
+                        </Text>
+                        <View style={s.nativeQaCaptureStatusLine}>
+                          <Text style={[s.nativeQaCaptureStatusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                            Proof status
+                          </Text>
+                          <Text style={[s.nativeQaCaptureStatusValue, { color: targetStatusTone, fontFamily: "Inter_800ExtraBold" }]}>
+                            {targetStatusLabel}
+                          </Text>
+                        </View>
+                        <Text
+                          numberOfLines={2}
+                          style={[s.nativeQaCaptureRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                        >
+                          {target.missingEvidence.join(" ")}
+                        </Text>
+                        {target.setupSteps[0] ? (
+                          <Text
+                            numberOfLines={2}
+                            style={[s.nativeQaCaptureRowPrep, { color: colors.copper, fontFamily: "Inter_700Bold" }]}
+                          >
+                            Prep: {target.setupSteps[0]}
+                          </Text>
+                        ) : null}
+                        {target.verificationSteps[0] ? (
+                          <Text
+                            numberOfLines={2}
+                            style={[s.nativeQaCaptureRowStep, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                          >
+                            Step: {target.verificationSteps[0]}
+                          </Text>
+                        ) : null}
+                        {target.acceptanceCriteria[0] ? (
+                          <Text
+                            numberOfLines={2}
+                            style={[s.nativeQaCaptureRowCriteria, { color: colors.sage, fontFamily: "Inter_700Bold" }]}
+                          >
+                            Pass: {target.acceptanceCriteria[0]}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View
+                        style={[
+                          s.nativeQaCapturePill,
+                          {
+                            backgroundColor: (target.priority === "launch-critical" ? colors.rose : colors.copper) + "14",
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.nativeQaCapturePillText,
+                            {
+                              color: target.priority === "launch-critical" ? colors.rose : colors.copper,
+                              fontFamily: "Inter_800ExtraBold",
+                            },
+                          ]}
+                        >
+                          {target.priority === "launch-critical" ? "Critical" : "Polish"}
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+            <View style={[s.launchPacket, { backgroundColor: betaShipTone + "10", borderColor: betaShipTone + "33" }]}>
+              <View style={[s.launchScore, { backgroundColor: betaShipTone + "18" }]}>
+                <Text style={[s.launchScoreValue, { color: betaShipTone, fontFamily: DISPLAY_SEMI }]}>48h</Text>
+                <Text style={[s.launchScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  beta
+                </Text>
+              </View>
+              <View style={s.launchPacketBody}>
+                <Text style={[s.launchPacketTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                  {launchReleasePacket.betaVerdictLabel}
+                </Text>
+                <Text style={[s.launchPacketCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {launchReleasePacket.betaSummary}
+                </Text>
+                <View style={s.betaNextActions}>
+                  {launchReleasePacket.betaNextActions.slice(0, 3).map((action, index) => (
+                    <View key={`${index}-${action}`} style={s.betaNextActionRow}>
+                      <View style={[s.betaNextActionDot, { backgroundColor: betaShipTone }]} />
+                      <Text style={[s.betaNextActionText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                        {action}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+                <View style={s.betaNextActionRail}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      launchReleasePacket.betaShipStatus === "qa-first"
+                        ? "Open beta device QA cockpit"
+                        : "Share WoofWatcher beta release packet"
+                    }
+                    onPress={
+                      launchReleasePacket.betaShipStatus === "qa-first"
+                        ? () => router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never)
+                        : shareBetaHandoffPacket
+                    }
+                    style={({ pressed }) => [
+                      s.betaNextActionButton,
+                      { backgroundColor: betaShipTone, opacity: pressed ? 0.86 : 1 },
+                    ]}
+                  >
+                    <Ionicons
+                      name={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
+                      size={15}
+                      color="#FFFFFF"
+                    />
+                    <Text style={[s.betaNextActionButtonText, { fontFamily: "Inter_800ExtraBold" }]}>
+                      {launchReleasePacket.betaShipStatus === "qa-first" ? "Open QA Cockpit" : "Share Beta Packet"}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Share WoofWatcher 48-hour beta handoff"
+                    onPress={shareBetaHandoffPacket}
+                    style={({ pressed }) => [
+                      s.betaHandoffShareButton,
+                      {
+                        borderColor: betaShipTone + "66",
+                        backgroundColor: colors.card,
+                        opacity: pressed ? 0.78 : 1,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="document-text-outline" size={15} color={betaShipTone} />
+                    <Text style={[s.betaHandoffShareText, { color: betaShipTone, fontFamily: "Inter_800ExtraBold" }]}>
+                      Share Beta Handoff
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+            <View style={[s.launchPacket, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <View style={[s.launchScore, { backgroundColor: readinessBadgeTone + "16" }]}>
+                <Text style={[s.launchScoreValue, { color: readinessBadgeTone, fontFamily: DISPLAY_SEMI }]}>
+                  {launchReleasePacket.readinessScore}%
+                </Text>
+                <Text style={[s.launchScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  release score
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.launchPacketTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                  {launchReleasePacket.verdictLabel}
+                </Text>
+                <Text style={[s.launchPacketCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {launchReleasePacket.ownerSummary}
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Share WoofWatcher release packet"
+              onPress={shareLaunchPacket}
+              style={({ pressed }) => [
+                s.launchShare,
+                { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
+              ]}
+            >
+              <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
+              <Text style={[s.launchShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share Launch Packet</Text>
+            </Pressable>
+            <View style={[s.launchPacket, { backgroundColor: storeSubmissionTone + "10", borderColor: storeSubmissionTone + "33" }]}>
+              <View style={[s.launchScore, { backgroundColor: storeSubmissionTone + "18" }]}>
+                <Text style={[s.launchScoreValue, { color: storeSubmissionTone, fontFamily: DISPLAY_SEMI }]}>
+                  {launchStoreSubmissionPacket.screenshotChecklist.length}
+                </Text>
+                <Text style={[s.launchScoreLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  screens
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.launchPacketTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                  Store Submission - {launchStoreSubmissionPacket.verdictLabel}
+                </Text>
+                <Text style={[s.launchPacketCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {launchStoreSubmissionPacket.metadata.shortDescription} {launchStoreSubmissionPacket.reviewNotes[0]}
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Share WoofWatcher store submission packet"
+              onPress={shareStoreSubmissionPacket}
+              style={({ pressed }) => [
+                s.launchShare,
+                { backgroundColor: colors.copper, opacity: pressed ? 0.84 : 1 },
+              ]}
+            >
+              <Ionicons name="storefront-outline" size={16} color="#FFFFFF" />
+              <Text style={[s.launchShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share Store Packet</Text>
+            </Pressable>
           </BoardCard>
 
           <Pressable
@@ -1043,78 +2843,11 @@ export default function MoreScreen() {
               <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
             </LinearGradient>
           </Pressable>
+            </>
+          ) : null}
 
           {/* Care Team / Household */}
-          {visibleSetupHandoffIntent && (
-            <BoardCard style={[s.setupHandoffCard, { borderColor: colors.primary + "44" }]}>
-              <View style={s.setupHandoffTop}>
-                <View style={[s.setupHandoffIcon, { backgroundColor: colors.primary + "18" }]}>
-                  <Ionicons
-                    name={visibleSetupHandoffIntent === "start_pack" ? "person-add-outline" : "enter-outline"}
-                    size={20}
-                    color={colors.primary}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.setupHandoffKicker, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                    Setup next step
-                  </Text>
-                  <Text style={[s.setupHandoffTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    {visibleSetupHandoffIntent === "start_pack"
-                      ? "Share this pack when ready"
-                      : visibleSetupHandoffIntent === "join_pack"
-                        ? "Join the owner's pack"
-                        : "Household next step"}
-                  </Text>
-                  <Text style={[s.setupHandoffCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {visibleSetupHandoffIntent === "start_pack"
-                      ? "Setup saved the dog care foundation. Share the owner/admin invite code here, then review Household Access before another caregiver logs care."
-                      : visibleSetupHandoffIntent === "join_pack"
-                        ? "Setup saved the dog care foundation. Enter the invite code from the pack owner here; WoofWatcher will only join a real synced household when the code matches."
-                        : "Setup saved the dog care foundation. More keeps invite, join, sync health, and switching controls in the real household surface."}
-                  </Text>
-                </View>
-              </View>
-              {visibleSetupHandoffIntent === "start_pack" ? (
-                <Pressable
-                  onPress={() => {
-                    completeSetupHandoff("start_pack");
-                    shareInvite();
-                  }}
-                  disabled={!householdAccess.canShareInvite}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share invite from setup handoff"
-                  accessibilityState={{ disabled: !householdAccess.canShareInvite }}
-                  style={({ pressed }) => [
-                    s.setupHandoffAction,
-                    {
-                      backgroundColor: householdAccess.canShareInvite ? colors.primary : colors.border,
-                      opacity: pressed ? 0.82 : 1,
-                    },
-                  ]}
-                >
-                  <Ionicons name="share-outline" size={16} color="#fff" />
-                  <Text style={[s.setupHandoffActionText, { fontFamily: "Inter_700Bold" }]}>Share invite</Text>
-                </Pressable>
-              ) : (
-                <Pressable
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    completeSetupHandoff("join_pack");
-                    setJoinCode("");
-                    setJoinOpen(true);
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Enter invite code from setup handoff"
-                  style={({ pressed }) => [s.setupHandoffAction, { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 }]}
-                >
-                  <Ionicons name="key-outline" size={16} color="#fff" />
-                  <Text style={[s.setupHandoffActionText, { fontFamily: "Inter_700Bold" }]}>Enter invite code</Text>
-                </Pressable>
-              )}
-            </BoardCard>
-          )}
-
+          <View collapsable={false} onLayout={registerSectionAnchor("household")} />
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader
               title="Care Team"
@@ -1165,54 +2898,6 @@ export default function MoreScreen() {
             </View>
 
             <View style={[s.boardDivider, { borderTopColor: colors.border }]} />
-            <View style={s.householdSwitcher}>
-              <View style={s.householdSwitcherHeader}>
-                <View>
-                  <Text style={[s.householdSwitcherLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                    Switch household
-                  </Text>
-                  <Text style={[s.householdSwitcherCopy, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                    Choose which pack care logs and routines sync into.
-                  </Text>
-                </View>
-                {setActiveHousehold.isPending && (
-                  <Text style={[s.householdSwitchingText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
-                    Switching
-                  </Text>
-                )}
-              </View>
-              <View style={s.householdChoiceList}>
-                {householdChoices.map((choice) => (
-                  <Pressable
-                    key={choice.id}
-                    onPress={() => switchHousehold(choice.id)}
-                    disabled={choice.isActive || setActiveHousehold.isPending}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Switch to ${choice.name}`}
-                    accessibilityState={{ selected: choice.isActive, disabled: choice.isActive || setActiveHousehold.isPending }}
-                    style={({ pressed }) => [
-                      s.householdChoice,
-                      {
-                        backgroundColor: choice.isActive ? colors.primary + "16" : colors.background,
-                        borderColor: choice.isActive ? colors.primary + "55" : colors.border,
-                        opacity: pressed ? 0.78 : choice.isActive ? 0.88 : 1,
-                      },
-                    ]}
-                  >
-                    <View style={[s.householdChoiceIcon, { backgroundColor: choice.isActive ? colors.primary : colors.sage + "1A" }]}>
-                      <Ionicons name={choice.isActive ? "checkmark" : "swap-horizontal"} size={16} color={choice.isActive ? "#fff" : colors.sage} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[s.householdChoiceName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{choice.name}</Text>
-                      <Text style={[s.householdChoiceMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {choice.isActive ? "Active care sync pack" : "Switch care sync here"}
-                      </Text>
-                    </View>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-            <View style={[s.boardDivider, { borderTopColor: colors.border }]} />
             {householdAccess.people.length === 0 ? (
               <View style={s.teamRow}>
                 <Text style={[s.teamRole, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -1245,9 +2930,6 @@ export default function MoreScreen() {
                       <Text style={[s.teamRole, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                         {person.role} - {person.needsInvite ? "Invite needed" : "Synced"}
                       </Text>
-                      <Text style={[s.teamPermissions, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {person.permissions.slice(0, 3).join(" - ")}
-                      </Text>
                     </View>
                     <View style={[s.logBadge, { backgroundColor: person.needsInvite ? colors.amber + "18" : colors.background }]}>
                       <Text style={[s.logBadgeText, { color: person.needsInvite ? colors.amber : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
@@ -1258,79 +2940,9 @@ export default function MoreScreen() {
                 );
               })
             )}
-            <View style={[s.boardDivider, { borderTopColor: colors.border }]} />
-            <View style={s.roleAdmin}>
-              <View style={s.roleAdminHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.roleAdminLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                    Manage roles
-                  </Text>
-                  <Text style={[s.roleAdminCopy, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
-                    Owners and admins can adjust existing synced caregivers. Owner transfer, removal, and invite approval stay provider-gated.
-                  </Text>
-                </View>
-                {updateHouseholdMember.isPending && (
-                  <Text style={[s.roleUpdatingText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
-                    Saving
-                  </Text>
-                )}
-              </View>
-              {roleUpdateTargets.length === 0 ? (
-                <View style={[s.roleEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Text style={[s.roleEmptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    Add synced caregivers before assigning sitter, trainer, vet viewer, member, or admin roles.
-                  </Text>
-                </View>
-              ) : (
-                <View style={s.roleTargetList}>
-                  {roleUpdateTargets.slice(0, 4).map((target) => (
-                    <View key={`role-${target.member.id}`} style={[s.roleTarget, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                      <View style={s.roleTargetHeader}>
-                        <Text style={[s.roleTargetName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{target.name}</Text>
-                        <Text style={[s.roleTargetMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                          Current: {formatHouseholdRoleLabel(target.role)}
-                        </Text>
-                      </View>
-                      <View style={s.roleChipRow}>
-                        {ROLE_UPDATE_OPTIONS.map((option) => {
-                          const selected = target.role === option.role;
-                          const disabled = selected || updateHouseholdMember.isPending;
-                          return (
-                            <Pressable
-                              key={`${target.member.id}-${option.role}`}
-                              onPress={() => updateMemberRole(target, option.role)}
-                              disabled={disabled}
-                              accessibilityRole="button"
-                              accessibilityLabel={`Set ${target.name} role to ${option.label}`}
-                              accessibilityState={{ selected, disabled }}
-                              style={({ pressed }) => [
-                                s.roleChip,
-                                {
-                                  backgroundColor: selected ? colors.primary : colors.card,
-                                  borderColor: selected ? colors.primary : colors.border,
-                                  opacity: pressed ? 0.76 : disabled && !selected ? 0.55 : 1,
-                                },
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  s.roleChipText,
-                                  { color: selected ? "#FFFFFF" : colors.foreground, fontFamily: "Inter_700Bold" },
-                                ]}
-                              >
-                                {option.label}
-                              </Text>
-                            </Pressable>
-                          );
-                        })}
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
           </BoardCard>
 
+          <View collapsable={false} onLayout={registerSectionAnchor("access")} />
           <BoardCard style={[s.moreBoardCard, { borderColor: accessTone + "44" }]}>
             <BoardSectionHeader
               title="Household Access"
@@ -1390,164 +3002,154 @@ export default function MoreScreen() {
 
           <BoardCard style={[s.moreBoardCard, { borderColor: colors.primary + "44" }]}>
             <BoardSectionHeader
-              title="Pack Audit"
+              title="Access Passes"
               accessory={
-                <Text style={[s.auditAccessLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                  owner/admin review only
-                </Text>
+                <Pressable
+                  onPress={openAccessPassSheet}
+                  accessibilityRole="button"
+                  accessibilityLabel="Create Access Pass draft"
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                >
+                  <Text style={[s.sectionLink, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>New pass</Text>
+                </Pressable>
               }
             />
-            <View style={s.auditTop}>
-              <View style={[s.auditIcon, { backgroundColor: colors.primary + "18" }]}>
-                <Ionicons name="shield-checkmark-outline" size={21} color={colors.primary} />
+            <View style={s.responsibilityTop}>
+              <View style={[s.responsibilityIcon, { backgroundColor: colors.primary + "18" }]}>
+                <Ionicons name="ticket-outline" size={21} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.auditTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  Household trust events
+                <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {accessPassPlan.title}
                 </Text>
-                <Text style={[s.auditSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Review who changed pack identity, active household sync, or invite membership before final provider retention policy.
+                <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  {accessPassPlan.summary}
                 </Text>
               </View>
             </View>
-            <View style={[s.auditNotice, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <Ionicons name="information-circle-outline" size={17} color={colors.primary} />
-              <Text style={[s.auditNoticeText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Audit review is offline until sync is available, and lifecycle changes still wait for provider-backed policy.
+            <View style={s.responsibilityMetrics}>
+              {[
+                { label: "Active", value: accessPassPlan.activeCount },
+                { label: "Upcoming", value: accessPassPlan.upcomingCount },
+                { label: "Drafts", value: accessPassPlan.draftCount },
+              ].map((metric) => (
+                <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
+                  <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
+                  <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={[s.responsibilityNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+              {accessPassPlan.nextStep}
+            </Text>
+            <View style={[s.passBoundary, { borderColor: colors.border, backgroundColor: colors.background }]}>
+              <Ionicons name="shield-checkmark-outline" size={16} color={colors.sage} />
+              <Text style={[s.passBoundaryText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                {accessPassPlan.permissionBoundary}
               </Text>
             </View>
-            <View style={s.auditFilterGroup}>
-              <Text style={[s.auditFilterLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                EVENT TYPE
-              </Text>
-              <View style={s.auditFilterRow}>
-                {AUDIT_ACTION_FILTERS.map((filter) => {
-                  const selected = selectedAuditAction === filter.value;
-                  return (
-                    <Pressable
-                      key={filter.value}
-                      onPress={() => setSelectedAuditAction(filter.value)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Filter Pack Audit by ${filter.label}`}
-                      accessibilityState={{ selected }}
-                      style={({ pressed }) => [
-                        s.auditFilterChip,
-                        {
-                          backgroundColor: selected ? colors.primary : colors.background,
-                          borderColor: selected ? colors.primary : colors.border,
-                          opacity: pressed ? 0.78 : 1,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          s.auditFilterText,
-                          {
-                            color: selected ? "#FFFFFF" : colors.foreground,
-                            fontFamily: "Inter_700Bold",
-                          },
-                        ]}
-                      >
-                        {filter.label}
+            {accessPassPlan.passes.length > 0 && (
+              <View style={[s.passList, { borderTopColor: colors.border }]}>
+                {accessPassPlan.passes.slice(0, 3).map((pass) => (
+                  <View key={pass.id} style={s.passRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.passName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{pass.holderName}</Text>
+                      <Text style={[s.passMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {pass.role} - {pass.timeLabel}
                       </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-              <Text style={[s.auditFilterLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                LIFECYCLE
-              </Text>
-              <View style={s.auditFilterRow}>
-                {AUDIT_LIFECYCLE_FILTERS.map((filter) => {
-                  const selected = selectedAuditLifecycle === filter.value;
-                  return (
-                    <Pressable
-                      key={filter.value}
-                      onPress={() => setSelectedAuditLifecycle(filter.value)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Filter Pack Audit lifecycle by ${filter.label}`}
-                      accessibilityState={{ selected }}
-                      style={({ pressed }) => [
-                        s.auditFilterChip,
-                        {
-                          backgroundColor: selected ? colors.copper : colors.background,
-                          borderColor: selected ? colors.copper : colors.border,
-                          opacity: pressed ? 0.78 : 1,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          s.auditFilterText,
-                          {
-                            color: selected ? "#FFFFFF" : colors.foreground,
-                            fontFamily: "Inter_700Bold",
-                          },
-                        ]}
-                      >
-                        {filter.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-            {householdAudit.isLoading ? (
-              <View style={[s.auditEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <Text style={[s.auditEmptyTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  Loading household trust events
-                </Text>
-                <Text style={[s.auditEmptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  WoofWatcher is checking the owner/admin audit log for this pack.
-                </Text>
-              </View>
-            ) : householdAudit.isError ? (
-              <View style={[s.auditEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <Text style={[s.auditEmptyTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  Audit review is offline until sync is available
-                </Text>
-                <Text style={[s.auditEmptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Owners and admins can retry after account sync is available. Care logs still remain local and recoverable.
-                </Text>
-              </View>
-            ) : auditEvents.length === 0 ? (
-              <View style={[s.auditEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <Text style={[s.auditEmptyTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  {selectedAuditAction === "all" && selectedAuditLifecycle === "all"
-                    ? "No household trust events yet"
-                    : "No matching trust events"}
-                </Text>
-                <Text style={[s.auditEmptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {selectedAuditAction === "all" && selectedAuditLifecycle === "all"
-                    ? "New pack creation, rename, active-pack switching, and invite joins will appear here after sync."
-                    : "Try another event type or lifecycle state. Review remains owner/admin only until provider policy is final."}
-                </Text>
-              </View>
-            ) : (
-              <View style={s.auditList}>
-                {auditEvents.slice(0, 4).map((event) => {
-                  const detail = auditEventDetail(event);
-                  return (
-                    <View
-                      key={event.id}
-                      accessible
-                      accessibilityLabel={`Household audit event: ${auditEventLabel(event)}. ${detail}`}
-                      style={[s.auditEventRow, { backgroundColor: colors.background, borderColor: colors.border }]}
-                    >
-                      <View style={[s.auditEventDot, { backgroundColor: colors.primary }]} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={[s.auditEventTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                          {auditEventLabel(event)}
-                        </Text>
-                        <Text style={[s.auditEventMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                          {detail} - {formatAuditEventTime(event.createdAt)}
-                        </Text>
-                      </View>
                     </View>
-                  );
-                })}
+                    <View style={[s.passStatus, { backgroundColor: pass.status === "active" ? colors.sage + "1F" : colors.background }]}>
+                      <Text style={[s.passStatusText, { color: pass.status === "active" ? colors.sage : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                        {pass.status}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
               </View>
             )}
+            <Pressable
+              onPress={shareAccessPassSummary}
+              accessibilityRole="button"
+              accessibilityLabel="Share Access Pass draft summary"
+              style={({ pressed }) => [
+                s.passAction,
+                { backgroundColor: colors.primary, opacity: pressed ? 0.78 : 1 },
+              ]}
+            >
+              <Ionicons name="share-outline" size={16} color="#FFFFFF" />
+              <Text style={[s.passActionText, { fontFamily: "Inter_700Bold" }]}>Share Draft Summary</Text>
+            </Pressable>
+          </BoardCard>
+
+          <BoardCard style={[s.moreBoardCard, { borderColor: responsibilityTone + "44" }]}>
+            <BoardSectionHeader
+              title="My Care Today"
+              accessory={
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    router.push("/calendar");
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open assigned care"
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                >
+                  <Text style={[s.sectionLink, { color: responsibilityTone, fontFamily: "Inter_600SemiBold" }]}>Open</Text>
+                </Pressable>
+              }
+            />
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push("/calendar");
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Open My Care Today in Plans"
+              style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}
+            >
+              <View style={s.responsibilityTop}>
+                <View style={[s.responsibilityIcon, { backgroundColor: responsibilityTone + "18" }]}>
+                  <Ionicons name="person-circle-outline" size={22} color={responsibilityTone} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {myCareToday.title}
+                  </Text>
+                  <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {myCareToday.summary}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+              </View>
+              <View style={s.responsibilityMetrics}>
+                {[
+                  { label: "Assigned", value: myCareToday.assignedCount },
+                  { label: "Open", value: myCareToday.openCount },
+                  { label: "Overdue", value: myCareToday.overdueCount },
+                ].map((metric) => (
+                  <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
+                    <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
+                    <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={[s.responsibilityNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {myCareToday.nextStep}
+              </Text>
+              {myCareToday.items.length > 0 && (
+                <View style={[s.careTodayList, { borderTopColor: colors.border }]}>
+                  {myCareToday.items.slice(0, 3).map((item) => (
+                    <View key={item.id} style={s.careTodayRow}>
+                      <Text style={[s.careTodayTime, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{item.time}</Text>
+                      <Text style={[s.careTodayLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
+                      <Text style={[s.careTodayStatus, { color: item.status === "done" ? colors.sage : item.status === "overdue" ? colors.rose : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                        {item.status}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </Pressable>
           </BoardCard>
 
           {/* Household responsibility */}
@@ -1629,6 +3231,20 @@ export default function MoreScreen() {
                 <Pressable
                   onPress={() => {
                     Haptics.selectionAsync();
+                    if (!isClerkConfigured) {
+                      notifyDialog(
+                        "Saved on this device",
+                        "Everything is saved on this device. Household sync is coming soon - nothing is waiting to upload.",
+                      );
+                      return;
+                    }
+                    if (!isSignedIn) {
+                      notifyDialog(
+                        "Sign in to sync",
+                        "Care logs stay saved on this device until you sign in to the household account.",
+                      );
+                      return;
+                    }
                     refresh();
                   }}
                   disabled={isSyncing}
@@ -1670,6 +3286,23 @@ export default function MoreScreen() {
             <Text style={[s.syncNextStep, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {syncDashboard.nextStep}
             </Text>
+            {ownerOps ? (
+              <Pressable
+                onPress={openCareEntryProviderSyncProofMission}
+                accessibilityRole="button"
+                accessibilityLabel="Open care-entry provider sync proof mission"
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                style={({ pressed }) => [
+                  s.providerSetupRowAction,
+                  { borderColor: colors.border, backgroundColor: colors.background, opacity: pressed ? 0.72 : 1 },
+                ]}
+              >
+                <Ionicons name="server-outline" size={14} color={syncTone} />
+                <Text style={[s.providerSetupRowActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  Open sync proof
+                </Text>
+              </Pressable>
+            ) : null}
           </BoardCard>
 
           {/* Household actions */}
@@ -1688,7 +3321,7 @@ export default function MoreScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[s.linkLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Your display name</Text>
                 <Text numberOfLines={1} style={[s.linkSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {myName || `Set how you appear in ${activeDisplayNamePack}`}
+                  {myName || "Set how you appear on logs"}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
@@ -1714,7 +3347,8 @@ export default function MoreScreen() {
             </Pressable>
           </View>
 
-          {/* Links */}
+          {/* Links (holds the Care Pass build-and-share row) */}
+          <View collapsable={false} onLayout={registerSectionAnchor("care-pass")} />
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader title="Tools & Sharing" />
             {links.map((l, i) => (
@@ -1738,6 +3372,7 @@ export default function MoreScreen() {
           </BoardCard>
 
           {/* Diet profile */}
+          <View collapsable={false} onLayout={registerSectionAnchor("diet")} />
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader
               title="Diet Profile"
@@ -1788,16 +3423,20 @@ export default function MoreScreen() {
             <Text style={[s.noticeText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{profile.vetBoundary}</Text>
           </View>
 
-          {/* Sign out */}
-          <Pressable
-            onPress={confirmSignOut}
-            accessibilityRole="button"
-            accessibilityLabel="Sign out of WoofWatcher"
-            style={({ pressed }) => [s.signOut, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
-          >
-            <Ionicons name="log-out-outline" size={19} color={colors.rose} />
-            <Text style={[s.signOutText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>Sign out</Text>
-          </Pressable>
+          {/* Sign out renders only when a real account provider is configured
+              and someone is actually signed in; the local-first build has no
+              sign-in, so a sign-out row would be a dead cloud-sync promise. */}
+          {isClerkConfigured && isSignedIn ? (
+            <Pressable
+              onPress={confirmSignOut}
+              accessibilityRole="button"
+              accessibilityLabel="Sign out of WoofWatcher"
+              style={({ pressed }) => [s.signOut, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Ionicons name="log-out-outline" size={19} color={colors.rose} />
+              <Text style={[s.signOutText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>Sign out</Text>
+            </Pressable>
+          ) : null}
 
           <Text style={[s.footer, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             WoofWatcher · Happy dog, simplified care 💚
@@ -1866,7 +3505,6 @@ export default function MoreScreen() {
         autoCapitalize="characters"
         confirmLabel="Join"
         loading={joinHousehold.isPending}
-        centeredModalBackdropPadding={centeredModalBackdropPadding}
         onCancel={() => setJoinOpen(false)}
         onConfirm={submitJoin}
       />
@@ -1883,7 +3521,6 @@ export default function MoreScreen() {
         onChangeText={setRenameValue}
         confirmLabel="Save"
         loading={updateHousehold.isPending}
-        centeredModalBackdropPadding={centeredModalBackdropPadding}
         onCancel={() => setRenameOpen(false)}
         onConfirm={submitRename}
       />
@@ -1894,16 +3531,231 @@ export default function MoreScreen() {
         colors={colors}
         icon="person-circle-outline"
         title="Your display name"
-        subtitle={`This is how you'll appear on care logs for ${activeDisplayNamePack}.`}
+        subtitle="This is how you'll appear on every care log."
         placeholder="Alex"
         value={nameValue}
         onChangeText={setNameValue}
         confirmLabel="Save"
         loading={updateMe.isPending}
-        centeredModalBackdropPadding={centeredModalBackdropPadding}
         onCancel={() => setNameOpen(false)}
         onConfirm={submitName}
       />
+
+      <Modal visible={petRosterOpen} transparent animationType="slide" onRequestClose={() => setPetRosterOpen(false)}>
+        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setPetRosterOpen(false)}>
+          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+            <View style={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}>
+              <View style={s.modalHandle} />
+              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Add future dog</Text>
+              <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                This saves a planned slot for a future dog. Multi-dog logs, routines, and records are coming soon - everything stays on this device for now.
+              </Text>
+
+              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NAME</Text>
+              <TextInput
+                value={petRosterName}
+                onChangeText={setPetRosterName}
+                placeholder="e.g. London"
+                placeholderTextColor={colors.mutedForeground}
+                style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+              />
+
+              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>BREED</Text>
+              <TextInput
+                value={petRosterBreed}
+                onChangeText={setPetRosterBreed}
+                placeholder="e.g. Golden Retriever"
+                placeholderTextColor={colors.mutedForeground}
+                style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+              />
+
+              <Pressable
+                onPress={saveFuturePet}
+                accessibilityRole="button"
+                accessibilityLabel="Save future dog to CareTwin roster"
+                style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+              >
+                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save planned slot</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={accessPassOpen} transparent animationType="slide" onRequestClose={() => setAccessPassOpen(false)}>
+        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setAccessPassOpen(false)}>
+          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+            <View style={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}>
+              <View style={s.modalHandle} />
+              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Create Access Pass</Text>
+              <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Save helper permissions as a local draft. Remote sharing is coming soon - passes stay on this device for now.
+              </Text>
+
+              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>HELPER NAME</Text>
+              <TextInput
+                value={accessPassName}
+                onChangeText={setAccessPassName}
+                placeholder="e.g. Maya"
+                placeholderTextColor={colors.mutedForeground}
+                style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+              />
+
+              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>ROLE</Text>
+              <View style={s.passKindGrid}>
+                {[
+                  { key: "sitter" as const, label: "Sitter" },
+                  { key: "trainer" as const, label: "Trainer" },
+                  { key: "vet" as const, label: "Vet viewer" },
+                  { key: "emergency" as const, label: "Emergency" },
+                ].map((kind) => {
+                  const selected = accessPassKind === kind.key;
+                  return (
+                    <Pressable
+                      key={kind.key}
+                      onPress={() => setAccessPassKind(kind.key)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Set Access Pass role to ${kind.label}`}
+                      style={[
+                        s.passKind,
+                        {
+                          borderColor: selected ? colors.primary : colors.border,
+                          backgroundColor: selected ? colors.primary + "18" : colors.background,
+                        },
+                      ]}
+                    >
+                      <Text style={[s.passKindText, { color: selected ? colors.primary : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {kind.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <Pressable
+                onPress={saveAccessPassDraft}
+                accessibilityRole="button"
+                accessibilityLabel="Save Access Pass draft"
+                style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+              >
+                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save Local Draft</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={providerSetupOpen} transparent animationType="slide" onRequestClose={() => setProviderSetupOpen(false)}>
+        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProviderSetupOpen(false)}>
+          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
+              bounces={false}
+            >
+              <View style={s.modalHandle} />
+              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Provider Launch Setup</Text>
+              <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Mark only production providers you have actually configured. This updates Launch Readiness but does not approve App Store or Play Store submission.
+              </Text>
+
+              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>REVIEW STATUS</Text>
+              <View style={s.providerStatusGrid}>
+                {[
+                  { key: "local-draft" as const, label: "Draft" },
+                  { key: "owner-reviewed" as const, label: "Owner reviewed" },
+                  { key: "provider-approved" as const, label: "Provider approved" },
+                ].map((statusOption) => {
+                  const selected = providerDraft.providerStatus === statusOption.key;
+                  return (
+                    <Pressable
+                      key={statusOption.key}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setProviderDraft((prev) => ({ ...prev, providerStatus: statusOption.key }));
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Set provider setup status to ${statusOption.label}`}
+                      style={[
+                        s.providerStatusPill,
+                        {
+                          backgroundColor: selected ? colors.primary + "18" : colors.background,
+                          borderColor: selected ? colors.primary : colors.border,
+                        },
+                      ]}
+                    >
+                      <Text style={[s.providerStatusText, { color: selected ? colors.primary : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                        {statusOption.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <View style={[s.providerChecklist, { borderTopColor: colors.border }]}>
+                {PROVIDER_SETUP_FIELDS.map((field) => {
+                  const checked = providerDraft[field.key];
+                  return (
+                    <Pressable
+                      key={field.key}
+                      onPress={() => toggleProviderDraft(field.key)}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked }}
+                      accessibilityLabel={`${field.label}. ${field.detail}`}
+                      style={({ pressed }) => [
+                        s.providerChecklistRow,
+                        { borderBottomColor: colors.border, opacity: pressed ? 0.72 : 1 },
+                      ]}
+                    >
+                      <Ionicons
+                        name={checked ? "checkbox" : "square-outline"}
+                        size={21}
+                        color={checked ? colors.sage : colors.mutedForeground}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.providerChecklistTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          {field.label}
+                        </Text>
+                        <Text style={[s.providerChecklistSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          {field.detail}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>OPERATOR NOTES</Text>
+              <TextInput
+                value={providerDraft.notes}
+                onChangeText={(notes) => setProviderDraft((prev) => ({ ...prev, notes }))}
+                placeholder="What still needs keys, rules, account approval, or QA?"
+                placeholderTextColor={colors.mutedForeground}
+                multiline
+                style={[
+                  s.profField,
+                  {
+                    backgroundColor: colors.background,
+                    color: colors.foreground,
+                    fontFamily: "Inter_400Regular",
+                    minHeight: 74,
+                    textAlignVertical: "top",
+                  },
+                ]}
+              />
+
+              <Pressable
+                onPress={saveProviderSetup}
+                accessibilityRole="button"
+                accessibilityLabel="Save provider launch setup"
+                style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+              >
+                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save provider setup</Text>
+              </Pressable>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Dog profile edit modal */}
       <Modal visible={profileOpen} transparent animationType="slide" onRequestClose={() => setProfileOpen(false)}>
@@ -2054,7 +3906,6 @@ function PromptModal({
   onChangeText,
   confirmLabel,
   loading,
-  centeredModalBackdropPadding,
   autoCapitalize = "sentences",
   onCancel,
   onConfirm,
@@ -2069,14 +3920,13 @@ function PromptModal({
   onChangeText: (t: string) => void;
   confirmLabel: string;
   loading?: boolean;
-  centeredModalBackdropPadding: ReturnType<typeof getCenteredModalBackdropPadding>;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
   onCancel: () => void;
   onConfirm: () => void;
 }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <Pressable style={[s.modalBackdrop, centeredModalBackdropPadding]} onPress={onCancel}>
+      <Pressable style={s.modalBackdrop} onPress={onCancel}>
         <Pressable style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
           <View style={[s.modalIcon, { backgroundColor: colors.primary + "1A" }]}>
             <Ionicons name={icon} size={22} color={colors.primary} />
@@ -2119,6 +3969,181 @@ const s = StyleSheet.create({
   header: { marginBottom: 18 },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 3 },
+  moreRouteHeader: {
+    paddingHorizontal: 20,
+  },
+
+  moreCommandStageCard: {
+    alignSelf: "stretch",
+    width: "100%",
+    maxWidth: "100%",
+    marginTop: 6,
+    overflow: "hidden",
+  },
+  moreCommandStage: {
+    width: "100%",
+    minHeight: 294,
+    overflow: "hidden",
+    padding: 10,
+    position: "relative",
+    justifyContent: "space-between",
+  },
+  moreCommandStageImage: {
+    borderRadius: 8,
+  },
+  moreCommandStageShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(8,20,36,0.24)",
+  },
+  moreCommandStageTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  moreCommandBubble: {
+    maxWidth: "62%",
+    minHeight: 72,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#081424",
+    backgroundColor: "rgba(255,249,239,0.94)",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  moreCommandKicker: {
+    fontSize: 9,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
+  moreCommandSpeech: {
+    fontSize: 13,
+    lineHeight: 17,
+    marginTop: 3,
+  },
+  moreCommandBubbleTail: {
+    position: "absolute",
+    left: 26,
+    bottom: -10,
+    width: 16,
+    height: 16,
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: "#081424",
+    backgroundColor: "rgba(255,249,239,0.94)",
+    transform: [{ rotate: "45deg" }],
+  },
+  moreCommandChip: {
+    maxWidth: 112,
+    flexShrink: 1,
+    minHeight: 38,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  moreCommandChipText: {
+    fontSize: 10,
+    lineHeight: 13,
+    textTransform: "uppercase",
+  },
+  moreCommandSprite: {
+    position: "absolute",
+    right: 12,
+    bottom: 86,
+    width: 112,
+    height: 112,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  moreCommandSpriteShadow: {
+    position: "absolute",
+    bottom: 8,
+    width: 98,
+    height: 22,
+    borderRadius: 999,
+    backgroundColor: "rgba(8,20,36,0.34)",
+  },
+  moreCommandHud: {
+    position: "absolute",
+    left: 10,
+    right: 10,
+    bottom: 70,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 9,
+    flexDirection: "row",
+    gap: 5,
+  },
+  moreCommandHudCell: {
+    flex: 1,
+    minWidth: 0,
+  },
+  moreCommandHudLabel: {
+    fontSize: 9,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
+  moreCommandHudValue: {
+    fontSize: 13,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  moreCommandSignalRow: {
+    height: 18,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 2,
+    marginTop: 4,
+  },
+  moreCommandSignalBar: {
+    width: 5,
+    borderRadius: 2,
+  },
+  moreCommandFooter: {
+    position: "absolute",
+    left: 10,
+    right: 10,
+    bottom: 10,
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 7,
+  },
+  moreCommandMission: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  moreCommandMissionLabel: {
+    fontSize: 9.5,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
+  moreCommandMissionValue: {
+    fontSize: 13,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  moreCommandAction: {
+    width: 106,
+    flexShrink: 0,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  moreCommandActionText: {
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
 
   profileCard: {
     borderRadius: 26,
@@ -2167,23 +4192,96 @@ const s = StyleSheet.create({
 
   sectionLink: { fontSize: 14 },
   moreBoardCard: { marginTop: 14 },
-  boardDivider: { borderTopWidth: 1, marginTop: 14 },
-  setupHandoffCard: { marginTop: 14 },
-  setupHandoffTop: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-  setupHandoffIcon: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  setupHandoffKicker: { fontSize: 10.5, letterSpacing: 0.5, textTransform: "uppercase" },
-  setupHandoffTitle: { fontSize: 16, marginTop: 2 },
-  setupHandoffCopy: { fontSize: 12.5, lineHeight: 18, marginTop: 3 },
-  setupHandoffAction: {
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
+  moreDirectoryCard: { marginTop: 12 },
+  moreDirectoryList: {
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  moreDirectoryRow: {
+    minHeight: 76,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    paddingVertical: 9,
+  },
+  moreDirectoryIcon: {
+    width: 42,
+    height: 42,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 13,
   },
-  setupHandoffActionText: { color: "#FFFFFF", fontSize: 13.5 },
+  moreDirectoryCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  moreDirectoryEyebrow: {
+    fontSize: 9.5,
+    lineHeight: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0,
+  },
+  moreDirectoryTitle: {
+    fontSize: 14.5,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  moreDirectoryDetail: {
+    fontSize: 11.4,
+    lineHeight: 15,
+    marginTop: 3,
+  },
+  moreDirectoryAction: {
+    minWidth: 76,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+  },
+  moreDirectoryActionText: {
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  boardDivider: { borderTopWidth: 1, marginTop: 14 },
+
+  rosterSummary: {
+    minHeight: 78,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+  },
+  rosterSummaryIcon: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  rosterSummaryTitle: { fontSize: 15.5, lineHeight: 20 },
+  rosterSummaryText: { fontSize: 12.2, lineHeight: 17, marginTop: 3 },
+  rosterMetrics: { flexDirection: "row", gap: 8, marginTop: 12 },
+  rosterMetric: {
+    flex: 1,
+    minHeight: 58,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  rosterMetricValue: { fontSize: 18, lineHeight: 21 },
+  rosterMetricLabel: { fontSize: 10.5, marginTop: 2, textTransform: "uppercase" },
+  rosterList: { borderTopWidth: 1, marginTop: 12 },
+  rosterRow: { flexDirection: "row", alignItems: "center", gap: 11, paddingVertical: 13 },
+  rosterAvatar: { width: 42, height: 42, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  rosterAvatarText: { fontSize: 17 },
+  rosterNameLine: { flexDirection: "row", alignItems: "center", gap: 7, flexWrap: "wrap" },
+  rosterName: { fontSize: 14.5, flexShrink: 1 },
+  rosterBadge: { minHeight: 22, borderRadius: 7, paddingHorizontal: 7, alignItems: "center", justifyContent: "center" },
+  rosterBadgeText: { fontSize: 9.5, textTransform: "uppercase" },
+  rosterMeta: { fontSize: 11.8, lineHeight: 16, marginTop: 3 },
+  rosterDetail: { fontSize: 11.4, lineHeight: 16, marginTop: 3 },
 
   launchBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 9 },
   launchBadgeText: { fontSize: 9.5, letterSpacing: 0.5 },
@@ -2241,6 +4339,287 @@ const s = StyleSheet.create({
     marginTop: 12,
   },
   launchNoticeText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  launchNextGate: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 12,
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  launchNextGateIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  launchNextGateBody: { flex: 1 },
+  launchNextGateKicker: { fontSize: 9.4, lineHeight: 12, textTransform: "uppercase" },
+  launchNextGateTitle: { fontSize: 14.2, lineHeight: 18, marginTop: 3 },
+  launchNextGateDetail: { fontSize: 11.4, lineHeight: 16, marginTop: 4 },
+  launchNextGateCta: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 },
+  launchNextGateCtaText: { fontSize: 11.5, lineHeight: 15 },
+  providerSetupPanel: {
+    marginTop: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 12,
+  },
+  providerSetupHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  providerSetupScore: {
+    width: 74,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  providerSetupScoreValue: { fontSize: 22, lineHeight: 25 },
+  providerSetupScoreLabel: { fontSize: 8.7, lineHeight: 12, textTransform: "uppercase", marginTop: 2 },
+  providerSetupTitle: { fontSize: 13.5, lineHeight: 18 },
+  providerSetupSub: { fontSize: 11.2, lineHeight: 15, marginTop: 2 },
+  providerSetupCopy: { fontSize: 11.2, lineHeight: 16, marginTop: 4 },
+  providerNextGate: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+    gap: 4,
+  },
+  providerNextGateHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
+  providerNextGateKicker: { fontSize: 9.3, lineHeight: 12, textTransform: "uppercase" },
+  providerNextGateTitle: { fontSize: 13, lineHeight: 17 },
+  providerNextGateMeta: { fontSize: 10.3, lineHeight: 14 },
+  providerNextGateCopy: { fontSize: 11, lineHeight: 15 },
+  providerNextGateProof: { fontSize: 10.2, lineHeight: 14 },
+  providerSetupProofChecklist: { gap: 3, marginTop: 4 },
+  providerSetupProofItem: { fontSize: 9.8, lineHeight: 13 },
+  providerSetupRows: { marginTop: 8 },
+  providerSetupRow: {
+    minHeight: 52,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    paddingVertical: 9,
+  },
+  providerSetupRowTitle: { fontSize: 12.4, lineHeight: 16 },
+  providerSetupRowSub: { fontSize: 10.8, lineHeight: 15, marginTop: 2 },
+  providerSetupRowProof: { fontSize: 10, lineHeight: 14, marginTop: 3 },
+  providerSetupRowAction: {
+    minHeight: 34,
+    alignSelf: "flex-start",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 6,
+    paddingHorizontal: 8,
+  },
+  providerSetupRowActionText: { fontSize: 10.2, lineHeight: 13 },
+  providerSetupActions: { flexDirection: "row", gap: 8, marginTop: 10 },
+  providerSetupButton: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 7,
+    paddingHorizontal: 9,
+  },
+  providerSetupButtonText: { color: "#FFFFFF", fontSize: 11.8 },
+  nativeQaCapturePanel: {
+    marginTop: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+  },
+  nativeQaCaptureHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingBottom: 10,
+  },
+  nativeQaCaptureIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nativeQaCaptureTitle: { fontSize: 13.5, lineHeight: 18 },
+  nativeQaCaptureSub: { fontSize: 11, lineHeight: 15, marginTop: 2 },
+  nativeQaOwnerProofRow: {
+    minHeight: 56,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  nativeQaOwnerProofLabel: { fontSize: 9.5, lineHeight: 13, textTransform: "uppercase" },
+  nativeQaOwnerProofTitle: { fontSize: 13, lineHeight: 17, marginTop: 1 },
+  nativeQaOwnerProofDetail: { fontSize: 10.8, lineHeight: 15, marginTop: 2 },
+  nativeQaCaptureActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 2,
+  },
+  nativeQaCaptureShare: {
+    flex: 1,
+    minWidth: 132,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  nativeQaCaptureShareText: { color: "#FFFFFF", fontSize: 12.5 },
+  nativeQaCaptureFixBrief: {
+    flex: 1,
+    minWidth: 132,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 8,
+  },
+  nativeQaCaptureNeedsTuneAction: {
+    flex: 1,
+    minWidth: 132,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 8,
+  },
+  nativeQaCaptureCockpitAction: {
+    flex: 1,
+    minWidth: 132,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 8,
+  },
+  nativeQaCaptureCockpitActionText: { fontSize: 12.2, lineHeight: 15 },
+  nativeQaCaptureRow: {
+    minHeight: 54,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+  },
+  nativeQaCaptureRowTitle: { fontSize: 12.5, lineHeight: 17 },
+  nativeQaCaptureStatusLine: {
+    marginTop: 3,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 5,
+  },
+  nativeQaCaptureStatusLabel: {
+    fontSize: 9.5,
+    lineHeight: 13,
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+  },
+  nativeQaCaptureStatusValue: { fontSize: 11, lineHeight: 14 },
+  nativeQaCaptureRowSub: { fontSize: 11, lineHeight: 15, marginTop: 2 },
+  nativeQaCaptureRowPrep: { fontSize: 11, lineHeight: 15, marginTop: 4 },
+  nativeQaCaptureRowStep: { fontSize: 11, lineHeight: 15, marginTop: 4 },
+  nativeQaCaptureRowCriteria: { fontSize: 11, lineHeight: 15, marginTop: 4 },
+  nativeQaCapturePill: {
+    minHeight: 26,
+    borderRadius: 7,
+    paddingHorizontal: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nativeQaCapturePillText: { fontSize: 9.5, lineHeight: 12 },
+  launchPacket: {
+    marginTop: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  launchPacketBody: { flex: 1, minWidth: 0 },
+  launchScore: {
+    width: 78,
+    borderRadius: 8,
+    paddingVertical: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  launchScoreValue: { fontSize: 22, lineHeight: 26 },
+  launchScoreLabel: { fontSize: 9, lineHeight: 12, textTransform: "uppercase", marginTop: 2 },
+  launchPacketTitle: { fontSize: 13.5, lineHeight: 18 },
+  launchPacketCopy: { fontSize: 11.5, lineHeight: 16, marginTop: 3 },
+  betaNextActions: { marginTop: 8, gap: 6 },
+  betaNextActionRow: { flexDirection: "row", alignItems: "flex-start", gap: 7 },
+  betaNextActionDot: { width: 6, height: 6, borderRadius: 3, marginTop: 5 },
+  betaNextActionText: { flex: 1, fontSize: 10.5, lineHeight: 15 },
+  betaNextActionRail: {
+    marginTop: 10,
+    gap: 8,
+  },
+  betaNextActionButton: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  betaNextActionButtonText: { color: "#FFFFFF", fontSize: 12.5 },
+  betaHandoffShareButton: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 8,
+  },
+  betaHandoffShareText: { fontSize: 12.2, lineHeight: 15 },
+  launchShare: {
+    marginTop: 12,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  launchShareText: { color: "#FFFFFF", fontSize: 13 },
 
   listCard: {
     borderRadius: 22,
@@ -2256,7 +4635,6 @@ const s = StyleSheet.create({
   teamNameLine: { flexDirection: "row", alignItems: "center", gap: 8 },
   teamName: { fontSize: 15.5 },
   teamRole: { fontSize: 13, marginTop: 2 },
-  teamPermissions: { fontSize: 11, lineHeight: 15, marginTop: 3 },
   youBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
   youBadgeText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
   logBadge: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 11 },
@@ -2275,6 +4653,25 @@ const s = StyleSheet.create({
   responsibilityMember: { flexDirection: "row", justifyContent: "space-between", gap: 10 },
   responsibilityMemberName: { fontSize: 12.5, flex: 1 },
   responsibilityMemberMeta: { fontSize: 12, textAlign: "right" },
+
+  passBoundary: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderRadius: 12, borderWidth: 1, padding: 11, marginTop: 12 },
+  passBoundaryText: { flex: 1, fontSize: 11.5, lineHeight: 16 },
+  passList: { borderTopWidth: 1, marginTop: 12, paddingTop: 10, gap: 8 },
+  passRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 5 },
+  passName: { fontSize: 13.5 },
+  passMeta: { fontSize: 12, lineHeight: 16, marginTop: 1 },
+  passStatus: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
+  passStatusText: { fontSize: 10.5, textTransform: "capitalize" },
+  passAction: { minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 8, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, marginTop: 13 },
+  passActionText: { color: "#FFFFFF", fontSize: 13.5 },
+  passKindGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8, marginBottom: 4 },
+  passKind: { flexGrow: 1, flexBasis: "47%", minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
+  passKindText: { fontSize: 12.5 },
+  careTodayList: { borderTopWidth: 1, marginTop: 12, paddingTop: 10, gap: 8 },
+  careTodayRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  careTodayTime: { width: 68, fontSize: 11.5 },
+  careTodayLabel: { flex: 1, fontSize: 12.5 },
+  careTodayStatus: { width: 66, textAlign: "right", fontSize: 11.5, textTransform: "capitalize" },
 
   syncTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   syncIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" },
@@ -2301,93 +4698,8 @@ const s = StyleSheet.create({
   },
   codeLabel: { fontSize: 10.5, letterSpacing: 0.6 },
   codeValue: { fontSize: 21, letterSpacing: 1, marginTop: 3 },
-  shareBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 16, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 13 },
+  shareBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 13 },
   shareBtnText: { color: "#fff", fontSize: 14 },
-  householdSwitcher: { paddingTop: 14 },
-  householdSwitcherHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 },
-  householdSwitcherLabel: { fontSize: 10.5, letterSpacing: 0.6 },
-  householdSwitcherCopy: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
-  householdSwitchingText: { fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 },
-  householdChoiceList: { gap: 8, marginTop: 10 },
-  householdChoice: {
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  householdChoiceIcon: { width: 32, height: 32, borderRadius: 9, alignItems: "center", justifyContent: "center" },
-  householdChoiceName: { fontSize: 13.5 },
-  householdChoiceMeta: { fontSize: 11.5, marginTop: 2 },
-  roleAdmin: { paddingTop: 14, gap: 10 },
-  roleAdminHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
-  roleAdminLabel: { fontSize: 10.5, letterSpacing: 0.6, textTransform: "uppercase" },
-  roleAdminCopy: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
-  roleUpdatingText: { fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 },
-  roleEmpty: { minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 8, borderWidth: 1, padding: 11, justifyContent: "center" },
-  roleEmptyText: { fontSize: 12, lineHeight: 17 },
-  roleTargetList: { gap: 9 },
-  roleTarget: { borderRadius: 8, borderWidth: 1, padding: 10, gap: 9 },
-  roleTargetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 10 },
-  roleTargetName: { flex: 1, fontSize: 13.5 },
-  roleTargetMeta: { fontSize: 11.5, textTransform: "capitalize" },
-  roleChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  roleChip: {
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 11,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  roleChipText: { fontSize: 11.5 },
-
-  auditAccessLabel: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0.5 },
-  auditTop: { flexDirection: "row", alignItems: "center", gap: 12 },
-  auditIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  auditTitle: { fontSize: 16, letterSpacing: 0 },
-  auditSummary: { fontSize: 12.5, lineHeight: 18, marginTop: 3 },
-  auditNotice: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    padding: 11,
-    marginTop: 13,
-  },
-  auditNoticeText: { flex: 1, fontSize: 12, lineHeight: 17 },
-  auditFilterGroup: { marginTop: 12, gap: 8 },
-  auditFilterLabel: { fontSize: 10, letterSpacing: 0.5 },
-  auditFilterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  auditFilterChip: {
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  auditFilterText: { fontSize: 11.5 },
-  auditList: { gap: 8, marginTop: 12 },
-  auditEventRow: {
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    padding: 11,
-  },
-  auditEventDot: { width: 8, height: 8, borderRadius: 4 },
-  auditEventTitle: { fontSize: 13.5 },
-  auditEventMeta: { fontSize: 11.5, lineHeight: 16, marginTop: 2 },
-  auditEmpty: { borderRadius: 8, borderWidth: 1, padding: 12, marginTop: 12 },
-  auditEmptyTitle: { fontSize: 13.5 },
-  auditEmptyCopy: { fontSize: 12, lineHeight: 17, marginTop: 3 },
 
   signOut: {
     flexDirection: "row",
@@ -2401,7 +4713,7 @@ const s = StyleSheet.create({
   },
   signOutText: { fontSize: 15 },
 
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(15,31,36,0.45)", justifyContent: "center" },
+  modalBackdrop: { flex: 1, backgroundColor: "rgba(15,31,36,0.45)", justifyContent: "center", paddingHorizontal: 28 },
   modalCard: {
     borderRadius: 26,
     padding: 24,
@@ -2416,12 +4728,12 @@ const s = StyleSheet.create({
   modalSub: { fontSize: 14, marginTop: 4, lineHeight: 20 },
   modalInput: { borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 13, fontSize: 16, marginTop: 16 },
   modalActions: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 },
-  modalCancel: { flex: 1, height: 48, alignItems: "center", justifyContent: "center" },
+  modalCancel: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   modalCancelText: { fontSize: 15 },
-  modalConfirm: { flex: 2, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  modalConfirm: { flex: 2, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   modalConfirmText: { color: "#fff", fontSize: 15 },
 
-  linkRow: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingVertical: 15 },
+  linkRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 15 },
   linkIconWrap: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   linkLabel: { fontSize: 15.5 },
   linkSub: { fontSize: 13, marginTop: 2 },
@@ -2452,7 +4764,7 @@ const s = StyleSheet.create({
   statusLabel: { fontSize: 11.5, marginTop: 3, textAlign: "center" },
   statusEnergyRow: { flexDirection: "row", gap: 4, marginBottom: 1 },
   statusEnergyDot: { width: 8, height: 8, borderRadius: 4 },
-  premiumCard: { flexDirection: "row", alignItems: "center", gap: 13, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 22, padding: 16, marginTop: 12 },
+  premiumCard: { flexDirection: "row", alignItems: "center", gap: 13, borderRadius: 22, padding: 16, marginTop: 12 },
   premiumIcon: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.15)" },
   premiumTitle: { color: "#FFFFFF", fontSize: 17, letterSpacing: 0 },
   premiumSub: { color: "rgba(255,255,255,0.78)", fontSize: 12.5, lineHeight: 18, marginTop: 2 },
@@ -2465,8 +4777,8 @@ const s = StyleSheet.create({
     position: "absolute",
     top: 12,
     right: 12,
-    width: MIN_MOBILE_TOUCH_TARGET,
-    height: MIN_MOBILE_TOUCH_TARGET,
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
@@ -2479,12 +4791,35 @@ const s = StyleSheet.create({
   profileModal: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", paddingTop: 14 },
   modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
   sheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
+  sheetSubtitle: { fontSize: 12.5, lineHeight: 18, marginBottom: 2 },
+  providerStatusGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 2 },
+  providerStatusPill: {
+    flexGrow: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+  providerStatusText: { fontSize: 12.2, lineHeight: 16 },
+  providerChecklist: { borderTopWidth: 1, marginTop: 14 },
+  providerChecklistRow: {
+    minHeight: 62,
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    paddingVertical: 11,
+  },
+  providerChecklistTitle: { fontSize: 13.2, lineHeight: 17 },
+  providerChecklistSub: { fontSize: 11.2, lineHeight: 16, marginTop: 2 },
   profFieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 16 },
   profField: { borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   profWeightRow: { flexDirection: "row", alignItems: "flex-end", gap: 12 },
   unitRow: { flexDirection: "row", gap: 8, paddingBottom: 1 },
-  unitPill: { paddingHorizontal: 16, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 13, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  unitPill: { minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 16, paddingVertical: 11, borderRadius: 13, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   unitText: { fontSize: 14 },
-  profSaveBtn: { marginTop: 24, borderRadius: 15, paddingVertical: 15, alignItems: "center" },
+  profSaveBtn: { marginTop: 24, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, paddingVertical: 15, alignItems: "center", justifyContent: "center" },
   profSaveBtnText: { color: "#fff", fontSize: 15.5 },
 });

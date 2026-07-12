@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 
 import {
   buildPetCredential,
-  derivePetCredentialReadiness,
   deriveRecordReminders,
+  getPetCredentialImageView,
   getPetCredentialPrintView,
   getRecordDueStatus,
   summarizeRecordVault,
@@ -26,21 +26,6 @@ test("summarizes the record vault into credential-critical sections", () => {
   assert.equal(vault.sections.find((section) => section.kind === "receipt")?.status, "On file");
   assert.deepEqual(vault.missingCritical, []);
   assert.equal(vault.priorityRecords[0].title, "Rabies");
-});
-
-test("summarizes local attachment readiness for receipt and document records", () => {
-  const vault = summarizeRecordVault([
-    { id: "receipt_1", type: "receipt", title: "Wellness receipt", note: "$182 exam", attachmentUri: "file://receipt.jpg" },
-    { id: "receipt_2", type: "receipt", title: "Food receipt", note: "$74 food order" },
-    { id: "doc_1", type: "document", title: "Rabies certificate", attachmentUri: "file://rabies.pdf" },
-    { id: "vaccine_1", type: "vaccine", title: "Rabies", due: "May 2027" },
-  ]);
-
-  assert.equal(vault.localAttachmentSummary.totalAttachable, 3);
-  assert.equal(vault.localAttachmentSummary.withAttachment, 2);
-  assert.equal(vault.localAttachmentSummary.missingAttachment, 1);
-  assert.deepEqual(vault.localAttachmentSummary.missingAttachmentTitles, ["Food receipt"]);
-  assert.equal(vault.sections.find((section) => section.kind === "receipt")?.attachmentCount, 1);
 });
 
 test("flags missing credential-critical records", () => {
@@ -93,49 +78,6 @@ test("uses dog profile credential fields when records are not uploaded yet", () 
   assert.match(credential.message, /Emergency contact: Apollo - 555-0100/);
 });
 
-test("derives Dog ID credential readiness from profile fallbacks and saved records", () => {
-  const readiness = derivePetCredentialReadiness({
-    profile: {
-      name: "Phoenix",
-      breed: "German Shepherd Mix",
-      weight: { current: 68, unit: "lb" },
-      primaryVet: "Alameda Wellness Vet",
-      emergencyContact: "Apollo - 555-0100",
-      microchipNumber: "985112003004551",
-    },
-    caregivers: [{ name: "Apollo", role: "Owner" }],
-    records: [
-      { id: "insurance", type: "insurance", title: "Lemonade", due: "Policy WW-1042" },
-      { id: "rabies", type: "vaccine", title: "Rabies", due: "May 2028" },
-    ],
-  });
-
-  assert.equal(readiness.status, "ready");
-  assert.equal(readiness.readyCount, readiness.totalCount);
-  assert.deepEqual(readiness.missingLabels, []);
-  assert.match(readiness.summary, /ready with 8 of 8/i);
-  assert.match(readiness.boundaryLine, /local printable source/i);
-});
-
-test("flags missing Dog ID credential fields before sharing", () => {
-  const readiness = derivePetCredentialReadiness({
-    profile: { name: "Phoenix", breed: "German Shepherd Mix" },
-    records: [{ id: "rabies", type: "vaccine", title: "Rabies", due: "May 2028" }],
-  });
-
-  assert.equal(readiness.status, "needs_info");
-  assert.ok(readiness.readyCount < readiness.totalCount);
-  assert.deepEqual(readiness.missingLabels, [
-    "Weight",
-    "Primary caregiver",
-    "Primary vet",
-    "Emergency contact",
-    "Microchip",
-    "Insurance",
-  ]);
-  assert.match(readiness.summary, /needs 6 credential fields/i);
-});
-
 test("renders a print-ready dog ID credential with escaped details", () => {
   const credential = buildPetCredential({
     profile: {
@@ -164,6 +106,37 @@ test("renders a print-ready dog ID credential with escaped details", () => {
   assert.match(printable.html, /Lemonade - WW-1042/);
   assert.match(printable.html, /For caregiver and veterinarian review/);
   assert.doesNotMatch(printable.html, /Phoenix <script>/);
+});
+
+test("renders a shareable SVG dog ID image source without claiming PDF output", () => {
+  const credential = buildPetCredential({
+    profile: {
+      name: "Phoenix <script>",
+      breed: "German Shepherd Mix",
+      careFocus: "Anxiety-aware feeding",
+      weight: { current: 68, unit: "lb" },
+      microchipNumber: "985112003004551",
+      insuranceProvider: "Lemonade",
+      insurancePolicy: "WW-1042",
+      primaryVet: "Alameda Wellness Vet",
+      emergencyContact: "Apollo - 555-0100",
+      vetBoundary: "For caregiver and veterinarian review.",
+    },
+    caregivers: [{ name: "Apollo", role: "Owner" }],
+    generatedAt: "2026-06-06T18:00:00.000Z",
+  });
+
+  const image = getPetCredentialImageView(credential);
+
+  assert.equal(image.fileName, "phoenix-script-dog-id-2026-06-06.svg");
+  assert.equal(image.mimeType, "image/svg+xml");
+  assert.equal(image.formatLabel, "SVG image source");
+  assert.match(image.svg, /^<svg /);
+  assert.match(image.svg, /Phoenix &lt;script&gt; Dog ID/);
+  assert.match(image.svg, /985112003004551/);
+  assert.match(image.svg, /Lemonade - WW-1042/);
+  assert.match(image.boundary, /PNG and PDF export still need native or provider-backed generation/);
+  assert.doesNotMatch(image.svg, /Phoenix <script>/);
 });
 
 test("classifies date-backed records by due status", () => {

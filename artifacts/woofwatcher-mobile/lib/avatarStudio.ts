@@ -19,7 +19,12 @@ export type AvatarFaceMarkingId = "none" | "mask" | "blaze" | "muzzle" | "eyebro
 export type AvatarMuzzleTypeId = "dark" | "light" | "spotted" | "short" | "long";
 export type AvatarCollarId = "forest-bandana" | "navy-collar" | "copper-collar" | "sage-bandana" | "none";
 export type AvatarTagId = "heart" | "bone" | "shield" | "round" | "none";
-export type AvatarEmotePackId = "starter-care-twin" | "phoenix-shepherd";
+export type AvatarEmotePackId =
+  | "starter-care-twin"
+  | "phoenix-shepherd"
+  | "retriever-starter"
+  | "husky-starter"
+  | "bully-starter";
 export type AvatarEmoteState =
   | "happy"
   | "calm"
@@ -80,12 +85,30 @@ export interface AvatarAccessoryOption {
   launchTier: "free" | "plus-ready";
 }
 
+export type AvatarAccessoryFitStatus = "template-fitted" | "inventory-ready";
+
+export interface AvatarAccessoryFitModel {
+  status: AvatarAccessoryFitStatus;
+  label: "Template-fitted" | "Pack pending";
+  detail: string;
+  placementHint: string;
+  needsDeviceQa: boolean;
+}
+
 export interface AvatarScanSuggestion {
   templateId: AvatarTemplateId;
   confidence: "high" | "medium" | "low";
   detectedTraits: string[];
   suggestedConfig: PetAvatarConfig;
   copy: string;
+}
+
+export type AvatarScanWorkflowStepId = "photo-reference" | "template-match" | "pixel-twin" | "owner-approval";
+
+export interface AvatarScanWorkflowStep {
+  id: AvatarScanWorkflowStepId;
+  label: string;
+  detail: string;
 }
 
 export const AVATAR_EMOTE_STATES: AvatarEmoteState[] = [
@@ -99,6 +122,29 @@ export const AVATAR_EMOTE_STATES: AvatarEmoteState[] = [
   "proud",
   "home_alone",
   "not_feeling_well",
+];
+
+export const AVATAR_SCAN_WORKFLOW_STEPS: AvatarScanWorkflowStep[] = [
+  {
+    id: "photo-reference",
+    label: "Photo reference",
+    detail: "Use 1-3 clear photos as reference only; the saved avatar stays an editable pixel character.",
+  },
+  {
+    id: "template-match",
+    label: "Template match",
+    detail: "Match visible traits to the PixelLab-backed template catalog and body-class anchors.",
+  },
+  {
+    id: "pixel-twin",
+    label: "Pixel twin",
+    detail: "Preview the bundled PixelLab stills, emotes, and live sprite packs before saving.",
+  },
+  {
+    id: "owner-approval",
+    label: "Owner approval",
+    detail: "Owner approval is required before the suggested care twin becomes the active avatar.",
+  },
 ];
 
 export const AVATAR_TEMPLATES: AvatarTemplate[] = [
@@ -119,7 +165,7 @@ export const AVATAR_TEMPLATES: AvatarTemplate[] = [
     bodyClass: "sporting",
     defaultEarTypeId: "floppy",
     defaultMuzzleTypeId: "long",
-    recommendedEmotePackId: "starter-care-twin",
+    recommendedEmotePackId: "retriever-starter",
     anchorNotes: "Bottom-center body with stable wagging tail anchor.",
   },
   {
@@ -129,7 +175,7 @@ export const AVATAR_TEMPLATES: AvatarTemplate[] = [
     bodyClass: "working",
     defaultEarTypeId: "tall",
     defaultMuzzleTypeId: "long",
-    recommendedEmotePackId: "starter-care-twin",
+    recommendedEmotePackId: "husky-starter",
     anchorNotes: "Bottom-center anchor; tail and ruff need template-specific accessory clearances.",
   },
   {
@@ -139,7 +185,7 @@ export const AVATAR_TEMPLATES: AvatarTemplate[] = [
     bodyClass: "compact",
     defaultEarTypeId: "rose",
     defaultMuzzleTypeId: "short",
-    recommendedEmotePackId: "starter-care-twin",
+    recommendedEmotePackId: "bully-starter",
     anchorNotes: "Bottom-center anchor; shorter body height and wider collar placement.",
   },
   {
@@ -237,8 +283,67 @@ export const AVATAR_ACCESSORIES: AvatarAccessoryOption[] = [
   { id: "heart-sparkles", label: "Heart sparkles", slot: "fx", tone: "#C96358", launchTier: "plus-ready" },
 ];
 
+const SHEPHERD_TEMPLATE_FITTED_ACCESSORY_IDS = new Set([
+  "forest-bandana",
+  "navy-collar",
+  "birthday-hat",
+  "sleepy-mask",
+  "training-vest",
+  "cozy-bed",
+  "heart-sparkles",
+]);
+
+const TEMPLATE_FITTED_ACCESSORY_IDS: Partial<Record<AvatarTemplateId, Set<string>>> = {
+  shepherd: SHEPHERD_TEMPLATE_FITTED_ACCESSORY_IDS,
+};
+
+const ACCESSORY_SLOT_COPY: Record<keyof AvatarAccessorySlots, string> = {
+  head: "head slot above ears",
+  face: "face slot across eyes and muzzle",
+  neck: "neck slot under the jaw and above the chest",
+  body: "body slot over shoulders and chest",
+  room: "room slot behind or beneath the avatar",
+  fx: "effect slot around the avatar silhouette",
+};
+
 export function getAvatarTemplate(templateId: AvatarTemplateId): AvatarTemplate {
   return AVATAR_TEMPLATES.find((template) => template.id === templateId) ?? AVATAR_TEMPLATES[0];
+}
+
+export function deriveAvatarAccessoryFit(
+  templateId: AvatarTemplateId,
+  accessory: AvatarAccessoryOption,
+): AvatarAccessoryFitModel {
+  const template = getAvatarTemplate(templateId);
+  const placementHint = ACCESSORY_SLOT_COPY[accessory.slot];
+  const hasTemplateOverlay = TEMPLATE_FITTED_ACCESSORY_IDS[templateId]?.has(accessory.id) ?? false;
+
+  if (hasTemplateOverlay) {
+    return {
+      status: "template-fitted",
+      label: "Template-fitted",
+      detail: `${accessory.label} has a PixelLab ${template.label} overlay for the ${placementHint}. Confirm crop and motion on a real device before store screenshots.`,
+      placementHint,
+      needsDeviceQa: true,
+    };
+  }
+
+  return {
+    status: "inventory-ready",
+    label: "Pack pending",
+    detail: `${accessory.label} uses the shared inventory icon and procedural preview for ${template.label} until its template overlay pack ships.`,
+    placementHint,
+    needsDeviceQa: false,
+  };
+}
+
+export function summarizeAvatarAccessoryFits(templateId: AvatarTemplateId): string {
+  const template = getAvatarTemplate(templateId);
+  const fittedCount = AVATAR_ACCESSORIES.filter((item) => deriveAvatarAccessoryFit(templateId, item).status === "template-fitted").length;
+  const pendingCount = AVATAR_ACCESSORIES.length - fittedCount;
+  const pendingCopy = pendingCount === 1 ? "1 stays" : `${pendingCount} stay`;
+
+  return `${fittedCount}/${AVATAR_ACCESSORIES.length} accessories template-fitted for ${template.label}; ${pendingCopy} inventory-ready until their template overlay pack ships.`;
 }
 
 export function createDefaultAvatarConfig(petName = "Phoenix", now = new Date().toISOString()): PetAvatarConfig {
@@ -295,15 +400,20 @@ export function normalizeAvatarConfig(input: unknown, petName = "Phoenix"): PetA
       data.accessorySlots && typeof data.accessorySlots === "object" && !Array.isArray(data.accessorySlots)
         ? { ...fallback.accessorySlots, ...data.accessorySlots }
         : fallback.accessorySlots,
-    emotePackId: data.emotePackId === "starter-care-twin" || data.emotePackId === "phoenix-shepherd"
-      ? data.emotePackId
-      : templateDefaults.recommendedEmotePackId,
+    emotePackId:
+      data.emotePackId === "starter-care-twin" ||
+      data.emotePackId === "phoenix-shepherd" ||
+      data.emotePackId === "retriever-starter" ||
+      data.emotePackId === "husky-starter" ||
+      data.emotePackId === "bully-starter"
+        ? data.emotePackId
+        : templateDefaults.recommendedEmotePackId,
     scanAssisted: Boolean(data.scanAssisted),
     updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : fallback.updatedAt,
   };
 }
 
-export function buildMockScanSuggestion(petName = "Phoenix", now = new Date().toISOString()): AvatarScanSuggestion {
+export function buildTemplateScanSuggestion(petName = "Phoenix", now = new Date().toISOString()): AvatarScanSuggestion {
   const suggestedConfig = {
     ...createDefaultAvatarConfig(petName, now),
     scanAssisted: true,
@@ -321,7 +431,7 @@ export function buildMockScanSuggestion(petName = "Phoenix", now = new Date().to
       "Green bandana or collar detail",
     ],
     suggestedConfig,
-    copy: "Upload photos to help us suggest your dog's pixel care twin. You always approve the match before it becomes the live avatar.",
+    copy: "Photos guide a PixelLab template suggestion for your dog's pixel care twin. You always approve the match before it becomes the live avatar.",
   };
 }
 

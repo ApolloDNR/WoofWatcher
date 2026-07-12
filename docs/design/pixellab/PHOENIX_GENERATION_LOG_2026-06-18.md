@@ -201,6 +201,63 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/phoenix-main-head-v2.png`
 - Status: wired into app defaults and Avatar Studio head/icon surfaces
 
+### Option B Hard-Pixel Redesign Review Pack
+
+- Date: 2026-06-18
+- Phase: Option B visual correction / next Phoenix identity source
+- Operator: Codex
+- PixelLab tool: `create_1_direction_object`, then `select_object_frames`
+- Review object ID: `28564860-9f83-48d7-9a30-23e0f157d68e`
+- Cost: 25 generations
+- Prompt target: crisp Option B WoofWatcher Phoenix mascot, German Shepherd / Belgian Shepherd mix, sage bandana, copper heart tag, navy outline, hard pixel clusters, transparent background, not painterly and not a soft portrait.
+- Selected frames: `0` and `1`
+- Selected object IDs:
+  - seated source: `83b452c4-4321-4a86-830f-8ef337798cee`
+  - standing source: `4646c92b-753f-4fe7-8837-c7e9d1b82eef`
+- Local files:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-seated.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-standing.png`
+- Animation jobs:
+  - seated idle/tail-wag group `29653c52-e674-44a6-a060-47de53639c43`, animation `e8ee095e-7cff-45b6-85c8-0b68d07b339e`
+  - standing walk-loop group `d943ef3e-8833-4149-82d7-0782ab094c4a`, animation `957f02db-170c-458e-ad3e-85101c7b93cd`
+- Local proof strips:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png`
+- Status: selected, downloaded, normalized into 8-frame 256px-slot proof strips, and wired into the common happy/tail-wag and walk runtime assets. The 2026-06-19 expansion replaced the remaining live Phoenix action fallbacks with matching Option B candidate strips.
+
+### Option B Hard-Pixel Runtime Pack Expansion
+
+- Date: 2026-06-19
+- Phase: Option B action-state expansion
+- Operator: Codex
+- PixelLab tools: `animate_object`, `create_object_state`, then local `build-pixellab-sprite-strip.js`
+- Source seated object ID: `83b452c4-4321-4a86-830f-8ef337798cee`
+- Source standing object ID: `4646c92b-753f-4fe7-8837-c7e9d1b82eef`
+- Corrected sleep source object ID: `2b46f263-6e10-435d-9bc7-536d21827314`
+- Generated animation IDs:
+  - `ear-perk`: `3614a73d-35fc-4974-bb0c-c7b6ea343a55`
+  - `eat-loop`: `45048471-f588-4592-a89f-ed8bb994b141`
+  - `drink-loop`: `8975e020-3e25-4b00-bee9-26e6fdc8c31b`
+  - first sleep attempt, rejected for runtime loop use: `11b5e9be-14e0-44b3-b788-b5695e2dd2dd`
+  - corrected curled `sleep-loop`: `bbd8a406-09b4-459c-8fdf-c833d6f31a5f`
+  - `comfort-loop`: `bd8469a7-8048-4922-9f11-8d621151d0d5`
+  - `health-watch`: `7a21cc5c-7428-4a9f-b714-e78fe64666d9`
+  - `celebrate-hop`: `cb56007a-2027-4a4c-8394-7509e07f4c7e`
+  - `bark-reaction`: `4a5d9b0b-a94e-43bb-ba65-3adf4fcc00eb`
+- Local source:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-sleep-source.png`
+- Local strips:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-ear-perk-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-eat-loop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-drink-loop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-sleep-loop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-comfort-loop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-health-watch-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-celebrate-hop-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/candidates/option-b-bark-reaction-strip.png`
+- Visual review notes: `ear-perk` is subtle but acceptable; `eat` and `drink` keep the same hard-pixel dog and add tiny prop pixels; the first sleep attempt was a sit-to-lie transition and was replaced by a curled sleep source plus subtle breathing loop; `comfort` and `health-watch` are calmer/subtler than final store-polish needs but preserve the Option B identity; `celebrate-hop` reads as a usable one-shot reward.
+- Runtime status: `careTwinAssets.ts` and `CARE_TWIN_SPRITE_MANIFEST` now point live Phoenix actions at the Option B candidate family, including a dedicated `option-b-bark-reaction-strip.png` for tap/bark moments instead of the older south-facing bark sprite.
+
 ### V2 State Assets
 
 - Sleep/rest object ID: `5ff99e4b-b2ca-4a4f-96b3-8da9a661c367`
@@ -349,4 +406,390 @@ Apollo added a PixelLab subscription and requested the redesign continue toward 
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/base.png` from `472ae20c-5dc4-496a-b0e7-7cafe29d147c`
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/base.png` from `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`
   - `artifacts/woofwatcher-mobile/assets/avatar/templates/doodle/base.png` from `f5852e83-c2d1-4630-8e97-6a4cdb02260d`
-- Status: generated, visually reviewed as a coherent first production-scale base set, registered in the mobile Avatar Studio preview stage, and protected by readiness tests. Remaining templates, emote stills, sprite strips, and accessory overlays are still future work.
+- Status: generated, visually reviewed as a coherent first production-scale base set, registered in the mobile Avatar Studio preview stage, and protected by readiness tests. Remaining base templates were completed in packs 2 and 3 below.
+
+### Avatar Studio Template Base Pack 2
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_1_direction_object`
+- Review object ID: `eae9f9d1-83ea-4f8d-9ea6-af81db200d18`
+- Tag: `woofwatcher-avatar-template-base-pack-2026-06-18`
+- Cost: 25 generations
+- Output format: 4 selected transparent 170x170 PNG base stills.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/base.png` from `25c648c4-6e26-4c8e-8b65-6fb94e7c10b4`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/terrier/base.png` from `65f0ffbb-e811-49d4-be6d-c8f2b2abf0ce`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/hound/base.png` from `7f8a712d-c65c-4d1c-835a-5f79b5500ff7`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/dachshund/base.png` from `8fbb402b-579d-478c-bcad-fd21e61cf530`
+- Status: generated, selected, downloaded, visually checked in a 12-template contact sheet, registered, and covered by PixelLab asset verification.
+
+### Avatar Studio Template Base Pack 3
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_1_direction_object`
+- Review object ID: `06af8c0e-a3fe-411a-bab9-9535648a7f29`
+- Tag: `woofwatcher-avatar-template-base-pack-2026-06-18`
+- Cost: 25 generations
+- Output format: 4 selected transparent 170x170 PNG base stills.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/spaniel/base.png` from `b85934b2-d1cc-4b89-b4e9-0342520ec73a`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/toy/base.png` from `995d0da0-6469-42ea-9855-7caed01584c2`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/slender/base.png` from `efa34067-c258-4105-9da4-73d0907f36b5`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/mixed/base.png` from `c63ef688-cc17-4f7f-94d2-8504606213b5`
+- Status: generated, selected, downloaded, visually checked in a 12-template contact sheet, registered, and covered by PixelLab asset verification. The launch template base-still layer is now complete; emote stills, sprite strips, and accessories remain.
+
+### Phoenix Avatar Studio Emote Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_object_state`
+- Source object ID: `4f318d58-7166-4b0a-b202-2896eed1e0dc`
+- Output format: 10 transparent 170x170 PNG emote stills.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarEmoteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/happy.png` from the approved proud/happy state.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/calm.png` from `f690d72e-5efb-4931-ad76-d2f4a739ff87`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/excited.png` from `bfe8bee5-5fa8-415c-b63e-2d71faa9725e`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/bored.png` from `b74aea82-806a-410c-acc5-1247cbde970c`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/hungry.png` from `2f1a7800-0414-44e7-94d0-fb986ca22343`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/anxious.png` from the approved home-alone/anxious state.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/sleepy.png` from the approved sleep/rest state.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/proud.png` from the approved proud/happy state.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/home-alone.png` from the approved home-alone/anxious state.
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/approved/emotes/not-feeling-well.png` from `39e8b2d9-da66-496b-83c6-8755bcad7d23`.
+- Rejected first-pass object IDs:
+  - `ac03ab66-d872-4ac6-a8e9-9b83f9828fe7` - bored pose too similar to default.
+  - `799136e4-e617-4187-880c-62078df88661` - hungry pose too subtle at phone size.
+  - `2032e8a9-6e52-4504-8ac4-38dd69c7957c` - not-feeling-well pose too similar to default.
+- Status: generated, downloaded, registered, wired into the Avatar Studio Mood set, and covered by PixelLab asset verification. The first Phoenix/Shepherd still-emote layer is live; remaining unfinished template emotes, accessory overlays, and mood transition strips remain.
+
+### Subscription Seed Animation Strips
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab character ID: `f0c6169b-88c0-4428-9089-31c0565c4129`
+- PixelLab templates:
+  - `idle`
+  - `walk-8-frames`
+  - `bark`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/pixellab-idle-south-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/pixellab-walk-south-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/phoenix/pixellab-bark-south-strip.png`
+- Output format: two transparent 2048x256 PNG strips with eight 256px frame slots, plus one transparent 1536x256 PNG bark strip with six 256px frame slots.
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
+- Status: local production seed strips for movement review. Idle and walk are not promoted over the current approved seated Home sprite family until phone-size proportions, anchor, and mockup fit are approved. Bark is wired as a momentary room-tap reaction so the main dog feels alive without adding a second avatar.
+
+### Retriever Avatar Studio Emote Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_object_state`
+- Source object ID: `472ae20c-5dc4-496a-b0e7-7cafe29d147c`
+- Output format: 10 transparent 170x170 PNG emote stills.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarEmoteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/happy.png` from `5e24a03f-73dc-4684-b4c3-ddc91f8db9f9`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/calm.png` from `b5983708-e550-472f-9189-5ac9bec7d191`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/excited.png` from `e4aae138-1c54-4cf1-88c7-613dc62d1184`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/bored.png` from `e29b6096-6f06-4f14-80c8-aec1c839ee2d`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/hungry.png` from `7afaace0-d865-4d94-ba17-b5a2b93a57a1`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/anxious.png` from `87bda871-3929-4378-ac3f-7ef1d98318d5`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/sleepy.png` from `2be863b6-a1b7-422b-ae26-cd82676cdc38`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/proud.png` from `88e6bf65-fc70-4fc8-bc58-d70a0672e671`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/home-alone.png` from `52215717-34b7-4ebf-a354-2c628eb0559d`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/emotes/not-feeling-well.png` from `a48f574d-fb49-4198-ad9b-96ac47df7e5f`.
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
+- Status: generated, downloaded, registered, wired into the Avatar Studio Mood set through selected-template emote routing, and covered by mobile readiness tests. This is the first non-Phoenix still-emote layer; remaining templates/body classes still need packs.
+
+### Husky Avatar Studio Emote Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_object_state`
+- Source object ID: `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`
+- Output format: 10 transparent 170x170 PNG emote stills.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarEmoteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/happy.png` from `43274fa6-510c-459c-8aab-7cc5f3a78d59`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/calm.png` from `151791e6-2aa1-45e9-9013-a743caa3349b`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/excited.png` from `01e04bc6-32b6-44bd-b97d-6201adc728f7`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/bored.png` from `a1b97cb6-1302-4dff-9981-4ce9b8550e82`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/hungry.png` from `8dcfd8f2-d981-45a5-b8fd-a3f1424bdaef`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/anxious.png` from `10ecc873-2e40-413a-b5b7-7bbda2a86a9a`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/sleepy.png` from `ed674bb8-5594-4bb0-877b-132c6e1212d0`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/proud.png` from `74fe802a-6f5a-4e3e-83a0-5e9de5c8f1cb`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/home-alone.png` from `aa79bc58-b3e2-4df5-9608-1556794bd5e7`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/emotes/not-feeling-well.png` from `3af5005a-8a5b-485a-8d3d-caeb67fdd927`.
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
+- Status: generated, downloaded, registered, wired into the Avatar Studio Mood set through selected-template emote routing, and covered by mobile readiness tests. This is the first spitz/working-body still-emote layer; remaining templates/body classes still need packs.
+
+### Bully Avatar Studio Emote Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `create_object_state`
+- Source object ID: `25c648c4-6e26-4c8e-8b65-6fb94e7c10b4`
+- Output format: 10 transparent 170x170 PNG emote stills.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarEmoteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/happy.png` from `5623a7f7-53c9-4016-8151-43f2fad7e501`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/calm.png` from `dd2f10b2-905f-4e46-91f6-16ca9168aefd`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/excited.png` from `37c9af58-89ad-403c-bb04-113c98a5bc1b`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/bored.png` from `cfb7f686-205a-48b4-ac87-53519d1f0181`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/hungry.png` from `80e3e425-8678-4216-90df-d51a9af1eb0a`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/anxious.png` from `1c011c1d-7732-4dac-863f-1832f249cf79`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/sleepy.png` from `8b2d35c3-70c9-459d-ad0a-5d8da56ddb34`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/proud.png` from `88ac8cb1-aaf9-4b4f-bc7b-6f6a73fa6d31`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/home-alone.png` from `15420aec-4dd6-447e-bee7-b4754b159f47`.
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/emotes/not-feeling-well.png` from `171074b3-552c-4b35-8fad-7b454b59349a`.
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
+- Status: generated, downloaded, visually checked, registered, wired into the Avatar Studio Mood set through selected-template emote routing, and covered by mobile readiness tests. This is the first compact-body still-emote layer; remaining templates/body classes still need packs and sprite strips.
+
+### Retriever Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tool: `animate_object`
+- Source object ID: `472ae20c-5dc4-496a-b0e7-7cafe29d147c`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `b0928f23-0fba-48cc-9747-948c55aa7508`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/472ae20c-5dc4-496a-b0e7-7cafe29d147c/animations/b0928f23-0fba-48cc-9747-948c55aa7508/unknown/{i}.png`.
+  - Walk loop: animation ID `ef112930-422e-4bf4-8947-616a42ca0272`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/472ae20c-5dc4-496a-b0e7-7cafe29d147c/animations/ef112930-422e-4bf4-8947-616a42ca0272/unknown/{i}.png`.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/retriever/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, registered, wired into Avatar Studio through template-specific sprite preview routing, and included in the static Expo web export. The idle strip is a usable first live template loop. The walk strip is a first-pass movement proof and should be phone-reviewed/refined because it includes a front-to-side motion read.
+
+### Husky Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `animate_object`, then `create_object_state` plus `animate_object` for the corrected walk source.
+- Source object ID: `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`
+- Standing walk source object ID: `6f981773-f54b-400d-8f8e-099c32ea259d`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `01564c1a-12f1-4ca6-81c5-7040a6f14b07`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7/animations/01564c1a-12f1-4ca6-81c5-7040a6f14b07/unknown/{i}.png`.
+  - Rejected seated walk attempt: animation ID `6a44263b-d4d2-44d7-b6fa-fd31863a4dfc`, source object `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`. This was not accepted because visual inspection showed a mostly seated expression loop instead of a walk.
+  - Accepted standing-source walk loop: animation ID `be7c3d19-df7d-4e36-9469-834ce5730679`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/6f981773-f54b-400d-8f8e-099c32ea259d/animations/be7c3d19-df7d-4e36-9469-834ce5730679/unknown/{i}.png`.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/husky/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, wired into Avatar Studio through template-specific sprite preview routing, and ready for static Expo export verification. Future body-class walk loops should start from a standing source pose when the base still is seated.
+
+### Bully Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `animate_object`, `create_object_state`, then `animate_object` for the standing walk source.
+- Source object ID: `25c648c4-6e26-4c8e-8b65-6fb94e7c10b4`
+- Standing walk source object ID: `63a12770-2e23-4e1b-bf9d-ba4aa2556018`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `dcd03bf7-9bcc-443e-9bae-a705a62179a6`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/25c648c4-6e26-4c8e-8b65-6fb94e7c10b4/animations/dcd03bf7-9bcc-443e-9bae-a705a62179a6/unknown/{i}.png`.
+  - Standing-source walk loop: animation ID `0e35a98b-b8c3-46ef-bf30-c5fe30a6270d`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/63a12770-2e23-4e1b-bf9d-ba4aa2556018/animations/0e35a98b-b8c3-46ef-bf30-c5fe30a6270d/unknown/{i}.png`.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/bully/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, wired into Avatar Studio through template-specific sprite preview routing, and ready for static Expo export verification.
+
+### Doodle Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `animate_object`, `create_object_state`, then `animate_object` for the standing walk source.
+- Source object ID: `f5852e83-c2d1-4630-8e97-6a4cdb02260d`
+- Standing walk source object ID: `20a386e7-34a8-46f9-904a-3be540ee46b6`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `f2f8d9a4-6218-4c9a-ad31-087ecd4ff476`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/f5852e83-c2d1-4630-8e97-6a4cdb02260d/animations/f2f8d9a4-6218-4c9a-ad31-087ecd4ff476/unknown/{i}.png`.
+  - Standing-source walk loop: animation ID `329d8628-3c73-4e90-b577-4f47a2137f5f`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/20a386e7-34a8-46f9-904a-3be540ee46b6/animations/329d8628-3c73-4e90-b577-4f47a2137f5f/unknown/{i}.png`.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/doodle/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/doodle/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, wired into Avatar Studio through template-specific sprite preview routing, and ready for static Expo export verification. The Doodle walk strip currently gives the strongest non-Phoenix game-walk read and should be used as a quality reference for future walk-loop prompts.
+
+### Terrier Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `animate_object`, `create_object_state`, then `animate_object` for the standing walk source.
+- Source object ID: `65f0ffbb-e811-49d4-be6d-c8f2b2abf0ce`
+- Standing walk source object ID: `ec13f68b-df30-4cc3-a73f-51c792f3ca17`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `44917f48-6d14-4d5c-ad96-091aea93f203`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/65f0ffbb-e811-49d4-be6d-c8f2b2abf0ce/animations/44917f48-6d14-4d5c-ad96-091aea93f203/unknown/{i}.png`.
+  - Standing-source walk loop: animation ID `e51be464-8eb8-4cec-b40e-a12f8ae184af`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/ec13f68b-df30-4cc3-a73f-51c792f3ca17/animations/e51be464-8eb8-4cec-b40e-a12f8ae184af/unknown/{i}.png`.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/terrier/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/terrier/sprites/walk-loop-strip.png`
+- UX update: `/portrait` now shows live/still readiness badges and a live-template count in the template picker, so unfinished templates are clearly labeled as still in production.
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, wired into Avatar Studio through template-specific sprite preview routing, and ready for static Expo export verification. The walk loop has a readable small-terrier trot with some front-to-side turn, so it should receive native phone-size gait review before final store polish.
+
+### Hound Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `create_1_direction_object`, `select_object_frames`, `animate_object`, `create_object_state`, then `animate_object` for the standing walk source.
+- Source review object ID: `ed2780ce-34ac-41ae-8848-12e723a0e7b1`
+- Selected source object ID: `ad00f137-4857-465f-99a6-82fae38de2c9`
+- Standing walk source object ID: `9299721e-1376-4b3a-9de3-224e79b2735f`
+- Supplemental 8-direction character reference ID: `7a3d1bdb-14d6-44e1-8a46-b24fac3bbc3b`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `8e0a7ca7-5969-42c8-bd64-b71346ea957c`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/ad00f137-4857-465f-99a6-82fae38de2c9/animations/8e0a7ca7-5969-42c8-bd64-b71346ea957c/unknown/{i}.png`.
+  - Standing-source walk loop: animation ID `eaf87717-3fba-4ff7-a2c3-ddee48728b43`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/9299721e-1376-4b3a-9de3-224e79b2735f/animations/eaf87717-3fba-4ff7-a2c3-ddee48728b43/unknown/{i}.png`.
+  - Rejected comparison strip: south-facing `walk-8-frames` from the supplemental 8-direction character. This was not accepted because it read too small/front-facing for the Avatar Studio side-view stage.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/hound/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/hound/sprites/walk-loop-strip.png`
+- UX update: `/portrait` now treats completed live template packs as animated preview citizens in the motion model and adds a tighter pixel-stage floor/live chip so the selected care twin reads as one in-scene game sprite.
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. The Hound side-view walk has a clean first-pass gait and should receive native phone-size timing review before final store polish.
+
+### Dachshund Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `create_object_state`, `create_1_direction_object` for backup comparison, `select_object_frames`, then `animate_object`.
+- Source base object ID: `8fbb402b-579d-478c-bcad-fd21e61cf530`
+- Accepted side-view live source object ID: `ebd40e4b-2e60-413d-a892-aa4a845ffba5`
+- Backup prompt-only review object ID: `76daf76c-e688-4294-9954-de4b32566669`
+- Backup selected object ID, not used for final local strips: `80b50c41-cf3c-44d2-b26e-606da8e362dd`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `67c0f82b-f46f-4740-a954-a700b75c910e`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/ebd40e4b-2e60-413d-a892-aa4a845ffba5/animations/67c0f82b-f46f-4740-a954-a700b75c910e/unknown/{i}.png`.
+  - Walk loop: animation ID `1a49feec-30dd-4a1c-a8c2-907abd759fa0`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/ebd40e4b-2e60-413d-a892-aa4a845ffba5/animations/1a49feec-30dd-4a1c-a8c2-907abd759fa0/unknown/{i}.png`.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/dachshund/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/dachshund/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. The accepted source preserves the long-body silhouette better than the prompt-only backup and gives Dachshund its own live game-style motion instead of a still preview.
+
+### Spaniel Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `create_object_state`, then `animate_object`.
+- Source base object ID: `b85934b2-d1cc-4b89-b4e9-0342520ec73a`
+- Accepted side-view live source object ID: `fd7de1c0-f821-4a8c-889c-098417d7d2a1`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `3e5b2a81-bcf5-4a5e-8516-4000147207c9`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/fd7de1c0-f821-4a8c-889c-098417d7d2a1/animations/3e5b2a81-bcf5-4a5e-8516-4000147207c9/unknown/{i}.png`.
+  - Walk loop: animation ID `25ca7161-8e0b-4b96-8518-3f7dd5a06611`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/fd7de1c0-f821-4a8c-889c-098417d7d2a1/animations/25ca7161-8e0b-4b96-8518-3f7dd5a06611/unknown/{i}.png`.
+- Local registry: `artifacts/woofwatcher-mobile/lib/avatarTemplateSpriteAssets.ts`
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/spaniel/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/spaniel/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. The accepted source turns the seated/front-facing Spaniel base into a side-view game-sprite stance with readable floppy-ear idle and walk loops.
+
+### Toy Breed Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `create_object_state`, then `animate_object`.
+- Source base object ID: `995d0da0-6469-42ea-9855-7caed01584c2`
+- Accepted side-view live source object ID: `ae5d26e0-3e12-4952-a728-15db8a56f15b`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `971528e9-ea77-422d-8b30-caa33ed431b7`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/ae5d26e0-3e12-4952-a728-15db8a56f15b/animations/971528e9-ea77-422d-8b30-caa33ed431b7/unknown/{i}.png`.
+  - Walk loop: animation ID `9c4c79dd-c34e-41ae-a1b0-48c3ba55e954`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/ae5d26e0-3e12-4952-a728-15db8a56f15b/animations/9c4c79dd-c34e-41ae-a1b0-48c3ba55e954/unknown/{i}.png`.
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/toy/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/toy/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. Toy's walk loop has a tiny contact-shadow artifact in some frames that should be reviewed on native phone-size QA before final store polish.
+
+### Slender Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `create_object_state`, then `animate_object`.
+- Source base object ID: `efa34067-c258-4105-9da4-73d0907f36b5`
+- Accepted side-view live source object ID: `a18794b5-dc3d-49c7-91c2-44d6238b538c`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `2b643c66-fef4-4092-8928-f5cf8d3c0828`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/a18794b5-dc3d-49c7-91c2-44d6238b538c/animations/2b643c66-fef4-4092-8928-f5cf8d3c0828/unknown/{i}.png`.
+  - Walk loop: animation ID `2445a280-335b-4bff-9249-cbc71a22f396`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/a18794b5-dc3d-49c7-91c2-44d6238b538c/animations/2445a280-335b-4bff-9249-cbc71a22f396/unknown/{i}.png`.
+  - Recovered failure: the first idle/tail-wag attempt failed with `[500] Out of CUDA memory (24 GB total capacity)`, then the retry succeeded.
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/slender/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/slender/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. The long-leg silhouette is strong; native phone-size QA should confirm the gait cadence reads naturally in motion.
+
+### Mixed Breed Avatar Studio Sprite Pack 1
+
+- Date: 2026-06-18
+- Operator: Codex
+- PixelLab tools: `create_object_state`, then `animate_object`.
+- Source base object ID: `c63ef688-cc17-4f7f-94d2-8504606213b5`
+- Accepted side-view live source object ID: `8c85ad7b-d623-4995-80e3-d0658250f7bc`
+- Output format: two transparent 2048x256 PNG strips with eight selected 256px frame slots each.
+- PixelLab animation outputs:
+  - Idle/tail wag: animation ID `1ac4546d-1e62-4026-bd8e-11279343320b`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/8c85ad7b-d623-4995-80e3-d0658250f7bc/animations/1ac4546d-1e62-4026-bd8e-11279343320b/unknown/{i}.png`.
+  - Walk loop: animation ID `53e19ee4-952c-4de9-a32d-5262ee6094e1`, source frame URL pattern `https://backblaze.pixellab.ai/file/pixellab-characters/objects/6d534fef-6adb-4c51-8cc0-dd07c50c68b3/8c85ad7b-d623-4995-80e3-d0658250f7bc/animations/53e19ee4-952c-4de9-a32d-5262ee6094e1/unknown/{i}.png`.
+- Local assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/mixed/sprites/idle-tail-wag-strip.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/templates/mixed/sprites/walk-loop-strip.png`
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js` and `artifacts/woofwatcher-mobile/lib/mobileReadiness.test.ts`.
+- Status: generated, normalized, visually checked, registered, and wired into Avatar Studio through template-specific sprite preview routing. This completes live idle/walk sprite coverage for every non-Phoenix launch template.
+
+### Final-Candidate Dogless Room Pass 1
+
+- Date: 2026-06-19
+- Operator: Codex
+- PixelLab tool: `create_map_object`.
+- Accepted map object IDs:
+  - Night: `ee1156d6-0ff6-495d-9e3b-847a86f0cd5b`
+  - Bedtime: `f5b8dc3d-e034-41f4-b9f7-f988166e9fb0`
+  - Health Watch: `be27ec74-b390-47f2-9c32-9a690a7e3b38`
+  - Home Alone: `762d57a1-ea40-4d92-b7c2-ac8b7d897e73`
+- Local source assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-night-pixellab-source.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-bedtime-pixellab-source.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-health-watch-pixellab-source.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-home-alone-pixellab-source.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-day-dogless-style-source-192.png`
+- Runtime assets:
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-night.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-bedtime.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-health-watch.png`
+  - `artifacts/woofwatcher-mobile/assets/avatar/rooms/phoenix-room-home-alone.png`
+- Rejected attempts:
+  - Bedtime attempts drifted into isometric room perspective or contained dog-like poster marks.
+  - Home-alone attempts with baked-in dogs or watermark-like marks were rejected.
+  - Night attempts with baked-in dogs were rejected.
+- Verification: covered by `artifacts/woofwatcher-mobile/scripts/verify-pixellab-assets.js`.
+- Status: night, bedtime, health-watch, and home-alone final candidates are downloaded, visually checked, normalized to 800x600 nearest-neighbor runtime layers, and wired through existing `careTwinAssets.ts` filenames. This completes replacement of the first-pass derived state room variants; native phone-size QA still needs to approve room/sprite proportions and stage cropping.
+
+### Option B Redesign Candidate Review
+
+- Date: 2026-06-19
+- Operator: Codex
+- PixelLab subscription status: active during this pass.
+- Current balance after review: 330 generations remaining from the active subscription allowance, no dollar credits remaining.
+- Candidate `6ad8a54d-3b19-41d8-9525-4eeca0d76529`: "WoofWatcher Phoenix Option B Single Sprite Candidate". Status: archived as a clean single side-sitting candidate, but not promoted because it has no matching animation pack and does not surpass the current registered Option B runtime family.
+- Candidate `96200e12-1297-4970-9342-beee2f18c5a9`: "WoofWatcher Phoenix Option B Final Candidate". Status: rejected because preview review showed duplicate/cropped body artifacts.
+- Candidate `93160aef-fe35-46bf-8b40-859687053072`: "WoofWatcher Phoenix Option B Pro Game Sprite". Status: rejected because the output drifted gray and lost the warm black/tan Phoenix identity from the locked boards.
+- Runtime decision: keep the current registered hard-pixel Option B Phoenix strips as the live app source, then improve the in-app renderer, room staging, quick-log reactions, and Avatar Studio presentation around those assets.
+- Product decision: do not spend more generations on Phoenix main-character replacement until the prompt/reference-image workflow is tighter or Apollo explicitly requests another production run.
+- Verification: local TypeScript, focused care-twin/avatar tests, PixelLab asset verification, Expo web export, and Chrome web screenshot checks were used for this redesign pass. Native iOS/Android QA remains required before final store confidence.

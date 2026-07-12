@@ -3,6 +3,7 @@ import {
   Inter_500Medium,
   Inter_600SemiBold,
   Inter_700Bold,
+  Inter_800ExtraBold,
   useFonts,
 } from "@expo-google-fonts/inter";
 import {
@@ -18,18 +19,22 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ClerkProvider, ClerkLoaded } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { Stack, useRouter, useSegments } from "expo-router";
+import { LinkPreviewContextProvider } from "expo-router/build/link/preview/LinkPreviewContext";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { Platform, StyleSheet, useColorScheme, View } from "react-native";
+import { Platform, StyleSheet, useColorScheme, useWindowDimensions, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { WalkRouteRecorderBridge } from "@/components/WalkRouteRecorder";
+import { WebDialogHost } from "@/components/WebDialogHost";
 import { CareProvider } from "@/context/CareContext";
 import { AvatarProvider } from "@/context/AvatarContext";
+import { useColors } from "@/hooks/useColors";
 import {
   clerkProxyUrl,
   clerkPublishableKey,
@@ -57,6 +62,7 @@ function RootLayoutNav() {
   const { isSignedIn } = useWoofAuth();
   const segments = useSegments();
   const router = useRouter();
+  const colors = useColors();
 
   // Development convenience: skip the sign-in gate so the app can be reviewed
   // in the web preview / simulator without logging in on every reload. Real
@@ -78,7 +84,18 @@ function RootLayoutNav() {
   return (
     <Stack
       initialRouteName="(tabs)"
-      screenOptions={{ headerBackTitle: "Back", headerTintColor: "#2E5846" }}
+      screenOptions={{
+        headerBackTitle: "Back",
+        headerTintColor: colors.copper,
+        headerTitleStyle: {
+          fontFamily: "Fredoka_700Bold",
+          fontSize: 19,
+          color: colors.foreground,
+        },
+        headerStyle: { backgroundColor: colors.background },
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: colors.background },
+      }}
     >
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -91,7 +108,6 @@ function RootLayoutNav() {
         options={{
           title: "Setup",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
       <Stack.Screen
@@ -99,7 +115,6 @@ function RootLayoutNav() {
         options={{
           title: "WoofGuide",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
       <Stack.Screen
@@ -107,7 +122,6 @@ function RootLayoutNav() {
         options={{
           title: "WoofWatcher Plus",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
       <Stack.Screen
@@ -115,20 +129,148 @@ function RootLayoutNav() {
         options={{
           title: "Privacy & Safety",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
+      <Stack.Screen
+        name="legal"
+        options={{
+          headerShown: false,
+          presentation: "card",
+        }}
+      />
+      <Stack.Screen
+        name="adventure"
+        options={{
+          title: "Adventure Mode",
+          presentation: "card",
+        }}
+      />
+      <Stack.Screen
+        name="fastlog"
+        options={{
+          headerShown: false,
+          presentation: "modal",
+          // iOS modals slide by default; this keeps Android's native
+          // transition matching instead of a platform-default cut. The web
+          // build ignores it, so the fastlog screen runs its own mount
+          // fade/rise there.
+          animation: "slide_from_bottom",
+          contentStyle: { backgroundColor: "#32362B" },
+        }}
+      />
+      <Stack.Screen
+        name="care-twin-qa"
+        options={{
+          title: "Care Twin QA",
+          presentation: "card",
+        }}
+      />
+      <Stack.Screen name="+not-found" options={{ title: "Not Found" }} />
     </Stack>
   );
 }
 
+type WebViewport = { width: number; height: number };
+
+function getWebViewport(): WebViewport | null {
+  const viewport = (globalThis as unknown as { visualViewport?: { width: number; height: number } }).visualViewport;
+  if (!viewport) return null;
+  return { width: viewport.width, height: viewport.height };
+}
+
+function useWebViewportClamp() {
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+
+    const webDocument = (globalThis as unknown as {
+      document?: {
+        body?: HTMLElement;
+        documentElement?: HTMLElement;
+        getElementById?: (id: string) => HTMLElement | null;
+      };
+    }).document;
+
+    const nodes = [
+      webDocument?.documentElement,
+      webDocument?.body,
+      webDocument?.getElementById?.("root"),
+    ].filter((node): node is HTMLElement => Boolean(node));
+
+    const previous = nodes.map((node) => ({
+      node,
+      margin: node.style.margin,
+      minWidth: node.style.minWidth,
+      width: node.style.width,
+      maxWidth: node.style.maxWidth,
+      overflowX: node.style.overflowX,
+    }));
+
+    for (const node of nodes) {
+      node.style.minWidth = "0";
+      node.style.width = "100vw";
+      node.style.maxWidth = "100vw";
+      node.style.overflowX = "hidden";
+    }
+
+    if (webDocument?.body) webDocument.body.style.margin = "0";
+
+    return () => {
+      for (const style of previous) {
+        style.node.style.margin = style.margin;
+        style.node.style.minWidth = style.minWidth;
+        style.node.style.width = style.width;
+        style.node.style.maxWidth = style.maxWidth;
+        style.node.style.overflowX = style.overflowX;
+      }
+    };
+  }, []);
+}
+
 function AppFrame() {
+  useWebViewportClamp();
+
   if (Platform.OS !== "web") return <RootLayoutNav />;
 
+  const { width, height } = useWindowDimensions();
+  const [webViewport, setWebViewport] = React.useState<WebViewport | null>(() => getWebViewport());
+
+  useEffect(() => {
+    const viewport = (globalThis as unknown as {
+      visualViewport?: {
+        addEventListener: (type: "resize", listener: () => void) => void;
+        removeEventListener: (type: "resize", listener: () => void) => void;
+      };
+    }).visualViewport;
+    if (!viewport) return;
+
+    const syncViewport = () => setWebViewport(getWebViewport());
+    syncViewport();
+    viewport.addEventListener("resize", syncViewport);
+    return () => viewport.removeEventListener("resize", syncViewport);
+  }, []);
+
+  const viewportWidth = webViewport?.width ?? width;
+  const viewportHeight = webViewport?.height ?? height;
+  const shouldAnchorCompactPreview = viewportWidth <= 520;
+  const frameWidth = Math.min(viewportWidth, 390);
+  const frameHeight = Math.min(viewportHeight, 932);
+
   return (
-    <View style={styles.webBackdrop}>
-      <View style={styles.webFrame}>
+    <View
+      style={[
+        styles.webBackdrop,
+        {
+          width: viewportWidth,
+          minHeight: viewportHeight,
+          alignItems: shouldAnchorCompactPreview ? "flex-start" : "center",
+        },
+      ]}
+    >
+      <View style={[styles.webFrame, { width: frameWidth, maxHeight: frameHeight }]}>
         <RootLayoutNav />
+        {/* Themed notice/confirm dialogs for web builds: notifyDialog and
+            confirmThroughSteps render here instead of raw window.alert. */}
+        <WebDialogHost />
       </View>
     </View>
   );
@@ -141,6 +283,7 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    Inter_800ExtraBold,
     Fredoka_500Medium,
     Fredoka_600SemiBold,
     Fredoka_700Bold,
@@ -157,23 +300,28 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   const app = (
-    <SafeAreaProvider>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <AuthBridge />
-          <CareProvider>
-            <AvatarProvider>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <KeyboardProvider>
-                  <StatusBar style={Platform.OS !== "web" && scheme === "dark" ? "light" : "dark"} />
-                  <AppFrame />
-                </KeyboardProvider>
-              </GestureHandlerRootView>
-            </AvatarProvider>
-          </CareProvider>
-        </QueryClientProvider>
-      </ErrorBoundary>
-    </SafeAreaProvider>
+    <LinkPreviewContextProvider>
+      <SafeAreaProvider>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <AuthBridge />
+            <CareProvider>
+              {/* Follows the shared walk lifecycle: starts route capture when
+                  any surface opens a walk session, persists it on finish. */}
+              <WalkRouteRecorderBridge />
+              <AvatarProvider>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <KeyboardProvider>
+                    <StatusBar style={Platform.OS !== "web" && scheme === "dark" ? "light" : "dark"} />
+                    <AppFrame />
+                  </KeyboardProvider>
+                </GestureHandlerRootView>
+              </AvatarProvider>
+            </CareProvider>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </SafeAreaProvider>
+    </LinkPreviewContextProvider>
   );
 
   if (!isClerkConfigured || !clerkPublishableKey) return app;
@@ -195,13 +343,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#081A2A",
-    padding: 18,
+    alignSelf: "flex-start",
+    minWidth: 0,
+    overflow: "hidden",
+    paddingHorizontal: 0,
+    paddingVertical: 18,
   },
   webFrame: {
     flex: 1,
-    width: "100%",
-    maxWidth: 430,
-    maxHeight: 932,
+    minWidth: 0,
     overflow: "hidden",
     backgroundColor: "#FFF9EF",
     borderColor: "rgba(255, 249, 239, 0.18)",

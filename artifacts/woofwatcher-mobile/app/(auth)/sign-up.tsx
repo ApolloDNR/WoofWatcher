@@ -11,13 +11,26 @@ import {
   Field,
   FormError,
   GoogleButton,
+  LocalPreviewGateway,
   PrimaryButton,
 } from "@/components/auth-ui";
 import { useColors } from "@/hooks/useColors";
+import { isClerkConfigured } from "@/lib/auth";
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignUpScreen() {
+  // Clerk hooks throw without a configured provider, so the local-preview
+  // gateway renders instead of mounting the account form in preview builds.
+  if (!isClerkConfigured) {
+    return (
+      <LocalPreviewGateway subtitle="Account creation is not connected in this preview build. Care data stays local-first until production sync providers are configured." />
+    );
+  }
+  return <ClerkSignUpScreen />;
+}
+
+function ClerkSignUpScreen() {
   const colors = useColors();
   const { signUp, errors, fetchStatus } = useSignUp();
   const { startSSOFlow } = useSSO();
@@ -103,7 +116,7 @@ export default function SignUpScreen() {
     return (
       <AuthShell
         title="Check your email"
-        subtitle={`We sent a verification code to ${emailAddress}. Enter it below to finish setting up your account.`}
+        subtitle={`We sent a verification code to ${emailAddress}. Enter it below to protect your household care space.`}
       >
         <FormError message={formError} />
         <Field
@@ -147,7 +160,7 @@ export default function SignUpScreen() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Start a shared care log your whole household can keep in sync."
+      subtitle="Create the account layer for Phoenix's care twin. Care data stays local-first until production sync providers are configured."
     >
       <FormError message={formError} />
       <Field

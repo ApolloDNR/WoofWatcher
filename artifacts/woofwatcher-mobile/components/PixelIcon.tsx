@@ -1,7 +1,10 @@
 import React from "react";
 import { Image, type ImageStyle, type StyleProp } from "react-native";
 
-// Pixel-art icons cropped from the WoofWatcher design board.
+// Premium pixel-art icon set generated to match the design board's icon
+// style (chunky pixels, dark soft outlines, warm storybook palette), shipped
+// as clean 128px squares. The pixel look is baked into the art itself, so
+// icons downscale smoothly with no nearest-neighbor artifacts at chip sizes.
 const SOURCES = {
   meal: require("@/assets/board/icons/meal.png"),
   walk: require("@/assets/board/icons/walk.png"),

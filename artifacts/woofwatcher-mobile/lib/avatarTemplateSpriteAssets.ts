@@ -1,505 +1,664 @@
 import type { ImageSourcePropType } from "react-native";
 
-import {
-  CARE_TWIN_SPRITE_MANIFEST,
-  type CareTwinSpriteAction,
-} from "./avatarLifeEngine.ts";
-import {
-  getCareTwinSpriteAsset,
-  type CareTwinSpriteAsset,
-} from "./careTwinAssets.ts";
-import type { AvatarTemplateId } from "./avatarStudio.ts";
+import type { SpriteSheetTrack } from "@/components/SpriteSheetPlayer";
+import type { AvatarEmoteState, AvatarTemplateId } from "@/lib/avatarStudio";
+import type { CareTwinSpriteAsset } from "@/lib/careTwinAssets";
 
-export type AvatarTemplateSpriteAction = Extract<
-  CareTwinSpriteAction,
-  "tail-wag" | "ear-perk" | "eat-loop" | "sleep-loop" | "comfort-loop" | "celebrate-hop" | "health-watch"
->;
-
-export interface AvatarTemplateSpriteAsset extends CareTwinSpriteAsset {
-  path: string;
-}
-
-export interface AvatarTemplateSpriteSlot {
-  action: AvatarTemplateSpriteAction;
-  expectedPath: string;
-  frameCount: number;
-  fps: number;
-  loop: boolean;
-  assetReady: boolean;
-}
-
-const AVATAR_TEMPLATE_PREVIEW_ACTIONS: readonly AvatarTemplateSpriteAction[] = [
-  "tail-wag",
-  "ear-perk",
-  "eat-loop",
-  "sleep-loop",
-  "comfort-loop",
-  "celebrate-hop",
-  "health-watch",
-];
-
-function bundledAsset(path: string, source: () => ImageSourcePropType): ImageSourcePropType {
+function bundledAsset(
+  path: string,
+  source: () => ImageSourcePropType,
+): ImageSourcePropType {
   return typeof require === "function" ? source() : { uri: path };
 }
 
-function createTemplateStripAsset(
-  path: string,
-  source: () => ImageSourcePropType,
-  action: AvatarTemplateSpriteAction,
-): AvatarTemplateSpriteAsset {
-  const track = CARE_TWIN_SPRITE_MANIFEST[action];
+export type AvatarTemplateSpriteAction = "idle-tail-wag" | "walk-loop";
 
+export interface AvatarTemplateSpritePackItem {
+  action: AvatarTemplateSpriteAction;
+  label: string;
+  asset: CareTwinSpriteAsset;
+  track: SpriteSheetTrack & {
+    requiredAsset: string;
+    anchor: "bottom-center";
+    notes: string;
+  };
+}
+
+function spriteAsset(source: ImageSourcePropType): CareTwinSpriteAsset {
   return {
-    source: bundledAsset(path, source),
-    path,
-    columns: track.frameCount,
+    source,
+    columns: 8,
     rows: 1,
-    frameWidth: track.slotSize,
-    frameHeight: track.slotSize,
+    frameWidth: 256,
+    frameHeight: 256,
   };
 }
 
 export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
-  Record<AvatarTemplateId, Partial<Record<AvatarTemplateSpriteAction, AvatarTemplateSpriteAsset>>>
+  Record<
+    AvatarTemplateId,
+    Partial<Record<AvatarTemplateSpriteAction, AvatarTemplateSpritePackItem>>
+  >
 > = {
-  retriever: {
-    "tail-wag": createTemplateStripAsset(
-      "assets/avatar/templates/retriever/sprites/tail-wag-strip.png",
-      () => require("@/assets/avatar/templates/retriever/sprites/tail-wag-strip.png"),
-      "tail-wag",
-    ),
-    "ear-perk": createTemplateStripAsset(
-      "assets/avatar/templates/retriever/sprites/ear-perk-strip.png",
-      () => require("@/assets/avatar/templates/retriever/sprites/ear-perk-strip.png"),
-      "ear-perk",
-    ),
-    "eat-loop": createTemplateStripAsset(
-      "assets/avatar/templates/retriever/sprites/eat-loop-strip.png",
-      () => require("@/assets/avatar/templates/retriever/sprites/eat-loop-strip.png"),
-      "eat-loop",
-    ),
-    "sleep-loop": createTemplateStripAsset(
-      "assets/avatar/templates/retriever/sprites/sleep-loop-strip.png",
-      () => require("@/assets/avatar/templates/retriever/sprites/sleep-loop-strip.png"),
-      "sleep-loop",
-    ),
-    "comfort-loop": createTemplateStripAsset(
-      "assets/avatar/templates/retriever/sprites/comfort-loop-strip.png",
-      () => require("@/assets/avatar/templates/retriever/sprites/comfort-loop-strip.png"),
-      "comfort-loop",
-    ),
-    "celebrate-hop": createTemplateStripAsset(
-      "assets/avatar/templates/retriever/sprites/celebrate-hop-strip.png",
-      () => require("@/assets/avatar/templates/retriever/sprites/celebrate-hop-strip.png"),
-      "celebrate-hop",
-    ),
-    "health-watch": createTemplateStripAsset(
-      "assets/avatar/templates/retriever/sprites/health-watch-strip.png",
-      () => require("@/assets/avatar/templates/retriever/sprites/health-watch-strip.png"),
-      "health-watch",
-    ),
-  },
-  husky: {
-    "tail-wag": createTemplateStripAsset(
-      "assets/avatar/templates/husky/sprites/tail-wag-strip.png",
-      () => require("@/assets/avatar/templates/husky/sprites/tail-wag-strip.png"),
-      "tail-wag",
-    ),
-    "ear-perk": createTemplateStripAsset(
-      "assets/avatar/templates/husky/sprites/ear-perk-strip.png",
-      () => require("@/assets/avatar/templates/husky/sprites/ear-perk-strip.png"),
-      "ear-perk",
-    ),
-    "eat-loop": createTemplateStripAsset(
-      "assets/avatar/templates/husky/sprites/eat-loop-strip.png",
-      () => require("@/assets/avatar/templates/husky/sprites/eat-loop-strip.png"),
-      "eat-loop",
-    ),
-    "sleep-loop": createTemplateStripAsset(
-      "assets/avatar/templates/husky/sprites/sleep-loop-strip.png",
-      () => require("@/assets/avatar/templates/husky/sprites/sleep-loop-strip.png"),
-      "sleep-loop",
-    ),
-    "comfort-loop": createTemplateStripAsset(
-      "assets/avatar/templates/husky/sprites/comfort-loop-strip.png",
-      () => require("@/assets/avatar/templates/husky/sprites/comfort-loop-strip.png"),
-      "comfort-loop",
-    ),
-    "celebrate-hop": createTemplateStripAsset(
-      "assets/avatar/templates/husky/sprites/celebrate-hop-strip.png",
-      () => require("@/assets/avatar/templates/husky/sprites/celebrate-hop-strip.png"),
-      "celebrate-hop",
-    ),
-    "health-watch": createTemplateStripAsset(
-      "assets/avatar/templates/husky/sprites/health-watch-strip.png",
-      () => require("@/assets/avatar/templates/husky/sprites/health-watch-strip.png"),
-      "health-watch",
-    ),
-  },
-  doodle: {
-    "tail-wag": createTemplateStripAsset(
-      "assets/avatar/templates/doodle/sprites/tail-wag-strip.png",
-      () => require("@/assets/avatar/templates/doodle/sprites/tail-wag-strip.png"),
-      "tail-wag",
-    ),
-    "ear-perk": createTemplateStripAsset(
-      "assets/avatar/templates/doodle/sprites/ear-perk-strip.png",
-      () => require("@/assets/avatar/templates/doodle/sprites/ear-perk-strip.png"),
-      "ear-perk",
-    ),
-    "eat-loop": createTemplateStripAsset(
-      "assets/avatar/templates/doodle/sprites/eat-loop-strip.png",
-      () => require("@/assets/avatar/templates/doodle/sprites/eat-loop-strip.png"),
-      "eat-loop",
-    ),
-    "sleep-loop": createTemplateStripAsset(
-      "assets/avatar/templates/doodle/sprites/sleep-loop-strip.png",
-      () => require("@/assets/avatar/templates/doodle/sprites/sleep-loop-strip.png"),
-      "sleep-loop",
-    ),
-    "comfort-loop": createTemplateStripAsset(
-      "assets/avatar/templates/doodle/sprites/comfort-loop-strip.png",
-      () => require("@/assets/avatar/templates/doodle/sprites/comfort-loop-strip.png"),
-      "comfort-loop",
-    ),
-    "celebrate-hop": createTemplateStripAsset(
-      "assets/avatar/templates/doodle/sprites/celebrate-hop-strip.png",
-      () => require("@/assets/avatar/templates/doodle/sprites/celebrate-hop-strip.png"),
-      "celebrate-hop",
-    ),
-    "health-watch": createTemplateStripAsset(
-      "assets/avatar/templates/doodle/sprites/health-watch-strip.png",
-      () => require("@/assets/avatar/templates/doodle/sprites/health-watch-strip.png"),
-      "health-watch",
-    ),
+  shepherd: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Shepherd live idle",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png"),
+        ),
+      ),
+      track: {
+        key: "shepherd:storybook-idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Storybook board-matched shepherd idle/tail-wag strip for the live Avatar Studio care-twin preview.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Shepherd walk loop",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png"),
+        ),
+      ),
+      track: {
+        key: "shepherd:storybook-walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Storybook board-matched shepherd walk loop for live Avatar Studio movement.",
+      },
+    },
   },
   bully: {
-    "tail-wag": createTemplateStripAsset(
-      "assets/avatar/templates/bully/sprites/tail-wag-strip.png",
-      () => require("@/assets/avatar/templates/bully/sprites/tail-wag-strip.png"),
-      "tail-wag",
-    ),
-    "ear-perk": createTemplateStripAsset(
-      "assets/avatar/templates/bully/sprites/ear-perk-strip.png",
-      () => require("@/assets/avatar/templates/bully/sprites/ear-perk-strip.png"),
-      "ear-perk",
-    ),
-    "eat-loop": createTemplateStripAsset(
-      "assets/avatar/templates/bully/sprites/eat-loop-strip.png",
-      () => require("@/assets/avatar/templates/bully/sprites/eat-loop-strip.png"),
-      "eat-loop",
-    ),
-    "sleep-loop": createTemplateStripAsset(
-      "assets/avatar/templates/bully/sprites/sleep-loop-strip.png",
-      () => require("@/assets/avatar/templates/bully/sprites/sleep-loop-strip.png"),
-      "sleep-loop",
-    ),
-    "comfort-loop": createTemplateStripAsset(
-      "assets/avatar/templates/bully/sprites/comfort-loop-strip.png",
-      () => require("@/assets/avatar/templates/bully/sprites/comfort-loop-strip.png"),
-      "comfort-loop",
-    ),
-    "celebrate-hop": createTemplateStripAsset(
-      "assets/avatar/templates/bully/sprites/celebrate-hop-strip.png",
-      () => require("@/assets/avatar/templates/bully/sprites/celebrate-hop-strip.png"),
-      "celebrate-hop",
-    ),
-    "health-watch": createTemplateStripAsset(
-      "assets/avatar/templates/bully/sprites/health-watch-strip.png",
-      () => require("@/assets/avatar/templates/bully/sprites/health-watch-strip.png"),
-      "health-watch",
-    ),
-  },
-  terrier: {
-    "tail-wag": createTemplateStripAsset(
-      "assets/avatar/templates/terrier/sprites/tail-wag-strip.png",
-      () => require("@/assets/avatar/templates/terrier/sprites/tail-wag-strip.png"),
-      "tail-wag",
-    ),
-    "ear-perk": createTemplateStripAsset(
-      "assets/avatar/templates/terrier/sprites/ear-perk-strip.png",
-      () => require("@/assets/avatar/templates/terrier/sprites/ear-perk-strip.png"),
-      "ear-perk",
-    ),
-    "eat-loop": createTemplateStripAsset(
-      "assets/avatar/templates/terrier/sprites/eat-loop-strip.png",
-      () => require("@/assets/avatar/templates/terrier/sprites/eat-loop-strip.png"),
-      "eat-loop",
-    ),
-    "sleep-loop": createTemplateStripAsset(
-      "assets/avatar/templates/terrier/sprites/sleep-loop-strip.png",
-      () => require("@/assets/avatar/templates/terrier/sprites/sleep-loop-strip.png"),
-      "sleep-loop",
-    ),
-    "comfort-loop": createTemplateStripAsset(
-      "assets/avatar/templates/terrier/sprites/comfort-loop-strip.png",
-      () => require("@/assets/avatar/templates/terrier/sprites/comfort-loop-strip.png"),
-      "comfort-loop",
-    ),
-    "celebrate-hop": createTemplateStripAsset(
-      "assets/avatar/templates/terrier/sprites/celebrate-hop-strip.png",
-      () => require("@/assets/avatar/templates/terrier/sprites/celebrate-hop-strip.png"),
-      "celebrate-hop",
-    ),
-    "health-watch": createTemplateStripAsset(
-      "assets/avatar/templates/terrier/sprites/health-watch-strip.png",
-      () => require("@/assets/avatar/templates/terrier/sprites/health-watch-strip.png"),
-      "health-watch",
-    ),
-  },
-  hound: {
-    "tail-wag": createTemplateStripAsset(
-      "assets/avatar/templates/hound/sprites/tail-wag-strip.png",
-      () => require("@/assets/avatar/templates/hound/sprites/tail-wag-strip.png"),
-      "tail-wag",
-    ),
-    "ear-perk": createTemplateStripAsset(
-      "assets/avatar/templates/hound/sprites/ear-perk-strip.png",
-      () => require("@/assets/avatar/templates/hound/sprites/ear-perk-strip.png"),
-      "ear-perk",
-    ),
-    "eat-loop": createTemplateStripAsset(
-      "assets/avatar/templates/hound/sprites/eat-loop-strip.png",
-      () => require("@/assets/avatar/templates/hound/sprites/eat-loop-strip.png"),
-      "eat-loop",
-    ),
-    "sleep-loop": createTemplateStripAsset(
-      "assets/avatar/templates/hound/sprites/sleep-loop-strip.png",
-      () => require("@/assets/avatar/templates/hound/sprites/sleep-loop-strip.png"),
-      "sleep-loop",
-    ),
-    "comfort-loop": createTemplateStripAsset(
-      "assets/avatar/templates/hound/sprites/comfort-loop-strip.png",
-      () => require("@/assets/avatar/templates/hound/sprites/comfort-loop-strip.png"),
-      "comfort-loop",
-    ),
-    "celebrate-hop": createTemplateStripAsset(
-      "assets/avatar/templates/hound/sprites/celebrate-hop-strip.png",
-      () => require("@/assets/avatar/templates/hound/sprites/celebrate-hop-strip.png"),
-      "celebrate-hop",
-    ),
-    "health-watch": createTemplateStripAsset(
-      "assets/avatar/templates/hound/sprites/health-watch-strip.png",
-      () => require("@/assets/avatar/templates/hound/sprites/health-watch-strip.png"),
-      "health-watch",
-    ),
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Bully live idle",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/bully/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/bully/sprites/idle-tail-wag-strip.png"),
+        ),
+      ),
+      track: {
+        key: "bully:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/bully/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Bully idle breathing and soft body/tail wiggle loop.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Bully walk loop",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/bully/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/bully/sprites/walk-loop-strip.png"),
+        ),
+      ),
+      track: {
+        key: "bully:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/bully/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Bully standing-source walking-in-place loop for live Avatar Studio preview.",
+      },
+    },
   },
   dachshund: {
-    "tail-wag": createTemplateStripAsset(
-      "assets/avatar/templates/dachshund/sprites/tail-wag-strip.png",
-      () => require("@/assets/avatar/templates/dachshund/sprites/tail-wag-strip.png"),
-      "tail-wag",
-    ),
-    "ear-perk": createTemplateStripAsset(
-      "assets/avatar/templates/dachshund/sprites/ear-perk-strip.png",
-      () => require("@/assets/avatar/templates/dachshund/sprites/ear-perk-strip.png"),
-      "ear-perk",
-    ),
-    "eat-loop": createTemplateStripAsset(
-      "assets/avatar/templates/dachshund/sprites/eat-loop-strip.png",
-      () => require("@/assets/avatar/templates/dachshund/sprites/eat-loop-strip.png"),
-      "eat-loop",
-    ),
-    "sleep-loop": createTemplateStripAsset(
-      "assets/avatar/templates/dachshund/sprites/sleep-loop-strip.png",
-      () => require("@/assets/avatar/templates/dachshund/sprites/sleep-loop-strip.png"),
-      "sleep-loop",
-    ),
-    "comfort-loop": createTemplateStripAsset(
-      "assets/avatar/templates/dachshund/sprites/comfort-loop-strip.png",
-      () => require("@/assets/avatar/templates/dachshund/sprites/comfort-loop-strip.png"),
-      "comfort-loop",
-    ),
-    "celebrate-hop": createTemplateStripAsset(
-      "assets/avatar/templates/dachshund/sprites/celebrate-hop-strip.png",
-      () => require("@/assets/avatar/templates/dachshund/sprites/celebrate-hop-strip.png"),
-      "celebrate-hop",
-    ),
-    "health-watch": createTemplateStripAsset(
-      "assets/avatar/templates/dachshund/sprites/health-watch-strip.png",
-      () => require("@/assets/avatar/templates/dachshund/sprites/health-watch-strip.png"),
-      "health-watch",
-    ),
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Dachshund live idle",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/dachshund/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/dachshund/sprites/idle-tail-wag-strip.png"),
+        ),
+      ),
+      track: {
+        key: "dachshund:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/dachshund/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Dachshund side-view idle breathing and soft tail wag loop.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Dachshund walk loop",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/dachshund/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/dachshund/sprites/walk-loop-strip.png"),
+        ),
+      ),
+      track: {
+        key: "dachshund:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/dachshund/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Dachshund long-body side-view walking-in-place loop for live Avatar Studio preview.",
+      },
+    },
   },
-  spaniel: {
-    "tail-wag": createTemplateStripAsset(
-      "assets/avatar/templates/spaniel/sprites/tail-wag-strip.png",
-      () => require("@/assets/avatar/templates/spaniel/sprites/tail-wag-strip.png"),
-      "tail-wag",
-    ),
-    "ear-perk": createTemplateStripAsset(
-      "assets/avatar/templates/spaniel/sprites/ear-perk-strip.png",
-      () => require("@/assets/avatar/templates/spaniel/sprites/ear-perk-strip.png"),
-      "ear-perk",
-    ),
-    "eat-loop": createTemplateStripAsset(
-      "assets/avatar/templates/spaniel/sprites/eat-loop-strip.png",
-      () => require("@/assets/avatar/templates/spaniel/sprites/eat-loop-strip.png"),
-      "eat-loop",
-    ),
-    "sleep-loop": createTemplateStripAsset(
-      "assets/avatar/templates/spaniel/sprites/sleep-loop-strip.png",
-      () => require("@/assets/avatar/templates/spaniel/sprites/sleep-loop-strip.png"),
-      "sleep-loop",
-    ),
-    "comfort-loop": createTemplateStripAsset(
-      "assets/avatar/templates/spaniel/sprites/comfort-loop-strip.png",
-      () => require("@/assets/avatar/templates/spaniel/sprites/comfort-loop-strip.png"),
-      "comfort-loop",
-    ),
-    "celebrate-hop": createTemplateStripAsset(
-      "assets/avatar/templates/spaniel/sprites/celebrate-hop-strip.png",
-      () => require("@/assets/avatar/templates/spaniel/sprites/celebrate-hop-strip.png"),
-      "celebrate-hop",
-    ),
-    "health-watch": createTemplateStripAsset(
-      "assets/avatar/templates/spaniel/sprites/health-watch-strip.png",
-      () => require("@/assets/avatar/templates/spaniel/sprites/health-watch-strip.png"),
-      "health-watch",
-    ),
+  doodle: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Doodle live idle",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/doodle/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/doodle/sprites/idle-tail-wag-strip.png"),
+        ),
+      ),
+      track: {
+        key: "doodle:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/doodle/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Doodle idle breathing and soft tail wag loop.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Doodle walk loop",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/doodle/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/doodle/sprites/walk-loop-strip.png"),
+        ),
+      ),
+      track: {
+        key: "doodle:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/doodle/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Doodle standing-source walking-in-place loop for live Avatar Studio preview.",
+      },
+    },
   },
-  toy: {
-    "tail-wag": createTemplateStripAsset(
-      "assets/avatar/templates/toy/sprites/tail-wag-strip.png",
-      () => require("@/assets/avatar/templates/toy/sprites/tail-wag-strip.png"),
-      "tail-wag",
-    ),
-    "ear-perk": createTemplateStripAsset(
-      "assets/avatar/templates/toy/sprites/ear-perk-strip.png",
-      () => require("@/assets/avatar/templates/toy/sprites/ear-perk-strip.png"),
-      "ear-perk",
-    ),
-    "eat-loop": createTemplateStripAsset(
-      "assets/avatar/templates/toy/sprites/eat-loop-strip.png",
-      () => require("@/assets/avatar/templates/toy/sprites/eat-loop-strip.png"),
-      "eat-loop",
-    ),
-    "sleep-loop": createTemplateStripAsset(
-      "assets/avatar/templates/toy/sprites/sleep-loop-strip.png",
-      () => require("@/assets/avatar/templates/toy/sprites/sleep-loop-strip.png"),
-      "sleep-loop",
-    ),
-    "comfort-loop": createTemplateStripAsset(
-      "assets/avatar/templates/toy/sprites/comfort-loop-strip.png",
-      () => require("@/assets/avatar/templates/toy/sprites/comfort-loop-strip.png"),
-      "comfort-loop",
-    ),
-    "celebrate-hop": createTemplateStripAsset(
-      "assets/avatar/templates/toy/sprites/celebrate-hop-strip.png",
-      () => require("@/assets/avatar/templates/toy/sprites/celebrate-hop-strip.png"),
-      "celebrate-hop",
-    ),
-    "health-watch": createTemplateStripAsset(
-      "assets/avatar/templates/toy/sprites/health-watch-strip.png",
-      () => require("@/assets/avatar/templates/toy/sprites/health-watch-strip.png"),
-      "health-watch",
-    ),
+  husky: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Husky live idle",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/husky/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/husky/sprites/idle-tail-wag-strip.png"),
+        ),
+      ),
+      track: {
+        key: "husky:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/husky/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Husky/Spitz idle breathing and soft tail wag loop.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Husky walk loop",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/husky/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/husky/sprites/walk-loop-strip.png"),
+        ),
+      ),
+      track: {
+        key: "husky:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/husky/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Husky/Spitz walking-in-place loop for live Avatar Studio preview.",
+      },
+    },
   },
-  slender: {
-    "tail-wag": createTemplateStripAsset(
-      "assets/avatar/templates/slender/sprites/tail-wag-strip.png",
-      () => require("@/assets/avatar/templates/slender/sprites/tail-wag-strip.png"),
-      "tail-wag",
-    ),
-    "ear-perk": createTemplateStripAsset(
-      "assets/avatar/templates/slender/sprites/ear-perk-strip.png",
-      () => require("@/assets/avatar/templates/slender/sprites/ear-perk-strip.png"),
-      "ear-perk",
-    ),
-    "eat-loop": createTemplateStripAsset(
-      "assets/avatar/templates/slender/sprites/eat-loop-strip.png",
-      () => require("@/assets/avatar/templates/slender/sprites/eat-loop-strip.png"),
-      "eat-loop",
-    ),
-    "sleep-loop": createTemplateStripAsset(
-      "assets/avatar/templates/slender/sprites/sleep-loop-strip.png",
-      () => require("@/assets/avatar/templates/slender/sprites/sleep-loop-strip.png"),
-      "sleep-loop",
-    ),
-    "comfort-loop": createTemplateStripAsset(
-      "assets/avatar/templates/slender/sprites/comfort-loop-strip.png",
-      () => require("@/assets/avatar/templates/slender/sprites/comfort-loop-strip.png"),
-      "comfort-loop",
-    ),
-    "celebrate-hop": createTemplateStripAsset(
-      "assets/avatar/templates/slender/sprites/celebrate-hop-strip.png",
-      () => require("@/assets/avatar/templates/slender/sprites/celebrate-hop-strip.png"),
-      "celebrate-hop",
-    ),
-    "health-watch": createTemplateStripAsset(
-      "assets/avatar/templates/slender/sprites/health-watch-strip.png",
-      () => require("@/assets/avatar/templates/slender/sprites/health-watch-strip.png"),
-      "health-watch",
-    ),
+  hound: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Hound live idle",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/hound/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/hound/sprites/idle-tail-wag-strip.png"),
+        ),
+      ),
+      track: {
+        key: "hound:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/hound/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Hound idle breathing with soft ear and tail motion.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Hound walk loop",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/hound/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/hound/sprites/walk-loop-strip.png"),
+        ),
+      ),
+      track: {
+        key: "hound:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/hound/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Hound standing-source side-view walk loop for live Avatar Studio preview.",
+      },
+    },
   },
   mixed: {
-    "tail-wag": createTemplateStripAsset(
-      "assets/avatar/templates/mixed/sprites/tail-wag-strip.png",
-      () => require("@/assets/avatar/templates/mixed/sprites/tail-wag-strip.png"),
-      "tail-wag",
-    ),
-    "ear-perk": createTemplateStripAsset(
-      "assets/avatar/templates/mixed/sprites/ear-perk-strip.png",
-      () => require("@/assets/avatar/templates/mixed/sprites/ear-perk-strip.png"),
-      "ear-perk",
-    ),
-    "eat-loop": createTemplateStripAsset(
-      "assets/avatar/templates/mixed/sprites/eat-loop-strip.png",
-      () => require("@/assets/avatar/templates/mixed/sprites/eat-loop-strip.png"),
-      "eat-loop",
-    ),
-    "sleep-loop": createTemplateStripAsset(
-      "assets/avatar/templates/mixed/sprites/sleep-loop-strip.png",
-      () => require("@/assets/avatar/templates/mixed/sprites/sleep-loop-strip.png"),
-      "sleep-loop",
-    ),
-    "comfort-loop": createTemplateStripAsset(
-      "assets/avatar/templates/mixed/sprites/comfort-loop-strip.png",
-      () => require("@/assets/avatar/templates/mixed/sprites/comfort-loop-strip.png"),
-      "comfort-loop",
-    ),
-    "celebrate-hop": createTemplateStripAsset(
-      "assets/avatar/templates/mixed/sprites/celebrate-hop-strip.png",
-      () => require("@/assets/avatar/templates/mixed/sprites/celebrate-hop-strip.png"),
-      "celebrate-hop",
-    ),
-    "health-watch": createTemplateStripAsset(
-      "assets/avatar/templates/mixed/sprites/health-watch-strip.png",
-      () => require("@/assets/avatar/templates/mixed/sprites/health-watch-strip.png"),
-      "health-watch",
-    ),
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Mixed Breed live idle",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/mixed/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/mixed/sprites/idle-tail-wag-strip.png"),
+        ),
+      ),
+      track: {
+        key: "mixed:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/mixed/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Mixed Breed idle breathing with friendly ear and tail motion.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Mixed Breed walk loop",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/mixed/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/mixed/sprites/walk-loop-strip.png"),
+        ),
+      ),
+      track: {
+        key: "mixed:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/mixed/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Mixed Breed balanced side-view walk loop for live Avatar Studio preview.",
+      },
+    },
+  },
+  retriever: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Retriever live idle",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/retriever/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/retriever/sprites/idle-tail-wag-strip.png"),
+        ),
+      ),
+      track: {
+        key: "retriever:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/retriever/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Retriever idle breathing and soft tail wag loop.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Retriever walk loop",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/retriever/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/retriever/sprites/walk-loop-strip.png"),
+        ),
+      ),
+      track: {
+        key: "retriever:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/retriever/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Retriever walk loop for live Avatar Studio preview.",
+      },
+    },
+  },
+  slender: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Slender live idle",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/slender/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/slender/sprites/idle-tail-wag-strip.png"),
+        ),
+      ),
+      track: {
+        key: "slender:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/slender/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Slender idle breathing with elegant long-leg posture motion.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Slender walk loop",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/slender/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/slender/sprites/walk-loop-strip.png"),
+        ),
+      ),
+      track: {
+        key: "slender:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/slender/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Slender long-leg side-view trot loop for live Avatar Studio preview.",
+      },
+    },
+  },
+  spaniel: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Spaniel live idle",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/spaniel/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/spaniel/sprites/idle-tail-wag-strip.png"),
+        ),
+      ),
+      track: {
+        key: "spaniel:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/spaniel/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Spaniel idle breathing with floppy-ear and tail motion.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Spaniel walk loop",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/spaniel/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/spaniel/sprites/walk-loop-strip.png"),
+        ),
+      ),
+      track: {
+        key: "spaniel:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/spaniel/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Spaniel side-view walking-in-place loop for live Avatar Studio preview.",
+      },
+    },
+  },
+  terrier: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Terrier live idle",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/terrier/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/terrier/sprites/idle-tail-wag-strip.png"),
+        ),
+      ),
+      track: {
+        key: "terrier:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/terrier/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Terrier idle breathing and tiny tail/body wiggle loop.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Terrier walk loop",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/terrier/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/terrier/sprites/walk-loop-strip.png"),
+        ),
+      ),
+      track: {
+        key: "terrier:walk-loop",
+        frameCount: 8,
+        fps: 9,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/terrier/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Terrier standing-source trot loop for live Avatar Studio preview.",
+      },
+    },
+  },
+  toy: {
+    "idle-tail-wag": {
+      action: "idle-tail-wag",
+      label: "Toy Breed live idle",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/toy/sprites/idle-tail-wag-strip.png",
+          () =>
+            require("@/assets/avatar/templates/toy/sprites/idle-tail-wag-strip.png"),
+        ),
+      ),
+      track: {
+        key: "toy:idle-tail-wag",
+        frameCount: 8,
+        fps: 7,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/toy/sprites/idle-tail-wag-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Toy Breed idle breathing with tiny-body ear and tail motion.",
+      },
+    },
+    "walk-loop": {
+      action: "walk-loop",
+      label: "Toy Breed walk loop",
+      asset: spriteAsset(
+        bundledAsset(
+          "assets/avatar/templates/toy/sprites/walk-loop-strip.png",
+          () =>
+            require("@/assets/avatar/templates/toy/sprites/walk-loop-strip.png"),
+        ),
+      ),
+      track: {
+        key: "toy:walk-loop",
+        frameCount: 8,
+        fps: 10,
+        loop: true,
+        slotSize: 256,
+        requiredAsset:
+          "assets/avatar/templates/toy/sprites/walk-loop-strip.png",
+        anchor: "bottom-center",
+        notes:
+          "Subscription-backed PixelLab Toy Breed tiny side-view trot loop for live Avatar Studio preview.",
+      },
+    },
   },
 };
 
-export function getAvatarTemplateSpriteAsset(
+export function mapAvatarEmoteToTemplateSpriteAction(
   templateId: AvatarTemplateId,
-  action: CareTwinSpriteAction,
-): CareTwinSpriteAsset | null {
-  if (templateId === "shepherd") {
-    return getCareTwinSpriteAsset(action);
+  emote: AvatarEmoteState,
+): AvatarTemplateSpriteAction | null {
+  if (!AVATAR_TEMPLATE_SPRITE_ASSETS[templateId]) return null;
+  switch (emote) {
+    case "happy":
+    case "calm":
+    case "proud":
+    case "hungry":
+    case "anxious":
+    case "sleepy":
+    case "home_alone":
+    case "not_feeling_well":
+      return "idle-tail-wag";
+    case "excited":
+    case "bored":
+      return "walk-loop";
+    default:
+      return null;
   }
-
-  return AVATAR_TEMPLATE_SPRITE_ASSETS[templateId]?.[action as AvatarTemplateSpriteAction] ?? null;
 }
 
-export function listAvatarTemplateSpriteSlots(templateId: AvatarTemplateId): AvatarTemplateSpriteSlot[] {
-  return AVATAR_TEMPLATE_PREVIEW_ACTIONS.map((action) => {
-    const asset =
-      templateId === "shepherd"
-        ? getCareTwinSpriteAsset(action)
-        : AVATAR_TEMPLATE_SPRITE_ASSETS[templateId]?.[action];
-    const expectedPath =
-      templateId === "shepherd"
-        ? CARE_TWIN_SPRITE_MANIFEST[action].requiredAsset
-        : `assets/avatar/templates/${templateId}/sprites/${action}-strip.png`;
+export function getAvatarTemplateSpritePreview(
+  templateId: AvatarTemplateId,
+  emote: AvatarEmoteState,
+): AvatarTemplateSpritePackItem | null {
+  const action = mapAvatarEmoteToTemplateSpriteAction(templateId, emote);
+  if (!action) return null;
+  return AVATAR_TEMPLATE_SPRITE_ASSETS[templateId]?.[action] ?? null;
+}
 
-    return {
-      action,
-      expectedPath,
-      frameCount: CARE_TWIN_SPRITE_MANIFEST[action].frameCount,
-      fps: CARE_TWIN_SPRITE_MANIFEST[action].fps,
-      loop: CARE_TWIN_SPRITE_MANIFEST[action].loop,
-      assetReady: Boolean(asset),
-    };
-  });
+export function hasAvatarTemplateSpritePack(
+  templateId: AvatarTemplateId,
+): boolean {
+  const pack = AVATAR_TEMPLATE_SPRITE_ASSETS[templateId];
+  return Boolean(pack?.["idle-tail-wag"] && pack?.["walk-loop"]);
+}
+
+export function listAvatarTemplateSpriteSlots(): AvatarTemplateSpritePackItem[] {
+  return Object.values(AVATAR_TEMPLATE_SPRITE_ASSETS).flatMap((pack) =>
+    Object.values(pack ?? {}),
+  );
 }

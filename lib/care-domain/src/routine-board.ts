@@ -1,7 +1,7 @@
 import { normalizeCareEventType, type CareEventDetails, type CareEventType } from "./events.ts";
 
-export type RoutineBoardStatus = "done" | "overdue" | "due" | "upcoming";
-export type RoutineCompletion = "complete" | "partial" | "skipped";
+export type RoutineBoardStatus = "done" | "pending" | "overdue" | "due" | "upcoming";
+export type RoutineCompletion = "complete" | "partial" | "skipped" | "pending";
 
 export interface RoutineBoardRoutine {
   id?: string;
@@ -110,15 +110,23 @@ function detailText(details: CareEventDetails, key: string): string {
 function entryCompletion(entry: RoutineBoardEntry, normalizedType: CareEventType): RoutineCompletion {
   if (normalizedType !== "meal") return "complete";
   const mealCompletion = detailText(entry.details, "mealCompletion");
+  const lifecycle = detailText(entry.details, "mealLifecycle");
   const completion = detailText(entry.details, "completion");
   const portion = detailText(entry.details, "portion");
   const outcome = mealCompletion || completion || portion;
+  if (
+    ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(outcome) ||
+    ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(lifecycle)
+  ) {
+    return "pending";
+  }
   if (["skipped", "skip", "none", "no"].includes(outcome)) return "skipped";
   if (["partial", "partially eaten", "half", "light", "small", "some"].includes(outcome)) return "partial";
   return "complete";
 }
 
 function completionLabel(completion: RoutineCompletion): string {
+  if (completion === "pending") return "Outcome pending";
   if (completion === "skipped") return "Skipped";
   if (completion === "partial") return "Partial";
   return "Complete";
@@ -184,12 +192,13 @@ export function deriveRoutineBoard(input: RoutineBoardInput): RoutineBoard {
 
     const owner = clean(routine.owner);
     const completion = fuzzy ? entryCompletion(fuzzy.entry, normalizedType) : null;
+    const pendingOutcome = completion === "pending";
     return {
       ...routine,
       id,
       owner,
       normalizedType,
-      status: statusFor(routineMs, Boolean(fuzzy), now),
+      status: pendingOutcome ? "pending" : statusFor(routineMs, Boolean(fuzzy), now),
       completion,
       completionLabel: completion ? completionLabel(completion) : null,
       completedBy: fuzzy ? clean(fuzzy.entry.caregiver) || null : null,
@@ -224,6 +233,7 @@ export function deriveRoutineBoard(input: RoutineBoardInput): RoutineBoard {
     unassignedCount: items.filter((item) => !item.owner).length,
     ownerLoads,
     next:
+      openItems.find((item) => item.status === "pending") ??
       openItems.find((item) => item.status === "due") ??
       openItems.find((item) => item.status === "overdue") ??
       openItems.find((item) => item.status === "upcoming") ??

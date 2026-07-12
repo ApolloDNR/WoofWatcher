@@ -6,18 +6,12 @@ import {
   usersTable,
   householdsTable,
   householdMembersTable,
-  householdAuditEventsTable,
   careStateTable,
   type User,
 } from "@workspace/db";
+import { deriveAccessPassRuntimeStatus } from "./household-access-pass";
 
 const INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-export const CARE_PLAN_WRITE_ROLES = ["owner", "admin", "member"] as const;
-export const CARE_LOG_WRITE_ROLES = ["owner", "admin", "member", "sitter", "trainer"] as const;
-export const CARE_PLAN_WRITE_FORBIDDEN_ERROR =
-  "Only owners, admins, and caregivers can change the shared care plan";
-export const CARE_LOG_WRITE_FORBIDDEN_ERROR =
-  "Vet viewers can review shared care, but cannot change logs or care plans";
 
 function generateInviteCode(): string {
   const bytes = randomBytes(6);
@@ -40,27 +34,7 @@ async function uniqueInviteCode(): Promise<string> {
   return `${generateInviteCode()}${generateInviteCode()}`;
 }
 
-export async function logHouseholdAuditEvent(input: {
-  householdId: string;
-  actorUserId: string;
-  action: string;
-  targetType?: string;
-  targetId?: string;
-  details?: Record<string, unknown>;
-  lifecycleState?: string;
-}): Promise<void> {
-  await db.insert(householdAuditEventsTable).values({
-    householdId: input.householdId,
-    actorUserId: input.actorUserId,
-    action: input.action,
-    targetType: input.targetType ?? null,
-    targetId: input.targetId ?? null,
-    lifecycleState: input.lifecycleState ?? "active",
-    details: input.details ?? {},
-  });
-}
-
-export async function ensureUser(userId: string): Promise<User> {
+async function ensureUser(userId: string): Promise<User> {
   const [existing] = await db
     .select()
     .from(usersTable)
@@ -92,7 +66,7 @@ export async function ensureUser(userId: string): Promise<User> {
   return user;
 }
 
-export async function ensureCareState(householdId: string, userId: string): Promise<void> {
+async function ensureCareState(householdId: string, userId: string): Promise<void> {
   await db
     .insert(careStateTable)
     .values({ householdId, doc: {}, version: 1, updatedBy: userId })
@@ -102,24 +76,19 @@ export async function ensureCareState(householdId: string, userId: string): Prom
 /**
  * Ensures the user exists and belongs to at least one household, creating a
  * default household + membership + care state on first sign-in. Returns the
- * user's active household id when it still matches a membership, otherwise the
- * earliest membership id.
+ * user's active (earliest) household id.
  */
 export async function ensureUserAndHousehold(
   userId: string,
 ): Promise<{ user: User; householdId: string }> {
   const user = await ensureUser(userId);
 
-  const memberships = await db
-    .select({ householdId: householdMembersTable.householdId })
+  const [membership] = await db
+    .select()
     .from(householdMembersTable)
     .where(eq(householdMembersTable.userId, userId))
-    .orderBy(householdMembersTable.createdAt);
-
-  const activeMembership = memberships.find(
-    (membership) => membership.householdId === user.activeHouseholdId,
-  );
-  const membership = activeMembership ?? memberships[0];
+    .orderBy(householdMembersTable.createdAt)
+    .limit(1);
 
   if (membership) {
     await ensureCareState(membership.householdId, userId);
@@ -138,60 +107,13 @@ export async function ensureUserAndHousehold(
     role: "owner",
     displayName: user.displayName,
   });
-  await db
-    .update(usersTable)
-    .set({ activeHouseholdId: household.id })
-    .where(eq(usersTable.id, userId));
   await ensureCareState(household.id, userId);
-  await logHouseholdAuditEvent({
-    householdId: household.id,
-    actorUserId: userId,
-    action: "household.created",
-    targetType: "household",
-    targetId: household.id,
-    details: { name },
-  });
   return { user, householdId: household.id };
 }
 
 export async function getActiveHouseholdId(userId: string): Promise<string> {
   const { householdId } = await ensureUserAndHousehold(userId);
   return householdId;
-}
-
-export async function requireActiveHouseholdRole(
-  userId: string,
-  allowedRoles: readonly string[],
-): Promise<{ householdId: string; role: string; allowed: boolean }> {
-  const { householdId } = await ensureUserAndHousehold(userId);
-  const [membership] = await db
-    .select({ role: householdMembersTable.role })
-    .from(householdMembersTable)
-    .where(
-      and(
-        eq(householdMembersTable.userId, userId),
-        eq(householdMembersTable.householdId, householdId),
-      ),
-    )
-    .limit(1);
-  const role = membership?.role ?? "member";
-  return {
-    householdId,
-    role,
-    allowed: membership ? allowedRoles.includes(membership.role.toLowerCase()) : false,
-  };
-}
-
-export async function requireActiveHouseholdCarePlanWrite(
-  userId: string,
-): Promise<{ householdId: string; role: string; allowed: boolean }> {
-  return requireActiveHouseholdRole(userId, CARE_PLAN_WRITE_ROLES);
-}
-
-export async function requireActiveHouseholdCareLogWrite(
-  userId: string,
-): Promise<{ householdId: string; role: string; allowed: boolean }> {
-  return requireActiveHouseholdRole(userId, CARE_LOG_WRITE_ROLES);
 }
 
 export async function getCaregiverName(
@@ -215,10 +137,55 @@ export async function getCaregiverName(
   return row?.memberName ?? row?.userName ?? null;
 }
 
+export interface HouseholdMemberAuthz {
+  id: string;
+  userId: string;
+  householdId: string;
+  role: string;
+  displayName: string | null;
+  accessPassExpiresAt: string | null;
+  accessPassExpired: boolean;
+}
+
+export async function getHouseholdMemberAuthz(
+  householdId: string,
+  userId: string,
+): Promise<HouseholdMemberAuthz | null> {
+  const [row] = await db
+    .select({
+      id: householdMembersTable.id,
+      userId: householdMembersTable.userId,
+      householdId: householdMembersTable.householdId,
+      role: householdMembersTable.role,
+      displayName: householdMembersTable.displayName,
+      accessPassExpiresAt: householdMembersTable.accessPassExpiresAt,
+    })
+    .from(householdMembersTable)
+    .where(
+      and(
+        eq(householdMembersTable.householdId, householdId),
+        eq(householdMembersTable.userId, userId),
+      ),
+    )
+    .limit(1);
+  if (!row) return null;
+
+  const runtime = deriveAccessPassRuntimeStatus({
+    role: row.role,
+    accessPassExpiresAt: row.accessPassExpiresAt,
+  });
+
+  return {
+    ...row,
+    role: runtime.authorizationRole,
+    accessPassExpiresAt: runtime.accessPassExpiresAt,
+    accessPassExpired: runtime.accessPassExpired,
+  };
+}
+
 export interface MePayload {
   user: { id: string; email: string | null; displayName: string | null };
   household: { id: string; name: string; inviteCode: string };
-  households: Array<{ id: string; name: string; inviteCode: string }>;
   members: Array<{
     id: string;
     userId: string;
@@ -226,6 +193,8 @@ export interface MePayload {
     displayName: string | null;
     email: string | null;
     isSelf: boolean;
+    accessPassExpiresAt: string | null;
+    accessPassExpired: boolean;
   }>;
 }
 
@@ -233,7 +202,7 @@ export async function buildMe(
   userId: string,
   householdId: string,
 ): Promise<MePayload> {
-  const [[user], [household], memberRows, householdRows] = await Promise.all([
+  const [[user], [household], memberRows] = await Promise.all([
     db.select().from(usersTable).where(eq(usersTable.id, userId)),
     db.select().from(householdsTable).where(eq(householdsTable.id, householdId)),
     db
@@ -241,6 +210,7 @@ export async function buildMe(
         id: householdMembersTable.id,
         userId: householdMembersTable.userId,
         role: householdMembersTable.role,
+        accessPassExpiresAt: householdMembersTable.accessPassExpiresAt,
         memberName: householdMembersTable.displayName,
         userName: usersTable.displayName,
         email: usersTable.email,
@@ -249,20 +219,7 @@ export async function buildMe(
       .leftJoin(usersTable, eq(usersTable.id, householdMembersTable.userId))
       .where(eq(householdMembersTable.householdId, householdId))
       .orderBy(householdMembersTable.createdAt),
-    db
-      .select({
-        id: householdsTable.id,
-        name: householdsTable.name,
-        inviteCode: householdsTable.inviteCode,
-        role: householdMembersTable.role,
-      })
-      .from(householdMembersTable)
-      .innerJoin(householdsTable, eq(householdsTable.id, householdMembersTable.householdId))
-      .where(eq(householdMembersTable.userId, userId))
-      .orderBy(householdMembersTable.createdAt),
   ]);
-  const selfMember = memberRows.find((m) => m.userId === userId);
-  const canShareInvite = ["owner", "admin"].includes(selfMember?.role?.toLowerCase() ?? "");
 
   return {
     user: {
@@ -273,20 +230,24 @@ export async function buildMe(
     household: {
       id: household.id,
       name: household.name,
-      inviteCode: canShareInvite ? household.inviteCode : "",
+      inviteCode: household.inviteCode,
     },
-    households: householdRows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      inviteCode: ["owner", "admin"].includes(row.role.toLowerCase()) ? row.inviteCode : "",
-    })),
-    members: memberRows.map((m) => ({
-      id: m.id,
-      userId: m.userId,
-      role: m.role,
-      displayName: m.memberName ?? m.userName ?? null,
-      email: m.email ?? null,
-      isSelf: m.userId === userId,
-    })),
+    members: memberRows.map((m) => {
+      const runtime = deriveAccessPassRuntimeStatus({
+        role: m.role,
+        accessPassExpiresAt: m.accessPassExpiresAt,
+      });
+
+      return {
+        id: m.id,
+        userId: m.userId,
+        role: runtime.role,
+        displayName: m.memberName ?? m.userName ?? null,
+        email: m.email ?? null,
+        isSelf: m.userId === userId,
+        accessPassExpiresAt: runtime.accessPassExpiresAt,
+        accessPassExpired: runtime.accessPassExpired,
+      };
+    }),
   };
 }

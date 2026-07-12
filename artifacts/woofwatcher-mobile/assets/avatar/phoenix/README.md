@@ -22,6 +22,9 @@ Required files:
 - `comfort-loop-strip.png`: 8 frames, 6 fps, loop. Status: live.
 - `celebrate-hop-strip.png`: 8 frames, 9 fps, one-shot reward. Status: live.
 - `health-watch-strip.png`: 8 frames, 5 fps, loop. Status: live.
+- `pixellab-idle-south-strip.png`: 8 frames, PixelLab template `idle`, south-facing seed strip from character `f0c6169b-88c0-4428-9089-31c0565c4129`. Status: local production seed, not promoted over the approved seated Home sprite yet.
+- `pixellab-walk-south-strip.png`: 8 frames, PixelLab template `walk-8-frames`, south-facing seed strip from character `f0c6169b-88c0-4428-9089-31c0565c4129`. Status: local production seed, not promoted over the current walk runtime until size/anchor are approved in-device.
+- `candidates/scenario-four-direction-walk-48-sheet.png`: first Scenario MCP batch (Retro Diffusion Animation, `walking_and_idle`, 48x48, spritesheet). 4x4 grid: rows south / east / north / west, 4 frames each, true alpha. Status: candidate only — quadruped gait confirmed, but the 48px retro look does not yet match the approved 256px Option B style, so the room runtime keeps the Option B walk strip (mirrored for direction) until a matched-style Scenario batch is approved.
 
 After adding assets, register them in:
 

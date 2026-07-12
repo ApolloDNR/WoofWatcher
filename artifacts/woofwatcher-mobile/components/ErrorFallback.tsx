@@ -13,11 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
-import {
-  getFloatingDebugButtonTopOffset,
-  getModalSheetBottomPadding,
-  MIN_MOBILE_TOUCH_TARGET,
-} from "@/lib/mobileLayout";
+import { getModalSheetBottomPadding } from "@/lib/mobileLayout";
 
 export type ErrorFallbackProps = {
   error: Error;
@@ -27,8 +23,10 @@ export type ErrorFallbackProps = {
 export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
-  const debugButtonTopOffset = getFloatingDebugButtonTopOffset(insets.top, Platform.OS === "web");
+  const modalSheetBottomPadding = getModalSheetBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
 
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -65,7 +63,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           style={({ pressed }) => [
             styles.topButton,
             {
-              top: debugButtonTopOffset,
+              top: insets.top + 16,
               backgroundColor: colors.card,
               opacity: pressed ? 0.8 : 1,
             },
@@ -208,8 +206,8 @@ const styles = StyleSheet.create({
   topButton: {
     position: "absolute",
     right: 16,
-    width: MIN_MOBILE_TOUCH_TARGET,
-    height: MIN_MOBILE_TOUCH_TARGET,
+    width: 44,
+    height: 44,
     borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
@@ -260,8 +258,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   closeButton: {
-    width: MIN_MOBILE_TOUCH_TARGET,
-    height: MIN_MOBILE_TOUCH_TARGET,
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
   },

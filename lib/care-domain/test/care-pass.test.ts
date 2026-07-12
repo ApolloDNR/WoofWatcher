@@ -4,21 +4,38 @@ import assert from "node:assert/strict";
 import {
   buildCarePass,
   createCarePassArtifact,
-  createPetCredentialArtifact,
-  createProgressReportArtifact,
+  describeCarePassArtifactExport,
+  describeCarePassArtifactStorage,
   getCarePassArtifactPrintView,
-  getReportArtifactPrintView,
   renderCarePassPrintHtml,
-  renderProgressReportPrintHtml,
-  describeReportArtifactRemoval,
-  describeReportArtifactSource,
-  summarizeReportArtifacts,
-  summarizePetCredentialArtifacts,
 } from "../src/index.ts";
 
 process.env.TZ = "America/Los_Angeles";
 
 const NOW = new Date("2026-06-06T15:00:00-07:00").getTime();
+
+function completeStorageEvidence() {
+  return {
+    fileName: "attachment-storage-provider-proof.json",
+    uri: "file:///provider-proof/attachment-storage-provider-proof.json",
+    mimeType: "application/json",
+    byteSize: 24_512,
+    bucketNames: ["care-proof-photos", "record-documents", "qa-evidence"],
+    signedUploadPolicy: "Signed upload policy covers Care Pass reports and related attachment queues.",
+    signedDownloadPolicy: "Signed downloads are household scoped with expiring links.",
+    householdScopePolicy: "Objects are keyed by household and dog id, with owner/admin access review.",
+    retentionPolicy: "Retention rules match care export, deletion, and legal hold requirements.",
+    exportPolicy: "Owner exports include attachment object ids, names, and signed export references.",
+    deletionPolicy: "Deletion receipts cover all attachment buckets and object ids.",
+    qaEvidenceStoragePolicy: "QA screenshots and native proof files are stored separately with release audit ownership.",
+    apolloApprovalOwner: "Apollo Duran",
+    signedAccessApproved: true,
+    householdScopeApproved: true,
+    retentionExportDeletionApproved: true,
+    qaEvidenceStorageApproved: true,
+    apolloApproved: true,
+  };
+}
 
 function baseInput() {
   return {
@@ -91,6 +108,87 @@ test("builds a sitter care pass with routine, diet, and next action context", ()
   assert.match(pass.message, /Keep meals calm/);
 });
 
+test("resolves the stored pet-name placeholder so the pass matches the app", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    profile: { ...baseInput().profile, name: "My Dog" },
+  });
+
+  // "My Dog" is the stored profile default, not a name; every app surface
+  // shows "Phoenix" until the owner personalizes it, and the flagship share
+  // artifact has to agree.
+  assert.equal(pass.title, "Phoenix Sitter Care Pass");
+  assert.match(pass.summary, /^Phoenix care handoff/);
+  assert.doesNotMatch(pass.message, /My Dog/);
+
+  const empty = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    profile: { ...baseInput().profile, name: "" },
+  });
+  assert.equal(empty.title, "Phoenix Sitter Care Pass");
+});
+
+test("a renamed dog's care pass never reads Phoenix in derived copy", () => {
+  // Zero entries steer several derive helpers into their name-bearing
+  // branches (walk nextStep, weight baseline prompt), and the watch-stool
+  // entry exercises the potty/health branches. If any sibling module still
+  // hardcodes "Phoenix", this catches the leak at the shared-artifact level.
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    profile: { ...baseInput().profile, name: "Biscuit", weight: { current: 0, unit: "lb" } },
+    entries: [
+      {
+        id: "potty_watch",
+        type: "potty",
+        title: "Potty - poop",
+        caregiver: "Emma",
+        occurredAt: new Date(NOW - 60 * 60 * 1000).toISOString(),
+        details: { kind: "poop", condition: "diarrhea" },
+      },
+    ],
+  });
+
+  assert.equal(pass.title, "Biscuit Sitter Care Pass");
+  assert.match(pass.message, /Log the walk when Biscuit gets outside/);
+  assert.match(pass.message, /Add Biscuit's current weight/);
+  assert.match(pass.message, /Biscuit seems painful/);
+  assert.doesNotMatch(pass.message, /Phoenix/);
+});
+
+test("keeps each Next Care attention item as its own sentence line", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    entries: [
+      {
+        id: "breakfast-served",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T14:00:00.000Z",
+        details: {
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  const nextCare = pass.sections.find((section) => section.title === "Next Care");
+  assert.ok(nextCare);
+  assert.ok(nextCare.lines.includes(
+    "Meal outcome pending: 1 meal outcome needs confirmation - ate all, ate some, refused, or still grazing.",
+  ));
+  assert.ok(nextCare.lines.includes("Meal remaining: 1 more meal to log today."));
+  assert.ok(nextCare.lines.includes("Walk remaining: 1 more walk to log today."));
+  // No machine-glued joins like "still open.; Walk remaining" anywhere.
+  assert.doesNotMatch(pass.message, /\.;/);
+});
+
 test("sitter care pass includes a practical handoff checklist", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "sitter" });
 
@@ -98,6 +196,132 @@ test("sitter care pass includes a practical handoff checklist", () => {
   assert.match(pass.message, /Confirm the next routine/i);
   assert.match(pass.message, /served amount/i);
   assert.match(pass.message, /Health Watch/i);
+});
+
+test("care pass diet section labels pending and estimated meal amounts", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    dietProfile: {
+      ...baseInput().dietProfile,
+      normalPortion: "1 cup twice daily",
+      mealSchedule: "Breakfast and dinner",
+    },
+    entries: [
+      {
+        id: "breakfast-served",
+        type: "meal",
+        title: "Breakfast - outcome pending",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T07:00:00-07:00",
+        details: {
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 1,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "lunch-partial",
+        type: "meal",
+        title: "Lunch - Ate some",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T12:00:00-07:00",
+        details: {
+          mealCompletion: "partial",
+          servedAmount: 1,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "dinner-complete",
+        type: "meal",
+        title: "Dinner - Ate all",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T14:00:00-07:00",
+        details: {
+          mealCompletion: "complete",
+          servedAmount: 1,
+          servedUnit: "cup",
+          eatenAmount: 1,
+          eatenUnit: "cup",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  const diet = pass.sections.find((section) => section.title === "Diet");
+  assert.ok(diet);
+  assert.match(pass.message, /Daily food: 1.5 of 2 cups today; 1 outcome pending; 1 estimated partial amount/);
+  assert.match(pass.message, /Meal amount note: 1 outcome pending; 1 estimated partial amount/);
+});
+
+test("care pass includes meal follow-up rows for pending estimated and corrected outcomes", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    entries: [
+      {
+        id: "breakfast-served",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T07:00:00-07:00",
+        details: {
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 1,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "lunch-partial",
+        type: "meal",
+        title: "Lunch",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T12:00:00-07:00",
+        details: {
+          mealCompletion: "partial",
+          servedAmount: 1,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "dinner-corrected",
+        type: "meal",
+        title: "Dinner",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T14:00:00-07:00",
+        details: {
+          mealCompletion: "partial",
+          eatenAmount: 0.5,
+          eatenUnit: "cup",
+          householdVisible: true,
+          trustState: "corrected",
+          auditTrail: [
+            {
+              id: "audit-1",
+              action: "corrected",
+              createdAt: "2026-06-06T14:30:00-07:00",
+              caregiver: "Apollo",
+              summary: "Apollo corrected Dinner from ate all to ate some.",
+            },
+          ],
+        },
+      },
+    ],
+  });
+
+  const followUps = pass.sections.find((section) => section.title === "Meal Follow-ups");
+  assert.ok(followUps);
+  assert.match(pass.message, /Outcome pending: Breakfast \(Emma, 7:00 AM\) - update eaten amount before sharing/);
+  assert.match(pass.message, /Estimated amount: Lunch \(Apollo, 12:00 PM\) - confirm exact eaten amount if possible/);
+  assert.match(pass.message, /Corrected outcome: Dinner \(Emma, 2:00 PM\) - review audit history before sharing/);
 });
 
 test("builds a vet care pass with health signals and records", () => {
@@ -247,6 +471,20 @@ test("care pass includes weekly care trend context", () => {
         details: { mealCompletion: "partial", householdVisible: true },
       },
       {
+        id: "meal-served",
+        type: "meal",
+        title: "Bedtime snack",
+        caregiver: "Emma",
+        occurredAt: "2026-06-07T21:00:00-07:00",
+        details: {
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 0.25,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
         id: "walk",
         type: "walk",
         title: "Neighborhood walk",
@@ -268,113 +506,12 @@ test("care pass includes weekly care trend context", () => {
 
   assert.ok(pass.sections.some((section) => section.title === "Care Trends"));
   assert.match(pass.message, /7-day trends/);
-  assert.match(pass.message, /4 visible care logs over 2 days/);
-  assert.match(pass.message, /Meals: 1 complete, 1 partial, 0 skipped/);
+  assert.match(pass.message, /5 visible care logs over 2 days/);
+  assert.match(pass.message, /Meals: 1 complete, 1 partial, 0 skipped, 1 pending outcome/);
+  assert.match(pass.message, /Watch: Meal follow-up/);
+  assert.match(pass.message, /1 partial, 0 skipped, and 1 outcome pending/);
   assert.match(pass.message, /Walks: 35 min/);
   assert.match(pass.message, /Watch: Potty watch/);
-});
-
-test("care pass includes shared mood and energy handoff context", () => {
-  const pass = buildCarePass({
-    ...baseInput(),
-    audience: "trainer",
-    now: new Date("2026-06-08T12:00:00-07:00").getTime(),
-    entries: [
-      ...baseInput().entries,
-      {
-        id: "mood-low",
-        type: "mood",
-        title: "Mood - visitors",
-        caregiver: "Emma",
-        occurredAt: "2026-06-08T08:00:00-07:00",
-        mood: "anxious",
-        details: {
-          energyLevel: "low",
-          moodContext: "Visitors came by before breakfast",
-          householdVisible: true,
-        },
-      },
-      {
-        id: "mood-steady",
-        type: "mood",
-        title: "Mood - settled",
-        caregiver: "Apollo",
-        occurredAt: "2026-06-07T18:00:00-07:00",
-        mood: "calm",
-        details: { energyLevel: "steady", householdVisible: true },
-      },
-      {
-        id: "private-mood",
-        type: "mood",
-        title: "Private mood",
-        caregiver: "Emma",
-        occurredAt: "2026-06-08T09:00:00-07:00",
-        mood: "happy",
-        details: { energyLevel: "high", householdVisible: false },
-      },
-      {
-        id: "old-mood",
-        type: "mood",
-        title: "Old mood",
-        caregiver: "Apollo",
-        occurredAt: "2026-04-01T09:00:00-07:00",
-        mood: "unwell",
-        details: { energyLevel: "low", householdVisible: true },
-      },
-    ],
-  });
-
-  const section = pass.sections.find((item) => item.title === "Mood & Energy");
-  assert.ok(section);
-  assert.match(pass.message, /2 shared mood check-ins/);
-  assert.match(pass.message, /Energy: 1 low, 1 steady, 0 high/);
-  assert.match(pass.message, /Latest: Anxious, low energy by Emma/);
-  assert.match(pass.message, /Visitors came by before breakfast/);
-  assert.doesNotMatch(pass.message, /Private mood/);
-  assert.doesNotMatch(pass.message, /Old mood/);
-});
-
-test("care pass includes local record attachment prep without claiming cloud storage", () => {
-  const pass = buildCarePass({
-    ...baseInput(),
-    audience: "vet",
-    records: [
-      ...baseInput().records,
-      { id: "receipt-ready", type: "receipt", title: "Wellness receipt", note: "$182 exam", attachmentUri: "file://receipt.jpg" },
-      { id: "doc-missing", type: "document", title: "Rabies certificate" },
-      { id: "doc-ready", type: "document", title: "Insurance PDF", attachmentUri: "file://insurance.pdf" },
-    ],
-  });
-
-  const section = pass.sections.find((item) => item.title === "Records Attachment Prep");
-  assert.ok(section);
-  assert.match(pass.message, /Local files: 2\/3 receipts or documents attached/);
-  assert.match(pass.message, /Needs local file: Rabies certificate/);
-  assert.match(pass.message, /Attachments are saved locally on this device/);
-  assert.doesNotMatch(pass.message, /cloud/i);
-});
-
-test("care pass includes Dog ID credential prep before sharing handoffs", () => {
-  const pass = buildCarePass({
-    ...baseInput(),
-    audience: "sitter",
-    profile: {
-      ...baseInput().profile,
-      emergencyContact: "Apollo - 555-0100",
-    },
-    records: [
-      { id: "microchip", type: "microchip", title: "HomeAgain", note: "985112003004551" },
-      { id: "insurance", type: "insurance", title: "Lemonade", note: "Policy WW-1042" },
-      { id: "rabies", type: "vaccine", title: "Rabies", due: "May 2026", note: "Up to date" },
-    ],
-  });
-
-  const section = pass.sections.find((item) => item.title === "Dog ID Prep");
-  assert.ok(section);
-  assert.match(pass.message, /Dog ID fields: 7\/8 ready/);
-  assert.match(pass.message, /Needs Dog ID field: Primary vet/);
-  assert.match(pass.message, /Dog ID is a local printable source until provider-backed credential\/PDF storage is approved/);
-  assert.doesNotMatch(pass.message, /image export ready/i);
 });
 
 test("care pass includes potty health context for sitter and vet review", () => {
@@ -571,12 +708,52 @@ test("care pass includes grooming care context for sitter and groomer handoff", 
   assert.match(pass.message, /owner-reported coat and grooming context/i);
 });
 
+test("care pass includes Incident Watch context for trainer and sitter handoff", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "trainer",
+    now: new Date("2026-06-20T12:00:00-07:00").getTime(),
+    entries: [
+      ...baseInput().entries,
+      {
+        id: "incident-dog-gate",
+        type: "incident",
+        title: "Incident - dog conflict",
+        caregiver: "Emma",
+        occurredAt: "2026-06-20T08:30:00-07:00",
+        details: {
+          incidentType: "dog-conflict",
+          incidentTrigger: "Fast dog at gate",
+          incidentExposure: "Leashed dog by fence",
+          incidentInjury: "None",
+          incidentAction: "Moved across street",
+          incidentFollowUp: "Practice calm passes",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  const section = pass.sections.find((item) => item.title === "Incident Watch");
+  assert.ok(section);
+  assert.match(pass.message, /1 incident in the last 90 days/);
+  assert.match(pass.message, /Triggers: Fast dog at gate/);
+  assert.match(pass.message, /Exposure\/context: Leashed dog by fence/);
+  assert.match(pass.message, /Action taken: Moved across street/);
+  assert.match(pass.message, /Follow-up: Practice calm passes/);
+  assert.match(pass.message, /Trend: Rising pattern/);
+  assert.match(pass.message, /Owner follow-ups: Close open follow-up/);
+  assert.match(pass.message, /Trainer goal ideas: Calm dog passes/);
+  assert.match(pass.message, /does not diagnose behavior or medical issues/i);
+});
+
 test("creates a stable report artifact snapshot from a care pass", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "vet" });
   const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
 
   assert.equal(artifact.id, "care_pass_vet_2026-06-08T06-30-00-000Z");
   assert.equal(artifact.audience, "vet");
+  assert.equal(artifact.storageStatus, "local-only");
   assert.equal(artifact.title, pass.title);
   assert.equal(artifact.createdAt, "2026-06-08T06:30:00.000Z");
   assert.equal(artifact.summary, pass.summary);
@@ -584,196 +761,40 @@ test("creates a stable report artifact snapshot from a care pass", () => {
   assert.deepEqual(artifact.sectionTitles, pass.sections.map((section) => section.title));
 });
 
-test("creates print-ready progress report artifacts with mood energy context", () => {
-  const artifact = createProgressReportArtifact({
-    dogName: "Phoenix <script>",
-    periodDays: 30,
-    generatedAt: "Jun 8, 7:30 AM",
-    createdAt: "2026-06-08T06:30:00.000Z",
-    summary: "30-day progress report for caregiver and vet review.",
-    sections: [
-      {
-        title: "Care Summary",
-        lines: ["Total entries logged: 14", "Most active caregiver: Emma (7)"],
-      },
-      {
-        title: "Mood & Energy",
-        lines: [
-          "Mood & Energy snapshot: 2 shared mood check-ins, 3.5/5 average with something worth watching.",
-          "Owner-reported mood and energy context only; not a diagnosis or emergency triage.",
-        ],
-      },
-    ],
-  });
-  const printable = getReportArtifactPrintView(artifact);
+test("describes Care Pass artifact storage without claiming provider upload", () => {
+  const pass = buildCarePass({ ...baseInput(), audience: "trainer" });
+  const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
+  const storage = describeCarePassArtifactStorage(artifact);
 
-  assert.equal(artifact.id, "progress_report_30d_2026-06-08T06-30-00-000Z");
-  assert.equal(artifact.kind, "progress_report");
-  assert.equal(artifact.title, "Phoenix <script> 30-day Progress Report");
-  assert.equal(artifact.periodDays, 30);
-  assert.deepEqual(artifact.sectionTitles, ["Care Summary", "Mood & Energy"]);
-  assert.match(artifact.message, /Mood & Energy snapshot/);
-  assert.equal(artifact.printFileName, "phoenix-script-30-day-progress-report-2026-06-08.html");
-  assert.equal(printable.status, "ready");
-  assert.equal(printable.html, artifact.printHtml);
-  assert.match(renderProgressReportPrintHtml(artifact), /Phoenix &lt;script&gt; 30-day Progress Report/);
-  assert.match(printable.html, /Mood &amp; Energy/);
-  assert.match(printable.html, /not a diagnosis or emergency triage/i);
-  assert.doesNotMatch(printable.html, /Phoenix <script>/);
+  assert.equal(storage.status, "local-only");
+  assert.equal(storage.label, "Saved locally");
+  assert.match(storage.detail, /Cloud storage pending/);
+  assert.equal(storage.providerBacked, false);
 });
 
-test("creates print-ready Dog ID credential artifacts for local report history", () => {
-  const artifact = createPetCredentialArtifact(
-    {
-      name: "Phoenix <script>",
-      breed: "German Shepherd mix",
-      weight: "68 lb",
-      careFocus: "Keep meals calm.",
-      primaryCaregiver: "Emma",
-      primaryVet: "Alameda Wellness Vet",
-      emergencyContact: "Apollo - 555-0100",
-      microchip: "985112003004551",
-      insurance: "Lemonade - WW-1042",
-      vaccines: "Rabies - May 2028",
-      generatedAt: "2026-06-08T06:30:00.000Z",
-      message: "Phoenix <script> Dog ID\nMicrochip: 985112003004551",
-    },
-    "2026-06-08T06:30:00.000Z",
-  );
-  const printable = getReportArtifactPrintView(artifact);
+test("keeps local Care Pass artifacts saved locally when provider setup lacks structured storage proof", () => {
+  const pass = buildCarePass({ ...baseInput(), audience: "sitter" });
+  const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
+  const storage = describeCarePassArtifactStorage(artifact, { storageProviderConfigured: true });
 
-  assert.equal(artifact.id, "pet_credential_2026-06-08T06-30-00-000Z");
-  assert.equal(artifact.kind, "pet_credential");
-  assert.equal(artifact.title, "Phoenix <script> Dog ID");
-  assert.equal(artifact.summary, "Local Dog ID credential source for caregiver and veterinarian review.");
-  assert.deepEqual(artifact.sectionTitles, ["Dog ID"]);
-  assert.match(artifact.message, /Microchip: 985112003004551/);
-  assert.equal(artifact.printFileName, "phoenix-script-dog-id-2026-06-08.html");
-  assert.equal(printable.status, "ready");
-  assert.equal(printable.html, artifact.printHtml);
-  assert.match(printable.html, /Phoenix &lt;script&gt; Dog ID/);
-  assert.match(printable.html, /WoofWatcher organizes owner-reported credential context/);
-  assert.doesNotMatch(printable.html, /Phoenix <script>/);
-  assert.doesNotMatch(artifact.message, /cloud storage ready|PDF export ready/i);
+  assert.equal(storage.status, "local-only");
+  assert.equal(storage.label, "Saved locally");
+  assert.match(storage.detail, /structured storage proof/i);
+  assert.equal(storage.providerBacked, false);
 });
 
-test("summarizes saved Dog ID credential artifacts for report history review", () => {
-  const oldArtifact = createPetCredentialArtifact(
-    {
-      name: "Phoenix",
-      generatedAt: "2026-06-07T06:30:00.000Z",
-      message: "Phoenix Dog ID\nMicrochip: 985112003004551",
-    },
-    "2026-06-07T06:30:00.000Z",
-  );
-  const latestArtifact = createPetCredentialArtifact(
-    {
-      name: "Phoenix",
-      generatedAt: "2026-06-08T06:30:00.000Z",
-      message: "Phoenix Dog ID\nPrimary vet: Alameda Wellness Vet",
-    },
-    "2026-06-08T06:30:00.000Z",
-  );
-
-  const summary = summarizePetCredentialArtifacts([oldArtifact, latestArtifact]);
-
-  assert.equal(summary.total, 2);
-  assert.equal(summary.latest?.id, latestArtifact.id);
-  assert.match(summary.summary, /2 local Dog ID credential sources saved/);
-  assert.match(summary.latestLine, /Latest Dog ID Credential saved Jun 7, 2026/);
-  assert.match(summary.action, /Report History/);
-  assert.match(summary.boundaryLine, /local credential sources/);
-  assert.doesNotMatch(summary.boundaryLine, /cloud storage ready|PDF export ready/i);
-});
-
-test("summarizes saved report artifacts for local handoff readiness", () => {
-  const carePass = createCarePassArtifact(
-    buildCarePass({ ...baseInput(), audience: "sitter" }),
-    "2026-06-08T06:30:00.000Z",
-  );
-  const progress = createProgressReportArtifact({
-    dogName: "Phoenix",
-    periodDays: 30,
-    generatedAt: "Jun 9, 7:30 AM",
-    createdAt: "2026-06-09T06:30:00.000Z",
-    summary: "30-day progress report for caregiver and vet review.",
-    sections: [{ title: "Care Summary", lines: ["Total entries logged: 14"] }],
-  });
-  const credential = createPetCredentialArtifact(
-    {
-      name: "Phoenix",
-      generatedAt: "2026-06-10T06:30:00.000Z",
-      message: "Phoenix Dog ID\nMicrochip: 985112003004551",
-    },
-    "2026-06-10T06:30:00.000Z",
-  );
-
-  const summary = summarizeReportArtifacts([carePass, progress, credential]);
-
-  assert.equal(summary.total, 3);
-  assert.equal(summary.carePassCount, 1);
-  assert.equal(summary.progressReportCount, 1);
-  assert.equal(summary.petCredentialCount, 1);
-  assert.equal(summary.latest?.id, credential.id);
-  assert.match(summary.summary, /3 local report sources saved/);
-  assert.match(summary.latestLine, /Latest saved source: Dog ID Credential/);
-  assert.match(summary.action, /Resend or share printable source/);
-  assert.match(summary.reviewLine, /Review the latest local source/);
-  assert.match(summary.reviewLine, /routines, medications, records, and audience/);
-  assert.match(summary.cleanupLine, /Remove obsolete local sources only after review/);
-  assert.match(summary.cleanupLine, /does not revoke shares/);
-  assert.match(summary.boundaryLine, /local reusable sources/);
-  assert.doesNotMatch(`${summary.reviewLine} ${summary.cleanupLine} ${summary.boundaryLine}`, /cloud storage ready|PDF export ready/i);
-});
-
-test("describes report artifact print-source readiness without claiming provider lifecycle", () => {
-  const readyProgress = createProgressReportArtifact({
-    dogName: "Phoenix",
-    periodDays: 30,
-    generatedAt: "Jun 9, 7:30 AM",
-    createdAt: "2026-06-09T06:30:00.000Z",
-    summary: "30-day progress report for caregiver and vet review.",
-    sections: [{ title: "Care Summary", lines: ["Total entries logged: 14"] }],
-  });
-  const restoredCarePass = {
-    ...createCarePassArtifact(
-      buildCarePass({ ...baseInput(), audience: "sitter" }),
-      "2026-06-08T06:30:00.000Z",
-    ),
-    printHtml: undefined,
-  };
-
-  const ready = describeReportArtifactSource(readyProgress);
-  const restored = describeReportArtifactSource(restoredCarePass);
-
-  assert.equal(ready.kindLabel, "Progress Report");
-  assert.match(ready.metadataLine, /Progress Report - 1 section - Print-ready source/);
-  assert.match(ready.fileLine, /phoenix-30-day-progress-report-2026-06-09.html/);
-  assert.match(ready.lifecycleLine, /Local printable source only/);
-  assert.match(restored.metadataLine, /Care Pass - .* - Restored printable source/);
-  assert.match(restored.lifecycleLine, /native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are not enabled/);
-  assert.doesNotMatch(`${ready.lifecycleLine} ${restored.lifecycleLine}`, /cloud storage ready|PDF export ready/i);
-});
-
-test("builds local report artifact removal copy without claiming provider deletion", () => {
-  const artifact = createProgressReportArtifact({
-    dogName: "Phoenix",
-    periodDays: 30,
-    generatedAt: "Jun 9, 7:30 AM",
-    createdAt: "2026-06-09T06:30:00.000Z",
-    summary: "30-day progress report for caregiver and vet review.",
-    sections: [{ title: "Care Summary", lines: ["Total entries logged: 14"] }],
+test("marks local Care Pass artifacts upload-ready only after structured storage proof is attached", () => {
+  const pass = buildCarePass({ ...baseInput(), audience: "sitter" });
+  const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
+  const storage = describeCarePassArtifactStorage(artifact, {
+    storageProviderConfigured: true,
+    storageProviderEvidence: completeStorageEvidence(),
   });
 
-  const copy = describeReportArtifactRemoval(artifact);
-
-  assert.equal(copy.title, "Remove Progress Report source?");
-  assert.match(copy.body, /Phoenix 30-day Progress Report/);
-  assert.match(copy.body, /local reusable source/);
-  assert.match(copy.body, /does not delete anything from cloud storage/);
-  assert.match(copy.confirmLabel, /Remove local source/);
-  assert.match(copy.accessibilityLabel, /Remove local Progress Report source/);
-  assert.doesNotMatch(`${copy.title} ${copy.body} ${copy.confirmLabel}`, /server deletion enabled|cloud deletion ready/i);
+  assert.equal(storage.status, "upload-ready");
+  assert.equal(storage.label, "Ready to upload");
+  assert.match(storage.detail, /signed access/);
+  assert.equal(storage.providerBacked, false);
 });
 
 test("renders a print-ready care pass document with escaped care content", () => {
@@ -807,6 +828,31 @@ test("returns stored print source for current care pass artifacts", () => {
   assert.equal(printable.status, "ready");
   assert.equal(printable.fileName, "phoenix-sitter-care-pass-2026-06-08.html");
   assert.equal(printable.html, artifact.printHtml);
+});
+
+test("describes Care Pass artifact export readiness without claiming PDF generation", () => {
+  const pass = buildCarePass({ ...baseInput(), audience: "vet" });
+  const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
+  const exportView = describeCarePassArtifactExport(artifact, { storageProviderConfigured: true });
+
+  assert.equal(exportView.fileName, "phoenix-vet-care-pass-2026-06-08.html");
+  assert.equal(exportView.mimeType, "text/html");
+  assert.equal(exportView.formatLabel, "Printable HTML");
+  assert.equal(exportView.sourceStatus, "ready");
+  assert.ok(exportView.byteSize > 500);
+  assert.equal(exportView.pdfStatus, "not-generated");
+  assert.match(exportView.pdfDetail, /PDF export still needs native or provider-backed generation/);
+  assert.equal(exportView.storage.label, "Saved locally");
+  assert.equal(exportView.providerBacked, false);
+  assert.deepEqual(
+    exportView.manifestRows.map((row) => row.label),
+    ["Format", "Source", "PDF", "Storage"],
+  );
+  assert.equal(exportView.manifestRows[0]?.value, "Printable HTML");
+  assert.equal(exportView.manifestRows[1]?.value, "Print-ready");
+  assert.equal(exportView.manifestRows[2]?.value, "PDF pending");
+  assert.equal(exportView.manifestRows[3]?.value, "Saved locally");
+  assert.match(exportView.manifestRows[2]?.detail ?? "", /native or provider-backed generation/);
 });
 
 test("restores escaped print source for older care pass artifacts", () => {

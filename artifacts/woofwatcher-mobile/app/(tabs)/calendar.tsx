@@ -4,8 +4,8 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
+  ImageBackground,
   Modal,
   Platform,
   Pressable,
@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWoofAuth } from "@/lib/auth";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import {
   deriveCareReminderCenter,
   deriveHouseholdResponsibility,
@@ -28,20 +29,42 @@ import {
 } from "@workspace/care-domain";
 import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
+import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
+import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
+import { confirmThroughSteps } from "@/lib/confirmDialog";
+import { parseLocalDate } from "@/lib/time";
+import { resolvePetName } from "@/lib/petIdentity";
+import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import {
+  applyReminderNotificationPreferenceDraft,
+  buildReminderNotificationPreferencesForCenter,
+} from "@/lib/reminderNotificationPreferences";
 import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
-  MOBILE_INLINE_HIT_SLOP,
   MIN_MOBILE_TOUCH_TARGET,
+  MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
-import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
-import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
-import { parseLocalDate } from "@/lib/time";
-import { BoardCard, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
+import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import {
+  BoardActionButton,
+  BoardSegmentTabs,
+  BoardStatusPill,
+  type BoardStatusPillTone,
+} from "@/components/board/BoardPrimitives";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+// Purpose-composed wide banner (1264x383, calm rug/floor band of the storybook
+// day room) so the wide command deck doesn't crop a square room to a mid-wall band.
+const PLANS_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
+const PLANS_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
+const PLANS_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
 
 const ROUTINE_ICON: Record<string, PulseIconName> = {
   meal: "bowl",
@@ -108,6 +131,21 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/**
+ * Next full clock hour as "7:00 AM"-style text. Used to prefill the free-text
+ * time fields with a real, immediately-submittable value instead of a grey
+ * placeholder that looks filled but fails validation.
+ */
+function nextRoundHourLabel(now: Date = new Date()): string {
+  const next = new Date(now);
+  next.setMinutes(0, 0, 0);
+  next.setHours(next.getHours() + 1);
+  const hours24 = next.getHours();
+  const period = hours24 >= 12 ? "PM" : "AM";
+  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+  return `${hours12}:00 ${period}`;
+}
+
 function dayLabel(iso: string): string {
   const d = new Date(`${iso}T12:00:00`);
   const today = todayISO();
@@ -122,6 +160,33 @@ function routineStatusLabel(status: RoutineBoardStatus): string {
   if (status === "overdue") return "Overdue";
   if (status === "due") return "Due now";
   return "Upcoming";
+}
+
+function scheduleStatusPill(
+  status: RoutineBoardStatus,
+  isNextUpcoming: boolean,
+): { label: string; tone: BoardStatusPillTone } {
+  if (status === "done") return { label: "Done", tone: "done" };
+  if (status === "overdue" || status === "due") return { label: "Due", tone: "due" };
+  if (isNextUpcoming) return { label: "Up Next", tone: "upNext" };
+  return { label: "Upcoming", tone: "upcoming" };
+}
+
+function routineBoardPillTone(status: RoutineBoardStatus): BoardStatusPillTone {
+  if (status === "done") return "done";
+  if (status === "overdue" || status === "due") return "due";
+  return "upcoming";
+}
+
+/** Time-of-day band for grouping the schedule like a real day planner. */
+function scheduleBandForTime(time: string): "Morning" | "Afternoon" | "Evening" | "Anytime" {
+  const match = /(\d+):(\d+)\s*(AM|PM)/i.exec(time);
+  if (!match) return "Anytime";
+  let hour = parseInt(match[1], 10) % 12;
+  if (/pm/i.test(match[3])) hour += 12;
+  if (hour < 12) return "Morning";
+  if (hour < 17) return "Afternoon";
+  return "Evening";
 }
 
 function reminderUrgencyLabel(urgency: string): string {
@@ -151,18 +216,49 @@ interface SuggestedEvent {
   note?: string;
 }
 
+interface PlanMissionRow {
+  id: string;
+  eyebrow: string;
+  title: string;
+  detail: string;
+  icon: PixelIconName;
+  tone: string;
+  actionLabel: string;
+  onPress: () => void;
+}
+
 export default function CalendarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
-  const modalSheetBottomPadding = getModalSheetBottomPadding(insets.bottom);
-  const { state, updateCareDoc, addEntry } = useCare();
+  const ownerOps = isOwnerOpsBuild();
+  const { state, updateCareDoc, addEntry, deleteEntry } = useCare();
 
   const { getToken } = useWoofAuth();
-  const { routines, calendarEvents, profile, entries, caregivers, records } = state;
+  const {
+    routines,
+    calendarEvents,
+    profile,
+    entries,
+    caregivers,
+    records,
+    launchProviderProfile,
+    reminderNotificationPreferences,
+  } = state;
 
-  const topScrollPadding = getRouteTopPadding(insets.top, "tabbed", Platform.OS === "web");
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
+  });
+  const bottomPadding = getTabbedRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
+  const modalSheetBottomPadding = getModalSheetBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
   const now = Date.now();
   const today = todayISO();
   const [scheduleTab, setScheduleTab] = useState<"today" | "tomorrow" | "week">("today");
@@ -184,6 +280,8 @@ export default function CalendarScreen() {
   const [rOwner, setROwner] = useState("");
   const [rNote, setRNote] = useState("");
   const [rTimeError, setRTimeError] = useState<string | null>(null);
+  const [routineFeedback, setRoutineFeedback] = useState<{ id: string; title: string; type: string } | null>(null);
+  const routineFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // WoofGuide discovery
   const [discoverOpen, setDiscoverOpen] = useState(false);
@@ -201,8 +299,20 @@ export default function CalendarScreen() {
     () => deriveRoutineBoard({ routines: sortedRoutines, entries, caregivers, now }),
     [sortedRoutines, entries, caregivers, now],
   );
+  // Fresh installs have no routines yet, so the schedule falls back to a
+  // hardcoded sample day. Those rows have no backing routine, so they must
+  // render as clearly-labeled, non-interactive preview content.
+  const isSampleSchedule = routineBoard.items.length === 0;
   const scheduleRows = useMemo(() => {
-    const fallback = [
+    const fallback: {
+      id: string;
+      label: string;
+      type: string;
+      time: string;
+      detail: string;
+      status: RoutineBoardStatus;
+      owner?: string;
+    }[] = [
       { id: "breakfast", label: "Breakfast", type: "meal", time: "7:00 AM", detail: "1 1/4 cups", status: "done" as RoutineBoardStatus },
       { id: "walk-am", label: "Walk", type: "walk", time: "8:00 AM", detail: "45 min", status: "done" as RoutineBoardStatus },
       { id: "training", label: "Training", type: "training", time: "10:00 AM", detail: "15 min", status: "done" as RoutineBoardStatus },
@@ -217,7 +327,8 @@ export default function CalendarScreen() {
           label: item.label,
           type: item.normalizedType,
           time: item.time,
-          detail: item.owner || item.note || routineStatusLabel(item.status),
+          owner: item.owner || "",
+          detail: item.note || "",
           status: item.status,
         }))
       : fallback;
@@ -230,9 +341,21 @@ export default function CalendarScreen() {
     () => deriveHouseholdResponsibility({ routines: sortedRoutines, entries, caregivers, now }),
     [sortedRoutines, entries, caregivers, now],
   );
+  const reminderNotificationPreferenceInput = useMemo(
+    () => buildReminderNotificationPreferencesForCenter(launchProviderProfile, reminderNotificationPreferences),
+    [launchProviderProfile, reminderNotificationPreferences],
+  );
   const careReminderCenter = useMemo(
-    () => deriveCareReminderCenter({ routines: sortedRoutines, entries, records, caregivers, now, limit: 4 }),
-    [sortedRoutines, entries, records, caregivers, now],
+    () => deriveCareReminderCenter({
+      routines: sortedRoutines,
+      entries,
+      records,
+      caregivers,
+      notificationPreferences: reminderNotificationPreferenceInput,
+      now,
+      limit: 4,
+    }),
+    [sortedRoutines, entries, records, caregivers, reminderNotificationPreferenceInput, now],
   );
   const reminderCount = careReminderCenter.total;
   const reminderTone =
@@ -249,6 +372,23 @@ export default function CalendarScreen() {
       : responsibility.status === "needs-assignment"
         ? colors.amber
         : colors.sage;
+  const responsibilityIsCovered = responsibility.status === "balanced" || responsibility.status === "steady";
+  const completedScheduleCount = scheduleRows.filter((row) => row.status === "done").length;
+  const openScheduleCount = Math.max(0, scheduleRows.length - completedScheduleCount);
+  const nextScheduleRow = scheduleRows.find((row) => row.status !== "done") ?? scheduleRows[0];
+  const nextScheduleStatus = nextScheduleRow ? routineStatusLabel(nextScheduleRow.status) : "Ready";
+  const firstUpcomingScheduleIndex = scheduleRows.findIndex((row) => row.status === "upcoming");
+  const commandDeckTone =
+    nextScheduleRow?.status === "overdue"
+      ? colors.rose
+      : nextScheduleRow?.status === "due"
+        ? colors.amber
+        : colors.sage;
+  const commandDeckSpeech = isSampleSchedule
+    ? "Here's a sample day. Add your first routine to make it yours."
+    : nextScheduleRow
+      ? `${nextScheduleRow.label} is next at ${nextScheduleRow.time}.`
+      : "Phoenix has a clear care board.";
 
   // Group upcoming one-off events by date.
   const upcoming = useMemo(() => {
@@ -275,6 +415,15 @@ export default function CalendarScreen() {
   };
 
   const [dateError, setDateError] = useState<string | null>(null);
+
+  const openAddEvent = () => {
+    // Prefill real, submittable defaults (today + next round hour) so the
+    // sheet never opens with grey placeholders that look like filled values.
+    if (!parseLocalDate(evDate)) setEvDate(todayISO());
+    if (!evTime.trim()) setEvTime(nextRoundHourLabel());
+    setDateError(null);
+    setAddOpen(true);
+  };
 
   const submitEvent = () => {
     if (!evTitle.trim()) return;
@@ -304,7 +453,9 @@ export default function CalendarScreen() {
     setRoutineEditId(null);
     setRLabel("");
     setRType("meal");
-    setRTime("");
+    // Real default instead of a placeholder-lookalike so Add Routine works
+    // immediately; owners can still type any "4:00 PM"-style time over it.
+    setRTime(nextRoundHourLabel());
     setROwner("");
     setRNote("");
     setRTimeError(null);
@@ -333,6 +484,23 @@ export default function CalendarScreen() {
     });
   };
 
+  const saveReminderNotificationPreferences = (
+    draft: Parameters<typeof applyReminderNotificationPreferenceDraft>[1],
+  ) => {
+    Haptics.selectionAsync();
+    const savedAt = new Date().toISOString();
+    updateCareDoc((doc) => applyReminderNotificationPreferenceDraft(doc, draft, savedAt));
+  };
+
+  const openPushNotificationProofMission = () => {
+    Haptics.selectionAsync();
+    router.push("/care-twin-qa?qaSurface=push-notifications-proof" as never);
+  };
+
+  const openReminderLogDetailRoute = (type: string) => {
+    router.push(`/log?type=${encodeURIComponent(type)}&detail=1&intent=${Date.now()}` as never);
+  };
+
   const openReminderAction = (item: CareReminderItem) => {
     Haptics.selectionAsync();
     const routine = item.sourceId ? routineBoard.items.find((candidate) => candidate.id === item.sourceId) : null;
@@ -341,11 +509,11 @@ export default function CalendarScreen() {
       return;
     }
     if (item.kind === "medication" && routine) {
-      router.push({ pathname: "/log", params: { type: "medication" } });
+      openReminderLogDetailRoute("medication");
       return;
     }
     if (item.kind === "grooming") {
-      router.push({ pathname: "/log", params: { type: "grooming" } });
+      openReminderLogDetailRoute("grooming");
       return;
     }
     if (item.kind === "record" || item.kind === "medication") {
@@ -354,18 +522,21 @@ export default function CalendarScreen() {
   };
 
   const deleteRoutine = (id: string) => {
-    Alert.alert("Delete Routine", "Remove this routine from your schedule?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          updateCareDoc((doc) => ({ ...doc, routines: doc.routines.filter((r) => r.id !== id) }));
-          setRoutineOpen(false);
+    confirmThroughSteps(
+      [
+        {
+          title: "Delete Routine",
+          message: "Remove this routine from your schedule?",
+          confirmLabel: "Delete",
+          destructive: true,
         },
+      ],
+      () => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        updateCareDoc((doc) => ({ ...doc, routines: doc.routines.filter((r) => r.id !== id) }));
+        setRoutineOpen(false);
       },
-    ]);
+    );
   };
 
   const submitRoutine = () => {
@@ -395,6 +566,39 @@ export default function CalendarScreen() {
     setRoutineOpen(false);
   };
 
+  const clearRoutineFeedbackTimer = () => {
+    if (routineFeedbackTimer.current) {
+      clearTimeout(routineFeedbackTimer.current);
+      routineFeedbackTimer.current = null;
+    }
+  };
+
+  const showRoutineFeedback = (feedback: { id: string; title: string; type: string }) => {
+    clearRoutineFeedbackTimer();
+    setRoutineFeedback(feedback);
+    routineFeedbackTimer.current = setTimeout(() => {
+      setRoutineFeedback(null);
+      routineFeedbackTimer.current = null;
+    }, 9000);
+  };
+
+  const undoRoutineFeedback = () => {
+    if (!routineFeedback) return;
+    clearRoutineFeedbackTimer();
+    void deleteEntry(routineFeedback.id);
+    setRoutineFeedback(null);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+  };
+
+  const openRoutineFeedbackDetails = () => {
+    if (!routineFeedback) return;
+    const entryId = routineFeedback.id;
+    clearRoutineFeedbackTimer();
+    setRoutineFeedback(null);
+    Haptics.selectionAsync();
+    router.push(`/log?entry=${encodeURIComponent(entryId)}` as never);
+  };
+
   const logRoutineDone = (routine: {
     id: string;
     label: string;
@@ -417,7 +621,7 @@ export default function CalendarScreen() {
       details.householdVisible = true;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    addEntry({
+    const id = addEntry({
       type,
       title: routine.label,
       caregiver,
@@ -425,6 +629,7 @@ export default function CalendarScreen() {
       ...(note ? { note } : {}),
       details,
     });
+    showRoutineFeedback({ id, title: routine.label, type });
   };
 
   const discover = async () => {
@@ -469,111 +674,351 @@ export default function CalendarScreen() {
     setSuggestions((prev) => prev.filter((s) => s !== sug));
   };
 
+  const nextScheduleRoutine = nextScheduleRow
+    ? routineBoard.items.find((item) => item.id === nextScheduleRow.id)
+    : null;
+  const leadReminder = careReminderCenter.items[0] ?? null;
+  const planMissionRows: PlanMissionRow[] = [];
+
+  if (nextScheduleRow) {
+    planMissionRows.push(
+      isSampleSchedule
+        ? {
+            id: "next-plan",
+            eyebrow: "Next Mission",
+            title: "Add your first routine",
+            detail: "The schedule shows a sample day until you do",
+            icon: routinePixelIcon(nextScheduleRow.type),
+            tone: commandDeckTone,
+            actionLabel: "Add",
+            onPress: () => {
+              Haptics.selectionAsync();
+              openNewRoutine();
+            },
+          }
+        : {
+            id: "next-plan",
+            eyebrow: "Next Mission",
+            title: nextScheduleRow.label,
+            detail: `${nextScheduleRow.time} - ${nextScheduleRow.detail}`,
+            icon: routinePixelIcon(nextScheduleRow.type),
+            tone: commandDeckTone,
+            actionLabel: nextScheduleRoutine ? "Open" : nextScheduleStatus,
+            onPress: () => {
+              Haptics.selectionAsync();
+              if (nextScheduleRoutine) openBoardRoutine(nextScheduleRoutine);
+            },
+          },
+    );
+  }
+
+  planMissionRows.push({
+    id: "household-sync",
+    eyebrow: "Household Sync",
+    title: responsibilityIsCovered ? "Care board is covered" : "Needs owner attention",
+    detail: responsibility.nextStep,
+    icon: "heart",
+    tone: responsibilityTone,
+    actionLabel: responsibilityIsCovered ? "Synced" : "Review",
+    onPress: () => {
+      Haptics.selectionAsync();
+      router.push("/more" as never);
+    },
+  });
+
+  planMissionRows.push(
+    leadReminder
+      ? {
+          id: "lead-reminder",
+          eyebrow: "Reminder",
+          title: leadReminder.label,
+          detail: leadReminder.action,
+          icon: leadReminder.kind === "medication" ? "medication" : "clock",
+          tone: reminderTone,
+          actionLabel: "Resolve",
+          onPress: () => openReminderAction(leadReminder),
+        }
+      : {
+          id: "clear-reminder",
+          eyebrow: "Reminder",
+          title: "No owner reminders",
+          detail: careReminderCenter.summary,
+          icon: "happy",
+          tone: colors.sage,
+          actionLabel: "Clear",
+          onPress: () => {
+            Haptics.selectionAsync();
+          },
+        },
+  );
+
   const isAdded = (sug: SuggestedEvent) =>
     calendarEvents.some((e) => e.title === sug.title && e.date === sug.date);
 
   // Mount animation
-  const fade = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(16)).current;
+  const isWebRoutePreview = (Platform.OS as string) === "web";
+  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
+  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
   useEffect(() => {
+    return () => {
+      if (routineFeedbackTimer.current) clearTimeout(routineFeedbackTimer.current);
+    };
+  }, []);
+  useEffect(() => {
+    if (isWebRoutePreview) return;
     Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: Platform.OS !== "web" }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: Platform.OS !== "web" }),
+      Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
+      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
     ]).start();
-  }, [fade, slide]);
+  }, [fade, isWebRoutePreview, slide]);
 
   const dateLabel = new Date(now).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
-  const H_PAD = 20;
+  const H_PAD = 16;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
         style={s.container}
-        contentContainerStyle={{ paddingTop: topScrollPadding, paddingBottom: bottomScrollPadding, paddingHorizontal: H_PAD }}
+        contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           <BoardRouteHeader
-            kicker="Plans"
-            title="Plans & Schedule"
+            title="Plan"
             subtitle={dateLabel}
-            icon="calendar-outline"
             actionIcon="add"
             actionLabel="Add plan"
             onAction={() => {
               Haptics.selectionAsync();
-              setAddOpen(true);
+              openAddEvent();
             }}
           />
 
+          <BoardCard style={s.commandDeckCard}>
+            <ImageBackground
+              source={PLANS_COMMAND_STAGE_ROOM}
+              resizeMode="cover"
+              imageStyle={[stageImageFill, s.commandDeckImage, pixelImageStyle]}
+              style={[s.commandDeckStage, { borderColor: colors.border }]}
+              testID="plans-command-pixel-stage"
+            >
+              <View style={[s.commandDeckShade, { backgroundColor: colors.card + "CC" }]} />
+              <View style={s.commandDeckTop}>
+                <View style={[s.commandDeckBubble, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Text style={[s.commandDeckKicker, { color: colors.forest, fontFamily: DISPLAY_SEMI }]}>
+                    Plans Command Deck
+                  </Text>
+                  <Text style={[s.commandDeckSpeech, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {commandDeckSpeech}
+                  </Text>
+                  <View style={[s.commandDeckBubbleTail, { backgroundColor: colors.card, borderColor: colors.border }]} />
+                </View>
+                <View style={[s.commandDeckChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <PixelIcon name={nextScheduleRow ? routinePixelIcon(nextScheduleRow.type) : "clock"} size={17} />
+                  <Text style={[s.commandDeckChipText, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
+                    {isSampleSchedule ? "Sample" : nextScheduleStatus}
+                  </Text>
+                </View>
+              </View>
+
+              <View pointerEvents="none" style={s.commandDeckSprite}>
+                <View style={s.commandDeckSpriteShadow} />
+                <SpriteSheetPlayer
+                  asset={PLANS_COMMAND_STAGE_SPRITE}
+                  track={PLANS_COMMAND_STAGE_TRACK}
+                  width={88}
+                  height={88}
+                  testID="plans-command-pixel-sprite"
+                />
+              </View>
+
+              <View style={[s.commandDeckHud, { backgroundColor: colors.card + "F2", borderColor: colors.border }]}>
+                <View style={s.commandDeckHudCell}>
+                  <Text style={[s.commandDeckHudLabel, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>Done</Text>
+                  <Text style={[s.commandDeckHudValue, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
+                    {isSampleSchedule ? "—" : `${completedScheduleCount}/${scheduleRows.length}`}
+                  </Text>
+                </View>
+                <View style={s.commandDeckHudCell}>
+                  <Text style={[s.commandDeckHudLabel, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>Open</Text>
+                  <Text style={[s.commandDeckHudValue, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
+                    {isSampleSchedule ? "—" : openScheduleCount}
+                  </Text>
+                </View>
+                <View style={s.commandDeckHudCell}>
+                  <Text style={[s.commandDeckHudLabel, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>Signal</Text>
+                  <View style={s.commandDeckSignalRow}>
+                    {[0, 1, 2, 3, 4].map((bar) => {
+                      const activeBars = isSampleSchedule ? 1 : Math.max(1, Math.min(5, openScheduleCount + 1));
+                      const filled = bar < activeBars;
+                      return (
+                        <View
+                          key={bar}
+                          style={[
+                            s.commandDeckSignalBar,
+                            {
+                              height: 6 + bar * 2,
+                              backgroundColor: filled
+                                ? isSampleSchedule
+                                  ? colors.mutedForeground
+                                  : commandDeckTone
+                                : colors.muted,
+                            },
+                          ]}
+                        />
+                      );
+                    })}
+                  </View>
+                </View>
+              </View>
+            </ImageBackground>
+          </BoardCard>
+
           <BoardCard style={s.scheduleCard}>
-            <View style={s.scheduleTabs}>
-              {[
+            <View style={s.scheduleCardHeader}>
+              <View style={s.scheduleHeaderCopy}>
+                <Text style={[s.scheduleEyebrow, { color: colors.forest, fontFamily: DISPLAY_SEMI }]}>Mission Schedule</Text>
+                <Text style={[s.scheduleHeaderTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {scheduleTab === "today" ? "Today's care plan" : scheduleTab === "tomorrow" ? "Tomorrow preview" : "Weekly rhythm"}
+                </Text>
+              </View>
+              {isSampleSchedule ? (
+                <BoardPill label="Sample day" tone={colors.mutedForeground} />
+              ) : (
+                <BoardPill
+                  label={openScheduleCount === 0 ? "Clear" : `${openScheduleCount} open`}
+                  tone={openScheduleCount === 0 ? colors.sage : commandDeckTone}
+                />
+              )}
+            </View>
+            <BoardSegmentTabs
+              segments={[
                 { key: "today" as const, label: "Today" },
                 { key: "tomorrow" as const, label: "Tomorrow" },
                 { key: "week" as const, label: "Week" },
-              ].map((tab) => {
-                const active = scheduleTab === tab.key;
-                return (
-                  <Pressable
-                    key={tab.key}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Show ${tab.label} plans`}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setScheduleTab(tab.key);
-                    }}
-                    style={[
-                      s.scheduleTab,
-                      {
-                        backgroundColor: active ? colors.brandNavy : colors.background,
-                        borderColor: active ? colors.brandNavy : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        s.scheduleTabText,
-                        {
-                          color: active ? colors.ivory : colors.navy,
-                          fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold",
-                        },
-                      ]}
-                    >
-                      {tab.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+              ]}
+              active={scheduleTab}
+              onChange={(key) => {
+                Haptics.selectionAsync();
+                setScheduleTab(key);
+              }}
+              style={s.scheduleTabs}
+            />
 
             <View style={s.scheduleList}>
               {scheduleRows.map((row, index) => {
                 const done = row.status === "done";
+                const pill = scheduleStatusPill(row.status, index === firstUpcomingScheduleIndex);
+                const band = scheduleBandForTime(row.time);
+                const showBandHeader =
+                  scheduleTab !== "week" &&
+                  (index === 0 || scheduleBandForTime(scheduleRows[index - 1].time) !== band);
+                const showNowLine =
+                  scheduleTab === "today" && !isSampleSchedule && index === firstUpcomingScheduleIndex;
+                const bandHeader = showBandHeader ? (
+                  <View style={s.scheduleBand}>
+                    <Text style={[s.scheduleBandText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      {band.toUpperCase()}
+                    </Text>
+                    <View style={[s.scheduleBandRule, { backgroundColor: colors.border }]} />
+                  </View>
+                ) : null;
+                const nowLine = showNowLine ? (
+                  <View style={s.scheduleNowLine} accessible accessibilityLabel="Current time marker">
+                    <View style={[s.scheduleNowChip, { backgroundColor: colors.primary }]}>
+                      <Text style={[s.scheduleNowChipText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                        NOW
+                      </Text>
+                    </View>
+                    <View style={[s.scheduleNowBar, { backgroundColor: colors.primary }]} />
+                  </View>
+                ) : null;
+                if (isSampleSchedule) {
+                  // Preview-only sample rows: no backing routine exists, so no
+                  // Pressable wrappers and no mark-done toggles render here.
+                  return (
+                    <React.Fragment key={`${row.id}-${index}`}>
+                    {bandHeader}
+                    <View
+                      accessible
+                      accessibilityLabel={`Sample day preview: ${row.time} ${row.label}`}
+                      style={[
+                        s.scheduleRow,
+                        s.scheduleSampleRow,
+                        index > 0 && !showBandHeader && { borderTopColor: colors.border, borderTopWidth: 1 },
+                      ]}
+                    >
+                      <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        {row.time}
+                      </Text>
+                      <View style={s.scheduleRowCopy}>
+                        <Text style={[s.scheduleTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          {row.label}
+                        </Text>
+                        <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          {scheduleTab === "week" ? `${dayLabel(today)} - ${row.detail}` : row.detail}
+                        </Text>
+                        <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
+                      </View>
+                      {hasMedallion(routinePixelIcon(row.type)) ? (
+                        <BoardMedallion name={routinePixelIcon(row.type) as never} size={44} />
+                      ) : (
+                        <View style={[s.scheduleIconBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                          <PixelIcon name={routinePixelIcon(row.type)} size={22} />
+                        </View>
+                      )}
+                    </View>
+                    </React.Fragment>
+                  );
+                }
                 const sourceRoutine = routineBoard.items.find((item) => item.id === row.id);
                 return (
+                  <React.Fragment key={`${row.id}-${index}`}>
+                  {bandHeader}
+                  {nowLine}
                   <Pressable
-                    key={`${row.id}-${index}`}
                     accessibilityRole="button"
                     accessibilityLabel={`${row.time} ${row.label}`}
                     onPress={() => {
                       Haptics.selectionAsync();
                       if (sourceRoutine) openBoardRoutine(sourceRoutine);
                     }}
-                    style={[s.scheduleRow, index > 0 && { borderTopColor: colors.border, borderTopWidth: 1 }]}
+                    style={[
+                      s.scheduleRow,
+                      index > 0 && !showBandHeader && !showNowLine && { borderTopColor: colors.border, borderTopWidth: 1 },
+                    ]}
                   >
-                    <Text style={[s.scheduleTime, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                    <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                       {row.time}
                     </Text>
-                    <PixelIcon name={routinePixelIcon(row.type)} size={25} />
                     <View style={s.scheduleRowCopy}>
                       <Text style={[s.scheduleTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                         {row.label}
                       </Text>
-                      <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {scheduleTab === "week" ? `${dayLabel(today)} - ${row.detail}` : row.detail}
-                      </Text>
+                      {row.owner ? (
+                        <View style={s.scheduleOwnerRow}>
+                          <Ionicons name="person-outline" size={11} color={colors.mutedForeground} />
+                          <Text
+                            numberOfLines={1}
+                            style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                          >
+                            {row.owner}
+                          </Text>
+                        </View>
+                      ) : row.detail ? (
+                        <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          {scheduleTab === "week" ? `${dayLabel(today)} - ${row.detail}` : row.detail}
+                        </Text>
+                      ) : null}
+                      <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
                     </View>
+                    {hasMedallion(routinePixelIcon(row.type)) ? (
+                      <BoardMedallion name={routinePixelIcon(row.type) as never} size={44} />
+                    ) : (
+                      <View style={[s.scheduleIconBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+                        <PixelIcon name={routinePixelIcon(row.type)} size={22} />
+                      </View>
+                    )}
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Mark ${row.label} done`}
@@ -592,27 +1037,82 @@ export default function CalendarScreen() {
                       {done ? <Ionicons name="checkmark" size={13} color="#FFFFFF" /> : null}
                     </Pressable>
                   </Pressable>
+                  </React.Fragment>
                 );
               })}
             </View>
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Add plan"
+            {isSampleSchedule ? (
+              <Text style={[s.scheduleSampleNote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                This is a sample day to show how your plan will look. Add your first routine to make it real.
+              </Text>
+            ) : null}
+
+            <BoardActionButton
+              label={isSampleSchedule ? "Add your first routine" : "Add routine"}
+              icon="add"
+              accessibilityLabel={isSampleSchedule ? "Add your first routine" : "Add routine"}
               onPress={() => {
                 Haptics.selectionAsync();
                 openNewRoutine();
               }}
-              style={({ pressed }) => [
-                s.scheduleAdd,
-                { backgroundColor: colors.brandNavy, opacity: pressed ? 0.88 : 1 },
-              ]}
-            >
-              <Ionicons name="add" size={17} color={colors.ivory} />
-              <Text style={[s.scheduleAddText, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>
-                Add Plan
-              </Text>
-            </Pressable>
+              style={s.scheduleAddButton}
+            />
+          </BoardCard>
+
+          <BoardCard style={s.planMissionBoard}>
+            <BoardSectionHeader
+              title="Today's Missions"
+              accessory={
+                <BoardPill
+                  label={
+                    isSampleSchedule
+                      ? "Sample day"
+                      : `${completedScheduleCount}/${scheduleRows.length} done`
+                  }
+                  tone={commandDeckTone}
+                />
+              }
+            />
+            <View style={s.planMissionList}>
+              {planMissionRows.map((mission, index) => (
+                <Pressable
+                  key={mission.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open ${mission.eyebrow}: ${mission.title}`}
+                  onPress={mission.onPress}
+                  style={({ pressed }) => [
+                    s.planMissionRow,
+                    {
+                      backgroundColor: pressed ? mission.tone + "10" : colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View style={[s.planMissionIcon, { backgroundColor: mission.tone + "18" }]}>
+                    <PixelIcon name={mission.icon} size={22} />
+                  </View>
+                  <View style={s.planMissionCopy}>
+                    <Text style={[s.planMissionEyebrow, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                      {mission.eyebrow}
+                    </Text>
+                    <Text numberOfLines={1} style={[s.planMissionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                      {mission.title}
+                    </Text>
+                    <Text numberOfLines={1} style={[s.planMissionDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      {mission.detail}
+                    </Text>
+                  </View>
+                  <View style={[s.planMissionAction, { backgroundColor: mission.tone + "16" }]}>
+                    <Text style={[s.planMissionActionText, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                      {mission.actionLabel}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={13} color={mission.tone} />
+                  </View>
+                  {index < planMissionRows.length - 1 ? <View style={[s.planMissionDivider, { backgroundColor: colors.border }]} /> : null}
+                </Pressable>
+              ))}
+            </View>
           </BoardCard>
 
           {/* WoofGuide discovery banner */}
@@ -625,7 +1125,7 @@ export default function CalendarScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[s.discoverTitle, { fontFamily: DISPLAY_SEMI }]}>Discover nearby dog events</Text>
-              <Text style={[s.discoverSub, { fontFamily: "Inter_400Regular" }]}>WoofGuide curates outings for {profile.name}</Text>
+              <Text style={[s.discoverSub, { fontFamily: "Inter_400Regular" }]}>WoofGuide curates outings for {resolvePetName(profile.name)}</Text>
             </View>
             <Ionicons name={discoverOpen ? "chevron-up" : "chevron-down"} size={20} color="#fff" />
           </Pressable>
@@ -685,7 +1185,10 @@ export default function CalendarScreen() {
 
           {/* Upcoming one-off events */}
           <BoardCard style={s.upcomingBoardCard}>
-            <BoardSectionHeader title="Upcoming Events" action={upcoming.length ? `${upcoming.length} days` : "Add one"} />
+            <BoardSectionHeader
+              title="Upcoming Events"
+              accessory={<BoardPill label={upcoming.length ? `${upcoming.length} days` : "Add one"} tone={colors.primary} />}
+            />
             {upcoming.length === 0 ? (
               <View style={[s.emptyPanel, { backgroundColor: colors.background }]}>
                 <Ionicons name="calendar-outline" size={30} color={colors.mutedForeground} />
@@ -743,7 +1246,7 @@ export default function CalendarScreen() {
           <BoardCard style={[s.plansBoardCard, { borderColor: reminderTone + "44" }]}>
             <BoardSectionHeader
               title="Reminder Center"
-              action={reminderCount === 0 ? "Clear" : `${reminderCount} active`}
+              accessory={<BoardPill label={reminderCount === 0 ? "Clear" : `${reminderCount} active`} tone={reminderTone} />}
             />
             <View style={s.responsibilityTop}>
               <View style={[s.responsibilityIcon, { backgroundColor: reminderTone + "18" }]}>
@@ -819,6 +1322,83 @@ export default function CalendarScreen() {
             <Text style={[s.reminderReadiness, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {careReminderCenter.notificationReadiness}
             </Text>
+            <View style={[s.reminderNotificationPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <Text style={[s.reminderNotificationTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                Notification preferences
+              </Text>
+              <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {careReminderCenter.notificationPreferenceSummary}
+              </Text>
+              <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {careReminderCenter.notificationQuietHours}
+              </Text>
+              <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                {careReminderCenter.notificationOptOut}
+              </Text>
+              <View style={s.reminderPreferenceActions}>
+                <Pressable
+                  onPress={() => saveReminderNotificationPreferences({ pushEnabled: true, optOut: false })}
+                  accessibilityRole="button"
+                  accessibilityLabel="Allow reminders when they arrive in a future update"
+                  style={({ pressed }) => [
+                    s.reminderPreferenceButton,
+                    { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
+                  ]}
+                >
+                  <Ionicons name="notifications-outline" size={15} color={colors.primary} />
+                  <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Allow future reminders
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => saveReminderNotificationPreferences({ optOut: true })}
+                  accessibilityRole="button"
+                  accessibilityLabel="Opt out of push reminders"
+                  style={({ pressed }) => [
+                    s.reminderPreferenceButton,
+                    { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
+                  ]}
+                >
+                  <Ionicons name="notifications-off-outline" size={15} color={colors.rose} />
+                  <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Opt out
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => saveReminderNotificationPreferences({ quietHoursStart: "9:00 PM", quietHoursEnd: "7:00 AM" })}
+                  accessibilityRole="button"
+                  accessibilityLabel="Save quiet hours from 9:00 PM to 7:00 AM"
+                  style={({ pressed }) => [
+                    s.reminderPreferenceButton,
+                    { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
+                  ]}
+                >
+                  <Ionicons name="moon-outline" size={15} color={colors.amber} />
+                  <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Save quiet hours
+                  </Text>
+                </Pressable>
+                {ownerOps ? (
+                  <Pressable
+                    onPress={openPushNotificationProofMission}
+                    accessibilityRole="button"
+                    accessibilityLabel="Open push notifications proof mission"
+                    style={({ pressed }) => [
+                      s.reminderPreferenceButton,
+                      { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
+                    ]}
+                  >
+                    <Ionicons name="shield-checkmark-outline" size={15} color={colors.amber} />
+                    <Text style={[s.reminderPreferenceButtonText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      Open push proof
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+              <Text style={[s.reminderNotificationText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Your choice is saved on this device. Reminder delivery arrives in a future update.
+              </Text>
+            </View>
           </BoardCard>
 
           {/* Daily routine */}
@@ -954,12 +1534,12 @@ export default function CalendarScreen() {
                           ) : null}
                         </View>
                         <View style={s.routineActions}>
-                          <View style={[s.routineStatusPill, { backgroundColor: statusColor + "16" }]}>
-                            <Text style={[s.routineStatusText, { color: statusColor, fontFamily: "Inter_700Bold" }]}>
-                              {routineStatusLabel(r.status)}
-                            </Text>
-                          </View>
-                          <Text style={[s.routineTime, { color: done ? colors.sage : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{r.time}</Text>
+                          <BoardStatusPill
+                            label={routineStatusLabel(r.status)}
+                            tone={routineBoardPillTone(r.status)}
+                            style={s.routineRowPill}
+                          />
+                          <Text style={[s.routineTime, { color: done ? colors.sage : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{r.time}</Text>
                           <Pressable
                             onPress={(event) => {
                               event.stopPropagation?.();
@@ -985,6 +1565,60 @@ export default function CalendarScreen() {
         </Animated.View>
       </ScrollView>
 
+      {routineFeedback ? (
+        <View
+          style={[
+            s.routineFeedback,
+            {
+              backgroundColor: colors.brandNavy,
+              borderColor: colors.copper + "66",
+              bottom: insets.bottom + 92,
+            },
+          ]}
+        >
+          <View style={s.routineFeedbackCopy}>
+            <Text style={[s.routineFeedbackTitle, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+              {routineFeedback.title} logged
+            </Text>
+            <Text style={[s.routineFeedbackSub, { color: colors.ivory + "CC", fontFamily: "Inter_600SemiBold" }]}>
+              Routine board updated. Add details now or undo this care log.
+            </Text>
+          </View>
+          <View style={s.routineFeedbackActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Undo ${routineFeedback.title} routine log`}
+              onPress={undoRoutineFeedback}
+              style={({ pressed }) => [
+                s.routineFeedbackButton,
+                {
+                  backgroundColor: pressed ? "rgba(255,249,239,0.17)" : "rgba(255,249,239,0.1)",
+                  borderColor: "rgba(255,249,239,0.34)",
+                },
+              ]}
+            >
+              <Text style={[s.routineFeedbackButtonText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>Undo</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Add details to ${routineFeedback.title} routine log`}
+              onPress={openRoutineFeedbackDetails}
+              style={({ pressed }) => [
+                s.routineFeedbackButton,
+                {
+                  backgroundColor: pressed ? colors.copper + "DD" : colors.copper,
+                  borderColor: colors.copper,
+                },
+              ]}
+            >
+              <Text style={[s.routineFeedbackButtonText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                Add details
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
       {/* Routine editor modal */}
       <Modal visible={routineOpen} transparent animationType="slide" onRequestClose={() => setRoutineOpen(false)}>
         <Pressable style={s.modalBackdrop} onPress={() => setRoutineOpen(false)}>
@@ -998,7 +1632,7 @@ export default function CalendarScreen() {
             <TextInput
               value={rLabel}
               onChangeText={setRLabel}
-              placeholder="Morning walk, breakfast, bedtime snack..."
+              placeholder="Morning walk"
               placeholderTextColor={colors.mutedForeground}
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
@@ -1071,8 +1705,19 @@ export default function CalendarScreen() {
             />
 
             <Pressable onPress={submitRoutine} disabled={!rLabel.trim()} style={[s.saveBtn, { backgroundColor: rLabel.trim() ? colors.primary : colors.border }]}>
-              <Text style={[s.saveBtnText, { fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
+              <Text style={[s.saveBtnText, { color: rLabel.trim() ? "#fff" : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
             </Pressable>
+            {/* Validation feedback lives next to the submit button so the
+                sheet never looks silently broken when a field above is off. */}
+            {!rLabel.trim() ? (
+              <Text style={[s.sheetSubmitHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Add a label above to save this routine.
+              </Text>
+            ) : rTimeError ? (
+              <Text accessibilityLiveRegion="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
+                {rTimeError}
+              </Text>
+            ) : null}
 
             {routineEditId && (
               <Pressable onPress={() => deleteRoutine(routineEditId)} style={s.deleteBtn}>
@@ -1161,6 +1806,17 @@ export default function CalendarScreen() {
             <Pressable onPress={submitEvent} disabled={!evTitle.trim()} style={[s.saveBtn, { backgroundColor: evTitle.trim() ? colors.primary : colors.border }]}>
               <Text style={[s.saveBtnText, { fontFamily: "Inter_700Bold" }]}>Add to Calendar</Text>
             </Pressable>
+            {/* Validation feedback lives next to the submit button so the
+                sheet never looks silently broken when a field above is off. */}
+            {!evTitle.trim() ? (
+              <Text style={[s.sheetSubmitHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Add a title above to save this event.
+              </Text>
+            ) : dateError ? (
+              <Text accessibilityLiveRegion="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
+                {dateError}
+              </Text>
+            ) : null}
           </Pressable>
         </Pressable>
       </Modal>
@@ -1176,7 +1832,7 @@ const s = StyleSheet.create({
   headerIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 2 },
-  addBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  addBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
 
   discoverCard: {
     flexDirection: "row",
@@ -1189,30 +1845,249 @@ const s = StyleSheet.create({
     shadowRadius: 18,
     elevation: 4,
   },
-  discoverIcon: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
+  discoverIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
   discoverTitle: { fontSize: 16, color: "#fff" },
   discoverSub: { fontSize: 13, color: "rgba(255,255,255,0.85)", marginTop: 1 },
 
   discoverPanel: { borderRadius: 20, padding: 14, marginTop: 10, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 2 },
   discoverInputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   discoverInput: { flex: 1, fontSize: 15, paddingVertical: 8 },
-  discoverGo: { paddingHorizontal: 18, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 13, alignItems: "center", justifyContent: "center", minWidth: 64 },
+  discoverGo: { paddingHorizontal: 18, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, alignItems: "center", justifyContent: "center", minWidth: 64 },
   discoverGoText: { color: "#fff", fontSize: 14 },
   discoverHint: { fontSize: 12, lineHeight: 17, marginTop: 10, marginBottom: 4 },
 
   sugRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
-  sugIcon: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  sugIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   sugTitle: { fontSize: 14.5 },
   sugMeta: { fontSize: 12, marginTop: 2 },
   sugNote: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },
-  sugAdd: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  sugAdd: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 11, alignItems: "center", justifyContent: "center" },
 
-  scheduleCard: { marginBottom: 14 },
+  commandDeckCard: {
+    padding: 10,
+    marginBottom: 10,
+  },
+  commandDeckStage: {
+    minHeight: 146,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: "hidden",
+    padding: 10,
+  },
+  commandDeckImage: {
+    borderRadius: 12,
+  },
+  commandDeckShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(243,236,218,0.12)",
+  },
+  commandDeckTop: {
+    position: "relative",
+    zIndex: 5,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  commandDeckBubble: {
+    maxWidth: "63%",
+    minHeight: 50,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+  },
+  commandDeckKicker: {
+    fontSize: 8.5,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  commandDeckSpeech: {
+    fontSize: 12,
+    lineHeight: 14,
+    marginTop: 3,
+  },
+  commandDeckBubbleTail: {
+    position: "absolute",
+    right: 20,
+    bottom: -7,
+    width: 12,
+    height: 12,
+    borderLeftWidth: 1,
+    borderBottomWidth: 1,
+    transform: [{ rotate: "-45deg" }],
+  },
+  commandDeckChip: {
+    minHeight: 29,
+    borderRadius: 7,
+    borderWidth: 1,
+    paddingHorizontal: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  commandDeckChipText: {
+    fontSize: 10.5,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  commandDeckSprite: {
+    position: "absolute",
+    zIndex: 4,
+    right: 22,
+    bottom: 46,
+    width: 94,
+    height: 94,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  commandDeckSpriteShadow: {
+    position: "absolute",
+    bottom: 8,
+    width: 66,
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: "rgba(8,26,42,0.25)",
+  },
+  commandDeckHud: {
+    position: "absolute",
+    zIndex: 6,
+    left: 12,
+    right: 12,
+    bottom: 8,
+    minHeight: 34,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  commandDeckHudCell: {
+    flex: 1,
+    minWidth: 0,
+  },
+  commandDeckHudLabel: {
+    fontSize: 8.5,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  commandDeckHudValue: {
+    fontSize: 12,
+    marginTop: 1,
+  },
+  commandDeckSignalRow: {
+    minHeight: 15,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 3,
+    marginTop: 2,
+  },
+  commandDeckSignalBar: {
+    width: 6,
+    borderRadius: 2,
+  },
+
+  planMissionBoard: {
+    marginBottom: 10,
+  },
+  planMissionList: {
+    gap: 6,
+  },
+  planMissionRow: {
+    position: "relative",
+    minHeight: 58,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    overflow: "hidden",
+  },
+  planMissionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  planMissionCopy: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  planMissionEyebrow: {
+    fontSize: 8.5,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
+  planMissionTitle: {
+    fontSize: 13.5,
+    marginTop: 1,
+  },
+  planMissionDetail: {
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: 1,
+  },
+  planMissionAction: {
+    width: 66,
+    flexShrink: 0,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  planMissionActionText: {
+    fontSize: 9,
+    lineHeight: 11,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  planMissionDivider: {
+    position: "absolute",
+    left: 56,
+    right: 12,
+    bottom: -5,
+    height: 1,
+    opacity: 0.8,
+  },
+
+  scheduleCard: { marginBottom: 10 },
+  scheduleCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 12,
+  },
+  scheduleHeaderCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  scheduleEyebrow: {
+    fontSize: 10,
+    letterSpacing: 0.65,
+    textTransform: "uppercase",
+  },
+  scheduleHeaderTitle: {
+    fontSize: 17,
+    marginTop: 2,
+  },
   scheduleTabs: {
     flexDirection: "row",
     gap: 6,
-    marginBottom: 12,
+    marginBottom: 8,
   },
+  // Segment chips render through BoardSegmentTabs; this block stays as the
+  // shared mobile touch-target contract for the schedule tabs.
   scheduleTab: {
     flex: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -1221,18 +2096,56 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  scheduleTabText: { fontSize: 12.5 },
   scheduleList: { marginTop: 2 },
-  scheduleRow: {
-    minHeight: 48,
+  scheduleBand: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingVertical: 9,
+    marginTop: 14,
+    marginBottom: 2,
+  },
+  scheduleBandText: {
+    fontSize: 11,
+    letterSpacing: 1.4,
+  },
+  scheduleBandRule: {
+    flex: 1,
+    height: 1,
+    borderRadius: 1,
+  },
+  scheduleNowLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 2,
+  },
+  scheduleNowChip: {
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 2,
+  },
+  scheduleNowChipText: {
+    fontSize: 10,
+    letterSpacing: 1.1,
+  },
+  scheduleNowBar: {
+    flex: 1,
+    height: 2,
+    borderRadius: 2,
+    opacity: 0.55,
+  },
+  scheduleRow: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    paddingVertical: 7,
   },
   scheduleTime: {
     width: 66,
     fontSize: 12,
+    paddingTop: 2,
   },
   scheduleRowCopy: {
     flex: 1,
@@ -1240,28 +2153,48 @@ const s = StyleSheet.create({
   },
   scheduleTitle: { fontSize: 13.5 },
   scheduleDetail: { fontSize: 11.5, marginTop: 2 },
+  scheduleRowPill: { alignSelf: "flex-start", marginTop: 5 },
+  scheduleOwnerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 1,
+  },
+  scheduleIconBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scheduleAddEvent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderRadius: 14,
+    paddingVertical: 12,
+    marginTop: 12,
+  },
+  scheduleAddEventText: { fontSize: 13 },
+  scheduleSampleRow: { opacity: 0.62 },
+  scheduleSampleNote: { fontSize: 11.5, lineHeight: 16, marginTop: 10, textAlign: "center" },
   scheduleStatus: {
-    width: MIN_MOBILE_TOUCH_TARGET,
-    height: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 16,
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 13,
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
   },
-  scheduleAdd: {
-    minHeight: 46,
-    borderRadius: 9,
-    marginTop: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  scheduleAddText: { fontSize: 14 },
+  scheduleAddButton: { marginTop: 12 },
 
   plansBoardCard: { marginTop: 14 },
   routineHeaderAccessory: { flexDirection: "row", alignItems: "center", gap: 10 },
-  sectionAddBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  sectionAddBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   routineProgress: { fontSize: 12, marginTop: 1 },
 
   emptyPanel: { borderRadius: 14, padding: 24, alignItems: "center", gap: 12 },
@@ -1278,14 +2211,14 @@ const s = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
   },
-  eventIcon: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  eventIcon: { width: 40, height: 40, borderRadius: 13, alignItems: "center", justifyContent: "center" },
   eventTitleLine: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   eventTitle: { fontSize: 15 },
   tag: { flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
   tagText: { fontSize: 9, letterSpacing: 0.3 },
   eventMeta: { fontSize: 12.5, marginTop: 3 },
   eventNote: { fontSize: 12.5, lineHeight: 17, marginTop: 4 },
-  removeBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  removeBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 10, alignItems: "center", justifyContent: "center" },
 
   reminderList: { marginTop: 8 },
   reminderRow: { flexDirection: "row", gap: 11, paddingVertical: 11 },
@@ -1300,6 +2233,23 @@ const s = StyleSheet.create({
   reminderMore: { fontSize: 12.5, lineHeight: 18, marginTop: 6 },
   reminderNext: { fontSize: 12.5, lineHeight: 18, marginTop: 12 },
   reminderReadiness: { fontSize: 11.5, lineHeight: 16, marginTop: 7 },
+  reminderNotificationPanel: { borderRadius: 13, borderWidth: 1, padding: 11, marginTop: 10, gap: 5 },
+  reminderNotificationTitle: { fontSize: 12.5, lineHeight: 17 },
+  reminderNotificationText: { fontSize: 11.5, lineHeight: 16 },
+  reminderPreferenceActions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 7 },
+  reminderPreferenceButton: {
+    flexGrow: 1,
+    flexBasis: "46%",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  reminderPreferenceButtonText: { flex: 1, fontSize: 11.5, lineHeight: 15 },
   reminderEmpty: { flexDirection: "row", alignItems: "center", gap: 9, borderRadius: 14, padding: 12, marginTop: 12 },
   reminderEmptyText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
 
@@ -1361,10 +2311,40 @@ const s = StyleSheet.create({
   routineMetaRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   routineNote: { fontSize: 12, lineHeight: 16, marginTop: 3 },
   routineActions: { width: 82, alignItems: "flex-end", gap: 5 },
-  routineStatusPill: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  routineStatusText: { fontSize: 9.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  routineRowPill: { alignSelf: "flex-end" },
   routineTime: { fontSize: 13 },
-  routineDoneBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  routineDoneBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  routineFeedback: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    zIndex: 20,
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 13,
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 22,
+    elevation: 7,
+  },
+  routineFeedbackCopy: { flex: 1, minWidth: 0 },
+  routineFeedbackTitle: { fontSize: 14.5 },
+  routineFeedbackSub: { fontSize: 11.5, lineHeight: 16, marginTop: 2 },
+  routineFeedbackActions: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 8 },
+  routineFeedbackButton: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    minWidth: 72,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 11,
+  },
+  routineFeedbackButtonText: { fontSize: 12.5 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
@@ -1373,13 +2353,14 @@ const s = StyleSheet.create({
   fieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 14 },
   field: { borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   fieldRow: { flexDirection: "row", gap: 12 },
-  typeChip: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 12, borderWidth: 1 },
+  typeChip: { flexDirection: "row", alignItems: "center", gap: 5, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 12, borderWidth: 1 },
   typeChipText: { fontSize: 13 },
   ownerQuickRow: { gap: 8, paddingTop: 10, paddingRight: 20 },
-  ownerQuickChip: { borderWidth: 1, borderRadius: 11, minHeight: MIN_MOBILE_TOUCH_TARGET, justifyContent: "center", paddingHorizontal: 12, paddingVertical: 8 },
+  ownerQuickChip: { borderWidth: 1, borderRadius: 11, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 12, paddingVertical: 8 },
   ownerQuickText: { fontSize: 12.5 },
-  saveBtn: { marginTop: 24, borderRadius: 15, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingVertical: 15, alignItems: "center", justifyContent: "center" },
+  saveBtn: { marginTop: 24, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, paddingVertical: 15, alignItems: "center", justifyContent: "center" },
   saveBtnText: { color: "#fff", fontSize: 15.5 },
+  sheetSubmitHint: { fontSize: 12, lineHeight: 16, marginTop: 10, textAlign: "center" },
   deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingVertical: 10 },
   deleteBtnText: { fontSize: 14 },
 });

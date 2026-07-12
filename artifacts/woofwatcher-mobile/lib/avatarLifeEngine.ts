@@ -15,7 +15,8 @@ export type CareTwinSpriteAction =
   | "sleep-loop"
   | "comfort-loop"
   | "celebrate-hop"
-  | "health-watch";
+  | "health-watch"
+  | "bark-loop";
 
 export interface CareTwinSpriteTrack {
   key: CareTwinSpriteAction;
@@ -65,9 +66,9 @@ export const CARE_TWIN_SPRITE_MANIFEST: Record<CareTwinSpriteAction, CareTwinSpr
     loop: true,
     anchor: "bottom-center",
     slotSize: 256,
-    requiredAsset: "assets/avatar/phoenix/idle-breathe-strip.png",
+    requiredAsset: "assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png",
     fallbackAnimation: "idle",
-    notes: "Subtle chest lift, stable paws, no scenery, transparent background.",
+    notes: "Option B hard-pixel idle proof with subtle breathing/tail movement, stable paws, no scenery, transparent background.",
   },
   "tail-wag": {
     key: "tail-wag",
@@ -76,9 +77,9 @@ export const CARE_TWIN_SPRITE_MANIFEST: Record<CareTwinSpriteAction, CareTwinSpr
     loop: true,
     anchor: "bottom-center",
     slotSize: 256,
-    requiredAsset: "assets/avatar/phoenix/tail-wag-strip.png",
+    requiredAsset: "assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png",
     fallbackAnimation: "idle",
-    notes: "Happy idle loop with readable tail movement and stable head silhouette.",
+    notes: "Option B happy idle loop with readable tail movement and stable head silhouette.",
   },
   "ear-perk": {
     key: "ear-perk",
@@ -87,20 +88,22 @@ export const CARE_TWIN_SPRITE_MANIFEST: Record<CareTwinSpriteAction, CareTwinSpr
     loop: false,
     anchor: "bottom-center",
     slotSize: 256,
-    requiredAsset: "assets/avatar/phoenix/ear-perk-strip.png",
+    requiredAsset: "assets/avatar/phoenix/storybook/storybook-ear-perk-strip.png",
     fallbackAnimation: "idle",
-    notes: "Alert attention cue for upcoming routines, transparent background, stable bottom-center anchor.",
+    notes: "Option B alert attention cue for upcoming routines, transparent background, stable bottom-center anchor.",
   },
   "walk-loop": {
     key: "walk-loop",
-    frameCount: 10,
-    fps: 10,
+    frameCount: 8,
+    // 12fps over the two-stride strip keeps a natural ~1.5 strides/sec dog
+    // cadence; 10fps read as a choppy flipbook.
+    fps: 12,
     loop: true,
     anchor: "bottom-center",
     slotSize: 256,
-    requiredAsset: "assets/avatar/phoenix/walk-loop-strip.png",
+    requiredAsset: "assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png",
     fallbackAnimation: "walk",
-    notes: "Side-to-three-quarter walk loop, same facing direction as the approved base frame, stable transparent strip.",
+    notes: "Option B side-profile walk loop, same facing direction as the approved standing source, stable transparent strip.",
   },
   "eat-loop": {
     key: "eat-loop",
@@ -109,9 +112,9 @@ export const CARE_TWIN_SPRITE_MANIFEST: Record<CareTwinSpriteAction, CareTwinSpr
     loop: true,
     anchor: "bottom-center",
     slotSize: 256,
-    requiredAsset: "assets/avatar/phoenix/eat-loop-strip.png",
+    requiredAsset: "assets/avatar/phoenix/storybook/storybook-eat-loop-strip.png",
     fallbackAnimation: "eat",
-    notes: "Bowl-facing chew loop; bowl is a prop layer, not baked scenery.",
+    notes: "Option B bowl-facing chew loop; tiny prop pixels are allowed, no room scenery.",
   },
   "drink-loop": {
     key: "drink-loop",
@@ -120,9 +123,9 @@ export const CARE_TWIN_SPRITE_MANIFEST: Record<CareTwinSpriteAction, CareTwinSpr
     loop: true,
     anchor: "bottom-center",
     slotSize: 256,
-    requiredAsset: "assets/avatar/phoenix/drink-loop-strip.png",
+    requiredAsset: "assets/avatar/phoenix/storybook/storybook-drink-loop-strip.png",
     fallbackAnimation: "drink",
-    notes: "Water-bowl lap loop with transparent background; keep body size stable with eat loop.",
+    notes: "Option B water-bowl lap loop with transparent background; keep body size stable with eat loop.",
   },
   "sleep-loop": {
     key: "sleep-loop",
@@ -131,9 +134,9 @@ export const CARE_TWIN_SPRITE_MANIFEST: Record<CareTwinSpriteAction, CareTwinSpr
     loop: true,
     anchor: "bottom-center",
     slotSize: 256,
-    requiredAsset: "assets/avatar/phoenix/sleep-loop-strip.png",
+    requiredAsset: "assets/avatar/phoenix/storybook/storybook-sleep-loop-strip.png",
     fallbackAnimation: "sleep",
-    notes: "Curled/lying loop with slow breathing and stable bed anchor.",
+    notes: "Option B curled/lying loop with slow breathing and stable bottom-center anchor.",
   },
   "comfort-loop": {
     key: "comfort-loop",
@@ -142,9 +145,9 @@ export const CARE_TWIN_SPRITE_MANIFEST: Record<CareTwinSpriteAction, CareTwinSpr
     loop: true,
     anchor: "bottom-center",
     slotSize: 256,
-    requiredAsset: "assets/avatar/phoenix/comfort-loop-strip.png",
+    requiredAsset: "assets/avatar/phoenix/storybook/storybook-comfort-loop-strip.png",
     fallbackAnimation: "comfort",
-    notes: "Soft anxious/low posture loop on a transparent background without medical certainty or distress exaggeration.",
+    notes: "Option B soft anxious/low-posture loop on a transparent background without medical certainty or distress exaggeration.",
   },
   "celebrate-hop": {
     key: "celebrate-hop",
@@ -153,9 +156,9 @@ export const CARE_TWIN_SPRITE_MANIFEST: Record<CareTwinSpriteAction, CareTwinSpr
     loop: false,
     anchor: "bottom-center",
     slotSize: 256,
-    requiredAsset: "assets/avatar/phoenix/celebrate-hop-strip.png",
+    requiredAsset: "assets/avatar/phoenix/storybook/storybook-celebrate-hop-strip.png",
     fallbackAnimation: "celebrate",
-    notes: "Reward hop for care wins on a transparent background; no coins or fake game economy.",
+    notes: "Option B reward hop for care wins on a transparent background; no coins or fake game economy.",
   },
   "health-watch": {
     key: "health-watch",
@@ -164,9 +167,20 @@ export const CARE_TWIN_SPRITE_MANIFEST: Record<CareTwinSpriteAction, CareTwinSpr
     loop: true,
     anchor: "bottom-center",
     slotSize: 256,
-    requiredAsset: "assets/avatar/phoenix/health-watch-strip.png",
+    requiredAsset: "assets/avatar/phoenix/storybook/storybook-health-watch-strip.png",
     fallbackAnimation: "comfort",
-    notes: "Careful low-energy watch state; calm, non-diagnostic presentation.",
+    notes: "Option B careful low-energy watch state; calm, non-diagnostic presentation.",
+  },
+  "bark-loop": {
+    key: "bark-loop",
+    frameCount: 6,
+    fps: 10,
+    loop: false,
+    anchor: "bottom-center",
+    slotSize: 256,
+    requiredAsset: "assets/avatar/phoenix/storybook/storybook-bark-reaction-strip.png",
+    fallbackAnimation: "idle",
+    notes: "Option B happy bark/tap reaction with lifted head, open mouth, and stable seated anchor.",
   },
 };
 

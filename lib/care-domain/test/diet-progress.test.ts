@@ -111,6 +111,56 @@ test("uses eaten amount for partial meals and treats skipped meals as zero intak
   assert.equal(progress.summary, "0.5 of 2 cups today");
 });
 
+test("does not count served pending meals as eaten and labels estimated partial amounts", () => {
+  const progress = deriveDietProgress({
+    now: NOW,
+    dietProfile: {
+      normalPortion: "1 cup twice daily",
+      mealSchedule: "Breakfast and dinner",
+    },
+    entries: [
+      {
+        type: "meal",
+        occurredAt: "2026-06-06T08:00:00.000Z",
+        details: {
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 1,
+          servedUnit: "cup",
+        },
+      },
+      {
+        type: "meal",
+        occurredAt: "2026-06-06T13:00:00.000Z",
+        details: {
+          mealCompletion: "partial",
+          servedAmount: 1,
+          servedUnit: "cup",
+        },
+      },
+      {
+        type: "meal",
+        occurredAt: "2026-06-06T17:30:00.000Z",
+        details: {
+          mealCompletion: "complete",
+          servedAmount: 1,
+          servedUnit: "cup",
+          eatenAmount: 1,
+          eatenUnit: "cup",
+        },
+      },
+    ],
+  });
+
+  assert.equal(progress.mealCount, 3);
+  assert.equal(progress.pendingMealCount, 1);
+  assert.equal(progress.estimatedMealCount, 1);
+  assert.equal(progress.fedAmount, 1.5);
+  assert.equal(progress.remainingAmount, 0.5);
+  assert.equal(progress.percent, 75);
+  assert.equal(progress.summary, "1.5 of 2 cups today; 1 outcome pending; 1 estimated partial amount");
+});
+
 test("falls back gracefully when the diet profile has no parseable portion", () => {
   const progress = deriveDietProgress({
     now: NOW,

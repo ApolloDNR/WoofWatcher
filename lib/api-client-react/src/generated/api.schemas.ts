@@ -41,6 +41,68 @@ export interface ApiError {
   error: string;
 }
 
+export interface WoofguideEventsStatus {
+  configured: boolean;
+  model: string;
+}
+
+export interface WoofguideEventsProfile {
+  name?: string;
+  breed?: string;
+  careFocus?: string;
+  background?: string;
+}
+
+export interface WoofguideEventsInput {
+  location?: string;
+  profile?: WoofguideEventsProfile;
+}
+
+export interface WoofguideEvent {
+  title: string;
+  type: string;
+  date: string;
+  time?: string;
+  location: string;
+  note?: string;
+}
+
+export interface WoofguideEventsResponse {
+  events: WoofguideEvent[];
+  mode: string;
+}
+
+export interface AvatarStylizeInput {
+  /** @minLength 1 */
+  imageBase64: string;
+  mimeType?: string;
+}
+
+export interface AvatarStylizeResponse {
+  imageBase64: string;
+  mimeType: string;
+}
+
+export interface AvatarEmotionImage {
+  imageBase64: string;
+  mimeType: string;
+}
+
+export interface AvatarEmotionsInput {
+  /** @minLength 1 */
+  imageBase64: string;
+  mimeType?: string;
+}
+
+export type AvatarEmotionsResponseImages = { [key: string]: AvatarEmotionImage };
+
+export type AvatarEmotionsResponseErrors = { [key: string]: string };
+
+export interface AvatarEmotionsResponse {
+  images: AvatarEmotionsResponseImages;
+  errors?: AvatarEmotionsResponseErrors;
+}
+
 export interface User {
   id: string;
   /** @nullable */
@@ -64,34 +126,193 @@ export interface Member {
   /** @nullable */
   email?: string | null;
   isSelf: boolean;
-}
-
-/**
- * @nullable
- */
-export type HouseholdAuditEventDetails = { [key: string]: unknown } | null;
-
-export interface HouseholdAuditEvent {
-  id: string;
-  householdId: string;
   /** @nullable */
-  actorUserId?: string | null;
-  action: string;
-  /** @nullable */
-  targetType?: string | null;
-  /** @nullable */
-  targetId?: string | null;
-  lifecycleState: string;
-  /** @nullable */
-  details?: HouseholdAuditEventDetails;
-  createdAt: string;
+  accessPassExpiresAt?: string | null;
+  accessPassExpired?: boolean;
 }
 
 export interface Me {
   user: User;
   household: Household;
-  households: Household[];
   members: Member[];
+}
+
+export type HouseholdAuditAction = "invitation-created" | "invitation-accepted" | "invitation-revoked" | "member-role-updated" | "member-revoked" | "access-pass-activated" | "access-pass-revoked";
+
+export type HouseholdAuditLifecycleState = "invite-created" | "invite-accepted" | "invite-revoked" | "member-updated" | "member-revoked" | "access-pass-active" | "access-pass-revoked" | "access-pass-expired";
+
+export interface HouseholdAuditEvent {
+  id: string;
+  action: HouseholdAuditAction;
+  lifecycleState: HouseholdAuditLifecycleState;
+  actorUserId: string;
+  householdId: string;
+  /** @nullable */
+  targetMemberId?: string | null;
+  /** @nullable */
+  targetUserId?: string | null;
+  /** @nullable */
+  targetRole?: string | null;
+  /** @nullable */
+  nextRole?: string | null;
+  /** @nullable */
+  reason?: string | null;
+  /** @nullable */
+  note?: string | null;
+  /** @nullable */
+  expiresAt?: string | null;
+  createdAt: string;
+  storage: "provider-durable";
+  boundary: string;
+}
+
+export interface HouseholdJoinResponse extends Me {
+  auditEvent: HouseholdAuditEvent;
+}
+
+export interface HouseholdMemberMutationResponse extends Me {
+  auditEvent: HouseholdAuditEvent;
+}
+
+export interface ListHouseholdAuditEventsParams {
+  limit?: number;
+  action?: HouseholdAuditAction;
+  lifecycleState?: HouseholdAuditLifecycleState;
+}
+
+export interface HouseholdAuditEventListFilters {
+  action?: HouseholdAuditAction;
+  lifecycleState?: HouseholdAuditLifecycleState;
+}
+
+export interface HouseholdAuditEventListResponse {
+  events: HouseholdAuditEvent[];
+  limit: number;
+  filters: HouseholdAuditEventListFilters;
+  boundary: string;
+}
+
+export type HouseholdInvitationLifecycleState = "pending-approval" | "approved" | "accepted" | "revoked" | "expired" | "rejected";
+
+export interface HouseholdInvitation {
+  id: string;
+  householdId: string;
+  inviteCode: string;
+  /** @nullable */
+  invitedEmail?: string | null;
+  /** @nullable */
+  invitedUserId?: string | null;
+  role: string;
+  lifecycleState: HouseholdInvitationLifecycleState;
+  runtimeLifecycleState: HouseholdInvitationLifecycleState;
+  expired: boolean;
+  createdByUserId: string;
+  /** @nullable */
+  approvedByUserId?: string | null;
+  /** @nullable */
+  acceptedByUserId?: string | null;
+  /** @nullable */
+  revokedByUserId?: string | null;
+  /** @nullable */
+  rejectedByUserId?: string | null;
+  /** @nullable */
+  note?: string | null;
+  /** @nullable */
+  expiresAt?: string | null;
+  /** @nullable */
+  acceptedAt?: string | null;
+  /** @nullable */
+  revokedAt?: string | null;
+  /** @nullable */
+  rejectedAt?: string | null;
+  createdAt: string;
+  /** @nullable */
+  updatedAt?: string | null;
+  storage: "provider-durable";
+  boundary: string;
+}
+
+export interface ListHouseholdInvitationsParams {
+  limit?: number;
+  lifecycleState?: HouseholdInvitationLifecycleState;
+}
+
+export interface HouseholdInvitationListFilters {
+  lifecycleState?: HouseholdInvitationLifecycleState;
+}
+
+export interface HouseholdInvitationListResponse {
+  invitations: HouseholdInvitation[];
+  limit: number;
+  filters: HouseholdInvitationListFilters;
+  boundary: string;
+}
+
+export interface HouseholdInvitationCreateInput {
+  /** @nullable */
+  invitedEmail?: string | null;
+  role?: string;
+  lifecycleState?: HouseholdInvitationLifecycleState;
+  /** @nullable */
+  expiresAt?: string | null;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface HouseholdInvitationRevokeInput {
+  /** @nullable */
+  reason?: string | null;
+}
+
+export interface HouseholdInvitationMutationResponse {
+  invitation: HouseholdInvitation;
+  auditEvent: HouseholdAuditEvent;
+}
+
+export type HouseholdSharingCleanupKind = "expired-invitation" | "expired-access-pass";
+
+export type HouseholdSharingCleanupRecommendedAction = "mark-invitation-expired" | "review-helper-access";
+
+export interface ListHouseholdSharingCleanupParams {
+  limit?: number;
+  kind?: HouseholdSharingCleanupKind;
+}
+
+export interface HouseholdSharingCleanupCandidate {
+  id: string;
+  kind: HouseholdSharingCleanupKind;
+  targetId: string;
+  householdId: string;
+  title: string;
+  detail: string;
+  role: string;
+  /** @nullable */
+  displayName?: string | null;
+  /** @nullable */
+  invitedEmail?: string | null;
+  /** @nullable */
+  inviteCode?: string | null;
+  /** @nullable */
+  userId?: string | null;
+  expiresAt: string;
+  staleSince: string;
+  recommendedAction: HouseholdSharingCleanupRecommendedAction;
+  storage: "review-only";
+  boundary: string;
+}
+
+export interface HouseholdSharingCleanupFilters {
+  kind?: HouseholdSharingCleanupKind;
+}
+
+export interface HouseholdSharingCleanupResponse {
+  candidates: HouseholdSharingCleanupCandidate[];
+  limit: number;
+  filters: HouseholdSharingCleanupFilters;
+  pendingReviewCount: number;
+  expiredInvitationCount: number;
+  expiredAccessPassCount: number;
+  boundary: string;
 }
 
 export interface MeUpdate {
@@ -99,18 +320,9 @@ export interface MeUpdate {
   displayName?: string;
 }
 
-export interface SetActiveHouseholdBody {
-  /** @minLength 1 */
-  householdId: string;
-}
-
 export interface HouseholdUpdate {
   /** @minLength 1 */
   name: string;
-}
-
-export interface UpdateHouseholdMemberBody {
-  role: 'admin' | 'member' | 'sitter' | 'trainer' | 'vet_viewer';
 }
 
 export interface JoinHouseholdInput {
@@ -118,11 +330,50 @@ export interface JoinHouseholdInput {
   inviteCode: string;
 }
 
-export type ListHouseholdAuditEventsParams = {
-limit?: number;
-action?: string;
-lifecycleState?: string;
-};
+export type HouseholdMemberRole = "owner" | "adult" | "teen" | "kid" | "sitter" | "trainer" | "walker" | "vet viewer";
+
+export interface HouseholdMemberUpdate {
+  role?: HouseholdMemberRole;
+  /** @nullable */
+  displayName?: string | null;
+}
+
+export type AccessPassRole = "sitter" | "trainer" | "walker" | "vet viewer";
+
+export interface AccessPassActivationInput {
+  /** @minLength 1 */
+  memberId: string;
+  role: AccessPassRole;
+  /** @nullable */
+  displayName?: string | null;
+  /** @nullable */
+  expiresAt?: string | null;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface AccessPassRevocationInput {
+  /** @minLength 1 */
+  memberId: string;
+  /** @nullable */
+  reason?: string | null;
+}
+
+export interface HouseholdAccessPass {
+  memberId: string;
+  userId: string;
+  role: AccessPassRole;
+  status: "active" | "revoked";
+  /** @nullable */
+  expiresAt?: string | null;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface HouseholdAccessPassMutationResponse extends Me {
+  accessPass: HouseholdAccessPass;
+  auditEvent: HouseholdAuditEvent;
+}
 
 export type CareStateEnvelopeDoc = { [key: string]: unknown };
 
@@ -165,6 +416,20 @@ export interface CareEntry {
   /** @nullable */
   details?: CareEntryDetails;
   createdAt: string;
+  updatedAt: string;
+}
+
+export interface CareEntryTombstone {
+  id: string;
+  householdId: string;
+  entryId: string;
+  /** @nullable */
+  petId?: string | null;
+  /** @nullable */
+  deletedByUserId?: string | null;
+  deletedAt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type CareEntryInputDetails = { [key: string]: unknown };
@@ -201,6 +466,12 @@ export interface CareEntryUpdate {
 
 export type ListCareEntriesParams = {
 since?: string;
+updatedSince?: string;
 limit?: number;
 };
+
+export interface ListCareEntryTombstonesParams {
+  updatedSince?: string;
+  limit?: number;
+}
 

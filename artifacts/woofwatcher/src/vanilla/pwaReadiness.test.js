@@ -3,6 +3,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { buildHostedNudgePlan } from "./woof-operations.js";
+import { buildCloudSyncPlan } from "./woof-privacy-cloud.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
@@ -136,6 +138,128 @@ test("keeps WoofGuide wired to owner-reviewed action routing", () => {
   assert.match(appEntry, /data-action="woofguide-draft-vet-note"/);
   assert.match(appEntry, /function buildWoofGuideVetNoteDraft/);
   assert.match(appEntry, /owner-reviewed/);
+});
+
+test("keeps PWA WoofGuide live AI gated behind structured provider proof", () => {
+  assert.match(appEntry, /proofReady: false/);
+  assert.match(appEntry, /function isAssistantLiveReady/);
+  assert.match(appEntry, /const liveReady = isAssistantLiveReady\(\)/);
+  assert.match(appEntry, /providerProofReady = Boolean/);
+  assert.match(appEntry, /const liveAnswer = isAssistantLiveReady\(\) \? await requestLiveAssistant/);
+  assert.match(appEntry, /Provider proof pending/);
+  assert.match(appEntry, /Structured AI proof needed/);
+  assert.match(appEntry, /structured WoofGuide AI proof/);
+  assert.doesNotMatch(appEntry, /Live OpenAI/);
+  assert.doesNotMatch(appEntry, /Credential found/);
+  assert.doesNotMatch(appEntry, /If live OpenAI is not configured/);
+});
+
+test("keeps PWA cloud sync gated behind structured provider proof", () => {
+  const stagedPlan = buildCloudSyncPlan(
+    {},
+    {
+      provider: "supabase",
+      backendUrl: "https://supabase.example",
+      householdId: "house_123"
+    },
+    "2026-07-04T00:00:00.000Z",
+  );
+
+  assert.equal(stagedPlan.status, "provider_proof_pending");
+  assert.equal(stagedPlan.backend.configured, true);
+  assert.equal(stagedPlan.backend.proofReady, false);
+  assert.match(stagedPlan.blockers.join(" "), /structured cloud sync provider proof/);
+  assert.match(stagedPlan.providerBoundary, /structured cloud sync provider proof/);
+  assert.doesNotMatch(stagedPlan.blockers.join(" "), /Choose and configure a backend/);
+
+  const readyPlan = buildCloudSyncPlan(
+    {},
+    {
+      provider: "supabase",
+      backendUrl: "https://supabase.example",
+      householdId: "house_123",
+      providerEvidence: {
+        proofLocator: "proof/cloud-sync/supabase.json",
+        proofMimeType: "application/json",
+        proofByteSize: 4096,
+        supabaseProjectId: "supabase-prod",
+        migrationBackfillPolicy: "care_entries updated_at and tombstones are migrated with rollback.",
+        activeHouseholdRlsPolicy: "active_household_id scopes cursors, tombstones, and denied reads.",
+        retentionPolicy: "Retention is household-scoped and documented.",
+        exportPolicy: "Owners can export household data before deletion.",
+        deletionPolicy: "Deletion removes household-scoped rows and objects with audit receipt.",
+        dependencyBuildProof: "CI run proves dependency-complete sync build.",
+        mobileFullRefreshProof: "iOS and Android full-refresh sign-off is attached.",
+        supabaseProjectApproved: true,
+        migrationBackfillApproved: true,
+        rlsApproved: true,
+        retentionExportDeletionApproved: true,
+        dependencyBuildApproved: true,
+        mobileSignoffApproved: true,
+        apolloApproved: true
+      }
+    },
+    "2026-07-04T00:00:00.000Z",
+  );
+
+  assert.equal(readyPlan.status, "ready_to_connect");
+  assert.equal(readyPlan.backend.proofReady, true);
+  assert.deepEqual(readyPlan.blockers, []);
+});
+
+test("keeps PWA hosted nudges gated behind structured delivery proof", () => {
+  const stagedPlan = buildHostedNudgePlan(
+    {},
+    {
+      backendUrl: "https://api.example",
+      householdId: "house_123",
+      pushProvider: "expo",
+      permission: "granted"
+    },
+    "2026-07-04T15:00:00.000Z",
+  );
+
+  assert.equal(stagedPlan.status, "provider_proof_pending");
+  assert.equal(stagedPlan.delivery.backendConfigured, true);
+  assert.equal(stagedPlan.delivery.pushProviderConfigured, true);
+  assert.equal(stagedPlan.delivery.proofReady, false);
+  assert.match(stagedPlan.blockers.join(" "), /structured hosted nudge delivery proof/);
+  assert.deepEqual(stagedPlan.jobs, []);
+
+  const readyPlan = buildHostedNudgePlan(
+    {},
+    {
+      backendUrl: "https://api.example",
+      householdId: "house_123",
+      pushProvider: "expo",
+      permission: "granted",
+      providerEvidence: {
+        proofLocator: "proof/hosted-nudges/expo.json",
+        proofMimeType: "application/json",
+        proofByteSize: 4096,
+        backendJobPolicy: "Hosted jobs are idempotent, rate-limited, and household scoped.",
+        caregiverConsentPolicy: "Caregiver notification consent is recorded and revocable.",
+        providerDeliveryPolicy: "Expo/APNs/FCM delivery provider setup is documented.",
+        caregiverPrivacyPolicy: "Nudges contain only scoped routine labels and no private notes.",
+        quietHoursPolicy: "Quiet hours and daily budget enforcement are tested.",
+        fallbackPolicy: "Missed delivery falls back to in-app Reminder Center review.",
+        nativeDeliveryProof: "iOS and Android delivery proof is attached.",
+        backendJobApproved: true,
+        caregiverConsentApproved: true,
+        providerDeliveryApproved: true,
+        caregiverPrivacyApproved: true,
+        quietHoursApproved: true,
+        fallbackApproved: true,
+        nativeDeliveryApproved: true,
+        apolloApproved: true
+      }
+    },
+    "2026-07-04T15:00:00.000Z",
+  );
+
+  assert.equal(readyPlan.delivery.proofReady, true);
+  assert.doesNotMatch(readyPlan.blockers.join(" "), /structured hosted nudge delivery proof/);
+  assert.notEqual(readyPlan.status, "provider_proof_pending");
 });
 
 test("keeps records and reports tools directly routable in the PWA", () => {

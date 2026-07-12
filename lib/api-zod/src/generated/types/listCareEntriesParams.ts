@@ -8,5 +8,6 @@
 
 export type ListCareEntriesParams = {
 since?: Date;
+updatedSince?: Date;
 limit?: number;
 };

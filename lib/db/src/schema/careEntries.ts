@@ -24,6 +24,30 @@ export const careEntriesTable = pgTable("care_entries", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export type CareEntry = typeof careEntriesTable.$inferSelect;
+
+export const careEntryTombstonesTable = pgTable("care_entry_tombstones", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  householdId: uuid("household_id")
+    .notNull()
+    .references(() => householdsTable.id, { onDelete: "cascade" }),
+  entryId: uuid("entry_id").notNull(),
+  petId: text("pet_id"),
+  deletedByUserId: text("deleted_by_user_id"),
+  deletedAt: timestamp("deleted_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type CareEntryTombstone = typeof careEntryTombstonesTable.$inferSelect;

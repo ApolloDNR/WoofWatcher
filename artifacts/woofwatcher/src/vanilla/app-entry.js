@@ -283,7 +283,7 @@ let activeQuickFlow = "";
 let selectedCalendarDate;
 let assistantAnswer = "";
 let assistantBusy = false;
-let assistantStatus = { checked: false, configured: false, mode: "local", model: "" };
+let assistantStatus = { checked: false, configured: false, proofReady: false, mode: "local", model: "" };
 let notificationPermission;
 
 export function initApp(container) {
@@ -300,6 +300,48 @@ export function initApp(container) {
   render();
   registerServiceWorker();
   checkAssistantStatus();
+}
+
+function hasAssistantProviderSignal() {
+  return Boolean(assistantStatus.configured);
+}
+
+function isAssistantLiveReady() {
+  return Boolean(assistantStatus.configured && assistantStatus.proofReady);
+}
+
+function getAssistantModeSummary() {
+  if (isAssistantLiveReady()) return "Provider proof ready";
+  if (hasAssistantProviderSignal()) return "Provider proof pending";
+  return "Local mode";
+}
+
+function getAssistantModeDetail() {
+  const modelSignal = assistantStatus.model ? ` Model signal: ${assistantStatus.model}.` : "";
+  if (isAssistantLiveReady()) {
+    return `Structured WoofGuide AI proof is attached for key storage, model policy, source rules, owner-reviewed writes, veterinary safety, and fallback handling.${modelSignal}`;
+  }
+  if (hasAssistantProviderSignal()) {
+    return `The server has an OpenAI key signal, but live AI stays gated until structured WoofGuide AI proof covers key storage, model policy, source rules, owner-reviewed writes, veterinary safety, and fallback handling.${modelSignal}`;
+  }
+  return "No server AI key signal is approved or stored in client JavaScript. WoofWatcher is using deterministic local care review until provider setup and structured AI proof are attached.";
+}
+
+function getAssistantStatusHeading() {
+  if (isAssistantLiveReady()) return "Structured AI proof attached";
+  if (hasAssistantProviderSignal()) return "Structured AI proof needed";
+  return "Credential approval needed";
+}
+
+function getAssistantChipLabel() {
+  if (assistantBusy) return "Reviewing";
+  return getAssistantModeSummary();
+}
+
+function getAssistantChipClass() {
+  const liveReady = isAssistantLiveReady();
+  if (assistantBusy) return "watch";
+  return liveReady ? "steady" : "watch";
 }
 
 function loadState() {
@@ -2685,7 +2727,7 @@ function renderSettingsBackupPanel() {
 }
 
 function renderSettingsSafetyPanel(context, syncPlan) {
-  const aiMode = assistantStatus.configured ? "Live OpenAI configured" : "Local WoofGuide fallback";
+  const aiMode = getAssistantModeSummary();
   const notificationLabel = context.notifications?.statusLabel || "Not checked";
   const items = [
     "No provider-backed sync is enabled in this PWA route yet.",
@@ -3012,9 +3054,8 @@ function renderWoofGuideTab(context) {
 function renderWoofGuidePanel() {
   const context = getAssistantContext(state, "");
   const answer = assistantAnswer || context.localAnswer;
-  const liveReady = assistantStatus.configured;
-  const chipLabel = assistantBusy ? "Reviewing" : liveReady ? "Live OpenAI" : "Local mode";
-  const chipClass = assistantBusy ? "watch" : liveReady ? "steady" : "watch";
+  const chipLabel = getAssistantChipLabel();
+  const chipClass = getAssistantChipClass();
   return `
     <section class="panel span-2 woofguide-panel">
       <div class="section-heading">
@@ -3272,9 +3313,8 @@ function renderReportTab(summary) {
 function renderAssistantTab() {
   const context = getAssistantContext(state, "");
   const answer = assistantAnswer || context.localAnswer;
-  const liveReady = assistantStatus.configured;
-  const chipLabel = assistantBusy ? "Reviewing" : liveReady ? "Live OpenAI" : "Local mode";
-  const chipClass = assistantBusy ? "watch" : liveReady ? "steady" : "watch";
+  const chipLabel = getAssistantChipLabel();
+  const chipClass = getAssistantChipClass();
   return `
     <div class="dashboard-grid">
       <section class="panel span-2">
@@ -3298,12 +3338,8 @@ function renderAssistantTab() {
       </section>
       <section class="panel">
         <p class="micro">OpenAI status</p>
-        <h3>${liveReady ? "Credential found" : "Credential approval needed"}</h3>
-        <p>${
-          liveReady
-            ? `The server reports OpenAI is configured${assistantStatus.model ? ` with ${escapeHtml(assistantStatus.model)}` : ""}. Questions use the live helper first and keep local review as fallback.`
-            : "No API key is approved or stored here. WoofWatcher is using deterministic local care review until OPENAI_API_KEY is configured on the server or Vercel."
-        }</p>
+        <h3>${escapeHtml(getAssistantStatusHeading())}</h3>
+        <p>${escapeHtml(getAssistantModeDetail())}</p>
       </section>
     </div>
   `;
@@ -4040,32 +4076,36 @@ async function checkAssistantStatus() {
     const response = await fetch("/api/care-helper", { cache: "no-store" });
     if (!response.ok) return;
     const status = await response.json();
+    const providerProofReady = Boolean(status.aiProviderProofReady || status.providerProofReady);
     assistantStatus = {
       checked: true,
       configured: Boolean(status.configured),
-      mode: status.mode || (status.configured ? "openai" : "local"),
+      proofReady: providerProofReady,
+      mode: providerProofReady && status.mode === "openai" ? "openai" : "local",
       model: status.model || ""
     };
     if (activeTab === "woofguide") render();
   } catch {
-    assistantStatus = { checked: true, configured: false, mode: "local", model: "" };
+    assistantStatus = { checked: true, configured: false, proofReady: false, mode: "local", model: "" };
   }
 }
 
 async function reviewAssistantQuestion(question) {
   const context = getAssistantContext(state, question);
   assistantBusy = true;
-  assistantAnswer = "Reviewing Phoenix context. If live OpenAI is not configured, WoofWatcher will use the local care review.";
+  assistantAnswer = "Reviewing Phoenix context. If structured AI proof is not attached, WoofWatcher will use the local care review.";
   render();
 
-  const liveAnswer = await requestLiveAssistant(question, context);
+  const liveAnswer = isAssistantLiveReady() ? await requestLiveAssistant(question, context) : null;
   assistantBusy = false;
   if (liveAnswer?.answer) {
+    const providerProofReady = Boolean(liveAnswer.aiProviderProofReady || liveAnswer.providerProofReady || assistantStatus.proofReady);
     assistantAnswer = liveAnswer.answer;
     assistantStatus = {
       checked: true,
       configured: liveAnswer.mode === "openai" || assistantStatus.configured,
-      mode: liveAnswer.mode || "openai",
+      proofReady: providerProofReady,
+      mode: providerProofReady && liveAnswer.mode === "openai" ? "openai" : "local",
       model: liveAnswer.model || assistantStatus.model || ""
     };
   } else {

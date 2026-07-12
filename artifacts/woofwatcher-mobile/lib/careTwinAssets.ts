@@ -2,9 +2,15 @@ import type { ImageSourcePropType } from "react-native";
 
 import {
   CARE_TWIN_SPRITE_MANIFEST,
+  deriveCareTwinScene,
+  type AvatarLifePlan,
+  type CareTwinNeed,
+  type CareTwinScenePhase,
   type CareTwinSpriteAction,
   type CareTwinSpriteTrack,
 } from "./avatarLifeEngine.ts";
+import type { AvatarMotionModel, AvatarMotionState } from "./avatarMotion.ts";
+import { getCareTwinStageFraming, type CareTwinStageFraming } from "./careTwinStage.ts";
 import type { Mood } from "./phoenixStatus";
 
 export interface CareTwinSpriteAsset {
@@ -38,14 +44,38 @@ export interface CareTwinLayerReadiness {
   missing: readonly string[];
 }
 
+export interface CareTwinRuntimeQaScenario {
+  id: string;
+  label: string;
+  motion: AvatarMotionModel;
+  expectedAction: CareTwinSpriteAction;
+  expectedRoomVariant: CareTwinRoomVariantKey;
+  expectedZone: AvatarLifePlan["zone"];
+  expectedScenePhase: CareTwinScenePhase;
+  expectedNeed: CareTwinNeed;
+  nativeQaPrompt: string;
+}
+
+export interface CareTwinRuntimeQaResult {
+  scenario: CareTwinRuntimeQaScenario;
+  plan: AvatarLifePlan;
+  actualAction: CareTwinSpriteAction;
+  actualRoomVariant: CareTwinRoomVariantKey;
+  actualZone: AvatarLifePlan["zone"];
+  actualScenePhase: CareTwinScenePhase;
+  actualNeed: CareTwinNeed;
+  stageFraming: CareTwinStageFraming;
+  readiness: CareTwinLayerReadiness;
+}
+
 function bundledAsset(path: string, source: () => ImageSourcePropType): ImageSourcePropType {
   return typeof require === "function" ? source() : { uri: path };
 }
 
 export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareTwinSpriteAsset>> = {
   "idle-breathe": {
-    source: bundledAsset("assets/avatar/phoenix/idle-breathe-strip.png", () =>
-      require("@/assets/avatar/phoenix/idle-breathe-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -53,8 +83,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "tail-wag": {
-    source: bundledAsset("assets/avatar/phoenix/tail-wag-strip.png", () =>
-      require("@/assets/avatar/phoenix/tail-wag-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -62,8 +92,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "ear-perk": {
-    source: bundledAsset("assets/avatar/phoenix/ear-perk-strip.png", () =>
-      require("@/assets/avatar/phoenix/ear-perk-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-ear-perk-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-ear-perk-strip.png"),
     ),
     columns: 6,
     rows: 1,
@@ -71,17 +101,17 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "walk-loop": {
-    source: bundledAsset("assets/avatar/phoenix/walk-loop-strip.png", () =>
-      require("@/assets/avatar/phoenix/walk-loop-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png"),
     ),
-    columns: 10,
+    columns: 8,
     rows: 1,
     frameWidth: 256,
     frameHeight: 256,
   },
   "eat-loop": {
-    source: bundledAsset("assets/avatar/phoenix/eat-loop-strip.png", () =>
-      require("@/assets/avatar/phoenix/eat-loop-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-eat-loop-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-eat-loop-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -89,8 +119,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "drink-loop": {
-    source: bundledAsset("assets/avatar/phoenix/drink-loop-strip.png", () =>
-      require("@/assets/avatar/phoenix/drink-loop-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-drink-loop-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-drink-loop-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -98,8 +128,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "sleep-loop": {
-    source: bundledAsset("assets/avatar/phoenix/sleep-loop-strip.png", () =>
-      require("@/assets/avatar/phoenix/sleep-loop-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-sleep-loop-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-sleep-loop-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -107,8 +137,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "comfort-loop": {
-    source: bundledAsset("assets/avatar/phoenix/comfort-loop-strip.png", () =>
-      require("@/assets/avatar/phoenix/comfort-loop-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-comfort-loop-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-comfort-loop-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -116,8 +146,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "celebrate-hop": {
-    source: bundledAsset("assets/avatar/phoenix/celebrate-hop-strip.png", () =>
-      require("@/assets/avatar/phoenix/celebrate-hop-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-celebrate-hop-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-celebrate-hop-strip.png"),
     ),
     columns: 8,
     rows: 1,
@@ -125,10 +155,19 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "health-watch": {
-    source: bundledAsset("assets/avatar/phoenix/health-watch-strip.png", () =>
-      require("@/assets/avatar/phoenix/health-watch-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-health-watch-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-health-watch-strip.png"),
     ),
     columns: 8,
+    rows: 1,
+    frameWidth: 256,
+    frameHeight: 256,
+  },
+  "bark-loop": {
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-bark-reaction-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-bark-reaction-strip.png"),
+    ),
+    columns: 6,
     rows: 1,
     frameWidth: 256,
     frameHeight: 256,
@@ -137,10 +176,10 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
 
 export const CARE_TWIN_ROOM_VARIANT_ASSETS = {
   day: {
-    source: bundledAsset("assets/avatar/rooms/phoenix-room-day.png", () =>
-      require("@/assets/avatar/rooms/phoenix-room-day.png"),
+    source: bundledAsset("assets/avatar/rooms/phoenix-room-day-option-b.png", () =>
+      require("@/assets/avatar/rooms/phoenix-room-day-option-b.png"),
     ),
-    description: "Dogless neo-retro Phoenix day room with empty rug for layered sprite animation.",
+    description: "Option B Dogless neo-retro Phoenix day room with empty rug for layered sprite animation.",
   },
   night: {
     source: bundledAsset("assets/avatar/rooms/phoenix-room-night.png", () =>
@@ -168,6 +207,9 @@ export const CARE_TWIN_ROOM_VARIANT_ASSETS = {
   },
 } satisfies Record<string, CareTwinRoomLayerAsset>;
 
+type CareTwinRoomVariantRegistry = typeof CARE_TWIN_ROOM_VARIANT_ASSETS;
+export type CareTwinRoomVariantKey = keyof CareTwinRoomVariantRegistry;
+
 const DAY_ROOM: CareTwinRoomLayerAsset = CARE_TWIN_ROOM_VARIANT_ASSETS.day;
 
 const HOME_ALONE_ROOM: CareTwinRoomLayerAsset = CARE_TWIN_ROOM_VARIANT_ASSETS.homeAlone;
@@ -193,16 +235,181 @@ export const CARE_TWIN_DOGLESS_ROOM_ASSETS: Partial<Record<Mood, CareTwinRoomLay
   unwell: HEALTH_WATCH_ROOM,
 };
 
+const ROOM_VARIANT_BY_MOOD: Partial<Record<Mood, CareTwinRoomVariantKey>> = {
+  happy: "day",
+  excited: "day",
+  calm: "day",
+  anxious: "homeAlone",
+  unwell: "healthWatch",
+};
+
+function qaMotion(
+  state: AvatarMotionState,
+  avatarMood: Mood,
+  cue: AvatarMotionModel["cue"],
+  label: string,
+): AvatarMotionModel {
+  return {
+    state,
+    avatarMood,
+    cue,
+    intensity: "medium",
+    label,
+    speech: label,
+    line: label,
+    route: "/log",
+  };
+}
+
+export const CARE_TWIN_RUNTIME_QA_SCENARIOS: readonly CareTwinRuntimeQaScenario[] = [
+  {
+    id: "steady-happy",
+    label: "Steady happy idle",
+    motion: qaMotion("happy", "happy", "tail-wag", "Care is steady."),
+    expectedAction: "tail-wag",
+    expectedRoomVariant: "day",
+    expectedZone: "rug",
+    expectedScenePhase: "idle",
+    expectedNeed: "bond",
+    nativeQaPrompt: "Phoenix should idle on the day-room rug with a soft tail wag and no duplicate dog baked into the room.",
+  },
+  {
+    id: "routine-excited",
+    label: "Upcoming activity excitement",
+    motion: qaMotion("excited", "excited", "paw-bounce", "Walk soon."),
+    expectedAction: "celebrate-hop",
+    expectedRoomVariant: "day",
+    expectedZone: "door",
+    expectedScenePhase: "routine",
+    expectedNeed: "activity",
+    nativeQaPrompt: "Phoenix should feel ready by the door without leaving the stage crop on a phone viewport.",
+  },
+  {
+    id: "activity-needed",
+    label: "Bored activity need",
+    motion: qaMotion("bored", "excited", "paw-bounce", "Still waiting."),
+    expectedAction: "walk-loop",
+    expectedRoomVariant: "day",
+    expectedZone: "door",
+    expectedScenePhase: "routine",
+    expectedNeed: "activity",
+    nativeQaPrompt: "Walk-cycle motion should read as activity-needed and keep paws anchored inside the day room.",
+  },
+  {
+    id: "meal-due-alert",
+    label: "Meal due attention",
+    motion: qaMotion("annoyed", "anxious", "ear-perk", "Meal time?"),
+    expectedAction: "ear-perk",
+    expectedRoomVariant: "night",
+    expectedZone: "bowl",
+    expectedScenePhase: "routine",
+    expectedNeed: "hunger",
+    nativeQaPrompt: "Ear-perk attention should use the night room when Phoenix is anxious, with the bowl zone still visually clear.",
+  },
+  {
+    id: "comfort-watch",
+    label: "Needs comfort",
+    motion: qaMotion("sad", "anxious", "head-tilt", "Stay close?"),
+    expectedAction: "comfort-loop",
+    expectedRoomVariant: "homeAlone",
+    expectedZone: "window",
+    expectedScenePhase: "watch",
+    expectedNeed: "comfort",
+    nativeQaPrompt: "Comfort motion should feel calm and emotionally warm in the home-alone room, not medically alarming.",
+  },
+  {
+    id: "low-energy-rest",
+    label: "Low energy rest",
+    motion: qaMotion("tired", "calm", "low-energy", "Slow day."),
+    expectedAction: "sleep-loop",
+    expectedRoomVariant: "bedtime",
+    expectedZone: "bed",
+    expectedScenePhase: "rest",
+    expectedNeed: "rest",
+    nativeQaPrompt: "The sleep loop should sit naturally in the bedtime room and keep the moonlit background dogless.",
+  },
+  {
+    id: "quiet-hours",
+    label: "Quiet-hours sleep",
+    motion: qaMotion("sleeping", "calm", "slow-breath", "Soft snooze."),
+    expectedAction: "sleep-loop",
+    expectedRoomVariant: "bedtime",
+    expectedZone: "bed",
+    expectedScenePhase: "rest",
+    expectedNeed: "rest",
+    nativeQaPrompt: "Quiet-hours sleep should feel like a soft game idle state, with no clipping at the bottom-center anchor.",
+  },
+  {
+    id: "meal-logged",
+    label: "Meal logged",
+    motion: qaMotion("eating", "happy", "chew", "Meal logged."),
+    expectedAction: "eat-loop",
+    expectedRoomVariant: "day",
+    expectedZone: "bowl",
+    expectedScenePhase: "care-action",
+    expectedNeed: "hunger",
+    nativeQaPrompt: "Eating should route to the bowl zone and stay visually separate from the room art.",
+  },
+  {
+    id: "water-logged",
+    label: "Water logged",
+    motion: qaMotion("drinking", "calm", "lap", "Water break."),
+    expectedAction: "drink-loop",
+    expectedRoomVariant: "day",
+    expectedZone: "bowl",
+    expectedScenePhase: "care-action",
+    expectedNeed: "hydration",
+    nativeQaPrompt: "Drinking should read as hydration at phone size, not as a generic idle loop.",
+  },
+  {
+    id: "walk-logged",
+    label: "Walk logged",
+    motion: qaMotion("walking", "happy", "walk-cycle", "Walk logged."),
+    expectedAction: "walk-loop",
+    expectedRoomVariant: "day",
+    expectedZone: "door",
+    expectedScenePhase: "care-action",
+    expectedNeed: "activity",
+    nativeQaPrompt: "The walk loop should feel alive like a game sprite while remaining inside the room bounds.",
+  },
+  {
+    id: "treat-win",
+    label: "Treat or training win",
+    motion: qaMotion("treat", "happy", "treat-hop", "Tiny celebration."),
+    expectedAction: "celebrate-hop",
+    expectedRoomVariant: "day",
+    expectedZone: "rug",
+    expectedScenePhase: "celebration",
+    expectedNeed: "bond",
+    nativeQaPrompt: "Celebration should feel rewarding without fake currency or visual clutter.",
+  },
+  {
+    id: "health-watch",
+    label: "Health Watch signal",
+    motion: qaMotion("sick", "unwell", "health-watch", "Let's take it easy."),
+    expectedAction: "health-watch",
+    expectedRoomVariant: "healthWatch",
+    expectedZone: "bed",
+    expectedScenePhase: "watch",
+    expectedNeed: "health",
+    nativeQaPrompt: "Health Watch should be calm and non-diagnostic, using the health room without scary medical framing.",
+  },
+];
+
 export function getCareTwinSpriteAsset(action: CareTwinSpriteAction): CareTwinSpriteAsset | null {
   return CARE_TWIN_SPRITE_ASSETS[action] ?? null;
 }
 
+export function getCareTwinRoomVariantKey(mood: Mood, action?: CareTwinSpriteAction): CareTwinRoomVariantKey {
+  if (action === "sleep-loop") return "bedtime";
+  if (action === "comfort-loop") return "homeAlone";
+  if (action === "health-watch") return "healthWatch";
+  if (action === "ear-perk" && mood === "anxious") return "night";
+  return ROOM_VARIANT_BY_MOOD[mood] ?? "day";
+}
+
 export function getCareTwinRoomLayer(mood: Mood, action?: CareTwinSpriteAction): CareTwinRoomLayerAsset | null {
-  if (action === "sleep-loop") return BEDTIME_ROOM;
-  if (action === "comfort-loop") return HOME_ALONE_ROOM;
-  if (action === "health-watch") return HEALTH_WATCH_ROOM;
-  if (action === "ear-perk" && mood === "anxious") return NIGHT_ROOM;
-  return CARE_TWIN_DOGLESS_ROOM_ASSETS[mood] ?? LEGACY_DAY_ROOM;
+  return CARE_TWIN_ROOM_VARIANT_ASSETS[getCareTwinRoomVariantKey(mood, action)] ?? LEGACY_DAY_ROOM;
 }
 
 export function listCareTwinSpriteSlots(): CareTwinSpriteSlot[] {
@@ -235,5 +442,27 @@ export function getCareTwinLayerReadiness(
     spriteReady: Boolean(sprite),
     roomReady: Boolean(room),
     missing,
+  };
+}
+
+export function listCareTwinRuntimeQaScenarios(): CareTwinRuntimeQaScenario[] {
+  return CARE_TWIN_RUNTIME_QA_SCENARIOS.map((scenario) => ({ ...scenario }));
+}
+
+export function evaluateCareTwinRuntimeQaScenario(scenario: CareTwinRuntimeQaScenario): CareTwinRuntimeQaResult {
+  const plan = deriveCareTwinScene(scenario.motion);
+  const actualRoomVariant = getCareTwinRoomVariantKey(scenario.motion.avatarMood, plan.spriteAction);
+  const actualZone = plan.zone;
+
+  return {
+    scenario,
+    plan,
+    actualAction: plan.spriteAction,
+    actualRoomVariant,
+    actualZone,
+    actualScenePhase: plan.scenePhase,
+    actualNeed: plan.priorityNeed,
+    stageFraming: getCareTwinStageFraming(plan.spriteAction, actualZone),
+    readiness: getCareTwinLayerReadiness(plan.spriteAction, scenario.motion.avatarMood),
   };
 }

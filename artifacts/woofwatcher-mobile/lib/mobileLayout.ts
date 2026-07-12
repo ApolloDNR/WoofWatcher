@@ -1,131 +1,174 @@
-export type FloatingTabChromeMetrics = {
-  tabBarBottom: number;
-  tabBarHeight: number;
-  fabBottom: number;
-  routeBottomPadding: number;
-};
+export type MobileRuntimePlatform = "android" | "ios" | "web" | string;
+
+export interface MobileLayoutInput {
+  platform: MobileRuntimePlatform;
+  bottomInset?: number;
+  topInset?: number;
+}
 
 export type RouteTopPaddingSurface = "tabbed" | "standalone" | "setup" | "auth";
+
+export interface FloatingTabChromeMetrics {
+  tabBarBottom: number;
+  tabBarHeight: number;
+  tabBarHorizontalInset: number;
+  tabBarRadius: number;
+  centerFabBottom: number;
+  centerFabSize: number;
+  contentBottomPadding: number;
+}
 
 export const MIN_MOBILE_TOUCH_TARGET = 48;
 export const MOBILE_INLINE_HIT_SLOP = 10;
 
-const NATIVE_TAB_BAR_BOTTOM = 8;
-const NATIVE_TAB_BAR_HEIGHT = 72;
-const NATIVE_FAB_BOTTOM_OFFSET = 26;
-const NATIVE_ROUTE_CLEARANCE = 130;
+const TAB_BAR_NATIVE_HEIGHT = 72;
+const TAB_BAR_WEB_HEIGHT = 72;
+const TAB_BAR_NATIVE_BOTTOM = 12;
+const TAB_BAR_WEB_BOTTOM = 12;
+const TAB_BAR_HORIZONTAL_INSET = 16;
+const TAB_BAR_RADIUS = 26;
+const CENTER_FAB_SIZE = 56;
+const CENTER_FAB_BOTTOM_OFFSET = 18;
+const CENTER_FAB_FALLBACK_SAFE_BOTTOM = 8;
+const TABBED_ROUTE_MIN_BOTTOM_PADDING = 110;
+const TABBED_ROUTE_BOTTOM_GUTTER = 16;
+const STANDALONE_ROUTE_MIN_BOTTOM_PADDING = 72;
+const STANDALONE_ROUTE_BOTTOM_GUTTER = 40;
+const DOCKED_COMPOSER_MIN_BOTTOM_PADDING = 12;
+const DOCKED_COMPOSER_WEB_BOTTOM_PADDING = 46;
+const DOCKED_COMPOSER_BOTTOM_GUTTER = 12;
 const NATIVE_TABBED_TOP_OFFSET = 8;
 const NATIVE_STANDALONE_TOP_OFFSET = 12;
 const NATIVE_SETUP_TOP_OFFSET = 14;
 const NATIVE_AUTH_TOP_OFFSET = 48;
-const WEB_TAB_BAR_BOTTOM = 12;
-const WEB_TAB_BAR_HEIGHT = 78;
-const WEB_FAB_BOTTOM_OFFSET = 26;
-const WEB_ROUTE_CLEARANCE = 130;
 const WEB_TABBED_TOP_INSET = 24;
 const WEB_STANDALONE_TOP_INSET = 18;
 const WEB_SETUP_TOP_INSET = 24;
 const WEB_AUTH_TOP_INSET = 24;
-const STANDALONE_ROUTE_CLEARANCE = 88;
-const STANDALONE_COMPOSER_CLEARANCE = 24;
-const STANDALONE_COMPOSER_INSET_OFFSET = 12;
-const WEB_COMPOSER_BOTTOM_INSET = 34;
-const MODAL_SHEET_CLEARANCE = 32;
-const MODAL_SHEET_INSET_OFFSET = 20;
+const MODAL_SHEET_MIN_BOTTOM_PADDING = 32;
+const MODAL_SHEET_BOTTOM_GUTTER = 20;
 const CENTERED_MODAL_HORIZONTAL_PADDING = 28;
 const CENTERED_MODAL_EDGE_CLEARANCE = 24;
-const CENTERED_MODAL_INSET_OFFSET = 16;
-const TABBED_FEEDBACK_OFFSET = 96;
-const STANDALONE_FEEDBACK_OFFSET = 22;
+const CENTERED_MODAL_INSET_GUTTER = 16;
+const TABBED_FLOATING_FEEDBACK_OFFSET = 96;
+const STANDALONE_FLOATING_FEEDBACK_OFFSET = 22;
 const FLOATING_DEBUG_TOP_OFFSET = 16;
 const WEB_FLOATING_DEBUG_TOP_INSET = 24;
 
-export function getFloatingTabChromeMetrics(bottomInset: number, isWeb: boolean): FloatingTabChromeMetrics {
-  if (isWeb) {
-    return {
-      tabBarBottom: WEB_TAB_BAR_BOTTOM,
-      tabBarHeight: WEB_TAB_BAR_HEIGHT,
-      fabBottom: bottomInset + WEB_FAB_BOTTOM_OFFSET,
-      routeBottomPadding: WEB_ROUTE_CLEARANCE,
-    };
-  }
+function isWebPlatform(platform: MobileRuntimePlatform): boolean {
+  return platform === "web";
+}
+
+function normalizeBottomInset(platform: MobileRuntimePlatform, bottomInset = 0): number {
+  if (isWebPlatform(platform)) return 0;
+  return Math.max(0, bottomInset);
+}
+
+function normalizeTopInset(platform: MobileRuntimePlatform, topInset = 0): number {
+  if (isWebPlatform(platform)) return 0;
+  return Math.max(0, topInset);
+}
+
+export function getFloatingTabChromeMetrics(input: MobileLayoutInput): FloatingTabChromeMetrics {
+  const web = isWebPlatform(input.platform);
+  const bottomInset = normalizeBottomInset(input.platform, input.bottomInset);
+  const tabBarBottom = web ? TAB_BAR_WEB_BOTTOM : TAB_BAR_NATIVE_BOTTOM;
+  const tabBarHeight = web ? TAB_BAR_WEB_HEIGHT : TAB_BAR_NATIVE_HEIGHT;
+  const centerFabBottom =
+    (bottomInset || CENTER_FAB_FALLBACK_SAFE_BOTTOM) + CENTER_FAB_BOTTOM_OFFSET;
+  const chromeBottomClearance = Math.max(
+    tabBarBottom + tabBarHeight,
+    centerFabBottom + CENTER_FAB_SIZE,
+  );
 
   return {
-    tabBarBottom: NATIVE_TAB_BAR_BOTTOM,
-    tabBarHeight: NATIVE_TAB_BAR_HEIGHT,
-    fabBottom: bottomInset + NATIVE_FAB_BOTTOM_OFFSET,
-    routeBottomPadding: Math.max(NATIVE_ROUTE_CLEARANCE, bottomInset + 108),
+    tabBarBottom,
+    tabBarHeight,
+    tabBarHorizontalInset: TAB_BAR_HORIZONTAL_INSET,
+    tabBarRadius: TAB_BAR_RADIUS,
+    centerFabBottom,
+    centerFabSize: CENTER_FAB_SIZE,
+    contentBottomPadding: Math.max(
+      TABBED_ROUTE_MIN_BOTTOM_PADDING,
+      chromeBottomClearance + TABBED_ROUTE_BOTTOM_GUTTER,
+    ),
   };
 }
 
-export function getTabbedRouteBottomPadding(bottomInset: number, isWeb: boolean): number {
-  return getFloatingTabChromeMetrics(bottomInset, isWeb).routeBottomPadding;
+export function getTabbedRouteBottomPadding(input: MobileLayoutInput): number {
+  return getFloatingTabChromeMetrics(input).contentBottomPadding;
 }
 
 export function getRouteTopPadding(
-  topInset: number,
-  surface: RouteTopPaddingSurface,
-  isWeb: boolean,
+  input: MobileLayoutInput & { surface: RouteTopPaddingSurface },
 ): number {
-  if (surface === "auth") {
-    return (isWeb ? WEB_AUTH_TOP_INSET : topInset) + NATIVE_AUTH_TOP_OFFSET;
+  const web = isWebPlatform(input.platform);
+  const topInset = normalizeTopInset(input.platform, input.topInset);
+
+  if (input.surface === "auth") {
+    return (web ? WEB_AUTH_TOP_INSET : topInset) + NATIVE_AUTH_TOP_OFFSET;
   }
 
-  if (surface === "setup") {
-    return (isWeb ? WEB_SETUP_TOP_INSET : topInset) + NATIVE_SETUP_TOP_OFFSET;
+  if (input.surface === "setup") {
+    return (web ? WEB_SETUP_TOP_INSET : topInset) + NATIVE_SETUP_TOP_OFFSET;
   }
 
-  if (surface === "standalone") {
-    return (isWeb ? WEB_STANDALONE_TOP_INSET : topInset) + NATIVE_STANDALONE_TOP_OFFSET;
+  if (input.surface === "standalone") {
+    return (web ? WEB_STANDALONE_TOP_INSET : topInset) + NATIVE_STANDALONE_TOP_OFFSET;
   }
 
-  return (isWeb ? WEB_TABBED_TOP_INSET : topInset) + NATIVE_TABBED_TOP_OFFSET;
+  return (web ? WEB_TABBED_TOP_INSET : topInset) + NATIVE_TABBED_TOP_OFFSET;
 }
 
-export function getStandaloneRouteBottomPadding(bottomInset: number): number {
-  return Math.max(STANDALONE_ROUTE_CLEARANCE, bottomInset + 54);
+export function getStandaloneRouteBottomPadding(input: MobileLayoutInput): number {
+  const bottomInset = normalizeBottomInset(input.platform, input.bottomInset);
+  return Math.max(STANDALONE_ROUTE_MIN_BOTTOM_PADDING, bottomInset + STANDALONE_ROUTE_BOTTOM_GUTTER);
 }
 
-export function getStandaloneComposerBottomPadding(bottomInset: number, isWeb: boolean): number {
-  const effectiveInset = isWeb ? WEB_COMPOSER_BOTTOM_INSET : bottomInset;
-  return Math.max(STANDALONE_COMPOSER_CLEARANCE, effectiveInset + STANDALONE_COMPOSER_INSET_OFFSET);
+export function getDockedComposerBottomPadding(input: MobileLayoutInput): number {
+  if (isWebPlatform(input.platform)) return DOCKED_COMPOSER_WEB_BOTTOM_PADDING;
+
+  const bottomInset = normalizeBottomInset(input.platform, input.bottomInset);
+  return Math.max(DOCKED_COMPOSER_MIN_BOTTOM_PADDING, bottomInset + DOCKED_COMPOSER_BOTTOM_GUTTER);
 }
 
-export function getModalSheetBottomPadding(bottomInset: number): number {
-  return Math.max(MODAL_SHEET_CLEARANCE, bottomInset + MODAL_SHEET_INSET_OFFSET);
+export function getModalSheetBottomPadding(input: MobileLayoutInput): number {
+  const bottomInset = normalizeBottomInset(input.platform, input.bottomInset);
+  return Math.max(MODAL_SHEET_MIN_BOTTOM_PADDING, bottomInset + MODAL_SHEET_BOTTOM_GUTTER);
 }
 
-export function getCenteredModalBackdropPadding(topInset: number, bottomInset: number) {
+export function getCenteredModalBackdropPadding(input: MobileLayoutInput): {
+  paddingHorizontal: number;
+  paddingTop: number;
+  paddingBottom: number;
+} {
+  const topInset = normalizeTopInset(input.platform, input.topInset);
+  const bottomInset = normalizeBottomInset(input.platform, input.bottomInset);
   return {
     paddingHorizontal: CENTERED_MODAL_HORIZONTAL_PADDING,
-    paddingTop: Math.max(CENTERED_MODAL_EDGE_CLEARANCE, topInset + CENTERED_MODAL_INSET_OFFSET),
-    paddingBottom: Math.max(CENTERED_MODAL_EDGE_CLEARANCE, bottomInset + CENTERED_MODAL_INSET_OFFSET),
+    paddingTop: Math.max(CENTERED_MODAL_EDGE_CLEARANCE, topInset + CENTERED_MODAL_INSET_GUTTER),
+    paddingBottom: Math.max(CENTERED_MODAL_EDGE_CLEARANCE, bottomInset + CENTERED_MODAL_INSET_GUTTER),
   };
 }
 
 export function getFloatingFeedbackBottomOffset(
-  bottomInset: number,
-  surface: "tabbed" | "standalone",
-  isWeb: boolean,
+  input: MobileLayoutInput & { surface: "tabbed" | "standalone" },
 ): number {
-  const effectiveInset = isWeb && surface === "standalone" ? WEB_COMPOSER_BOTTOM_INSET : bottomInset;
-  const offset = surface === "tabbed" ? TABBED_FEEDBACK_OFFSET : STANDALONE_FEEDBACK_OFFSET;
+  const effectiveInset = isWebPlatform(input.platform) && input.surface === "standalone"
+    ? DOCKED_COMPOSER_WEB_BOTTOM_PADDING - DOCKED_COMPOSER_BOTTOM_GUTTER
+    : normalizeBottomInset(input.platform, input.bottomInset);
+  const offset = input.surface === "tabbed" ? TABBED_FLOATING_FEEDBACK_OFFSET : STANDALONE_FLOATING_FEEDBACK_OFFSET;
   return effectiveInset + offset;
 }
 
-export function getFloatingDebugButtonTopOffset(topInset: number, isWeb: boolean): number {
-  const effectiveInset = isWeb ? WEB_FLOATING_DEBUG_TOP_INSET : topInset;
+export function getFloatingDebugButtonTopOffset(input: MobileLayoutInput): number {
+  const effectiveInset = isWebPlatform(input.platform) ? WEB_FLOATING_DEBUG_TOP_INSET : normalizeTopInset(input.platform, input.topInset);
   return effectiveInset + FLOATING_DEBUG_TOP_OFFSET;
 }
 
 export function getKeyboardAvoidingVerticalOffset(
-  topInset: number,
-  surface: Exclude<RouteTopPaddingSurface, "auth">,
-  isWeb: boolean,
+  input: MobileLayoutInput & { surface: Exclude<RouteTopPaddingSurface, "auth"> },
 ): number {
-  if (isWeb) {
-    return 0;
-  }
-
-  return getRouteTopPadding(topInset, surface, false);
+  if (isWebPlatform(input.platform)) return 0;
+  return getRouteTopPadding(input);
 }

@@ -1,14 +1,10 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import { householdsTable } from "./households";
+import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 // Clerk-backed users. `id` is the Clerk user id (JIT-provisioned on first request).
 export const usersTable = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email"),
   displayName: text("display_name"),
-  activeHouseholdId: uuid("active_household_id").references(() => householdsTable.id, {
-    onDelete: "set null",
-  }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

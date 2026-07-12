@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createDefaultAvatarConfig } from "./avatarStudio.ts";
+import { AVATAR_TEMPLATES, createDefaultAvatarConfig } from "./avatarStudio.ts";
 import {
+  getAvatarStudioMotionPreviewState,
+  listAvatarStudioMotionPreviewStates,
   deriveAvatarPreviewAccessories,
   deriveAvatarPreviewMood,
   deriveAvatarPreviewMotion,
@@ -14,11 +16,11 @@ test("derives layered preview accessories from configured slots", () => {
   const layers = deriveAvatarPreviewAccessories(config);
 
   assert.deepEqual(
-    layers.map((layer) => [layer.id, layer.kind, layer.slot]),
+    layers.map((layer) => [layer.id, layer.kind, layer.slot, layer.fitStatus]),
     [
-      ["forest-bandana", "bandana", "neck"],
-      ["cozy-bed", "bed", "room"],
-      ["heart-sparkles", "sparkles", "fx"],
+      ["forest-bandana", "bandana", "neck", "template-fitted"],
+      ["cozy-bed", "bed", "room", "template-fitted"],
+      ["heart-sparkles", "sparkles", "fx", "template-fitted"],
     ],
   );
 });
@@ -37,14 +39,36 @@ test("maps accessory ids to visual overlay kinds", () => {
   const layers = deriveAvatarPreviewAccessories(config);
 
   assert.deepEqual(
-    layers.map((layer) => [layer.id, layer.kind]),
+    layers.map((layer) => [layer.id, layer.kind, layer.fitLabel]),
     [
-      ["navy-collar", "collar"],
-      ["birthday-hat", "hat"],
-      ["sleepy-mask", "mask"],
-      ["training-vest", "vest"],
+      ["navy-collar", "collar", "Template-fitted"],
+      ["birthday-hat", "hat", "Template-fitted"],
+      ["sleepy-mask", "mask", "Template-fitted"],
+      ["training-vest", "vest", "Template-fitted"],
     ],
   );
+});
+
+test("marks accessories without a template overlay as inventory-ready for non-shepherd templates", () => {
+  const config = {
+    ...createDefaultAvatarConfig("Scout"),
+    templateId: "retriever" as const,
+    accessorySlots: {
+      neck: "forest-bandana",
+      head: "birthday-hat",
+    },
+  };
+
+  const layers = deriveAvatarPreviewAccessories(config);
+
+  assert.deepEqual(
+    layers.map((layer) => [layer.id, layer.fitStatus, layer.fitLabel]),
+    [
+      ["forest-bandana", "inventory-ready", "Pack pending"],
+      ["birthday-hat", "inventory-ready", "Pack pending"],
+    ],
+  );
+  assert.match(layers[0]?.fitDetail ?? "", /shared inventory icon/);
 });
 
 test("derives preview mood copy and colors", () => {
@@ -64,14 +88,67 @@ test("uses the live Phoenix sprite pack for shepherd mood previews", () => {
   const motion = deriveAvatarPreviewMotion("shepherd", "excited");
 
   assert.equal(motion.mode, "sprite");
-  assert.equal(motion.label, "Animated care twin pack");
+  assert.equal(motion.label, "Animated Phoenix pack");
   assert.equal(motion.spriteAction, "celebrate-hop");
 });
 
-test("uses the animated launch pack for retriever mood previews", () => {
+test("uses live template sprite packs for completed launch breed previews", () => {
   const motion = deriveAvatarPreviewMotion("retriever", "calm");
 
   assert.equal(motion.mode, "sprite");
-  assert.equal(motion.label, "Animated care twin pack");
-  assert.equal(motion.spriteAction, "tail-wag");
+  assert.equal(motion.label, "Live template sprite pack");
+  assert.equal(motion.spriteAction, null);
+});
+
+test("uses live template sprite packs for every non-Phoenix launch template", () => {
+  const liveTemplateIds = AVATAR_TEMPLATES.map((template) => template.id).filter(
+    (templateId) => templateId !== "shepherd",
+  );
+
+  assert.deepEqual(liveTemplateIds, [
+    "retriever",
+    "husky",
+    "bully",
+    "doodle",
+    "terrier",
+    "hound",
+    "dachshund",
+    "spaniel",
+    "toy",
+    "slender",
+    "mixed",
+  ]);
+
+  for (const templateId of liveTemplateIds) {
+    const motion = deriveAvatarPreviewMotion(templateId, "calm");
+
+    assert.equal(motion.mode, "sprite");
+    assert.equal(motion.label, "Live template sprite pack");
+    assert.equal(motion.spriteAction, null);
+  }
+});
+
+test("defines Avatar Studio motion preview states for the living care twin", () => {
+  const states = listAvatarStudioMotionPreviewStates();
+
+  assert.deepEqual(
+    states.map((state) => [state.id, state.spriteAction, state.templateSpriteAction]),
+    [
+      ["idle", "idle-breathe", "idle-tail-wag"],
+      ["walk", "walk-loop", "walk-loop"],
+      ["meal", "eat-loop", "idle-tail-wag"],
+      ["water", "drink-loop", "idle-tail-wag"],
+      ["rest", "sleep-loop", "idle-tail-wag"],
+      ["comfort", "comfort-loop", "idle-tail-wag"],
+      ["health", "health-watch", "idle-tail-wag"],
+      ["celebrate", "celebrate-hop", "walk-loop"],
+    ],
+  );
+
+  assert.equal(getAvatarStudioMotionPreviewState("walk").emote, "excited");
+  assert.equal(getAvatarStudioMotionPreviewState("meal").statusLabel, "Bowl loop");
+  assert.match(
+    getAvatarStudioMotionPreviewState("health").accessibilityLabel,
+    /health watch animation/i,
+  );
 });

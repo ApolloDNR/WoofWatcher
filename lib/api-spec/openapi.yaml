@@ -12,6 +12,10 @@ tags:
     description: Health operations
   - name: care-helper
     description: WoofWatcher AI care assistant
+  - name: woofguide-events
+    description: Dog-friendly outing suggestions for WoofGuide and Adventure Mode
+  - name: avatar
+    description: Avatar Studio image generation helpers
 paths:
   /healthz:
     get:
@@ -31,7 +35,7 @@ paths:
       operationId: getCareHelperStatus
       tags: [care-helper]
       summary: Get AI care helper status
-      description: Returns whether OpenAI is configured and what mode is active
+      description: Returns whether the provider-backed or local care-helper mode is active.
       responses:
         "200":
           description: Status info
@@ -43,6 +47,10 @@ paths:
       operationId: askCareHelper
       tags: [care-helper]
       summary: Ask the AI care helper a question
+      description: >-
+        Asks the authenticated WoofGuide care helper a dog-care question. When
+        the provider is unavailable, the API returns a truthful local fallback
+        response instead of claiming live AI.
       requestBody:
         required: true
         content:
@@ -51,23 +59,194 @@ paths:
               $ref: "#/components/schemas/CareHelperInput"
       responses:
         "200":
-          description: AI answer
+          description: Provider-backed or local care-helper answer
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CareHelperAnswer"
-        "501":
-          description: OpenAI not configured
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CareHelperError"
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Provider-backed care-helper question rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "502":
-          description: OpenAI request failed
+          description: Provider request failed
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CareHelperError"
+  /woofguide-events:
+    get:
+      operationId: getWoofguideEventsStatus
+      tags: [woofguide-events]
+      summary: Get WoofGuide events provider status
+      description: >-
+        Returns whether provider-backed dog-friendly event curation is
+        configured. When unavailable, the API falls back to local curated
+        suggestions instead of claiming live provider data.
+      responses:
+        "200":
+          description: WoofGuide events provider status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WoofguideEventsStatus"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      operationId: createWoofguideEvents
+      tags: [woofguide-events]
+      summary: Create dog-friendly WoofGuide event suggestions
+      description: >-
+        Creates owner-reviewed outing ideas for a household dog. Suggestions are
+        inspirational and not bookings, addresses, prices, or provider-verified
+        events.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WoofguideEventsInput"
+      responses:
+        "200":
+          description: Local or provider-backed event suggestions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WoofguideEventsResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          description: Provider request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /avatar-stylize:
+    post:
+      operationId: stylizeAvatar
+      tags: [avatar]
+      summary: Create a stylized dog avatar portrait
+      description: >-
+        Generates an owner-reviewed stylized portrait from a dog photo when the
+        image provider is configured. This is a helper for Avatar Studio and
+        must not be represented as automatic identity verification.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvatarStylizeInput"
+      responses:
+        "200":
+          description: Generated portrait image
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvatarStylizeResponse"
+        "400":
+          description: Missing image payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "413":
+          description: Image too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Image provider is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          description: Image provider request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /avatar-emotions:
+    post:
+      operationId: createAvatarEmotions
+      tags: [avatar]
+      summary: Create a set of stylized dog avatar emotion portraits
+      description: >-
+        Generates a small owner-reviewed emotion set for the same dog from one
+        photo when the image provider is configured. Some emotions can fail
+        independently and are returned in the errors map.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvatarEmotionsInput"
+      responses:
+        "200":
+          description: Generated emotion image set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvatarEmotionsResponse"
+        "400":
+          description: Missing image payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "413":
+          description: Image too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Image provider is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          description: Image provider request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /me:
     get:
       operationId: getMe
@@ -83,6 +262,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Me"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     patch:
       operationId: updateMe
       tags: [household]
@@ -100,30 +285,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Me"
-  /me/active-household:
-    patch:
-      operationId: setActiveHousehold
-      tags: [household]
-      summary: Set the active household for the current user
-      description: >-
-        Switches the authenticated user's active household only when they already
-        have membership in that household. Later care-state and care-entry routes
-        use this active household.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SetActiveHousehold"
-      responses:
-        "200":
-          description: Active household context
+        "400":
+          description: Invalid profile update payload
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Me"
-        "404":
-          description: Household membership not found
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -146,56 +315,207 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Me"
-  /household/audit-events:
-    get:
-      operationId: listHouseholdAuditEvents
-      tags: [household]
-      summary: List household audit events
-      description: >-
-        Returns durable household audit events for owner/admin review. This is a
-        review surface only; lifecycle changes and retention policy remain
-        provider-gated.
-      parameters:
-        - in: query
-          name: limit
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 200
-        - in: query
-          name: action
-          schema:
-            type: string
-        - in: query
-          name: lifecycleState
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Household audit events
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/HouseholdAuditEvent"
-        "403":
-          description: Owner or admin membership required
+        "400":
+          description: Invalid household update payload
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
-  /household/members/{memberId}:
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /household/invitations:
+    get:
+      operationId: listHouseholdInvitations
+      tags: [household]
+      summary: List household invitations
+      description: >-
+        Owner/admin-only review of provider-durable household invitation
+        lifecycle rows scoped to the authenticated active household. Production
+        Supabase migration, RLS, retention, export/deletion policy, and
+        notification delivery remain launch approval gates.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: lifecycleState
+          in: query
+          schema:
+            $ref: "#/components/schemas/HouseholdInvitationLifecycleState"
+      responses:
+        "200":
+          description: Durable household invitation review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdInvitationListResponse"
+        "400":
+          description: Invalid invitation review query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Only owners can review invitations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      operationId: createHouseholdInvitation
+      tags: [household]
+      summary: Create a household invitation
+      description: >-
+        Owner/admin-only creation of provider-durable invitation rows. New
+        invitations may start approved or pending owner approval, and the join
+        flow only creates caregiver memberships after the row is approved and
+        unexpired.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HouseholdInvitationCreateInput"
+      responses:
+        "201":
+          description: Household invitation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdInvitationMutationResponse"
+        "400":
+          description: Invalid invitation payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Only owners can create invitations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /household/invitations/{id}/revoke:
+    post:
+      operationId: revokeHouseholdInvitation
+      tags: [household]
+      summary: Revoke a household invitation
+      description: >-
+        Owner/admin-only revocation of a provider-durable invitation before or
+        after acceptance. The returned invitation reflects the revoked lifecycle
+        state and includes the household audit event for owner review.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HouseholdInvitationRevokeInput"
+      responses:
+        "200":
+          description: Household invitation revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdInvitationMutationResponse"
+        "400":
+          description: Invalid invitation revoke payload or id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Only owners can revoke invitations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Household invitation not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /household/join:
+    post:
+      operationId: joinHousehold
+      tags: [household]
+      summary: Join an existing household by invite code
+      description: >-
+        Accepts a household invite code, creates or reuses the caregiver
+        membership, and returns a HouseholdAuditEvent for invitation acceptance.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinHouseholdInput"
+      responses:
+        "200":
+          description: Joined household context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdJoinResponse"
+        "400":
+          description: Invalid invite payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Invite code not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /household/members/{id}:
     patch:
       operationId: updateHouseholdMember
       tags: [household]
-      summary: Update a household member role
+      summary: Update a household member role or display name
       description: >-
-        Lets owner/admin members change an existing active-household member's
-        role before richer provider-backed caregiver administration exists.
-        Owner memberships cannot be demoted through this endpoint.
+        Owner/admin-only helper management for household roles, sitter/trainer
+        scopes, and vet viewer read-only access. This is the server contract
+        foundation for future Access Pass enforcement.
       parameters:
-        - name: memberId
+        - name: id
           in: path
           required: true
           schema:
@@ -212,15 +532,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Me"
+                $ref: "#/components/schemas/HouseholdMemberMutationResponse"
         "400":
-          description: Invalid role change
+          description: Invalid member update payload or id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
         "403":
-          description: Owner or admin membership required
+          description: Role is not allowed to update household members
           content:
             application/json:
               schema:
@@ -231,26 +557,255 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
-  /household/join:
-    post:
-      operationId: joinHousehold
+    delete:
+      operationId: revokeHouseholdMember
       tags: [household]
-      summary: Join an existing household by invite code
+      summary: Revoke a household member from the current household
+      description: >-
+        Owner/admin-only helper revocation. Self-revocation and protected owner
+        role changes remain blocked until last-owner-safe account flows exist.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Household member revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdMemberMutationResponse"
+        "400":
+          description: Invalid member id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to revoke household members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Household member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /household/access-passes/activate:
+    post:
+      operationId: activateHouseholdAccessPass
+      tags: [household]
+      summary: Activate an Access Pass helper role for a household member
+      description: >-
+        Owner/admin-only helper activation for existing household members. This
+        assigns a sitter, trainer, walker, or vet viewer role and returns helper
+        audit trail metadata backed by the durable provider audit contract.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/JoinHouseholdInput"
+              $ref: "#/components/schemas/AccessPassActivationInput"
       responses:
         "200":
-          description: Joined household context
+          description: Access Pass helper role activated
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Me"
+                $ref: "#/components/schemas/HouseholdAccessPassMutationResponse"
+        "400":
+          description: Invalid Access Pass activation payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to activate Access Pass helpers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
-          description: Invite code not found
+          description: Household member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /household/access-passes/revoke:
+    post:
+      operationId: revokeHouseholdAccessPass
+      tags: [household]
+      summary: Revoke an Access Pass helper role
+      description: >-
+        Owner/admin-only helper revocation for active sitter, trainer, walker,
+        and vet viewer roles. Core household members should use the normal
+        member-management flow instead.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessPassRevocationInput"
+      responses:
+        "200":
+          description: Access Pass helper access revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdAccessPassMutationResponse"
+        "400":
+          description: Invalid Access Pass revocation payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to revoke Access Pass helpers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Household member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /household/sharing-cleanup:
+    get:
+      operationId: listHouseholdSharingCleanup
+      tags: [household]
+      summary: Review expired household sharing cleanup candidates
+      description: >-
+        Owner/admin-only, non-destructive review of expired invitation rows and
+        expired Access Pass helper memberships scoped to the authenticated
+        active household. This endpoint does not revoke, delete, or mutate
+        household access; applying cleanup, production Supabase migration/RLS,
+        retention/export/deletion policy, notification delivery, and
+        legal/privacy approval remain launch gates.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: kind
+          in: query
+          schema:
+            $ref: "#/components/schemas/HouseholdSharingCleanupKind"
+      responses:
+        "200":
+          description: Expired household sharing cleanup review candidates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdSharingCleanupResponse"
+        "400":
+          description: Invalid sharing cleanup query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to review household sharing cleanup
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /household/audit-events:
+    get:
+      operationId: listHouseholdAuditEvents
+      tags: [household]
+      summary: List durable household audit events
+      description: >-
+        Owner/admin-only review of durable household invitation, role, and
+        Access Pass audit rows scoped to the authenticated active household.
+        Production migration, RLS, retention, export, and deletion policy remain
+        launch approval gates.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: action
+          in: query
+          schema:
+            type: string
+            enum:
+              - invitation-created
+              - invitation-accepted
+              - invitation-revoked
+              - member-role-updated
+              - member-revoked
+              - access-pass-activated
+              - access-pass-revoked
+        - name: lifecycleState
+          in: query
+          schema:
+            type: string
+            enum:
+              - invite-created
+              - invite-accepted
+              - invite-revoked
+              - member-updated
+              - member-revoked
+              - access-pass-active
+              - access-pass-revoked
+              - access-pass-expired
+      responses:
+        "200":
+          description: Durable household audit review rows
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdAuditEventListResponse"
+        "400":
+          description: Invalid audit review query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to review household audit events
           content:
             application/json:
               schema:
@@ -267,6 +822,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CareStateEnvelope"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Care state document not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     put:
       operationId: putCareState
       tags: [care-state]
@@ -284,8 +851,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CareStateEnvelope"
+        "400":
+          description: Invalid care state payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Care state document not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "409":
-          description: Version conflict — refetch and retry
+          description: Version conflict - refetch and retry
           content:
             application/json:
               schema:
@@ -302,14 +887,20 @@ paths:
           schema:
             type: string
             format: date-time
+        - name: updatedSince
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
         - name: limit
           in: query
           required: false
-          description: Maximum number of entries to return. The API clamps this between 1 and 500.
           schema:
             type: integer
             minimum: 1
             maximum: 500
+            default: 250
       responses:
         "200":
           description: Care entries
@@ -319,6 +910,18 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/CareEntry"
+        "400":
+          description: Invalid care-entry list query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     post:
       operationId: createCareEntry
       tags: [care-entries]
@@ -336,6 +939,65 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CareEntry"
+        "400":
+          description: Invalid care entry payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to create shared care logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /care-entries/tombstones:
+    get:
+      operationId: listCareEntryTombstones
+      tags: [care-entries]
+      summary: List deleted care log tombstones for household sync
+      parameters:
+        - name: updatedSince
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 250
+      responses:
+        "200":
+          description: Deleted care-entry tombstones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CareEntryTombstone"
+        "400":
+          description: Invalid care-entry tombstone list query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /care-entries/{id}:
     patch:
       operationId: updateCareEntry
@@ -360,6 +1022,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CareEntry"
+        "400":
+          description: Invalid care entry update payload or id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to update shared care logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Entry not found
           content:
@@ -379,6 +1059,24 @@ paths:
       responses:
         "204":
           description: Deleted
+        "400":
+          description: Invalid care entry id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Role is not allowed to delete shared care logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Entry not found
           content:
@@ -449,6 +1147,120 @@ components:
           type: string
       required:
         - error
+    WoofguideEventsStatus:
+      type: object
+      properties:
+        configured:
+          type: boolean
+        model:
+          type: string
+      required:
+        - configured
+        - model
+    WoofguideEventsProfile:
+      type: object
+      properties:
+        name:
+          type: string
+        breed:
+          type: string
+        careFocus:
+          type: string
+        background:
+          type: string
+    WoofguideEventsInput:
+      type: object
+      properties:
+        location:
+          type: string
+        profile:
+          $ref: "#/components/schemas/WoofguideEventsProfile"
+    WoofguideEvent:
+      type: object
+      properties:
+        title:
+          type: string
+        type:
+          type: string
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+        location:
+          type: string
+        note:
+          type: string
+      required:
+        - title
+        - type
+        - date
+        - location
+    WoofguideEventsResponse:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/WoofguideEvent"
+        mode:
+          type: string
+      required:
+        - events
+        - mode
+    AvatarStylizeInput:
+      type: object
+      properties:
+        imageBase64:
+          type: string
+          minLength: 1
+        mimeType:
+          type: string
+      required:
+        - imageBase64
+    AvatarStylizeResponse:
+      type: object
+      properties:
+        imageBase64:
+          type: string
+        mimeType:
+          type: string
+      required:
+        - imageBase64
+        - mimeType
+    AvatarEmotionImage:
+      type: object
+      properties:
+        imageBase64:
+          type: string
+        mimeType:
+          type: string
+      required:
+        - imageBase64
+        - mimeType
+    AvatarEmotionsInput:
+      type: object
+      properties:
+        imageBase64:
+          type: string
+          minLength: 1
+        mimeType:
+          type: string
+      required:
+        - imageBase64
+    AvatarEmotionsResponse:
+      type: object
+      properties:
+        images:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/AvatarEmotionImage"
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+        - images
     User:
       type: object
       properties:
@@ -488,41 +1300,17 @@ components:
           type: ["string", "null"]
         isSelf:
           type: boolean
+        accessPassExpiresAt:
+          type: ["string", "null"]
+          description: Active Access Pass expiry for temporary helpers, if one is set.
+        accessPassExpired:
+          type: boolean
+          description: True when a temporary helper's Access Pass has lapsed and writes should be blocked until renewed.
       required:
         - id
         - userId
         - role
         - isSelf
-    HouseholdAuditEvent:
-      type: object
-      properties:
-        id:
-          type: string
-        householdId:
-          type: string
-        actorUserId:
-          type: ["string", "null"]
-        action:
-          type: string
-        targetType:
-          type: ["string", "null"]
-        targetId:
-          type: ["string", "null"]
-        lifecycleState:
-          type: string
-        details:
-          type: object
-          additionalProperties: true
-          nullable: true
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - householdId
-        - action
-        - lifecycleState
-        - createdAt
     Me:
       type: object
       properties:
@@ -530,10 +1318,6 @@ components:
           $ref: "#/components/schemas/User"
         household:
           $ref: "#/components/schemas/Household"
-        households:
-          type: array
-          items:
-            $ref: "#/components/schemas/Household"
         members:
           type: array
           items:
@@ -541,22 +1325,357 @@ components:
       required:
         - user
         - household
-        - households
         - members
+    HouseholdAuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        action:
+          type: string
+          enum:
+            - invitation-created
+            - invitation-accepted
+            - invitation-revoked
+            - member-role-updated
+            - member-revoked
+            - access-pass-activated
+            - access-pass-revoked
+        lifecycleState:
+          type: string
+          enum:
+            - invite-created
+            - invite-accepted
+            - invite-revoked
+            - member-updated
+            - member-revoked
+            - access-pass-active
+            - access-pass-revoked
+            - access-pass-expired
+        actorUserId:
+          type: string
+        householdId:
+          type: string
+        targetMemberId:
+          type: ["string", "null"]
+        targetUserId:
+          type: ["string", "null"]
+        targetRole:
+          type: ["string", "null"]
+        nextRole:
+          type: ["string", "null"]
+        reason:
+          type: ["string", "null"]
+        note:
+          type: ["string", "null"]
+        expiresAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        storage:
+          type: string
+          enum: [provider-durable]
+        boundary:
+          type: string
+      required:
+        - id
+        - action
+        - lifecycleState
+        - actorUserId
+        - householdId
+        - createdAt
+        - storage
+        - boundary
+    HouseholdJoinResponse:
+      allOf:
+        - $ref: "#/components/schemas/Me"
+        - type: object
+          properties:
+            auditEvent:
+              $ref: "#/components/schemas/HouseholdAuditEvent"
+          required:
+            - auditEvent
+    HouseholdMemberMutationResponse:
+      allOf:
+        - $ref: "#/components/schemas/Me"
+        - type: object
+          properties:
+            auditEvent:
+              $ref: "#/components/schemas/HouseholdAuditEvent"
+          required:
+            - auditEvent
+    HouseholdAuditEventListFilters:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+            - invitation-created
+            - invitation-accepted
+            - invitation-revoked
+            - member-role-updated
+            - member-revoked
+            - access-pass-activated
+            - access-pass-revoked
+        lifecycleState:
+          type: string
+          enum:
+            - invite-created
+            - invite-accepted
+            - invite-revoked
+            - member-updated
+            - member-revoked
+            - access-pass-active
+            - access-pass-revoked
+            - access-pass-expired
+    HouseholdAuditEventListResponse:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/HouseholdAuditEvent"
+        limit:
+          type: integer
+        filters:
+          $ref: "#/components/schemas/HouseholdAuditEventListFilters"
+        boundary:
+          type: string
+      required:
+        - events
+        - limit
+        - filters
+        - boundary
+    HouseholdInvitationLifecycleState:
+      type: string
+      enum:
+        - pending-approval
+        - approved
+        - accepted
+        - revoked
+        - expired
+        - rejected
+    HouseholdInvitation:
+      type: object
+      properties:
+        id:
+          type: string
+        householdId:
+          type: string
+        inviteCode:
+          type: string
+        invitedEmail:
+          type: ["string", "null"]
+        invitedUserId:
+          type: ["string", "null"]
+        role:
+          type: string
+        lifecycleState:
+          $ref: "#/components/schemas/HouseholdInvitationLifecycleState"
+        runtimeLifecycleState:
+          $ref: "#/components/schemas/HouseholdInvitationLifecycleState"
+        expired:
+          type: boolean
+        createdByUserId:
+          type: string
+        approvedByUserId:
+          type: ["string", "null"]
+        acceptedByUserId:
+          type: ["string", "null"]
+        revokedByUserId:
+          type: ["string", "null"]
+        rejectedByUserId:
+          type: ["string", "null"]
+        note:
+          type: ["string", "null"]
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+        acceptedAt:
+          type: ["string", "null"]
+          format: date-time
+        revokedAt:
+          type: ["string", "null"]
+          format: date-time
+        rejectedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: ["string", "null"]
+          format: date-time
+        storage:
+          type: string
+          enum: [provider-durable]
+        boundary:
+          type: string
+      required:
+        - id
+        - householdId
+        - inviteCode
+        - role
+        - lifecycleState
+        - runtimeLifecycleState
+        - expired
+        - createdByUserId
+        - createdAt
+        - storage
+        - boundary
+    HouseholdInvitationListFilters:
+      type: object
+      properties:
+        lifecycleState:
+          $ref: "#/components/schemas/HouseholdInvitationLifecycleState"
+    HouseholdInvitationListResponse:
+      type: object
+      properties:
+        invitations:
+          type: array
+          items:
+            $ref: "#/components/schemas/HouseholdInvitation"
+        limit:
+          type: integer
+        filters:
+          $ref: "#/components/schemas/HouseholdInvitationListFilters"
+        boundary:
+          type: string
+      required:
+        - invitations
+        - limit
+        - filters
+        - boundary
+    HouseholdInvitationCreateInput:
+      type: object
+      properties:
+        invitedEmail:
+          type: ["string", "null"]
+          format: email
+        role:
+          type: string
+        lifecycleState:
+          $ref: "#/components/schemas/HouseholdInvitationLifecycleState"
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+        note:
+          type: ["string", "null"]
+    HouseholdInvitationRevokeInput:
+      type: object
+      properties:
+        reason:
+          type: ["string", "null"]
+    HouseholdInvitationMutationResponse:
+      type: object
+      properties:
+        invitation:
+          $ref: "#/components/schemas/HouseholdInvitation"
+        auditEvent:
+          $ref: "#/components/schemas/HouseholdAuditEvent"
+      required:
+        - invitation
+        - auditEvent
+    HouseholdSharingCleanupKind:
+      type: string
+      enum:
+        - expired-invitation
+        - expired-access-pass
+    HouseholdSharingCleanupRecommendedAction:
+      type: string
+      enum:
+        - mark-invitation-expired
+        - review-helper-access
+    HouseholdSharingCleanupCandidate:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          $ref: "#/components/schemas/HouseholdSharingCleanupKind"
+        targetId:
+          type: string
+        householdId:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        role:
+          type: string
+        displayName:
+          type: ["string", "null"]
+        invitedEmail:
+          type: ["string", "null"]
+        inviteCode:
+          type: ["string", "null"]
+        userId:
+          type: ["string", "null"]
+        expiresAt:
+          type: string
+          format: date-time
+        staleSince:
+          type: string
+          format: date-time
+        recommendedAction:
+          $ref: "#/components/schemas/HouseholdSharingCleanupRecommendedAction"
+        storage:
+          type: string
+          enum: [review-only]
+        boundary:
+          type: string
+      required:
+        - id
+        - kind
+        - targetId
+        - householdId
+        - title
+        - detail
+        - role
+        - expiresAt
+        - staleSince
+        - recommendedAction
+        - storage
+        - boundary
+    HouseholdSharingCleanupFilters:
+      type: object
+      properties:
+        kind:
+          $ref: "#/components/schemas/HouseholdSharingCleanupKind"
+    HouseholdSharingCleanupResponse:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/HouseholdSharingCleanupCandidate"
+        limit:
+          type: integer
+        filters:
+          $ref: "#/components/schemas/HouseholdSharingCleanupFilters"
+        pendingReviewCount:
+          type: integer
+        expiredInvitationCount:
+          type: integer
+        expiredAccessPassCount:
+          type: integer
+        boundary:
+          type: string
+      required:
+        - candidates
+        - limit
+        - filters
+        - pendingReviewCount
+        - expiredInvitationCount
+        - expiredAccessPassCount
+        - boundary
     MeUpdate:
       type: object
       properties:
         displayName:
           type: string
           minLength: 1
-    SetActiveHousehold:
-      type: object
-      properties:
-        householdId:
-          type: string
-          minLength: 1
-      required:
-        - householdId
     HouseholdUpdate:
       type: object
       properties:
@@ -565,14 +1684,6 @@ components:
           minLength: 1
       required:
         - name
-    HouseholdMemberUpdate:
-      type: object
-      properties:
-        role:
-          type: string
-          enum: [admin, member, sitter, trainer, vet_viewer]
-      required:
-        - role
     JoinHouseholdInput:
       type: object
       properties:
@@ -581,6 +1692,80 @@ components:
           minLength: 1
       required:
         - inviteCode
+    HouseholdMemberUpdate:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [owner, adult, teen, kid, sitter, trainer, walker, vet viewer]
+          description: "Owner-reviewed household role such as adult, kid, sitter, trainer, walker, or vet viewer."
+        displayName:
+          type: ["string", "null"]
+          minLength: 1
+    AccessPassActivationInput:
+      type: object
+      properties:
+        memberId:
+          type: string
+          minLength: 1
+        role:
+          type: string
+          enum: [sitter, trainer, walker, vet viewer]
+        displayName:
+          type: ["string", "null"]
+          minLength: 1
+        expiresAt:
+          type: ["string", "null"]
+          description: Optional owner-reviewed expiry metadata for future enforcement.
+        note:
+          type: ["string", "null"]
+      required:
+        - memberId
+        - role
+    AccessPassRevocationInput:
+      type: object
+      properties:
+        memberId:
+          type: string
+          minLength: 1
+        reason:
+          type: ["string", "null"]
+      required:
+        - memberId
+    HouseholdAccessPass:
+      type: object
+      properties:
+        memberId:
+          type: string
+        userId:
+          type: string
+        role:
+          type: string
+          enum: [sitter, trainer, walker, vet viewer]
+        status:
+          type: string
+          enum: [active, revoked]
+        expiresAt:
+          type: ["string", "null"]
+        note:
+          type: ["string", "null"]
+      required:
+        - memberId
+        - userId
+        - role
+        - status
+    HouseholdAccessPassMutationResponse:
+      allOf:
+        - $ref: "#/components/schemas/Me"
+        - type: object
+          properties:
+            accessPass:
+              $ref: "#/components/schemas/HouseholdAccessPass"
+            auditEvent:
+              $ref: "#/components/schemas/HouseholdAuditEvent"
+          required:
+            - accessPass
+            - auditEvent
     CareStateEnvelope:
       type: object
       properties:
@@ -637,11 +1822,44 @@ components:
         createdAt:
           type: string
           format: date-time
+        updatedAt:
+          type: string
+          format: date-time
       required:
         - id
         - type
         - occurredAt
         - createdAt
+        - updatedAt
+    CareEntryTombstone:
+      type: object
+      properties:
+        id:
+          type: string
+        householdId:
+          type: string
+        entryId:
+          type: string
+        petId:
+          type: ["string", "null"]
+        deletedByUserId:
+          type: ["string", "null"]
+        deletedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - householdId
+        - entryId
+        - deletedAt
+        - createdAt
+        - updatedAt
     CareEntryInput:
       type: object
       properties:

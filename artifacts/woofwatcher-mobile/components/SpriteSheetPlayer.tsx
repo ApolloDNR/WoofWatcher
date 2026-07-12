@@ -9,11 +9,19 @@ import Animated, {
 } from "react-native-reanimated";
 
 import type { CareTwinSpriteAsset } from "@/lib/careTwinAssets";
-import type { CareTwinSpriteTrack } from "@/lib/avatarLifeEngine";
+import { pixelImageStyle } from "@/lib/pixelRendering";
+
+export interface SpriteSheetTrack {
+  key: string;
+  frameCount: number;
+  fps: number;
+  loop: boolean;
+  slotSize: number;
+}
 
 interface Props {
   asset: CareTwinSpriteAsset | null;
-  track: CareTwinSpriteTrack;
+  track: SpriteSheetTrack;
   width?: number;
   height?: number;
   playing?: boolean;
@@ -92,6 +100,7 @@ export function SpriteSheetPlayer({
             width: frameMetrics.sheetWidth,
             height: frameMetrics.sheetHeight,
           },
+          pixelImageStyle,
           sheetStyle,
         ]}
       />

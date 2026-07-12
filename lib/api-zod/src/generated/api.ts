@@ -18,7 +18,7 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * Returns whether OpenAI is configured and what mode is active
+ * Returns whether the provider-backed or local care-helper mode is active.
  * @summary Get AI care helper status
  */
 export const GetCareHelperStatusResponse = zod.object({
@@ -46,6 +46,82 @@ export const AskCareHelperResponse = zod.object({
 
 
 /**
+ * Returns whether provider-backed dog-friendly event curation is configured. When unavailable, the API falls back to local curated suggestions instead of claiming live provider data.
+ * @summary Get WoofGuide events provider status
+ */
+export const GetWoofguideEventsStatusResponse = zod.object({
+  "configured": zod.boolean(),
+  "model": zod.string()
+})
+
+
+/**
+ * Creates owner-reviewed outing ideas for a household dog. Suggestions are inspirational and not bookings, addresses, prices, or provider-verified events.
+ * @summary Create dog-friendly WoofGuide event suggestions
+ */
+export const CreateWoofguideEventsBody = zod.object({
+  "location": zod.string().optional(),
+  "profile": zod.object({
+  "name": zod.string().optional(),
+  "breed": zod.string().optional(),
+  "careFocus": zod.string().optional(),
+  "background": zod.string().optional()
+}).optional()
+})
+
+export const CreateWoofguideEventsResponse = zod.object({
+  "events": zod.array(zod.object({
+  "title": zod.string(),
+  "type": zod.string(),
+  "date": zod.coerce.date(),
+  "time": zod.string().optional(),
+  "location": zod.string(),
+  "note": zod.string().optional()
+})),
+  "mode": zod.string()
+})
+
+
+/**
+ * Generates an owner-reviewed stylized portrait from a dog photo when the image provider is configured. This is a helper for Avatar Studio and must not be represented as automatic identity verification.
+ * @summary Create a stylized dog avatar portrait
+ */
+
+
+
+export const StylizeAvatarBody = zod.object({
+  "imageBase64": zod.string().min(1),
+  "mimeType": zod.string().optional()
+})
+
+export const StylizeAvatarResponse = zod.object({
+  "imageBase64": zod.string(),
+  "mimeType": zod.string()
+})
+
+
+/**
+ * Generates a small owner-reviewed emotion set for the same dog from one photo when the image provider is configured. Some emotions can fail independently and are returned in the errors map.
+ * @summary Create a set of stylized dog avatar emotion portraits
+ */
+
+
+
+export const CreateAvatarEmotionsBody = zod.object({
+  "imageBase64": zod.string().min(1),
+  "mimeType": zod.string().optional()
+})
+
+export const CreateAvatarEmotionsResponse = zod.object({
+  "images": zod.record(zod.string(), zod.object({
+  "imageBase64": zod.string(),
+  "mimeType": zod.string()
+})),
+  "errors": zod.record(zod.string(), zod.string()).optional()
+})
+
+
+/**
  * Returns the authenticated user. On first call this JIT-provisions the user, a default household, and a membership.
  * @summary Get the current user, their household and members
  */
@@ -60,19 +136,38 @@ export const GetMeResponse = zod.object({
   "name": zod.string(),
   "inviteCode": zod.string()
 }),
-  "households": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "inviteCode": zod.string()
-})),
   "members": zod.array(zod.object({
   "id": zod.string(),
   "userId": zod.string(),
   "role": zod.string(),
   "displayName": zod.string().nullish(),
   "email": zod.string().nullish(),
-  "isSelf": zod.boolean()
+  "isSelf": zod.boolean(),
+  "accessPassExpiresAt": zod.string().nullish(),
+  "accessPassExpired": zod.boolean().optional()
 }))
+})
+
+export const HouseholdAuditEvent = zod.object({
+  "id": zod.string(),
+  "action": zod.enum(["invitation-created", "invitation-accepted", "invitation-revoked", "member-role-updated", "member-revoked", "access-pass-activated", "access-pass-revoked"]),
+  "lifecycleState": zod.enum(["invite-created", "invite-accepted", "invite-revoked", "member-updated", "member-revoked", "access-pass-active", "access-pass-revoked", "access-pass-expired"]),
+  "actorUserId": zod.string(),
+  "householdId": zod.string(),
+  "targetMemberId": zod.string().nullish(),
+  "targetUserId": zod.string().nullish(),
+  "targetRole": zod.string().nullish(),
+  "nextRole": zod.string().nullish(),
+  "reason": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "expiresAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "storage": zod.enum(["provider-durable"]),
+  "boundary": zod.string()
+})
+
+export const HouseholdJoinResponse = GetMeResponse.extend({
+  "auditEvent": HouseholdAuditEvent
 })
 
 
@@ -97,55 +192,15 @@ export const UpdateMeResponse = zod.object({
   "name": zod.string(),
   "inviteCode": zod.string()
 }),
-  "households": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "inviteCode": zod.string()
-})),
   "members": zod.array(zod.object({
   "id": zod.string(),
   "userId": zod.string(),
   "role": zod.string(),
   "displayName": zod.string().nullish(),
   "email": zod.string().nullish(),
-  "isSelf": zod.boolean()
-}))
-})
-
-
-/**
- * @summary Set the active household for the current user
- */
-
-
-
-export const SetActiveHouseholdBody = zod.object({
-  "householdId": zod.string().min(1)
-})
-
-export const SetActiveHouseholdResponse = zod.object({
-  "user": zod.object({
-  "id": zod.string(),
-  "email": zod.string().nullish(),
-  "displayName": zod.string().nullish()
-}),
-  "household": zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "inviteCode": zod.string()
-}),
-  "households": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "inviteCode": zod.string()
-})),
-  "members": zod.array(zod.object({
-  "id": zod.string(),
-  "userId": zod.string(),
-  "role": zod.string(),
-  "displayName": zod.string().nullish(),
-  "email": zod.string().nullish(),
-  "isSelf": zod.boolean()
+  "isSelf": zod.boolean(),
+  "accessPassExpiresAt": zod.string().nullish(),
+  "accessPassExpired": zod.boolean().optional()
 }))
 })
 
@@ -171,86 +226,17 @@ export const UpdateHouseholdResponse = zod.object({
   "name": zod.string(),
   "inviteCode": zod.string()
 }),
-  "households": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "inviteCode": zod.string()
-})),
   "members": zod.array(zod.object({
   "id": zod.string(),
   "userId": zod.string(),
   "role": zod.string(),
   "displayName": zod.string().nullish(),
   "email": zod.string().nullish(),
-  "isSelf": zod.boolean()
+  "isSelf": zod.boolean(),
+  "accessPassExpiresAt": zod.string().nullish(),
+  "accessPassExpired": zod.boolean().optional()
 }))
 })
-
-
-/**
- * Lets owner/admin members change an existing active-household member's role before richer provider-backed caregiver administration exists. Owner memberships cannot be demoted through this endpoint.
- * @summary Update a household member role
- */
-export const UpdateHouseholdMemberParams = zod.object({
-  "memberId": zod.coerce.string()
-})
-
-
-
-
-export const UpdateHouseholdMemberBody = zod.object({
-  "role": zod.enum(["admin", "member", "sitter", "trainer", "vet_viewer"])
-})
-
-export const UpdateHouseholdMemberResponse = zod.object({
-  "user": zod.object({
-  "id": zod.string(),
-  "email": zod.string().nullish(),
-  "displayName": zod.string().nullish()
-}),
-  "household": zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "inviteCode": zod.string()
-}),
-  "households": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "inviteCode": zod.string()
-})),
-  "members": zod.array(zod.object({
-  "id": zod.string(),
-  "userId": zod.string(),
-  "role": zod.string(),
-  "displayName": zod.string().nullish(),
-  "email": zod.string().nullish(),
-  "isSelf": zod.boolean()
-}))
-})
-
-
-/**
- * Returns durable household audit events for owner/admin review. This is a review surface only; lifecycle changes and retention policy remain provider-gated.
- * @summary List household audit events
- */
-export const ListHouseholdAuditEventsQueryParams = zod.object({
-  "limit": zod.coerce.number().min(1).max(200).optional(),
-  "action": zod.string().min(1).optional(),
-  "lifecycleState": zod.string().min(1).optional()
-})
-
-export const ListHouseholdAuditEventsResponseItem = zod.object({
-  "id": zod.string(),
-  "householdId": zod.string(),
-  "actorUserId": zod.string().nullish(),
-  "action": zod.string(),
-  "targetType": zod.string().nullish(),
-  "targetId": zod.string().nullish(),
-  "lifecycleState": zod.string(),
-  "details": zod.record(zod.string(), zod.unknown()).nullish(),
-  "createdAt": zod.coerce.date()
-})
-export const ListHouseholdAuditEventsResponse = zod.array(ListHouseholdAuditEventsResponseItem)
 
 
 /**
@@ -263,30 +249,188 @@ export const JoinHouseholdBody = zod.object({
   "inviteCode": zod.string().min(1)
 })
 
-export const JoinHouseholdResponse = zod.object({
-  "user": zod.object({
+export const JoinHouseholdResponse = HouseholdJoinResponse
+
+export const HouseholdMemberMutationResponse = GetMeResponse.extend({
+  "auditEvent": HouseholdAuditEvent
+})
+
+export const ListHouseholdAuditEventsQueryParams = zod.object({
+  "limit": zod.coerce.number().optional(),
+  "action": zod.string().optional(),
+  "lifecycleState": zod.string().optional()
+})
+
+export const HouseholdAuditEventListFilters = zod.object({
+  "action": zod.enum(["invitation-created", "invitation-accepted", "invitation-revoked", "member-role-updated", "member-revoked", "access-pass-activated", "access-pass-revoked"]).optional(),
+  "lifecycleState": zod.enum(["invite-created", "invite-accepted", "invite-revoked", "member-updated", "member-revoked", "access-pass-active", "access-pass-revoked", "access-pass-expired"]).optional()
+})
+
+export const ListHouseholdAuditEventsResponse = zod.object({
+  "events": zod.array(HouseholdAuditEvent),
+  "limit": zod.number(),
+  "filters": HouseholdAuditEventListFilters,
+  "boundary": zod.string()
+})
+
+export const HouseholdInvitationLifecycleState = zod.enum(["pending-approval", "approved", "accepted", "revoked", "expired", "rejected"])
+
+export const HouseholdInvitation = zod.object({
   "id": zod.string(),
-  "email": zod.string().nullish(),
-  "displayName": zod.string().nullish()
-}),
-  "household": zod.object({
+  "householdId": zod.string(),
+  "inviteCode": zod.string(),
+  "invitedEmail": zod.string().nullish(),
+  "invitedUserId": zod.string().nullish(),
+  "role": zod.string(),
+  "lifecycleState": HouseholdInvitationLifecycleState,
+  "runtimeLifecycleState": HouseholdInvitationLifecycleState,
+  "expired": zod.boolean(),
+  "createdByUserId": zod.string(),
+  "approvedByUserId": zod.string().nullish(),
+  "acceptedByUserId": zod.string().nullish(),
+  "revokedByUserId": zod.string().nullish(),
+  "rejectedByUserId": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "expiresAt": zod.string().nullish(),
+  "acceptedAt": zod.string().nullish(),
+  "revokedAt": zod.string().nullish(),
+  "rejectedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().nullish(),
+  "storage": zod.enum(["provider-durable"]),
+  "boundary": zod.string()
+})
+
+export const ListHouseholdInvitationsQueryParams = zod.object({
+  "limit": zod.coerce.number().optional(),
+  "lifecycleState": HouseholdInvitationLifecycleState.optional()
+})
+
+export const HouseholdInvitationListFilters = zod.object({
+  "lifecycleState": HouseholdInvitationLifecycleState.optional()
+})
+
+export const ListHouseholdInvitationsResponse = zod.object({
+  "invitations": zod.array(HouseholdInvitation),
+  "limit": zod.number(),
+  "filters": HouseholdInvitationListFilters,
+  "boundary": zod.string()
+})
+
+export const CreateHouseholdInvitationBody = zod.object({
+  "invitedEmail": zod.string().email().nullish(),
+  "role": zod.string().optional(),
+  "lifecycleState": HouseholdInvitationLifecycleState.optional(),
+  "expiresAt": zod.string().nullish(),
+  "note": zod.string().nullish()
+})
+
+export const RevokeHouseholdInvitationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RevokeHouseholdInvitationBody = zod.object({
+  "reason": zod.string().nullish()
+})
+
+export const HouseholdInvitationMutationResponse = zod.object({
+  "invitation": HouseholdInvitation,
+  "auditEvent": HouseholdAuditEvent
+})
+
+export const CreateHouseholdInvitationResponse = HouseholdInvitationMutationResponse
+
+export const RevokeHouseholdInvitationResponse = HouseholdInvitationMutationResponse
+
+export const HouseholdSharingCleanupKind = zod.enum(["expired-invitation", "expired-access-pass"])
+
+export const HouseholdSharingCleanupRecommendedAction = zod.enum(["mark-invitation-expired", "review-helper-access"])
+
+export const HouseholdSharingCleanupCandidate = zod.object({
   "id": zod.string(),
-  "name": zod.string(),
-  "inviteCode": zod.string()
-}),
-  "households": zod.array(zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "inviteCode": zod.string()
-})),
-  "members": zod.array(zod.object({
-  "id": zod.string(),
-  "userId": zod.string(),
+  "kind": HouseholdSharingCleanupKind,
+  "targetId": zod.string(),
+  "householdId": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
   "role": zod.string(),
   "displayName": zod.string().nullish(),
-  "email": zod.string().nullish(),
-  "isSelf": zod.boolean()
-}))
+  "invitedEmail": zod.string().nullish(),
+  "inviteCode": zod.string().nullish(),
+  "userId": zod.string().nullish(),
+  "expiresAt": zod.string(),
+  "staleSince": zod.string(),
+  "recommendedAction": HouseholdSharingCleanupRecommendedAction,
+  "storage": zod.enum(["review-only"]),
+  "boundary": zod.string()
+})
+
+export const ListHouseholdSharingCleanupQueryParams = zod.object({
+  "limit": zod.coerce.number().optional(),
+  "kind": HouseholdSharingCleanupKind.optional()
+})
+
+export const HouseholdSharingCleanupFilters = zod.object({
+  "kind": HouseholdSharingCleanupKind.optional()
+})
+
+export const ListHouseholdSharingCleanupResponse = zod.object({
+  "candidates": zod.array(HouseholdSharingCleanupCandidate),
+  "limit": zod.number(),
+  "filters": HouseholdSharingCleanupFilters,
+  "pendingReviewCount": zod.number(),
+  "expiredInvitationCount": zod.number(),
+  "expiredAccessPassCount": zod.number(),
+  "boundary": zod.string()
+})
+
+/**
+ * @summary Update a household member role or display name
+ */
+export const UpdateHouseholdMemberParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateHouseholdMemberBody = zod.object({
+  "role": zod.enum(["owner", "adult", "teen", "kid", "sitter", "trainer", "walker", "vet viewer"]).optional(),
+  "displayName": zod.string().min(1).nullish()
+})
+
+export const UpdateHouseholdMemberResponse = HouseholdMemberMutationResponse
+
+
+/**
+ * @summary Revoke a household member from the current household
+ */
+export const RevokeHouseholdMemberParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RevokeHouseholdMemberResponse = HouseholdMemberMutationResponse
+
+export const AccessPassActivationBody = zod.object({
+  "memberId": zod.string().min(1),
+  "role": zod.enum(["sitter", "trainer", "walker", "vet viewer"]),
+  "displayName": zod.string().min(1).nullish(),
+  "expiresAt": zod.string().nullish(),
+  "note": zod.string().nullish()
+})
+
+export const AccessPassRevocationBody = zod.object({
+  "memberId": zod.string().min(1),
+  "reason": zod.string().nullish()
+})
+
+export const HouseholdAccessPassMutationResponse = GetMeResponse.extend({
+  "accessPass": zod.object({
+    "memberId": zod.string(),
+    "userId": zod.string(),
+    "role": zod.enum(["sitter", "trainer", "walker", "vet viewer"]),
+    "status": zod.enum(["active", "revoked"]),
+    "expiresAt": zod.string().nullish(),
+    "note": zod.string().nullish()
+  }),
+  "auditEvent": HouseholdAuditEvent
 })
 
 
@@ -322,6 +466,7 @@ export const PutCareStateResponse = zod.object({
  */
 export const ListCareEntriesQueryParams = zod.object({
   "since": zod.date().optional(),
+  "updatedSince": zod.date().optional(),
   "limit": zod.number().min(1).max(500).optional()
 })
 
@@ -336,9 +481,31 @@ export const ListCareEntriesResponseItem = zod.object({
   "severity": zod.string().nullish(),
   "note": zod.string().nullish(),
   "details": zod.record(zod.string(), zod.unknown()).nullish(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
 })
 export const ListCareEntriesResponse = zod.array(ListCareEntriesResponseItem)
+
+
+/**
+ * @summary List deleted care log tombstones for household sync
+ */
+export const ListCareEntryTombstonesQueryParams = zod.object({
+  "updatedSince": zod.date().optional(),
+  "limit": zod.number().min(1).max(500).optional()
+})
+
+export const CareEntryTombstone = zod.object({
+  "id": zod.string(),
+  "householdId": zod.string(),
+  "entryId": zod.string(),
+  "petId": zod.string().nullish(),
+  "deletedByUserId": zod.string().nullish(),
+  "deletedAt": zod.coerce.date(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListCareEntryTombstonesResponse = zod.array(CareEntryTombstone)
 
 
 /**
@@ -388,7 +555,8 @@ export const UpdateCareEntryResponse = zod.object({
   "severity": zod.string().nullish(),
   "note": zod.string().nullish(),
   "details": zod.record(zod.string(), zod.unknown()).nullish(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
 })
 
 
@@ -398,5 +566,3 @@ export const UpdateCareEntryResponse = zod.object({
 export const DeleteCareEntryParams = zod.object({
   "id": zod.coerce.string()
 })
-
-

@@ -12,835 +12,25 @@ Each decision should include:
 
 ## Decisions
 
-### 2026-07-01: Report History Pre-Share Review Guidance Is Shared
+### 2026-06-20: Incident Watch Follow-Ups Are Owner-Reviewed Guidance
 
-Decision: Records Report History and WoofGuide saved-report drafts should reuse a shared pre-share review line from `summarizeReportArtifacts`. The line may tell owners to review the latest local source for stale routines, medications, records, and audience before resending, but it must not imply provider-backed storage, native export, cloud sharing, retention, deletion, or unsupervised assistant actions are ready.
+Decision: Incident Watch may derive trend signals, owner follow-up tasks, and trainer goal suggestions from household-visible incident logs, but those outputs must route humans into review workflows instead of automatically creating behavior plans, medical claims, or trainer instructions.
 
-Reason: Report History now supports reusable local sources, printable-source sharing, source cleanup, and WoofGuide review. Owners need one consistent reminder to check whether the saved local handoff source still matches the dog, audience, routines, medications, and records before it leaves the app.
+Reason: Apollo wants WoofWatcher to feel sophisticated and operational, but incident/altercation context is sensitive. The app should help households organize facts, prepare trainer or vet handoffs, and keep follow-up visible without diagnosing behavior or pretending provider-backed trainer plans exist.
 
 Owner: Codex.
 
-Revisit trigger: Native PDF/image export, server-backed report artifacts, provider-backed document or credential storage, persisted assistant report drafts, permission-aware assistant writes, cloud sharing, share revocation, or storage retention/deletion policy become active release work.
+Revisit trigger: Provider-backed trainer plans, role-aware behavior goals, professional review, or legal/safety policy introduces a stronger behavior workflow.
 
-### 2026-07-01: Report History Cleanup Guidance Is Shared
+### 2026-06-19: Care Twin QA Captures Evidence But Does Not Certify Release
 
-Decision: Records Report History and WoofGuide saved-report drafts should reuse a shared cleanup line from `summarizeReportArtifacts`. The line may tell owners to remove obsolete local sources only after review and must state that local cleanup does not revoke shares or change provider retention.
+Decision: The development/internal `/care-twin-qa` route should collect session-level device evidence with Pass/Needs tune controls, per-state notes, summary counts, and a native shareable QA report, but it must not imply that iOS/Android QA is complete without screenshots and human review.
 
-Reason: Report History now supports local source removal, but the cleanup guidance needs to stay aligned with saved-report readiness, WoofGuide review drafts, and provider-gated lifecycle copy. Keeping the line in shared care-domain logic prevents Records and WoofGuide from drifting into different claims about cloud deletion, share revocation, retention, native export, or server-backed report storage.
+Reason: Apollo wants the living Phoenix room to feel like a polished video-game care twin. Static tests and web export prove the route and assets are wired, but only phone-size review can catch crop, scale, loop timing, touch-response, and gait issues. A shareable report makes the QA pass easier without overstating readiness.
 
 Owner: Codex.
 
-Revisit trigger: Server-backed report artifacts, native PDF/image export, cloud sharing, provider-backed retention/deletion policy, audit lifecycle controls, or share revocation become active release work.
-
-### 2026-07-01: Report History Can Remove Local Sources Only
-
-Decision: Records Report History may expose a confirmed remove action for saved Care Pass, Progress Report, and Dog ID report-history artifacts. The confirmation copy should come from shared `describeReportArtifactRemoval`, and the action may only filter the selected local artifact from the care document.
-
-Reason: Owners can now save and reuse local handoff sources, but they also need a truthful way to remove an obsolete or mistaken local source without implying provider-backed deletion, share revocation, retention lifecycle controls, native PDF export, or server-backed report storage are enabled.
-
-Owner: Codex.
-
-Revisit trigger: Server-backed report artifacts, native PDF/image export, cloud sharing, provider-backed retention/deletion policy, audit lifecycle controls, or share revocation become active release work.
-
-### 2026-06-30: Report Source Rows Use Shared Lifecycle Copy
-
-Decision: Records Report History rows and WoofGuide saved report-history drafts should describe reusable Care Pass, Progress Report, and Dog ID sources through `describeReportArtifactSource`. The descriptor may expose the owner-readable source kind, section count, print-ready versus restored printable-source status, printable file name, and local-only lifecycle boundary.
-
-Reason: Report History now spans multiple local artifact kinds, and route-local row strings can drift from WoofGuide draft copy. Keeping source metadata in shared care-domain logic lets owners see what can be resent or shared as printable source without implying native PDF export, server-backed report storage, cloud sharing, retention, deletion, or lifecycle controls are enabled.
-
-Owner: Codex.
-
-Revisit trigger: Native PDF/image export, server-backed report artifacts, provider-backed document or credential storage, report retention/deletion policy, cloud sharing, or broader report lifecycle controls become active release work.
-
-### 2026-06-30: WoofGuide Can Review Saved Report History
-
-Decision: WoofGuide may surface an owner-reviewed `report_history` draft when local Care Pass or Progress Report sources already exist in Report History. The draft may summarize the reusable local source mix, identify the latest saved source, and route the owner back to Records Report History for resend or printable-source sharing.
-
-Reason: Records now summarizes local handoff sources across Care Pass, Progress Report, and Dog ID artifacts, but owners also need assistant-guided handoff prep when they are deciding what to share with a sitter, trainer, caregiver, or vet. Reusing `summarizeReportArtifacts` keeps WoofGuide aligned with Records while avoiding claims about native PDF export, server-backed report storage, cloud sharing, retention, deletion, live AI, persisted report drafts, or unsupervised assistant actions.
-
-Owner: Codex.
-
-Revisit trigger: Native PDF/image export, server-backed report artifacts, provider-backed document or credential storage, cloud sharing, persisted assistant drafts, permission-aware assistant writes, or storage retention/deletion policy becomes active release work.
-
-### 2026-06-30: Report History Summarizes Local Handoff Sources
-
-Decision: Records Report History may show a shared local readiness summary across Care Pass, Progress Report, and Dog ID credential artifacts. The summary may count the saved source mix, identify the latest reusable source, and guide owners to resend or share printable source from Report History.
-
-Reason: Care Pass, Progress Report, and Dog ID artifacts now all save local print-ready sources, but owners need one quick way to understand what is reusable before a sitter, trainer, caregiver, or vet handoff. Keeping this in `summarizeReportArtifacts` avoids route-local counting and keeps the boundary explicit that native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy are not enabled.
-
-Owner: Codex.
-
-Revisit trigger: Native PDF/image export, server-backed report artifacts, provider-backed document or credential storage, cloud sharing, retention/deletion policy, or broader report lifecycle controls become active release work.
-
-### 2026-06-30: WoofGuide Can Review Saved Dog ID History
-
-Decision: WoofGuide may surface an owner-reviewed `pet_credential_history` draft when local Dog ID credential artifacts already exist in Report History. The draft may summarize how many local credential sources are saved, identify the latest saved Dog ID source, and route the owner back to Records Report History for resend or printable-source sharing.
-
-Reason: Dog ID shares now create local report-history artifacts, but owners need a guided way to find and reuse that saved credential source before handing context to a sitter, trainer, caregiver, or vet. Reusing `summarizePetCredentialArtifacts` keeps WoofGuide aligned with Records without implying native PDF/image export, provider-backed credential storage, cloud sharing, server-backed report storage, retention, deletion, live AI, or unsupervised assistant actions are ready.
-
-Owner: Codex.
-
-Revisit trigger: Native credential PDF/image export, provider-backed credential or document storage, server-backed report artifacts, cloud sharing, persisted assistant drafts, permission-aware assistant writes, or storage retention/deletion policy becomes active release work.
-
-### 2026-06-30: Dog ID Shares Can Create Local Report-History Artifacts
-
-Decision: Records Dog ID card and printable-source shares may save a `pet_credential` report artifact in local Report History. The artifact may store escaped printable Dog ID HTML, stable file names, a Dog ID section title, and the owner-readable Dog ID message for resend or printable-source sharing.
-
-Reason: Records already has Dog ID readiness, WoofGuide prep, Care Pass prep, and Progress Report prep, but direct Dog ID sharing was not reusable after the share sheet closed. Saving a local credential artifact strengthens the report-history path while avoiding claims that native image/PDF export, cloud sharing, provider-backed credential storage, server-backed report storage, retention, or deletion policy are ready.
-
-Owner: Codex.
-
-Revisit trigger: Native credential image/PDF export, provider-backed document or credential storage, server-backed report artifacts, cloud sharing, native export/download, or storage retention/deletion policy becomes active release work.
-
-### 2026-06-30: Progress Reports Can Carry Dog ID Prep
-
-Decision: Records Progress Reports may include a `Dog ID Prep` section derived from shared `derivePetCredentialReadiness`. The section may show ready-versus-missing Dog ID credential fields and the local printable-source boundary in the saved report-history artifact before an owner shares the report.
-
-Reason: Records, WoofGuide, and Care Pass now use the same credential readiness helper, but Progress Reports are the reusable report-history surface. Carrying Dog ID Prep into saved report artifacts keeps report handoffs aligned with Records while avoiding claims that image/PDF export, provider-backed credential storage, binary PDF generation, native export/download, server-backed report storage, cloud sharing, retention, or deletion are ready.
-
-Owner: Codex.
-
-Revisit trigger: Credential image/PDF export, provider-backed document or credential storage, native export/download, binary PDF generation, server-backed report artifacts, cloud sharing, or storage retention/deletion policy becomes active release work.
-
-### 2026-06-30: Care Pass Can Carry Dog ID Prep
-
-Decision: Care Pass reports may include a `Dog ID Prep` section derived from shared `derivePetCredentialReadiness`. The section may show ready-versus-missing Dog ID credential fields and the local printable-source boundary before the owner shares a sitter, trainer, caregiver, or vet handoff.
-
-Reason: Records and WoofGuide now use the same credential readiness helper, but Care Pass is the handoff surface that owners actually share. Reusing the shared readiness model keeps reports aligned with Records while avoiding claims that image/PDF export, provider-backed credential storage, cloud sharing, retention, deletion, live AI, or unsupervised record changes are ready.
-
-Owner: Codex.
-
-Revisit trigger: Credential image/PDF export, provider-backed document or credential storage, native export/download, server-backed report artifacts, cloud sharing, or storage retention/deletion policy becomes active release work.
-
-### 2026-06-30: WoofGuide Can Draft Dog ID Prep
-
-Decision: WoofGuide may surface an owner-reviewed `pet_credential_prep` suggested action when shared Dog ID credential readiness shows some available context but missing fields before sharing. The draft may list ready and missing credential fields, route the owner to Records, and insert only a reviewed assistant note.
-
-Reason: Records now shows Dog ID readiness, but owners also need a guided prep prompt before sharing credentials with sitters, trainers, family members, or vets. Reusing `derivePetCredentialReadiness` keeps WoofGuide aligned with Records while avoiding claims about image/PDF export, provider-backed credential storage, cloud sharing, retention, deletion, live AI, or unsupervised record changes.
-
-Owner: Codex.
-
-Revisit trigger: Credential image/PDF export, provider-backed document or credential storage, native export/download, persisted report drafts, permission-aware assistant writes, cloud sharing, or storage retention/deletion policy becomes active release work.
-
-### 2026-06-30: Dog ID Export Shows Credential Readiness
-
-Decision: Mobile Records should show a Dog ID readiness summary before owners share the normal Dog ID text or printable source. The summary should use shared `derivePetCredentialReadiness` logic, count ready-versus-total credential fields, list missing Dog ID fields, and repeat that Dog ID export is a local printable source until provider-backed credential/PDF storage is approved.
-
-Reason: Dog ID printable HTML already exists, but owners need to know whether the credential is actually ready for a sitter, trainer, family member, or vet before sharing. Keeping readiness in `lib/care-domain` lets profile fallbacks and saved records use the same rules while avoiding claims about image/PDF generation, provider-backed credential storage, cloud sharing, retention, or deletion.
-
-Owner: Codex.
-
-Revisit trigger: Credential card image/PDF export, provider-backed document storage, cloud sharing, server-backed report storage, native file download, or storage retention/deletion policy becomes active release work.
-
-### 2026-06-29: WoofGuide Can Draft Local Records Attachment Prep
-
-Decision: WoofGuide may surface an owner-reviewed `records_attachment_prep` suggested action when the Records Vault local attachment summary shows missing local receipt/document files. The draft may list attached-versus-attachable counts, name missing local file titles, route the owner to Records, and insert only a reviewed assistant note.
-
-Reason: Records, Care Pass, and Progress Reports now expose local attachment readiness, but owners also need a guided prep prompt before sharing sitter, trainer, or vet handoffs. Keeping this as a deterministic, owner-reviewed, non-mutating WoofGuide draft improves handoff readiness without claiming cloud storage, provider-backed document upload, binary PDF generation, retention/deletion policy, live AI, or unsupervised file actions are ready.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed document storage, cloud file sharing, native export/download, binary PDF generation, persisted report drafts, permission-aware assistant writes, or storage retention/deletion policy becomes active release work.
-
-### 2026-06-29: Reports Can Carry Local Attachment Prep
-
-Decision: Care Pass and Progress Reports may include a `Records Attachment Prep` section derived from the shared Records Vault local attachment summary. The section may state attached-versus-attachable receipt/document counts, list a few missing local file titles, and repeat the local-only storage boundary.
-
-Reason: Records Vault now makes local receipt/document readiness visible, but handoff reports are where owners prepare context for sitters, trainers, and vets. Carrying the same summary into reports improves practical handoff prep without claiming provider-backed document storage, cloud sharing, retention/deletion, native file export, binary PDF generation, or server-backed report storage is ready.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed document storage, cloud sharing, native file export/download, binary PDF generation, report retention, or server-backed report artifacts becomes active release work.
-
-### 2026-06-29: Records Vault Shows Local Attachment Readiness
-
-Decision: Records Vault may summarize local receipt/document attachment readiness from saved record metadata. The shared `summarizeRecordVault` helper should count attachable receipt/document records, local attachments, missing local file titles, and per-section attachment counts, while Mobile Records states that attachments are local until provider-backed document storage is approved.
-
-Reason: Records already let owners attach photos or receipts, but the vault treated those files as invisible metadata. Showing local attachment readiness makes receipts and documents more useful for sitter/vet handoff prep without claiming cloud storage, retention, deletion, document sharing, or provider-backed upload is ready.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed document upload/storage, retention/deletion policy, native file export, server-backed record documents, or cloud sharing becomes active release work.
-
-### 2026-06-29: Progress Reports Save Print-Ready Artifacts
-
-Decision: Records Progress Reports should save local report-history artifacts through `createProgressReportArtifact` when shared. The artifact may store escaped printable HTML, section metadata, stable filenames, and Mood & Energy owner-reported boundary lines, and Records should use the shared report artifact print view for both Care Pass and Progress Report resend/print-source actions.
-
-Reason: Progress Reports had report-ready Mood & Energy share text, but the paid report workflow still lost reuse value after the share sheet closed. Saving print-ready artifacts strengthens Report History and the future PDF/storage path without claiming binary PDF generation, native file export, provider-backed storage, diagnosis, emergency triage, or live AI interpretation are complete.
-
-Owner: Codex.
-
-Revisit trigger: Binary PDF generation, native download/export, server-backed report artifact storage, report retention policy, or provider-backed report sharing becomes active release work.
-
-### 2026-06-29: Progress Reports Use Shared Mood Energy Snapshots
-
-Decision: Records Progress Reports may include a Mood & Energy snapshot when recent shared mood check-ins exist. The snapshot should use `deriveMoodEnergyReportSnapshot`, which reuses the shared mood-trend boundary, excludes private/stale mood logs, includes energy counts plus latest caregiver/context, and carries explicit owner-reported/non-diagnostic language into the share payload.
-
-Reason: Mood evidence now feeds Records, Care Pass, WoofGuide, period filters, and sparklines. Progress Reports are the owner-shareable summary surface, so they should carry the same report-ready mood context without rebuilding route-local mood strings or implying diagnosis, emergency triage, predictive analytics, live AI, PDF generation, or provider-backed report storage.
-
-Owner: Codex.
-
-Revisit trigger: Binary PDF generation, server-backed report storage, provider-backed AI interpretation, clinician-reviewed mood language, or predictive analytics becomes active release work.
-
-### 2026-06-29: Mood Trend Sparklines Stay Evidence-Bounded
-
-Decision: Records Mood Trend may show a compact Mood sparkline for the selected Week, Month, or Quarter view, including caregiver and care-context filters. The sparkline should use `deriveMoodTrendSparkline`, bucket only household-visible mood check-ins that pass the same lookback and filter boundary as `deriveMoodTrend`, and show empty/watch/steady/good buckets without prediction or diagnosis.
-
-Reason: Owners need a quick visual read of whether recent mood check-ins are sparse, steady, improving, or worth watching, but that visual must not become a separate analytics system with looser evidence rules. Reusing the shared care-domain boundary keeps Records, Care Pass, and WoofGuide aligned while provider-backed interpretation and clinician-reviewed language remain gated.
-
-Owner: Codex.
-
-Revisit trigger: Predictive mood analytics, clinician-reviewed language, provider-backed AI mood interpretation, or avatar state-machine changes become active release work.
-
-### 2026-06-28: WoofGuide Mood Summaries Are Owner-Reviewed And Non-Mutating
-
-Decision: WoofGuide suggested actions may surface a Mood & Energy summary when recent shared mood check-ins exist. The summary should reuse `deriveMoodTrend`, exclude private and stale mood logs, include energy counts plus latest caregiver/context, and insert only a reviewed assistant message after owner approval. It must not create care logs, change routines, call live AI, or imply diagnosis.
-
-Reason: Mood logging now feeds Records and Care Pass, but owners also need a bounded assistant explanation they can review in the same WoofGuide workflow as meal, record, vet-note, and Care Pass drafts. Reusing the shared helper keeps the assistant grounded in the same household-visible evidence while provider-backed generation, citations, permission-aware writes, and durable report drafts remain gated.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed WoofGuide generation, persisted report drafts, mood charting, avatar state-machine changes, or permission-aware assistant writes become active release work.
-
-### 2026-06-28: Care Pass Uses Shared Mood Handoff Context
-
-Decision: Care Pass reports should include a Mood & Energy section when recent shared mood check-ins exist. The report builder should reuse `deriveMoodTrend`, carry low/steady/high energy counts plus latest caregiver/context into sitter, trainer, and vet handoffs, exclude private and stale mood logs, and state that mood/energy is owner-reported context rather than a diagnosis.
-
-Reason: Mood logging and Records Mood Trend now capture structured energy and care context, but handoff reports are the surface sitters, trainers, and vets actually receive. Reusing the shared helper keeps Records and Care Pass aligned, avoids route-local report parsing, and turns mood data into useful care context without expanding into diagnosis, live AI, or deeper analytics before those release slices are ready.
-
-Owner: Codex.
-
-Revisit trigger: Longer-range mood charts, WoofGuide mood explanations, trainer/vet report templates, avatar state-machine changes, or provider-backed report storage become active release work.
-
-### 2026-06-28: Mood Trend Uses Shared Energy Context
-
-Decision: Records Mood Trend should derive from shared care-domain logic instead of route-local aggregation. The shared helper should exclude private and stale mood logs, preserve low/steady/high energy, latest caregiver/context, watch status, summary, and next-step copy, and keep the language non-diagnostic.
-
-Reason: Mood and energy logs are now structured care evidence. Leaving Records as a simple local mood-count chart would store useful context without making it reviewable by the household, reports, or future care-domain surfaces. Shared derivation keeps the real care loop consistent while deeper analytics, Care Pass mood sections, and native runtime QA remain separate work.
-
-Owner: Codex.
-
-Revisit trigger: Deeper mood analytics, Care Pass mood handoff sections, avatar state-machine changes, trainer/vet report language, or provider-backed WoofGuide mood explanations become active release work.
-
-### 2026-06-27: Invite-Code Join Success Names The Active Pack
-
-Decision: Mobile More should show a post-join confirmation when an invite code is accepted. The confirmation should use the generated `/household/join` response to name the joined household as the active care sync pack, then keep switching, Household Access, and Sync Health in More while stating that provider-backed invite approval remains gated.
-
-Reason: First-run Setup can hand a caregiver into the real invite-code modal, but silently closing after a successful join makes the owner guess whether the care sync target changed. Naming the joined pack improves multi-household trust without claiming arbitrary membership lookup, invite approval, cloud onboarding, or final provider administration is complete.
-
-Owner: Codex.
-
-Revisit trigger: Full auth-connected onboarding, provider-backed invite approval, multi-household setup, native onboarding completion, or final caregiver administration becomes active release work.
-
-### 2026-06-27: Display Name Copy Names The Active Pack
-
-Decision: Mobile More should describe display-name edits as applying to the active pack's care logs, and the save confirmation should name that selected household context.
-
-Reason: The API intentionally updates the authenticated user's global display name plus the active-household membership display-name row. Saying the name appears on every care log can imply a broader all-households or provider-backed identity change than the launch contract supports. Active-pack wording keeps multi-household caregiver identity truthful while richer account/profile administration remains gated.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed account profile management, richer multi-household onboarding, member profile editing, audit policy, or cross-household identity controls become active release work.
-
-### 2026-06-27: Setup Household Handoff Clears After The Owner Acts
-
-Decision: More should treat the `setupHandoff` route param as initial context, render the setup next-step card through local visible-handoff state, and hide the card after the owner shares the invite or opens the invite-code modal.
-
-Reason: The handoff card should make the next action obvious, but leaving it visible after the owner takes that action makes onboarding feel unfinished and can imply a provider-backed task is still pending. Clearing it locally preserves truthful routing to the existing household tools without adding invite approval, cloud onboarding, arbitrary membership changes, or new backend state.
-
-Owner: Codex.
-
-Revisit trigger: Full auth-connected onboarding, invite approval, multi-household setup, provider-backed sync administration, or a native onboarding completion state becomes active release work.
-
-### 2026-06-27: Setup Household Handoff Lands In More With Intent
-
-Decision: When the owner chooses Share invite or Join pack in first-run Setup, the Open More action should pass a setup handoff intent into More. More should show a setup next-step card that routes to the existing invite share action or invite-code modal, while keeping invite approval, arbitrary membership lookup, cloud onboarding, and final provider-backed administration gated.
-
-Reason: Setup already captures household intent, but a generic jump to More makes owners hunt for the correct household tool. An intent-aware handoff makes the next action obvious without inventing new provider-backed onboarding behavior or overstating sync readiness.
-
-Owner: Codex.
-
-Revisit trigger: Full auth-connected onboarding, invite approval, multi-household setup, provider-backed sync administration, or a native onboarding completion flow becomes active release work.
-
-### 2026-06-26: Setup Captures Household Sync Intent Without Completing Admin Work
-
-Decision: Mobile first-run Setup should let the owner choose Share invite, Join pack, or Decide later after entering the dog care foundation. The choice should shape the post-save confirmation and whether the alert offers Open More, but actual invite sharing, invite-code joining, sync health, and household switching remain in More.
-
-Reason: Auth-connected onboarding is still incomplete, but owners need a clear next step for household coordination at first setup. Capturing intent reduces confusion while preserving the truthful boundary that setup only saves Dog Profile, diet, routine, and caregiver context and does not complete provider-backed invite approval, cloud sync administration, or arbitrary household membership changes.
-
-Owner: Codex.
-
-Revisit trigger: Full auth-connected onboarding, invite approval, multi-household setup, provider-backed sync administration, or a native onboarding completion flow becomes active release work.
-
-### 2026-06-26: Setup Confirmation Names The Active Household
-
-Decision: Mobile first-run Setup should pass `/me` household context into the post-save confirmation. When an active household is known, the confirmation should name that pack; when multiple memberships exist, it should point invite, sync, and switching management to More and clarify that setup only saved the care foundation.
-
-Reason: Auth-connected onboarding is still incomplete, but caregivers with existing memberships need to know which pack their saved dog profile, diet, and routine context belongs to. Naming the active household improves trust without pretending provider-backed invite approval, cloud administration, or multi-household setup is complete.
-
-Owner: Codex.
-
-Revisit trigger: Full auth-connected onboarding, invite approval, multi-household setup, provider-backed sync administration, or a native onboarding completion flow becomes active release work.
-
-### 2026-06-26: Setup Confirms The Saved Care Foundation
-
-Decision: Mobile first-run Setup should show a post-save confirmation before returning to Today. The confirmation should summarize the saved dog, starter routine, caregiver, and diet baseline, explain that Today, Log, Records, reports, and WoofGuide will use that context, and keep household invite/sync controls explicitly in More.
-
-Reason: The setup route already writes the care foundation, but a silent redirect makes the owner guess whether the real care loop changed. Confirmation improves trust without pretending provider-backed account provisioning, invite approval, cloud sync administration, or multi-household onboarding is complete.
-
-Owner: Codex.
-
-Revisit trigger: Auth-connected onboarding, invite approval, multi-household setup, provider-backed sync administration, or a native onboarding completion screen becomes active release work.
-
-### 2026-06-26: Care Team Role Management Uses Launch Role Labels
-
-Decision: Mobile Care Team role-management rows and role-update success confirmations should format current and newly assigned roles through the same owner-readable launch labels used by Household Access and Pack Audit.
-
-Reason: The role-management surface is where owners/admins make trust decisions. Showing raw or ad hoc role formatting there can drift from the permission summaries and audit trail, especially for `vet_viewer`. Reusing the launch labels keeps the UI understandable without expanding caregiver administration into owner transfer, member removal, invite approval, or final provider-backed role policy.
-
-Owner: Codex.
-
-Revisit trigger: A shared role-label component, provider-backed caregiver administration, final role policy, member removal, owner transfer, invite approval, or audit export/delete becomes active release work.
-
-### 2026-06-26: Pack Audit Role Changes Identify The Caregiver
-
-Decision: API role-change audit events should include the affected member's display name and email when available, and Mobile Pack Audit should render caregiver-specific copy such as `Emma: Sitter to Trainer`. Older audit rows without target identity should continue using the generic role-change fallback.
-
-Reason: Owner/admin audit review needs to answer who changed roles, not only what role transition happened. Adding target identity to the existing durable audit details improves household trust without adding member removal, owner transfer, invite approval, audit lifecycle actions, or broader provider-backed administration.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed caregiver administration, audit export/delete, final role policy, or richer member profile privacy rules become active release work.
-
-### 2026-06-26: Pack Audit Role Changes Use Owner-Readable Labels
-
-Decision: Mobile Pack Audit role-change rows should format stored `previousRole` and `newRole` values through the launch role labels and render previous-to-new transition copy when both values exist. Older audit rows with only `newRole` still get a readable fallback. Visible rows and accessibility labels should not expose internal role ids such as `vet_viewer`.
-
-Reason: Household owners use Pack Audit to understand trust changes. Showing raw implementation ids undermines the owner-readable permission model that Household Access already presents, especially after role updates to vet viewer, sitter, or trainer. The audit surface should stay review-only and provider-gated while making the stored evidence understandable.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed audit export/delete, final role policy, richer caregiver administration, or a shared role-label component replaces the local More formatter.
-
-### 2026-06-26: Sitter And Trainer Corrections Are Own-Entry Scoped
-
-Decision: API sitter and trainer roles may create care-entry evidence, but `PATCH /care-entries/:id` and `DELETE /care-entries/:id` should add `caregiverUserId` scoping for those roles. Owner, admin, and member roles retain household-wide log correction authority, and vet viewers remain read-only.
-
-Reason: Household Access describes sitters and trainers as logging/report helpers, not full household log administrators. They should be able to correct their own visit evidence without altering another caregiver's log before final provider-backed permission policy, invite approval, member removal, audit retention, and live integration tests exist.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed caregiver administration, final role-specific permission policy, live API integration tests, or a formal delegated log-review workflow becomes active release work.
-
-### 2026-06-26: Care Plan Writes Are Stricter Than Care Log Writes
-
-Decision: API care-plan writes should use a stricter role guard than care-log writes. `PUT /care-state` is limited to owner, admin, and member roles because it changes the shared Dog Profile, routines, records, reports, and other care-document state. `POST/PATCH/DELETE /care-entries` remains available to owner, admin, member, sitter, and trainer roles so invited care helpers can log and correct care evidence. Vet viewers stay read-only for both surfaces.
-
-Reason: Household Access presents sitters and trainers as logging/report roles, not shared care-plan editors. Allowing those roles to mutate the full care document would contradict the owner-readable permission boundary and make sitter/trainer access broader than the launch role model promises.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed role enforcement, document/report access controls, final caregiver administration policy, or a formal sitter/trainer care-plan collaboration workflow becomes active release work.
-
-### 2026-06-25: Vet Viewers Are Read-Only For Shared Care Writes
-
-Decision: API care-write routes should keep `vet_viewer` memberships read-only. `PUT /care-state` and `POST/PATCH/DELETE /care-entries` return a clear 403 for read-only active household roles, while read routes remain available for review.
-
-Reason: Mobile can now assign a vet viewer role and Household Access explains it as report/context review. Letting that role change logs or care plans would contradict the owner-readable permission boundary and weaken household trust before final provider-backed permission policy exists.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed role enforcement, document/report access controls, veterinarian collaboration workflows, or final caregiver administration policy becomes active release work.
-
-### 2026-06-25: Household Access Shows Role Permission Boundaries
-
-Decision: Household Access should label the launch caregiver role set as Owner, Admin, Caregiver, Sitter, Trainer, and Vet viewer, and each role should carry a short owner-readable permission summary. Mobile More should show that summary under each Care Team person, but final enforcement, invite approval, owner transfer, removal, document access rules, and broader provider-backed policy remain gated.
-
-Reason: The API and mobile controls can now update existing caregiver roles, but a household still needs to understand what those roles mean without seeing internal ids such as `vet_viewer` or assuming final provider-backed permissions are complete. Shared domain copy keeps More, future handoffs, and tests aligned around the same truthful boundary.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed role enforcement, document access rules, invite approval, owner transfer, member removal, or final caregiver administration becomes active release work.
-
-### 2026-06-25: Mobile Care Team Role Management Is Bounded
-
-Decision: Mobile More should expose role chips for existing synced non-owner household members using the generated `useUpdateHouseholdMember` hook. Owners/admins can assign admin, member, sitter, trainer, or vet viewer roles from the Care Team surface, then `/me` refreshes and Pack Audit refetches role-change events. The UI must keep owner transfer, member removal, invite approval, arbitrary member lookup, lifecycle actions, and final permission policy provider-gated.
-
-Reason: The API role-update contract exists, but household owners need a visible way to adjust existing caregiver roles from the shared care surface. Limiting the UI to current synced non-owner members preserves the same active-household boundary and avoids pretending full provider-backed caregiver administration is complete.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed caregiver administration, invite approval, member removal, owner transfer, document access rules, final role-specific permissions, or live API integration tests become active release work.
-
-### 2026-06-25: Household Member Role Updates Are Owner/Admin Scoped
-
-Decision: API `PATCH /household/members/{memberId}` should let owner/admin members update existing active-household memberships to `admin`, `member`, `sitter`, `trainer`, or `vet_viewer`. The route should refuse owner demotion, return the refreshed `/me` household context, and write a durable `household.member_role_changed` audit event with previous role, new role, target member, and actor role details. The endpoint is documented across OpenAPI, zod, and the generated React client, but no full caregiver editing UI, invite approval, lifecycle controls, or provider-backed final role policy is implied yet.
-
-Reason: Household Access already shows who can sync care and who needs invite/admin attention, but owners also need a bounded backend contract for managing existing member roles before broader provider-backed caregiver administration is available. Scoping the update to the active household and auditing the role change improves household trust without allowing arbitrary membership edits or owner demotion.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed caregiver administration, invite approval, owner transfer, member removal, document access policy, role-specific permission enforcement, or a mobile admin UI becomes active release work.
-
-### 2026-06-25: Mobile Pack Audit Shows Owner-Readable Event Context
-
-Decision: Mobile More's Pack Audit rows should summarize stored audit event details in owner-readable language for pack creation, rename, active-household switching, and invite membership events. Row accessibility labels should include the same readable detail. The UI should not expose raw JSON, raw audit detail dumps, lifecycle mutation controls, deletion, export, or retention actions before provider-backed account audit policy exists.
-
-Reason: Owner/admin review is only useful if a household can understand what changed, not just which bounded event type occurred. The existing producers already store safe detail fields such as pack name, renamed-to value, selected household switch context, and whether a caregiver membership was newly created, so rendering those details improves household trust without expanding backend behavior or implying final audit retention policy is ready.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed account audit policy, retention lifecycle actions, audit export/delete, role changes, invite approval, caregiver editing, or live API integration tests become active release work.
-
-### 2026-06-25: Mobile Pack Audit Uses Review Filters Only
-
-Decision: Mobile More's Pack Audit board should expose event-type and lifecycle filter chips that pass `action` and `lifecycleState` into the existing `GET /household/audit-events` generated hook. The filters are owner/admin review aids only; the board still does not expose audit lifecycle changes, deletion, export, or retention controls before provider-backed account audit policy exists.
-
-Reason: Owner/admin audit review is more useful when pack creation, rename, active-household switching, invite-join, active, and retained events can be narrowed in place. Reusing the existing API query contract improves household trust inspection without inventing new backend behavior or implying final retention policy is ready.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed account audit policy, retention lifecycle actions, audit export/delete, role changes, invite approval, caregiver editing, or live API integration tests become active release work.
-
-### 2026-06-25: Mobile Pack Audit Is Review Only
-
-Decision: Mobile More should expose a Pack Audit board that reads `GET /household/audit-events` through the generated React hook and shows recent household trust events with loading, empty, and offline states. The surface is owner/admin review only and does not expose lifecycle changes, deletion, export, or retention actions before provider-backed account audit policy exists.
-
-Reason: The API now writes and lists durable household audit events, but owners need visible trust feedback in the app when pack identity, active household sync, or invite membership changes. Keeping the card review-only makes the trust trail useful without pretending final retention, export, delete, or admin workflows are live.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed account audit policy, retention lifecycle actions, invite approval, caregiver editing, role changes, audit export/delete, or live API integration tests become active release work.
-
-### 2026-06-24: Sensitive Household Actions Produce Audit Events
-
-Decision: Default household creation, household rename, active-household switching, and invite acceptance should write durable `household_audit_events` rows with bounded action names: `household.created`, `household.renamed`, `household.active_changed`, and `household.member_joined`.
-
-Reason: The owner/admin audit review endpoint should show real household trust transitions, not only a query contract. These actions affect shared pack identity, membership, or care-sync target, so they need a durable review trail before provider-backed invite approval, caregiver editing, role changes, and final retention/export/deletion policy are complete.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed invite approval, caregiver editing, role changes, account deletion/export policy, retention lifecycle changes, or live API integration tests become active release work.
-
-### 2026-06-24: Household Audit Review Is Owner/Admin Scoped
-
-Decision: Household audit review should use a durable `household_audit_events` table and an owner/admin-only `GET /household/audit-events` route. The route lists newest events first, supports bounded `limit`, `action`, and `lifecycleState` filters, and is documented across OpenAPI, zod, and the generated React client before final provider-backed retention policy exists.
-
-Reason: Care log deletes already retain evidence, but sensitive household/account events need a reviewable backend contract before richer role administration and account audit policy are implemented. Restricting the list endpoint to owner/admin members preserves household trust without pretending audit producers, retention lifecycle changes, or live DB/provider integration tests are complete.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed audit event producers, invite approval, caregiver editing, document access, role changes, retention/export/deletion policy, or live API integration tests become active release work.
-
-### 2026-06-24: Mobile Household Switching Uses Existing Memberships
-
-Decision: `/me` should include the authenticated user's existing household list, with invite codes still hidden unless that user is owner/admin for a given pack. Mobile More should render those households as the active-pack switcher and call the membership-scoped `PATCH /me/active-household` endpoint, then refresh `/me` and care state after a successful switch.
-
-Reason: The active-household API contract was complete, but caregivers still had no owner-visible way to choose which pack routines and logs sync into. Showing only existing memberships preserves the household trust boundary and avoids implying invite approval, role editing, or arbitrary household lookup are complete.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed invite approval, role changes, caregiver administration, account audit policy, or richer multi-household management becomes active release work.
-
-### 2026-06-23: Active Household Switching Requires Membership
-
-Decision: API `PATCH /me/active-household` should set `users.activeHouseholdId` only when the authenticated user already has membership in the requested household. The route should ensure that household has care state and return the normal `/me` payload for the selected pack.
-
-Reason: Invite acceptance and fallback selection are not enough for multi-household caregivers. Care-state, care-entry, profile, and household routes need one explicit active-household pointer, but the API must not let a caller switch into an arbitrary household id before provider-backed admin tooling exists.
-
-Owner: Codex.
-
-Revisit trigger: Mobile household switcher UI, provider-backed invite approval, role changes, caregiver administration, or full multi-household management becomes active release work.
-
-### 2026-06-23: Invite Accepts Persist The Active Household
-
-Decision: API `POST /household/join` should set `users.activeHouseholdId` to the joined household after a valid invite accept, and the active-household helper should prefer that saved membership before falling back to the earliest valid membership.
-
-Reason: Invite acceptance should move the caregiver's real care loop into the shared pack immediately. Without a persisted active-household pointer, later care-state and care-entry calls can drift back to an older default household even though the join response showed the invited pack.
-
-Owner: Codex.
-
-Revisit trigger: Explicit household switching UI, provider-backed invite approval, caregiver administration, role changes, or multi-household management becomes active release work.
-
-### 2026-06-23: Invite Codes Are Owner/Admin Visible
-
-Decision: API `/me` should return the shared household invite code only when the authenticated member's active-household role is `owner` or `admin`. Ordinary members still receive household context and member lists, but their household invite code is blank so mobile Household Access treats invite sharing as unavailable.
-
-Reason: Joining a pack and contributing care is different from spreading access to the pack. Until provider-backed caregiver administration, invite approval, role changes, and account audit policy exist, invite-code visibility should follow the same owner/admin trust boundary as household rename.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed invite approval, caregiver editing, active household switching, role changes, or a formal share-invite endpoint becomes active release work.
-
-### 2026-06-23: Invite Join Does Not Create A Default Pack First
-
-Decision: API `POST /household/join` should provision the authenticated user directly, find the invited household by normalized invite code, ensure that household has care state, avoid duplicate membership inserts, and add a new invitee as a normal `member` without first creating a personal default household.
-
-Reason: A first-time caregiver who accepts an invite intends to join the shared pack, not create a separate empty household that can become the earliest active household for later care-state and care-entry routes. This keeps household sync truth closer to the invite workflow while full active-household switching, invite approval, and provider-backed role administration remain future work.
-
-Owner: Codex.
-
-Revisit trigger: Active-household selection, invite approval, caregiver editing, role changes, or provider-backed household administration becomes active release work.
-
-### 2026-06-23: Household Rename Requires Owner Or Admin Membership
-
-Decision: API `PATCH /household` should allow shared pack renames only when the authenticated user's active-household membership role is `owner` or `admin`. Non-owner/admin members receive a 403 response and can continue using the household for normal care workflows.
-
-Reason: The household name is shared pack identity, not a personal profile field. Invited caregivers should be able to contribute logs and care context without being able to rename the household before provider-backed role enforcement, invite approval, caregiver editing, and account audit policy are complete.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed role enforcement, household admin tools, caregiver editing, role changes, invite approval, or broader account/household audit policy becomes active release work.
-
-### 2026-06-23: Member Profile Updates Stay In The Active Household
-
-Decision: API `PATCH /me` should update the authenticated user's global display name, but the household membership display-name row must be constrained by both user id and active household id.
-
-Reason: A caregiver can belong to more than one household. Updating membership rows by user id alone can rename that caregiver across unrelated packs, which weakens household trust before provider-backed role enforcement, active household switching, and richer caregiver management are complete.
-
-Owner: Codex.
-
-Revisit trigger: Provider-backed role enforcement, explicit active-household selection, caregiver editing, invite approval, or account audit policy becomes active release work.
-
-### 2026-06-23: Care-State Optimistic Writes Are Atomic
-
-Decision: API `PUT /care-state` writes should update the shared household care document only when both the household id and the current version still match. If another device updates the document after the initial read, the API should refetch the latest household state and return the existing recoverable 409 response shape instead of overwriting it.
-
-Reason: Dog Profile, routines, records, reports, and setup data live in the shared care document. A pre-check alone can still lose a race between two household devices, so the version predicate belongs in the update itself before live database integration tests and deeper multi-device conflict policy are available.
-
-Owner: Codex.
-
-Revisit trigger: Live API integration tests are available, care-state rows gain a stronger compare-and-swap helper, or deeper multi-device merge/restore policy becomes active release work.
-
-### 2026-06-22: Server Deletes Retain Household Audit Notes
-
-Decision: Care-entry deletes through the API should create a retained non-health household audit note after a household-scoped delete succeeds. The audit note stores the deleted entry snapshot, audit subject id, caregiver, and audit trail using the shared care-domain deletion audit shape. Mobile Log should avoid adding a duplicate local deletion audit when the server already retained one, while local/offline deletes still create the local audit note.
-
-Reason: Deleted care logs should stop satisfying routines and health summaries, but the household still needs an evidence trail of what changed. Keeping the server-backed delete audit in the API reduces trust and retention risk before the final live database retention/restore policy is approved, without pretending provider-backed deletion policy or live integration tests are complete.
-
-Owner: Codex.
-
-Revisit trigger: A live test database/provider-auth harness is available, final delete/restore retention policy is approved, or role-aware audit events for records/documents/accounts become active release work.
-
-### 2026-06-22: API Route Contract Readiness Runs In Focused Tests
-
-Decision: The focused test suite should include CI-safe API route contract readiness while live Express/Drizzle integration tests remain blocked by local dependency, database, and provider-auth setup. The first API readiness slice protects authenticated household scoping, care-state optimistic conflict responses, household-isolated care-entry create/update/delete behavior, and the `/care-entries?limit=` query contract across OpenAPI, zod, and generated React client types.
-
-Reason: Backend route regressions can break household trust and sync safety even before production providers are approved. The current Codex checkout has no `node_modules` or `DATABASE_URL`, so static contract readiness is the strongest local coverage that can run in the same zero-dependency gate as the mobile/domain tests without pretending live provider integration has been verified.
-
-Owner: Codex.
-
-Revisit trigger: A local or CI test database/auth harness is available, API dependencies are installed in the checkout, or provider-backed auth/roles/storage become active release work.
-
-### 2026-06-22: Avatar Studio Owner Inputs Use The Shared Touch Target
-
-Decision: Avatar Studio scan actions, template tiles, accessory tiles, and mood preview chips should use the shared `MIN_MOBILE_TOUCH_TARGET` floor before native accessibility traversal, while preserving larger visual tile heights where the character-creator layout already needs them. Face-marking options should also expose explicit screen-reader labels.
-
-Reason: Avatar Studio is a high-touch care-twin creation workflow where owners repeatedly scan, choose templates, customize markings, select accessories, and preview moods. Native accessibility traversal is still blocked, so the in-code contract should keep those owner-input controls aligned with the rest of the mobile release-safe target baseline without changing the truthful PixelLab/template readiness model.
-
-Owner: Codex.
-
-Revisit trigger: Native screen-reader or device QA shows Avatar Studio needs different sizing, final Figma/native character-creator components replace the current controls, or platform-specific guidance requires separate iOS/Android values.
-
-### 2026-06-22: Onboarding And Avatar Creation Actions Expose Screen-Reader State
-
-Decision: Release-critical onboarding and Avatar Studio creation actions should expose explicit screen-reader roles, labels, and state before native accessibility traversal. This covers shared auth primary/Google buttons, Setup starter-routine type selection, Setup save/finish-later actions, and Avatar Studio reset/save controls.
-
-Reason: Account setup, care foundation setup, and care-twin creation are first-run release paths. Native screen-reader traversal is still blocked, so static readiness should prevent these controls from regressing to text-only tappables or unlabeled icon/text combinations while preserving the existing auth, setup, and avatar behavior.
-
-Owner: Codex.
-
-Revisit trigger: Native screen-reader traversal shows different labeling/state requirements, final Figma/native components replace these controls, or provider-backed onboarding changes the first-run flow.
-
-### 2026-06-22: Remaining Route Actions Use The Shared 48px Touch Target
-
-Decision: Remaining high-frequency route actions should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper before native accessibility traversal. This covers Quick Log launcher tabs and outbox retry, Records empty-add and delete controls, More Care Intelligence, tool, premium, and profile-edit actions, and Privacy export/delete actions.
-
-Reason: Native screen-reader and device QA are still blocked, and these actions sit in core care logging, sync recovery, records, household tools, monetization preview, profile editing, and privacy/export workflows. Reusing the shared 48px contract reduces missed-tap risk without changing care data behavior, provider truth, or claiming native QA has run.
-
-Owner: Codex.
-
-Revisit trigger: Native accessibility traversal shows a route needs a different target, final Figma/native components replace these route-local controls, or platform-specific guidance requires separate iOS/Android values.
-
-### 2026-06-22: Living Phoenix Room Uses Shared Tap Contracts
-
-Decision: The living Phoenix room should use the shared mobile tap contracts before native accessibility traversal. The full-room pressable uses `MOBILE_INLINE_HIT_SLOP`, and the visible status and next-action cue chips use `MIN_MOBILE_TOUCH_TARGET`.
-
-Reason: The animated care-twin room is the premium first-screen care surface for Home and Avatar Studio. Simulator/device QA is still blocked, so keeping its tap target and visible action cues on the same shared mobile contract reduces missed-tap and drift risk without changing care-state behavior, avatar motion, or claiming native QA has run.
-
-Owner: Codex.
-
-Revisit trigger: Native screen-reader or device QA shows the room needs different touch behavior, the final Figma/native care-twin component changes the room interaction model, or platform-specific accessibility guidance requires separate iOS/Android values.
-
-### 2026-06-22: Auth Actions Use The Shared 48px Touch Target
-
-Decision: The shared mobile auth primary button and Google SSO button should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of relying only on padding-driven height.
-
-Reason: Native accessibility traversal is still waiting on simulator/device access, and sign-in/sign-up are release-critical onboarding actions. Reusing the 48px contract reduces missed-tap risk without changing auth behavior, provider truth, or claiming native QA has run.
-
-Owner: Codex.
-
-Revisit trigger: Native screen-reader or device QA shows auth controls need different sizing, final Figma/native auth components replace the current shared auth UI, or platform-specific accessibility guidance requires separate iOS/Android values.
-
-### 2026-06-22: Plans Modal Controls Use The Shared 48px Touch Target
-
-Decision: Plans routine and event modal controls should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of relying on padding-only local sizing.
-
-Reason: Native accessibility traversal is still waiting on simulator/device access, and Plans modals are where owners create and edit the routines that define what should happen. Reusing the 48px contract reduces missed-tap risk for type chips, owner quick chips, save actions, and delete routine without changing routine/log behavior or claiming native QA has run.
-
-Owner: Codex.
-
-Revisit trigger: Native screen-reader or device QA shows Plans modal controls need different sizing, final Figma/native planning components replace the current modal controls, or platform-specific accessibility guidance requires separate iOS/Android values.
-
-### 2026-06-21: Home Header Navigation Uses The Shared 48px Touch Target
-
-Decision: The Home header More menu and Health Watch notification controls should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 42px sizing.
-
-Reason: Native accessibility traversal is still waiting on simulator/device access, and Home is the first-screen command surface owners use to reach More, household tools, and Health Watch. Reusing the 48px contract reduces tap-risk without changing the existing header navigation or claiming native QA has run.
-
-Owner: Codex.
-
-Revisit trigger: Native screen-reader or device QA shows the Home header needs different sizing, final Figma/native header components replace the current controls, or platform-specific accessibility guidance requires separate iOS/Android values.
-
-### 2026-06-21: Error Recovery Controls Use The Shared 48px Touch Target
-
-Decision: The development error-details button and error-details modal close control should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 44px sizing.
-
-Reason: Native accessibility traversal is still waiting on simulator/device access, and the app-wide recovery surface must remain usable when an owner or tester needs to inspect or close error details. Reusing the 48px contract reduces tap-risk without changing the error recovery workflow or claiming native QA has run.
-
-Owner: Codex.
-
-Revisit trigger: Native screen-reader or device QA shows recovery controls need different sizing, the app gains a global recovery overlay component, or platform-specific accessibility guidance requires separate iOS/Android values.
-
-### 2026-06-21: Calendar Event Controls Use The Shared 48px Touch Target
-
-Decision: Calendar event discovery and upcoming-event controls should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 28/38/40px sizing.
-
-Reason: Native accessibility traversal is still waiting on simulator/device access, and these controls sit in the Plans event-management workflow where owners discover outings, review suggestions, and remove one-off events. Reusing the 48px contract reduces tap-risk without changing calendar data behavior or claiming native QA has run.
-
-Owner: Codex.
-
-Revisit trigger: Native screen-reader or device QA shows Calendar event controls need different sizing, final Figma/native event components replace the current controls, or platform-specific accessibility guidance requires separate iOS/Android values.
-
-### 2026-06-21: Compact Search Report And Household Controls Use The Shared 48px Touch Target
-
-Decision: Quick Log type chips, timeline filters, search clear, Records medication search/filter controls, report artifact actions, report period tabs, More invite, and dog-profile unit pills should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local sub-48px sizing.
-
-Reason: Native accessibility traversal is still waiting on simulator/device access, and these controls sit in high-frequency care review workflows: filtering logs, searching medication evidence, resending/printing reports, switching report periods, inviting household caregivers, and editing profile units. Reusing the 48px contract reduces tap-risk without changing care data behavior or claiming native QA has run.
-
-Owner: Codex.
-
-Revisit trigger: Native screen-reader or device QA shows these controls need different sizing, final Figma/native components replace the current route-local controls, or platform-specific accessibility guidance requires separate iOS/Android values.
-
-### 2026-06-21: Plans Schedule And Routine Controls Use The Shared 48px Touch Target
-
-Decision: Plans schedule tabs, the schedule mark-done status control, the Daily Routine add button, and routine done buttons should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 21/30/32/36px sizing.
-
-Reason: Native accessibility traversal is still waiting on simulator/device access, and Plans is the core household routine surface where owners switch schedule views, add routines, and mark care as handled. Keeping these high-frequency controls on the same 48px contract reduces tap-risk without changing routine/log behavior or claiming native QA has run.
-
-Owner: Codex.
-
-Revisit trigger: Native screen-reader or device QA shows Plans needs different sizing, final Figma/native routine components replace the current controls, or platform-specific accessibility guidance requires separate iOS/Android values.
-
-### 2026-06-21: Health/Bile Route Controls Use The Shared 48px Touch Target
-
-Decision: The Health/Bile segmented tabs plus Log health note and Records hero actions should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 36/42px sizing.
-
-Reason: Native accessibility traversal is still waiting on simulator/device access, and Health/Bile Watch is a core non-diagnostic care workflow where owners switch between health context, bile review, logging, and records. Keeping these controls on the same 48px contract reduces tap-risk without changing the medical boundary or claiming native QA has run.
-
-Owner: Codex.
-
-Revisit trigger: Native screen-reader or device QA shows Health/Bile needs different sizing, a final Figma/native health component replaces the current segmented control and hero actions, or platform-specific accessibility guidance requires separate iOS/Android values.
-
-### 2026-06-21: Avatar Studio Compact Controls Use The Shared 48px Touch Target
-
-Decision: Avatar Studio tabs, coat swatches, and face-marking option pills should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of route-local 40/42/36px sizing.
-
-Reason: Native accessibility traversal is still waiting on simulator/device access, and Avatar Studio is a high-touch production-art workflow where owners repeatedly select templates, colors, traits, accessories, and moods. Keeping compact owner-input controls on the same 48px contract reduces tap-risk without changing the truthful PixelLab/template readiness model.
-
-Owner: Codex.
-
-Revisit trigger: Native screen-reader or device QA shows Avatar Studio needs different sizing, a final Figma/native character-creator component replaces the current controls, or platform-specific accessibility guidance requires separate iOS/Android values.
-
-### 2026-06-21: Route-Local Actions Use The Shared 48px Touch Target
-
-Decision: Plans add/discover controls, Log sync/detail controls, the Premium hero mark, and Setup finish-later action should use `MIN_MOBILE_TOUCH_TARGET` from the shared mobile layout helper instead of local 40-42px boxes.
-
-Reason: Native accessibility traversal is still waiting on simulator/device access, and these route-local controls sit outside the shared board primitive layer. Reusing the existing 48px contract keeps compact route actions aligned with the mobile tap-target baseline without adding a new visual system.
-
-Owner: Codex.
-
-Revisit trigger: Native screen-reader or device QA shows a route needs different sizing, final Figma/native components replace these route-local controls, or platform-specific accessibility guidance requires separate iOS/Android values.
-
-### 2026-06-21: Inline Route Actions Use Shared Mobile Hit Slop
-
-Decision: Home, Plans, More, Records, Privacy, and WoofGuide inline icon/text actions should use `MOBILE_INLINE_HIT_SLOP` from the shared mobile layout helper instead of route-local `hitSlop={8}` or `hitSlop={10}` literals.
-
-Reason: Native accessibility traversal is still waiting on simulator/device access, and inline controls are the remaining compact actions around headers, report sharing, record deletion, household/profile actions, and owner-review close controls. A named hit-slop contract keeps those tap targets consistent without changing the visual board layout.
-
-Owner: Codex.
-
-Revisit trigger: Native screen-reader or device QA shows different hit slop is needed, final Figma/native components replace the inline controls, or platform-specific guidance requires separate iOS/Android values.
-
-### 2026-06-20: Keyboard Avoidance Uses The Shared Safe-Area Contract
-
-Decision: Setup, WoofGuide, the Log sticky-note prompt, and Records Care Pass/record sheets should use `getKeyboardAvoidingVerticalOffset` from the shared mobile layout helper instead of relying on React Native's default zero keyboard offset.
-
-Reason: Native runtime QA is still waiting on simulator/device screenshots, and these surfaces are the remaining high-risk keyboard flows where text inputs can appear under route chrome, notches, or docked controls. A named helper keeps keyboard movement aligned with the same tabbed, setup, and standalone top-safe-area contracts already used by the route headers.
-
-Owner: Codex.
-
-Revisit trigger: Native device QA shows a screen needs a different keyboard offset, the app shell changes its header/chrome model, or a final native form/sheet component replaces the current route-local `KeyboardAvoidingView` usage.
-
-### 2026-06-20: WoofGuide Owner Review Uses The Shared Modal Safe-Area Contract
-
-Decision: WoofGuide's owner-reviewed draft sheet should use `getModalSheetBottomPadding` from the shared mobile layout helper instead of fixed-only sheet padding.
-
-Reason: WoofGuide draft review is an AI safety boundary where owners approve meal logs, reminders, vet-note drafts, and Care Pass actions before anything changes. Keeping that docked sheet on the same modal clearance contract as Plans, Log, Records, More, and error recovery reduces native home-indicator clipping risk before simulator/device screenshots are available.
-
-Owner: Codex.
-
-Revisit trigger: Native device QA shows WoofGuide review sheets need different clearance, a shared design-system sheet component replaces route-local sheets, or WoofGuide review moves to a full-screen workflow.
-
-### 2026-06-20: Error Recovery Debug Controls Use The Shared Safe-Area Top Contract
-
-Decision: The app error fallback's development-only error-details button should use `getFloatingDebugButtonTopOffset` from the shared mobile layout helper instead of route-local `insets.top + 16` positioning.
-
-Reason: Native runtime QA is still blocked on simulator/device access, and the error recovery surface is one of the last app-wide overlays with direct notch math. A named helper keeps recovery controls below notches and web preview chrome without changing the recovery workflow or the already-shared error-details sheet bottom padding.
-
-Owner: Codex.
-
-Revisit trigger: Native device QA shows floating recovery/debug controls need different clearance, the app shell gains a global overlay container, or the final design system replaces the current error fallback.
-
-### 2026-06-20: Route Headers Use The Shared Safe-Area Top Contract
-
-Decision: Home, Log, Plans, Health, More, Records, Avatar Studio, Setup, Premium, Privacy, and the shared auth shell should use `getRouteTopPadding` from the shared mobile layout helper instead of route-local `topInset + 8/12/14/48` formulas.
-
-Reason: The native runtime-QA baseline already covered bottom scroll clearance, composers, sheets, toasts, and centered modals, but route headers still owned their own top safe-area offsets. A named top-padding helper gives simulator/device QA one contract to inspect for notches, web preview chrome, and auth/onboarding spacing without changing the care workflows.
-
-Owner: Codex.
-
-Revisit trigger: Native device QA shows route headers need different per-surface top clearance, the app shell changes, or a final design-system route container replaces the current screen-level scroll containers.
-
-### 2026-06-20: Centered Text Modals Use The Shared Safe-Area Contract
-
-Decision: The Log post-care sticky-note prompt and More household/name prompt modals should use `getCenteredModalBackdropPadding` from the shared mobile layout helper instead of fixed horizontal-only centered modal padding.
-
-Reason: Native runtime QA is still waiting on simulator/device access, but centered keyboard modals can appear on small or notched devices before a real screenshot pass is available. A named helper gives these prompts top, bottom, and horizontal clearance from one contract without changing their care workflow behavior.
-
-Owner: Codex.
-
-Revisit trigger: Native device QA shows centered text prompts need different edge clearance, the prompt pattern moves to docked sheets, or a final design-system modal replaces these route-local prompt components.
-
-### 2026-06-20: Floating Feedback Uses The Shared Safe-Area Contract
-
-Decision: Home quick-log feedback and Avatar Studio save feedback should use `getFloatingFeedbackBottomOffset` from the shared mobile layout helper instead of route-local `insets.bottom + 96/22` toast positioning.
-
-Reason: The native runtime-QA baseline already covered scroll clearance, standalone composers, and docked sheets, but transient feedback could still sit too close to the floating tab shell or home indicator. A named helper gives the simulator/device screenshot pass one feedback-position contract to inspect without claiming device QA has run.
-
-Owner: Codex.
-
-Revisit trigger: Native device QA shows feedback needs a different clearance value, the floating tab shell changes, or a final toast/snackbar component replaces the current route-local feedback views.
-
-### 2026-06-19: Docked Mobile Sheets Use The Shared Safe-Area Contract
-
-Decision: Plans routine/event sheets, Log detail/edit sheets, Records Care Pass/record sheets, More diet/profile sheets, and the app error recovery sheet should use `getModalSheetBottomPadding` from the shared mobile layout helper instead of local `insets.bottom + 16/18/20` padding.
-
-Reason: The broader native runtime-QA baseline already covered the floating tab shell, tabbed scroll routes, standalone routes, and WoofGuide composer, but docked sheets still had route-local bottom-clearance math. Centralizing sheet padding gives the simulator/device screenshot pass one modal contract to inspect and reduces the risk that critical edit, report, profile, or recovery controls sit too close to the home indicator.
-
-Owner: Codex.
-
-Revisit trigger: Native device QA shows docked sheets need a different clearance value, the modal presentation pattern changes, or a final native design system introduces a richer sheet component.
-
-### 2026-06-19: WoofGuide Composer Clearance Belongs In Shared Mobile Layout
-
-Decision: WoofGuide's bottom composer should use `getStandaloneComposerBottomPadding` from the shared mobile layout helper instead of route-local `bottomInset + 12` math.
-
-Reason: WoofGuide is a standalone owner-reviewed assistant surface with a persistent input control. The broader safe-area baseline already covered tabbed scroll routes and standalone scroll content, but the assistant composer still had its own inset calculation that could leave flat native devices with too little clearance. A named helper gives native runtime QA one contract to inspect for standalone composer controls without claiming simulator screenshots have run.
-
-Owner: Codex.
-
-Revisit trigger: Native device QA shows the WoofGuide composer needs a different clearance than the shared standalone composer contract, or another standalone composer surface is added and needs a richer helper.
-
-### 2026-06-19: Standalone Mobile Routes Should Share The Same Bottom Clearance Contract
-
-Decision: Setup, Premium, Privacy, and the shared auth shell should use `getStandaloneRouteBottomPadding` instead of per-screen `insets.bottom + 32/40/44` padding.
-
-Reason: The tabbed safe-area helper fixed the primary shell, but the detached secondary routes still had route-specific bottom spacing that could leave primary form or CTA content too close to the home indicator on native devices. Moving every standalone scroll surface onto one helper gives the upcoming simulator/device QA pass a single clearance contract to validate.
-
-Owner: Codex.
-
-Revisit trigger: Device QA shows a specific standalone route needs stronger per-screen spacing, or the final native design system introduces a different standalone route footer pattern.
-
-### 2026-06-19: Safe-Area Clearance Should Come From One Mobile Layout Contract
-
-Decision: The floating bottom-tab shell, the main tabbed routes, and Avatar Studio should all derive bottom clearance from shared mobile layout helpers instead of route-by-route magic numbers such as `128`, `130`, `142`, or `72`.
-
-Reason: The current queue is blocked on real simulator/device QA, but code inspection already showed inconsistent bottom spacing across Home, Log, Plans, Health, More, Records, and Avatar Studio. Centralizing the spacing contract reduces the chance of the floating shell or home indicator covering primary actions on notched devices and gives the upcoming runtime screenshot pass a stable baseline to validate.
-
-Owner: Codex.
-
-Revisit trigger: The navigation shell changes height or shape, a final native design system replaces the current floating tab chrome, or device QA shows a specific route needs stronger per-screen clearance than the shared contract provides.
-
-### 2026-06-19: Launch Template Packs Should All Share One Animated Preview Contract
-
-Decision: Bully, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed should now promote from base-only to the same full overlay, mood-still, and generated preview-strip contract already used by Retriever, Husky, and Doodle, instead of leaving most launch breeds in a long-lived still-only state.
-
-Reason: The repo already had a safe local generation seam built around registered `base.png` art, file-backed overlays, mood stills, and seven non-walk preview strips. Finishing the remaining launch breeds with that same contract makes Avatar Studio feel consistently premium, keeps the manifest/verifier/readiness model truthful, and moves the next queue step to native QA plus final room illustration instead of more breed-pack catch-up.
-
-Owner: Codex.
-
-Revisit trigger: Artist-provided breed strip sets replace the current generated preview-strip seam, or WoofWatcher adds template-specific walk cycles beyond the current non-walk preview contract.
-
-### 2026-06-19: Family-Dog Templates Should Promote Straight From Partial Packs To Full Animated Packs
-
-Decision: Once Retriever, Husky, and Doodle had credible partial overlays and mood stills, WoofWatcher should finish their full family packs in one pass by adding the remaining overlay slots, the remaining mood stills, and generated preview strips together instead of introducing another long-lived half-ready state.
-
-Reason: Apollo has been explicit that WoofWatcher should not imply more production progress than actually exists. Finishing the family-dog trio in one coherent slice keeps the UI truthful, lets the verifier enforce one complete contract, and shifts the next queue step to the remaining launch breeds instead of keeping Retriever/Husky/Doodle stuck in `Art pack in progress`.
-
-Owner: Codex.
-
-Revisit trigger: Artist-provided breed strips replace the current generated preview-strip seam, or the remaining launch breeds need a different promotion path than the family-dog trio used.
-
-### 2026-06-18: Family-Dog Templates Can Ship Truthful Partial Packs Before Animation
-
-Decision: Retriever, Husky, and Doodle may ship file-backed accessory overlays and mood stills before their animated sprite strips are ready, as long as Avatar Studio labels them `Art pack in progress` and keeps animated preview explicitly false.
-
-Reason: The family-dog wave was blocked in the uncomfortable middle state between base-only truth and full animation. Adding real overlay and mood files gives owners richer breed-specific review choices now, while the manifest/readiness contract still prevents those breeds from looking fully animated before their strip work is finished.
-
-Owner: Codex.
-
-Revisit trigger: Retriever, Husky, and Doodle receive live sprite strips, or a stronger artist-provided partial-pack contract replaces the current generated overlay/still seam.
-
-### 2026-06-18: Avatar Studio Pack Truth Uses One Manifest
-
-Decision: Avatar Studio's live-art status, next-pack priority, and PixelLab asset verification should all derive from one shared template-pack manifest instead of separate hardcoded lists in the UI, readiness model, and verifier.
-
-Reason: The next production wave targets Retriever, Husky, and Doodle. Keeping pack truth in multiple files makes it too easy for a breed to look "next" in one surface, "queued" in another, or silently skip verification when art lands. One manifest keeps the studio truthful while making future pack registration smaller and safer.
-
-Owner: Codex.
-
-Revisit trigger: A fuller asset-management system replaces the current template-pack registry, or the art pipeline moves to generated metadata from PixelLab/Figma tooling.
-
-### 2026-06-18: Avatar Studio Must Show Pack Stage On Each Choice
-
-Decision: Avatar Studio should expose production-pack truth at the choice level, not only as a summary. Template cards, accessory slots, and mood chips should label whether a breed pack is base-only, art-partial, or animated, and whether each accessory or mood has live file-backed art today.
-
-Reason: As more breed packs come online, aggregate counters alone make it too easy to overread readiness. Owners need to know which exact customization choices are backed by real art before saving a care twin, and Apollo has been explicit that WoofWatcher must not imply production progress that has not actually shipped.
-
-Owner: Codex.
-
-Revisit trigger: Most launch templates ship full overlay/emote/sprite packs, or a richer in-studio art browser replaces the current readiness labels.
-
-### 2026-06-18: Avatar Studio Must Not Fake Production Overlay Readiness
-
-Decision: Avatar Studio should render live accessory/emote art only when a template has real file-backed pack assets, and unfinished templates should say that production overlays or moods are still pending instead of drawing generic stand-in costume shapes.
-
-Reason: The dog-care twin needs to feel premium and trustworthy. Generic fallback costume art makes Retriever, Husky, Doodle, and the remaining breeds look more finished than they are, which creates the same fake-progress problem Apollo keeps rejecting elsewhere in the product.
-
-Owner: Codex.
-
-Revisit trigger: Additional breed packs ship with real overlay/emote files, or the team approves a separate clearly-labeled wireframe preview mode for unfinished templates.
+Revisit trigger: Native iOS/Android QA automation, visual regression, or a final game-scene renderer replaces the manual evidence workflow.
 
 ### 2026-06-18: Avatar Studio Uses Live Phoenix Motion Only Where Production Sprite Packs Exist
 
@@ -852,14 +42,6 @@ Owner: Codex.
 
 Revisit trigger: Additional breed-specific sprite packs ship, or a unified template animation renderer replaces the current Phoenix-only preview contract.
 
-### 2026-06-19: Avatar Studio Should Separate Production Now From Next Pack
-
-Decision: Avatar Studio should present partial-pack breeds with an explicit `Production now` versus `Next pack` breakdown so owners can see the exact live overlays and moods before selecting them, instead of inferring readiness from counts alone.
-
-Reason: Retriever, Husky, and Doodle now have meaningful but incomplete art coverage. Counts such as `8/10 live overlays` are truthful, but they still force the owner to guess which two accessories or which three moods are pending. Listing the live set and the pending-next set makes the studio more trustworthy and keeps the family-dog wave understandable while animation strips are still unfinished.
-
-Revisit trigger: The remaining launch breeds receive partial or animated packs, or the pack contract expands beyond overlays, moods, and animated strips.
-
 ### 2026-06-17: PixelLab Is The Production Asset Pipeline For Phoenix
 
 Decision: WoofWatcher will use PixelLab for the production Phoenix identity, transparent sprite strips, dogless rooms, template previews, and accessory packs. PixelLab secrets stay local or backend-only and must never be placed in the Expo app, PWA, GitHub, screenshots, or docs.
@@ -869,6 +51,26 @@ Reason: The app already has a tested care-twin state engine, sprite manifest, an
 Owner: Apollo and Codex.
 
 Revisit trigger: PixelLab cannot produce a consistent approved Phoenix identity, generation cost becomes impractical, or Apollo selects a dedicated pixel artist/toolchain instead.
+
+### 2026-06-18: Avatar Studio Uses The Living Room In Studio Presentation
+
+Decision: Mobile Avatar Studio should use `LivingPhoenixRoom` with `presentation="studio"` as its primary hero instead of a static template portrait, old board hero image, or Home HUD clone.
+
+Reason: Apollo wants the dog to feel alive like a video-game care twin, but the Studio screen cannot carry Home-specific status docks that clip or compete with the creator workflow. A dedicated Studio presentation keeps one animated Phoenix, preserves the premium neo-retro room feel, and avoids duplicate-avatar or pasted-on art.
+
+Owner: Codex.
+
+Revisit trigger: A final native game scene renderer, Figma design system, or PixelLab sprite-family pack replaces the current React Native room renderer.
+
+### 2026-06-18: Subscription Seed Strips Stay In Review Until Phone-Size Approval
+
+Decision: The PixelLab subscription-generated `pixellab-idle-south-strip.png` and `pixellab-walk-south-strip.png` are verified local seed strips, but they should not replace the current approved seated Home sprite family until Apollo approves their phone-size proportions, bottom-center anchor, and mockup fit.
+
+Reason: Candidate D is useful as movement exploration, but Apollo's target boards favor a larger expressive Phoenix. Promoting a smaller directional strip too early could make the app feel less premium even if the file is technically valid.
+
+Owner: Apollo and Codex.
+
+Revisit trigger: Device preview confirms the seed strips look closer to boards 05/06 than the current seated v2 sprite family, or PixelLab produces a stronger large-body movement set.
 
 ### 2026-06-18: First Layered Phoenix Sprite Runtime Is Live
 
@@ -1786,16 +988,16 @@ Revisit trigger: Figma/Fable/PixelLab produces production-scale template packs o
 
 ### 2026-06-18: Avatar Templates Use Separate Preview And Base Asset Tiers
 
-Decision: Avatar Studio template art now has two registered tiers: `preview.png` thumbnails for compact pickers and `base.png` character stills for the larger creator preview stage. The first base tier covers Shepherd, Retriever, Husky, and Doodle.
+Decision: Avatar Studio template art now has two registered tiers: `preview.png` thumbnails for compact pickers and `base.png` character stills for the larger creator preview stage. The first base tier now covers all 12 launch templates: Shepherd, Retriever, Husky, Bully, Doodle, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed.
 
 Reason: Enlarging 85x85 thumbnails makes Avatar Studio feel cheap and undermines the "real-life digital pet" promise. A separate 170x170 base tier gives the app a production-shaped character creator path while leaving room for emote stills, sprite strips, and accessory overlays under the same template folders.
 
 Consequences:
 
 - `avatarTemplateAssets.ts` registers `AVATAR_TEMPLATE_BASE_ASSETS` separately from `AVATAR_TEMPLATE_PREVIEW_ASSETS`.
-- `/portrait` shows selected template base art when it exists and falls back safely for unfinished templates.
-- `verify-pixellab-assets.js` now checks the first four template base PNGs.
-- Remaining launch templates still need base art, emotes, sprites, and accessory overlays.
+- `/portrait` shows selected template base art and falls back safely for future unfinished templates.
+- `verify-pixellab-assets.js` now checks all 12 template base PNGs.
+- Launch templates still need emotes, sprites, and accessory overlays.
 
 Owner: Codex.
 
@@ -1819,115 +1021,1109 @@ Revisit trigger: Final accessory overlays, emote stills, or live template sprite
 
 ### 2026-06-18: Avatar Studio Prefers Registered Overlay And Emote PNG Assets
 
-Decision: Avatar Studio should prefer file-backed template accessory overlays and emote stills whenever a template pack provides them, while preserving the existing shape-based fallback for templates that are still waiting on production art.
+Decision: Avatar Studio should prefer file-backed template accessory overlays and emote stills whenever a template pack provides them, while preserving the existing shape-based fallback for templates that are still waiting on production art. Shepherd/Phoenix now has registered overlay and emote PNGs; Retriever, Husky/Spitz, and Bully now have registered 10-state template emote packs.
 
-Reason: The first Shepherd/Phoenix overlay and emote pack needs to be a real runtime contract, not only a note in the queue. Registering those PNGs in `avatarTemplateAssets.ts` and enforcing them in the verifier lets the mobile preview show truthful PixelLab-backed art today while keeping the remaining breeds shippable through the existing fallback path.
-
-Consequences:
-
-- `avatarTemplateAssets.ts` now registers shepherd accessory overlays plus a 10-state shepherd emote still pack.
-- `app/portrait.tsx` prefers those real PNG layers for the hero preview and mood chips before it falls back to the older code-drawn shapes.
-- `verify-pixellab-assets.js` and the mobile readiness suite now treat the first accessory and emote pack as required production assets.
-
-Owner: Codex.
-
-Revisit trigger: Retriever, Husky, Doodle, and the remaining template packs ship matching overlay/emote assets or move to full sprite-driven previews.
-
-### 2026-06-20: Shared Board Controls Use A 48px Mobile Touch Target
-
-Decision: Shared mobile board controls should use the exported `MIN_MOBILE_TOUCH_TARGET` contract from `mobileLayout.ts`, starting with board route icon buttons, compact pills, and care rows.
-
-Reason: Native accessibility QA is still pending, so the in-code board system should not depend on route-local visual tweaks for tap safety. A shared 48px target keeps premium board controls usable on mobile while preserving the compact neo-retro pixel style.
+Reason: Apollo called out the wrong-dog problem directly: non-Phoenix avatars cannot feel like a real care twin if the Mood set quietly displays Phoenix. Registering those PNGs in `avatarTemplateAssets.ts` and enforcing them in the verifier lets the mobile preview show truthful PixelLab-backed art today while keeping the remaining breeds shippable through the existing fallback path.
 
 Consequences:
 
-- `BoardPrimitives.tsx` imports the shared touch target instead of using smaller local 40px/42px controls.
-- Mobile layout tests lock the touch target value.
-- Mobile readiness tests protect shared board controls from drifting below release-safe tap sizes before simulator/device accessibility traversal is available.
+- `avatarTemplateAssets.ts` now registers Shepherd accessory overlays plus Shepherd, Retriever, Husky/Spitz, and Bully emote still packs.
+- `AvatarEmotePackId` now includes `retriever-starter`, `husky-starter`, and `bully-starter`; those templates recommend their matching packs.
+- `app/portrait.tsx` prefers real PNG layers for the hero preview and mood chips before it falls back to the older code-drawn shapes or base stills.
+- `verify-pixellab-assets.js` and the mobile readiness suite now treat the first overlay pack and all four live emote packs as required production assets.
 
 Owner: Codex.
 
-Revisit trigger: Native accessibility QA, final Figma components, or platform-specific design guidance requires a different minimum target.
+Revisit trigger: Doodle and the remaining template packs ship matching overlay/emote assets or move to full sprite-driven previews.
 
-### 2026-06-27: Animated Care-Twin Taps Need Explicit Accessibility Meaning
+### 2026-06-19: Option B Is The Active Phoenix Runtime Family
 
-Decision: Interactive care-twin avatar taps should be exposed as screen-reader buttons with mood-aware labels and a non-mutating hint.
+Decision: Phoenix Home and the care-twin runtime should prefer the hard-pixel Option B candidate family for live motion states: idle/tail-wag, walk, ear-perk, eat, drink, corrected curled sleep, comfort/home-alone, health-watch, celebrate, and bark/tap reaction.
 
-Reason: The animated care twin is a premium first-screen interaction, but tapping it only plays a gentle response and optional feedback callback. Screen-reader users need that boundary explicitly, and the app should not imply a care log, household sync write, or health action happened.
+Reason: Apollo repeatedly rejected softer/non-pixel avatar reads and selected the Neo Retro Digital Pet Option B boards as the target. A single coherent hard-pixel family makes the app feel more like a video-game care twin and prevents the main dog from slipping between unrelated art directions.
 
 Consequences:
 
-- `AnimatedAvatar` now exposes `accessibilityRole`, a mood/speech label, and a hint that the tap does not change care records.
-- Mobile readiness protects the contract until native screen-reader traversal is available.
-- Future care-twin interactions should keep playful reactions separate from actual care-log or routine mutations unless the UI clearly routes through an owner-reviewed action.
+- `careTwinAssets.ts` and `CARE_TWIN_SPRITE_MANIFEST` register Option B candidate strips for all current Phoenix live actions.
+- The older v2 Phoenix still pack remains useful for profile/still surfaces and fallback/reference, but it is not the preferred live Home motion direction.
+- The older south-facing subscription bark strip is archived as a fallback, while `option-b-bark-reaction-strip.png` is the active tap reaction.
+- Native iOS/Android phone-size QA must review the full Option B family before promotion from `candidates/` to final approved production paths.
 
 Owner: Codex.
 
-Revisit trigger: Native accessibility QA, Figma interaction specs, or a future care-twin action model changes the tap from feedback-only to a routed owner-reviewed workflow.
+Revisit trigger: Apollo rejects an Option B loop in phone-size QA, or a stronger artist/Figma/PixelLab production pack replaces the candidate family.
 
-### 2026-06-27: Mood Logs Need Structured Energy Context
+### 2026-06-19: Room Variants Must Stay Dogless Even When PixelLab Adds More Detail
 
-Decision: Mood logging should capture an explicit energy level and optional care context, plus household visibility and sticky notes, while preserving the top-level mood field used by Records Mood Trend and care-twin state.
+Decision: The live care-twin stage may graduate PixelLab room variants only when the room is dogless, text-free, watermark-free, and keeps an open center area for the animated Phoenix layer. The 2026-06-19 pass accepted night, bedtime, health-watch, and home-alone final candidates.
 
-Reason: Mood and energy are part of the real care loop, not decorative avatar inputs. The household needs to know whether a mood check happened after food, visitors, weather, or activity, and future care-twin/report logic needs structured fields instead of parsing generic notes.
+Reason: WoofWatcher's game feel depends on one living care twin, not a baked background dog plus an animated dog. Apollo explicitly rejected duplicate/ugly secondary avatar behavior, so richer room art cannot break the layered runtime contract.
 
 Consequences:
 
-- The Log composer now records low/steady/high energy as `details.energyLevel` for mood logs.
-- Optional context is stored as `details.moodContext`, and sticky notes still capture richer owner observations.
-- Mood logs use the same household visibility boundary as other shared evidence, while Records can continue reading the existing top-level `mood`.
+- `phoenix-room-night.png`, `phoenix-room-bedtime.png`, `phoenix-room-health-watch.png`, and `phoenix-room-home-alone.png` are now PixelLab final-candidate runtime layers.
+- Future room generations should be rejected if they contain dogs, readable text, watermark-like marks, or a perspective that makes the sprite stage feel disconnected.
 
 Owner: Codex.
 
-Revisit trigger: Deeper mood analytics, Care Pass mood sections, or avatar state-machine work requires a shared care-domain mood trend helper.
+Revisit trigger: Native phone-size QA shows room/sprite scale or stage cropping issues, or a stronger Figma/PixelLab final room set replaces these candidates.
 
-### 2026-06-28: Records Mood Timeline Uses Shared Owner-Reported Mood Evidence
+### 2026-06-19: Logging Is Instant By Default, Detailed When Needed, And Correctable Afterward
 
-Decision: Records should show a longer-range Mood Timeline from `deriveMoodTrend` before adding predictive mood analytics, clinician language, or provider-backed AI interpretation.
+Decision: WoofWatcher mobile logging uses tap for safe quick logs, long press for the detailed composer, and detail-required routing for medication and health/vomit-style logs. Meal logs use a served to outcome lifecycle. Potty remains the parent action, with pee/poop/accident/condition as outcomes or detail fields. Quick logs carry trust and confirmation metadata from creation.
 
-Reason: Mood logging, Records Mood Trend, Care Pass, and WoofGuide now share the same household-visible mood evidence. A 90-day mobile timeline lets owners review what changed over time, who logged it, and what care context was attached without pretending WoofWatcher can diagnose behavior or health.
+Reason: Apollo locked the product rule that care logging must be effortless without becoming careless. A tap should handle the common safe action in under five seconds, but serious care moments need enough structure to support household trust, reports, vets, sitters, and later AI summaries.
 
 Consequences:
 
-- Records now derives both a 30-day Mood Trend summary and a 90-day Mood Timeline from `deriveMoodTrend`.
-- The timeline shows caregiver, relative date, energy, context, and notes for recent shared mood check-ins.
-- Private and stale mood logs remain excluded, and the UI repeats that mood and energy are owner-reported care context, not diagnosis.
+- `quickLogEntry.ts` now owns the tested quick-log policy and default care-event shape.
+- Home and Log quick actions both use the same builder so progress outputs, pending meal loops, Care IQ, reports, and records receive consistent data.
+- Medication and health/vomit logs open the detailed composer instead of creating misleading one-tap proof.
+- The Log detail sheet can update a pending meal outcome while preserving audit history.
+- Future UI polish must not reintroduce Pee/Poo as top-level launcher actions; they are Potty outcomes.
 
 Owner: Codex.
 
-Revisit trigger: Period filters, richer mood visuals, clinician-reviewed wording, or provider-backed AI mood interpretation becomes active release work.
+Revisit trigger: The full structured edit sheet, photo proof, voice/talk-to-log, or cloud role permissions introduce a stronger event contract that still preserves this doctrine.
 
-### 2026-06-28: Mood Trend Period Filters Stay Evidence-Bounded
+### 2026-06-19: Alone Time Is A Start/Return Lifecycle, Not A Static Duration Log
 
-Decision: Records Mood Trend should offer Week, Month, and Quarter views from shared mood evidence before adding predictive mood analytics or clinician-style interpretation.
+Decision: Alone Time in WoofWatcher is modeled as an open household status session. Leaving Home starts an active `home-alone` log. I'm Home closes that same log with duration, return outcome, recovery/note details, returned-by metadata, and an audit trail.
 
-Reason: Owners need to compare whether recent mood and energy context is a short-term blip or a longer household pattern. The comparison must reuse the same private/stale exclusion and owner-reported boundary as `deriveMoodTrend`, so period controls do not become a separate analytics system with different trust rules.
+Reason: Apollo's vision depends on WoofWatcher answering "Where is Phoenix and is she alone?" in seconds. A static duration log cannot support live presence, household trust, care-twin home-alone behavior, sitter handoffs, or anxiety pattern review. The app needs a real open loop.
 
 Consequences:
 
-- `deriveMoodTrendPeriods` derives period summaries by calling `deriveMoodTrend` for each period.
-- Records uses accessible period controls and compact period comparison bars while preserving the 90-day Mood Timeline.
-- Mood and energy remain framed as household care context, not diagnosis.
+- `aloneTimeSession.ts` owns the start/find/return lifecycle contract.
+- Log's Alone Time quick action starts the active session when none exists and shows a return check-in when one is open.
+- Home reads the same open session and displays Phoenix as home alone instead of assuming a caregiver is present.
+- Completed sessions continue to feed the existing Alone Time analytics in Records and Care Passes.
+- Future Household Pulse and notification work should reuse this lifecycle instead of creating separate presence state.
 
 Owner: Codex.
 
-Revisit trigger: Caregiver/context filters, sparklines, clinician-reviewed wording, or provider-backed AI mood interpretation becomes active release work.
+Revisit trigger: Cloud sync/presence permissions introduce server-backed household presence, but the user-facing session still needs start/return auditability.
 
-### 2026-06-29: Mood Trend Caregiver And Context Filters Stay Evidence-Bounded
+### 2026-06-19: Care Log Trust Review Is Owner-Confirmed, Not Hidden Mutation
 
-Decision: Records Mood Trend caregiver and care-context filters should live in `deriveMoodTrend`/`deriveMoodTrendPeriods`, not as UI-only filtering.
+Decision: Care log trust state must be reviewed through explicit owner-facing actions: Confirm, Reject, Request photo, and Mark corrected. These actions update the existing log with trust/proof metadata and append audit history instead of deleting, overwriting, or silently hiding the original record.
 
-Reason: Owners need to review whether a mood pattern belongs to one caregiver shift or one repeated care context, but that view must preserve the same household-visible, lookback, owner-reported, and non-diagnostic boundary as the summary, period views, Care Pass, and WoofGuide.
+Reason: Apollo wants logging to stay effortless, but household members still need to trust medication, kid, sitter, trainer, health, and report-driving records. A serious care app needs visible confirmation and correction loops without turning every quick log into paperwork.
 
 Consequences:
 
-- `deriveMoodTrend` and `deriveMoodTrendPeriods` accept optional caregiver and context filters.
-- Records uses accessible filter chips to narrow the Mood Trend card and 90-day Mood Timeline together.
-- Private and stale mood logs remain excluded before filters are applied, and filtered empty states avoid implying diagnosis or hidden sync.
+- `careLogTrust.ts` owns the tested role-aware trust review contract.
+- Adult Admin, Adult, Owner, and Primary caregiver roles can review care-log trust state.
+- Kid, Sitter, Trainer, and Vet Viewer roles can create or view allowed care logs but cannot confirm/reject/correct trust state in this slice.
+- Request photo records a proof-request status only; it does not claim that camera/upload proof exists yet.
+- Rejected logs stay in history with watch severity so later reports can explain the correction instead of losing context.
+- The Log detail sheet presents trust state as a panel and omits raw trust/proof fields from generic detail rows.
 
 Owner: Codex.
 
-Revisit trigger: Richer sparklines, clinician-reviewed language, provider-backed AI mood interpretation, or caregiver permission policy changes the shape of mood review.
+Revisit trigger: Server-backed household roles, real photo uploads, medication proof policies, or caregiver Access Pass permissions require stricter role enforcement.
+
+### 2026-06-19: Detailed Logs Share The Same Trust Contract As Quick Logs
+
+Decision: Long-press/detail-sheet logs must use the same trust default engine as quick logs before they enter the timeline. Medication detail logs start pending confirmation with proof-needed metadata, safety-critical health logs start pending review, and kid/helper detail logs stay owner-reviewable even for care types that are normally casual.
+
+Reason: The user can create the same real care event through a quick tap, a long press, Home, or the Log composer. Those paths should not create different levels of household trust, proof expectation, or report evidence just because one path asked for more detail.
+
+Consequences:
+
+- `careLogTrust.ts` owns shared trust defaults and timeline attention chip derivation.
+- The detailed Log composer now adds trust metadata before append/audit work, matching the quick-log doctrine.
+- Medication proof remains a truthful placeholder state until camera/upload storage is implemented.
+- Timeline rows show unresolved care loops before opening the detail sheet: needs review, proof needed, photo requested, outcome pending, rejected, corrected, and estimated.
+- Future visual polish should preserve attention chips as an owner-facing operational surface, not hide them inside metadata.
+
+Owner: Codex.
+
+Revisit trigger: Server-backed roles, real attachments, medication proof policy, or talk-to-log command parsing introduce a stronger event creation pipeline that still preserves consistent trust defaults.
+
+### 2026-06-19: Medication Proof Can Be Attached Locally, But Does Not Confirm Care
+
+Decision: Medication proof attachment is a local evidence seam, not an approval action. A caregiver can attach a proof photo URI to a medication log, but the log remains pending adult confirmation until an owner explicitly reviews it. The UI must label this as local-only until provider-backed storage is approved and implemented.
+
+Reason: Medication is a high-trust household workflow. Photo evidence helps owners verify what happened, but a local image URI is not durable cloud proof, not cross-device storage, and not a substitute for owner review.
+
+Consequences:
+
+- `careLogTrust.ts` owns the proof attachment patch and audit event.
+- Attached proof records URI/name/source, attached-by/at, local-only storage status, and a proof-attached timeline chip.
+- The Log detail sheet can attach proof through Expo ImagePicker and shows the storage boundary in the Trust review panel.
+- Proof attachment does not clear `confirmationRequired`; Confirm/Reject/Mark corrected remain explicit owner actions.
+- Future Supabase/storage work should replace the local URI with durable storage metadata without changing the owner-facing trust contract.
+
+Owner: Codex.
+
+Revisit trigger: Provider-backed file storage, medication proof policy, Access Pass permissions, or Care Pass report attachments become production scope.
+
+### 2026-06-19: Potty Quick Logs Stay Fast, Detail Corrections Stay Traceable
+
+Decision: Potty remains a parent event. A quick tap can log a fast potty attempt, and the Log detail sheet can later clarify outcome, location, pee detail, stool consistency/color, and context. Corrections must rewrite stale pee/stool fields and append audit history instead of layering conflicting metadata onto the same log.
+
+Reason: Real care is messy. Someone may only know that Phoenix went outside now, then later clarify pee, poop, both, an accident, or tried-nothing. The app should support that reality without forcing a full form every time or polluting Records with stale stool/pee detail.
+
+Consequences:
+
+- `pottyLogDetail.ts` owns the tested parent-outcome correction helper and option vocabulary.
+- The mobile Log detail sheet has a Clarify potty log panel for outcome/location/pee/stool/context updates.
+- Records Potty Health can trust updated fields because stale pee/stool metadata is removed when the outcome changes.
+- Audit history explains who corrected the potty detail and when.
+- The copy remains observational and non-diagnostic.
+
+Owner: Codex.
+
+Revisit trigger: Walk-session editing, voice-to-log parsing, or provider-backed audit/sync rules introduce a more general structured log detail engine.
+
+### 2026-06-19: Walks Can Be Live Sessions, Not Only Past Logs
+
+Decision: Walk quick actions can start an active household-visible walk session. Home and Log should show that open session until a caregiver finishes it, and finishing should update the same log with duration, route/place, distance, dog interactions, social outcome, note, and audit history.
+
+Reason: Real walks are often started before the household knows duration, distance, route, or dog exposure. Treating every tap as a completed past event makes the care record feel fake and makes later Records/Care Pass outputs less trustworthy.
+
+Consequences:
+
+- `walkSession.ts` owns the tested start/find/finish lifecycle helper.
+- Home uses the helper for the Walk quick action and shows Walk active in the room, presence strip, and Next Up.
+- Log renders a WALK ACTIVE finish panel with validated distance/dog-interaction fields.
+- Completing the walk records one shared source event for Walk Activity, Saved Routes, Care Passes, and audit history.
+- GPS/location tracking remains out of scope for this version; route/place is owner-entered.
+
+Owner: Codex.
+
+Revisit trigger: GPS session tracking, background timers, Apple/Google Health integrations, or walker/sitter proof policies become production scope.
+
+### 2026-06-19: Correction History Is Traceability, Not Blame
+
+Decision: Log details should show a Correction history summary before the raw Audit trail. The summary should surface latest update, correction count, and changed-field chips while keeping the complete audit rows available below.
+
+Reason: Household care logs are edited because real care is messy, not because someone did something wrong. Owners need enough trust to understand what changed without making normal corrections feel punitive.
+
+Consequences:
+
+- Log details show a Correction history card when audit events exist.
+- Logs with no later audit events say they are original instead of implying missing data.
+- The full audit trail remains available for handoffs, sitter/trainer review, and safety-critical logs.
+- Future design polish should keep correction language calm and operational.
+
+Owner: Codex.
+
+Revisit trigger: Server-backed audit policies, Access Pass review, legal export requirements, or provider-backed attachment history require a stricter audit presentation.
+
+### 2026-06-19: CareTwin Roster Can Stage Future Dogs, But Switching Is Provider-Gated
+
+Decision: The mobile app may persist planned future dogs in a local CareTwin roster, but only the primary dog is treated as the live care twin until provider-backed multi-dog care documents exist. Future dogs must be shown as provider-gated planned slots, not as selectable pets with shared Phoenix logs.
+
+Reason: WoofWatcher's long-term platform needs multiple dogs, but pretending to switch pets without separate logs, routines, records, reports, avatar state, permissions, and privacy export would corrupt trust. Staging the roster is useful; fake switching is not.
+
+Consequences:
+
+- `CareContext` now carries `activePetId` and `pets`.
+- `careTwinRoster.ts` owns the tested live-versus-provider-gated roster model.
+- More shows CareTwin Roster with Add future dog and locked planned slots.
+- Owner data export and deletion request scope include staged pet roster data.
+- True switching remains blocked until provider-backed multi-dog care document scoping is approved and implemented.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves production account/storage/database rules for multi-dog care documents, or the API schema grows first-class per-dog scoping.
+
+### 2026-06-19: Access Pass Drafts Are Local Until Provider Enforcement Exists
+
+Decision: WoofWatcher can stage Access Pass drafts for sitters, trainers, vet viewers, emergency helpers, and temporary helpers, but remote access, revocation, and role enforcement remain provider-gated.
+
+Reason: Access Pass is permission to help, while Care Pass is a shareable report. Treating a local draft as real remote authorization would create a privacy and safety risk for household records, medication logs, and dog health data.
+
+Consequences:
+
+- `access-pass.ts` owns tested Access Pass permission defaults, blocked actions, active/upcoming/draft status, and My Care Today assigned-care derivation.
+- Mobile More can create and share a local Access Pass draft summary while explicitly saying provider-backed sharing is not live.
+- `CareContext` persists `accessPasses` locally/shared in the care document for future provider enforcement.
+- Privacy export and deletion request scope include Access Pass drafts.
+- Provider-backed Access Pass enforcement still requires account roles, API authorization, revocation, helper audit trails, and storage/provider rules.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves provider-backed household roles, helper invites, storage rules, or role-specific API authorization.
+
+### 2026-06-19: Adventure Mode Is Private Real-Care Memory, Not Public AR
+
+Decision: Adventure Mode can derive private quests, XP, levels, proof, and local memory drafts from household-visible care logs, but it must not claim public AR, GPS tracking, map storage, cloud photo storage, community discovery, or live sharing until those provider and safety rules exist.
+
+Reason: The product vision needs the dog-care RPG magic, but the real pet comes first. A private care-memory loop is useful now; pretending to have location safety, cloud media, public sharing, or community moderation would create privacy and trust risk.
+
+Consequences:
+
+- `adventure.ts` owns the tested local quest, XP, proof, and memory-draft derivation model.
+- Mobile More links to `/adventure` as a real screen, not a placeholder.
+- `CareContext` persists `adventureMemories` as local/private care evidence.
+- Owner export and deletion-request scope include Adventure memories.
+- Provider-backed media, maps/location retention, share links, and community discovery remain blocked until Apollo approves storage, privacy, and safety scope.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves provider-backed media storage, location/map retention policy, share-link permissions, or a moderated community-adventure product.
+
+### 2026-06-20: In-App Mobile QA Evidence Does Not Equal Launch Approval
+
+Decision: WoofWatcher may use the internal `/care-twin-qa` route as a Mobile Release QA cockpit for Phoenix Home, Care Twin State Lab, Avatar Studio, Incident Composer, Records Incident Watch, Trainer Care Pass, and the 12-state care-twin animation matrix. The route can collect Pass/Needs tune status, device notes, and a native share report, but it must keep attached iOS/Android screenshots and human review as required before release approval.
+
+Reason: The Windows automation worktree can prove wiring, tests, static route coverage, and share-report contracts, but it cannot prove native phone-size crop, safe areas, touch response, keyboard overlap, animation taste, or App Store-quality visual polish. Treating in-app checkboxes as launch proof would create false confidence.
+
+Consequences:
+
+- `mobileReleaseQa.ts` owns the tested launch workflow checklist and share-report contract.
+- `/care-twin-qa` combines the Mobile Release QA checklist with the existing care-twin state matrix.
+- `mobileQaSession.ts` may persist the internal QA session locally so testers can leave the route, inspect target screens, return, and keep Pass/Needs tune status plus notes without claiming provider-backed QA storage.
+- The next native QA pass should complete both sections, attach screenshots, and fix the first visible issue before claiming release confidence.
+- Future release docs must distinguish local/static verification from simulator/device evidence.
+
+Owner: Codex.
+
+Revisit trigger: The project gains reliable automated native screenshot capture, simulator access, or App Store/Play release automation that can produce equivalent visual proof.
+
+### 2026-06-20: Care Twin Taps Must Be State-Aware
+
+Decision: Phoenix room taps should use a choreography model derived from the current care-twin state instead of always triggering a bark. Happy/steady states can use the playful bark reaction, rest states should use a soft check-in, and Health Watch should use a calm comfort response.
+
+Reason: The care twin needs to feel like a living game character, not a generic button. A dog that is sleeping, low-energy, or on Health Watch should not be forced into the same high-energy tap reaction as a happy idle state.
+
+Consequences:
+
+- `careTwinChoreography.ts` owns the tested primary loop, ambient micro-loop, tap reaction, reaction timing, and QA summary model.
+- Home derives room tap reactions from the choreography model.
+- `LivingPhoenixRoom` uses the same choreography model for ambient and reaction timing.
+- `/care-twin-qa` exposes a Motion recipe for each state so native reviewers can judge the intended behavior alongside crop, scale, and loop quality.
+- Native iOS/Android QA remains required before claiming the animation taste is launch-approved.
+
+Owner: Codex.
+
+Revisit trigger: Rive, Lottie, Reanimated, or a future game-runtime layer replaces sprite-strip playback with a richer animation graph.
+
+### 2026-06-20: Native QA Screenshots Stay Local Until Provider Storage Is Approved
+
+Decision: `/care-twin-qa` may attach local screenshot evidence from the device photo library to release surfaces and care-twin states, persist that evidence in the local QA session, and include screenshot file names in the share report. It must not imply provider-backed screenshot storage, remote QA review, or launch approval.
+
+Reason: Native screenshots are necessary for judging App Store-quality crop, safe areas, touch response, keyboard fit, and animation taste. Local evidence capture makes device review more organized, but storing screenshots as production QA records requires approved storage/provider rules and privacy handling.
+
+Consequences:
+
+- `qaScreenshotEvidence.ts` owns sanitized local screenshot metadata.
+- `mobileQaSession.ts` persists release-surface and care-twin state evidence locally with the rest of the QA session.
+- `mobileReleaseQa.ts` and `careTwinQaReport.ts` count attached screenshots and list file names in share text.
+- `/care-twin-qa` exposes Attach screenshot and Clear controls for each release surface and each care-twin scenario.
+- Real iOS/Android human screenshot review remains required before release confidence.
+- Provider-backed QA media storage remains blocked until Apollo approves storage rules.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves provider-backed media/document storage for QA evidence, or the project gains reliable automated native screenshot capture.
+
+### 2026-06-20: Native QA Evidence Must Distinguish iOS From Android
+
+Decision: local QA screenshot evidence must track the runtime platform. iOS screenshots can satisfy iOS evidence slots, Android screenshots can satisfy Android evidence slots, and web/unknown screenshots can remain visible without satisfying native release proof.
+
+Reason: A mobile-first app can pass on one platform and still have safe-area, keyboard, crop, or animation issues on the other. Counting generic screenshots would let one-platform evidence create false release confidence.
+
+Consequences:
+
+- `qaScreenshotEvidence.ts` stores `targetPlatform` and labels screenshot file names with iOS, Android, Web, or Unknown platform.
+- `mobileReleaseQa.ts` tracks required and attached iOS, Android, and general screenshot slots separately.
+- `/care-twin-qa` tags new attachments from the current runtime platform and shows iOS/Android evidence counts in the cockpit header.
+- Share reports list platform labels beside screenshot filenames.
+- Native release confidence still requires both iOS and Android evidence plus human review.
+
+Owner: Codex.
+
+Revisit trigger: automated native screenshot capture or provider-backed QA evidence storage introduces a stronger platform/source-of-truth model.
+
+### 2026-06-20: Native QA Proof Requires All Evidence Classes
+
+Decision: Mobile Release QA proof is complete only when required iOS slots, required Android slots, and flexible/general screenshot slots are all satisfied. The cockpit may display total attached files, but completion color/copy must come from the tested platform-proof helper instead of a generic screenshot count.
+
+Reason: Some launch evidence is platform-specific and some is flexible, such as a shared report screenshot. A total file count can look impressive while still missing every Android capture, so the app must show the exact gap before release review.
+
+Consequences:
+
+- `mobileReleaseQa.ts` owns helper functions for complete platform proof, flexible slot satisfaction, platform evidence labels, and missing evidence copy.
+- `/care-twin-qa` shows Native proof open/ready plus exact iOS/Android/flexible evidence status.
+- Static readiness tests reject the older aggregate screenshot-badge completion pattern.
+- Real native QA still requires device/simulator screenshots and human visual review.
+
+Owner: Codex.
+
+Revisit trigger: release QA moves to an external provider-backed evidence system or automated native screenshot capture creates a stronger per-platform proof source.
+
+### 2026-06-20: Floating Paw Tab Clearance Is A Shared Layout Contract
+
+Decision: mobile tab bar geometry, center paw positioning, and tabbed route bottom padding should be derived from a shared layout helper instead of hard-coded separately in each route.
+
+Reason: WoofWatcher is mobile-first, and fixed per-screen bottom padding can quietly drift as the floating paw navigation, safe-area insets, or web/native tab sizes change. A shared helper makes iOS, Android, and web clearance predictable before native QA.
+
+Consequences:
+
+- `mobileLayout.ts` owns floating tab chrome metrics plus tabbed and standalone bottom-padding helpers.
+- The tab shell uses shared metrics for tab bar height/bottom/radius/insets and center paw bottom position.
+- Home, Log, Plans, Health, More, and Records use `getTabbedRouteBottomPadding`.
+- Mobile readiness tests reject fixed `128`, `130`, or `142` tab clearance values on tabbed routes.
+- Native iOS/Android QA still has to judge real visual fit, but the route-level spacing contract is now test-protected.
+
+Owner: Codex.
+
+Revisit trigger: the mobile navigation design changes, the center paw is removed, or Expo/native safe-area handling changes enough to require new tab geometry.
+
+### 2026-06-20: Standalone Mobile Screens Share The Same Safe-Area Contract
+
+Decision: standalone routes, auth/setup screens, and docked bottom composers should use `mobileLayout.ts` helpers instead of route-local bottom-padding constants.
+
+Reason: WoofWatcher is primarily an iOS/Android app, and the non-tab screens are part of the launch-critical path: Avatar Studio, Adventure, Care Twin QA, Premium, Privacy, Setup, auth, and WoofGuide. If those screens hand-roll bottom insets, the app can look polished on Home while still clipping buttons, input bars, or proof controls elsewhere.
+
+Consequences:
+
+- `mobileLayout.ts` now exports `getDockedComposerBottomPadding` alongside the existing tabbed and standalone helpers.
+- Adventure, Avatar Studio, Care Twin QA, Premium, Privacy, Setup, and `AuthShell` use `getStandaloneRouteBottomPadding`.
+- WoofGuide uses `getDockedComposerBottomPadding` for the bottom input composer.
+- Mobile readiness tests reject the older standalone magic numbers and local composer inset.
+- Real iOS/Android QA still has to judge keyboard behavior, bottom reach, scroll length, and visual fit.
+
+Owner: Codex.
+
+Revisit trigger: a native keyboard avoidance layer, new modal sheet system, or app-shell redesign changes how standalone routes and bottom composers reserve safe-area space.
+
+### 2026-06-20: First-Run Household Setup Can Stage Intent Before Provider Invites
+
+Decision: the setup wizard may capture and persist Create household, Join by invite, or Local preview intent before provider-backed household creation and invite acceptance are live, as long as the UI truthfully labels the state and blocks incomplete join drafts.
+
+Reason: WoofWatcher's launch flow needs a real household decision early, but fake cloud invites would damage trust. A local household setup object lets the app collect the right owner intent, include it in privacy export, and guide the next account step without claiming remote sync or membership enforcement.
+
+Consequences:
+
+- `setupWizard.ts` persists `householdSetup` with mode, household name, optional invite code, provider status, and update time.
+- Setup UI shows Create household, Join by invite, and Local preview options.
+- Join-by-invite setup requires an invite code before save.
+- Confirmation copy distinguishes local-only, account-needed, and provider-ready states.
+- Privacy export includes household setup metadata.
+- Provider-backed household creation, invite acceptance, role enforcement, and revocation remain separate production work.
+
+Owner: Codex.
+
+Revisit trigger: Clerk/Supabase household provisioning and invite acceptance become live, or Apollo changes the launch account model.
+
+### 2026-06-21: Mobile Interaction Geometry Is A Shared Contract
+
+Decision: route top padding, modal sheet bottom padding, centered modal padding,
+keyboard avoiding offsets, and mobile touch target constants belong in
+`mobileLayout.ts`, not in individual route files.
+
+Reason: WoofWatcher is primarily an iOS/Android app. The premium product can
+look good in a browser but still feel unfinished on a phone if each screen
+hand-rolls notch clearance, keyboard offsets, modal reach, and small inline tap
+areas. A shared contract makes Home, Log, Plans, Health, More, Records,
+standalone tools, auth/setup, WoofGuide, and fallback recovery behave like one
+app before native QA.
+
+Consequences:
+
+- `mobileLayout.ts` owns top safe-area padding for tabbed, standalone, setup,
+  and auth surfaces.
+- `mobileLayout.ts` owns modal sheet bottom padding, centered modal backdrop
+  padding, keyboard avoiding offsets, floating feedback/debug offsets, minimum
+  touch target size, and inline hit slop.
+- Launch-critical route files call the shared helpers instead of route-local
+  formulas.
+- Mobile readiness tests reject hard-coded top safe-area formulas, unsafe modal
+  bottom padding, and literal 8/10 hit slop.
+- Real iOS/Android QA still has to judge the visual result on device and feed
+  the next tuning pass.
+
+Owner: Codex.
+
+Revisit trigger: the app adopts a native sheet/navigation library, changes the
+floating paw navigation, or real device QA proves the shared constants need
+surface-specific tuning.
+
+### 2026-06-23: Access Pass Mutations Return Audit Metadata Before Durable Audit Storage
+
+Decision: provider-backed household helper work can expose owner/admin Access Pass activation and revocation routes now, but those routes return response-level `HouseholdAuditEvent` metadata instead of pretending durable provider audit storage exists.
+
+Reason: WoofWatcher needs a trustworthy household-sharing contract before launch. Owners should be able to assign sitter, trainer, walker, and vet-viewer helper roles through typed API operations, and clients need audit metadata to show what happened. Durable account-action audit storage still needs database/provider approval and retention rules.
+
+Consequences:
+
+- Join-by-invite returns an invitation-accepted audit event and stores the canonical adult caregiver role.
+- Access Pass activation/revocation are owner/admin-only, active-household scoped, and limited to helper-compatible roles.
+- Generated OpenAPI, Zod, and React client contracts expose the audit-aware responses.
+- Durable audit storage, expiry enforcement, invite approval lifecycle states, and account-action retention remain separate provider-launch work.
+
+Owner: Codex.
+
+Revisit trigger: Supabase/Postgres provider rules, invite lifecycle storage, Access Pass expiry, or account-action audit retention become approved implementation work.
+
+### 2026-06-24: Household Audit Rows Can Be Provider-Durable Before Full Invite Workflow
+
+Decision: household invite acceptance, member role changes, member revocation, and Access Pass activation/revocation may now write provider-durable audit rows through the `household_audit_events` schema, while full invite approval workflow, audit review APIs, scheduled expiry cleanup, provider RLS, retention, export, and deletion policy remain launch gates.
+
+Reason: WoofWatcher's household trust layer should not rely on response-only metadata once helper role mutations exist. Persisting account-action evidence makes Access Passes, sitter/trainer/vet-viewer changes, and future owner review flows safer, but it would be dishonest to claim production audit compliance before provider migration and policy approvals are complete.
+
+Consequences:
+
+- `household_audit_events` stores action, lifecycle state, actor, target member/user, role transition, note/reason, expiry metadata, created time, and provider/export metadata.
+- Household join/update/revoke and Access Pass activation/revocation routes insert durable audit rows before returning typed audit responses.
+- Access Pass activation rejects invalid or past expiration values before helper access changes.
+- OpenAPI, Zod, and React generated schemas expose provider-durable audit storage plus lifecycle states.
+- Production still needs migrations, RLS/provider access rules, audit review APIs, scheduled expiry cleanup, retention/export/deletion policy, and legal/privacy review.
+
+Owner: Codex.
+
+Revisit trigger: provider migrations/RLS are approved, audit review APIs are built, or Access Pass expiry cleanup moves from readiness into production enforcement.
+
+### 2026-06-24: Household Audit Review Is Owner/Admin Only Before Fine-Grained Admin Roles
+
+Decision: durable household audit rows can now be listed through `GET /household/audit-events`, but the review API stays authenticated, active-household scoped, and owner/admin-only until provider RLS, retention, export/deletion policy, and finer-grained admin roles are approved.
+
+Reason: WoofWatcher needs an owner trust surface for invite acceptance, role changes, revocations, and Access Pass helper activity before launch. Exposing those rows too broadly would weaken household privacy and could leak caregiver or helper access history to roles that should not see account-action evidence.
+
+Consequences:
+
+- The API returns newest-first durable audit rows with safe `limit`, `action`, and `lifecycleState` filters.
+- OpenAPI, Zod validators, React schemas/hooks, and generated type files expose the audit review response and filters.
+- Non-owner roles receive a typed `403` error until a finer provider-backed admin permission model exists.
+- Provider migration, RLS, scheduled expiry cleanup, retention/export/deletion policy, and legal/privacy approval remain separate launch gates.
+
+Owner: Codex.
+
+Revisit trigger: provider RLS is approved, household admin roles become distinct from owner, or audit review needs role-specific views for sitters, trainers, or vet viewers.
+
+### 2026-06-24: Access Pass Expiry Is Enforced At Request Time Before Cleanup Jobs
+
+Decision: expired Access Pass helper memberships must lose write authority during request-time authorization even before scheduled cleanup jobs, provider migrations, RLS, or owner-facing cleanup UI exist.
+
+Reason: temporary helper access is a trust boundary. A sitter, trainer, walker, or vet-viewer pass that has passed its expiry should not continue satisfying write authorization just because a cleanup task has not run yet. Request-time enforcement gives the API a safer default while still letting `/me` show the original helper role plus expiry metadata so the UI can explain what happened.
+
+Consequences:
+
+- Household member rows carry `accessPassExpiresAt`.
+- Access Pass activation persists the valid future expiry window on the helper membership.
+- Helper roles with expired pass windows resolve to `expired access pass` inside authorization.
+- Care-entry writes treat `expired access pass` as read-only.
+- `/me` exposes `accessPassExpiresAt` and `accessPassExpired` without hiding the member's display role.
+- Scheduled cleanup, provider migration/RLS, retention/export/deletion policy, and legal/privacy approval remain separate launch gates.
+
+Owner: Codex.
+
+Revisit trigger: provider migrations/RLS are approved, scheduled cleanup is added, or the UI needs owner/admin controls for expired helper memberships.
+
+### 2026-06-24: Household Invitations Are Durable Lifecycle Rows Before Provider Delivery
+
+Decision: household invitations now live as durable lifecycle rows with owner/admin list/create/revoke APIs, and `/household/join` must prefer those rows over the legacy household invite code whenever a durable invitation exists.
+
+Reason: shared household care and temporary helper access cannot rely on one static invite code once WoofWatcher supports roles, approval windows, Access Passes, audit review, and future provider-backed delivery. A durable invitation record lets the product distinguish pending approval, approved, accepted, revoked, expired, and rejected invitations while keeping legacy local-preview joins available until provider setup is complete.
+
+Consequences:
+
+- `household_invitations` stores invite code, household, invited email/user, canonical role, lifecycle state, actor ids, lifecycle timestamps, expiry, notes, and provider metadata.
+- Owner/admin invite list/create/revoke APIs are authenticated and active-household scoped.
+- `/household/join` blocks pending, revoked, expired, rejected, and already accepted durable invitations, applies the invitation role on acceptance, and marks accepted invites.
+- Invite creation and revocation emit durable audit events through the existing household audit trail.
+- Production still needs Supabase migration/RLS, notification/email delivery, invite UI polish, scheduled expiry cleanup, retention/export/deletion policy, and legal/privacy approval.
+
+Owner: Codex.
+
+Revisit trigger: provider migrations/RLS are approved, invite delivery is implemented, or invite approval/rejection needs fine-grained UI.
+
+### 2026-06-24: Household Sharing Cleanup Review Is Read-Only Before Apply Cleanup
+
+Decision: expired household invitations and expired Access Pass helper memberships can be reviewed through owner/admin-only `GET /household/sharing-cleanup`, but cleanup remains read-only until owner approval, provider RLS/migrations, retention/export/deletion policy, and legal/privacy rules are approved.
+
+Reason: expired sharing objects are trust risks, but automatically deleting rows or revoking helper access without an owner-visible review/apply model would be destructive. A read-only packet lets the mobile app show what needs attention while preserving request-time authorization safety.
+
+Consequences:
+
+- `household-sharing-cleanup.ts` derives review-only stale candidates from runtime-expired invitation rows and expired Access Pass helper memberships.
+- The route is authenticated, active-household scoped, owner/admin-only, query-validated, and generated-client typed.
+- Cleanup candidates expose `review-only` storage and recommended actions instead of mutating data.
+- Future cleanup apply, scheduled jobs, Supabase migration/RLS, retention/export/deletion, notification delivery, and legal/privacy approval remain launch gates.
+
+Owner: Codex.
+
+Revisit trigger: owner-approved cleanup apply is designed, provider migrations/RLS are approved, or expired invite/helper cleanup needs a scheduled job.
+
+### 2026-06-28: Port Main-Line Mood/Energy Logic Instead Of Broad-Merging The Premium Branch
+
+Decision: after fetching the latest `origin/main`, the automation branch should not broad-merge main for this slice. The full merge was attempted, produced conflicts across API, mobile routes, generated clients, binary avatar assets, and docs, then was aborted. The accepted approach is to port the highest-impact mood/energy care logic surgically into the premium branch.
+
+Reason: this automation branch contains richer premium UI, care-twin QA, provider-readiness, and release-handoff work. A mechanical merge would risk losing or flattening those product lines. Mood/energy logging is still valuable for launch because it connects Quick Log, Records, Phoenix's care twin, and future WoofGuide summaries, so it should be brought in deliberately through shared care-domain logic.
+
+Consequences:
+
+- `deriveMoodTrend` lives in `lib/care-domain` and becomes the source formula for shared mood/energy trends.
+- Quick Log Mood captures mood, energy level, household visibility, care context, and optional sticky notes.
+- Records Mood Trend uses the shared formula for average score, steady/watch status, energy mix, latest context, and next-step copy.
+- Main-line reconciliation should continue as explicit, test-backed ports until the branch can be safely merged or replaced.
+
+Owner: Codex.
+
+Revisit trigger: the premium branch is ready for a dedicated conflict-resolution merge window, or main contains another high-impact care logic change that should be ported intentionally.
+
+### 2026-07-04: Care Pass Report Storage Requires Structured Proof
+
+Decision: Care Pass report artifact storage cannot treat configured/provider-approved storage setup as upload readiness. Saved printable HTML reports must stay `Saved locally` until `CarePassStorageProviderEvidence` proves buckets, signed upload/download, household scope, retention/export/deletion, QA evidence storage, approval owner, and approval booleans.
+
+Reason: Report History is an owner handoff surface. If a saved report says `Ready to upload` from setup booleans alone, it contradicts the shared attachment storage guard and can imply cloud durability before any real storage proof exists.
+
+Consequences:
+
+- `describeCarePassArtifactStorage` accepts `storageProviderEvidence` and calls `isCarePassStorageProviderProofReady`.
+- Provider storage setup without structured proof stays local and explains the missing proof requirements.
+- Real storage buckets, signed policies, native share/reopen evidence, store review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real provider storage proof files or the app gains a provider-backed proof evidence service that can feed Report History.
+
+### 2026-07-03: Payments Checkout Requires Focused Provider Proof Before Money Movement
+
+Decision: WoofWatcher Plus payments get a focused `/care-twin-qa?qaSurface=payments-provider-proof` mission and a Provider Launch Setup shortcut before any checkout, entitlement enforcement, or money movement can be enabled.
+
+Reason: paid checkout is a launch-critical trust boundary. Local preview state, static plan copy, or owner-staged provider rows must not be treated as a real paid subscription. Helpers need one concrete mission for product ids, billing path, sandbox receipts, restore purchases, entitlements, refund/support policy, and Apollo approval before the payments gate can close.
+
+Consequences:
+
+- More's Plus payments provider row opens the focused payments proof mission.
+- Mobile Release QA, Share Beta Handoff, Release Smoke Checklist, live-preview proof, JSON mobile beta doctor, and native QA tooling doctor all name the same route.
+- The proof target requires Plus and Family product ids, billing path decision, sandbox purchase, renewal, cancel, refund, expired receipt, restore purchases, entitlement mapping, household role access, refund/support policy, and checkout-gate evidence.
+- Paid checkout, Stripe or store purchase flows, active paid entitlements, subscription enforcement, and public launch remain blocked until real provider proof and Apollo approval exist.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves the billing path, App Store/Google Play/Stripe provider credentials are available, or sandbox receipt evidence is ready to attach.
+
+### 2026-07-04: Payments Receipt Proof Must Be Store-Specific
+
+Decision: WoofWatcher Plus checkout cannot move from blocked to reviewable from generic payment approval flags. The payments proof manifest must require separate iOS App Store and Android Google Play sandbox receipt evidence, with platform/store naming, JSON MIME, byte size, product id, transaction id, purchase, renewal, cancellation, refund, expiration, and restore proof.
+
+Reason: billing is a money and trust boundary. A helper note that says receipts are approved is not enough to prove App Store or Google Play purchase and restore behavior, and it would let local preview state look too close to a real paid subscription.
+
+Consequences:
+
+- The Sandbox receipts, Entitlements and restore, and Checkout gate rows stay blocked until both platform/store receipt proofs are attached.
+- Share Beta Handoff, Release Smoke Checklist, native QA tooling doctor, JSON mobile beta doctor, and Payments Provider Proof QA copy all name the store-specific evidence shape.
+- Paid checkout, active paid entitlements, App Store/Google Play purchase flows, refund/tax obligations, store approval, public launch, and Apollo checkout sign-off remain blocked.
+
+Owner: Codex.
+
+Revisit trigger: Apollo approves the billing path and real App Store/Google Play sandbox receipt evidence is available for attachment.
+
+### 2026-07-04: Records Native File Proof Requires Device Evidence Before Approval
+
+Decision: the focused Records local-file mission gets a source-backed proof manifest, but `Native file proof allowed` remains `No` until Care Pass local HTML, Dog ID local HTML, Dog ID SVG, native share-sheet behavior, Android content URI or saved-file proof, fallback copy, and generated PDF/PNG/provider boundary evidence are attached from real device QA.
+
+Reason: Records can already create local HTML/SVG sources, and generated PDF/PNG bytes exist as separate local artifacts, but helpers need one explicit checklist that prevents local source availability from being mistaken for native file proof, provider-backed storage, cloud sync, or export readiness.
+
+Consequences:
+
+- `/care-twin-qa?qaSurface=records-local-file-handoff` renders the Records local file handoff proof manifest before Evidence Capture.
+- The JSON mobile beta doctor guards that the manifest remains source-backed.
+- Real iOS/Android share-sheet evidence, Android content URI or saved-file proof, fallback-copy proof, native share/reopen evidence for generated binaries, structured provider storage proof, and Apollo sign-off remain launch gates.
+
+Owner: Codex.
+
+Revisit trigger: native Records file proof is attached, provider-backed records storage is configured, or generated PDF/PNG export readiness is ready for approval.
+
+### 2026-07-04: Records Native File Proof Must Be Platform And File Specific
+
+Decision: the Records local-file handoff proof manifest cannot treat generic native share-sheet notes as native file proof. Native Records file proof requires six concrete local-file slots: iOS Care Pass local HTML, Android Care Pass local HTML, iOS Dog ID local HTML, Android Dog ID local HTML, iOS Dog ID SVG image source, and Android Dog ID SVG image source.
+
+Reason: Care Pass HTML, Dog ID HTML, and Dog ID SVG can each fail differently across iOS and Android share/open paths. A broad "iOS and Android share sheets opened" note could hide missing file names, MIME, byte size, platform path, or Android URI evidence.
+
+Consequences:
+
+- Each native Records file proof slot must include platform/file naming in the file name or URI, MIME, positive byte size, share proof, and reopen proof.
+- Android content URI or saved-file proof remains blocked until the Android Care Pass HTML, Dog ID HTML, and Dog ID SVG slots include `content://` or `file://` URI evidence.
+- Fallback copy, generated PDF/PNG proof, provider storage, cloud sync, public launch, and Apollo sign-off remain separate gates.
+
+Owner: Codex.
+
+Revisit trigger: real iOS/Android Records file evidence is attached from configured native tooling or physical devices.
+
+### 2026-07-04: Auth Setup Native Proof Must Be Platform And Surface Specific
+
+Decision: the Auth/Setup proof manifest cannot treat generic native screen approval flags as native Auth/Setup proof. Native Auth/Setup proof requires four concrete screenshot slots: iOS Auth gateway, Android Auth gateway, iOS Setup local-preview, and Android Setup local-preview.
+
+Reason: account entry and first-run setup can fail differently across platforms and screens. A broad "native screens approved" flag could hide missing file names, MIME, byte size, provider-boundary copy, or reachable setup controls.
+
+Consequences:
+
+- Each native Auth/Setup proof slot must include platform/surface naming in the file name or URI, image MIME, positive byte size, and provider-boundary copy.
+- Setup local-preview proof also requires reachable setup controls before the row can open.
+- Provider-backed auth, household sync, store review, public launch, and Apollo sign-off remain separate gates.
+
+Owner: Codex.
+
+Revisit trigger: real iOS/Android Auth gateway and Setup local-preview evidence is attached from configured native tooling or physical devices.
+
+### 2026-07-04: Push Delivery Proof Must Be Platform And Provider Specific
+
+Decision: the Push notifications proof manifest cannot treat generic APNs, FCM, or delivery QA strings as reminder delivery proof. Reminder delivery proof requires concrete iOS APNs and Android FCM native delivery evidence.
+
+Reason: reminder delivery is a user-trust and store-review boundary. A copied note that says notifications worked is not enough to claim delivery across APNs and FCM, permission preferences, quiet-hours or opt-out behavior, and missed-notification fallback.
+
+Consequences:
+
+- The APNs, FCM, and delivery QA manifest rows remain blocked until native delivery evidence includes platform/provider naming in the file name or URI, image MIME, positive byte size, token registration, delivered reminder, permission preference, quiet-hours or opt-out, and fallback capture.
+- Share Beta Handoff, the Release Smoke Checklist, the mobile beta doctor, and the native QA tooling doctor now tell helpers to attach `ios-apns` and `android-fcm` delivery evidence instead of generic notification notes.
+- Provider setup, prompt/legal approval, store privacy review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: push delivery proof becomes signed provider telemetry instead of screenshot/file metadata, or Apollo chooses a different notification provider stack.
+
+### 2026-07-04: Generated Binary Export Readiness Requires Native And Provider Proof
+
+Decision: the focused Report Binary Export Proof mission renders a source-backed proof manifest, but `Generated artifacts allowed` remains `No` until Care Pass PDF, Dog ID PNG, provider storage, and native artifact proof evidence are attached from real device/provider QA.
+
+Reason: local PDF/PNG bytes and artifact-specific Records manifests are useful launch handoff evidence, but helpers need one focused route that prevents local generation from being mistaken for native share/reopen approval, provider-backed storage, store approval, public launch, or Apollo sign-off.
+
+Consequences:
+
+- `/care-twin-qa?qaSurface=report-binary-export-proof` renders the Report binary export proof manifest before Evidence Capture.
+- The JSON mobile beta doctor guards that the focused manifest remains source-backed.
+- Native iOS/Android share/reopen evidence, renderer approval, structured provider storage proof, retention/export/deletion proof, store review, and Apollo sign-off remain launch gates.
+
+### 2026-07-04: Native Binary Artifact Proof Must Be Platform And Artifact Specific
+
+Decision: generated PDF/PNG readiness cannot rely on a generic native artifact approval flag. The Report Binary Export manifest requires four concrete native proofs before readiness can open: iOS Care Pass PDF, Android Care Pass PDF, iOS Dog ID PNG, and Android Dog ID PNG.
+
+Reason: local generated bytes are useful, but launch helpers need evidence that each artifact type was shared and reopened on each native platform. A single approval boolean could make a partially tested or ambiguously named artifact look ready.
+
+Consequences:
+
+- Each native artifact proof must carry matching platform/artifact text in the file name or URI, expected MIME type, positive byte size, share proof, and reopen proof.
+- The native artifact proof row reports `0/4 native proofs attached` until real evidence is supplied, then `4/4 native proofs ready` only when all four platform/artifact slots are satisfied.
+- Provider storage, renderer approval, retention/export/deletion policy, native device QA, store review, public launch, and Apollo sign-off remain separate gates.
+
+Owner: Codex.
+
+Revisit trigger: native PDF/PNG share/reopen proof is attached, provider-backed artifact storage is configured, or generated binary export readiness is ready for Apollo approval.
+
+### 2026-07-04: Route Visual Proof Requires Route-Named Evidence
+
+Decision: the Route Visual proof manifest must keep each Home, Log, Plans, Health, Records, and More iOS/Android row blocked until the saved evidence file name or URI names that route; generic platform screenshot counts alone are not proof.
+
+Reason: six iOS files plus six Android files can show that screenshots were attached without proving the actual launch routes were captured. Route-named evidence keeps the helper handoff honest while native device capture and human visual approval remain pending.
+
+Consequences:
+
+- `buildRouteVisualProofManifest` reports platform counts separately from per-route readiness.
+- Generic `native-ios-*` and `native-android-*` attachments keep the manifest blocked until route-named files or URIs are attached.
+- The JSON mobile beta doctor guards the route-named source path, but actual native screenshots, visual approval, store review, and Apollo sign-off remain launch gates.
+
+Owner: Codex.
+
+Revisit trigger: automated native screenshot capture can attach route identity metadata, or Apollo approves a different route-proof naming convention.
+
+### 2026-07-04: Store Account Readiness Requires Structured Apple And Google Proof
+
+Decision: the Store accounts proof manifest cannot treat generic Apple/Google approval notes as App Review or Play review readiness. App submission remains blocked until structured proof files satisfy each Apple, Google, reviewer, metadata, and Apollo approval row.
+
+Reason: store-account readiness is a high-trust launch boundary. Text that says an account or metadata is approved can hide missing team ids, package records, signing custody, reviewer access, privacy labels, Apollo sign-off, or the no-submit boundary.
+
+Consequences:
+
+- `buildStoreAccountsProofManifest` keeps all six rows blocked when only legacy text fields are present.
+- iOS App Store Connect, Android Google Play, shared bundle/signing, reviewer access, metadata/privacy, and release approval proof must include platform/store naming, MIME, positive byte size, and the row-specific ids, roles, ownership fields, and approval booleans.
+- Store accounts, metadata/screenshots/privacy approval, App Review or Play review submission, legal/privacy approval, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real App Store Connect and Google Play proof, or the app gains a provider-backed store-submission evidence service.
+
+### 2026-07-04: Live AI Requires Structured Provider And Safety Proof
+
+Decision: the WoofGuide AI provider proof manifest cannot treat generic OpenAI/model/source/write-gate/veterinary/fallback approval strings as live-AI readiness. `Live AI allowed` remains blocked until six structured proof files satisfy OpenAI secret storage, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, and fallback/incident handling.
+
+Reason: live AI is a care-trust and veterinary-safety boundary. Text that says a model, citation policy, or safety boundary is approved can hide missing key custody, retention stance, source freshness, automatic-write prevention, diagnosis/treatment refusal examples, fallback behavior, rollback plan, or support handoff.
+
+Consequences:
+
+- `buildAiProviderProofManifest` keeps all six rows blocked when only legacy approval strings are present.
+- Each proof file must include proof naming, acceptable MIME, positive byte size, required policy fields, and row-specific safety booleans.
+- Live OpenAI configuration, model approval, provider-backed answers, automatic care-log writes, source/citation review, veterinary safety approval, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real OpenAI/provider proof files, or WoofGuide gains a provider-backed AI evidence service with signed policy metadata.
+
+### 2026-07-04: PWA WoofGuide Key Detection Is Not Live AI Approval
+
+Decision: the PWA WoofGuide surface cannot treat `/api/care-helper` reporting a server OpenAI key as live-AI approval. A key signal stays staged as `Provider proof pending` and `Structured AI proof needed`, and the PWA does not call the live helper until structured AI provider proof sets `proofReady`.
+
+Reason: the PWA is an owner-facing preview surface. If it says `Live OpenAI` or sends questions to the provider from key detection alone, it contradicts the WoofGuide AI proof manifest, Privacy & Safety AI proof guard, and public-launch truth boundaries.
+
+Consequences:
+
+- `assistantStatus` separates key signal from structured proof readiness.
+- PWA WoofGuide copy avoids `Live OpenAI` and `Credential found` until proof is attached.
+- `reviewAssistantQuestion` only posts to `/api/care-helper` when `isAssistantLiveReady()` is true.
+- Server OpenAI key storage, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, fallback/incident handling, live AI approval, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real WoofGuide AI provider proof files, or the API returns signed `proofReady` evidence from a provider-backed AI evidence service.
+
+### 2026-07-04: Destructive Account Deletion Requires Structured Compliance Proof
+
+Decision: the Account deletion proof manifest cannot treat generic deletion-route/export/receipt/audit/recovery/legal approval strings as destructive-deletion readiness. `Destructive deletion allowed` remains blocked until six structured proof files satisfy deletion-route/auth, export-before-delete, data/object deletion receipt, audit/support receipt, recovery/cancellation policy, and legal/store/Apollo approval.
+
+Reason: self-serve account deletion is a destructive data, privacy, and store-compliance boundary. Text that says deletion or legal approval is ready can hide missing reauthentication proof, export-before-delete handoff, provider object deletion receipts, audit/support receipts, recovery/cancellation behavior, App Store/Play Store compliance, Apollo approval, or the local-preview no-delete boundary.
+
+Consequences:
+
+- `buildAccountDeletionProofManifest` keeps all six rows blocked when only legacy approval strings are present.
+- Each proof file must include matching locator text, acceptable MIME, positive byte size, required row fields, and row-specific approval booleans.
+- Provider-backed destructive deletion, storage/object deletion, privacy/legal approval, App Store or Play Store deletion compliance, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real provider deletion and legal/store proof files, or WoofWatcher gains a provider-backed deletion evidence service with signed receipt metadata.
+
+### 2026-07-04: Public Launch Requires Structured Support Legal Proof
+
+Decision: the Support legal readiness proof manifest cannot treat generic support inbox/privacy-terms/refund/veterinary/deletion/incident/Apollo approval strings as public-launch readiness. `Public launch allowed` remains blocked until seven structured proof files satisfy support inbox, privacy policy and terms, refund/subscription policy, veterinary/emergency boundary, deletion escalation, incident response owner, and Apollo launch approval/no-launch boundary.
+
+Reason: public launch is a support, legal, refund, veterinary-safety, store-review, and Apollo sign-off boundary. Text that says support or legal approval is ready can hide missing monitored inbox proof, final privacy/terms URLs, subscription/refund workflow, emergency boundary copy, deletion escalation, incident response ownership, no-launch boundary, or Apollo approval.
+
+Consequences:
+
+- `buildSupportLegalReadinessProofManifest` keeps all seven rows blocked when only legacy approval strings are present.
+- Each proof file must include matching locator text, acceptable MIME, positive byte size, required row fields, and row-specific approval booleans.
+- Legal/privacy approval, refund/subscription approval, support operations, veterinary-boundary sign-off, App Store or Play Store support review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real support/legal/refund/veterinary-boundary approval proof files, or WoofWatcher gains a provider-backed launch-approval evidence service with signed approval metadata.
+
+### 2026-07-04: Support Runbook Requires Structured Public-Launch Proof
+
+Decision: the Support runbook cannot treat support/legal approval booleans, support email, privacy policy URL, or terms URL as enough to mark public launch ready. It must consume the Support legal readiness proof manifest and keep `launchReady`, `supportRunbookApproved`, and `privacyLegalApproved` blocked until structured support/legal proof files make the manifest ready.
+
+Reason: the Support runbook is an owner-facing launch safety surface. If it marks launch ready from local approval fields, it can contradict the focused Support Legal Readiness Proof manifest and the aggregate Launch Readiness proof guard.
+
+Consequences:
+
+- `deriveSupportRunbookPlan` accepts `supportLegalReadinessEvidence` and calls `buildSupportLegalReadinessProofManifest`.
+- Staged support/legal fields now show as blocked sections until the matching proof rows are attached.
+- Privacy & Safety may display or persist `provider-approved` support status only when the support runbook plan is `launchReady`; otherwise stale or attempted provider-approved saves are treated as owner-reviewed local packets.
+- Privacy owner exports clamp launch support/provider status through `deriveSupportRunbookPlan` and `deriveLaunchProviderSetup` before serialization, so stale imported `provider-approved` profiles do not leak into owner export proof without structured evidence.
+- Real support operations, privacy/legal copy, refund/subscription policy, veterinary-boundary sign-off, store review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real support/legal proof files or the app gains a provider-backed support/legal proof evidence service that can feed the Support runbook.
+
+### 2026-07-04: Incremental Care Sync Requires Structured Provider Proof
+
+Decision: the care-entry provider sync proof packet cannot treat generic Supabase ids, migration notes, RLS text, policy notes, CI URLs, or mobile sign-off strings as incremental-sync readiness. `Incremental sync allowed` remains blocked until six structured proof files satisfy Supabase project id, migration/backfill, active-household cursor/tombstone RLS, retention/export/deletion, dependency-complete build, and mobile incremental sign-off requirements.
+
+Reason: incremental care-entry sync is a data-integrity, privacy, retention, and native-adoption boundary. Text that says provider sync is ready can hide missing production project confirmation, unapplied migrations, incomplete existing-row backfills, cross-household cursor/tombstone leaks, missing retention/export/deletion approval, stale dependency builds, missing native QA, or absent rollback approval.
+
+Consequences:
+
+- `deriveCareEntryProviderSyncProof` keeps all six rows blocked when only legacy provider strings are present.
+- Each proof file must include matching file name or URI tokens, acceptable MIME, positive byte size, required row fields, and row-specific booleans or approvals.
+- Supabase migration execution, production RLS/privacy approval, retention/export/deletion policy, native incremental QA, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real Supabase/provider, native QA, and rollback proof files, or WoofWatcher gains a provider-backed sync evidence service with signed migration, RLS, retention, and native-adoption metadata.
+
+### 2026-07-04: Report Binary Provider Storage Requires Structured Proof
+
+Decision: the Report Binary Export proof manifest cannot treat `storageProviderConfigured` or a generic storage-policy note as provider-storage readiness. `Generated artifacts allowed` remains blocked until a structured provider storage proof file satisfies report PDFs, credential PNG/SVG/HTML, and QA evidence storage requirements.
+
+Reason: report and credential binaries are user records. A single provider-configured boolean can hide missing bucket names, signed upload/download rules, household scoping, retention/export/deletion approval, QA evidence storage, file metadata, or row-specific approvals.
+
+Consequences:
+
+- `buildReportBinaryExportProofManifest` keeps the provider storage row blocked as `Provider storage pending structured proof` when only `storageProviderConfigured` is true.
+- Provider storage proof must include a file name or URI, acceptable MIME, positive byte size, at least three bucket names, signed upload/download policy, household scope, retention, export, deletion, QA evidence storage, and approval booleans.
+- Native share/reopen proof, renderer approval, provider storage configuration, store review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real storage/provider proof files, or WoofWatcher gains a provider-backed report-storage evidence service with signed bucket, policy, and lifecycle metadata.
+
+### 2026-07-04: Attachment Storage Readiness Requires Structured Proof
+
+Decision: the shared attachment manifest cannot treat `storageProviderConfigured` as upload readiness for local medication proof photos, record documents, Adventure memories, Care Pass reports, or QA screenshots. Local attachment queues remain `local-only` until structured attachment storage proof satisfies the shared storage boundary.
+
+Reason: attachment storage spans owner care proof, medical records, generated handoffs, and QA evidence. A single storage checkbox can hide missing bucket names, signed upload/download rules, household scoping, retention/export/deletion approval, QA evidence ownership, and Apollo approval.
+
+Consequences:
+
+- `deriveAttachmentManifest` keeps local attachments blocked as `local-only` when only `storageProviderConfigured` is true.
+- Attachment storage proof must include a file name or URI, acceptable MIME, positive byte size, at least three bucket names, signed upload and download policies, household scope, retention, export, deletion, QA evidence storage, approval owner, and row-specific approval booleans.
+- More Launch Readiness and Privacy & Safety now require a separate `storageProviderProofReady`/structured proof boundary before storage can contribute to release readiness.
+- Real storage bucket configuration, signed policy files, native share/reopen proof, store review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real attachment-storage provider proof files, or WoofWatcher gains a provider-backed attachment evidence service with signed bucket, policy, object lifecycle, and approval metadata.
+
+### 2026-07-04: Auth Provider Readiness Requires Structured Proof Files
+
+Decision: the Auth/Setup proof manifest cannot treat `clerkProductionApproved`, `redirectDeepLinkApproved`, `householdSyncApproved`, or `launchGateApproved` as account/onboarding readiness. Legacy booleans can stage row copy only; readiness requires structured proof files for Clerk production, redirect/deep-link URLs, household membership policy, and Apollo auth launch approval.
+
+Reason: production auth is a trust, privacy, account custody, and household-boundary launch gate. Approval booleans can hide missing Clerk app ids, key custody, local placeholder key exclusion, OAuth return paths, invite permissions, role enforcement, denied cross-household access, native proof references, Apollo approval, or the no-launch boundary.
+
+Consequences:
+
+- `buildAuthSetupProofManifest` keeps provider rows blocked when only legacy approval booleans are present.
+- Each provider proof file must include a locator, acceptable MIME, positive byte size, required row fields, and row-specific approval booleans.
+- Real Clerk configuration, OAuth, provider-backed household creation, native screenshots, store approval, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real Clerk/auth provider proof files, or WoofWatcher gains a provider-backed auth evidence service with signed app, redirect, household, and launch metadata.
+
+### 2026-07-04: Launch Readiness Requires Aggregate Structured Proof Flags
+
+Decision: the aggregate Launch Readiness dashboard, release packet, and store submission packet cannot treat provider-approved booleans as store readiness. Auth, care-entry sync, storage, AI, payments, account deletion, push delivery, store accounts, privacy/legal, and support/refund each need matching structured proof-ready flags before the top-level launch gate can close.
+
+Reason: individual proof manifests already reject generic approval notes, but the aggregate dashboard could still overstate readiness if raw provider booleans were promoted without the same proof boundary. Release and store packets inherit that dashboard state, so this is a public-claim boundary.
+
+Consequences:
+
+- `deriveLaunchReadiness` keeps provider/store/approval tiles blocked when provider booleans are true but structured proof flags are absent.
+- More passes aggregate proof flags as `false` until real evidence is attached, preventing staged provider setup from becoming `storeLaunchReady`.
+- Release packets and store submission packets cannot claim launch or submission readiness until every aggregate proof flag is present alongside native/local readiness.
+- Real provider proof files, native iOS/Android QA, store review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains a provider-backed proof evidence service or Apollo attaches real proof files that can populate the aggregate proof-ready flags.
+
+### 2026-07-04: Privacy & Safety AI Disclosure Requires Structured Provider Proof
+
+Decision: Privacy & Safety cannot treat `aiProviderConfigured` as enough to mark the WoofGuide AI disclosure ready. It must consume the WoofGuide AI provider proof manifest and stay `limited` until structured proof files cover OpenAI key storage, approved model policy, source rules, owner-reviewed writes, veterinary safety, and fallback/incident handling.
+
+Reason: Privacy & Safety is an owner-facing launch safety surface. If it marks AI ready from a provider checkbox, it can contradict the focused WoofGuide AI proof manifest and the aggregate Launch Readiness guard.
+
+Consequences:
+
+- `deriveAccountSafetyPlan` accepts `aiProviderEvidence` and calls `buildAiProviderProofManifest`.
+- Configured AI without structured proof adds a WoofGuide AI provider-proof blocker instead of showing the disclosure as ready.
+- Real OpenAI configuration, model approval, live AI, source/citation review, automatic-write approval, veterinary safety approval, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real WoofGuide AI provider proof files or the app gains a provider-backed proof evidence service that can feed Privacy & Safety.
+
+### 2026-07-04: Privacy & Safety Account Deletion Requires Structured Proof
+
+Decision: Privacy & Safety cannot treat `accountDeletionEnabled` as enough to mark destructive account deletion ready. It must consume the Account deletion proof manifest and stay `blocked` until structured proof files cover route/auth, export-before-delete, data/object receipts, audit/support, recovery/cancellation, and legal/store approval.
+
+Reason: Privacy & Safety is the owner-facing account and data-control surface. If it shows deletion ready from a provider checkbox, it can contradict the focused Account Deletion Proof manifest and make a destructive data action look safer than it is.
+
+Consequences:
+
+- `deriveAccountSafetyPlan` accepts `accountDeletionEvidence` and calls `buildAccountDeletionProofManifest`.
+- Enabled account deletion without structured proof adds an account-deletion proof blocker instead of showing destructive deletion as ready.
+- Real deletion routes, reauthentication, export-before-delete, data/object deletion receipts, audit/support receipts, recovery/cancellation rules, legal/store approval, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real account-deletion proof files or the app gains a provider-backed proof evidence service that can feed Privacy & Safety.
+
+### 2026-07-04: Privacy & Safety Payments Requires Structured Proof
+
+Decision: Privacy & Safety cannot treat `paymentsEnabled` as enough to mark checkout ready. It must consume the Payments provider proof manifest and stay `blocked` until structured proof files cover product catalog, billing path, iOS App Store and Android Google Play sandbox receipts, restore purchases, refund/support policy, and Apollo checkout approval.
+
+Reason: Privacy & Safety is an owner-facing launch safety surface and payments are a store, money-movement, refund, and support risk. If it marks payments ready from a provider checkbox, it can contradict the focused Payments Provider Proof manifest and the aggregate Launch Readiness guard.
+
+Consequences:
+
+- `deriveAccountSafetyPlan` accepts `paymentsProviderEvidence` and calls `buildPaymentsProviderProofManifest`.
+- Enabled payments without structured proof adds a payments-proof blocker instead of showing checkout as ready.
+- Real product ids, store billing path, sandbox receipts, restore purchases, entitlement mapping, refund/support approval, store review, public launch, and Apollo checkout sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real payments provider proof files or the app gains a provider-backed proof evidence service that can feed Privacy & Safety.
+
+### 2026-07-04: Reminder Center Push Delivery Requires Structured Proof
+
+Decision: Reminder Center cannot treat configured/provider-approved push setup as provider-backed notification delivery. Calendar must consume the Push notifications proof manifest and keep provider-backed notification status local/in-app until structured Expo/APNs/FCM, permission, quiet-hours, opt-out, and native delivery proof makes `reminderDeliveryAllowed` true.
+
+Reason: Reminder delivery is an owner-trust and store-review boundary. If Calendar marks notifications provider-backed from setup booleans alone, it can contradict the focused Push Notifications Proof manifest and imply delivered reminder behavior before any iOS APNs or Android FCM proof exists.
+
+Consequences:
+
+- `buildReminderNotificationPreferencesForCenter` accepts `pushNotificationsProofEvidence` and calls `buildPushNotificationsProofManifest`.
+- Provider-approved push without structured proof stays staged, and shared Reminder Center copy explains that proof is still missing.
+- Implementation commit `c36e36e` is pushed with local red/green proof; fresh branch CI for that commit remains pending because manual workflow dispatch was blocked before GitHub accepted it.
+- Real Expo/APNs/FCM configuration, native delivery evidence, prompt/legal approval, store privacy review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real push notification proof files or the app gains a provider-backed proof evidence service that can feed Calendar.
+
+### 2026-07-04: PWA Cloud Sync Requires Structured Provider Proof
+
+Decision: The PWA cloud sync plan cannot treat `backendConfigured`, a backend URL, or a household id as cross-device sync readiness. It must keep staged backend setup at `provider_proof_pending` until structured cloud sync provider proof covers Supabase project id, migration/backfill, active-household RLS, retention/export/deletion, dependency-complete build proof, mobile full-refresh sign-off, and Apollo approval.
+
+Reason: Cloud sync is a privacy, data-loss, and household-trust boundary. If the PWA marks sync `ready_to_connect` from a URL and household id alone, it contradicts the focused Care-entry Provider Sync proof manifest and can imply durable provider-backed sync before migrations, RLS, retention/export/deletion, dependency build, or mobile adoption proof exists.
+
+Consequences:
+
+- `buildCloudSyncPlan` separates backend setup from `providerProofReady`.
+- Backend setup without structured proof returns `provider_proof_pending` and adds a structured cloud sync provider proof blocker.
+- Real Supabase configuration, migrations, RLS, retention/export/deletion, dependency-complete provider build, mobile full-refresh sign-off, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real care-entry/cloud sync provider proof files or the app gains a provider-backed proof evidence service that can feed PWA cloud sync planning.
+
+### 2026-07-04: PWA Hosted Nudges Require Structured Delivery Proof
+
+Decision: The PWA hosted nudge plan cannot treat `backendConfigured`, a backend URL, a household id, or push provider setup as closed-app delivery readiness. It must keep staged backend and provider setup at `provider_proof_pending` until structured hosted nudge delivery proof covers backend jobs, caregiver consent, provider delivery, caregiver privacy, quiet-hours and daily-budget enforcement, missed-delivery fallback, native delivery, and Apollo approval.
+
+Reason: Hosted nudges can interrupt caregivers outside the app and expose household care context. If the PWA marks nudges `ready_to_schedule` from provider setup alone, it contradicts the Push Notifications proof manifest and can imply closed-app push/email/SMS delivery before consent, privacy, quiet-hours, fallback, or native delivery proof exists.
+
+Consequences:
+
+- `buildHostedNudgePlan` separates backend/push setup from `providerProofReady`.
+- Staged backend and push setup without structured proof returns `provider_proof_pending`, adds a structured hosted nudge delivery proof blocker, and keeps generated jobs empty.
+- Real backend job runners, caregiver consent/privacy approval, provider delivery setup, native delivery evidence, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real hosted nudge delivery proof files or the app gains a provider-backed proof evidence service that can feed hosted nudge planning.
+
+### 2026-07-04: Provider Launch Setup Rows Require Structured Proof Flags
+
+Decision: Provider Launch Setup cannot treat provider-approved status plus configured provider booleans as enough to mark auth, database, storage, AI, payments, push, store, or account-deletion rows ready. Each row needs its matching structured proof-ready flag before it can become ready or feed true provider input into Launch Readiness.
+
+Reason: The aggregate Launch Readiness model already requires structured proof flags, but Provider Launch Setup could still present provider-approved rows as ready from older booleans. That made the operator packet overstate readiness even though real provider files, native evidence, store proof, and Apollo sign-off were still missing.
+
+Consequences:
+
+- `deriveLaunchProviderSetup` normalizes row proof flags for auth, database, storage, AI, payments, push, store accounts, and account deletion.
+- A row is ready only when setup is configured, `providerStatus` is `provider-approved`, and the row proof flag is true.
+- Provider-approved rows without proof stay staged as `Proof pending` and say structured proof evidence is still required.
+- `providerInput` only forwards true configured/proof flags for rows that are actually ready.
+- More's Provider Launch Setup save path only preserves a persisted `provider-approved` status when every provider row has both configured setup and its matching `proofKey` flag; configured-only saved profiles are downgraded to `owner-reviewed`.
+- Real provider proof files, native/store proof, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: Apollo attaches real provider proof files for the provider rows, or WoofWatcher gains a provider-backed evidence service that can validate those files automatically.
+
+### 2026-07-04: Care Documents Preserve Launch Proof Fields
+
+Decision: The saved care document must preserve structured launch proof fields instead of treating them as transient UI-only state. `launchSupportProfile.supportLegalReadinessEvidence` and every Provider Launch Setup proof-ready flag must survive local cache hydration, server refresh, conflict merge, privacy export, and More's Launch Readiness derivation.
+
+Reason: The proof models require structured evidence, but the care-document merge path could strip those fields before `deriveSupportRunbookPlan`, `deriveLaunchProviderSetup`, or `deriveLaunchReadiness` saw them. That made real saved/imported proof impossible to use and could leave operators stuck behind stale hardcoded proof placeholders even after evidence was attached.
+
+Consequences:
+
+- `CareContext` includes and normalizes `supportLegalReadinessEvidence`.
+- `CareContext` includes all Provider Launch Setup proof-ready flags and normalizes `launchProviderProfile` through `normalizeLaunchProviderProfile`.
+- More forwards only `launchProviderSetupPlan.providerInput` proof flags plus launch-ready support/legal proof variables into Launch Readiness.
+- Raw configured/provider-approved booleans still cannot bypass structured proof gates.
+- Real provider proof files, native/store proof, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains a provider-backed proof evidence service or a richer proof attachment editor that can validate and attach proof files directly from the app.
+
+### 2026-07-04: Storage Provider Evidence Must Reach Records And Privacy
+
+Decision: Provider Launch Setup must preserve structured storage provider evidence and forward it to the Records and Privacy proof consumers. `storageProviderEvidence` is durable launch-provider profile state, not a transient UI-only field, and it must reach Care Pass artifact export, Report Binary Export proof, and Privacy & Safety storage review.
+
+Reason: Earlier storage guards correctly rejected `storageProviderConfigured` by itself, but valid saved/imported storage proof still could not satisfy the downstream validators because Provider Launch Setup and CareContext did not preserve a structured storage evidence object. That stranded real proof and made Records/Privacy behave as if no storage proof existed even after evidence was attached.
+
+Consequences:
+
+- `LaunchProviderProfile` includes normalized `storageProviderEvidence`.
+- `deriveLaunchProviderSetup` forwards the evidence through `providerInput`.
+- `CareContext` persists the typed storage evidence field with the launch provider profile.
+- Records passes the evidence into Care Pass artifact export and Report Binary Export proof manifests.
+- Privacy & Safety passes the evidence into `deriveAccountSafetyPlan`.
+- Storage readiness still requires the existing structured proof validators; raw configured booleans do not count as upload, export, deletion, native, store, public-launch, or Apollo approval.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains a provider-backed storage proof attachment service or Apollo attaches real storage bucket/policy proof files that should be validated from saved app state.
+
+### 2026-07-04: Privacy Export Attachment State Uses Saved Storage Proof
+
+Decision: Owner privacy export and deletion-request attachment summaries must derive storage readiness from the saved launch-provider storage proof instead of forcing attachment queues to local-only. If normalized `launchProviderProfile.storageProviderEvidence` satisfies the shared attachment-storage proof validator, export metadata and deletion copy may show files as ready for provider upload; otherwise they must keep the approved-storage-rules blocker.
+
+Reason: The Privacy screen storage gate and Records proof surfaces could now consume structured storage proof, but `buildPrivacyExportBundle` and `buildAccountDeletionRequest` still called `deriveAttachmentManifest` with `storageProviderConfigured: false`. That made owner export/deletion copy stale and contradicted the shared storage proof boundary when valid proof was saved.
+
+Consequences:
+
+- Privacy export attachment queues use normalized `launchProviderProfile.storageProviderEvidence`.
+- Deletion request attachment summaries use the same storage-proof-derived manifest.
+- Export and deletion copy can show `ready for provider upload` only after the shared attachment-storage proof validator passes.
+- Real provider upload, object ids, signed access, retention/export/deletion receipts, native proof, store review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains provider-backed attachment object ids or Apollo attaches real storage migration/deletion receipt proof that should appear in owner export and deletion audit trails.
+
+### 2026-07-04: Focused Report Binary Export Uses Saved Storage Proof
+
+Decision: The focused `/care-twin-qa?qaSurface=report-binary-export-proof` helper route must derive Report Binary Export provider-storage state from the saved launch-provider profile instead of hardcoding storage as unavailable. The helper route should use `deriveLaunchProviderSetup(state.launchProviderProfile)` and pass saved `storageProviderEvidence` into `buildReportBinaryExportProofManifest`.
+
+Reason: Records and Privacy now preserve and consume structured storage proof, but the focused helper mission still rendered provider storage from `storageProviderConfigured: false`. That made real saved/imported proof impossible to review from the exact QA mission Apollo, Replit, or a native helper is instructed to open for PDF/PNG readiness.
+
+Consequences:
+
+- `/care-twin-qa` consumes `useCare` state and derives the same Provider Launch Setup plan as owner-facing launch routes.
+- The focused Report Binary Export proof manifest uses `launchProviderSetupPlan.providerInput.storageProviderConfigured`.
+- The focused manifest forwards saved `storageProviderEvidence` as `providerStorageEvidence`.
+- Valid structured storage proof can reach the helper route, but PDF/PNG readiness still requires local bytes, renderer proof, iOS/Android share/reopen evidence, structured provider storage proof, App Store/Play review where applicable, public launch approval, and Apollo sign-off.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains provider-backed proof attachment capture or the helper route starts editing proof evidence directly instead of only reviewing saved launch-provider proof.
+
+### 2026-07-06: More Launch Readiness Uses Saved Attachment Storage Proof
+
+Decision: More's Launch Readiness attachment queue must derive storage readiness from the saved Provider Launch Setup storage proof path instead of forcing attachment manifests to local-only. The route should build `launchProviderSetupPlan` before `deriveAttachmentManifest`, then pass `providerInput.storageProviderConfigured` and saved `storageProviderEvidence`.
+
+Reason: Records, Privacy, and the focused Report Binary Export helper can now consume valid saved/imported storage evidence. If More still passes `storageProviderConfigured: false`, the owner launch cockpit shows a stale storage queue and contradicts the storage-specific proof surfaces even when structured evidence is present.
+
+Consequences:
+
+- More's shared attachment manifest uses the same normalized Provider Launch Setup input as Launch Readiness.
+- The Records Storage tile and storage queue can reflect valid structured storage proof when the shared validators accept it.
+- Raw provider setup booleans still cannot prove provider upload, object ids, native share/reopen, store review, public launch, or Apollo sign-off.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains provider-backed attachment object ids, native upload/share evidence capture, or an in-app proof editor that can attach storage evidence directly from More.
+
+### 2026-07-06: Store Screenshot QA Uses Saved Launch Proof Paths
+
+Decision: Store Screenshot QA's store-prep packet must derive provider, support, and storage state from saved Provider Launch Setup, Support Runbook, and attachment manifest models instead of hardcoding provider gates false.
+
+Reason: Store Screenshot QA already powers the internal screenshot checklist and share packet. It should reflect valid structured proof that the rest of the launch cockpit can see, while still keeping native/store/public approval blocked.
+
+Consequences:
+
+- `/care-twin-qa` derives attachment manifest and support runbook state from saved care state.
+- `storeLaunchReadinessPlan` consumes provider proof-ready flags, support/legal variables, and `attachmentManifest.launchQueue`.
+- `nativeQa` remains `null`, so the store packet stays preparation evidence only.
+- Real native screenshots, store accounts, store review, public launch, and Apollo sign-off remain separate blockers.
+
+Owner: Codex.
+
+Revisit trigger: WoofWatcher gains a provider-backed proof evidence service or Store Screenshot QA starts editing or attaching proof directly.
 
 ## Open Decisions For Apollo
 

@@ -221,3 +221,197 @@ test("builds a caregiver handoff with done, watch, next, and load", () => {
   assert.equal(handoff.caregiverLoad[0].todayLogs, 2);
   assert.match(handoff.message, /Emma logged 2/i);
 });
+
+test("writes needs-attention sentences with real subject-verb agreement", () => {
+  const handoff = deriveCareHandoff({
+    now: NOW,
+    caregivers: [{ name: "Emma", role: "Primary" }],
+    routines: [
+      { id: "breakfast", type: "meal", label: "Breakfast", time: "7:00 AM", owner: "Emma" },
+      { id: "dinner", type: "meal", label: "Dinner", time: "6:00 PM", owner: "Emma" },
+      { id: "walk", type: "walk", label: "Walk", time: "8:30 AM", owner: "Emma" },
+    ],
+    entries: [
+      {
+        id: "breakfast-served",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T14:00:00.000Z",
+        details: {
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  const details = handoff.sections.needsAttention.map((item) => `${item.label}: ${item.detail}`);
+  assert.ok(details.includes(
+    "Meal outcome pending: 1 meal outcome needs confirmation - ate all, ate some, refused, or still grazing.",
+  ));
+  assert.ok(details.includes("Meal remaining: 1 more meal to log today."));
+  assert.ok(details.includes("Walk remaining: 1 more walk to log today."));
+  // Singular subjects never take plural verbs, and nothing claims "open".
+  assert.ok(details.every((line) => !/1 meal outcome need /.test(line)));
+  assert.ok(details.every((line) => !/still open/.test(line)));
+});
+
+test("only calls a walk open while its session is actually in progress", () => {
+  const base = {
+    now: NOW,
+    caregivers: [{ name: "Apollo", role: "Owner" }],
+    routines: [
+      { id: "walk-am", type: "walk", label: "Morning walk", time: "8:30 AM", owner: "Apollo" },
+      { id: "walk-pm", type: "walk", label: "Evening walk", time: "6:30 PM", owner: "Apollo" },
+    ],
+  };
+
+  const inProgress = deriveCareHandoff({
+    ...base,
+    entries: [
+      {
+        id: "walk_open",
+        type: "walk",
+        title: "Morning walk - In progress",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T14:30:00.000Z",
+        details: { walkLifecycle: "in-progress", householdVisible: true },
+      },
+    ],
+  });
+  assert.ok(
+    inProgress.sections.needsAttention.some(
+      (item) => item.label === "Walk in progress" && /still in progress/.test(item.detail),
+    ),
+  );
+
+  const finished = deriveCareHandoff({
+    ...base,
+    entries: [
+      {
+        id: "walk_done",
+        type: "walk",
+        title: "Morning walk",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T14:30:00.000Z",
+        durationMinutes: 25,
+        details: { walkLifecycle: "completed", householdVisible: true },
+      },
+    ],
+  });
+  // The finished walk is never described as open/in progress; the second
+  // routine walk is reported as a real remaining count.
+  assert.ok(
+    finished.sections.needsAttention.every((item) => item.label !== "Walk in progress"),
+  );
+  assert.ok(
+    finished.sections.needsAttention.some(
+      (item) => item.label === "Walk remaining" && item.detail === "1 more walk to log today.",
+    ),
+  );
+});
+
+test("credits the household when today's logs match no listed caregiver name", () => {
+  const handoff = deriveCareHandoff({
+    now: NOW,
+    // The caregiver was renamed to Apollo, but today's entries still carry
+    // the old name string - never report "Apollo logged 0 items today".
+    caregivers: [{ name: "Apollo", role: "Owner" }],
+    entries: [
+      {
+        id: "meal_1",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Old Name",
+        occurredAt: "2026-06-06T14:00:00.000Z",
+      },
+      {
+        id: "walk_1",
+        type: "walk",
+        title: "Morning walk",
+        caregiver: "Old Name",
+        occurredAt: "2026-06-06T14:30:00.000Z",
+        durationMinutes: 25,
+      },
+    ],
+  });
+
+  assert.equal(handoff.message, "The household logged 2 items today.");
+  assert.doesNotMatch(handoff.message, /logged 0/);
+});
+
+test("matches caregiver log attribution case-insensitively", () => {
+  const handoff = deriveCareHandoff({
+    now: NOW,
+    caregivers: [{ name: "Emma", role: "Primary" }],
+    entries: [
+      {
+        id: "meal_1",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "emma ",
+        occurredAt: "2026-06-06T14:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(handoff.caregiverLoad[0]?.todayLogs, 1);
+  assert.match(handoff.message, /Emma logged 1 item today/);
+});
+
+test("keeps pending meal outcomes in caregiver handoff needs-attention", () => {
+  const handoff = deriveCareHandoff({
+    now: NOW,
+    caregivers: [
+      { name: "Emma", role: "Primary" },
+      { name: "Apollo", role: "Caregiver" },
+    ],
+    routines: [
+      { id: "breakfast", type: "meal", label: "Breakfast", time: "7:00 AM", owner: "Emma" },
+      { id: "dinner", type: "meal", label: "Dinner", time: "6:00 PM", owner: "Apollo" },
+    ],
+    entries: [
+      {
+        id: "breakfast-served",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T14:00:00.000Z",
+        details: {
+          routineId: "breakfast",
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 1,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "dinner-finished",
+        type: "meal",
+        title: "Dinner",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T18:00:00.000Z",
+        details: {
+          routineId: "dinner",
+          mealCompletion: "ate most",
+          servedAmount: 1,
+          eatenAmount: 0.8,
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  assert.match(handoff.sections.done.find((item) => item.kind === "meal")?.detail ?? "", /1\/2 meals resolved/i);
+  assert.ok(
+    handoff.sections.needsAttention.some(
+      (item) =>
+        item.kind === "meal" &&
+        /outcome pending/i.test(item.label) &&
+        /confirm/i.test(item.detail),
+    ),
+  );
+});

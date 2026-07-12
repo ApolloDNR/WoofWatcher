@@ -23,7 +23,7 @@ Template to PixelLab object map:
 - `mixed/preview.png`: `29dd78da-57d2-4609-953a-25b1c07ce71d`
 
 Base pack generated: 2026-06-18
-PixelLab source review object: `3e5f7877-7382-49de-b3fc-1f74c75631ec`
+PixelLab source review objects: `3e5f7877-7382-49de-b3fc-1f74c75631ec`, `eae9f9d1-83ea-4f8d-9ea6-af81db200d18`, `06af8c0e-a3fe-411a-bab9-9535648a7f29`
 Tag: `woofwatcher-avatar-template-base-pack-2026-06-18`
 Format: transparent PNG, 170x170px.
 
@@ -32,15 +32,15 @@ Template to PixelLab object map:
 - `shepherd/base.png`: `4a979556-9f07-4660-b3bf-831fed6030c0`
 - `retriever/base.png`: `472ae20c-5dc4-496a-b0e7-7cafe29d147c`
 - `husky/base.png`: `f8fed25f-6a1f-46fa-8d5a-5ec17fadd0f7`
+- `bully/base.png`: `25c648c4-6e26-4c8e-8b65-6fb94e7c10b4`
 - `doodle/base.png`: `f5852e83-c2d1-4630-8e97-6a4cdb02260d`
-- `bully/base.png`: `19c0de83-fd9a-4cea-a8c0-719cc6d05c48`
-- `terrier/base.png`: `8f45fa96-9f37-44c3-bdf6-a9e8990aad52`
-- `hound/base.png`: `611f9723-733d-4636-9c17-31cfc31a16bb`
-- `toy/base.png`: `19c35278-7028-4064-882d-715a6b741652`
-- `spaniel/base.png`: `b67cf12f-99f7-4038-8f52-e1c9aa3b6575`
-- `dachshund/base.png`: `1aea4cf3-8e3e-485a-8ae3-eb5e501ee599`
-- `slender/base.png`: `f6e41dfd-c01e-4f3a-904a-480425e8427f`
-- `mixed/base.png`: `faf7a705-1eaa-4119-bdae-5156772c5453`
+- `terrier/base.png`: `65f0ffbb-e811-49d4-be6d-c8f2b2abf0ce`
+- `hound/base.png`: `7f8a712d-c65c-4d1c-835a-5f79b5500ff7`
+- `dachshund/base.png`: `8fbb402b-579d-478c-bcad-fd21e61cf530`
+- `spaniel/base.png`: `b85934b2-d1cc-4b89-b4e9-0342520ec73a`
+- `toy/base.png`: `995d0da0-6469-42ea-9855-7caed01584c2`
+- `slender/base.png`: `efa34067-c258-4105-9da4-73d0907f36b5`
+- `mixed/base.png`: `c63ef688-cc17-4f7f-94d2-8504606213b5`
 
 Shepherd accessory + emote overlay pack generated: 2026-06-18
 Source basis: Phoenix approved still pack under `assets/avatar/phoenix/approved/`
@@ -69,20 +69,43 @@ Live shepherd emote stills:
 - `shepherd/emotes/home_alone.png`
 - `shepherd/emotes/not_feeling_well.png`
 
+Live template emote still packs:
+
+- `retriever/emotes/happy.png`
+- `retriever/emotes/calm.png`
+- `retriever/emotes/excited.png`
+- `retriever/emotes/bored.png`
+- `retriever/emotes/hungry.png`
+- `retriever/emotes/anxious.png`
+- `retriever/emotes/sleepy.png`
+- `retriever/emotes/proud.png`
+- `retriever/emotes/home-alone.png`
+- `retriever/emotes/not-feeling-well.png`
+- `husky/emotes/happy.png`
+- `husky/emotes/calm.png`
+- `husky/emotes/excited.png`
+- `husky/emotes/bored.png`
+- `husky/emotes/hungry.png`
+- `husky/emotes/anxious.png`
+- `husky/emotes/sleepy.png`
+- `husky/emotes/proud.png`
+- `husky/emotes/home-alone.png`
+- `husky/emotes/not-feeling-well.png`
+- `bully/emotes/happy.png`
+- `bully/emotes/calm.png`
+- `bully/emotes/excited.png`
+- `bully/emotes/bored.png`
+- `bully/emotes/hungry.png`
+- `bully/emotes/anxious.png`
+- `bully/emotes/sleepy.png`
+- `bully/emotes/proud.png`
+- `bully/emotes/home-alone.png`
+- `bully/emotes/not-feeling-well.png`
+
 Rules:
 
 - Keep previews transparent and character-only.
 - Do not bake accessories into template previews.
-- Full template packs should later add `base.png`, emotes, and sprite strips under the same template folder.
+- Full template packs should later add emotes and sprite strips under the same template folder.
 - `base.png` is the production-scale character still for Avatar Studio preview. It is not a walk/eat/sleep sprite strip.
 - Accessory overlays and emote stills should stay slot-compatible with the registered base pose for that template.
-- Live-pack status and next-pack priority now belong in `artifacts/woofwatcher-mobile/lib/avatarTemplatePackManifest.ts`. Update that manifest before changing Avatar Studio readiness copy or verifier expectations.
-
-Family-dog promotion generated: 2026-06-19
-Source basis: the registered `base.png` family-dog templates plus the repo-native pack generator in `artifacts/woofwatcher-mobile/scripts/generate-template-partial-packs.ps1`.
-
-Retriever, Husky, and Doodle now each include:
-
-- `accessories/` with the full 10-slot launch overlay set
-- `emotes/` with the full 10-state mood still set
-- `sprites/` with `tail-wag-strip.png`, `ear-perk-strip.png`, `eat-loop-strip.png`, `sleep-loop-strip.png`, `comfort-loop-strip.png`, `celebrate-hop-strip.png`, and `health-watch-strip.png`

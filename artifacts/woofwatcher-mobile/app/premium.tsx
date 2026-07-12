@@ -1,11 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef } from "react";
 import {
-  Alert,
   Animated,
+  ImageBackground,
   Platform,
   Pressable,
   ScrollView,
@@ -14,6 +13,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { OwnerOpsUnavailableScreen } from "@/components/board/OwnerOpsBoundary";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import {
   deriveHealthWatch,
   derivePremiumPreview,
@@ -23,11 +24,21 @@ import {
 } from "@workspace/care-domain";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding, MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
+import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
+import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { notifyDialog } from "@/lib/confirmDialog";
+import { MIN_MOBILE_TOUCH_TARGET, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { buildPaymentsProviderProofManifest } from "@/lib/paymentsProviderProof";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+const PIXEL_DISPLAY = "Fredoka_600SemiBold";
+const PREMIUM_VALUE_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-pixellab-400x300.png");
+const PREMIUM_VALUE_STAGE_SPRITE = getCareTwinSpriteAsset("celebrate-hop");
+const PREMIUM_VALUE_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["celebrate-hop"];
 
 function signalIcon(key: PremiumValueSignal["key"]): keyof typeof Ionicons.glyphMap {
   if (key === "household") return "people-outline";
@@ -38,6 +49,15 @@ function signalIcon(key: PremiumValueSignal["key"]): keyof typeof Ionicons.glyph
 }
 
 export default function PremiumScreen() {
+  // Store builds hide the gated Plus preview: pricing tiers may not be
+  // shown to reviewers or households until checkout is provider-approved.
+  if (!isOwnerOpsBuild()) {
+    return <OwnerOpsUnavailableScreen title="WoofWatcher Plus preview unavailable" />;
+  }
+  return <PremiumScreenBody />;
+}
+
+function PremiumScreenBody() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -71,61 +91,172 @@ export default function PremiumScreen() {
     preview.plans.find((plan) => plan.id === preview.recommendedPlanId) ?? preview.plans[1];
   const includedEntitlements = preview.entitlements.included.slice(0, 3);
   const lockedEntitlements = preview.entitlements.locked.slice(0, 5);
+  const premiumStageSpeech =
+    lockedEntitlements[0]
+      ? `${recommendedPlan.name} unlocks ${lockedEntitlements[0].label.toLowerCase()} when checkout is approved.`
+      : `${recommendedPlan.name} is ready to review once launch gates close.`;
+  const premiumStageHud = [
+    { label: "Plan", value: recommendedPlan.name, tone: colors.primary },
+    { label: "Price", value: recommendedPlan.monthlyPrice, tone: colors.amber },
+    { label: "Signals", value: String(preview.valueSignals.length), tone: colors.sage },
+    { label: "Gate", value: "Checkout", tone: colors.amber },
+  ];
+  const paymentsProofManifest = buildPaymentsProviderProofManifest();
 
-  const fade = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(18)).current;
+  const isWebRoutePreview = (Platform.OS as string) === "web";
+  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
+  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 18)).current;
   useEffect(() => {
+    if (isWebRoutePreview) return;
     Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 420, useNativeDriver: Platform.OS !== "web" }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: Platform.OS !== "web" }),
+      Animated.timing(fade, { toValue: 1, duration: 420, useNativeDriver: !isWebRoutePreview }),
+      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
     ]).start();
-  }, [fade, slide]);
+  }, [fade, isWebRoutePreview, slide]);
 
   const showLaunchChecklist = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert(
+    notifyDialog(
       "Premium launch checklist",
       "Payments stay disabled until privacy terms, support scope, refund workflow, subscription packaging, and app-store launch target are approved.",
     );
   };
 
-  const topScrollPadding = getRouteTopPadding(insets.top, "standalone", Platform.OS === "web");
-  const bottomScrollPadding = getStandaloneRouteBottomPadding(insets.bottom);
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "standalone",
+  });
+  const bottomPadding = getStandaloneRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ title: "WoofWatcher Plus" }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: topScrollPadding, paddingHorizontal: 20, paddingBottom: bottomScrollPadding }}
+        contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 20, paddingBottom: bottomPadding }}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
-          <LinearGradient
-            colors={[colors.midnight, colors.primary, colors.sage]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={s.hero}
-          >
-            <View style={s.heroTop}>
-              <View style={s.heroMark}>
-                <Ionicons name="diamond-outline" size={21} color="#FFFFFF" />
+          <BoardCard padded={false} style={s.premiumValueStageCard}>
+            <ImageBackground
+              source={PREMIUM_VALUE_STAGE_ROOM}
+              resizeMode="stretch"
+              imageStyle={[stageImageFill, s.premiumValueStageImage, pixelImageStyle]}
+              style={s.premiumValueStage}
+              testID="premium-value-pixel-stage"
+            >
+              <View style={s.premiumValueStageShade} />
+
+              <View style={s.premiumValueStageTop}>
+                <View style={s.premiumValueBubble}>
+                  <Text style={[s.premiumValueKicker, { color: colors.copper, fontFamily: PIXEL_DISPLAY }]}>
+                    Plus Value Console
+                  </Text>
+                  <Text
+                    numberOfLines={3}
+                    style={[s.premiumValueSpeech, { color: colors.brandNavy, fontFamily: PIXEL_DISPLAY }]}
+                  >
+                    {premiumStageSpeech}
+                  </Text>
+                  <View style={s.premiumValueBubbleTail} />
+                </View>
+                <View
+                  style={[
+                    s.premiumValueChip,
+                    { backgroundColor: colors.brandNavy + "E8", borderColor: colors.ivory + "55" },
+                  ]}
+                >
+                  <Ionicons name="lock-closed-outline" size={15} color={colors.amber} />
+                  <Text style={[s.premiumValueChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                    Checkout gated
+                  </Text>
+                </View>
               </View>
-              <View style={[s.planBadge, { backgroundColor: "rgba(255,255,255,0.16)" }]}>
-                <Text style={[s.planBadgeText, { fontFamily: "Inter_700Bold" }]}>
-                  {recommendedPlan.badge}
-                </Text>
+
+              <View pointerEvents="none" style={s.premiumValueSprite}>
+                <View style={s.premiumValueSpriteShadow} />
+                <SpriteSheetPlayer
+                  asset={PREMIUM_VALUE_STAGE_SPRITE}
+                  track={PREMIUM_VALUE_STAGE_TRACK}
+                  width={136}
+                  height={136}
+                  testID="premium-value-pixel-sprite"
+                />
               </View>
-            </View>
-            <Text style={[s.heroTitle, { fontFamily: DISPLAY }]}>WoofWatcher Plus</Text>
-            <Text style={[s.heroSub, { fontFamily: "Inter_500Medium" }]}>
-              Premium dog care built around advanced meals, Health Watch, shared household routines, records, and reports.
-            </Text>
-            <View style={s.recoRow}>
-              <Text style={[s.recoLabel, { fontFamily: "Inter_600SemiBold" }]}>Recommended</Text>
-              <Text style={[s.recoPlan, { fontFamily: DISPLAY_SEMI }]}>{recommendedPlan.name}</Text>
-              <Text style={[s.recoPrice, { fontFamily: "Inter_700Bold" }]}>{recommendedPlan.monthlyPrice}</Text>
-            </View>
-          </LinearGradient>
+
+              <View
+                style={[
+                  s.premiumValueHud,
+                  { backgroundColor: colors.brandNavy + "DF", borderColor: colors.ivory + "44" },
+                ]}
+              >
+                {premiumStageHud.map((metric) => (
+                  <View key={metric.label} style={s.premiumValueHudCell}>
+                    <Text style={[s.premiumValueHudLabel, { color: colors.ivory, fontFamily: PIXEL_DISPLAY }]}>
+                      {metric.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[s.premiumValueHudValue, { color: metric.tone, fontFamily: "Inter_800ExtraBold" }]}
+                    >
+                      {metric.value}
+                    </Text>
+                    <View style={s.premiumValueSignalRow}>
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <View
+                          key={`${metric.label}-${index}`}
+                          style={[
+                            s.premiumValueSignalBar,
+                            {
+                              backgroundColor:
+                                index < Math.min(5, preview.valueSignals.length || 1)
+                                  ? metric.tone
+                                  : colors.ivory + "30",
+                            },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <View style={s.premiumValueFooter}>
+                <View
+                  style={[
+                    s.premiumValuePlanCard,
+                    { backgroundColor: colors.ivory + "E8", borderColor: colors.ivory + "AA" },
+                  ]}
+                >
+                  <Text style={[s.premiumValuePlanLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                    Recommended
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[s.premiumValuePlanValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
+                  >
+                    {recommendedPlan.name} · {recommendedPlan.monthlyPrice}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open premium launch checklist from value console"
+                  onPress={showLaunchChecklist}
+                  style={({ pressed }) => [
+                    s.premiumValueAction,
+                    { backgroundColor: colors.sage, opacity: pressed ? 0.82 : 1 },
+                  ]}
+                >
+                  <Text style={[s.premiumValueActionText, { fontFamily: "Inter_800ExtraBold" }]}>
+                    Launch checklist
+                  </Text>
+                  <Ionicons name="arrow-forward" size={15} color={colors.ivory} />
+                </Pressable>
+              </View>
+            </ImageBackground>
+          </BoardCard>
 
           <View style={[s.notice, { backgroundColor: colors.amber + "14", borderColor: colors.amber + "45" }]}>
             <Ionicons name="lock-closed-outline" size={16} color={colors.amber} />
@@ -134,8 +265,54 @@ export default function PremiumScreen() {
             </Text>
           </View>
 
+          <BoardCard style={s.paymentsProofCard}>
+            <BoardSectionHeader
+              title="Payments proof manifest"
+              accessory={<BoardPill label="Checkout disabled" tone={colors.amber} />}
+            />
+            <Text style={[s.paymentsProofIntro, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              Paid checkout stays blocked until every provider proof row is approved from real billing evidence.
+            </Text>
+            <View style={s.paymentsProofGrid}>
+              {paymentsProofManifest.rows.map((row) => (
+                <View key={row.label} style={[s.paymentsProofCell, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <Text style={[s.paymentsProofLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    {row.label}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      s.paymentsProofValue,
+                      {
+                        color: row.status === "ready" ? colors.sage : colors.amber,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
+                    {row.value}
+                  </Text>
+                  <Text numberOfLines={2} style={[s.paymentsProofDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    {row.detail}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            {paymentsProofManifest.blockers.map((blocker) => (
+              <Text
+                key={blocker}
+                numberOfLines={2}
+                style={[s.paymentsProofBlocker, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
+              >
+                - {blocker}
+              </Text>
+            ))}
+          </BoardCard>
+
           <BoardCard style={s.premiumBoard}>
-            <BoardSectionHeader title="Why upgrade" action={`${preview.valueSignals.length} signals`} />
+            <BoardSectionHeader
+              title="Why upgrade"
+              accessory={<BoardPill label={`${preview.valueSignals.length} signals`} tone={colors.sage} />}
+            />
             <View style={s.signalGrid}>
               {preview.valueSignals.slice(0, 4).map((signal) => (
                 <View key={signal.key} style={[s.signalTile, { backgroundColor: colors.background, borderColor: colors.border }]}>
@@ -154,7 +331,7 @@ export default function PremiumScreen() {
           </BoardCard>
 
           <View style={s.planSection}>
-            <BoardSectionHeader title="Plans" action="Checkout gated" />
+            <BoardSectionHeader title="Plans" accessory={<BoardPill label="Checkout gated" tone={colors.amber} />} />
           </View>
           <View style={s.planStack}>
             {preview.plans.map((plan) => (
@@ -168,7 +345,7 @@ export default function PremiumScreen() {
           </View>
 
           <BoardCard style={s.entitlementCard}>
-            <BoardSectionHeader title="Launch entitlements" action="Current: Free" />
+            <BoardSectionHeader title="Launch entitlements" accessory={<BoardPill label="Current: Free" tone={colors.primary} />} />
             <Text style={[s.entitlementSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               Current plan: Free
             </Text>
@@ -312,38 +489,189 @@ function PlanCard({
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  hero: {
-    borderRadius: 26,
-    padding: 22,
-    minHeight: 260,
-    justifyContent: "space-between",
+  premiumValueStageCard: {
     overflow: "hidden",
+    borderRadius: 8,
   },
-  heroTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  heroMark: {
-    width: MIN_MOBILE_TOUCH_TARGET,
-    height: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.16)",
+  premiumValueStage: {
+    minHeight: 372,
+    overflow: "hidden",
+    justifyContent: "space-between",
+  },
+  premiumValueStageImage: {
+    borderRadius: 8,
+  },
+  premiumValueStageShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(8, 20, 36, 0.14)",
+  },
+  premiumValueStageTop: {
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  premiumValueBubble: {
+    position: "relative",
+    flex: 1,
+    maxWidth: 248,
+    borderWidth: 2,
+    borderColor: "#142033",
+    backgroundColor: "rgba(255, 249, 239, 0.94)",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    shadowColor: "#081424",
+    shadowOpacity: 0.16,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 5 },
+  },
+  premiumValueKicker: {
+    fontSize: 8,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
+  premiumValueSpeech: {
+    fontSize: 11,
+    lineHeight: 18,
+    marginTop: 6,
+  },
+  premiumValueBubbleTail: {
+    position: "absolute",
+    width: 16,
+    height: 16,
+    left: 22,
+    bottom: -9,
+    backgroundColor: "rgba(255, 249, 239, 0.94)",
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: "#142033",
+    transform: [{ rotate: "45deg" }],
+  },
+  premiumValueChip: {
+    flexShrink: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  premiumValueChipText: {
+    fontSize: 11,
+    textTransform: "uppercase",
+  },
+  premiumValueSprite: {
+    position: "absolute",
+    right: 20,
+    bottom: 134,
+    width: 146,
+    height: 146,
     alignItems: "center",
     justifyContent: "center",
   },
-  planBadge: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
-  planBadgeText: { color: "#FFFFFF", fontSize: 12 },
-  heroTitle: { color: "#FFFFFF", fontSize: 34, letterSpacing: 0, marginTop: 28 },
-  heroSub: { color: "rgba(255,255,255,0.84)", fontSize: 15, lineHeight: 22, marginTop: 10 },
-  recoRow: {
+  premiumValueSpriteShadow: {
+    position: "absolute",
+    width: 112,
+    height: 24,
+    borderRadius: 999,
+    bottom: 10,
+    backgroundColor: "rgba(8, 20, 36, 0.24)",
+  },
+  premiumValueHud: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 86,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    flexDirection: "row",
+    gap: 8,
+  },
+  premiumValueHudCell: {
+    flex: 1,
+    minWidth: 0,
+  },
+  premiumValueHudLabel: {
+    fontSize: 7,
+    lineHeight: 11,
+    textTransform: "uppercase",
+    opacity: 0.72,
+  },
+  premiumValueHudValue: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 3,
+  },
+  premiumValueSignalRow: {
+    flexDirection: "row",
+    gap: 2,
+    marginTop: 6,
+  },
+  premiumValueSignalBar: {
+    flex: 1,
+    height: 6,
+    borderRadius: 2,
+  },
+  premiumValueFooter: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 14,
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "stretch",
+  },
+  premiumValuePlanCard: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    justifyContent: "center",
+  },
+  premiumValuePlanLabel: {
+    fontSize: 10,
+    textTransform: "uppercase",
+  },
+  premiumValuePlanValue: {
+    fontSize: 15,
+    marginTop: 2,
+  },
+  premiumValueAction: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    flexWrap: "wrap",
-    marginTop: 24,
+    justifyContent: "center",
+    gap: 6,
   },
-  recoLabel: { color: "rgba(255,255,255,0.72)", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6 },
-  recoPlan: { color: "#FFFFFF", fontSize: 20 },
-  recoPrice: { color: "#FFFFFF", fontSize: 13 },
+  premiumValueActionText: {
+    color: "#FFF9EF",
+    fontSize: 12,
+  },
   notice: { flexDirection: "row", gap: 9, borderWidth: 1, borderRadius: 17, padding: 14, marginTop: 14 },
   noticeText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
+  paymentsProofCard: { marginTop: 14 },
+  paymentsProofIntro: { fontSize: 12.5, lineHeight: 18, marginTop: -4 },
+  paymentsProofGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
+  paymentsProofCell: {
+    width: "48.5%",
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    minHeight: 118,
+  },
+  paymentsProofLabel: { fontSize: 9.5, textTransform: "uppercase", letterSpacing: 0.4 },
+  paymentsProofValue: { fontSize: 11.5, marginTop: 4 },
+  paymentsProofDetail: { fontSize: 10.5, lineHeight: 14, marginTop: 4 },
+  paymentsProofBlocker: { fontSize: 10.5, lineHeight: 15, marginTop: 8 },
   premiumBoard: { marginTop: 18 },
   signalGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   signalTile: { width: "48.5%", borderWidth: 1, borderRadius: 16, padding: 14 },

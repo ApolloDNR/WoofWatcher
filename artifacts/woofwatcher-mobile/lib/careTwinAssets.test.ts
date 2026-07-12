@@ -6,9 +6,12 @@ import {
   CARE_TWIN_DOGLESS_ROOM_ASSETS,
   CARE_TWIN_ROOM_VARIANT_ASSETS,
   CARE_TWIN_SPRITE_ASSETS,
+  evaluateCareTwinRuntimeQaScenario,
   getCareTwinLayerReadiness,
   getCareTwinRoomLayer,
+  getCareTwinRoomVariantKey,
   getCareTwinSpriteAsset,
+  listCareTwinRuntimeQaScenarios,
   listCareTwinSpriteSlots,
 } from "./careTwinAssets.ts";
 
@@ -23,6 +26,7 @@ test("enables layered sprite rendering when production sprite and dogless room a
 
 test("registers finished PixelLab sprite strips and a dogless room layer", () => {
   assert.deepEqual(Object.keys(CARE_TWIN_SPRITE_ASSETS).sort(), [
+    "bark-loop",
     "celebrate-hop",
     "comfort-loop",
     "drink-loop",
@@ -49,12 +53,44 @@ test("registers finished PixelLab sprite strips and a dogless room layer", () =>
     "night",
   ]);
   assert.equal(getCareTwinSpriteAsset("tail-wag")?.frameWidth, 256);
-  assert.equal(getCareTwinSpriteAsset("walk-loop")?.columns, 10);
+  assert.equal(getCareTwinSpriteAsset("idle-breathe")?.columns, 8);
+  assert.equal(getCareTwinSpriteAsset("tail-wag")?.columns, 8);
+  assert.equal(getCareTwinSpriteAsset("walk-loop")?.columns, 8);
   assert.equal(getCareTwinSpriteAsset("ear-perk")?.columns, 6);
+  assert.equal(getCareTwinSpriteAsset("bark-loop")?.columns, 6);
+  assert.match(CARE_TWIN_ROOM_VARIANT_ASSETS.day.description, /Option B Dogless/);
   assert.equal(getCareTwinRoomLayer("happy")?.description.includes("Dogless"), true);
 });
 
+test("uses the hard-pixel Option B Phoenix family for live runtime actions", () => {
+  const optionBActions: CareTwinSpriteAction[] = [
+    "idle-breathe",
+    "tail-wag",
+    "ear-perk",
+    "walk-loop",
+    "eat-loop",
+    "drink-loop",
+    "sleep-loop",
+    "comfort-loop",
+    "celebrate-hop",
+    "health-watch",
+    "bark-loop",
+  ];
+
+  for (const action of optionBActions) {
+    assert.match(CARE_TWIN_SPRITE_MANIFEST[action].requiredAsset, /assets\/avatar\/phoenix\/storybook\/storybook-/);
+  }
+  assert.equal(CARE_TWIN_SPRITE_MANIFEST["walk-loop"].frameCount, 8);
+  assert.match(CARE_TWIN_SPRITE_MANIFEST["bark-loop"].requiredAsset, /storybook-bark-reaction-strip\.png/);
+  assert.notEqual(CARE_TWIN_SPRITE_MANIFEST["bark-loop"].requiredAsset, CARE_TWIN_SPRITE_MANIFEST["ear-perk"].requiredAsset);
+});
+
 test("routes care twin sprite states to the right dogless room mood variant", () => {
+  assert.equal(getCareTwinRoomVariantKey("calm", "sleep-loop"), "bedtime");
+  assert.equal(getCareTwinRoomVariantKey("happy", "comfort-loop"), "homeAlone");
+  assert.equal(getCareTwinRoomVariantKey("happy", "health-watch"), "healthWatch");
+  assert.equal(getCareTwinRoomVariantKey("anxious", "ear-perk"), "night");
+  assert.equal(getCareTwinRoomVariantKey("happy", "tail-wag"), "day");
   assert.equal(getCareTwinRoomLayer("calm", "sleep-loop"), CARE_TWIN_ROOM_VARIANT_ASSETS.bedtime);
   assert.equal(getCareTwinRoomLayer("happy", "comfort-loop"), CARE_TWIN_ROOM_VARIANT_ASSETS.homeAlone);
   assert.equal(getCareTwinRoomLayer("happy", "health-watch"), CARE_TWIN_ROOM_VARIANT_ASSETS.healthWatch);
@@ -93,5 +129,65 @@ test("mirrors the sprite manifest into asset slots for Fable and artist handoff"
     assert.equal(slot.anchor, "bottom-center");
     assert.equal(slot.slotSize, 256);
     assert.equal(slot.assetReady, Boolean(CARE_TWIN_SPRITE_ASSETS[slot.action]));
+  }
+});
+
+test("defines a native QA matrix for every care twin state and room variant", () => {
+  const scenarios = listCareTwinRuntimeQaScenarios();
+  const scenarioStates = new Set(scenarios.map((scenario) => scenario.motion.state));
+  const roomVariants = new Set(scenarios.map((scenario) => scenario.expectedRoomVariant));
+
+  assert.equal(scenarios.length, 12);
+  assert.deepEqual(
+    [...scenarioStates].sort(),
+    [
+      "annoyed",
+      "bored",
+      "drinking",
+      "eating",
+      "excited",
+      "happy",
+      "sad",
+      "sick",
+      "sleeping",
+      "tired",
+      "treat",
+      "walking",
+    ],
+  );
+  assert.deepEqual([...roomVariants].sort(), ["bedtime", "day", "healthWatch", "homeAlone", "night"]);
+
+  for (const scenario of scenarios) {
+    const result = evaluateCareTwinRuntimeQaScenario(scenario);
+
+    assert.equal(result.actualAction, scenario.expectedAction, scenario.id);
+    assert.equal(result.actualRoomVariant, scenario.expectedRoomVariant, scenario.id);
+    assert.equal(result.actualZone, scenario.expectedZone, scenario.id);
+    assert.equal(result.actualScenePhase, scenario.expectedScenePhase, scenario.id);
+    assert.equal(result.actualNeed, scenario.expectedNeed, scenario.id);
+    assert.equal(result.readiness.layeredReady, true, scenario.id);
+    assert.deepEqual(result.readiness.missing, [], scenario.id);
+    assert.equal(result.stageFraming.zone, result.actualZone, scenario.id);
+    assert.match(result.stageFraming.cropRule, /head, paws, speech bubble, and bottom dock/i, scenario.id);
+    assert.match(result.stageFraming.hudClearanceRule, /HUD/i, scenario.id);
+    assert.match(result.stageFraming.singleAvatarRule, /single live sprite/i, scenario.id);
+    assert.match(result.stageFraming.phoneQaHint, /phone screenshot/i, scenario.id);
+    assert.ok(scenario.nativeQaPrompt.length > 50, scenario.id);
+    assert.doesNotMatch(scenario.nativeQaPrompt, /emergency|certainty|cure|treatment claim/i, scenario.id);
+  }
+});
+
+test("keeps stage framing contracts specific to each Phoenix room zone", () => {
+  const results = listCareTwinRuntimeQaScenarios().map(evaluateCareTwinRuntimeQaScenario);
+  const byZone = new Map(results.map((result) => [result.actualZone, result.stageFraming]));
+
+  assert.match(byZone.get("rug")?.cropRule ?? "", /centered/i);
+  assert.match(byZone.get("door")?.cropRule ?? "", /left third/i);
+  assert.match(byZone.get("bowl")?.cropRule ?? "", /bowl/i);
+  assert.match(byZone.get("bed")?.cropRule ?? "", /bed/i);
+  assert.match(byZone.get("window")?.cropRule ?? "", /window/i);
+  for (const framing of byZone.values()) {
+    assert.match(framing.mockupAccuracyRule, /Option B/i);
+    assert.match(framing.mockupAccuracyRule, /hard-pixel/i);
   }
 });

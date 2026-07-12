@@ -23,6 +23,7 @@ import {
   type CareStateEnvelope,
 } from "@workspace/api-client-react";
 import {
+  buildCareEntryRefreshPlan,
   deriveCareSyncOutbox,
   mergeServerAndLocalEntries,
   reconcileCareDocFromServer,
@@ -31,8 +32,14 @@ import {
   type CareSyncOutbox,
   type EntrySyncStatus,
 } from "@/lib/careSync";
-import type { ReportArtifact } from "@workspace/care-domain";
+import type { AccessPass, AdventureMemory, CarePassArtifact } from "@workspace/care-domain";
 import { useWoofAuth } from "@/lib/auth";
+import {
+  normalizeReminderNotificationPreferences,
+  type ReminderNotificationPreferences,
+} from "@/lib/reminderNotificationPreferences";
+import { normalizeLaunchProviderProfile, type LaunchStorageProviderEvidence } from "@/lib/launchProviderSetup";
+import type { SupportLegalReadinessProofEvidence } from "@/lib/supportRunbook";
 
 const STORAGE_KEY = "woofwatcher.v2.state";
 
@@ -57,9 +64,65 @@ export interface Profile {
   vetBoundary: string;
 }
 
+export interface PetProfile {
+  id: string;
+  name: string;
+  publicLabel?: string;
+  breed: string;
+  careFocus?: string;
+  avatarTemplateId?: string;
+  status?: "live" | "setup-needed" | "provider-gated";
+  createdAt?: string;
+  weight?: Partial<WeightInfo>;
+}
+
 export interface Caregiver {
   name: string;
   role: string;
+}
+
+export interface HouseholdSetup {
+  mode: "create" | "join" | "local";
+  householdName: string;
+  inviteCode?: string;
+  providerStatus: "local-only" | "pending-provider";
+  updatedAt?: string;
+}
+
+export interface LaunchSupportProfile {
+  supportEmail: string;
+  privacyPolicyUrl: string;
+  termsUrl: string;
+  refundPolicyApproved: boolean;
+  veterinaryBoundaryApproved: boolean;
+  accountDeletionEscalationApproved: boolean;
+  incidentResponseApproved: boolean;
+  supportLegalReadinessEvidence?: SupportLegalReadinessProofEvidence | null;
+  ownerReviewedAt?: string;
+  providerStatus: "local-draft" | "owner-reviewed" | "provider-approved";
+}
+
+export interface LaunchProviderProfile {
+  authConfigured: boolean;
+  authProviderProofReady: boolean;
+  databaseConfigured: boolean;
+  databaseProviderProofReady: boolean;
+  storageProviderConfigured: boolean;
+  storageProviderProofReady: boolean;
+  storageProviderEvidence?: LaunchStorageProviderEvidence | null;
+  aiProviderConfigured: boolean;
+  aiProviderProofReady: boolean;
+  paymentsEnabled: boolean;
+  paymentsProviderProofReady: boolean;
+  pushNotificationsConfigured: boolean;
+  pushNotificationsProofReady: boolean;
+  appStoreAccountsReady: boolean;
+  storeAccountsProofReady: boolean;
+  accountDeletionEnabled: boolean;
+  accountDeletionProofReady: boolean;
+  ownerReviewedAt?: string;
+  providerStatus: "local-draft" | "owner-reviewed" | "provider-approved";
+  notes: string;
 }
 
 export interface Routine {
@@ -102,6 +165,8 @@ export interface CalendarEvent {
   source: "manual" | "woofguide";
 }
 
+export type ReportArtifact = CarePassArtifact;
+
 export interface Entry {
   id: string;
   type: string;
@@ -142,12 +207,20 @@ export interface DietProfile {
 export interface CareDoc {
   createdAt: string;
   updatedAt: string;
+  activePetId: string;
   profile: Profile;
+  pets: PetProfile[];
   caregivers: Caregiver[];
+  householdSetup: HouseholdSetup;
+  launchSupportProfile: LaunchSupportProfile;
+  launchProviderProfile: LaunchProviderProfile;
+  reminderNotificationPreferences: ReminderNotificationPreferences;
   dietProfile: DietProfile;
   routines: Routine[];
   goals: Goal[];
   records: Record[];
+  accessPasses: AccessPass[];
+  adventureMemories: AdventureMemory[];
   reportArtifacts: ReportArtifact[];
   calendarEvents: CalendarEvent[];
 }
@@ -157,11 +230,18 @@ export interface CareState extends CareDoc {
   entries: Entry[];
 }
 
+function normalizeSupportLegalReadinessEvidence(
+  value: SupportLegalReadinessProofEvidence | null | undefined,
+): SupportLegalReadinessProofEvidence | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
 function getDefaultDoc(): CareDoc {
   const now = new Date().toISOString();
   return {
     createdAt: now,
     updatedAt: now,
+    activePetId: "primary",
     profile: {
       name: "My Dog",
       publicLabel: "My Dog",
@@ -181,7 +261,27 @@ function getDefaultDoc(): CareDoc {
       vetBoundary:
         "WoofWatcher tracks patterns for caregiver and veterinarian review. It is not a veterinary diagnosis.",
     },
+    pets: [],
     caregivers: [],
+    householdSetup: {
+      mode: "create",
+      householdName: "",
+      inviteCode: "",
+      providerStatus: "local-only",
+    },
+    launchSupportProfile: {
+      supportEmail: "",
+      privacyPolicyUrl: "",
+      termsUrl: "",
+      refundPolicyApproved: false,
+      veterinaryBoundaryApproved: false,
+      accountDeletionEscalationApproved: false,
+      incidentResponseApproved: false,
+      supportLegalReadinessEvidence: null,
+      providerStatus: "local-draft",
+    },
+    launchProviderProfile: normalizeLaunchProviderProfile(null),
+    reminderNotificationPreferences: normalizeReminderNotificationPreferences(null),
     dietProfile: {
       primaryFood: "",
       normalPortion: "",
@@ -198,6 +298,8 @@ function getDefaultDoc(): CareDoc {
     routines: [],
     goals: [],
     records: [],
+    accessPasses: [],
+    adventureMemories: [],
     reportArtifacts: [],
     calendarEvents: [],
   };
@@ -205,9 +307,46 @@ function getDefaultDoc(): CareDoc {
 
 function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
   const merged = { ...getDefaultDoc(), ...(partial ?? {}) };
+  const launchSupportProfile = merged.launchSupportProfile ?? getDefaultDoc().launchSupportProfile;
   return {
     ...merged,
+    activePetId: typeof merged.activePetId === "string" && merged.activePetId.trim() ? merged.activePetId : "primary",
+    pets: Array.isArray(merged.pets) ? merged.pets : [],
+    accessPasses: Array.isArray(merged.accessPasses) ? merged.accessPasses : [],
+    adventureMemories: Array.isArray(merged.adventureMemories) ? merged.adventureMemories : [],
     reportArtifacts: Array.isArray(merged.reportArtifacts) ? merged.reportArtifacts : [],
+    householdSetup: {
+      mode:
+        merged.householdSetup?.mode === "join" || merged.householdSetup?.mode === "local"
+          ? merged.householdSetup.mode
+          : "create",
+      householdName: typeof merged.householdSetup?.householdName === "string" ? merged.householdSetup.householdName : "",
+      inviteCode: typeof merged.householdSetup?.inviteCode === "string" ? merged.householdSetup.inviteCode : "",
+      providerStatus:
+        merged.householdSetup?.providerStatus === "pending-provider" ? "pending-provider" : "local-only",
+      updatedAt: typeof merged.householdSetup?.updatedAt === "string" ? merged.householdSetup.updatedAt : undefined,
+    },
+    launchSupportProfile: {
+      supportEmail:
+        typeof launchSupportProfile.supportEmail === "string" ? launchSupportProfile.supportEmail : "",
+      privacyPolicyUrl:
+        typeof launchSupportProfile.privacyPolicyUrl === "string" ? launchSupportProfile.privacyPolicyUrl : "",
+      termsUrl: typeof launchSupportProfile.termsUrl === "string" ? launchSupportProfile.termsUrl : "",
+      refundPolicyApproved: Boolean(launchSupportProfile.refundPolicyApproved),
+      veterinaryBoundaryApproved: Boolean(launchSupportProfile.veterinaryBoundaryApproved),
+      accountDeletionEscalationApproved: Boolean(launchSupportProfile.accountDeletionEscalationApproved),
+      incidentResponseApproved: Boolean(launchSupportProfile.incidentResponseApproved),
+      supportLegalReadinessEvidence: normalizeSupportLegalReadinessEvidence(launchSupportProfile.supportLegalReadinessEvidence),
+      ownerReviewedAt:
+        typeof launchSupportProfile.ownerReviewedAt === "string" ? launchSupportProfile.ownerReviewedAt : undefined,
+      providerStatus:
+        launchSupportProfile.providerStatus === "owner-reviewed" ||
+        launchSupportProfile.providerStatus === "provider-approved"
+          ? launchSupportProfile.providerStatus
+          : "local-draft",
+    },
+    launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile),
+    reminderNotificationPreferences: normalizeReminderNotificationPreferences(merged.reminderNotificationPreferences),
   };
 }
 
@@ -280,18 +419,19 @@ function isConflict(err: unknown): err is { status: number; data: unknown } {
 interface CareContextValue {
   state: CareState;
   addEntry: (entry: Omit<Entry, "id">) => string;
-  deleteEntry: (id: string) => Promise<DeleteEntryResult>;
+  deleteEntry: (id: string) => Promise<boolean>;
   updateEntry: (id: string, patch: Partial<Omit<Entry, "id">>) => void;
   updateCareDoc: (updater: (doc: CareDoc) => CareDoc) => void;
   refresh: () => void;
+  /**
+   * Store-compliance data deletion: resets the live care document and
+   * removes every WoofWatcher key on this device (care state, avatar art,
+   * QA sessions). Local-first means this is the complete deletion.
+   */
+  eraseAllLocalData: () => Promise<void>;
   syncOutbox: CareSyncOutbox;
   isLoaded: boolean;
   isSyncing: boolean;
-}
-
-interface DeleteEntryResult {
-  ok: boolean;
-  auditHandledByServer: boolean;
 }
 
 const CareContext = createContext<CareContextValue | null>(null);
@@ -316,6 +456,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   // arrive before a create resolves (post-log quick-note race).
   const realIdByTemp = useRef<Map<string, string>>(new Map());
   const pendingPatch = useRef<Map<string, Partial<Omit<Entry, "id">>>>(new Map());
+  // Bumped by eraseAllLocalData so in-flight sync results can't resurrect
+  // data the owner just deleted from this device.
+  const eraseGenerationRef = useRef(0);
   useEffect(() => {
     docRef.current = doc;
   }, [doc]);
@@ -480,10 +623,15 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const syncFromServer = useCallback(async () => {
     if (!signedInRef.current || syncingRef.current) return;
+    // Capture the erase generation so results from a sync that was in
+    // flight when the owner wiped this device are discarded instead of
+    // resurrecting the deleted data.
+    const eraseGenerationAtStart = eraseGenerationRef.current;
     syncingRef.current = true;
     setIsSyncing(true);
     try {
       const envelope = await getCareState();
+      if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
       const plan = reconcileCareDocFromServer<CareDoc>({
         localDoc: docRef.current,
         localVersion: versionRef.current,
@@ -503,7 +651,14 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         setServerVersion(plan.version);
       }
 
-      const rows = await listCareEntries();
+      const entryRefreshPlan = buildCareEntryRefreshPlan({
+        // The current API `since` filter is occurrence-based, not a server
+        // update cursor, so full refresh remains the safe household sync path.
+        hasUpdatedAtCursor: false,
+        hasDeleteTombstones: false,
+      });
+      const rows = await listCareEntries(entryRefreshPlan.params);
+      if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
       const serverEntries = rows.map(toEntry);
       const retryableCreates = entriesRef.current.filter(
         (entry) => shouldRetryCreate(entry) && entry.syncStatus !== "pending",
@@ -551,26 +706,28 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const deleteEntry = useCallback(
     async (id: string) => {
+      // A quick undo can arrive after the optimistic create already swapped
+      // its temp id for the server id; resolve through the mapping so the
+      // right row is removed locally AND on the server.
+      const realId = realIdByTemp.current.get(id) ?? id;
       let removed: Entry | undefined;
       setEntries((prev) => {
-        removed = prev.find((e) => e.id === id);
-        return prev.filter((e) => e.id !== id);
+        removed = prev.find((e) => e.id === realId || e.id === id);
+        return prev.filter((e) => e.id !== realId && e.id !== id);
       });
-      if (!signedInRef.current || id.startsWith("temp_")) {
-        return { ok: true, auditHandledByServer: false };
-      }
+      if (!signedInRef.current || realId.startsWith("temp_")) return true;
       try {
-        await deleteCareEntry(id);
+        await deleteCareEntry(realId);
         queryClient.invalidateQueries({
           queryKey: getListCareEntriesQueryKey(),
         });
-        return { ok: true, auditHandledByServer: true };
+        return true;
       } catch {
         if (removed) {
           const restored = removed;
           setEntries((prev) => [restored, ...prev]);
         }
-        return { ok: false, auditHandledByServer: false };
+        return false;
       }
     },
     [queryClient],
@@ -655,12 +812,20 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       version: serverVersion,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
+      activePetId: doc.activePetId,
       profile: doc.profile,
+      pets: doc.pets,
       caregivers: doc.caregivers,
+      householdSetup: doc.householdSetup,
+      launchSupportProfile: doc.launchSupportProfile,
+      launchProviderProfile: doc.launchProviderProfile,
+      reminderNotificationPreferences: doc.reminderNotificationPreferences,
       dietProfile: doc.dietProfile,
       routines: doc.routines,
       goals: doc.goals,
       records: doc.records,
+      accessPasses: doc.accessPasses,
+      adventureMemories: doc.adventureMemories,
       reportArtifacts: doc.reportArtifacts,
       calendarEvents: doc.calendarEvents,
       entries,
@@ -670,6 +835,28 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const syncOutbox = useMemo(() => deriveCareSyncOutbox(entries), [entries]);
 
+  const eraseAllLocalData = useCallback(async () => {
+    // Reset the live document first so the UI reflects the wipe instantly,
+    // then remove every WoofWatcher-owned key on the device. The persist
+    // effect re-saves only a pristine default household afterward.
+    eraseGenerationRef.current += 1;
+    setDoc(getDefaultDoc());
+    setEntries([]);
+    setServerVersion(0);
+    realIdByTemp.current.clear();
+    pendingPatch.current.clear();
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const owned = keys.filter((key) => key.startsWith("woofwatcher"));
+      if (owned.length) {
+        await AsyncStorage.multiRemove(owned);
+      }
+    } catch {
+      // Best effort: the in-memory reset above already cleared the live
+      // document, and the persist effect overwrites the primary cache key.
+    }
+  }, []);
+
   const value = useMemo<CareContextValue>(
     () => ({
       state,
@@ -678,6 +865,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       updateEntry,
       updateCareDoc,
       refresh: () => void syncFromServer(),
+      eraseAllLocalData,
       syncOutbox,
       isLoaded: hydrated,
       isSyncing,
@@ -689,6 +877,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       updateEntry,
       updateCareDoc,
       syncFromServer,
+      eraseAllLocalData,
       syncOutbox,
       hydrated,
       isSyncing,

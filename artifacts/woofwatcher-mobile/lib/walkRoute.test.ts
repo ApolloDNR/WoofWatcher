@@ -1,0 +1,270 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
+import {
+  WALK_ROUTE_MAX_POINTS,
+  cancelWalkRouteCapture,
+  computeTrailTiles,
+  finishWalkRouteCapture,
+  fitRouteViewport,
+  formatRouteDistanceMiles,
+  getWalkRouteCaptureSnapshot,
+  haversineMeters,
+  latToWorldY,
+  lonToWorldX,
+  parseWalkRoute,
+  projectRoutePoint,
+  routeDistanceMeters,
+  shouldAppendRoutePoint,
+  simplifyRoute,
+  startWalkRouteCapture,
+  subscribeWalkRouteCapture,
+  type WalkRoutePoint,
+} from "./walkRoute.ts";
+
+const SF = { lat: 37.7749, lon: -122.4194 };
+
+function point(lat: number, lon: number, t: number): WalkRoutePoint {
+  return { lat, lon, t };
+}
+
+/** Meters of latitude converted to degrees (1 deg lat ~ 111.13 km). */
+function latDegrees(meters: number): number {
+  return meters / 111_132;
+}
+
+test("haversineMeters matches known real-world distances", () => {
+  // 0.01 degrees of latitude is ~1111.9 m anywhere on Earth.
+  const north = { lat: SF.lat + 0.01, lon: SF.lon };
+  const d = haversineMeters(SF, north);
+  assert.ok(Math.abs(d - 1112) < 6, `expected ~1112m, got ${d}`);
+
+  // 0.01 degrees of longitude at SF latitude is ~879 m (cos 37.77 ~ 0.7906).
+  const east = { lat: SF.lat, lon: SF.lon + 0.01 };
+  const dEast = haversineMeters(SF, east);
+  assert.ok(Math.abs(dEast - 879) < 6, `expected ~879m, got ${dEast}`);
+
+  assert.equal(haversineMeters(SF, SF), 0);
+});
+
+test("shouldAppendRoutePoint throttles by >=15m OR >=20s", () => {
+  const start = point(SF.lat, SF.lon, 1_000_000);
+
+  // First fix always lands.
+  assert.equal(shouldAppendRoutePoint(null, start), true);
+
+  // 5m and 5s later: rejected (neither threshold met).
+  const near = point(SF.lat + latDegrees(5), SF.lon, start.t + 5_000);
+  assert.equal(shouldAppendRoutePoint(start, near), false);
+
+  // 20m moved after only 2s: accepted (distance threshold).
+  const moved = point(SF.lat + latDegrees(20), SF.lon, start.t + 2_000);
+  assert.equal(shouldAppendRoutePoint(start, moved), true);
+
+  // 3m moved but 20s elapsed: accepted (time threshold).
+  const waited = point(SF.lat + latDegrees(3), SF.lon, start.t + 20_000);
+  assert.equal(shouldAppendRoutePoint(start, waited), true);
+
+  // Fixes that predate the last kept point are rejected.
+  const backwards = point(SF.lat + latDegrees(100), SF.lon, start.t - 1);
+  assert.equal(shouldAppendRoutePoint(start, backwards), false);
+
+  // Invalid coordinates never land.
+  assert.equal(shouldAppendRoutePoint(null, point(91, 0, 1)), false);
+  assert.equal(shouldAppendRoutePoint(null, point(0, 181, 1)), false);
+  assert.equal(shouldAppendRoutePoint(null, point(NaN, 0, 1)), false);
+  assert.equal(shouldAppendRoutePoint(null, point(0, 0, NaN)), false);
+});
+
+test("routeDistanceMeters sums consecutive segments", () => {
+  const a = point(SF.lat, SF.lon, 0);
+  const b = point(SF.lat + latDegrees(100), SF.lon, 60_000);
+  const c = point(SF.lat + latDegrees(100), SF.lon + 0.001, 120_000);
+  const total = routeDistanceMeters([a, b, c]);
+  const expected = haversineMeters(a, b) + haversineMeters(b, c);
+  assert.ok(Math.abs(total - expected) < 1e-9);
+  assert.ok(Math.abs(total - 188) < 4, `expected ~188m, got ${total}`);
+  assert.equal(routeDistanceMeters([a]), 0);
+  assert.equal(routeDistanceMeters([]), 0);
+});
+
+test("simplifyRoute collapses collinear points but keeps real corners", () => {
+  // Straight 300m line sampled every 15m: collapses to its endpoints.
+  const line: WalkRoutePoint[] = [];
+  for (let i = 0; i <= 20; i += 1) {
+    line.push(point(SF.lat + latDegrees(i * 15), SF.lon, i * 20_000));
+  }
+  const simplifiedLine = simplifyRoute(line);
+  assert.equal(simplifiedLine[0], line[0]);
+  assert.equal(simplifiedLine[simplifiedLine.length - 1], line[line.length - 1]);
+  assert.ok(
+    simplifiedLine.length <= 3,
+    `straight line should collapse, got ${simplifiedLine.length} points`,
+  );
+
+  // An L-shape must keep the corner: 200m north, then 200m east.
+  const corner = point(SF.lat + latDegrees(200), SF.lon, 200_000);
+  const lShape = [
+    point(SF.lat, SF.lon, 0),
+    point(SF.lat + latDegrees(100), SF.lon, 100_000),
+    corner,
+    point(SF.lat + latDegrees(200), SF.lon + 0.001, 300_000),
+    point(SF.lat + latDegrees(200), SF.lon + 0.002, 400_000),
+  ];
+  const simplifiedL = simplifyRoute(lShape);
+  assert.ok(
+    simplifiedL.some((p) => p.lat === corner.lat && p.lon === corner.lon),
+    "corner point must survive simplification",
+  );
+});
+
+test("simplifyRoute caps long zigzag walks at 200 points, endpoints intact", () => {
+  // A 1000-point zigzag (every point is a genuine corner, worst case for DP).
+  const zigzag: WalkRoutePoint[] = [];
+  for (let i = 0; i < 1000; i += 1) {
+    zigzag.push(
+      point(
+        SF.lat + latDegrees(i * 20),
+        SF.lon + (i % 2 === 0 ? 0 : 0.0004),
+        i * 20_000,
+      ),
+    );
+  }
+  const simplified = simplifyRoute(zigzag);
+  assert.ok(
+    simplified.length <= WALK_ROUTE_MAX_POINTS,
+    `expected <=${WALK_ROUTE_MAX_POINTS}, got ${simplified.length}`,
+  );
+  assert.ok(simplified.length >= 2);
+  assert.deepEqual(simplified[0], zigzag[0]);
+  assert.deepEqual(simplified[simplified.length - 1], zigzag[zigzag.length - 1]);
+
+  // Short routes pass through untouched apart from collinear cleanup.
+  const short = [point(SF.lat, SF.lon, 0), point(SF.lat + 0.001, SF.lon + 0.001, 60_000)];
+  assert.deepEqual(simplifyRoute(short), short);
+});
+
+test("parseWalkRoute accepts only plausible stored routes", () => {
+  const good = [
+    { lat: 37.7749, lon: -122.4194, t: 1_700_000_000_000 },
+    { lat: 37.7759, lon: -122.4184, t: 1_700_000_060_000 },
+  ];
+  assert.deepEqual(parseWalkRoute(good), good);
+
+  assert.equal(parseWalkRoute(undefined), null);
+  assert.equal(parseWalkRoute("route"), null);
+  assert.equal(parseWalkRoute([]), null);
+  assert.equal(parseWalkRoute([good[0]]), null, "single point is not a route");
+  assert.equal(parseWalkRoute([good[0], { lat: 99, lon: 0, t: 1 }]), null);
+  assert.equal(parseWalkRoute([good[0], { lat: "37", lon: -122, t: 1 }]), null);
+});
+
+test("formatRouteDistanceMiles renders walkable distances honestly", () => {
+  assert.equal(formatRouteDistanceMiles(1609.344), "1.0 mi");
+  assert.equal(formatRouteDistanceMiles(644), "0.4 mi");
+  assert.equal(formatRouteDistanceMiles(60), "200 ft");
+  assert.equal(formatRouteDistanceMiles(17_000), "10.6 mi");
+  assert.equal(formatRouteDistanceMiles(NaN), "");
+  assert.equal(formatRouteDistanceMiles(-5), "");
+});
+
+test("fitRouteViewport clamps zoom to 14-17 and centers on the route", () => {
+  // A tiny ~30m route zooms all the way in.
+  const tiny = [
+    point(SF.lat, SF.lon, 0),
+    point(SF.lat + latDegrees(30), SF.lon, 60_000),
+  ];
+  const tinyViewport = fitRouteViewport(tiny, 358, 286);
+  assert.ok(tinyViewport);
+  assert.equal(tinyViewport.zoom, 17);
+
+  // A ~5km route cannot fit above the minimum zoom.
+  const long = [
+    point(SF.lat, SF.lon, 0),
+    point(SF.lat + latDegrees(5000), SF.lon, 3_600_000),
+  ];
+  const longViewport = fitRouteViewport(long, 358, 286);
+  assert.ok(longViewport);
+  assert.equal(longViewport.zoom, 14);
+
+  // Center is the bbox midpoint in world pixels.
+  const mid = {
+    lat: (tiny[0].lat + tiny[1].lat) / 2,
+    lon: tiny[0].lon,
+  };
+  assert.ok(Math.abs(tinyViewport.centerX - lonToWorldX(mid.lon, 17)) < 0.51);
+  assert.ok(Math.abs(tinyViewport.centerY - latToWorldY(mid.lat, 17)) < 0.51);
+
+  assert.equal(fitRouteViewport([], 358, 286), null);
+  assert.equal(fitRouteViewport(tiny, 0, 0), null);
+});
+
+test("computeTrailTiles covers the viewport with correctly placed OSM tiles", () => {
+  const route = [
+    point(SF.lat, SF.lon, 0),
+    point(SF.lat + latDegrees(400), SF.lon + 0.004, 600_000),
+  ];
+  const width = 358;
+  const height = 286;
+  const viewport = fitRouteViewport(route, width, height);
+  assert.ok(viewport);
+  const tiles = computeTrailTiles(viewport, width, height);
+  assert.ok(tiles.length >= 4 && tiles.length <= 12, `got ${tiles.length} tiles`);
+
+  for (const tile of tiles) {
+    assert.match(
+      tile.uri,
+      new RegExp(`^https://tile\\.openstreetmap\\.org/${viewport.zoom}/\\d+/\\d+\\.png$`),
+    );
+    // Every tile must overlap the view.
+    assert.ok(tile.left < width && tile.left + 256 > 0);
+    assert.ok(tile.top < height && tile.top + 256 > 0);
+    // Tile offsets are exact multiples of 256 apart from the shared origin.
+    assert.ok(Math.abs((tile.left - tiles[0].left) % 256) < 1e-6);
+    assert.ok(Math.abs((tile.top - tiles[0].top) % 256) < 1e-6);
+  }
+
+  // The full view area is covered by the tile grid.
+  const minLeft = Math.min(...tiles.map((tile) => tile.left));
+  const maxRight = Math.max(...tiles.map((tile) => tile.left + 256));
+  const minTop = Math.min(...tiles.map((tile) => tile.top));
+  const maxBottom = Math.max(...tiles.map((tile) => tile.top + 256));
+  assert.ok(minLeft <= 0 && maxRight >= width);
+  assert.ok(minTop <= 0 && maxBottom >= height);
+
+  // Route points project inside the padded view.
+  for (const p of route) {
+    const projected = projectRoutePoint(p, viewport, width, height);
+    assert.ok(projected.x >= 0 && projected.x <= width);
+    assert.ok(projected.y >= 0 && projected.y <= height);
+  }
+});
+
+test("recorder degrades to a no-op outside web/native runtimes", async () => {
+  // Plain Node has no geolocation and is not React Native: the recorder
+  // must report "unavailable" and hand back nothing, without throwing.
+  const seen: string[] = [];
+  const unsubscribe = subscribeWalkRouteCapture(() => {
+    seen.push(getWalkRouteCaptureSnapshot().status);
+  });
+  try {
+    await startWalkRouteCapture("2026-07-10T17:00:00.000Z");
+    assert.equal(getWalkRouteCaptureSnapshot().status, "unavailable");
+    assert.equal(getWalkRouteCaptureSnapshot().pointCount, 0);
+    assert.ok(seen.includes("starting"));
+    assert.ok(seen.includes("unavailable"));
+
+    // Finishing an empty capture returns null and resets to idle.
+    assert.equal(finishWalkRouteCapture("2026-07-10T17:00:00.000Z"), null);
+    assert.equal(getWalkRouteCaptureSnapshot().status, "idle");
+
+    // Finishing with a mismatched key never steals another session.
+    await startWalkRouteCapture("session-a");
+    assert.equal(finishWalkRouteCapture("session-b"), null);
+    assert.equal(getWalkRouteCaptureSnapshot().sessionKey, "session-a");
+  } finally {
+    unsubscribe();
+    cancelWalkRouteCapture();
+  }
+  assert.equal(getWalkRouteCaptureSnapshot().status, "idle");
+});

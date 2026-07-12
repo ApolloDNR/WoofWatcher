@@ -1,3 +1,4 @@
+import { resolvePetName } from "./pet-identity.ts";
 import { type RoutineBoardEntry, type RoutineBoardItem, type RoutineBoardRoutine, deriveRoutineBoard } from "./routine-board.ts";
 
 export type HouseholdResponsibilityStatus =
@@ -54,6 +55,8 @@ export interface HouseholdResponsibilityInput {
   entries: readonly RoutineBoardEntry[];
   caregivers?: readonly HouseholdResponsibilityCaregiverInput[];
   now?: number;
+  /** Display name for owner-facing copy; resolved via resolvePetName so renamed dogs never read "Phoenix". */
+  petName?: string | null;
 }
 
 export interface HouseholdResponsibility {
@@ -177,6 +180,7 @@ function buildMembers(input: {
 
 export function deriveHouseholdResponsibility(input: HouseholdResponsibilityInput): HouseholdResponsibility {
   const now = input.now ?? Date.now();
+  const petName = resolvePetName(input.petName);
   const board = deriveRoutineBoard({
     routines: input.routines,
     entries: input.entries,
@@ -201,7 +205,7 @@ export function deriveHouseholdResponsibility(input: HouseholdResponsibilityInpu
       status: "needs-setup",
       title: "Build the care team",
       summary: "No household caregivers are set up yet.",
-      nextStep: "Add the first caregiver so Phoenix's routines have clear ownership.",
+      nextStep: `Add the first caregiver so ${petName}'s routines have clear ownership.`,
       totalMembers: 0,
       totalRoutines,
       assignedRoutines: totalRoutines - unassignedItems.length,

@@ -1,65 +1,192 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
+  Easing,
+  Image,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { deriveCareIntelligence, normalizeCareEventType, type CareEventDetails } from "@workspace/care-domain";
+import {
+  deriveAdventureMode,
+  deriveCareIntelligence,
+  normalizeCareEventType,
+  type CareEventDetails,
+  type CareEventType,
+} from "@workspace/care-domain";
 
 import {
   BoardCard,
+  BoardPill,
   BoardSectionHeader,
   CareRow,
   QuickActionTile,
   StatusMeter,
 } from "@/components/board/BoardPrimitives";
-import { LivingPhoenixRoom, type PhoenixRoomReaction } from "@/components/LivingPhoenixRoom";
+import {
+  LivingPhoenixRoom,
+  type PhoenixRoomReaction,
+  type PhoenixRoomStat,
+} from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
-import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
+import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
 import { useAvatar } from "@/context/AvatarContext";
-import { useCare } from "@/context/CareContext";
+import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
-import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import {
   getFloatingFeedbackBottomOffset,
+  getFloatingTabChromeMetrics,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
-  MOBILE_INLINE_HIT_SLOP,
   MIN_MOBILE_TOUCH_TARGET,
+  MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
+import { deriveAvatarMotion } from "@/lib/avatarMotion";
+import { deriveCareTwinScene } from "@/lib/avatarLifeEngine";
+import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
+import { describeCareTwinReactionForLog } from "@/lib/careTwinReactionPolicy";
+import {
+  buildHomeMissionDeck,
+  type HomeMissionTone,
+} from "@/lib/homeMissionDeck";
+import { getHomeFirstScreenLayout } from "@/lib/homeFirstScreenLayout";
+import { getHomeMissionDeckLayout } from "@/lib/homeMissionLayout";
+import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
+import {
+  careXpForEntry,
+  deriveCareCareer,
+  deriveCareStreak,
+} from "@/lib/careCareer";
+import {
+  buildQuickLogEntry,
+  findRecentQuickLogDuplicate,
+  getQuickLogPolicy,
+  QUICK_LOG_DEDUPE_WINDOW_MS,
+} from "@/lib/quickLogEntry";
+import {
+  buildWalkSessionFinishPatch,
+  buildWalkSessionStartEntry,
+  findOpenWalkSession,
+} from "@/lib/walkSession";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
-
-const HERO_RATIO = 1.05;
+import { resolvePetName } from "@/lib/petIdentity";
+import { deriveTodayCommand, findPendingMealOutcome } from "@/lib/todayCommand";
 
 interface QuickItem {
   key: string;
   icon: PixelIconName;
   label: string;
-  type: string;
+  type: CareEventType;
   title: string;
   mood?: string;
   severity?: string;
   route?: "/log";
+  /** Always open the detail flow - some logs need context before saving. */
+  forceDetail?: boolean;
 }
 
+type StatusTileTarget = "mood" | "health" | "diet" | "bond";
+type TodayMetricTarget = "activity" | "meals" | "potty";
+type HomeWatchTarget = "health" | "bile" | "alone";
+type HomePresenceRoute =
+  | `/log?entry=${string}`
+  | `/log?type=${string}&detail=1&intent=${number}`;
+type HomeNextUpRoute =
+  | "/calendar"
+  | `/log?entry=${string}`
+  | `/log?type=${string}&detail=1&intent=${number}`;
+type HomeNextUpItem = {
+  label: string;
+  time: string;
+  icon: PixelIconName;
+  route: HomeNextUpRoute;
+  meta?: string;
+  /** open-loop = an active session/outcome to close; routine = a planned item. */
+  kind: "open-loop" | "routine" | "suggestion";
+  routineId?: string;
+  owner?: string;
+};
+
+const todayMetricRouteType: Record<TodayMetricTarget, CareEventType> = {
+  activity: "walk",
+  meals: "meal",
+  potty: "potty",
+};
+
+// Framed storybook room: the living sprite layer floats over this backdrop
+// inside the Today card. The art is lifted straight from Apollo's mock
+// boards (baked-in dog and camera chip removed with the approved edit
+// pipeline, recomposed to 3:2 for the card). The room follows the
+// household's real clock - lamplit night after 8 PM, daylight from 6 AM -
+// so the world feels alive without faking anything.
+// Full-bleed home scene from the mock boards: tall 9:16 art where the
+// furniture band and paw-print rug live in the top third (the dog's traffic
+// area) and calm wooden floor flows down behind the floating console.
+const HOME_IMMERSIVE_ROOM_DAY = require("@/assets/avatar/rooms/home-fullbleed-day.png");
+const HOME_IMMERSIVE_ROOM_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-night.png");
+// During a real walk session the home scene becomes the park and the twin
+// visibly walks it - the room returns when the walk is finished.
+const HOME_IMMERSIVE_PARK_DAY = require("@/assets/avatar/rooms/home-fullbleed-park-day.png");
+const HOME_IMMERSIVE_PARK_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-park-night.png");
+
+// Device-local flag so the first-run welcome card stays dismissed across
+// reloads. It keeps the "woofwatcher" key prefix so the privacy
+// erase-all-data flow removes it with every other WoofWatcher key.
+const HOME_WELCOME_DISMISSED_KEY = "woofwatcher.homeWelcomeDismissed.v1";
+
+export function homeImmersiveRoomIsNight(hour: number): boolean {
+  return hour >= 20 || hour < 6;
+}
+
+// Storybook status sentence, non-diagnostic by design.
+const HOME_MOOD_WORD: Record<Mood, string> = {
+  happy: "happy",
+  excited: "excited",
+  calm: "calm",
+  anxious: "a little unsettled",
+  unwell: "having a gentle day",
+};
+
+// Mock-board Quick Log row: Meal · Potty · Walk · Meds · Water · Note.
+// Meds and Note always open their detail flow - a med log needs dosage
+// context and a note needs words before anything is saved.
 const HOME_QUICK_LOG: QuickItem[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
+  { key: "potty", icon: "pee", label: "Potty", type: "potty", title: "Potty" },
   { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
-  { key: "pee", icon: "pee", label: "Pee", type: "potty", title: "Potty - Pee" },
-  { key: "water", icon: "bile", label: "Water", type: "water", title: "Fresh water" },
-  { key: "training", icon: "training", label: "Training", type: "training", title: "Training win" },
-  { key: "treat", icon: "treat", label: "Treat", type: "treat", title: "Treat" },
-  { key: "play", icon: "play", label: "Play", type: "play", title: "Play session" },
-  { key: "more", icon: "note", label: "More", type: "note", title: "Open quick log", route: "/log" },
+  {
+    key: "meds",
+    icon: "medication",
+    label: "Meds",
+    type: "medication",
+    title: "Medication",
+  },
+  {
+    key: "water",
+    icon: "bile",
+    label: "Water",
+    type: "water",
+    title: "Fresh water",
+  },
+  {
+    key: "note",
+    icon: "note",
+    label: "Note",
+    type: "note",
+    title: "Care note",
+    forceDetail: true,
+  },
 ];
 
 const SPEECH_BY_MOOD: Record<Mood, string> = {
@@ -124,33 +251,115 @@ function shortTime(iso: string): string {
 }
 
 function detailValue(details: unknown, key: string): unknown {
-  if (!details || typeof details !== "object" || Array.isArray(details)) return undefined;
+  if (!details || typeof details !== "object" || Array.isArray(details))
+    return undefined;
   return (details as Record<string, unknown>)[key];
 }
 
 function careDetails(details: unknown): CareEventDetails {
-  if (!details || typeof details !== "object" || Array.isArray(details)) return undefined;
+  if (!details || typeof details !== "object" || Array.isArray(details))
+    return undefined;
   return details as CareEventDetails;
 }
 
-function isPendingMealLog(entry: { type: string; details?: unknown }): boolean {
-  const details = careDetails(entry.details);
-  if (normalizeCareEventType(entry.type, details) !== "meal") return false;
-  const completion = String(detailValue(entry.details, "mealCompletion") ?? "");
-  const lifecycle = String(detailValue(entry.details, "mealLifecycle") ?? "");
-  return lifecycle === "outcome-pending" || completion === "served" || completion === "grazing";
+function homeLogEntryRoute(entryId: string): `/log?entry=${string}` {
+  return `/log?entry=${encodeURIComponent(entryId)}`;
+}
+
+function homeLogDetailRoute(
+  type: CareEventType,
+  intent: number,
+): `/log?type=${string}&detail=1&intent=${number}` {
+  return `/log?type=${type}&detail=1&intent=${intent}`;
+}
+
+function adventureQuestIcon(id: string): PixelIconName {
+  if (id.includes("walk")) return "walk";
+  if (id.includes("training")) return "training";
+  if (id.includes("play")) return "play";
+  return "heart";
+}
+
+function HomeHeaderAction({
+  label,
+  accessibilityLabel,
+  route,
+}: {
+  label: string;
+  accessibilityLabel: string;
+  route:
+    | "/log"
+    | "/health?tab=health"
+    | "/health?tab=bile"
+    | "/calendar"
+    | "/records";
+}) {
+  const colors = useColors();
+  const router = useRouter();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      hitSlop={MOBILE_INLINE_HIT_SLOP}
+      onPress={() => router.push(route as never)}
+      style={({ pressed }) => [
+        s.homeHeaderAction,
+        {
+          backgroundColor: pressed ? colors.secondary : colors.background,
+          borderColor: colors.border,
+        },
+      ]}
+    >
+      <Text
+        style={[
+          s.homeHeaderActionText,
+          { color: colors.navy, fontFamily: "Inter_800ExtraBold" },
+        ]}
+      >
+        {label}
+      </Text>
+      <Ionicons name="chevron-forward" size={13} color={colors.navy} />
+    </Pressable>
+  );
 }
 
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width: viewportWidth, height: viewportHeight } =
+    useWindowDimensions();
   const router = useRouter();
-  const { state, addEntry } = useCare();
+  const { state, addEntry, deleteEntry, updateEntry, refresh } = useCare();
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
-  const bottomScrollPadding = getTabbedRouteBottomPadding(insets.bottom, Platform.OS === "web");
-  const toastBottomOffset = getFloatingFeedbackBottomOffset(insets.bottom, "tabbed", Platform.OS === "web");
 
-  const topScrollPadding = getRouteTopPadding(insets.top, "tabbed", Platform.OS === "web");
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
+  });
+  const tabChrome = getFloatingTabChromeMetrics({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
+  const bottomPadding = getTabbedRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
+  const bottomChromeClearance = Math.max(
+    tabChrome.tabBarBottom + tabChrome.tabBarHeight,
+    tabChrome.centerFabBottom + tabChrome.centerFabSize,
+  );
+  const homeFirstScreenLayout = useMemo(
+    () =>
+      getHomeFirstScreenLayout({
+        width: viewportWidth,
+        height: viewportHeight,
+        topPadding,
+        bottomChromeClearance,
+      }),
+    [bottomChromeClearance, topPadding, viewportHeight, viewportWidth],
+  );
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30000);
@@ -158,6 +367,13 @@ export default function HomeScreen() {
   }, []);
 
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  // Session-scoped reaction gate: the room only reacts to care logged in
+  // THIS session. Without the floor, a meal logged minutes before an app
+  // reload replayed "Meal logged. Tail wag." plus the eat loop on mount -
+  // reactions arrived from storage instead of being earned live. Entries
+  // already on disk when Home mounts derive the standing scene (quiet-hours
+  // sleep, routine pressure, steady) instead of a reaction state.
+  const reactionSessionFloor = useRef(now);
   const avatarMotion = useMemo(
     () =>
       deriveAvatarMotion({
@@ -166,9 +382,28 @@ export default function HomeScreen() {
         caregivers: state.caregivers,
         now,
         energy: status.energy,
+        reactionsSince: reactionSessionFloor.current,
       }),
     [state.entries, state.routines, state.caregivers, now, status.energy],
   );
+  // The heart status line and the living room must tell one story: the room
+  // scheduler can have the twin asleep (quiet hours, low energy) while the
+  // day's walk math still reads "excited" - and "Phoenix is excited." over
+  // a sleeping dog looks broken. Upbeat words defer to rest; concern moods
+  // (anxious, unwell) keep their honest care signal.
+  const restWord =
+    avatarMotion.state === "sleeping"
+      ? "snoozing"
+      : avatarMotion.state === "tired"
+        ? "resting"
+        : null;
+  const homeMoodWord =
+    restWord &&
+    (status.mood === "happy" ||
+      status.mood === "excited" ||
+      status.mood === "calm")
+      ? restWord
+      : HOME_MOOD_WORD[status.mood];
   const careIntelligence = useMemo(
     () =>
       deriveCareIntelligence({
@@ -179,17 +414,156 @@ export default function HomeScreen() {
       }),
     [state.entries, state.routines, state.caregivers, now],
   );
+  const careCareer = useMemo(
+    () => deriveCareCareer(state.entries, now),
+    [state.entries, now],
+  );
+  const careStreak = useMemo(
+    () => deriveCareStreak(state.entries, now),
+    [state.entries, now],
+  );
+  const todayCommand = useMemo(
+    () =>
+      deriveTodayCommand(
+        {
+          profile: state.profile,
+          entries: state.entries,
+          routines: state.routines,
+          caregivers: state.caregivers,
+        },
+        now,
+      ),
+    [state.caregivers, state.entries, state.profile, state.routines, now],
+  );
 
-  const petName =
-    state.profile.name && state.profile.name !== "My Dog"
-      ? state.profile.name
-      : "Phoenix";
+  const petName = resolvePetName(state.profile.name);
   const avatarTemplate = useMemo(
     () => getAvatarTemplate(avatarConfig.templateId),
     [avatarConfig.templateId],
   );
-  const caregiver = state.caregivers[0]?.name ?? "Emma";
-  const timeLabel = useMemo(() => shortTime(new Date(now).toISOString()), [now]);
+  // Never invent a person: with no caregivers yet, care is simply "You".
+  const hasCaregivers = state.caregivers.length > 0;
+  const caregiver = state.caregivers[0]?.name ?? "you";
+  // A brand-new household: no care logged and no profile finished yet. We
+  // greet them once (dismissible) and point at setup, without ever blocking
+  // the app - guest/preview mode stays fully usable behind the card.
+  // `null` means the persisted flag has not hydrated yet, so the card never
+  // flashes for someone who already dismissed it.
+  const [welcomeDismissed, setWelcomeDismissed] = useState<boolean | null>(
+    null,
+  );
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(HOME_WELCOME_DISMISSED_KEY)
+      .then((raw) => {
+        if (!cancelled) setWelcomeDismissed(raw === "true");
+      })
+      .catch(() => {
+        if (!cancelled) setWelcomeDismissed(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const dismissWelcome = () => {
+    setWelcomeDismissed(true);
+    AsyncStorage.setItem(HOME_WELCOME_DISMISSED_KEY, "true").catch(() => {});
+  };
+  const isFreshStart =
+    !hasCaregivers &&
+    state.entries.length === 0 &&
+    !state.profile.breed?.trim();
+
+  // The welcome card leaves by folding shut (height + opacity, ~250ms)
+  // instead of unmounting instantly - the first quick log used to yank the
+  // whole screen up 200+ px right under the finger. The card keeps rendering
+  // through the collapse and is removed only when the fold finishes.
+  const welcomeShouldShow = isFreshStart && welcomeDismissed === false;
+  const [welcomeCollapsed, setWelcomeCollapsed] = useState(false);
+  const welcomeWasShown = useRef(false);
+  const welcomeCollapse = useRef(new Animated.Value(1)).current;
+  const [welcomeCardHeight, setWelcomeCardHeight] = useState(0);
+  useEffect(() => {
+    if (welcomeShouldShow) {
+      welcomeWasShown.current = true;
+      return;
+    }
+    if (!welcomeWasShown.current || welcomeCollapsed) return;
+    Animated.timing(welcomeCollapse, {
+      toValue: 0,
+      duration: 250,
+      easing: Easing.out(Easing.cubic),
+      // Height cannot animate on the native driver; this is a one-off exit.
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (finished) setWelcomeCollapsed(true);
+    });
+  }, [welcomeCollapse, welcomeCollapsed, welcomeShouldShow]);
+  const welcomeVisible =
+    welcomeShouldShow || (welcomeWasShown.current && !welcomeCollapsed);
+  const timeLabel = useMemo(
+    () => shortTime(new Date(now).toISOString()),
+    [now],
+  );
+  const openAloneSession = useMemo(
+    () => findOpenAloneTimeSession(state.entries),
+    [state.entries],
+  );
+  const openAloneStartedAt = openAloneSession
+    ? String(
+        openAloneSession.details?.aloneStartedAt ?? openAloneSession.occurredAt,
+      )
+    : "";
+  const openAloneMinutes = useMemo(() => {
+    if (!openAloneStartedAt) return 0;
+    const startedAt = Date.parse(openAloneStartedAt);
+    if (!Number.isFinite(startedAt)) return 0;
+    return Math.max(0, Math.round((now - startedAt) / 60000));
+  }, [now, openAloneStartedAt]);
+  const openWalkSession = useMemo(
+    () => findOpenWalkSession(state.entries),
+    [state.entries],
+  );
+  const openWalkStartedAt = openWalkSession
+    ? String(
+        openWalkSession.details?.walkStartedAt ?? openWalkSession.occurredAt,
+      )
+    : "";
+  const openWalkMinutes = useMemo(() => {
+    if (!openWalkStartedAt) return 0;
+    const startedAt = Date.parse(openWalkStartedAt);
+    if (!Number.isFinite(startedAt)) return 0;
+    return Math.max(0, Math.round((now - startedAt) / 60000));
+  }, [now, openWalkStartedAt]);
+  const presenceState = openAloneSession
+    ? "home-alone"
+    : openWalkSession
+      ? "on-walk"
+      : "with-human";
+  const presenceLabel = openAloneSession
+    ? `${petName} Home alone`
+    : openWalkSession
+      ? `${petName} on a walk`
+      : `${petName} with ${caregiver}`;
+  const presenceSub = openAloneSession
+    ? `${formatDuration(openAloneMinutes)} active - tap I\u2019m Home in Log`
+    : openWalkSession
+      ? `${formatDuration(openWalkMinutes)} active - tap Finish in Next Up`
+      : `At home - ${timeLabel}`;
+  const presenceRoute: HomePresenceRoute = openAloneSession
+    ? openAloneSession.id
+      ? homeLogEntryRoute(openAloneSession.id)
+      : homeLogDetailRoute("alone", now)
+    : openWalkSession
+      ? openWalkSession.id
+        ? homeLogEntryRoute(openWalkSession.id)
+        : homeLogDetailRoute("walk", now)
+      : homeLogDetailRoute("alone", now);
+  const presenceActionHint = openAloneSession
+    ? "Opens the active Alone Time log so you can complete the return check-in."
+    : openWalkSession
+      ? "Opens the active walk log so you can finish or edit the walk."
+      : "Opens the Alone Time flow to log heading out or time apart.";
 
   const meals = status.counts.meals;
   const fed = meals.target > 0 ? meals.done >= meals.target : true;
@@ -200,56 +574,292 @@ export default function HomeScreen() {
   const bondScore = status.mood === "anxious" ? 70 : 92;
   const moodIcon = MOOD_ICON[status.mood];
 
+  // Shared with Today Command: pending meal outcomes stay actionable across
+  // the midnight rollover (up to 12h) instead of vanishing at 12:00 AM.
   const pendingMeal = useMemo(
-    () =>
-      [...state.entries]
-        .filter((entry) => isToday(entry.occurredAt, now) && isPendingMealLog(entry))
-        .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))[0] ?? null,
+    () => findPendingMealOutcome(state.entries, now),
     [state.entries, now],
   );
 
-  const nextUp = useMemo(() => {
-    if (pendingMeal) {
-      const label = pendingMeal.title.split(" - ")[0] || "Meal";
+  // Session-local snooze: a snoozed routine steps out of Next Up for 30
+  // minutes on this device, without touching the Plan schedule itself.
+  const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
+
+  const nextUp = useMemo<HomeNextUpItem[]>(() => {
+    if (openAloneSession) {
       return [
         {
-          label: `${label} served`,
-          time: "Outcome pending",
-          icon: "meal" as PixelIconName,
+          label: "Home alone",
+          time: `${formatDuration(openAloneMinutes)} - log return`,
+          icon: "clock" as PixelIconName,
+          route: openAloneSession.id
+            ? homeLogEntryRoute(openAloneSession.id)
+            : homeLogDetailRoute("alone", now),
+          meta: "Return",
+          kind: "open-loop" as const,
         },
       ];
     }
+    if (openWalkSession) {
+      return [
+        {
+          label: "Walk active",
+          time: `${formatDuration(openWalkMinutes)} - tap Finish to complete`,
+          icon: "walk" as PixelIconName,
+          route: openWalkSession.id
+            ? homeLogEntryRoute(openWalkSession.id)
+            : homeLogDetailRoute("walk", now),
+          meta: "Finish",
+          kind: "open-loop" as const,
+        },
+      ];
+    }
+    const awakeRoutines = state.routines.filter(
+      (r) => (snoozedUntil[r.id] ?? 0) <= now,
+    );
+    if (awakeRoutines.length) {
+      return awakeRoutines.slice(0, 3).map((r) => {
+        const routineType = normalizeCareEventType(r.type ?? "note");
+        return {
+          label: r.label,
+          time: r.time,
+          icon: routineIcon(routineType),
+          route: homeLogDetailRoute(routineType, now),
+          meta: "Start",
+          kind: "routine" as const,
+          routineId: r.id,
+          owner: r.owner || undefined,
+        };
+      });
+    }
     if (state.routines.length) {
-      return state.routines.slice(0, 3).map((r) => ({
-        label: r.label,
-        time: r.time,
-        icon: routineIcon(r.type),
-      }));
+      // Everything scheduled is snoozed right now.
+      return [];
     }
     return [
-      { label: `Walk with ${caregiver}`, time: "5:30 PM", icon: "walk" as PixelIconName },
-      { label: "Dinner", time: "7:00 PM", icon: "meal" as PixelIconName },
-      { label: "Training", time: "6:30 PM", icon: "training" as PixelIconName },
+      {
+        label: hasCaregivers ? `Walk with ${caregiver}` : "Evening walk",
+        time: "5:30 PM",
+        icon: "walk" as PixelIconName,
+        route: homeLogDetailRoute("walk", now),
+        meta: "Start",
+        kind: "suggestion" as const,
+        owner: hasCaregivers ? caregiver : undefined,
+      },
+      {
+        label: "Dinner",
+        time: "7:00 PM",
+        icon: "meal" as PixelIconName,
+        route: homeLogDetailRoute("meal", now),
+        meta: "Serve",
+        kind: "suggestion" as const,
+      },
+      {
+        label: "Training",
+        time: "6:30 PM",
+        icon: "training" as PixelIconName,
+        route: homeLogDetailRoute("training", now),
+        meta: "Log",
+        kind: "suggestion" as const,
+      },
     ];
-  }, [pendingMeal, state.routines, caregiver]);
+  }, [
+    openAloneMinutes,
+    openAloneSession,
+    openWalkMinutes,
+    openWalkSession,
+    snoozedUntil,
+    state.routines,
+    caregiver,
+    hasCaregivers,
+    now,
+  ]);
+
+  // Served meal awaiting its outcome: rendered as its own open-loop chip
+  // stacked above the planned Next Up item, so closing the meal loop never
+  // hides the plan (or the "more in Plan" link) from the hero flow.
+  const pendingMealOpenLoop = useMemo(
+    () =>
+      pendingMeal
+        ? {
+            label: `${(pendingMeal.title ?? "Meal").split(" - ")[0] || "Meal"} served`,
+            time: "Outcome pending",
+            icon: "meal" as PixelIconName,
+            route: pendingMeal.id
+              ? homeLogEntryRoute(pendingMeal.id)
+              : homeLogDetailRoute("meal", now),
+          }
+        : null,
+    [now, pendingMeal],
+  );
 
   const nextPrimary = nextUp[0];
   const nextCount = Math.max(nextUp.length, 1);
-  const nextMeta =
-    pendingMeal
-      ? "Open meal"
+  const nextMeta = openAloneSession
+    ? "I'm Home"
+    : openWalkSession
+      ? "Finish walk"
       : status.minutesUntilNext !== null
-      ? `In ${formatDuration(status.minutesUntilNext)}`
-      : nextPrimary?.time ?? "Ready";
-  const nextDetail =
-    pendingMeal
-      ? "Outcome pending - update when Phoenix finishes"
+        ? `In ${formatDuration(status.minutesUntilNext)}`
+        : (nextPrimary?.time ?? "Ready");
+  const nextDetail = openAloneSession
+    ? `${formatDuration(openAloneMinutes)} active - log return`
+    : openWalkSession
+      ? `${formatDuration(openWalkMinutes)} active - tap Finish to complete`
       : status.minutesUntilNext !== null
-      ? `${nextMeta} - ${nextPrimary?.time ?? "Scheduled"}`
-      : nextPrimary?.time ?? "Ready when you are";
+        ? `${nextMeta} - ${nextPrimary?.time ?? "Scheduled"}`
+        : (nextPrimary?.time ?? "Ready when you are");
+  const nextUpRoute = nextPrimary?.route ?? "/calendar";
+
+  const snoozeNextUp = (item: HomeNextUpItem) => {
+    if (!item.routineId) return;
+    void Haptics.selectionAsync();
+    setSnoozedUntil((prev) => ({
+      ...prev,
+      [item.routineId as string]: now + 30 * 60000,
+    }));
+    showToast(`${item.label} snoozed 30 min`);
+  };
+
+  // "Walk with Emma in 25 min · Dinner at 7:00 PM" - built from the same
+  // real Next Up items, never invented.
+  const glanceLine = useMemo(() => {
+    // Next Up already owns the live-walk "Finish" CTA, so the mood card falls
+    // back to the calm command line instead of echoing the active walk here.
+    if (openWalkSession) return todayCommand.primaryAction.detail;
+    const parts = nextUp.slice(0, 2).map((item, index) => {
+      if (index === 0 && item.kind === "routine" && status.minutesUntilNext !== null) {
+        return `${item.label} in ${formatDuration(status.minutesUntilNext)}`;
+      }
+      return `${item.label} ${item.time.includes(" - ") ? "" : "at "}${item.time}`;
+    });
+    if (!parts.length) return todayCommand.primaryAction.detail;
+    return parts.join(" · ");
+  }, [nextUp, openWalkSession, status.minutesUntilNext, todayCommand.primaryAction.detail]);
+
+  // Recency chips: Fed / Potty / Walk / Alone Time, each from the latest
+  // real log of that care lane.
+  const formatAgo = (iso: string): string => {
+    const then = Date.parse(iso);
+    if (!Number.isFinite(then)) return "logged";
+    const minutes = Math.max(0, Math.round((now - then) / 60000));
+    if (minutes < 1) return "just now";
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.round(hours / 24)}d ago`;
+  };
+  const recencyChips = useMemo(() => {
+    const latestOf = (lane: CareEventType) =>
+      [...state.entries]
+        .filter(
+          (entry) => normalizeCareEventType(entry.type, careDetails(entry.details)) === lane,
+        )
+        .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))[0] ?? null;
+    const lastMeal = latestOf("meal");
+    const lastPotty = latestOf("potty");
+    const lastWalk = latestOf("walk");
+    const nextWalkSoon =
+      !openWalkSession &&
+      status.minutesUntilNext !== null &&
+      status.minutesUntilNext <= 90 &&
+      nextUp[0]?.icon === "walk";
+    return [
+      {
+        key: "fed",
+        icon: "meal" as PixelIconName,
+        label: "Fed",
+        value: lastMeal ? formatAgo(lastMeal.occurredAt) : "None yet",
+        route: homeLogDetailRoute("meal", now),
+        hint: "Opens the meal detail flow.",
+      },
+      {
+        key: "potty",
+        icon: "pee" as PixelIconName,
+        label: "Potty",
+        value: lastPotty ? formatAgo(lastPotty.occurredAt) : "None yet",
+        route: homeLogDetailRoute("potty", now),
+        hint: "Opens the potty detail flow.",
+      },
+      {
+        key: "walk",
+        icon: "walk" as PixelIconName,
+        label: "Walk",
+        value: openWalkSession
+          ? "Now"
+          : nextWalkSoon
+            ? "Soon"
+            : lastWalk
+              ? formatAgo(lastWalk.occurredAt)
+              : "None yet",
+        route: openWalkSession
+          ? openWalkSession.id
+            ? homeLogEntryRoute(openWalkSession.id)
+            : homeLogDetailRoute("walk", now)
+          : homeLogDetailRoute("walk", now),
+        hint: openWalkSession
+          ? "Opens the active walk log."
+          : "Opens the walk detail flow.",
+      },
+      {
+        key: "alone",
+        icon: "clock" as PixelIconName,
+        label: "Alone",
+        value: openAloneSession ? formatDuration(openAloneMinutes) : "OK",
+        route: openAloneSession
+          ? openAloneSession.id
+            ? homeLogEntryRoute(openAloneSession.id)
+            : homeLogDetailRoute("alone", now)
+          : homeLogDetailRoute("alone", now),
+        hint: openAloneSession
+          ? "Opens the return check-in for the active alone time."
+          : "Opens the Alone Time detail flow.",
+      },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    state.entries,
+    now,
+    nextUp,
+    openAloneMinutes,
+    openAloneSession,
+    openWalkSession,
+    status.minutesUntilNext,
+  ]);
+
+  const todayCommandTone =
+    todayCommand.primaryAction.urgency === "alert"
+      ? colors.rose
+      : todayCommand.primaryAction.urgency === "watch"
+        ? colors.amber
+        : colors.sage;
+  const todayCommandCta =
+    todayCommand.primaryAction.kind === "sync"
+      ? "Review"
+      : todayCommand.primaryAction.kind === "health"
+        ? "Open"
+        : todayCommand.primaryAction.kind === "routine"
+          ? "Plans"
+          : todayCommand.primaryAction.kind === "update-meal-outcome"
+            ? "Update"
+            : "Start";
+  const careStatusTone = openAloneSession
+    ? colors.amber
+    : openWalkSession
+      ? colors.sage
+      : colors.copper;
+  const careStatusLabel = openAloneSession
+    ? "Alone"
+    : openWalkSession
+      ? "On walk"
+      : `With ${caregiver}`;
 
   const health = status.counts.healthAlert
-    ? { status: "Needs Watch", sub: "Recent symptom logged", color: colors.amber }
+    ? {
+        status: "Needs Watch",
+        sub: "Recent symptom logged",
+        color: colors.amber,
+      }
     : { status: "Stable", sub: "All good right now", color: colors.sage };
 
   const bileCount = useMemo(
@@ -264,7 +874,90 @@ export default function HomeScreen() {
   const bile =
     bileCount === 0
       ? { status: "Low Risk", sub: "Everything looks good", color: colors.sage }
-      : { status: "Watch", sub: `${bileCount} flagged today`, color: colors.amber };
+      : {
+          status: "Watch",
+          sub: `${bileCount} flagged today`,
+          color: colors.amber,
+        };
+
+  // Header bell badge mirrors the Health/Bile watch cards below: one signal
+  // per watch surface that currently needs owner attention, hidden when calm.
+  const watchSignalCount =
+    (status.counts.healthAlert ? 1 : 0) + (bileCount > 0 ? 1 : 0);
+
+  // Header care line + heart card, straight from real state: watch signals
+  // first, then live sessions, then the calm baseline.
+  const careLine =
+    watchSignalCount > 0
+      ? "Needs a look today"
+      : openWalkSession
+        ? "On a walk now"
+        : openAloneSession
+          ? "Home alone now"
+          : "Care on track";
+
+  const roomStats = useMemo<PhoenixRoomStat[]>(
+    () => [
+      {
+        label: "Mood",
+        value: status.meta.label,
+        icon: moodIcon,
+        tone:
+          status.mood === "unwell"
+            ? colors.rose
+            : status.mood === "anxious"
+              ? colors.amber
+              : colors.sage,
+        progress:
+          status.mood === "unwell" ? 44 : status.mood === "anxious" ? 62 : 92,
+      },
+      {
+        label: "Energy",
+        value: `${status.energy}%`,
+        icon: "energy",
+        tone: colors.sage,
+        progress: status.energy,
+      },
+      {
+        label: "Hunger",
+        value: hungerLabel,
+        icon: "hunger",
+        tone: fed ? colors.sage : colors.copper,
+        progress: hungerScore,
+      },
+      {
+        label: "Hydration",
+        value: "Good",
+        icon: "bile",
+        tone: colors.blueSignal,
+        progress: hydrationScore,
+      },
+      {
+        label: "Bond",
+        value: bondLabel,
+        icon: "heart",
+        tone: colors.rose,
+        progress: bondScore,
+      },
+    ],
+    [
+      bondLabel,
+      bondScore,
+      colors.amber,
+      colors.blueSignal,
+      colors.copper,
+      colors.rose,
+      colors.sage,
+      fed,
+      hungerLabel,
+      hungerScore,
+      hydrationScore,
+      moodIcon,
+      status.energy,
+      status.meta.label,
+      status.mood,
+    ],
+  );
 
   const aloneMinutes = useMemo(
     () =>
@@ -278,9 +971,17 @@ export default function HomeScreen() {
     [state.entries, now],
   );
   const alone = {
-    status: aloneMinutes > 0 ? formatDuration(aloneMinutes) : "0m",
-    sub: aloneMinutes > 0 ? "Time alone today" : "None logged today",
-    color: colors.copper,
+    status: openAloneSession
+      ? "Home alone"
+      : aloneMinutes > 0
+        ? formatDuration(aloneMinutes)
+        : "0m",
+    sub: openAloneSession
+      ? `${formatDuration(openAloneMinutes)} active`
+      : aloneMinutes > 0
+        ? "Time alone today"
+        : "None logged today",
+    color: openAloneSession ? colors.amber : colors.copper,
   };
 
   const recentActivity = useMemo(
@@ -289,6 +990,7 @@ export default function HomeScreen() {
         .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
         .slice(0, 3)
         .map((entry) => ({
+          id: entry.id,
           title: entry.title,
           time: shortTime(entry.occurredAt),
           icon: routineIcon(entry.type),
@@ -297,35 +999,328 @@ export default function HomeScreen() {
     [state.entries],
   );
 
-  const careProgress = careIntelligence.score;
   const questLine = careIntelligence.title;
+  const adventureMode = useMemo(
+    () =>
+      deriveAdventureMode({
+        petName,
+        entries: state.entries,
+        memories: state.adventureMemories,
+        now,
+      }),
+    [petName, state.entries, state.adventureMemories, now],
+  );
+  const adventureQuest = adventureMode.quests[0];
 
   const statusTiles = [
-    { label: "Happiness", value: status.meta.label, icon: moodIcon, tone: colors.amber },
-    { label: "Energy", value: `${status.energy}%`, icon: "energy" as PixelIconName, tone: colors.sage },
-    { label: "Hunger", value: hungerLabel, icon: "hunger" as PixelIconName, tone: fed ? colors.sage : colors.copper },
-    { label: "Bond", value: bondLabel, icon: "heart" as PixelIconName, tone: colors.rose },
+    {
+      label: "Happiness",
+      value: status.meta.label,
+      icon: "happy" as PixelIconName,
+      tone: colors.amber,
+      target: "mood" as StatusTileTarget,
+      actionLabel: "Open mood details",
+      progress: undefined as number | undefined,
+    },
+    {
+      label: "Energy",
+      value: `${status.energy}%`,
+      icon: "energy" as PixelIconName,
+      tone: colors.sage,
+      target: "health" as StatusTileTarget,
+      actionLabel: "Open Health Watch",
+      progress: status.energy as number | undefined,
+    },
+    {
+      label: "Hunger",
+      value: hungerLabel,
+      icon: "hunger" as PixelIconName,
+      tone: fed ? colors.sage : colors.copper,
+      target: "diet" as StatusTileTarget,
+      actionLabel: "Open Diet Profile",
+      progress: hungerScore as number | undefined,
+    },
+    {
+      label: "Bond",
+      value: bondLabel,
+      icon: "heart" as PixelIconName,
+      tone: colors.rose,
+      target: "bond" as StatusTileTarget,
+      actionLabel: "Open play details",
+      progress: bondScore as number | undefined,
+    },
   ];
+  const openStatusTile = (target: StatusTileTarget) => {
+    void Haptics.selectionAsync();
+    if (target === "mood") {
+      router.push(`/log?type=mood&detail=1&intent=${Date.now()}` as never);
+      return;
+    }
+    if (target === "health") {
+      router.push("/health?tab=health" as never);
+      return;
+    }
+    if (target === "diet") {
+      router.push("/more?section=diet" as never);
+      return;
+    }
+    router.push(`/log?type=play&detail=1&intent=${Date.now()}` as never);
+  };
+
+  const openTodayMetric = (target: TodayMetricTarget) => {
+    void Haptics.selectionAsync();
+    router.push(
+      `/log?type=${todayMetricRouteType[target]}&detail=1&intent=${Date.now()}` as never,
+    );
+  };
+
+  const openHomeWatchCard = (target: HomeWatchTarget) => {
+    void Haptics.selectionAsync();
+    if (target === "health") {
+      router.push("/health?tab=health" as never);
+      return;
+    }
+    if (target === "bile") {
+      router.push("/health?tab=bile" as never);
+      return;
+    }
+    router.push(`/log?type=alone&detail=1&intent=${Date.now()}` as never);
+  };
+
+  const openPresencePanel = () => {
+    void Haptics.selectionAsync();
+    router.push(presenceRoute as never);
+  };
+
+  const openHomeCareIntelligenceNextAction = () => {
+    void Haptics.selectionAsync();
+    if (careIntelligence.nextAction.kind === "retry-sync") {
+      refresh();
+      return;
+    }
+    if (careIntelligence.nextAction.targetEntryId) {
+      router.push(
+        `/log?entry=${encodeURIComponent(careIntelligence.nextAction.targetEntryId)}` as never,
+      );
+      return;
+    }
+    if (
+      careIntelligence.nextAction.kind === "handle-routine" ||
+      careIntelligence.nextAction.targetRoutineId
+    ) {
+      router.push("/calendar");
+      return;
+    }
+    if (careIntelligence.nextAction.kind === "update-meal-outcome") {
+      router.push(`/log?type=meal&detail=1&intent=${Date.now()}` as never);
+      return;
+    }
+    router.push("/log");
+  };
+
+  const homeCareIntelligenceIcon: PixelIconName =
+    careIntelligence.nextAction.kind === "update-meal-outcome"
+      ? "meal"
+      : careIntelligence.nextAction.kind === "handle-routine"
+        ? "clock"
+        : careIntelligence.nextAction.kind === "retry-sync"
+          ? "note"
+          : "heart";
+  const homeCareIntelligenceCta =
+    careIntelligence.nextAction.kind === "retry-sync"
+      ? "Retry"
+      : careIntelligence.nextAction.kind === "handle-routine"
+        ? "Plans"
+        : careIntelligence.nextAction.targetEntryId
+          ? "Open log"
+          : "Open";
+  const homeMissions = useMemo(
+    () =>
+      buildHomeMissionDeck({
+        petName,
+        caregiverName: caregiver,
+        nextCare: {
+          label: nextPrimary?.label ?? "Review today's care",
+          detail: nextDetail,
+          icon: nextPrimary?.icon ?? "clock",
+          route: nextUpRoute,
+          openLoop: Boolean(pendingMeal || openAloneSession || openWalkSession),
+        },
+        adventure: {
+          title: adventureQuest.title,
+          level: adventureMode.level,
+          todayXp: adventureMode.todayXp,
+          memoriesCount: adventureMode.memoriesCount,
+        },
+        health: {
+          label: bileCount ? "Bile Watch" : "Health Watch",
+          status: bile.status,
+          detail: bileCount ? bile.sub : health.sub,
+          needsReview: Boolean(bileCount || status.counts.healthAlert),
+        },
+        carePass: {
+          label: state.reportArtifacts[0]?.title ?? "Care Pass",
+          detail:
+            state.records.length || state.reportArtifacts.length
+              ? `${state.records.length} records and ${state.reportArtifacts.length} reports ready`
+              : "Build a vet, sitter, or trainer packet from Phoenix's care history",
+          ready: Boolean(state.records.length || state.reportArtifacts.length),
+        },
+      }),
+    [
+      adventureMode.level,
+      adventureMode.memoriesCount,
+      adventureMode.todayXp,
+      adventureQuest.title,
+      bile.status,
+      bile.sub,
+      bileCount,
+      caregiver,
+      health.sub,
+      nextDetail,
+      nextPrimary?.icon,
+      nextPrimary?.label,
+      nextUpRoute,
+      openAloneSession,
+      openWalkSession,
+      pendingMeal,
+      petName,
+      state.records.length,
+      state.reportArtifacts.length,
+      state.reportArtifacts[0]?.title,
+      status.counts.healthAlert,
+    ],
+  );
+  // The Next Up card already owns today's care action; the deck keeps the
+  // quest, health, and Care Pass missions so nothing repeats on one screen.
+  const deckMissions = useMemo(
+    () => homeMissions.filter((mission) => mission.key !== "care-today"),
+    [homeMissions],
+  );
+  const missionLayout = useMemo(
+    () =>
+      getHomeMissionDeckLayout({
+        width: viewportWidth,
+        missionCount: deckMissions.length,
+      }),
+    [deckMissions.length, viewportWidth],
+  );
+
+  const missionToneColor = (tone: HomeMissionTone) => {
+    if (tone === "copper") return colors.copper;
+    if (tone === "amber") return colors.amber;
+    if (tone === "rose") return colors.rose;
+    if (tone === "navy") return colors.blueSignal;
+    return colors.sage;
+  };
 
   const [toast, setToast] = useState<string | null>(null);
-  const [roomReaction, setRoomReaction] = useState<PhoenixRoomReaction | null>(null);
+  const [quickFeedback, setQuickFeedback] = useState<{
+    id: string;
+    title: string;
+    type: CareEventType;
+  } | null>(null);
+  const [roomReaction, setRoomReaction] = useState<PhoenixRoomReaction | null>(
+    null,
+  );
+  const roomTapChoreography = useMemo(
+    () => deriveCareTwinChoreography(deriveCareTwinScene(avatarMotion)),
+    [avatarMotion],
+  );
+  // Celebrate care level-ups through the room choreography. The level is
+  // derived from real logged evidence only, so this fires exactly when a
+  // real log crosses the next threshold.
+  const prevCareLevel = useRef<number | null>(null);
+  useEffect(() => {
+    if (prevCareLevel.current === null) {
+      prevCareLevel.current = careCareer.level;
+      return;
+    }
+    if (careCareer.level > prevCareLevel.current) {
+      setRoomReaction({
+        id: Date.now(),
+        icon: "energy",
+        label: "Level up!",
+        detail: `${petName} reached Lv ${careCareer.level} ${careCareer.title}.`,
+        tone: colors.amber,
+        spriteAction: "celebrate-hop",
+      });
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => {});
+      }
+    }
+    prevCareLevel.current = careCareer.level;
+  }, [careCareer.level, careCareer.title, colors.amber, petName]);
+  // Quick logs acknowledge through the room's own speech bubble (the charm
+  // layer) instead of stacking a dark reaction card over the dog. Feedback
+  // stays two layers total: bubble in the room + one actionable toast above
+  // the tab bar carrying XP, Undo, and Add details.
+  const [roomSpeechOverride, setRoomSpeechOverride] = useState<string | null>(
+    null,
+  );
+  const roomSpeechTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showRoomSpeech = (line: string) => {
+    setRoomSpeechOverride(line);
+    if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
+    roomSpeechTimer.current = setTimeout(
+      () => setRoomSpeechOverride(null),
+      3200,
+    );
+  };
+  useEffect(
+    () => () => {
+      if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
+    },
+    [],
+  );
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const showToast = (msg: string) => {
+  // While the actionable toast for a just-served meal is alive, its "Add
+  // details" button opens the exact log the Next Up "Update" chip would.
+  // The chip waits and slides in when the toast fades, so the toast never
+  // floats on top of a live Update button (and the reveal never jumps).
+  const pendingMealChipSuppressed = Boolean(
+    toast &&
+      quickFeedback &&
+      pendingMeal &&
+      quickFeedback.id === pendingMeal.id,
+  );
+  const mealChipReveal = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(mealChipReveal, {
+      toValue: pendingMealChipSuppressed ? 0 : 1,
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [mealChipReveal, pendingMealChipSuppressed]);
+  const showToast = (
+    msg: string,
+    feedback?: { id: string; title: string; type: CareEventType },
+  ) => {
     setToast(msg);
+    setQuickFeedback(feedback ?? null);
     Animated.timing(toastOpacity, {
       toValue: 1,
       duration: 160,
       useNativeDriver: Platform.OS !== "web",
     }).start();
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => {
-      Animated.timing(toastOpacity, {
-        toValue: 0,
-        duration: 240,
-        useNativeDriver: Platform.OS !== "web",
-      }).start(() => setToast(null));
-    }, 1400);
+    toastTimer.current = setTimeout(
+      () => {
+        Animated.timing(toastOpacity, {
+          toValue: 0,
+          duration: 240,
+          useNativeDriver: Platform.OS !== "web",
+        }).start(() => {
+          setToast(null);
+          setQuickFeedback(null);
+        });
+      },
+      feedback ? 5200 : 1400,
+    );
   };
   useEffect(
     () => () => {
@@ -334,242 +1329,1625 @@ export default function HomeScreen() {
     [],
   );
 
+  const undoQuickFeedback = () => {
+    if (!quickFeedback) return;
+    const title = quickFeedback.title;
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    void deleteEntry(quickFeedback.id);
+    setQuickFeedback(null);
+    // Clear the room bubble in the same commit: the undone log's "Meal
+    // served"/"Walk started" line must not linger over the twin for the
+    // rest of its 3.2s timer after the entry is already gone.
+    if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
+    setRoomSpeechOverride(null);
+    showToast(`${title} undone`);
+  };
+
+  const openQuickFeedbackDetails = () => {
+    if (!quickFeedback) return;
+    const entryId = quickFeedback.id;
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(null);
+    setQuickFeedback(null);
+    router.push(`/log?entry=${entryId}` as never);
+  };
+
+  const openQuickDetails = (item: QuickItem) => {
+    if (Platform.OS !== "web") {
+      Haptics.selectionAsync().catch(() => {});
+    }
+    if (item.route) {
+      router.push(item.route);
+      return;
+    }
+    router.push(
+      `/log?type=${item.type}&detail=1&intent=${Date.now()}` as never,
+    );
+  };
+
+  const openActiveWalkFromHomeQuickLog = () => {
+    if (!openWalkSession) return;
+    const activeWalkRoute = openWalkSession.id
+      ? homeLogEntryRoute(openWalkSession.id)
+      : homeLogDetailRoute("walk", Date.now());
+    showToast("Walk already active");
+    router.push(activeWalkRoute as never);
+  };
+
+  // Home's Finish completes the walk right here with the same shared
+  // lifecycle patch /log's "Finish walk session" applies (route, distance,
+  // and notes stay optional and editable from the saved log afterward).
+  const finishWalkFromHome = () => {
+    if (!openWalkSession?.id) return;
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    }
+    const patch = buildWalkSessionFinishPatch(openWalkSession, {
+      caregiver,
+      now: Date.now(),
+    });
+    updateEntry(openWalkSession.id, patch as Partial<Omit<Entry, "id">>);
+    showRoomSpeech("Walk completed");
+    showToast(
+      `Walk completed · ${formatDuration(patch.durationMinutes)} logged · +${careXpForEntry({ ...openWalkSession, details: patch.details })} care XP`,
+    );
+  };
+
+  // Double-tap safety: one save per intent on every quick-log surface. The
+  // synchronous ref catches a second press in the same tick (React state
+  // cannot update between the two), and the shared entry-window check covers
+  // slower bounces and cross-surface repeats. A deliberate second log after
+  // the 1.5s window still saves normally.
+  const recentQuickSave = useRef<{ type: CareEventType; at: number } | null>(
+    null,
+  );
+  const isDuplicateQuickTap = (type: CareEventType): boolean => {
+    const prev = recentQuickSave.current;
+    return Boolean(
+      prev &&
+        prev.type === type &&
+        Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
+    );
+  };
+  const markQuickSave = (type: CareEventType) => {
+    recentQuickSave.current = { type, at: Date.now() };
+  };
+
+  // One shared start path for every Home surface that begins a real walk
+  // session (Quick Log tile and Next Up's walk "Start"): same lifecycle
+  // entry, same dedupe guard, same toast. Returns the started entry id, or
+  // null when the tap was a duplicate already answered by the first tap.
+  const startWalkSessionFromHome = (options?: {
+    routineId?: string;
+    routineLabel?: string;
+  }): string | null => {
+    // A rapid second Walk tap lands before the open session exists in
+    // state; it is the same intent, already answered by the first tap.
+    if (isDuplicateQuickTap("walk")) return null;
+    markQuickSave("walk");
+    const entry = buildWalkSessionStartEntry({
+      caregiver,
+      now,
+      routineId: options?.routineId,
+      routineLabel: options?.routineLabel,
+    });
+    const id = addEntry(entry as Omit<Entry, "id">);
+    const reactionPlan = describeCareTwinReactionForLog({
+      type: "walk",
+      label: "Walk",
+      title: "Walk started",
+      details: entry.details,
+    });
+    showRoomSpeech(reactionPlan.label);
+    showToast("Walk started · care XP lands when you finish", {
+      id,
+      title: "Walk started",
+      type: "walk",
+    });
+    return id;
+  };
+
   const logQuick = (item: QuickItem) => {
     if (item.route) {
       router.push(item.route);
       return;
     }
+    if (item.forceDetail) {
+      openQuickDetails(item);
+      return;
+    }
+    const policy = getQuickLogPolicy(item.type);
+    if (policy.tapBehavior === "detail-required") {
+      router.push(homeLogDetailRoute(policy.type, Date.now()) as never);
+      return;
+    }
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    addEntry({
-      type: item.type,
-      title: item.title,
-      caregiver,
-      occurredAt: new Date().toISOString(),
-      mood: item.mood,
-      severity: item.severity,
+    if (item.type === "walk") {
+      if (openWalkSession) {
+        openActiveWalkFromHomeQuickLog();
+        return;
+      }
+      startWalkSessionFromHome();
+      return;
+    }
+    // Dedupe against the same tick (ref) and the saved timeline (shared
+    // window): the first tap's entry and toast already answered this tap.
+    // The timeline check runs on wall-clock time - the screen's 30s `now`
+    // tick would otherwise make a deliberate second log inside the same
+    // tick look like a bounce forever.
+    if (
+      isDuplicateQuickTap(policy.type) ||
+      findRecentQuickLogDuplicate(state.entries, item.type, Date.now())
+    ) {
+      return;
+    }
+    markQuickSave(policy.type);
+    const role = state.caregivers.find(
+      (person) => person.name === caregiver,
+    )?.role;
+    const entry = buildQuickLogEntry(
+      {
+        type: item.type,
+        title: item.title,
+        mood: item.mood,
+        severity: item.severity,
+      },
+      state,
+      { caregiver, caregiverRole: role, now },
+    );
+    const id = addEntry(entry);
+    const reactionPlan = describeCareTwinReactionForLog({
+      type: entry.type,
+      label: item.label,
+      title: entry.title,
+      mood: entry.mood,
+      severity: entry.severity,
+      details: entry.details,
     });
-    setRoomReaction({
-      id: Date.now(),
-      icon: item.icon,
-      label: `${item.label} logged`,
-      detail: avatarMotion.cue === "health-watch" ? "Health context updated." : "Phoenix reacts in the room.",
-      tone: item.type === "vomit" || item.severity === "alert" ? colors.rose : colors.brandNavy,
-    });
-    showToast(`${item.title} logged`);
+    showRoomSpeech(reactionPlan.label);
+    // The served-meal explainer lives in this one toast (with the room
+    // bubble) - no third dark callout over the sprite. The outcome-pending
+    // Next Up chip stays the persistent affordance after the toast fades.
+    const mealOutcomeOpen =
+      entry.type === "meal" &&
+      entry.details?.mealLifecycle === "outcome-pending";
+    showToast(
+      mealOutcomeOpen
+        ? `Meal served · outcome stays open · +${careXpForEntry(entry)} care XP`
+        : `${item.title} logged · +${careXpForEntry(entry)} care XP`,
+      {
+        id,
+        title: item.title,
+        type: item.type,
+      },
+    );
   };
 
-  const fade = useRef(new Animated.Value(0)).current;
+  const tapPhoenixRoom = () => {
+    const tapReaction = roomTapChoreography.tapReaction;
+    setRoomReaction({
+      id: Date.now(),
+      icon:
+        tapReaction.action === "comfort-loop"
+          ? "health"
+          : tapReaction.action === "ear-perk"
+            ? "clock"
+            : "heart",
+      label: tapReaction.label,
+      detail: tapReaction.qaHint,
+      tone: colors.brandNavy,
+      spriteAction: tapReaction.action,
+    });
+    showToast(avatarMotion.line);
+  };
+
+  const openAvatarStudio = () => {
+    void Haptics.selectionAsync();
+    router.push("/portrait");
+  };
+
+  // Today's Story: one honest sentence from the day's real log evidence.
+  const todayStoryLine = useMemo(() => {
+    const todayKey = new Date(now).toDateString();
+    const todaysEntries = state.entries.filter(
+      (entry) => new Date(entry.occurredAt).toDateString() === todayKey,
+    );
+    if (!todaysEntries.length) {
+      return `${petName}'s story is ready for its first care moment today.`;
+    }
+    const latest = [...todaysEntries].sort((a, b) =>
+      b.occurredAt.localeCompare(a.occurredAt),
+    )[0];
+    const count = todaysEntries.length;
+    return `${latest.title} logged by ${latest.caregiver}. ${count} care ${count === 1 ? "moment" : "moments"} today.`;
+  }, [now, petName, state.entries]);
+
+  const isWebRoutePreview = (Platform.OS as string) === "web";
+  // The web preview mirrors the native inset so the room console floats
+  // with the same clean margins reviewers see on a real device.
+  const routeHorizontalPadding = 16;
+  // Height-based hero clamp for short phones (SE-class, 568-640pt): the
+  // whole stage - room band, roaming twin, bubble - scales down as one
+  // unit, so the fixed 150px twin rig shrinks with its floor instead of
+  // dwarfing the screen or wandering under the floating tab pill.
+  const isShortViewport = viewportHeight > 0 && viewportHeight < 640;
+  // Under 360pt the four recency chips truncate ("Fed No...", "Al... OK"),
+  // so they reflow into a 2x2 grid with room for their real values.
+  const narrowViewport = viewportWidth > 0 && viewportWidth < 360;
+  const heroStageWidth = Math.max(
+    240,
+    viewportWidth - routeHorizontalPadding * 2,
+  );
+  const heroDesignHeight = Math.round(
+    heroStageWidth / homeFirstScreenLayout.heroAspectRatio,
+  );
+  const heroStageScale = isShortViewport
+    ? Math.max(0.72, Math.min(1, viewportHeight / 700))
+    : 1;
+  const heroStageHeight = Math.round(heroDesignHeight * heroStageScale);
+  // On those same short screens the first-run welcome card plus the full
+  // stage cannot both fit above the tab pill, so the room stays folded
+  // behind the welcome card and grows in as the card folds away.
+  const heroDeferredForWelcome = isShortViewport && welcomeVisible;
+  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
   useEffect(() => {
+    if (isWebRoutePreview) return;
     Animated.timing(fade, {
       toValue: 1,
       duration: 450,
-      useNativeDriver: Platform.OS !== "web",
+      useNativeDriver: !isWebRoutePreview,
     }).start();
-  }, [fade]);
+  }, [fade, isWebRoutePreview]);
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
+      {/* Full-bleed storybook backdrop from the mock boards: the scene fills
+          the whole screen top to bottom. The dog's traffic area is the top
+          band; a soft scrim quiets the lower floor so the floating console
+          stays legible while the background still peeks through. */}
+      <Image
+        source={
+          openWalkSession
+            ? colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours())
+              ? HOME_IMMERSIVE_PARK_NIGHT
+              : HOME_IMMERSIVE_PARK_DAY
+            : colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours())
+              ? HOME_IMMERSIVE_ROOM_NIGHT
+              : HOME_IMMERSIVE_ROOM_DAY
+        }
+        resizeMode="cover"
+        style={s.fullBleedArt}
+        fadeDuration={0}
+      />
+      {colors.isDark ? (
+        <View
+          style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(9,17,32,0.16)" }]}
+          pointerEvents="none"
+        />
+      ) : null}
+      <LinearGradient
+        colors={[
+          "rgba(0,0,0,0)",
+          colors.background + "55",
+          colors.background + "E0",
+        ]}
+        locations={[0.42, 0.62, 0.95]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
       <ScrollView
         style={s.container}
         contentContainerStyle={{
-          paddingTop: topScrollPadding,
-          paddingBottom: bottomScrollPadding,
-          paddingHorizontal: 16,
+          paddingTop: topPadding,
+          paddingBottom: bottomPadding,
+          paddingHorizontal: routeHorizontalPadding,
         }}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade }}>
-          <View style={s.header}>
+          <View style={[s.header, { backgroundColor: colors.card }]}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Open More"
-              onPress={() => router.push("/more")}
+              accessibilityLabel={`${petName}. ${careStatusLabel}. Open the Pack`}
+              accessibilityHint="Opens pets and people who share the care."
+              onPress={() => router.push("/pack" as never)}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
-              style={[s.headerButton, { borderColor: "transparent", backgroundColor: "transparent" }]}
+              style={({ pressed }) => [s.identityWrap, { opacity: pressed ? 0.75 : 1 }]}
             >
-              <Ionicons name="menu" size={27} color={colors.navy} />
+              <Image
+                source={require("@/assets/images/phoenix-avatar.png")}
+                style={[s.identityAvatar, { borderColor: colors.border, backgroundColor: colors.secondary }]}
+              />
+              <View style={s.identityCopy}>
+                <View style={s.identityNameRow}>
+                  <Text
+                    numberOfLines={1}
+                    style={[s.identityName, { color: colors.foreground, fontFamily: "Fraunces_700Bold" }]}
+                  >
+                    {petName}
+                  </Text>
+                  <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                </View>
+                <View style={s.identityCareLine}>
+                  <Ionicons
+                    name="heart"
+                    size={13}
+                    color={watchSignalCount > 0 ? colors.amber : colors.forest}
+                  />
+                  <Text
+                    numberOfLines={1}
+                    style={[s.identityCareText, { color: watchSignalCount > 0 ? colors.amber : colors.forest, fontFamily: "Inter_700Bold" }]}
+                  >
+                    {careLine}
+                  </Text>
+                </View>
+              </View>
             </Pressable>
-            <View style={s.logoWrap}>
-              <WoofWatcherLogo size={39} wordmarkSize={30} />
-              <Text style={[s.logoSub, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
-                Real care. Pixel heart.
-              </Text>
-            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open the Pack"
+              accessibilityHint="Opens pets and people who share the care."
+              onPress={() => router.push("/pack" as never)}
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={[
+                s.headerButton,
+                { borderColor: "transparent", backgroundColor: "transparent" },
+              ]}
+            >
+              <Ionicons name="people-outline" size={24} color={colors.foreground} />
+            </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Open Health Watch"
-              onPress={() => router.push("/health")}
+              accessibilityHint={
+                watchSignalCount > 0
+                  ? `${watchSignalCount} ${watchSignalCount === 1 ? "signal needs" : "signals need"} attention`
+                  : "No active signals"
+              }
+              onPress={() => router.push("/health?tab=health" as never)}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
-              style={[s.headerButton, { borderColor: "transparent", backgroundColor: "transparent" }]}
+              style={[
+                s.headerButton,
+                { borderColor: "transparent", backgroundColor: "transparent" },
+              ]}
             >
-              <Ionicons name="notifications-outline" size={23} color={colors.navy} />
-              <View style={[s.badge, { backgroundColor: colors.rose }]}>
-                <Text style={[s.badgeText, { fontFamily: "Inter_700Bold" }]}>3</Text>
-              </View>
+              <Ionicons
+                name="notifications-outline"
+                size={23}
+                color={colors.navy}
+              />
+              {watchSignalCount > 0 ? (
+                <View style={[s.badge, { backgroundColor: colors.rose }]}>
+                  <Text style={[s.badgeText, { fontFamily: "Inter_700Bold" }]}>
+                    {watchSignalCount}
+                  </Text>
+                </View>
+              ) : null}
             </Pressable>
           </View>
 
-          <BoardCard padded={false} style={s.heroCard}>
-            <View style={s.heroWrap}>
+          {welcomeVisible ? (
+            <Animated.View
+              pointerEvents={welcomeShouldShow ? "auto" : "none"}
+              onLayout={(event) => {
+                const measured = Math.round(event.nativeEvent.layout.height);
+                if (welcomeShouldShow && measured > 0) {
+                  setWelcomeCardHeight((prev) => Math.max(prev, measured));
+                }
+              }}
+              style={{
+                opacity: welcomeCollapse,
+                overflow: "hidden",
+                ...(welcomeCardHeight > 0
+                  ? {
+                      maxHeight: welcomeCollapse.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, welcomeCardHeight],
+                      }),
+                    }
+                  : {}),
+              }}
+            >
+            <View style={[s.welcomeCard, s.softShadow, { backgroundColor: colors.forest }]}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Dismiss welcome"
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                onPress={dismissWelcome}
+                style={s.welcomeDismiss}
+              >
+                <Ionicons name="close" size={16} color={colors.primaryForeground} />
+              </Pressable>
+              <Text style={[s.welcomeKicker, { color: colors.amberSoft, fontFamily: "Fredoka_600SemiBold" }]}>
+                WELCOME TO WOOFWATCHER
+              </Text>
+              <Text style={[s.welcomeTitle, { color: colors.primaryForeground, fontFamily: "Fraunces_700Bold" }]}>
+                Let's make {petName} yours
+              </Text>
+              <Text style={[s.welcomeBody, { color: colors.primaryForeground, fontFamily: "Inter_500Medium" }]}>
+                Add your dog's name, breed, and routines so Today, Log, and Records fit your real day. It takes a minute.
+              </Text>
+              <View style={s.welcomeActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Set up ${petName}`}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    router.push("/setup" as never);
+                  }}
+                  style={({ pressed }) => [
+                    s.welcomePrimary,
+                    { backgroundColor: colors.primaryForeground, opacity: pressed ? 0.85 : 1 },
+                  ]}
+                >
+                  <Text style={[s.welcomePrimaryText, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
+                    Set up {petName}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={15} color={colors.forest} />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Explore first"
+                  onPress={dismissWelcome}
+                  style={({ pressed }) => [s.welcomeGhost, { opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <Text style={[s.welcomeGhostText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                    Explore first
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+            </Animated.View>
+          ) : null}
+
+          {/* The room is a framed storybook card: day/night art fills the
+              frame and the living twin roams inside it, matching Apollo's
+              storybook mockup Home. On short phones the stage height is
+              clamped (uniform scale) and it stays folded while the first-run
+              welcome card is up, growing in as the card folds away. */}
+          <Animated.View
+            pointerEvents={heroDeferredForWelcome ? "none" : "auto"}
+            style={
+              heroDeferredForWelcome
+                ? {
+                    overflow: "hidden",
+                    opacity: welcomeCollapse.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 0],
+                    }),
+                    maxHeight: welcomeCollapse.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [heroStageHeight, 0],
+                    }),
+                  }
+                : null
+            }
+          >
+          <View style={s.heroBackdrop}>
+            <View
+              accessibilityLabel="Phoenix Room"
+              accessibilityHint={homeFirstScreenLayout.qaLabel}
+              style={[
+                s.heroWrap,
+                { height: heroStageHeight, overflow: "hidden" },
+              ]}
+            >
+             <View
+               style={
+                 heroStageScale < 1
+                   ? {
+                       width: heroStageWidth,
+                       height: heroDesignHeight,
+                       transform: [{ scale: heroStageScale }],
+                       transformOrigin: "top center",
+                     }
+                   : { width: "100%", height: heroDesignHeight }
+               }
+             >
               <LivingPhoenixRoom
                 mood={avatarMotion.avatarMood}
                 motion={avatarMotion}
-                speech={avatarMotion.speech || SPEECH_BY_MOOD[status.mood]}
+                speech={
+                  roomSpeechOverride ??
+                  (avatarMotion.speech || SPEECH_BY_MOOD[status.mood])
+                }
                 energy={status.energy}
-                presenceLabel={`${petName} with ${caregiver}`}
-                nextLabel={avatarMotion.label}
+                presenceLabel={presenceLabel}
+                nextLabel={
+                  openWalkSession
+                    ? "Walk active"
+                    : openAloneSession
+                      ? "Home alone"
+                      : avatarMotion.label
+                }
                 reaction={roomReaction}
-                onPress={() => showToast(avatarMotion.line)}
+                statusReadouts={roomStats}
+                avatarConfig={avatarConfig}
+                petName={petName}
+                awayOnWalk={Boolean(openWalkSession)}
+                awayMinutes={openWalkMinutes}
+                chromeDensity="compact"
+                transparentScene
+                onPress={tapPhoenixRoom}
+                onLongPress={openAvatarStudio}
+                accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
               />
             </View>
-          </BoardCard>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
+              onPress={openAvatarStudio}
+              style={({ pressed }) => [
+                s.heroStudioChip,
+                {
+                  minHeight: homeFirstScreenLayout.heroStudioButtonMinHeight,
+                  backgroundColor: pressed
+                    ? colors.ivory
+                    : "rgba(251,246,231,0.94)",
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Ionicons name="color-wand-outline" size={17} color={colors.forest} />
+            </Pressable>
+          </View>
+          </View>
+          </Animated.View>
 
+          {/* Mock-board heart status card: "<Pet> is happy." over the real
+              next-up glance line. It is still the Today Command surface -
+              tapping opens the recommended care workflow. */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${petName} is with ${caregiver}`}
-            onPress={() => router.push("/more")}
-            style={[s.presencePanel, { backgroundColor: colors.ivory, borderColor: colors.border }]}
+            accessibilityLabel={`Today Command. ${petName} is ${homeMoodWord}. ${glanceLine}`}
+            accessibilityHint="Opens the exact care workflow behind today's recommended action."
+            hitSlop={MOBILE_INLINE_HIT_SLOP}
+            onPress={() =>
+              router.push(todayCommand.primaryAction.route as never)
+            }
+            style={({ pressed }) => [
+              s.moodCard,
+              s.softShadow,
+              {
+                backgroundColor: pressed ? colors.secondary : colors.card,
+                borderColor: pressed ? todayCommandTone : colors.border,
+              },
+            ]}
           >
-            <View style={[s.presenceAvatar, { backgroundColor: colors.copper }]}>
-              <Text style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}>
-                {caregiver.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-            <View style={s.presenceCopy}>
-              <Text style={[s.presenceText, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                {petName} is with {caregiver}
-              </Text>
-              <Text style={[s.presenceSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                At home - {timeLabel}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={17} color={colors.navy} />
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
-            onPress={() => router.push("/portrait")}
-            style={[s.avatarIdentityBar, { backgroundColor: colors.card, borderColor: colors.border }]}
-          >
-            <View style={[s.avatarIdentityIcon, { backgroundColor: colors.secondary }]}>
-              <PixelIcon name="heart" size={22} />
-            </View>
-            <View style={s.avatarIdentityCopy}>
-              <Text style={[s.avatarIdentityTitle, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                {avatarTemplate.label} care twin
-              </Text>
-              <Text style={[s.avatarIdentitySub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                {avatarConfig.scanAssisted ? "Scan-assisted traits saved" : "Template ready - customize Phoenix"}
-              </Text>
-            </View>
-            <Ionicons name="color-palette-outline" size={18} color={colors.navy} />
-          </Pressable>
-
-          <View style={s.statusTiles}>
-            {statusTiles.map((tile) => (
-              <View
-                key={tile.label}
-                style={[s.statusTile, { backgroundColor: colors.card, borderColor: colors.border }]}
-              >
-                <View style={[s.statusTileIcon, { backgroundColor: tile.tone + "16" }]}>
-                  <PixelIcon name={tile.icon} size={29} />
-                </View>
-                <Text style={[s.statusTileLabel, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                  {tile.label}
-                </Text>
-                <Text style={[s.statusTileValue, { color: tile.tone, fontFamily: "Inter_700Bold" }]}>
-                  {tile.value}
+            <View style={s.moodCardBody}>
+              <View style={s.moodTitleRow}>
+                <Ionicons
+                  name="heart"
+                  size={20}
+                  color={
+                    status.mood === "unwell"
+                      ? colors.rose
+                      : status.mood === "anxious"
+                        ? colors.amber
+                        : colors.forest
+                  }
+                />
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    s.moodTitle,
+                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                  ]}
+                >
+                  {petName} is {homeMoodWord}.
                 </Text>
               </View>
+              <Text
+                numberOfLines={1}
+                style={[
+                  s.moodSub,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
+                {glanceLine}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+          </Pressable>
+
+          {/* Recency chips: Fed · Potty · Walk · Alone Time from real logs. */}
+          <View style={[s.recencyRow, narrowViewport ? s.recencyRowNarrow : null]}>
+            {recencyChips.map((chip) => (
+              <Pressable
+                key={chip.key}
+                accessibilityRole="button"
+                accessibilityLabel={`${chip.label}. ${chip.value}.`}
+                accessibilityHint={chip.hint}
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  router.push(chip.route as never);
+                }}
+                style={({ pressed }) => [
+                  s.recencyChip,
+                  s.softShadow,
+                  narrowViewport ? s.recencyChipNarrow : null,
+                  {
+                    backgroundColor: pressed ? colors.secondary : colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <PixelIcon name={chip.icon} size={18} />
+                <View style={s.recencyCopy}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      s.recencyLabel,
+                      { color: colors.navy, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    {chip.label}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      s.recencyValue,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    {chip.value}
+                  </Text>
+                </View>
+              </Pressable>
             ))}
           </View>
 
           <View style={s.homeSplit}>
-            <BoardCard style={[s.nextCard, s.homeSplitCard]}>
-              <BoardSectionHeader title="Next Up" action={`1 of ${nextCount}`} />
-              {nextUp.slice(0, 3).map((item, index) => (
-                <CareRow
-                  key={`${item.label}-${item.time}-${index}`}
-                  icon={item.icon}
-                  title={item.label}
-                  detail={index === 0 ? nextDetail : item.time}
-                  meta={index === 0 && pendingMeal ? "Update" : index === 0 ? "Start" : ""}
-                  onPress={() => router.push(pendingMeal ? "/log?type=meal" : "/calendar")}
-                />
-              ))}
-            </BoardCard>
-
-            <BoardCard style={[s.quickHomeCard, s.homeSplitCard]}>
-              <BoardSectionHeader title="Quick Log" action="Open" />
-              <View style={s.homeQuickGrid}>
-                {HOME_QUICK_LOG.map((item) => (
-                  <QuickActionTile
-                    key={item.key}
-                    icon={item.icon}
-                    label={item.label}
-                    accessibilityLabel={item.route ? "Open Quick Log" : `Log ${item.label}`}
-                    onPress={() => logQuick(item)}
-                    accent={colors.secondary}
-                    style={s.homeQuickTile}
-                    iconSize={25}
-                    labelStyle={s.homeQuickText}
+            {/* Mock-board Quick Log: bare section title over a row of six
+                circular tiles floating on the parchment. */}
+            <View style={s.quickHomeCard}>
+              <View style={s.quickSectionHeader}>
+                <Text
+                  style={[
+                    s.quickSectionTitle,
+                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                  ]}
+                >
+                  Quick Log
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open full Quick Log"
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={() => router.push("/log")}
+                  style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                >
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={colors.mutedForeground}
                   />
+                </Pressable>
+              </View>
+              <View style={s.homeQuickGrid}>
+                {HOME_QUICK_LOG.slice(0, 6).map((item) => (
+                  <Pressable
+                    key={item.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Log ${item.label}`}
+                    accessibilityHint={
+                      item.forceDetail
+                        ? "Opens details before saving."
+                        : "Long press opens details before saving."
+                    }
+                    onPress={() => logQuick(item)}
+                    onLongPress={() => openQuickDetails(item)}
+                    style={({ pressed }) => [
+                      s.homeQuickTile,
+                      { transform: [{ scale: pressed ? 0.94 : 1 }] },
+                    ]}
+                  >
+                    {hasMedallion(item.icon) ? (
+                      <BoardMedallion name={item.icon} size={54} style={s.softShadow} />
+                    ) : (
+                      <View
+                        style={[
+                          s.homeQuickCircle,
+                          s.softShadow,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <PixelIcon name={item.icon} size={26} />
+                      </View>
+                    )}
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.homeQuickText,
+                        { color: colors.navy, fontFamily: "Inter_600SemiBold" },
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </Pressable>
                 ))}
               </View>
+            </View>
+
+            <BoardCard style={s.nextCard}>
+              <BoardSectionHeader
+                title="Next Up"
+                accessory={
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open Plan. 1 of ${nextCount} next up.`}
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() => router.push("/calendar")}
+                    style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                  >
+                    <Ionicons
+                      name="ellipsis-horizontal"
+                      size={18}
+                      color={colors.mutedForeground}
+                    />
+                  </Pressable>
+                }
+              />
+              {pendingMealOpenLoop ? (
+                <Animated.View
+                  pointerEvents={pendingMealChipSuppressed ? "none" : "auto"}
+                  style={{
+                    opacity: mealChipReveal,
+                    overflow: "hidden",
+                    maxHeight: mealChipReveal.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 88],
+                    }),
+                  }}
+                >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Update ${pendingMealOpenLoop.label}. Outcome pending.`}
+                  accessibilityHint="Opens the served meal log so the outcome can be confirmed."
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    router.push(pendingMealOpenLoop.route as never);
+                  }}
+                  style={({ pressed }) => [
+                    s.nextOpenLoopChip,
+                    {
+                      backgroundColor: pressed
+                        ? colors.secondary
+                        : colors.amberSoft,
+                      borderColor: colors.amber,
+                    },
+                  ]}
+                >
+                  <PixelIcon name={pendingMealOpenLoop.icon} size={20} />
+                  <View style={s.nextOpenLoopCopy}>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.nextOpenLoopTitle,
+                        { color: colors.navy, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
+                      {pendingMealOpenLoop.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.nextOpenLoopMeta,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      {pendingMealOpenLoop.time}
+                    </Text>
+                  </View>
+                  <View
+                    style={[s.nextButton, { backgroundColor: colors.primary }]}
+                  >
+                    <Text
+                      style={[
+                        s.nextButtonText,
+                        {
+                          color: colors.primaryForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      Update
+                    </Text>
+                  </View>
+                </Pressable>
+                </Animated.View>
+              ) : null}
+              {nextPrimary ? (
+                <View style={s.nextPrimaryRow}>
+                  <Image
+                    source={require("@/assets/images/phoenix-avatar.png")}
+                    style={[s.nextThumb, { borderColor: colors.border, backgroundColor: colors.secondary }]}
+                    resizeMode="cover"
+                    accessibilityLabel={`${petName} thumbnail`}
+                  />
+                  <View style={s.nextPrimaryCopy}>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.nextPrimaryTitle,
+                        { color: colors.foreground, fontFamily: "Fredoka_600SemiBold" },
+                      ]}
+                    >
+                      {nextPrimary.label}
+                    </Text>
+                    <Text
+                      numberOfLines={2}
+                      style={[
+                        s.nextPrimaryMeta,
+                        { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                      ]}
+                    >
+                      {nextPrimary.kind === "open-loop"
+                        ? nextDetail
+                        : `${nextPrimary.time}${
+                            nextPrimary.owner
+                              ? ` · ${nextPrimary.owner} assigned`
+                              : nextPrimary.kind === "suggestion"
+                                ? " · Suggested"
+                                : ""
+                          }`}
+                    </Text>
+                    <View style={s.nextButtonRow}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`${nextPrimary.meta ?? "Start"} ${nextPrimary.label}`}
+                        accessibilityHint={
+                          nextPrimary.kind === "open-loop" &&
+                          nextPrimary.icon === "walk"
+                            ? "Completes the active walk now and logs the real duration."
+                            : nextPrimary.icon === "walk" &&
+                                nextPrimary.kind !== "open-loop"
+                              ? "Starts the walk session now. Finish it from here or the walk log."
+                              : undefined
+                        }
+                        onPress={() => {
+                          // The active-walk Finish acts here instead of
+                          // deep-linking to /log - same shared lifecycle
+                          // patch, zero extra hunting.
+                          if (
+                            nextPrimary.kind === "open-loop" &&
+                            nextPrimary.icon === "walk" &&
+                            openWalkSession
+                          ) {
+                            finishWalkFromHome();
+                            return;
+                          }
+                          // "Start" on a planned or suggested walk starts
+                          // the real session right here - same shared start
+                          // path and dedupe guard as the Quick Log walk
+                          // tile - so the button does what it says instead
+                          // of deep-linking to /log with Walk preselected.
+                          if (
+                            nextPrimary.icon === "walk" &&
+                            nextPrimary.kind !== "open-loop" &&
+                            !openWalkSession
+                          ) {
+                            if (Platform.OS !== "web") {
+                              Haptics.impactAsync(
+                                Haptics.ImpactFeedbackStyle.Light,
+                              );
+                            }
+                            startWalkSessionFromHome({
+                              routineId: nextPrimary.routineId,
+                              routineLabel:
+                                nextPrimary.kind === "routine"
+                                  ? nextPrimary.label
+                                  : undefined,
+                            });
+                            return;
+                          }
+                          router.push(nextPrimary.route as never);
+                        }}
+                        style={({ pressed }) => [
+                          s.nextButton,
+                          {
+                            backgroundColor: colors.primary,
+                            opacity: pressed ? 0.85 : 1,
+                          },
+                        ]}
+                      >
+                        <Text style={[s.nextButtonText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                          {nextPrimary.meta ?? "Start"}
+                        </Text>
+                      </Pressable>
+                      {nextPrimary.kind === "routine" ? (
+                        <>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Snooze ${nextPrimary.label} for 30 minutes`}
+                            onPress={() => snoozeNextUp(nextPrimary)}
+                            style={({ pressed }) => [
+                              s.nextButton,
+                              s.nextButtonSoft,
+                              {
+                                backgroundColor: pressed ? colors.muted : colors.secondary,
+                              },
+                            ]}
+                          >
+                            <Text style={[s.nextButtonText, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
+                              Snooze
+                            </Text>
+                          </Pressable>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Reassign ${nextPrimary.label} in Plan`}
+                            accessibilityHint="Opens the Plan tab, where routines and owners are edited."
+                            onPress={() => router.push("/calendar")}
+                            style={({ pressed }) => [
+                              s.nextButton,
+                              s.nextButtonSoft,
+                              {
+                                backgroundColor: pressed ? colors.muted : colors.secondary,
+                              },
+                            ]}
+                          >
+                            <Text style={[s.nextButtonText, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
+                              Reassign
+                            </Text>
+                          </Pressable>
+                        </>
+                      ) : null}
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <Text
+                  style={[
+                    s.nextEmptyText,
+                    { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                  ]}
+                >
+                  Everything scheduled is snoozed. It returns in 30 minutes, or
+                  open Plan to review.
+                </Text>
+              )}
+              {nextUp.length > 1 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`View ${nextUp.length - 1} more planned ${nextUp.length - 1 === 1 ? "item" : "items"} in Plan`}
+                  onPress={() => router.push("/calendar")}
+                  style={({ pressed }) => [s.nextMoreRow, { opacity: pressed ? 0.6 : 1 }]}
+                >
+                  <Text
+                    style={[
+                      s.nextMoreText,
+                      { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+                    ]}
+                  >
+                    {nextUp.length - 1} more in Plan
+                  </Text>
+                  <Ionicons name="chevron-forward" size={13} color={colors.mutedForeground} />
+                </Pressable>
+              ) : null}
             </BoardCard>
           </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Today's Story. ${todayStoryLine} Open Story.`}
+            accessibilityHint="Opens Phoenix's living story."
+            onPress={() => router.push("/story" as never)}
+            style={({ pressed }) => [
+              s.todayStoryCard,
+              s.softShadow,
+              {
+                backgroundColor: pressed ? colors.secondary : colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Image
+              source={require("@/assets/board/hero.png")}
+              style={[s.todayStoryThumb, { borderColor: colors.border }]}
+              resizeMode="cover"
+            />
+            <View style={s.todayStoryCopy}>
+              <Text
+                style={[
+                  s.todayStoryKicker,
+                  { color: colors.copper, fontFamily: "Fredoka_600SemiBold" },
+                ]}
+              >
+                Today's Story
+              </Text>
+              <Text
+                numberOfLines={2}
+                style={[
+                  s.todayStoryText,
+                  { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+                ]}
+              >
+                {todayStoryLine}
+              </Text>
+              <View style={s.todayStoryChips}>
+                {careCareer.todayXp > 0 ? (
+                  <View style={[s.todayStoryChip, { backgroundColor: colors.amberSoft }]}>
+                    <Text style={[s.todayStoryChipText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                      +{careCareer.todayXp} XP
+                    </Text>
+                  </View>
+                ) : null}
+                {careStreak >= 2 ? (
+                  <View style={[s.todayStoryChip, { backgroundColor: colors.sageSoft }]}>
+                    <Text style={[s.todayStoryChipText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
+                      {careStreak}-day streak
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+          </Pressable>
+
+          {/* Presence panel: who Phoenix is with right now, still one tap
+              from the live alone-time workflow. During an active walk, Next
+              Up already owns the live "Finish" CTA, so the panel steps aside
+              instead of echoing the same walk status a second time. */}
+          {openWalkSession ? null : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${presenceLabel}. Presence state ${presenceState}`}
+            accessibilityHint={presenceActionHint}
+            onPress={openPresencePanel}
+            style={[
+              s.presencePanel,
+              s.softShadow,
+              {
+                minHeight: homeFirstScreenLayout.presencePanelMinHeight,
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <View
+              style={[
+                s.presenceAvatar,
+                {
+                  backgroundColor: openAloneSession
+                    ? colors.amber
+                    : openWalkSession
+                      ? colors.sage
+                      : colors.copper,
+                },
+              ]}
+            >
+              {openAloneSession ? (
+                <Ionicons name="home-outline" size={18} color="#FFFFFF" />
+              ) : openWalkSession ? (
+                <PixelIcon name="walk" size={21} />
+              ) : (
+                <Text
+                  style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}
+                >
+                  {caregiver.charAt(0).toUpperCase()}
+                </Text>
+              )}
+            </View>
+            <View style={s.presenceCopy}>
+              <Text
+                numberOfLines={1}
+                style={[
+                  s.presenceText,
+                  { color: colors.navy, fontFamily: "Inter_700Bold" },
+                ]}
+              >
+                {openAloneSession
+                  ? `${petName} is home alone`
+                  : openWalkSession
+                    ? `${petName} is on a walk`
+                    : `${petName} is with ${caregiver}`}
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={[
+                  s.presenceSub,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_500Medium",
+                  },
+                ]}
+              >
+                {presenceSub}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={17} color={colors.navy} />
+          </Pressable>
+          )}
+
+          <BoardCard style={s.careStatusCard}>
+            <BoardSectionHeader
+              title="Care Status"
+              accessory={<BoardPill label={careStatusLabel} tone={careStatusTone} />}
+            />
+            <View
+              style={[
+                s.statusTiles,
+                {
+                  gap: homeFirstScreenLayout.statusTileGap,
+                  marginBottom: 0,
+                },
+              ]}
+            >
+              {statusTiles.map((tile) => (
+                <Pressable
+                  key={tile.label}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${tile.label}. ${tile.value}. ${tile.actionLabel}`}
+                  onPress={() => openStatusTile(tile.target)}
+                  style={({ pressed }) => [
+                    s.statusTile,
+                    {
+                      minHeight: homeFirstScreenLayout.statusTileMinHeight,
+                      backgroundColor: pressed ? colors.secondary : colors.background,
+                      borderColor: colors.border,
+                      opacity: pressed ? 0.78 : 1,
+                      transform: [{ scale: pressed ? 0.98 : 1 }],
+                    },
+                  ]}
+                >
+                  {hasMedallion(tile.icon) ? (
+                    <BoardMedallion
+                      name={tile.icon}
+                      size={homeFirstScreenLayout.statusTileIconBoxSize}
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        s.statusTileIcon,
+                        {
+                          width: homeFirstScreenLayout.statusTileIconBoxSize,
+                          height: homeFirstScreenLayout.statusTileIconBoxSize,
+                          backgroundColor: tile.tone + "16",
+                        },
+                      ]}
+                    >
+                      <PixelIcon
+                        name={tile.icon}
+                        size={homeFirstScreenLayout.statusTileIconSize}
+                      />
+                    </View>
+                  )}
+                  <Text
+                    style={[
+                      s.statusTileLabel,
+                      { color: colors.navy, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    {tile.label}
+                  </Text>
+                  {tile.progress != null ? (
+                    <View style={s.statusTileSegments}>
+                      {Array.from({ length: 8 }).map((_, index) => (
+                        <View
+                          key={`${tile.label}-seg-${index}`}
+                          style={[
+                            s.statusTileSegment,
+                            {
+                              backgroundColor:
+                                index <
+                                Math.max(
+                                  1,
+                                  Math.round(((tile.progress ?? 0) / 100) * 8),
+                                )
+                                  ? tile.tone
+                                  : colors.muted,
+                              // Hairline keeps empty segments legible on the
+                              // dark board, where the muted fill nearly
+                              // matches the card behind it.
+                              borderColor: colors.border,
+                            },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  ) : (
+                    <View
+                      style={[
+                        s.statusTileValuePill,
+                        {
+                          backgroundColor: tile.tone + "1C",
+                          borderColor: tile.tone + "55",
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.statusTileValue,
+                          { color: tile.tone, fontFamily: "Inter_700Bold" },
+                        ]}
+                      >
+                        {tile.value}
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
+              ))}
+            </View>
+          </BoardCard>
+
+          <BoardCard style={s.careerCard}>
+            <View
+              accessible
+              accessibilityLabel={`Care level ${careCareer.level}, ${careCareer.title}. ${careCareer.levelXp} of ${careCareer.levelSpanXp} XP toward the next level.${careCareer.todayXp > 0 ? ` ${careCareer.todayXp} XP earned today.` : ""}`}
+              style={s.careerRow}
+            >
+              <View style={[s.careerBadge, { backgroundColor: colors.amberSoft, borderColor: colors.amber }]}>
+                <Text style={[s.careerBadgeKicker, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+                  LV
+                </Text>
+                <Text style={[s.careerBadgeLevel, { color: colors.foreground, fontFamily: "Fraunces_700Bold" }]}>
+                  {careCareer.level}
+                </Text>
+              </View>
+              <View style={s.careerBody}>
+                <View style={s.careerTitleRow}>
+                  <Text
+                    numberOfLines={1}
+                    style={[s.careerTitle, { color: colors.navy, fontFamily: "Fredoka_600SemiBold" }]}
+                  >
+                    {careCareer.title}
+                  </Text>
+                  {careCareer.todayXp > 0 ? (
+                    <Text style={[s.careerToday, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
+                      +{careCareer.todayXp} XP today
+                    </Text>
+                  ) : null}
+                </View>
+                <View style={s.careerSegments}>
+                  {Array.from({ length: 10 }).map((_, index) => (
+                    <View
+                      key={`career-seg-${index}`}
+                      style={[
+                        s.careerSegment,
+                        {
+                          backgroundColor:
+                            index < Math.round(careCareer.levelProgress * 10)
+                              ? colors.amber
+                              : colors.muted,
+                          borderColor:
+                            index < Math.round(careCareer.levelProgress * 10)
+                              ? colors.amber
+                              : colors.border,
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+                <Text style={[s.careerXp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  {careCareer.levelXp.toLocaleString()} / {careCareer.levelSpanXp.toLocaleString()} XP ·{" "}
+                  {careStreak >= 2
+                    ? `${careStreak}-day care streak`
+                    : "every point from real care logs"}
+                </Text>
+              </View>
+            </View>
+          </BoardCard>
+
+          <BoardCard
+            tone="navy"
+            style={[s.missionDeck, { padding: missionLayout.deckPadding }]}
+          >
+            <View
+              style={[
+                s.missionHeader,
+                { marginBottom: missionLayout.headerGap },
+              ]}
+            >
+              <View>
+                <Text
+                  style={[
+                    s.missionKicker,
+                    { color: colors.amber, fontFamily: "Fredoka_600SemiBold" },
+                  ]}
+                >
+                  Today's Missions
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[s.missionTitle, { fontFamily: "Fredoka_700Bold" }]}
+                >
+                  Quest board
+                </Text>
+              </View>
+              {missionLayout.showBadge ? (
+                <View style={s.missionBadge}>
+                  <PixelIcon name="heart" size={25} />
+                  <Text
+                    style={[
+                      s.missionBadgeText,
+                      { fontFamily: "Inter_800ExtraBold" },
+                    ]}
+                  >
+                    Care RPG
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            <View style={[s.missionRows, { gap: missionLayout.rowGap }]}>
+              {deckMissions.map((mission) => {
+                const tone = missionToneColor(mission.tone);
+                return (
+                  <Pressable
+                    key={mission.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${mission.label}. ${mission.title}. ${mission.detail}`}
+                    accessibilityHint={missionLayout.qaLabel}
+                    onPress={() => router.push(mission.route as never)}
+                    style={({ pressed }) => [
+                      s.missionRow,
+                      {
+                        minHeight: missionLayout.rowMinHeight,
+                        paddingHorizontal: missionLayout.rowPaddingHorizontal,
+                        paddingVertical: missionLayout.rowPaddingVertical,
+                      },
+                      {
+                        borderColor: pressed ? tone : "rgba(255,249,239,0.18)",
+                        backgroundColor: pressed
+                          ? "rgba(255,249,239,0.16)"
+                          : "rgba(255,249,239,0.08)",
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        s.missionIcon,
+                        {
+                          width: missionLayout.iconBoxSize,
+                          height: missionLayout.iconBoxSize,
+                          backgroundColor: tone + "24",
+                          borderColor: tone + "80",
+                        },
+                      ]}
+                    >
+                      <PixelIcon
+                        name={mission.icon as PixelIconName}
+                        size={missionLayout.iconSize}
+                      />
+                    </View>
+                    <View style={s.missionCopy}>
+                      <View style={s.missionCopyTop}>
+                        <Text
+                          numberOfLines={1}
+                          style={[
+                            s.missionLabel,
+                            { fontFamily: "Inter_800ExtraBold" },
+                          ]}
+                        >
+                          {mission.label}
+                        </Text>
+                        {/* The Quest board header already carries the "Care
+                            RPG" badge, so the adventure row drops its
+                            duplicate status pill and reads under its own
+                            "Adventure" category label. */}
+                        {mission.key === "adventure" ? null : (
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              s.missionStatus,
+                              { color: tone, fontFamily: "Inter_800ExtraBold" },
+                            ]}
+                          >
+                            {mission.statusLabel}
+                          </Text>
+                        )}
+                      </View>
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          s.missionRowTitle,
+                          { fontFamily: "Fredoka_700Bold" },
+                        ]}
+                      >
+                        {mission.title}
+                      </Text>
+                      <Text
+                        numberOfLines={missionLayout.detailLines}
+                        style={[
+                          s.missionDetail,
+                          { fontFamily: "Inter_600SemiBold" },
+                        ]}
+                      >
+                        {mission.detail}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        s.missionCta,
+                        {
+                          maxWidth: missionLayout.ctaMaxWidth,
+                          minHeight: missionLayout.ctaMinHeight,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="chevron-forward"
+                        size={17}
+                        color="#FFF9EF"
+                      />
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </BoardCard>
 
           <View style={s.cardGrid}>
             <BoardCard style={s.gridCard}>
               <BoardSectionHeader title="Today at a glance" />
               <View style={s.todayGrid}>
-                <View style={s.todayMetric}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open today activity logs"
+                  accessibilityHint="Opens the walk detail flow for today's activity."
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={() => openTodayMetric("activity")}
+                  style={({ pressed }) => [
+                    s.todayMetric,
+                    {
+                      backgroundColor: pressed
+                        ? colors.secondary
+                        : colors.background,
+                      borderColor: pressed ? colors.sage : colors.border,
+                    },
+                  ]}
+                >
                   <PixelIcon name="walk" size={26} />
-                  <Text style={[s.metricValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.metricValue,
+                      { color: colors.navy, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     {status.counts.walkMinutes}m
                   </Text>
-                  <Text style={[s.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text
+                    style={[
+                      s.metricLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
                     Activity
                   </Text>
-                </View>
-                <View style={s.todayMetric}>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open today meal logs"
+                  accessibilityHint="Opens the meal detail flow for portions and outcomes."
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={() => openTodayMetric("meals")}
+                  style={({ pressed }) => [
+                    s.todayMetric,
+                    {
+                      backgroundColor: pressed
+                        ? colors.secondary
+                        : colors.background,
+                      borderColor: pressed ? colors.copper : colors.border,
+                    },
+                  ]}
+                >
                   <PixelIcon name="meal" size={26} />
-                  <Text style={[s.metricValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.metricValue,
+                      { color: colors.navy, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     {completionLabel(meals.done, meals.target || 2)}
                   </Text>
-                  <Text style={[s.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text
+                    style={[
+                      s.metricLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
                     Meals
                   </Text>
-                </View>
-                <View style={s.todayMetric}>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open today potty logs"
+                  accessibilityHint="Opens the potty detail flow for pee, poop, accidents, and notes."
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={() => openTodayMetric("potty")}
+                  style={({ pressed }) => [
+                    s.todayMetric,
+                    {
+                      backgroundColor: pressed
+                        ? colors.secondary
+                        : colors.background,
+                      borderColor: pressed ? colors.blueSignal : colors.border,
+                    },
+                  ]}
+                >
                   <PixelIcon name="pee" size={26} />
-                  <Text style={[s.metricValue, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
-                    {completionLabel(status.counts.potty.done, status.counts.potty.target || 3)}
+                  <Text
+                    style={[
+                      s.metricValue,
+                      { color: colors.navy, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    {completionLabel(
+                      status.counts.potty.done,
+                      status.counts.potty.target || 3,
+                    )}
                   </Text>
-                  <Text style={[s.metricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text
+                    style={[
+                      s.metricLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
                     Potty
                   </Text>
-                </View>
+                </Pressable>
               </View>
             </BoardCard>
 
             <BoardCard style={s.gridCard}>
-              <BoardSectionHeader title="Recent activity" action="View all" />
+              <BoardSectionHeader
+                title="Recent activity"
+                accessory={
+                  <HomeHeaderAction
+                    label="View all"
+                    accessibilityLabel="View all recent care activity"
+                    route="/log"
+                  />
+                }
+              />
               {recentActivity.length ? (
                 recentActivity.map((entry) => (
                   <CareRow
-                    key={`${entry.title}-${entry.time}`}
+                    key={entry.id}
                     icon={entry.icon}
                     title={entry.title}
                     detail={entry.caregiver}
                     meta={entry.time}
+                    accessibilityLabel={`Open recent care log: ${entry.title}`}
+                    onPress={() =>
+                      router.push(
+                        `/log?entry=${encodeURIComponent(entry.id)}` as never,
+                      )
+                    }
                   />
                 ))
               ) : (
-                <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                <Text
+                  style={[
+                    s.emptyText,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
                   No care logs yet today.
                 </Text>
               )}
@@ -578,26 +2956,68 @@ export default function HomeScreen() {
 
           <View style={s.watchRow}>
             {[
-              { title: "Health Watch", icon: "health" as PixelIconName, data: health, route: "/health" },
-              { title: "Bile Watch", icon: "bile" as PixelIconName, data: bile, route: "/health" },
-              { title: "Alone Time", icon: "clock" as PixelIconName, data: alone, route: "/log" },
+              {
+                title: "Health Watch",
+                icon: "health" as PixelIconName,
+                data: health,
+                target: "health" as HomeWatchTarget,
+                hint: "Opens Health Watch overview with activity, appetite, stool, hydration, energy, and vomiting signals.",
+              },
+              {
+                title: "Bile Watch",
+                icon: "bile" as PixelIconName,
+                data: bile,
+                target: "bile" as HomeWatchTarget,
+                hint: "Opens the Bile Watch tab for yellow bile patterns, food gaps, and owner notes.",
+              },
+              {
+                title: "Alone Time",
+                icon: "clock" as PixelIconName,
+                data: alone,
+                target: "alone" as HomeWatchTarget,
+                hint: openAloneSession
+                  ? "Opens the return check-in so the household can close the active alone time."
+                  : "Opens the Alone Time detail flow for leaving home or logging a return.",
+              },
             ].map((w) => (
               <Pressable
                 key={w.title}
                 accessibilityRole="button"
                 accessibilityLabel={`${w.title}. ${w.data.status}`}
-                onPress={() => router.push(w.route as never)}
-                style={({ pressed }) => [{ flex: 1, opacity: pressed ? 0.72 : 1 }]}
+                accessibilityHint={w.hint}
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                onPress={() => openHomeWatchCard(w.target)}
+                style={({ pressed }) => [
+                  { flex: 1, opacity: pressed ? 0.72 : 1 },
+                ]}
               >
                 <BoardCard style={s.watchCard}>
                   <PixelIcon name={w.icon} size={24} />
-                  <Text style={[s.watchTitle, { color: colors.navy, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.watchTitle,
+                      { color: colors.navy, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     {w.title}
                   </Text>
-                  <Text style={[s.watchStatus, { color: w.data.color, fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.watchStatus,
+                      { color: w.data.color, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     {w.data.status}
                   </Text>
-                  <Text style={[s.watchSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  <Text
+                    style={[
+                      s.watchSub,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
                     {w.data.sub}
                   </Text>
                 </BoardCard>
@@ -605,114 +3025,299 @@ export default function HomeScreen() {
             ))}
           </View>
 
-          <BoardCard tone="navy" style={s.questCard}>
+          {/* Care quest sits on the default card surface, not navy, so it
+              reads as its own lighter block instead of a second dark panel
+              stacked under the Quest board mission deck. */}
+          <BoardCard style={s.questCard}>
             <View style={s.questTop}>
-              <View>
-                <Text style={[s.questKicker, { color: colors.amber, fontFamily: "Fredoka_600SemiBold" }]}>
+              <View style={s.questTopCopy}>
+                <Text
+                  style={[
+                    s.questKicker,
+                    { color: colors.copper, fontFamily: "Fredoka_600SemiBold" },
+                  ]}
+                >
                   Care quest
                 </Text>
-                <Text style={[s.questTitle, { fontFamily: "Fredoka_700Bold" }]}>
+                <Text
+                  style={[
+                    s.questTitle,
+                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                  ]}
+                >
                   {questLine}
                 </Text>
-                <Text style={[s.questSub, { fontFamily: "Inter_600SemiBold" }]}>
+                <Text
+                  style={[
+                    s.questSub,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
                   {careIntelligence.subtitle}
                 </Text>
               </View>
-              <View style={s.questBadge}>
+              <View
+                style={[
+                  s.questBadge,
+                  {
+                    backgroundColor: colors.rose + "1C",
+                    borderColor: colors.rose + "55",
+                  },
+                ]}
+              >
                 <PixelIcon name="heart" size={30} />
               </View>
             </View>
-            <View style={s.questProofGrid}>
-              {careIntelligence.metrics.slice(0, 3).map((metric) => (
-                <View key={metric.label} style={s.questProofTile}>
-                  <Text style={[s.questProofValue, { fontFamily: "Fredoka_700Bold" }]}>{metric.value}</Text>
-                  <Text style={[s.questProofLabel, { fontFamily: "Inter_700Bold" }]}>{metric.label}</Text>
-                </View>
-              ))}
-            </View>
-            <View style={s.questMeterWrap}>
-              {Array.from({ length: 10 }).map((_, index) => {
-                const active = index < Math.round(careProgress / 10);
-                return (
-                  <View
-                    key={`quest-${index}`}
-                    style={[
-                      s.questPip,
-                      {
-                        backgroundColor: active ? colors.sage : "rgba(255,249,239,0.18)",
-                        borderColor: active ? colors.sage : "rgba(255,249,239,0.26)",
-                      },
-                    ]}
-                  />
-                );
-              })}
-            </View>
             <View style={s.questMetaRow}>
-              <Text style={[s.questMeta, { fontFamily: "Inter_700Bold" }]}>
-                {careIntelligence.score}% Care IQ
+              <Text
+                style={[
+                  s.questMeta,
+                  { color: colors.navy, fontFamily: "Inter_700Bold" },
+                ]}
+              >
+                {/* Zero-log day: "--" instead of a fabricated percentage -
+                    the score starts with the first real log. */}
+                {careIntelligence.visibleLogCount === 0
+                  ? "-- Care IQ"
+                  : `${careIntelligence.score}% Care IQ`}
               </Text>
-              <Text style={[s.questMeta, { fontFamily: "Inter_600SemiBold" }]}>
-                {careIntelligence.confidenceScore}% log confidence
+              <Text
+                style={[
+                  s.questMeta,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
+                {careIntelligence.visibleLogCount === 0
+                  ? "Starts with your first log"
+                  : `${careIntelligence.confidenceScore}% log confidence`}
               </Text>
             </View>
-          </BoardCard>
-
-          <BoardCard style={s.statusCard}>
-            <BoardSectionHeader title="Phoenix status" action="View full report" />
-            <View style={s.meterStack}>
-              <StatusMeter
-                label="Energy"
-                icon="energy"
-                value={status.energy}
-                valueLabel={`${status.energy}%`}
-                tone={colors.sage}
-              />
-              <StatusMeter
-                label="Hunger"
-                icon="hunger"
-                value={hungerScore}
-                valueLabel={fed ? "Full" : "Hungry"}
-                tone={fed ? colors.sage : colors.copper}
-              />
-              <StatusMeter
-                label="Hydration"
-                icon="bile"
-                value={hydrationScore}
-                valueLabel="Good"
-                tone={colors.blueSignal}
-              />
-              <StatusMeter
-                label="Bile Risk"
-                icon="bile"
-                value={bileCount ? 46 : 82}
-                valueLabel={bile.status}
-                tone={bile.color}
-              />
-              <StatusMeter
-                label="Bond"
-                icon="bond"
-                value={bondScore}
-                valueLabel={bondLabel}
-                tone={colors.sage}
-              />
-            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Home Care Intelligence next action: ${careIntelligence.nextAction.label}`}
+              accessibilityHint={careIntelligence.nextAction.detail}
+              onPress={openHomeCareIntelligenceNextAction}
+              style={({ pressed }) => [
+                s.questNextAction,
+                {
+                  borderColor: pressed ? colors.amber : colors.border,
+                  backgroundColor: pressed
+                    ? colors.secondary
+                    : colors.background,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  s.questNextIcon,
+                  {
+                    backgroundColor: colors.amber + "1C",
+                    borderColor: colors.amber + "55",
+                  },
+                ]}
+              >
+                <PixelIcon name={homeCareIntelligenceIcon} size={24} />
+              </View>
+              <View style={s.questNextCopy}>
+                <Text
+                  style={[
+                    s.questNextKicker,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_800ExtraBold",
+                    },
+                  ]}
+                >
+                  Next care move
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    s.questNextTitle,
+                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                  ]}
+                >
+                  {careIntelligence.nextAction.label}
+                </Text>
+                <Text
+                  numberOfLines={2}
+                  style={[
+                    s.questNextDetail,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  {careIntelligence.nextAction.detail}
+                </Text>
+              </View>
+              <View
+                style={[s.questNextCta, { backgroundColor: colors.primary }]}
+              >
+                <Text
+                  style={[
+                    s.questNextCtaText,
+                    {
+                      color: colors.primaryForeground,
+                      fontFamily: "Inter_800ExtraBold",
+                    },
+                  ]}
+                >
+                  {homeCareIntelligenceCta}
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={15}
+                  color={colors.primaryForeground}
+                />
+              </View>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Open Adventure Mode. ${adventureQuest.title}. ${adventureMode.summary}`}
+              onPress={() => router.push("/adventure" as never)}
+              style={({ pressed }) => [
+                s.adventureInline,
+                {
+                  backgroundColor: pressed ? colors.secondary : colors.background,
+                  borderColor: colors.border,
+                  opacity: pressed ? 0.78 : 1,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  s.adventureIcon,
+                  {
+                    backgroundColor: colors.copper + "1C",
+                    borderColor: colors.copper + "55",
+                  },
+                ]}
+              >
+                <PixelIcon
+                  name={adventureQuestIcon(adventureQuest.id)}
+                  size={25}
+                />
+              </View>
+              <View style={s.adventureCopy}>
+                <Text
+                  style={[
+                    s.adventureKicker,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_700Bold",
+                    },
+                  ]}
+                >
+                  Adventure Mode
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    s.adventureTitle,
+                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                  ]}
+                >
+                  {adventureQuest.title}
+                </Text>
+                <Text
+                  numberOfLines={2}
+                  style={[
+                    s.adventureSub,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  Quest level {adventureMode.level} - {adventureMode.todayXp}{" "}
+                  quest XP today - {adventureMode.memoriesCount} memories
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.navy} />
+            </Pressable>
           </BoardCard>
         </Animated.View>
       </ScrollView>
 
       {toast && (
         <Animated.View
-          pointerEvents="none"
+          pointerEvents={quickFeedback ? "auto" : "none"}
           style={[
             s.toast,
             {
               backgroundColor: colors.brandNavy,
               opacity: toastOpacity,
-              bottom: toastBottomOffset,
+              // The one feedback toast anchors just above the floating tab
+              // bar through the shared chrome metric, never mid-screen.
+              bottom: getFloatingFeedbackBottomOffset({
+                platform: Platform.OS,
+                bottomInset: insets.bottom,
+                surface: "tabbed",
+              }),
             },
           ]}
         >
-          <Text style={[s.toastText, { fontFamily: "Inter_700Bold" }]}>{toast}</Text>
+          <Text style={[s.toastText, { fontFamily: "Inter_700Bold" }]}>
+            {toast}
+          </Text>
+          {quickFeedback ? (
+            <View style={s.toastActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Undo ${quickFeedback.title} quick log`}
+                onPress={undoQuickFeedback}
+                style={({ pressed }) => [
+                  s.toastAction,
+                  {
+                    backgroundColor: pressed
+                      ? "rgba(255,249,239,0.16)"
+                      : "rgba(255,249,239,0.1)",
+                    borderColor: "rgba(255,249,239,0.34)",
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    s.toastActionText,
+                    { fontFamily: "Inter_800ExtraBold" },
+                  ]}
+                >
+                  Undo
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Add details to ${quickFeedback.title}`}
+                onPress={openQuickFeedbackDetails}
+                style={({ pressed }) => [
+                  s.toastAction,
+                  {
+                    backgroundColor: pressed
+                      ? colors.copper + "DD"
+                      : colors.copper,
+                    borderColor: colors.copper,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    s.toastActionText,
+                    { fontFamily: "Inter_800ExtraBold" },
+                  ]}
+                >
+                  Add details
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
         </Animated.View>
       )}
     </View>
@@ -728,10 +3333,13 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 10,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   headerButton: {
     width: MIN_MOBILE_TOUCH_TARGET,
-    height: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
@@ -740,8 +3348,8 @@ const s = StyleSheet.create({
   },
   badge: {
     position: "absolute",
-    top: -6,
-    right: -5,
+    top: 0,
+    right: 4,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
@@ -750,27 +3358,93 @@ const s = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: { color: "#FFFFFF", fontSize: 10 },
-  logoWrap: { flex: 1, alignItems: "center", gap: 0 },
-  logoSub: { fontSize: 11.5, marginTop: -1 },
-
-  heroCard: {
-    overflow: "hidden",
-    marginBottom: 0,
+  identityWrap: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  identityAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     borderWidth: 1,
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
+  },
+  identityCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
+  },
+  identityNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  identityName: {
+    fontSize: 20,
+    lineHeight: 24,
+  },
+  identityCareLine: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  identityCareText: {
+    fontSize: 11.5,
+  },
+
+  heroBackdrop: {
+    width: "100%",
+    marginBottom: 0,
+  },
+  fullBleedArt: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
+  },
+  heroStudioChip: {
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    zIndex: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroStudioButton: {
+    width: 116,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 7,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    justifyContent: "center",
+  },
+  heroStudioKicker: {
+    fontSize: 8.5,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  heroStudioTitle: {
+    fontSize: 11.5,
+    marginTop: 2,
   },
   heroWrap: {
     width: "100%",
-    aspectRatio: HERO_RATIO,
     position: "relative",
   },
   presencePanel: {
-    width: "84%",
-    alignSelf: "flex-start",
-    marginTop: -30,
-    marginLeft: 12,
+    width: "100%",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -779,11 +3453,144 @@ const s = StyleSheet.create({
     borderRadius: 18,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    shadowColor: "#081424",
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
+  },
+
+  // Soft premium elevation for the mock-board surfaces, matching the
+  // BoardCard shadow language so everything floats gently on the parchment.
+  softShadow: {
+    shadowColor: "#2A2118",
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
+  },
+
+  // First-run welcome (fresh household only)
+  welcomeCard: {
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 14,
+  },
+  welcomeDismiss: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
+  welcomeKicker: {
+    fontSize: 11,
+    letterSpacing: 1.3,
+    marginBottom: 4,
+  },
+  welcomeTitle: {
+    fontSize: 22,
+    marginBottom: 6,
+  },
+  welcomeBody: {
+    fontSize: 13,
+    lineHeight: 19,
+    opacity: 0.92,
+    marginBottom: 14,
+    paddingRight: 8,
+  },
+  welcomeActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  welcomePrimary: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+  },
+  welcomePrimaryText: {
+    fontSize: 14,
+  },
+  welcomeGhost: {
+    paddingHorizontal: 10,
+    paddingVertical: 11,
+  },
+  welcomeGhostText: {
+    fontSize: 13,
+  },
+
+  // Mock-board heart status card
+  moodCard: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    marginTop: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  moodCardBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  moodTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  moodTitle: {
+    flexShrink: 1,
+    minWidth: 0,
+    fontSize: 17,
+    lineHeight: 22,
+  },
+  moodSub: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 3,
+  },
+
+  // Recency chips: Fed · Potty · Walk · Alone Time
+  recencyRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  // Under-360 reflow: two chips per row so values never truncate.
+  recencyRowNarrow: {
+    flexWrap: "wrap",
+  },
+  recencyChipNarrow: {
+    flexBasis: "48%",
+  },
+  recencyChip: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  recencyCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  recencyLabel: {
+    fontSize: 10,
+  },
+  recencyValue: {
+    fontSize: 9.5,
+    marginTop: 1,
   },
   presenceAvatar: {
     width: 38,
@@ -794,87 +3601,468 @@ const s = StyleSheet.create({
   },
   presenceInitial: { color: "#FFFFFF", fontSize: 17 },
   presenceCopy: { flex: 1, minWidth: 0 },
+  todayStoryCard: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  todayStoryThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  todayStoryCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+  },
+  todayStoryKicker: {
+    fontSize: 11,
+  },
+  todayStoryText: {
+    fontSize: 12.5,
+    lineHeight: 17,
+  },
+  todayStoryChips: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  todayStoryChip: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  todayStoryChipText: {
+    fontSize: 10,
+  },
+  careerCard: {
+    marginBottom: 12,
+  },
+  careerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  careerBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  careerBadgeKicker: {
+    fontSize: 8,
+    letterSpacing: 1,
+  },
+  careerBadgeLevel: {
+    fontSize: 21,
+    lineHeight: 24,
+  },
+  careerBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  careerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  careerTitle: {
+    flexShrink: 1,
+    fontSize: 15,
+  },
+  careerToday: {
+    fontSize: 10.5,
+  },
+  careerSegments: {
+    flexDirection: "row",
+    gap: 3,
+    marginTop: 6,
+  },
+  careerSegment: {
+    flex: 1,
+    height: 10,
+    borderWidth: 1,
+    borderRadius: 2,
+  },
+  careerXp: {
+    fontSize: 10.5,
+    marginTop: 5,
+  },
   presenceText: { fontSize: 14 },
   presenceSub: { fontSize: 11, marginTop: 2 },
-  avatarIdentityBar: {
-    minHeight: 48,
+  careStatusCard: {
+    marginTop: 0,
+    marginBottom: 8,
+  },
+  statusTiles: {
+    flexDirection: "column",
+    gap: 6,
+    marginBottom: 10,
+  },
+  statusTile: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 0,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  statusTileIcon: {
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusTileLabel: { flex: 1, fontSize: 14 },
+  statusTileValuePill: {
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  statusTileValue: { fontSize: 13, textAlign: "right" },
+  statusTileSegments: {
+    flexDirection: "row",
+    gap: 3,
+  },
+  statusTileSegment: {
+    width: 13,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  todayCommandCard: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    shadowColor: "#081424",
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  todayCommandIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  todayCommandCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  todayCommandKicker: {
+    fontSize: 9.5,
+    lineHeight: 12,
+    textTransform: "uppercase",
+  },
+  todayCommandTitle: {
+    fontSize: 14.5,
+    lineHeight: 17,
+    marginTop: 1,
+  },
+  todayCommandDetail: {
+    fontSize: 10.5,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  todayCommandCta: {
+    minHeight: 34,
+    borderRadius: 7,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+  },
+  todayCommandCtaText: {
+    color: "#FFF9EF",
+    fontSize: 10,
+  },
+
+  missionDeck: {
+    marginBottom: 10,
+    padding: 12,
+    overflow: "hidden",
+  },
+  missionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 10,
+  },
+  missionKicker: {
+    fontSize: 11,
+    textTransform: "uppercase",
+  },
+  missionTitle: {
+    color: "#FFF9EF",
+    fontSize: 17,
+    lineHeight: 21,
+    marginTop: 1,
+  },
+  missionBadge: {
+    minHeight: 34,
+    borderRadius: 7,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(255,249,239,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,249,239,0.2)",
+  },
+  missionBadgeText: {
+    color: "#FFF9EF",
+    fontSize: 9,
+    textTransform: "uppercase",
+  },
+  missionRows: {
+    gap: 8,
+  },
+  missionRow: {
+    minHeight: 72,
     borderRadius: 8,
     borderWidth: 1,
-    marginBottom: 10,
-    paddingHorizontal: 11,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
   },
-  avatarIdentityIcon: {
-    width: 34,
-    height: 34,
+  missionIcon: {
+    width: 40,
+    height: 40,
     borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarIdentityCopy: { flex: 1, minWidth: 0 },
-  avatarIdentityTitle: { fontSize: 13 },
-  avatarIdentitySub: { fontSize: 11, marginTop: 1 },
-  statusTiles: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 10,
-  },
-  statusTile: {
-    flex: 1,
-    minHeight: 92,
     borderWidth: 1,
-    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 6,
-    paddingVertical: 9,
+    backgroundColor: "rgba(255,249,239,0.14)",
   },
-  statusTileIcon: {
-    width: 39,
-    height: 39,
-    borderRadius: 8,
+  missionCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  missionCopyTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  missionLabel: {
+    color: "rgba(255,249,239,0.76)",
+    fontSize: 9.5,
+    textTransform: "uppercase",
+    flexShrink: 1,
+  },
+  missionStatus: {
+    fontSize: 9.5,
+    textTransform: "uppercase",
+  },
+  missionRowTitle: {
+    color: "#FFF9EF",
+    fontSize: 14.5,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  missionDetail: {
+    color: "rgba(255,249,239,0.7)",
+    fontSize: 10.5,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  missionCta: {
+    maxWidth: 82,
+    minHeight: 34,
+    borderRadius: 7,
+    paddingHorizontal: 7,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 5,
+    gap: 2,
+    backgroundColor: "rgba(255,249,239,0.12)",
   },
-  statusTileLabel: { fontSize: 11, textAlign: "center" },
-  statusTileValue: { fontSize: 13, marginTop: 3, textAlign: "center" },
+  missionCtaText: {
+    color: "#FFF9EF",
+    fontSize: 9.5,
+    maxWidth: 58,
+  },
 
   homeSplit: {
-    flexDirection: "row",
+    flexDirection: "column",
     gap: 10,
     alignItems: "stretch",
     marginBottom: 10,
   },
   homeSplitCard: {
-    flex: 1,
     minWidth: 0,
   },
   nextCard: { marginTop: 0 },
   quickHomeCard: {
-    minHeight: 188,
+    minHeight: 0,
   },
-  homeQuickGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    rowGap: 8,
-  },
-  homeQuickTile: {
-    width: "48%",
-    minHeight: 54,
+  quickHeaderAction: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 8,
+    paddingHorizontal: 10,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
-    paddingVertical: 5,
+  },
+  quickHeaderActionText: {
+    fontSize: 10,
+    letterSpacing: 0,
+  },
+  homeHeaderAction: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  homeHeaderActionText: {
+    fontSize: 10,
+    letterSpacing: 0,
+  },
+  quickSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  },
+  quickSectionTitle: {
+    fontSize: 17,
+    lineHeight: 22,
+  },
+  homeQuickGrid: {
+    flexDirection: "row",
+    flexWrap: "nowrap",
+    justifyContent: "space-between",
+  },
+  homeQuickTile: {
+    width: "15.5%",
+    minHeight: 74,
+    alignItems: "center",
+    gap: 5,
+  },
+  homeQuickCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   homeQuickText: {
     fontSize: 9.5,
     textAlign: "center",
+  },
+
+  // Open-loop chip stacked above the planned Next Up item: a served meal
+  // waiting on its outcome never displaces the plan itself.
+  nextOpenLoopChip: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  nextOpenLoopCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  nextOpenLoopTitle: {
+    fontSize: 12.5,
+  },
+  nextOpenLoopMeta: {
+    fontSize: 10.5,
+    marginTop: 1,
+  },
+
+  // Next Up primary row: thumb + copy + Start/Snooze/Reassign
+  nextPrimaryRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    paddingTop: 2,
+  },
+  nextThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  nextPrimaryCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  nextPrimaryTitle: {
+    fontSize: 15,
+    lineHeight: 19,
+  },
+  nextPrimaryMeta: {
+    fontSize: 11.5,
+    lineHeight: 15,
+    marginTop: 2,
+  },
+  nextButtonRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+  nextButton: {
+    minHeight: 34,
+    borderRadius: 999,
+    paddingHorizontal: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nextButtonSoft: {},
+  nextButtonText: {
+    fontSize: 11.5,
+  },
+  nextEmptyText: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  nextMoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    marginTop: 10,
+    alignSelf: "flex-start",
+  },
+  nextMoreText: {
+    fontSize: 11,
   },
   questCard: {
     marginTop: 10,
@@ -888,20 +4076,20 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
   },
+  questTopCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
   questKicker: { fontSize: 11, textTransform: "uppercase" },
   questTitle: {
-    color: "#FFF9EF",
     fontSize: 17,
     lineHeight: 21,
     marginTop: 2,
-    maxWidth: 245,
   },
   questSub: {
-    color: "rgba(255,249,239,0.78)",
     fontSize: 11.5,
     lineHeight: 16,
     marginTop: 5,
-    maxWidth: 245,
   },
   questBadge: {
     width: 44,
@@ -909,61 +4097,102 @@ const s = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,249,239,0.12)",
     borderWidth: 1,
-    borderColor: "rgba(255,249,239,0.18)",
-  },
-  questProofGrid: {
-    flexDirection: "row",
-    gap: 7,
-    marginTop: 13,
-  },
-  questProofTile: {
-    flex: 1,
-    minHeight: 54,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,249,239,0.16)",
-    backgroundColor: "rgba(255,249,239,0.08)",
-    paddingHorizontal: 8,
-    paddingVertical: 7,
-    justifyContent: "center",
-  },
-  questProofValue: {
-    color: "#FFF9EF",
-    fontSize: 16,
-  },
-  questProofLabel: {
-    color: "rgba(255,249,239,0.68)",
-    fontSize: 9,
-    lineHeight: 12,
-    marginTop: 1,
-    textTransform: "uppercase",
-  },
-  questMeterWrap: {
-    flexDirection: "row",
-    gap: 5,
-    marginTop: 13,
-  },
-  questPip: {
-    flex: 1,
-    height: 12,
-    borderWidth: 1,
-    borderRadius: 2,
   },
   questMetaRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
-    marginTop: 9,
+    marginTop: 12,
   },
   questMeta: {
-    color: "rgba(255,249,239,0.82)",
     fontSize: 11.5,
   },
-  statusCard: { marginBottom: 10 },
-  meterStack: { gap: 8 },
+  questNextAction: {
+    marginTop: 11,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  questNextIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+  },
+  questNextCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  questNextKicker: {
+    fontSize: 8.5,
+    letterSpacing: 0,
+    textTransform: "uppercase",
+  },
+  questNextTitle: {
+    fontSize: 13.5,
+    lineHeight: 16,
+    marginTop: 1,
+  },
+  questNextDetail: {
+    fontSize: 10.5,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  questNextCta: {
+    minHeight: 34,
+    borderRadius: 7,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  questNextCtaText: {
+    fontSize: 10.5,
+  },
+  adventureInline: {
+    marginTop: 13,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  adventureIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+  },
+  adventureCopy: { flex: 1, minWidth: 0 },
+  adventureKicker: {
+    fontSize: 9,
+    textTransform: "uppercase",
+  },
+  adventureTitle: {
+    fontSize: 14,
+    lineHeight: 17,
+    marginTop: 1,
+  },
+  adventureSub: {
+    fontSize: 10.5,
+    lineHeight: 14,
+    marginTop: 2,
+  },
   cardGrid: { gap: 10, marginTop: 10 },
   gridCard: { minHeight: 124 },
   todayGrid: {
@@ -973,7 +4202,13 @@ const s = StyleSheet.create({
   },
   todayMetric: {
     flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 7,
     alignItems: "center",
+    justifyContent: "center",
     gap: 4,
   },
   metricValue: { fontSize: 17 },
@@ -989,8 +4224,21 @@ const s = StyleSheet.create({
     position: "absolute",
     alignSelf: "center",
     paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 999,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    maxWidth: "92%",
+    alignItems: "center",
+    gap: 8,
   },
   toastText: { color: "#FFFFFF", fontSize: 13 },
+  toastActions: { flexDirection: "row", gap: 8 },
+  toastAction: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toastActionText: { color: "#FFFFFF", fontSize: 12 },
 });

@@ -31,24 +31,25 @@ import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import {
-  getFloatingFeedbackBottomOffset,
-  getRouteTopPadding,
-  getStandaloneRouteBottomPadding,
-  MIN_MOBILE_TOUCH_TARGET,
-} from "@/lib/mobileLayout";
-import {
   deriveAvatarPreviewAccessories,
   deriveAvatarPreviewMood,
   deriveAvatarPreviewMotion,
 } from "@/lib/avatarPreviewModel";
 import {
+  buildAvatarSpriteProductionQaSummary,
+  buildAvatarSpriteProductionTemplateReview,
+} from "@/lib/avatarSpriteProductionQa";
+import {
   AVATAR_ACCESSORIES,
   AVATAR_EMOTE_STATES,
+  AVATAR_SCAN_WORKFLOW_STEPS,
   AVATAR_TEMPLATES,
-  buildMockScanSuggestion,
+  buildTemplateScanSuggestion,
   createDefaultAvatarConfig,
+  deriveAvatarAccessoryFit,
   describeAvatarConfig,
   getAvatarTemplate,
+  summarizeAvatarAccessoryFits,
   type AvatarAccessoryOption,
   type AvatarEmoteState,
   type AvatarFaceMarkingId,
@@ -61,32 +62,41 @@ import {
   getAvatarTemplateDisplaySource,
   getAvatarTemplateEmoteSource,
 } from "@/lib/avatarTemplateAssets";
-import { getAvatarTemplateSpriteAsset } from "@/lib/avatarTemplateSpriteAssets";
 import {
-  getAvatarTemplateReadiness,
-  isAvatarTemplateAccessoryLive,
-  isAvatarTemplateEmoteLive,
-} from "@/lib/avatarTemplateReadiness";
-import { getAvatarTemplatePack } from "@/lib/avatarTemplatePackManifest";
+  getAvatarTemplateSpritePreview,
+  hasAvatarTemplateSpritePack,
+} from "@/lib/avatarTemplateSpriteAssets";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
+import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import {
+  getRouteTopPadding,
+  getStandaloneRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
+import { resolvePetName } from "@/lib/petIdentity";
+import { pixelImageStyle } from "@/lib/pixelRendering";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
 const DISPLAY = "Fredoka_700Bold";
-const PIXEL_ROOM_SOURCE = require("@/assets/avatar/rooms/phoenix-room-day.png");
-const PIXEL_HEAD_SOURCE = require("@/assets/avatar/phoenix/approved/phoenix-main-head-v2.png");
+const PIXEL_ROOM_SOURCE = require("@/assets/avatar/rooms/phoenix-room-day-option-b.png");
+const PIXEL_HEAD_SOURCE = require("@/assets/avatar/phoenix/approved/phoenix-main-head-v2-crisp.png");
 
 type Phase = "idle" | "working" | "result";
 type StudioTab = "scan" | "template" | "customize" | "emotes";
 
 const SCAN_LINES = [
-  "Reading body shape...",
-  "Finding coat colors...",
-  "Checking ears and muzzle...",
-  "Matching a pixel template...",
-  "Preparing owner review...",
+  "Opening your photo as a reference...",
+  "Lining up pixel template bases...",
+  "Setting your dog side by side...",
+  "Suggesting a base to start from...",
+  "Handing the picks back to you...",
 ];
 
-const HERO_TEMPLATE_SPRITE_SIZE = 220;
+const SCAN_WORKFLOW_ACCESSIBILITY_SUMMARY =
+  "Photo reference, Template match, Pixel twin, Owner approval";
+const HERO_TEMPLATE_SPRITE_SIZE = 256;
 
 const COAT_SWATCHES = [
   "#1B1714",
@@ -128,11 +138,10 @@ function emoteLabel(state: AvatarEmoteState): string {
     .join(" ");
 }
 
-function accessoryLabel(accessoryId: string): string {
-  return AVATAR_ACCESSORIES.find((accessory) => accessory.id === accessoryId)?.label ?? accessoryId;
-}
-
-function updateConfig(config: PetAvatarConfig, patch: Partial<PetAvatarConfig>): PetAvatarConfig {
+function updateConfig(
+  config: PetAvatarConfig,
+  patch: Partial<PetAvatarConfig>,
+): PetAvatarConfig {
   return {
     ...config,
     ...patch,
@@ -165,6 +174,7 @@ export default function PortraitScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const ownerOps = isOwnerOpsBuild();
   const { state } = useCare();
   const {
     avatarConfig,
@@ -174,10 +184,16 @@ export default function PortraitScreen() {
     resetAvatarConfig,
   } = useAvatar();
 
-  const petName = state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
-  const topScrollPadding = getRouteTopPadding(insets.top, "tabbed", Platform.OS === "web");
-  const bottomScrollPadding = getStandaloneRouteBottomPadding(insets.bottom);
-  const toastBottomOffset = getFloatingFeedbackBottomOffset(insets.bottom, "standalone", Platform.OS === "web");
+  const petName = resolvePetName(state.profile.name);
+  const topPadding = getRouteTopPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "standalone",
+  });
+  const bottomPadding = getStandaloneRouteBottomPadding({
+    platform: Platform.OS,
+    bottomInset: insets.bottom,
+  });
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [activeTab, setActiveTab] = useState<StudioTab>("scan");
@@ -187,7 +203,10 @@ export default function PortraitScreen() {
   const [scanLine, setScanLine] = useState(0);
   const [savedToast, setSavedToast] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const scanSuggestion = useMemo(() => buildMockScanSuggestion(petName), [petName]);
+  const scanSuggestion = useMemo(
+    () => buildTemplateScanSuggestion(petName),
+    [petName],
+  );
 
   const scanAnim = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(0)).current;
@@ -230,12 +249,17 @@ export default function PortraitScreen() {
     );
     scanLoop.start();
     pulseLoop.start();
-    const lineTimer = setInterval(() => setScanLine((idx) => (idx + 1) % SCAN_LINES.length), 900);
+    const lineTimer = setInterval(
+      () => setScanLine((idx) => (idx + 1) % SCAN_LINES.length),
+      900,
+    );
     const finishTimer = setTimeout(() => {
       setDraft(scanSuggestion.suggestedConfig);
       setPhase("result");
       setActiveTab("template");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => {},
+      );
     }, 2450);
 
     return () => {
@@ -274,13 +298,41 @@ export default function PortraitScreen() {
   }, [templateLife]);
 
   const selectedTemplate = getAvatarTemplate(draft.templateId);
+  const faceMarkingLabel =
+    FACE_MARKINGS.find((marking) => marking.id === draft.faceMarkingId)?.label ??
+    draft.faceMarkingId;
+  const liveTemplateCount = useMemo(
+    () =>
+      AVATAR_TEMPLATES.filter((template) =>
+        hasAvatarTemplateSpritePack(template.id),
+      ).length,
+    [],
+  );
+  const avatarSpriteProductionSummary = useMemo(
+    () => buildAvatarSpriteProductionQaSummary(),
+    [],
+  );
+  const productionTemplateReview = useMemo(
+    () => buildAvatarSpriteProductionTemplateReview(draft.templateId),
+    [draft.templateId],
+  );
   const selectedTemplateBase = getAvatarTemplateBaseSource(draft.templateId);
-  const selectedTemplateDisplaySource = getAvatarTemplateDisplaySource(draft.templateId);
-  const selectedTemplateEmote = getAvatarTemplateEmoteSource(draft.templateId, previewEmote);
-  const selectedTemplateCardSource = selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
-  const templatePack = useMemo(() => getAvatarTemplatePack(draft.templateId), [draft.templateId]);
-  const templateReadiness = useMemo(() => getAvatarTemplateReadiness(draft.templateId), [draft.templateId]);
-  const previewAccessories = useMemo(() => deriveAvatarPreviewAccessories(draft), [draft]);
+  const selectedTemplateEmote = getAvatarTemplateEmoteSource(
+    draft.templateId,
+    previewEmote,
+  );
+  const selectedTemplateStillSource =
+    selectedTemplateEmote ?? selectedTemplateBase ?? PIXEL_HEAD_SOURCE;
+  const previewAccessories = useMemo(
+    () => deriveAvatarPreviewAccessories(draft),
+    [draft],
+  );
+  const accessoryFitSummary = useMemo(
+    () => summarizeAvatarAccessoryFits(draft.templateId),
+    [draft.templateId],
+  );
+  const accessoryFitBadge =
+    accessoryFitSummary.split(";")[0] ?? accessoryFitSummary;
   const previewAccessoryLayers = useMemo(
     () =>
       previewAccessories.map((layer) => ({
@@ -289,30 +341,33 @@ export default function PortraitScreen() {
       })),
     [draft.templateId, previewAccessories],
   );
-  const previewMood = useMemo(() => deriveAvatarPreviewMood(previewEmote), [previewEmote]);
-  const previewMotion = useMemo(() => deriveAvatarPreviewMotion(draft.templateId, previewEmote), [draft.templateId, previewEmote]);
-  const previewSpriteTrack = previewMotion.spriteAction ? CARE_TWIN_SPRITE_MANIFEST[previewMotion.spriteAction] : null;
-  const previewSpriteAsset = previewMotion.spriteAction
-    ? getAvatarTemplateSpriteAsset(draft.templateId, previewMotion.spriteAction)
+  const previewMood = useMemo(
+    () => deriveAvatarPreviewMood(previewEmote),
+    [previewEmote],
+  );
+  const previewMotion = useMemo(
+    () => deriveAvatarPreviewMotion(draft.templateId, previewEmote),
+    [draft.templateId, previewEmote],
+  );
+  const templateSpritePreview = useMemo(
+    () => getAvatarTemplateSpritePreview(draft.templateId, previewEmote),
+    [draft.templateId, previewEmote],
+  );
+  const careTwinPreviewTrack = previewMotion.spriteAction
+    ? CARE_TWIN_SPRITE_MANIFEST[previewMotion.spriteAction]
     : null;
+  const careTwinPreviewAsset = previewMotion.spriteAction
+    ? getCareTwinSpriteAsset(previewMotion.spriteAction)
+    : null;
+  const previewSpriteTrack =
+    templateSpritePreview?.track ?? careTwinPreviewTrack;
+  const previewSpriteAsset =
+    templateSpritePreview?.asset ?? careTwinPreviewAsset;
+  const previewIsSprite = Boolean(previewSpriteTrack && previewSpriteAsset);
+  const previewMotionLabel =
+    templateSpritePreview?.label ?? previewMotion.label;
   const avatarSummary = describeAvatarConfig(draft);
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
-  const liveAccessoryLabels = useMemo(
-    () => templateReadiness.liveAccessoryIds.map((accessoryId) => accessoryLabel(accessoryId)),
-    [templateReadiness.liveAccessoryIds],
-  );
-  const pendingAccessoryLabels = useMemo(
-    () => templateReadiness.pendingAccessoryIds.map((accessoryId) => accessoryLabel(accessoryId)),
-    [templateReadiness.pendingAccessoryIds],
-  );
-  const liveEmoteLabels = useMemo(
-    () => templateReadiness.liveEmoteIds.map((emote) => emoteLabel(emote)),
-    [templateReadiness.liveEmoteIds],
-  );
-  const pendingEmoteLabels = useMemo(
-    () => templateReadiness.pendingEmoteIds.map((emote) => emoteLabel(emote)),
-    [templateReadiness.pendingEmoteIds],
-  );
   const avatarMotion = useMemo(
     () =>
       deriveAvatarMotion({
@@ -324,17 +379,29 @@ export default function PortraitScreen() {
       }),
     [state.entries, state.routines, state.caregivers, now, status.energy],
   );
-  const caregiver = state.caregivers[0]?.name ?? "Emma";
-  const scanTranslate = scanAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 250] });
-  const reticleOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.34, 0.84] });
-  const templateLift = templateLife.interpolate({ inputRange: [0, 1], outputRange: [0, -5] });
-  const templateScale = templateLife.interpolate({ inputRange: [0, 1], outputRange: [1, 1.018] });
+  const caregiver = state.caregivers[0]?.name ?? "you";
+  const scanTranslate = scanAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 250],
+  });
+  const reticleOpacity = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.34, 0.84],
+  });
+  const templateLift = templateLife.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -5],
+  });
+  const templateScale = templateLife.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.018],
+  });
   const heroSpeech =
     activeTab === "emotes"
       ? previewMood.copy
       : activeTab === "customize"
-      ? "Make me yours."
-      : "I'm ready!";
+        ? "Make me yours."
+        : "I'm ready!";
 
   const ensurePermission = async (camera: boolean) => {
     if (Platform.OS === "web") return true;
@@ -350,8 +417,16 @@ export default function PortraitScreen() {
     if (!ok) return;
 
     const res = camera
-      ? await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], allowsEditing: true, quality: 0.86 })
-      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, quality: 0.86 });
+      ? await ImagePicker.launchCameraAsync({
+          mediaTypes: ["images"],
+          allowsEditing: true,
+          quality: 0.86,
+        })
+      : await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ["images"],
+          allowsEditing: true,
+          quality: 0.86,
+        });
 
     if (res.canceled || !res.assets?.[0]?.uri) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
@@ -379,14 +454,56 @@ export default function PortraitScreen() {
     setDraft((current) =>
       updateConfig(current, {
         accessorySlots: { [item.slot]: item.id },
-        collarId: item.slot === "neck" && item.id.includes("collar") ? (item.id as PetAvatarConfig["collarId"]) : current.collarId,
+        collarId:
+          item.slot === "neck" && item.id.includes("collar")
+            ? (item.id as PetAvatarConfig["collarId"])
+            : current.collarId,
       }),
     );
   };
 
+  const selectStudioTab = (tab: StudioTab) => {
+    Haptics.selectionAsync().catch(() => {});
+    setActiveTab(tab);
+  };
+
+  const setCoatColor = (swatch: string, primary: boolean) => {
+    Haptics.selectionAsync().catch(() => {});
+    setDraft((current) =>
+      updateConfig(
+        current,
+        primary ? { coatSecondary: swatch } : { coatPrimary: swatch },
+      ),
+    );
+  };
+
+  const setFaceMarking = (marking: AvatarFaceMarkingId) => {
+    Haptics.selectionAsync().catch(() => {});
+    setDraft((current) => updateConfig(current, { faceMarkingId: marking }));
+  };
+
+  const previewMoodState = (emote: AvatarEmoteState) => {
+    Haptics.selectionAsync().catch(() => {});
+    setPreviewEmote(emote);
+  };
+
+  const openAvatarSpriteProductionQa = () => {
+    Haptics.selectionAsync().catch(() => {});
+    router.push({
+      pathname: "/care-twin-qa",
+      params: { qaSurface: "avatar-sprite-production-review" },
+    });
+  };
+
   const saveDraft = async () => {
-    await saveAvatarConfig({ ...draft, petName, updatedAt: new Date().toISOString() });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    await saveAvatarConfig({
+      ...draft,
+      petName,
+      updatedAt: new Date().toISOString(),
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+      () => {},
+    );
     setSavedToast(`${petName}'s care twin saved`);
     setTimeout(() => setSavedToast(null), 1600);
     setPhase("idle");
@@ -402,16 +519,20 @@ export default function PortraitScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: topScrollPadding, paddingBottom: bottomScrollPadding, paddingHorizontal: 20 }}
+        contentContainerStyle={{
+          paddingTop: topPadding,
+          paddingBottom: bottomPadding,
+          paddingHorizontal: 20,
+        }}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
         <BoardRouteHeader
-          kicker="Avatar Studio"
-          title="Create the care twin"
-          subtitle="Upload photos to help us suggest your dog's pixel care twin, then approve and customize it."
+          kicker="Pixel Twin"
+          title="Avatar Studio"
+          subtitle="Choose a pixel twin, then customize."
           back
-          onBack={() => router.back()}
+          onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
           actionIcon="checkmark"
           actionLabel="Save avatar"
           onAction={saveDraft}
@@ -419,30 +540,103 @@ export default function PortraitScreen() {
         />
 
         {phase === "working" ? (
-          <BoardCard padded={false} style={[s.canvasCard, { borderColor: colors.border }]}>
-            {sourceUri ? (
-              <Image source={{ uri: sourceUri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
-            ) : (
-              <Image source={PIXEL_ROOM_SOURCE} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
-            )}
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(8,26,42,0.44)" }]} />
-            <Animated.View style={[s.scanBand, { transform: [{ translateY: scanTranslate }] }]}>
+          <BoardCard
+            padded={false}
+            style={[s.canvasCard, { borderColor: colors.border }]}
+          >
+            <Image
+              source={PIXEL_ROOM_SOURCE}
+              style={[StyleSheet.absoluteFill, pixelImageStyle]}
+              contentFit="cover"
+              transition={220}
+            />
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                { backgroundColor: "rgba(8,26,42,0.44)" },
+              ]}
+            />
+            <Animated.View
+              style={[
+                s.scanBand,
+                { transform: [{ translateY: scanTranslate }] },
+              ]}
+            >
               <LinearGradient
                 colors={["transparent", colors.sage + "55", "#FFF9EF"]}
                 style={StyleSheet.absoluteFill}
               />
               <View style={[s.scanLine, { backgroundColor: "#FFF9EF" }]} />
             </Animated.View>
-            <Animated.View pointerEvents="none" style={[s.reticle, { opacity: reticleOpacity }]}>
+            <Animated.View
+              pointerEvents="none"
+              style={[s.reticle, { opacity: reticleOpacity }]}
+            >
               <View style={[s.corner, s.cornerTL]} />
               <View style={[s.corner, s.cornerTR]} />
               <View style={[s.corner, s.cornerBL]} />
               <View style={[s.corner, s.cornerBR]} />
             </Animated.View>
             <View style={s.workingCopy}>
-              <BoardPill label="Scan assist mock" icon="scan-outline" tone={colors.amber} active />
-              <Text style={[s.workingText, { color: "#FFF9EF", fontFamily: DISPLAY }]}>{SCAN_LINES[scanLine]}</Text>
-              <Text style={[s.workingHint, { color: "rgba(255,249,239,0.82)", fontFamily: "Inter_600SemiBold" }]}>
+              <BoardPill
+                label="PixelLab template match"
+                icon="scan-outline"
+                tone={colors.amber}
+                active
+              />
+              {sourceUri ? (
+                <View
+                  style={[
+                    s.sourceProofCard,
+                    {
+                      backgroundColor: "rgba(255,249,239,0.94)",
+                      borderColor: colors.copper,
+                    },
+                  ]}
+                >
+                  <Image
+                    source={{ uri: sourceUri }}
+                    style={s.sourceProofImage}
+                    contentFit="cover"
+                    transition={160}
+                  />
+                  <View style={s.sourceProofCopy}>
+                    <Text
+                      style={[
+                        s.sourceProofKicker,
+                        { color: colors.copper, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
+                      PHOTO REFERENCE
+                    </Text>
+                    <Text
+                      style={[
+                        s.sourceProofText,
+                        { color: colors.navy, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
+                      Building a pixel twin, not using the photo as the avatar.
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+              <Text
+                style={[
+                  s.workingText,
+                  { color: "#FFF9EF", fontFamily: DISPLAY },
+                ]}
+              >
+                {SCAN_LINES[scanLine]}
+              </Text>
+              <Text
+                style={[
+                  s.workingHint,
+                  {
+                    color: "rgba(255,249,239,0.82)",
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
                 This suggests traits only. You approve the final avatar.
               </Text>
             </View>
@@ -452,93 +646,238 @@ export default function PortraitScreen() {
             <View style={s.liveRoomStage}>
               {selectedTemplateBase ? (
                 <View style={s.templatePreviewStage}>
-                  <Image source={PIXEL_ROOM_SOURCE} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
-                  <View style={[s.templateMoodAura, { backgroundColor: previewMood.auraColor }]} pointerEvents="none" />
-                  {previewAccessoryLayers
-                    .filter((layer) => layer.kind === "bed" && layer.source)
-                    .map((layer) => (
-                      <Image
-                        key={layer.id}
-                        source={layer.source}
-                        style={s.templateAccessoryLayer}
-                        contentFit="contain"
-                        transition={150}
-                        pointerEvents="none"
-                      />
-                    ))}
+                  <Image
+                    source={PIXEL_ROOM_SOURCE}
+                    style={[StyleSheet.absoluteFill, pixelImageStyle]}
+                    contentFit="cover"
+                    transition={220}
+                  />
+                  <View
+                    style={[
+                      s.templateMoodAura,
+                      { backgroundColor: previewMood.auraColor },
+                    ]}
+                    pointerEvents="none"
+                  />
+                  {!previewIsSprite &&
+                  previewAccessoryLayers.some(
+                    (layer) => layer.kind === "bed" && layer.source,
+                  ) ? (
+                    previewAccessoryLayers
+                      .filter((layer) => layer.kind === "bed" && layer.source)
+                      .map((layer) => (
+                        <Image
+                          key={layer.id}
+                          source={layer.source}
+                          style={[s.templateAccessoryLayer, pixelImageStyle]}
+                          contentFit="contain"
+                          transition={150}
+                          pointerEvents="none"
+                        />
+                      ))
+                  ) : !previewIsSprite &&
+                    previewAccessories.some((layer) => layer.kind === "bed") ? (
+                    <View
+                      style={[
+                        s.templateAccessoryBed,
+                        {
+                          backgroundColor:
+                            previewAccessories.find(
+                              (layer) => layer.kind === "bed",
+                            )?.tone ?? colors.stone,
+                        },
+                      ]}
+                      pointerEvents="none"
+                    />
+                  ) : null}
                   <LinearGradient
                     colors={["rgba(255,249,239,0.08)", "rgba(8,26,42,0.16)"]}
                     style={StyleSheet.absoluteFill}
                     pointerEvents="none"
                   />
+                  <View style={s.templatePixelFloor} pointerEvents="none" />
+                  <View style={s.templatePixelLines} pointerEvents="none" />
                   <Animated.View
                     style={[
                       s.templateHeroDogWrap,
                       {
-                        transform: [{ translateY: templateLift }, { scale: templateScale }],
+                        transform: [
+                          { translateY: templateLift },
+                          { scale: templateScale },
+                        ],
                       },
                     ]}
                   >
-                    <Image
-                      source={selectedTemplateBase}
-                      style={[s.templateHeroDog, previewMotion.mode === "sprite" ? s.templateHeroDogGhost : null]}
-                      contentFit="contain"
-                      transition={180}
-                    />
-                    {previewMotion.mode === "sprite" && previewSpriteTrack ? (
-                      <SpriteSheetPlayer
-                        asset={previewSpriteAsset}
-                        track={previewSpriteTrack}
-                        width={HERO_TEMPLATE_SPRITE_SIZE}
-                        height={HERO_TEMPLATE_SPRITE_SIZE}
-                        style={s.templateHeroSprite}
-                        testID="avatar-studio-live-sprite-preview"
-                      />
-                    ) : selectedTemplateEmote ? (
-                      <Image
-                        source={selectedTemplateEmote}
-                        style={s.templateHeroDog}
-                        contentFit="contain"
-                        transition={180}
-                      />
-                    ) : null}
-                    {previewAccessoryLayers
-                      .filter((layer) => layer.kind !== "bed" && layer.source)
-                      .map((layer) => (
-                        <Image
-                          key={layer.id}
-                          source={layer.source}
-                          style={s.templateAccessoryLayer}
-                          contentFit="contain"
-                          transition={150}
+                    {previewIsSprite && previewSpriteTrack ? (
+                      <View
+                        testID="avatar-studio-pixel-sprite-viewport"
+                        style={[
+                          s.templateSpriteViewport,
+                          {
+                            backgroundColor: "rgba(247,242,232,0.12)",
+                            borderColor: colors.navy,
+                          },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            s.templateSpriteGround,
+                            {
+                              backgroundColor: colors.sage,
+                              borderColor: colors.navy,
+                            },
+                          ]}
                           pointerEvents="none"
                         />
-                      ))}
+                        <SpriteSheetPlayer
+                          asset={previewSpriteAsset}
+                          track={previewSpriteTrack}
+                          width={HERO_TEMPLATE_SPRITE_SIZE}
+                          height={HERO_TEMPLATE_SPRITE_SIZE}
+                          style={s.templateHeroSprite}
+                          testID="avatar-studio-live-sprite-preview"
+                        />
+                      </View>
+                    ) : (
+                      <>
+                        <Image
+                          source={selectedTemplateStillSource}
+                          style={[s.templateHeroDog, pixelImageStyle]}
+                          contentFit="contain"
+                          transition={180}
+                        />
+                        {previewAccessoryLayers.map((layer) => {
+                          if (layer.kind !== "bed" && layer.source) {
+                            return (
+                              <Image
+                                key={layer.id}
+                                source={layer.source}
+                                style={[
+                                  s.templateAccessoryLayer,
+                                  pixelImageStyle,
+                                ]}
+                                contentFit="contain"
+                                transition={150}
+                                pointerEvents="none"
+                              />
+                            );
+                          }
+                          switch (layer.kind) {
+                            case "bandana":
+                              return (
+                                <View
+                                  key={layer.id}
+                                  style={[
+                                    s.templateBandana,
+                                    { backgroundColor: layer.tone },
+                                  ]}
+                                  pointerEvents="none"
+                                />
+                              );
+                            case "collar":
+                              return (
+                                <View
+                                  key={layer.id}
+                                  style={[
+                                    s.templateCollar,
+                                    { borderColor: layer.tone },
+                                  ]}
+                                  pointerEvents="none"
+                                />
+                              );
+                            case "hat":
+                              return (
+                                <View
+                                  key={layer.id}
+                                  style={[
+                                    s.templateHatWrap,
+                                    { borderBottomColor: layer.tone },
+                                  ]}
+                                  pointerEvents="none"
+                                >
+                                  <View
+                                    style={[
+                                      s.templateHatPom,
+                                      { backgroundColor: layer.tone },
+                                    ]}
+                                  />
+                                </View>
+                              );
+                            case "mask":
+                              return (
+                                <View
+                                  key={layer.id}
+                                  style={[
+                                    s.templateMask,
+                                    { backgroundColor: layer.tone },
+                                  ]}
+                                  pointerEvents="none"
+                                />
+                              );
+                            case "vest":
+                              return (
+                                <View
+                                  key={layer.id}
+                                  style={[
+                                    s.templateVest,
+                                    { backgroundColor: layer.tone },
+                                  ]}
+                                  pointerEvents="none"
+                                />
+                              );
+                            case "sparkles":
+                              return (
+                                <View
+                                  key={layer.id}
+                                  style={s.templateSparkleCluster}
+                                  pointerEvents="none"
+                                >
+                                  <View
+                                    style={[
+                                      s.templateSparkle,
+                                      s.templateSparkleOne,
+                                      { backgroundColor: layer.tone },
+                                    ]}
+                                  />
+                                  <View
+                                    style={[
+                                      s.templateSparkle,
+                                      s.templateSparkleTwo,
+                                      { backgroundColor: layer.tone },
+                                    ]}
+                                  />
+                                  <View
+                                    style={[
+                                      s.templateSparkle,
+                                      s.templateSparkleThree,
+                                      { backgroundColor: layer.tone },
+                                    ]}
+                                  />
+                                </View>
+                              );
+                            default:
+                              return null;
+                          }
+                        })}
+                      </>
+                    )}
                   </Animated.View>
-                  <View style={[s.templateSpeech, { backgroundColor: colors.ivory, borderColor: colors.navy }]}>
-                    <Text style={[s.templateSpeechText, { color: colors.navy, fontFamily: DISPLAY }]}>
+                  <View
+                    style={[
+                      s.templateSpeech,
+                      {
+                        backgroundColor: colors.ivory,
+                        borderColor: colors.brandNavy,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.templateSpeechText,
+                        { color: colors.brandNavy, fontFamily: DISPLAY },
+                      ]}
+                    >
                       {heroSpeech}
-                    </Text>
-                  </View>
-                  <View style={[s.templateHeroHud, { backgroundColor: "rgba(255,249,239,0.92)", borderColor: colors.border }]}>
-                    <Text style={[s.templateHeroKicker, { color: previewMood.chipColor, fontFamily: "Inter_700Bold" }]}>
-                      {previewMotion.label}
-                    </Text>
-                    <Text style={[s.templateHeroTitle, { color: colors.navy, fontFamily: DISPLAY }]}>{selectedTemplate.label}</Text>
-                    <Text style={[s.templateHeroMood, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                      {templateReadiness.stageLabel} | {emoteLabel(previewEmote)}
-                    </Text>
-                    <Text style={[s.templateHeroMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                      {templateReadiness.stageDetail}
-                    </Text>
-                    <Text style={[s.templateHeroMeta, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                      {templatePack.focusLabel}
-                    </Text>
-                    <Text style={[s.templateHeroMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                      {templateReadiness.accessoryStatus} | {templateReadiness.emoteStatus}
-                    </Text>
-                    <Text style={[s.templateHeroMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {templatePack.focusDetail}
                     </Text>
                   </View>
                 </View>
@@ -546,27 +885,23 @@ export default function PortraitScreen() {
                 <LivingPhoenixRoom
                   mood={avatarMotion.avatarMood}
                   motion={avatarMotion}
-                  speech={activeTab === "emotes" ? "Try my moods." : activeTab === "customize" ? "Make me Phoenix." : "I'm ready."}
+                  speech={
+                    activeTab === "emotes"
+                      ? "Try my moods."
+                      : activeTab === "customize"
+                        ? "Make me Phoenix."
+                        : "I'm ready."
+                  }
                   energy={status.energy}
                   presenceLabel={`${petName} with ${caregiver}`}
-                  nextLabel={activeTab === "scan" ? "Scan or choose a template" : selectedTemplate.label}
+                  nextLabel={
+                    activeTab === "scan"
+                      ? "Scan or choose a template"
+                      : selectedTemplate.label
+                  }
+                  avatarConfig={draft}
                 />
               )}
-            </View>
-            <View style={s.pixelFrameOverlay} pointerEvents="none">
-              <View style={[s.pixelIdCard, { backgroundColor: "rgba(255,249,239,0.94)", borderColor: colors.navy }]}>
-                <Image source={selectedTemplateCardSource} style={s.pixelHead} contentFit="contain" transition={160} />
-                <View style={s.pixelIdCopy}>
-                  <Text style={[s.pixelIdKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>CARE TWIN</Text>
-                  <Text style={[s.pixelIdName, { color: colors.navy, fontFamily: DISPLAY }]}>{selectedTemplate.label}</Text>
-                  <View style={s.pixelLevelRow}>
-                    <View style={[s.pixelLevelPip, { backgroundColor: colors.sage }]} />
-                    <View style={[s.pixelLevelPip, { backgroundColor: colors.sage }]} />
-                    <View style={[s.pixelLevelPip, { backgroundColor: colors.sage }]} />
-                    <View style={[s.pixelLevelPip, { backgroundColor: colors.stone }]} />
-                  </View>
-                </View>
-              </View>
             </View>
             <LinearGradient
               colors={["transparent", "rgba(8,26,42,0.84)"]}
@@ -576,12 +911,18 @@ export default function PortraitScreen() {
             <View style={s.heroCopy}>
               <BoardPill
                 label={draft.scanAssisted ? "Scan-assisted" : "Template-built"}
-                icon={draft.scanAssisted ? "scan-outline" : "color-palette-outline"}
+                icon={
+                  draft.scanAssisted ? "scan-outline" : "color-palette-outline"
+                }
                 tone={draft.scanAssisted ? colors.sage : colors.amber}
                 active
               />
-              <Text style={[s.savedName, { fontFamily: DISPLAY }]}>{petName}'s Pixel Twin</Text>
-              <Text style={[s.savedSub, { fontFamily: "Inter_600SemiBold" }]}>{avatarSummary}</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit style={[s.savedName, { fontFamily: DISPLAY }]}>
+                {petName}'s Pixel Twin
+              </Text>
+              <Text numberOfLines={1} style={[s.savedSub, { fontFamily: "Inter_600SemiBold" }]}>
+                {previewIsSprite ? "Live PixelLab sprite rig." : "Still preview until a live animation pack exists."}
+              </Text>
             </View>
           </BoardCard>
         )}
@@ -600,7 +941,8 @@ export default function PortraitScreen() {
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={`Avatar Studio ${label}`}
-                onPress={() => setActiveTab(key as StudioTab)}
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                onPress={() => selectStudioTab(key as StudioTab)}
                 style={[
                   s.tab,
                   {
@@ -609,7 +951,15 @@ export default function PortraitScreen() {
                   },
                 ]}
               >
-                <Text style={[s.tabText, { color: active ? "#FFF9EF" : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                <Text
+                  style={[
+                    s.tabText,
+                    {
+                      color: active ? "#FFF9EF" : colors.foreground,
+                      fontFamily: "Inter_700Bold",
+                    },
+                  ]}
+                >
                   {label}
                 </Text>
               </Pressable>
@@ -619,15 +969,48 @@ export default function PortraitScreen() {
 
         {phase === "result" ? (
           <BoardCard style={s.avatarBoard}>
-            <BoardSectionHeader title="Generated mood set" action="Owner review" />
-            <Text style={[s.copy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              {scanSuggestion.copy}
+            <BoardSectionHeader
+              title="Generated mood set"
+              accessory={<BoardPill label="Owner review" tone={colors.amber} />}
+            />
+            <Text
+              style={[
+                s.copy,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
+              Set your photo side by side and pick the base that best matches
+              your dog. These are starting cues to compare against, not an
+              automatic detection.
             </Text>
             <View style={s.traitGrid}>
               {scanSuggestion.detectedTraits.map((trait) => (
-                <View key={trait} style={[s.traitChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                  <Ionicons name="checkmark-circle" size={14} color={colors.sage} />
-                  <Text style={[s.traitText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{trait}</Text>
+                <View
+                  key={trait}
+                  style={[
+                    s.traitChip,
+                    {
+                      backgroundColor: colors.secondary,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={14}
+                    color={colors.sage}
+                  />
+                  <Text
+                    style={[
+                      s.traitText,
+                      { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
+                    {trait}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -636,132 +1019,557 @@ export default function PortraitScreen() {
 
         {activeTab === "scan" ? (
           <BoardCard style={s.avatarBoard}>
-            <BoardSectionHeader title="Bring your dog in" action={hasConfiguredAvatar ? "Configured" : "Start"} />
-            <Text style={[s.copy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              Add 1-3 clear photos. WoofWatcher will suggest a base template and traits, then you can edit every choice before saving.
+            <BoardSectionHeader
+              title="Bring your dog in"
+              accessory={
+                <BoardPill
+                  label={hasConfiguredAvatar ? "Configured" : "Start"}
+                  tone={colors.sage}
+                />
+              }
+            />
+            <Text
+              style={[
+                s.copy,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
+              Add 1-3 clear photos. WoofWatcher will suggest a base template and
+              traits, then you can edit every choice before saving.
             </Text>
+            <View style={s.scanTruthRail}>
+              <BoardPill
+                label="PixelLab-backed template catalog"
+                icon="sparkles-outline"
+                tone={colors.sage}
+                active
+              />
+              <BoardPill
+                label="Not a photo filter"
+                icon="shield-checkmark-outline"
+                tone={colors.copper}
+                active
+              />
+            </View>
+            <View
+              accessibilityLabel={SCAN_WORKFLOW_ACCESSIBILITY_SUMMARY}
+              style={s.scanPipelineGrid}
+            >
+              {AVATAR_SCAN_WORKFLOW_STEPS.map((step, index) => (
+                <View
+                  key={step.id}
+                  style={[
+                    s.scanPipelineCard,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      s.scanPipelineNumber,
+                      { backgroundColor: colors.brandNavy },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.scanPipelineNumberText,
+                        { fontFamily: "Inter_800ExtraBold" },
+                      ]}
+                    >
+                      {index + 1}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      s.scanPipelineLabel,
+                      {
+                        color: colors.foreground,
+                        fontFamily: "Inter_800ExtraBold",
+                      },
+                    ]}
+                  >
+                    {step.label}
+                  </Text>
+                  <Text
+                    style={[
+                      s.scanPipelineDetail,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    {step.detail}
+                  </Text>
+                </View>
+              ))}
+            </View>
             <View style={s.actionRow}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Choose dog photo from gallery"
                 onPress={() => pick(false)}
-                style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, opacity: pressed ? 0.65 : 1 }]}
+                style={({ pressed }) => [
+                  s.secondaryBtn,
+                  { borderColor: colors.border, opacity: pressed ? 0.65 : 1 },
+                ]}
               >
-                <Ionicons name="images-outline" size={18} color={colors.foreground} />
-                <Text style={[s.secondaryBtnText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Gallery</Text>
+                <Ionicons
+                  name="images-outline"
+                  size={18}
+                  color={colors.foreground}
+                />
+                <Text
+                  style={[
+                    s.secondaryBtnText,
+                    { color: colors.foreground, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
+                  Gallery
+                </Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Take dog photo"
                 onPress={() => pick(true)}
-                style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 }]}
+                style={({ pressed }) => [
+                  s.primaryBtn,
+                  {
+                    backgroundColor: colors.primary,
+                    opacity: pressed ? 0.82 : 1,
+                  },
+                ]}
               >
                 <Ionicons name="camera" size={18} color="#FFF9EF" />
-                <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>Take photo</Text>
+                <Text
+                  style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}
+                >
+                  Take photo
+                </Text>
               </Pressable>
             </View>
           </BoardCard>
         ) : null}
 
         {activeTab === "template" ? (
-          <BoardCard style={s.avatarBoard}>
-            <BoardSectionHeader title="Choose base template" action={selectedTemplate.label} />
-            <Text style={[s.sectionHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              {templatePack.focusDetail}
-            </Text>
-            <View style={s.packSummaryRow}>
-              <View style={[s.packSummaryCard, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                <Text style={[s.packSummaryLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
-                  {templateReadiness.packSummaryLabel}
-                </Text>
-                <Text style={[s.packSummaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  {templateReadiness.previewLabel}
-                </Text>
-                <Text style={[s.packSummaryText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  {templateReadiness.accessoryStatus} and {templateReadiness.emoteStatus}.
-                </Text>
+          <>
+            <BoardCard style={s.avatarBoard}>
+              <BoardSectionHeader
+                title="Choose base template"
+                accessory={
+                  <BoardPill
+                    label={`${liveTemplateCount}/${AVATAR_TEMPLATES.length} live`}
+                    tone={colors.primary}
+                  />
+                }
+              />
+              <View style={s.templateGrid}>
+                {AVATAR_TEMPLATES.map((template) => {
+                  const active = draft.templateId === template.id;
+                  const tone = templateColor(template.id);
+                  const liveSprite = hasAvatarTemplateSpritePack(template.id);
+                  return (
+                    <Pressable
+                      key={template.id}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      accessibilityLabel={`Choose ${template.label} avatar template`}
+                      onPress={() => selectTemplate(template.id)}
+                      style={[
+                        s.templateTile,
+                        {
+                          backgroundColor: active
+                            ? tone + "20"
+                            : colors.background,
+                          borderColor: active ? tone : colors.border,
+                        },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          s.templateArtWrap,
+                          {
+                            backgroundColor: active
+                              ? colors.ivory
+                              : tone + "12",
+                            borderColor: active ? tone : colors.border,
+                          },
+                        ]}
+                      >
+                        <Image
+                          source={getAvatarTemplateDisplaySource(template.id)}
+                          style={[s.templateArt, pixelImageStyle]}
+                          contentFit="contain"
+                          transition={140}
+                        />
+                        <View
+                          style={[
+                            s.templateLiveBadge,
+                            {
+                              backgroundColor: liveSprite
+                                ? colors.brandNavy
+                                : colors.ivory,
+                              borderColor: liveSprite
+                                ? colors.brandNavy
+                                : colors.border,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              s.templateLiveBadgeText,
+                              {
+                                color: liveSprite
+                                  ? "#FFF9EF"
+                                  : colors.mutedForeground,
+                                fontFamily: "Inter_700Bold",
+                              },
+                            ]}
+                          >
+                            {liveSprite ? "Live" : "Still"}
+                          </Text>
+                        </View>
+                        {active ? (
+                          <View
+                            style={[s.templateCheck, { backgroundColor: tone }]}
+                          >
+                            <Ionicons
+                              name="checkmark"
+                              size={13}
+                              color="#FFF9EF"
+                            />
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text
+                        style={[
+                          s.templateTitle,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {template.label}
+                      </Text>
+                      <Text
+                        style={[
+                          s.templateSub,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_500Medium",
+                          },
+                        ]}
+                      >
+                        {template.subtitle}
+                      </Text>
+                      <Text
+                        style={[
+                          s.templateSpriteNote,
+                          {
+                            color: liveSprite ? tone : colors.mutedForeground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {liveSprite
+                          ? "Breathes and walks in preview"
+                          : "Sprite rig in production"}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
-              <View style={[s.packSummaryCard, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                <Text style={[s.packSummaryLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
-                  {templateReadiness.nextPackLabel}
+            </BoardCard>
+
+            {ownerOps ? (
+            <BoardCard style={s.avatarBoard}>
+              <BoardSectionHeader
+                title="Sprite production review"
+                accessory={
+                  <BoardPill
+                    label={productionTemplateReview.proofStatusLabel}
+                    tone={colors.sage}
+                  />
+                }
+              />
+              <View
+                accessibilityLabel={`Avatar sprite production review for ${selectedTemplate.label}`}
+                style={[
+                  s.productionReviewPanel,
+                  {
+                    backgroundColor: colors.secondary,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    s.productionHeadline,
+                    { color: colors.foreground, fontFamily: DISPLAY },
+                  ]}
+                >
+                  {productionTemplateReview.headline}
                 </Text>
-                <Text style={[s.packSummaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  {templateReadiness.hasAnimatedPreview
-                    ? "Remaining breeds still need parity."
-                    : templateReadiness.packStage === "art-partial"
-                    ? "Finish pending overlays, moods, and animation strips."
-                    : "Add first overlays, moods, and animation strips."}
+                <Text
+                  style={[
+                    s.productionCopy,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  {productionTemplateReview.template.nativeReviewPrompt}
                 </Text>
-              </View>
-            </View>
-            <View style={s.templateGrid}>
-              {AVATAR_TEMPLATES.map((template) => {
-                const active = draft.templateId === template.id;
-                const tone = templateColor(template.id);
-                const templatePack = getAvatarTemplatePack(template.id);
-                const templateReadiness = getAvatarTemplateReadiness(template.id);
-                return (
-                  <Pressable
-                    key={template.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    accessibilityLabel={`Choose ${template.label} avatar template`}
-                    onPress={() => selectTemplate(template.id)}
+                <View style={s.productionMetricGrid}>
+                  <View
                     style={[
-                      s.templateTile,
+                      s.productionMetricCard,
                       {
-                        backgroundColor: active ? tone + "20" : colors.background,
-                        borderColor: active ? tone : colors.border,
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.productionMetricValue,
+                        { color: colors.foreground, fontFamily: DISPLAY },
+                      ]}
+                    >
+                      {avatarSpriteProductionSummary.liveTemplatePacks}/
+                      {avatarSpriteProductionSummary.totalTemplates}
+                    </Text>
+                    <Text
+                      style={[
+                        s.productionMetricKicker,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      LIVE TEMPLATES
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      s.productionMetricCard,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.productionMetricValue,
+                        { color: colors.foreground, fontFamily: DISPLAY },
+                      ]}
+                    >
+                      {avatarSpriteProductionSummary.totalSpriteSlots}
+                    </Text>
+                    <Text
+                      style={[
+                        s.productionMetricKicker,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      SPRITE SLOTS
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      s.productionMetricCard,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.productionMetricValue,
+                        { color: colors.foreground, fontFamily: DISPLAY },
+                      ]}
+                    >
+                      {productionTemplateReview.template.bodyClass}
+                    </Text>
+                    <Text
+                      style={[
+                        s.productionMetricKicker,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_800ExtraBold",
+                        },
+                      ]}
+                    >
+                      BODY CLASS
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={s.productionActionList}>
+                {productionTemplateReview.template.actions.map((action) => (
+                  <View
+                    key={action.action}
+                    style={[
+                      s.productionActionRow,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
                       },
                     ]}
                   >
                     <View
                       style={[
-                        s.templateArtWrap,
+                        s.productionActionIcon,
+                        { backgroundColor: colors.ivory },
+                      ]}
+                    >
+                      <Ionicons
+                        name={
+                          action.action === "walk-loop"
+                            ? "walk-outline"
+                            : "pulse-outline"
+                        }
+                        size={18}
+                        color={colors.primary}
+                      />
+                    </View>
+                    <View style={s.productionActionCopy}>
+                      <Text
+                        style={[
+                          s.productionActionTitle,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
+                        {action.label}
+                      </Text>
+                      <Text
+                        style={[
+                          s.productionActionMeta,
+                          {
+                            color: colors.copper,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
+                        {action.frameCount} frames | {action.fps} fps |{" "}
+                        {action.anchor}
+                      </Text>
+                      <Text
+                        style={[
+                          s.productionActionNotes,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_600SemiBold",
+                          },
+                        ]}
+                      >
+                        {action.notes}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <View style={s.productionCheckList}>
+                <Text
+                  style={[
+                    s.productionCheckTitle,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Inter_800ExtraBold",
+                    },
+                  ]}
+                >
+                  Game-feel checks
+                </Text>
+                {productionTemplateReview.gameFeelChecks.map((check) => (
+                  <View key={check} style={s.productionCheckRow}>
+                    <Ionicons
+                      name="scan-circle-outline"
+                      size={17}
+                      color={colors.sage}
+                    />
+                    <Text
+                      style={[
+                        s.productionCheckText,
                         {
-                          backgroundColor: active ? colors.ivory : tone + "12",
-                          borderColor: active ? tone : colors.border,
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
                         },
                       ]}
                     >
-                      <Image
-                        source={getAvatarTemplateDisplaySource(template.id)}
-                        style={s.templateArt}
-                        contentFit="contain"
-                        transition={140}
-                      />
-                      {active ? (
-                        <View style={[s.templateCheck, { backgroundColor: tone }]}>
-                          <Ionicons name="checkmark" size={13} color="#FFF9EF" />
-                        </View>
-                      ) : null}
-                    </View>
-                    <Text style={[s.templateTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      {template.label}
+                      {check}
                     </Text>
-                    <Text style={[s.templateBadge, { color: tone, fontFamily: "Inter_700Bold" }]}>
-                      {templateReadiness.stageLabel}
-                    </Text>
-                    <Text style={[s.templatePackFocus, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      {templatePack.focusLabel}
-                    </Text>
-                    <Text style={[s.templateSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {template.subtitle}
-                    </Text>
-                    <Text style={[s.templateFocusDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {templatePack.focusDetail}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </BoardCard>
+                  </View>
+                ))}
+              </View>
+
+              <Text
+                style={[
+                  s.productionBoundary,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
+                {productionTemplateReview.nativeProofStatus}
+              </Text>
+              {ownerOps ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open Avatar sprite production QA cockpit"
+                  accessibilityHint="Opens the focused native QA checklist for sprite gait and phone crop review."
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={openAvatarSpriteProductionQa}
+                  style={({ pressed }) => [
+                    s.productionQaButton,
+                    {
+                      backgroundColor: colors.brandNavy,
+                      opacity: pressed ? 0.78 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.productionQaButtonText,
+                      { fontFamily: "Inter_800ExtraBold" },
+                    ]}
+                  >
+                    Open sprite QA cockpit
+                  </Text>
+                  <Ionicons name="arrow-forward" size={17} color="#FFF9EF" />
+                </Pressable>
+              ) : null}
+            </BoardCard>
+            ) : null}
+          </>
         ) : null}
 
         {activeTab === "customize" ? (
           <View>
             <BoardCard style={s.avatarBoard}>
-              <BoardSectionHeader title="Coat colors" action="Editable" />
+              <BoardSectionHeader
+                title="Coat colors"
+                accessory={<BoardPill label="Editable" tone={colors.sage} />}
+              />
               <View style={s.swatchGrid}>
                 {COAT_SWATCHES.map((swatch) => {
                   const primary = draft.coatPrimary === swatch;
@@ -770,17 +1578,24 @@ export default function PortraitScreen() {
                     <Pressable
                       key={swatch}
                       accessibilityRole="button"
+                      accessibilityState={{ selected: primary || secondary }}
                       accessibilityLabel={`Set coat color ${swatch}`}
-                      onPress={() =>
-                        setDraft((current) =>
-                          updateConfig(current, primary ? { coatSecondary: swatch } : { coatPrimary: swatch }),
-                        )
+                      accessibilityHint={
+                        primary
+                          ? "Double tap to set this as the secondary coat color."
+                          : "Double tap to set this as the primary coat color."
                       }
+                      hitSlop={MOBILE_INLINE_HIT_SLOP}
+                      onPress={() => setCoatColor(swatch, primary)}
                       style={[
                         s.swatch,
                         {
                           backgroundColor: swatch,
-                          borderColor: primary ? colors.navy : secondary ? colors.copper : colors.border,
+                          borderColor: primary
+                            ? colors.navy
+                            : secondary
+                              ? colors.copper
+                              : colors.border,
                           borderWidth: primary || secondary ? 3 : 1,
                         },
                       ]}
@@ -788,10 +1603,27 @@ export default function PortraitScreen() {
                   );
                 })}
               </View>
+              <Text
+                style={[
+                  s.swatchLegend,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
+                Tap a swatch to set the primary coat, then tap it again to set
+                the secondary.
+              </Text>
             </BoardCard>
 
             <BoardCard style={s.avatarBoard}>
-              <BoardSectionHeader title="Face and ears" action={draft.faceMarkingId} />
+              <BoardSectionHeader
+                title="Face markings"
+                accessory={
+                  <BoardPill label={faceMarkingLabel} tone={colors.amber} />
+                }
+              />
               <View style={s.optionGrid}>
                 {FACE_MARKINGS.map((marking) => {
                   const active = draft.faceMarkingId === marking.id;
@@ -800,17 +1632,31 @@ export default function PortraitScreen() {
                       key={marking.id}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
-                      accessibilityLabel={`Set face marking ${marking.label}`}
-                      onPress={() => setDraft((current) => updateConfig(current, { faceMarkingId: marking.id }))}
+                      accessibilityLabel={`Set ${marking.label} face marking`}
+                      accessibilityHint="Double tap to apply this marking to the pixel twin."
+                      hitSlop={MOBILE_INLINE_HIT_SLOP}
+                      onPress={() => setFaceMarking(marking.id)}
                       style={[
                         s.optionPill,
                         {
-                          backgroundColor: active ? colors.brandNavy : colors.background,
-                          borderColor: active ? colors.brandNavy : colors.border,
+                          backgroundColor: active
+                            ? colors.brandNavy
+                            : colors.background,
+                          borderColor: active
+                            ? colors.brandNavy
+                            : colors.border,
                         },
                       ]}
                     >
-                      <Text style={[s.optionText, { color: active ? "#FFF9EF" : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      <Text
+                        style={[
+                          s.optionText,
+                          {
+                            color: active ? "#FFF9EF" : colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
                         {marking.label}
                       </Text>
                     </Pressable>
@@ -820,52 +1666,48 @@ export default function PortraitScreen() {
             </BoardCard>
 
             <BoardCard style={s.avatarBoard}>
-              <BoardSectionHeader title="Accessories" action="Slots" />
-              <Text style={[s.sectionHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                {templateReadiness.liveAccessoryCount > 0
-                  ? `${templateReadiness.accessoryStatus}. Missing slots stay configurable now and get real art as each breed pack ships.`
-                  : `This template saves accessory choices now. ${templatePack.focusDetail}`}
-              </Text>
-              <View style={s.packChipSection}>
-                <Text style={[s.packChipLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>Live overlays now</Text>
-                <View style={s.packChipRow}>
-                  {liveAccessoryLabels.length > 0 ? (
-                    liveAccessoryLabels.map((label) => (
-                      <View key={label} style={[s.packChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                        <Text style={[s.packChipText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{label}</Text>
-                      </View>
-                    ))
-                  ) : (
-                    <View style={[s.packChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                      <Text style={[s.packChipText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                        Base art only
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-              <View style={s.packChipSection}>
-                <Text style={[s.packChipLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>Next pack</Text>
-                <View style={s.packChipRow}>
-                  {pendingAccessoryLabels.length > 0 ? (
-                    pendingAccessoryLabels.map((label) => (
-                      <View key={label} style={[s.packChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                        <Text style={[s.packChipText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                          {label}
-                        </Text>
-                      </View>
-                    ))
-                  ) : (
-                    <View style={[s.packChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                      <Text style={[s.packChipText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Overlay set live</Text>
-                    </View>
-                  )}
-                </View>
+              <BoardSectionHeader
+                title="Accessories"
+                accessory={<BoardPill label="Fit map" tone={colors.copper} />}
+              />
+              <View
+                style={[
+                  s.accessoryFitPanel,
+                  {
+                    backgroundColor: colors.secondary,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    s.accessoryFitTitle,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Inter_800ExtraBold",
+                    },
+                  ]}
+                >
+                  Template overlay readiness
+                </Text>
+                <Text
+                  style={[
+                    s.accessoryFitSummary,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  {accessoryFitSummary}
+                </Text>
               </View>
               <View style={s.accessoryGrid}>
                 {AVATAR_ACCESSORIES.map((item) => {
-                  const active = Object.values(draft.accessorySlots).includes(item.id);
-                  const liveArtReady = isAvatarTemplateAccessoryLive(draft.templateId, item.id);
+                  const active = Object.values(draft.accessorySlots).includes(
+                    item.id,
+                  );
+                  const fit = deriveAvatarAccessoryFit(draft.templateId, item);
                   return (
                     <Pressable
                       key={item.id}
@@ -876,28 +1718,62 @@ export default function PortraitScreen() {
                       style={[
                         s.accessoryTile,
                         {
-                          backgroundColor: active ? item.tone + "20" : colors.background,
+                          backgroundColor: active
+                            ? item.tone + "20"
+                            : colors.background,
                           borderColor: active ? item.tone : colors.border,
                         },
                       ]}
                     >
-                      <View style={[s.accessoryDot, { backgroundColor: item.tone }]} />
-                      <Text style={[s.accessoryLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        {item.label}
-                      </Text>
-                      <Text style={[s.accessorySlot, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                        {item.slot}
-                      </Text>
+                      <View
+                        style={[s.accessoryDot, { backgroundColor: item.tone }]}
+                      />
                       <Text
                         style={[
-                          s.accessoryStatus,
+                          s.accessoryLabel,
                           {
-                            color: liveArtReady ? colors.sage : colors.mutedForeground,
+                            color: colors.foreground,
                             fontFamily: "Inter_700Bold",
                           },
                         ]}
                       >
-                        {liveArtReady ? "Live art ready" : "Art pending"}
+                        {item.label}
+                      </Text>
+                      <Text
+                        style={[
+                          s.accessorySlot,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_600SemiBold",
+                          },
+                        ]}
+                      >
+                        {item.slot}
+                      </Text>
+                      <Text
+                        style={[
+                          s.accessoryFitLabel,
+                          {
+                            color:
+                              fit.status === "template-fitted"
+                                ? colors.sage
+                                : colors.copper,
+                            fontFamily: "Inter_800ExtraBold",
+                          },
+                        ]}
+                      >
+                        {fit.label}
+                      </Text>
+                      <Text
+                        style={[
+                          s.accessoryFitHint,
+                          {
+                            color: colors.mutedForeground,
+                            fontFamily: "Inter_600SemiBold",
+                          },
+                        ]}
+                      >
+                        {fit.placementHint}
                       </Text>
                     </Pressable>
                   );
@@ -909,120 +1785,92 @@ export default function PortraitScreen() {
 
         {activeTab === "emotes" ? (
           <BoardCard style={s.avatarBoard}>
-            <BoardSectionHeader title="Mood set" action={templateReadiness.emoteStatus} />
-            <Text style={[s.sectionHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-              {templateReadiness.hasAnimatedPreview
-                ? "Shepherd uses the live Phoenix sprite rig where production strips already exist."
-                : `${templatePack.focusDetail} This template stays on truthful still previews until its emote pack and animation strips are produced.`}
-            </Text>
-            <View style={s.packChipSection}>
-              <Text style={[s.packChipLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
-                {templateReadiness.packSummaryLabel}
-              </Text>
-              <View style={s.packChipRow}>
-                {liveEmoteLabels.length > 0 ? (
-                  liveEmoteLabels.map((label) => (
-                    <View key={label} style={[s.packChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                      <Text style={[s.packChipText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{label}</Text>
-                    </View>
-                  ))
-                ) : (
-                  <View style={[s.packChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                    <Text style={[s.packChipText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                      Still preview only
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-            <View style={s.packChipSection}>
-              <Text style={[s.packChipLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>Moods landing next</Text>
-              <View style={s.packChipRow}>
-                {pendingEmoteLabels.length > 0 ? (
-                  pendingEmoteLabels.map((label) => (
-                    <View key={label} style={[s.packChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                      <Text style={[s.packChipText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{label}</Text>
-                    </View>
-                  ))
-                ) : (
-                  <View style={[s.packChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                    <Text style={[s.packChipText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Mood set live</Text>
-                  </View>
-                )}
-              </View>
-            </View>
+            <BoardSectionHeader
+              title="Mood set"
+              accessory={
+                <BoardPill
+                  label={
+                    draft.emotePackId === "phoenix-shepherd"
+                      ? "Phoenix pack"
+                      : "Starter"
+                  }
+                  tone={colors.primary}
+                />
+              }
+            />
             <View style={s.moodGrid}>
               {AVATAR_EMOTE_STATES.map((emote) => {
                 const active = previewEmote === emote;
                 const moodPreview = deriveAvatarPreviewMood(emote);
-                const moodStill = getAvatarTemplateEmoteSource(draft.templateId, emote);
-                const liveMoodReady = isAvatarTemplateEmoteLive(draft.templateId, emote);
+                const moodStill = getAvatarTemplateEmoteSource(
+                  draft.templateId,
+                  emote,
+                );
                 return (
                   <Pressable
                     key={emote}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
                     accessibilityLabel={`Preview ${emoteLabel(emote)} mood`}
-                    onPress={() => setPreviewEmote(emote)}
+                    accessibilityHint="Double tap to update the live care-twin preview mood."
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() => previewMoodState(emote)}
                     style={s.moodChip}
                   >
                     <View
                       style={[
                         s.moodThumbWrap,
                         {
-                          borderColor: active ? moodPreview.chipColor : colors.border,
-                          backgroundColor: active ? moodPreview.auraColor : colors.card,
+                          borderColor: active
+                            ? moodPreview.chipColor
+                            : colors.border,
+                          backgroundColor: active
+                            ? moodPreview.auraColor
+                            : colors.card,
                         },
                       ]}
                     >
                       <Image
-                        source={moodStill ?? selectedTemplateDisplaySource}
-                        style={s.moodThumb}
+                        source={moodStill ?? PIXEL_HEAD_SOURCE}
+                        style={[s.moodThumb, pixelImageStyle]}
                         contentFit="contain"
                         transition={150}
                       />
-                    <View
-                      pointerEvents="none"
-                      style={[
-                        s.moodWash,
-                        {
-                          opacity: moodStill ? 0.24 : 0.42,
-                          backgroundColor:
-                            emote === "not_feeling_well"
-                              ? "rgba(201,99,88,0.22)"
-                              : emote === "anxious" || emote === "home_alone"
-                              ? "rgba(168,203,232,0.22)"
-                              : emote === "sleepy" || emote === "calm"
-                              ? "rgba(109,163,111,0.18)"
-                              : "rgba(216,168,82,0.12)",
-                        },
-                      ]}
-                    />
-                    <View style={[s.emoteIcon, { backgroundColor: colors.ivory }]}>
-                      <PixelIcon name={EMOTE_ICON[emote]} size={18} />
-                    </View>
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          s.moodWash,
+                          {
+                            opacity: moodStill ? 0.24 : 1,
+                            backgroundColor:
+                              emote === "not_feeling_well"
+                                ? "rgba(201,99,88,0.22)"
+                                : emote === "anxious" || emote === "home_alone"
+                                  ? "rgba(168,203,232,0.22)"
+                                  : emote === "sleepy" || emote === "calm"
+                                    ? "rgba(109,163,111,0.18)"
+                                    : "rgba(216,168,82,0.12)",
+                          },
+                        ]}
+                      />
+                      <View
+                        style={[s.emoteIcon, { backgroundColor: colors.ivory }]}
+                      >
+                        <PixelIcon name={EMOTE_ICON[emote]} size={18} />
+                      </View>
                     </View>
                     <Text
                       style={[
                         s.moodChipLabel,
                         {
-                          color: active ? colors.foreground : colors.mutedForeground,
+                          color: active
+                            ? colors.foreground
+                            : colors.mutedForeground,
                           fontFamily: "Inter_600SemiBold",
                         },
                       ]}
                     >
                       {emoteLabel(emote)}
-                    </Text>
-                    <Text
-                      style={[
-                        s.moodChipStatus,
-                        {
-                          color: liveMoodReady ? colors.sage : colors.mutedForeground,
-                          fontFamily: "Inter_700Bold",
-                        },
-                      ]}
-                    >
-                      {liveMoodReady ? "Live mood" : "Still preview"}
                     </Text>
                   </Pressable>
                 );
@@ -1035,41 +1883,86 @@ export default function PortraitScreen() {
           <Pressable
             onPress={resetDraft}
             accessibilityRole="button"
-            accessibilityLabel="Reset avatar draft"
-            style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, opacity: pressed ? 0.65 : 1 }]}
+            accessibilityLabel="Reset Avatar Studio draft"
+            accessibilityHint="Restores the default pixel twin before saving."
+            hitSlop={MOBILE_INLINE_HIT_SLOP}
+            style={({ pressed }) => [
+              s.secondaryBtn,
+              { borderColor: colors.border, opacity: pressed ? 0.65 : 1 },
+            ]}
           >
             <Ionicons name="refresh" size={18} color={colors.foreground} />
-            <Text style={[s.secondaryBtnText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Reset</Text>
+            <Text
+              style={[
+                s.secondaryBtnText,
+                { color: colors.foreground, fontFamily: "Inter_700Bold" },
+              ]}
+            >
+              Reset
+            </Text>
           </Pressable>
           <Pressable
             onPress={saveDraft}
             accessibilityRole="button"
-            accessibilityLabel="Save avatar configuration"
-            style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 }]}
+            accessibilityLabel="Save Avatar Studio draft"
+            accessibilityHint="Saves the current pixel twin configuration locally."
+            hitSlop={MOBILE_INLINE_HIT_SLOP}
+            style={({ pressed }) => [
+              s.primaryBtn,
+              { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
+            ]}
           >
             <Ionicons name="heart" size={18} color="#FFF9EF" />
-            <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>Save Avatar</Text>
+            <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>
+              Save Avatar
+            </Text>
           </Pressable>
         </View>
 
         {hasCustomAvatar ? (
           <BoardCard style={s.tipBoard} tone="soft">
-            <Text style={[s.tipText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-              Your uploaded mood images still work. The new template config gives those images a real editable identity layer.
+            <Text
+              style={[
+                s.tipText,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_600SemiBold",
+                },
+              ]}
+            >
+              Your uploaded mood images still work. The new template config
+              gives those images a real editable identity layer.
             </Text>
           </BoardCard>
         ) : (
           <BoardCard style={s.tipBoard} tone="soft">
-            <Text style={[s.tipText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-              True AI scanning plugs in later. This version ships the reliable character creator, scan suggestion, and emote-preview system first.
+            <Text
+              style={[
+                s.tipText,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_600SemiBold",
+                },
+              ]}
+            >
+              Provider scanning can plug in later. This version ships the
+              reliable PixelLab template matcher, character creator, and
+              emote-preview system first.
             </Text>
           </BoardCard>
         )}
       </ScrollView>
 
       {savedToast ? (
-        <View style={[s.toast, { backgroundColor: colors.brandNavy, bottom: toastBottomOffset }]}>
-          <Text style={[s.toastText, { fontFamily: "Inter_700Bold" }]}>{savedToast}</Text>
+        <View
+          style={[
+            s.toast,
+            { backgroundColor: colors.brandNavy, bottom: insets.bottom + 22 },
+          ]}
+        >
+          <Text style={[s.toastText, { fontFamily: "Inter_700Bold" }]}>
+            {savedToast}
+          </Text>
         </View>
       ) : null}
     </View>
@@ -1119,12 +2012,43 @@ const s = StyleSheet.create({
     bottom: 18,
     gap: 8,
   },
+  sourceProofCard: {
+    minHeight: 70,
+    borderRadius: 4,
+    borderWidth: 2,
+    padding: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    shadowColor: "#081424",
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  sourceProofImage: {
+    width: 52,
+    height: 52,
+    borderRadius: 3,
+  },
+  sourceProofCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  sourceProofKicker: {
+    fontSize: 8.5,
+    letterSpacing: 0.8,
+  },
+  sourceProofText: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
   workingText: { fontSize: 25, lineHeight: 30 },
   workingHint: { fontSize: 13, lineHeight: 18 },
   heroPreview: {
     overflow: "hidden",
     aspectRatio: 0.96,
-    marginBottom: 12,
+    marginBottom: 10,
     backgroundColor: "#081424",
     position: "relative",
   },
@@ -1137,12 +2061,31 @@ const s = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#EDE7DC",
   },
+  templatePixelFloor: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    bottom: 68,
+    height: 44,
+    borderRadius: 2,
+    backgroundColor: "rgba(109,163,111,0.22)",
+    borderWidth: 2,
+    borderColor: "rgba(8,20,36,0.18)",
+    transform: [{ scaleX: 1.08 }, { skewX: "-8deg" }],
+  },
+  templatePixelLines: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.12,
+    borderWidth: 2,
+    borderColor: "#081424",
+    margin: 10,
+  },
   templateHeroDogWrap: {
     position: "absolute",
-    left: 34,
-    right: 34,
-    bottom: 62,
-    height: "62%",
+    left: 0,
+    right: 0,
+    bottom: 58,
+    height: "76%",
     alignItems: "center",
     justifyContent: "flex-end",
   },
@@ -1150,12 +2093,29 @@ const s = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  templateHeroDogGhost: {
-    opacity: 0.16,
+  templateSpriteViewport: {
+    width: 272,
+    height: 272,
+    borderRadius: 3,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    overflow: "hidden",
+    position: "relative",
+  },
+  templateSpriteGround: {
+    position: "absolute",
+    left: 22,
+    right: 22,
+    bottom: 15,
+    height: 26,
+    borderRadius: 2,
+    borderWidth: 2,
+    opacity: 0.28,
+    transform: [{ skewX: "-8deg" }],
   },
   templateHeroSprite: {
-    position: "absolute",
-    bottom: 0,
+    marginBottom: 7,
   },
   templateAccessoryLayer: {
     position: "absolute",
@@ -1170,88 +2130,139 @@ const s = StyleSheet.create({
     bottom: 56,
     borderRadius: 120,
   },
+  templateAccessoryBed: {
+    position: "absolute",
+    bottom: 28,
+    left: "50%",
+    marginLeft: -62,
+    width: 124,
+    height: 28,
+    borderRadius: 18,
+    opacity: 0.48,
+  },
+  templateBandana: {
+    position: "absolute",
+    top: 88,
+    width: 48,
+    height: 18,
+    borderRadius: 10,
+    opacity: 0.94,
+  },
+  templateCollar: {
+    position: "absolute",
+    top: 90,
+    width: 44,
+    height: 14,
+    borderRadius: 9,
+    borderWidth: 3,
+    backgroundColor: "rgba(255,249,239,0.72)",
+  },
+  templateHatWrap: {
+    position: "absolute",
+    top: 2,
+    left: "50%",
+    marginLeft: -18,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 18,
+    borderRightWidth: 18,
+    borderBottomWidth: 28,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    transform: [{ rotate: "-6deg" }],
+  },
+  templateHatPom: {
+    position: "absolute",
+    top: -8,
+    left: -5,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  templateMask: {
+    position: "absolute",
+    top: 60,
+    width: 56,
+    height: 16,
+    borderRadius: 10,
+    opacity: 0.82,
+  },
+  templateVest: {
+    position: "absolute",
+    top: 98,
+    width: 58,
+    height: 38,
+    borderRadius: 16,
+    opacity: 0.76,
+  },
+  templateSparkleCluster: {
+    position: "absolute",
+    top: 40,
+    right: 12,
+    width: 42,
+    height: 38,
+  },
+  templateSparkle: {
+    position: "absolute",
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    opacity: 0.92,
+  },
+  templateSparkleOne: { top: 4, right: 5 },
+  templateSparkleTwo: { top: 14, left: 4 },
+  templateSparkleThree: { bottom: 2, right: 14 },
   templateSpeech: {
     position: "absolute",
     left: 24,
-    top: 52,
-    maxWidth: "62%",
+    top: 24,
+    maxWidth: "52%",
     borderRadius: 6,
     borderWidth: 2,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  templateSpeechText: { fontSize: 17, lineHeight: 21 },
-  templateHeroHud: {
-    position: "absolute",
-    right: 16,
-    bottom: 76,
-    minWidth: 104,
-    borderRadius: 6,
-    borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 8,
+  },
+  templateSpeechText: { fontSize: 15, lineHeight: 19 },
+  templateHeroHud: {
+    position: "absolute",
+    right: 12,
+    bottom: 44,
+    minWidth: 96,
+    maxWidth: 142,
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     gap: 2,
   },
-  templateHeroKicker: { fontSize: 8.5, letterSpacing: 0.8, textTransform: "uppercase" },
+  templateHeroKicker: {
+    fontSize: 8.5,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
   templateHeroTitle: { fontSize: 17, lineHeight: 20 },
-  templateHeroMood: { fontSize: 11, lineHeight: 14 },
-  templateHeroMeta: { fontSize: 10.5, lineHeight: 13 },
-  pixelFrameOverlay: {
-    position: "absolute",
-    left: 14,
-    top: 14,
-    right: 14,
-    alignItems: "flex-end",
-  },
-  pixelIdCard: {
-    width: 184,
-    minHeight: 76,
-    borderRadius: 2,
-    borderWidth: 2,
-    padding: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  pixelHead: {
-    width: 54,
-    height: 54,
-    borderRadius: 2,
-    borderWidth: 2,
-    borderColor: "#081424",
-    backgroundColor: "#F7F2E8",
-  },
-  pixelIdCopy: { flex: 1, minWidth: 0, gap: 2 },
-  pixelIdKicker: { fontSize: 8, letterSpacing: 0.6, textTransform: "uppercase" },
-  pixelIdName: { fontSize: 16, lineHeight: 18 },
-  pixelLevelRow: { flexDirection: "row", gap: 3, marginTop: 3 },
-  pixelLevelPip: {
-    width: 14,
-    height: 7,
-    borderRadius: 1,
-    borderWidth: 1,
-    borderColor: "rgba(8,20,36,0.22)",
-  },
+  templateHeroMood: { fontSize: 10, lineHeight: 13 },
+  templateHeroFit: { fontSize: 8.8, lineHeight: 11, maxWidth: 126 },
   savedScrim: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    height: "52%",
+    height: "24%",
   },
   heroCopy: {
     position: "absolute",
-    left: 16,
-    right: 16,
-    bottom: 16,
-    gap: 7,
+    left: 14,
+    width: "64%",
+    bottom: 10,
+    gap: 3,
   },
-  savedName: { color: "#FFF9EF", fontSize: 25 },
-  savedSub: { color: "rgba(255,249,239,0.82)", fontSize: 12.5, lineHeight: 17 },
+  savedName: { color: "#FFF9EF", fontSize: 17.5, lineHeight: 20 },
+  savedSub: { color: "rgba(255,249,239,0.82)", fontSize: 9.4, lineHeight: 12 },
   tabRow: {
     flexDirection: "row",
     gap: 7,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   tab: {
     flex: 1,
@@ -1262,8 +2273,39 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   tabText: { fontSize: 11.5 },
-  avatarBoard: { marginBottom: 12 },
+  avatarBoard: { marginBottom: 10 },
   copy: { fontSize: 13, lineHeight: 19 },
+  scanTruthRail: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
+  scanPipelineGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
+  scanPipelineCard: {
+    flexBasis: "48%",
+    flexGrow: 1,
+    minHeight: 92,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 9,
+    gap: 4,
+  },
+  scanPipelineNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scanPipelineNumberText: { color: "#FFF9EF", fontSize: 11 },
+  scanPipelineLabel: { fontSize: 12 },
+  scanPipelineDetail: { fontSize: 10.8, lineHeight: 14 },
   traitGrid: { gap: 8, marginTop: 12 },
   traitChip: {
     minHeight: 38,
@@ -1301,7 +2343,7 @@ const s = StyleSheet.create({
   templateTile: {
     flexBasis: "48%",
     flexGrow: 1,
-    minHeight: Math.max(MIN_MOBILE_TOUCH_TARGET, 178),
+    minHeight: Math.max(178, MIN_MOBILE_TOUCH_TARGET),
     borderRadius: 8,
     borderWidth: 1,
     padding: 10,
@@ -1333,38 +2375,115 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#FFF9EF",
   },
-  templateTitle: { fontSize: 13.5 },
-  templateBadge: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
-  templatePackFocus: { fontSize: 10.5, lineHeight: 13 },
-  templateSub: { fontSize: 11.5, lineHeight: 16 },
-  templateFocusDetail: { fontSize: 10.5, lineHeight: 14 },
-  packSummaryRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
-  packSummaryCard: {
-    flex: 1,
+  templateLiveBadge: {
+    position: "absolute",
+    left: 6,
+    bottom: 6,
+    minHeight: 22,
+    borderRadius: 4,
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 4,
-  },
-  packSummaryLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
-  packSummaryText: { fontSize: 11.5, lineHeight: 16 },
-  packChipSection: { gap: 8, marginBottom: 12 },
-  packChipLabel: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
-  packChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  packChip: {
-    minHeight: 32,
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingHorizontal: 7,
+    alignItems: "center",
     justifyContent: "center",
   },
-  packChipText: { fontSize: 11.5, lineHeight: 15 },
+  templateLiveBadgeText: {
+    fontSize: 9,
+    textTransform: "uppercase",
+  },
+  templateTitle: { fontSize: 13.5 },
+  templateSub: { fontSize: 11.5, lineHeight: 16 },
+  templateSpriteNote: { fontSize: 10.5, lineHeight: 14, marginTop: "auto" },
+  productionReviewPanel: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  productionHeadline: { fontSize: 19, lineHeight: 23 },
+  productionCopy: { fontSize: 12.5, lineHeight: 18 },
+  productionMetricGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 2,
+  },
+  productionMetricCard: {
+    flexBasis: "30%",
+    flexGrow: 1,
+    minHeight: 64,
+    borderRadius: 7,
+    borderWidth: 1,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
+    justifyContent: "center",
+  },
+  productionMetricValue: { fontSize: 17, lineHeight: 20 },
+  productionMetricKicker: {
+    fontSize: 8.5,
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
+  },
+  productionActionList: { gap: 8, marginTop: 12 },
+  productionActionRow: {
+    minHeight: Math.max(92, MIN_MOBILE_TOUCH_TARGET),
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10,
+    flexDirection: "row",
+    gap: 10,
+  },
+  productionActionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  productionActionCopy: { flex: 1, minWidth: 0, gap: 3 },
+  productionActionTitle: { fontSize: 12.5 },
+  productionActionMeta: {
+    fontSize: 10,
+    textTransform: "uppercase",
+  },
+  productionActionNotes: { fontSize: 11.5, lineHeight: 16 },
+  productionCheckList: { gap: 8, marginTop: 12 },
+  productionCheckTitle: {
+    fontSize: 11.5,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  productionCheckRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  productionCheckText: { flex: 1, fontSize: 11.5, lineHeight: 16 },
+  productionBoundary: {
+    fontSize: 11.5,
+    lineHeight: 17,
+    marginTop: 12,
+  },
+  productionQaButton: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  productionQaButtonText: {
+    color: "#FFF9EF",
+    fontSize: 13,
+    textTransform: "uppercase",
+  },
   swatchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
+  swatchLegend: { fontSize: 11.5, lineHeight: 15, marginTop: 8 },
   swatch: {
-    width: MIN_MOBILE_TOUCH_TARGET,
-    height: MIN_MOBILE_TOUCH_TARGET,
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
   },
   optionGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
@@ -1377,28 +2496,37 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   optionText: { fontSize: 12 },
-  sectionHint: { fontSize: 12.5, lineHeight: 18, marginBottom: 10 },
+  accessoryFitPanel: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  accessoryFitTitle: { fontSize: 11.5, textTransform: "uppercase" },
+  accessoryFitSummary: { fontSize: 12, lineHeight: 17 },
   accessoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   accessoryTile: {
     flexBasis: "47.5%",
     flexGrow: 1,
-    minHeight: Math.max(MIN_MOBILE_TOUCH_TARGET, 82),
+    minHeight: Math.max(126, MIN_MOBILE_TOUCH_TARGET),
     borderRadius: 8,
     borderWidth: 1,
     padding: 10,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     gap: 5,
   },
   accessoryDot: { width: 18, height: 18, borderRadius: 5 },
   accessoryLabel: { fontSize: 12.5 },
   accessorySlot: { fontSize: 10, textTransform: "uppercase" },
-  accessoryStatus: { fontSize: 10.5, textTransform: "uppercase" },
+  accessoryFitLabel: { fontSize: 9.5, textTransform: "uppercase" },
+  accessoryFitHint: { fontSize: 10.5, lineHeight: 14 },
   moodGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   moodChip: {
-    flexBasis: "30.9%",
-    flexGrow: 1,
+    width: "30.9%",
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     alignItems: "center",
+    justifyContent: "center",
   },
   moodThumbWrap: {
     width: "100%",
@@ -1424,7 +2552,6 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   moodChipLabel: { fontSize: 10.5, textAlign: "center" },
-  moodChipStatus: { fontSize: 9.5, textTransform: "uppercase", textAlign: "center", marginTop: 2 },
   tipBoard: { marginTop: 2 },
   tipText: { fontSize: 12.5, lineHeight: 18, textAlign: "center" },
   toast: {

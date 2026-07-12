@@ -16,6 +16,7 @@ export interface CareStatusRoutine {
 export interface CountStat {
   done: number;
   target: number;
+  pending?: number;
 }
 
 export interface CareDayStatus {
@@ -52,6 +53,25 @@ function isAnxietyEntry(entry: CareStatusEntry): boolean {
   );
 }
 
+function asObject(details: CareEventDetails): Record<string, unknown> {
+  return details != null && typeof details === "object" && !Array.isArray(details)
+    ? (details as Record<string, unknown>)
+    : {};
+}
+
+function clean(value: unknown): string {
+  return String(value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function isPendingMealOutcome(entry: CareStatusEntry): boolean {
+  if (normalizeCareEventType(entry.type, entry.details) !== "meal") return false;
+  const details = asObject(entry.details);
+  const completion = clean(details.mealCompletion ?? details.completion ?? details.outcome);
+  const lifecycle = clean(details.mealLifecycle);
+  return ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(completion) ||
+    ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(lifecycle);
+}
+
 export function deriveCareDayStatus(
   entries: readonly CareStatusEntry[],
   routines: readonly CareStatusRoutine[] = [],
@@ -77,10 +97,13 @@ export function deriveCareDayStatus(
   const healthAlert = vomitEntries.some((entry) =>
     ["alert", "urgent", "watch"].includes((entry.severity ?? "").toLowerCase()),
   );
+  const mealEntries = normalized.filter((entry) => entry.normalizedType === "meal");
+  const pendingMealOutcomes = mealEntries.filter(isPendingMealOutcome).length;
+  const resolvedMealCount = Math.max(0, mealEntries.length - pendingMealOutcomes);
 
   return {
     counts: {
-      meals: { done: countType("meal"), target: mealTarget },
+      meals: { done: resolvedMealCount, target: mealTarget, pending: pendingMealOutcomes },
       walks: { done: countType("walk"), target: walkTarget },
       potty: { done: countType("potty"), target: 3 },
       training: countType("training"),

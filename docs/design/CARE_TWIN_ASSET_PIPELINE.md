@@ -27,7 +27,6 @@ PixelLab balance is no longer blocked:
 - PixelLab reported 1,856 generations remaining after the v2 seed, state pack, idle animation, tail-wag animation, sleep-loop animation, and first dogless room layer. Additional action strips were generated later in the same 2026-06-18 production pass.
 - Approved v2 seed object: `4f318d58-7166-4b0a-b202-2896eed1e0dc`.
 - Current next blocker: final visual approval and native runtime QA, not credits, MCP access, room file presence, or sprite file presence.
-- Avatar Studio's full non-shepherd launch-pack wave is now live as repo-native full packs: Retriever, Husky, Bully, Doodle, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed each have file-backed accessory overlays, the full mood still set, and generated preview strips, so the next asset step moves to native QA and final room art instead of more breed-pack catch-up.
 
 ## Goal
 
@@ -87,6 +86,12 @@ Needed later in code:
 The room should match the current board style: warm interior, window/patio depth, cozy objects, strong pixel charm, no heavy UI text inside the art.
 
 Create at least a day room and dark/night room so the Home and dark-mode/supporting-page looks can share the same care-twin identity without duplicate dogs.
+
+2026-06-19 room status: day is live, and PixelLab final-candidate night,
+bedtime, health-watch, and home-alone rooms are now wired as dogless 800x600
+runtime layers. Rejected PixelLab attempts included isometric drift, baked-in
+dogs, visible text, and watermark-like marks; do not register future rooms
+until they pass those visual checks.
 
 ### 3. Phoenix Sprite Strips
 
@@ -171,9 +176,8 @@ Do not register future sprite strips before a matching dogless room exists. The 
 ## Local Asset Scripts
 
 - `npm run build:pixellab-sprite-strip` downloads a PixelLab `{i}.png` frame URL template and stitches selected frames into a fixed 256px-slot horizontal strip.
-- `npm run build:pixellab-room-variants` derives first-pass night, bedtime, health-watch, and home-alone room variants from the approved dogless day room.
-- `npm run verify:pixellab-assets` checks sprite strip dimensions, required room files, and the live template-pack files declared in the shared manifest.
-- `powershell -ExecutionPolicy Bypass -File scripts/generate-template-partial-packs.ps1` refreshes the current non-shepherd launch packs from their registered base art, including overlays, mood stills, and generated preview strips.
+- `npm run build:pixellab-room-variants` derives first-pass room variants from the approved dogless day room. Use it only as a fallback; final room art should come from visually accepted PixelLab/Figma-quality sources.
+- `npm run verify:pixellab-assets` checks sprite strip dimensions and required room files.
 
 ## Quality Gate
 
@@ -181,7 +185,7 @@ Run the PixelLab asset verifier before registering final assets:
 
 ```text
 cd artifacts/woofwatcher-mobile
-node --experimental-strip-types scripts/verify-pixellab-assets.ts
+node scripts/verify-pixellab-assets.js
 ```
 
 Before approving assets:

@@ -1,105 +1,105 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "node:test";
 
 import {
-  getFloatingTabChromeMetrics,
-  getFloatingFeedbackBottomOffset,
   getCenteredModalBackdropPadding,
+  getDockedComposerBottomPadding,
   getFloatingDebugButtonTopOffset,
+  getFloatingFeedbackBottomOffset,
+  getFloatingTabChromeMetrics,
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   getRouteTopPadding,
-  getStandaloneComposerBottomPadding,
   getStandaloneRouteBottomPadding,
   getTabbedRouteBottomPadding,
   MOBILE_INLINE_HIT_SLOP,
   MIN_MOBILE_TOUCH_TARGET,
 } from "./mobileLayout.ts";
 
-test("keeps floating tab chrome safe on native devices with home indicators", () => {
-  const chrome = getFloatingTabChromeMetrics(34, false);
+test("derives iOS tabbed route padding from the floating paw and safe area", () => {
+  const metrics = getFloatingTabChromeMetrics({ platform: "ios", bottomInset: 34 });
 
-  assert.equal(chrome.tabBarBottom, 8);
-  assert.equal(chrome.tabBarHeight, 72);
-  assert.equal(chrome.fabBottom, 60);
-  assert.equal(chrome.routeBottomPadding, 142);
+  assert.equal(metrics.tabBarHeight, 72);
+  assert.equal(metrics.tabBarBottom, 12);
+  assert.equal(metrics.centerFabBottom, 52);
+  assert.equal(metrics.centerFabSize, 56);
+  assert.equal(metrics.contentBottomPadding, 124);
+  assert.equal(getTabbedRouteBottomPadding({ platform: "ios", bottomInset: 34 }), 124);
 });
 
-test("keeps tabbed routes clear of the floating shell on flat native devices and web", () => {
-  assert.equal(getTabbedRouteBottomPadding(0, false), 130);
-  assert.equal(getTabbedRouteBottomPadding(0, true), 130);
+test("keeps Android and web tabbed routes clear of the floating nav without wasting space", () => {
+  assert.equal(getTabbedRouteBottomPadding({ platform: "android", bottomInset: 0 }), 110);
+  assert.equal(getTabbedRouteBottomPadding({ platform: "web", bottomInset: 99 }), 110);
+
+  const webMetrics = getFloatingTabChromeMetrics({ platform: "web", bottomInset: 99 });
+  assert.equal(webMetrics.tabBarHeight, 72);
+  assert.equal(webMetrics.tabBarBottom, 12);
+  assert.equal(webMetrics.centerFabBottom, 26);
+});
+
+test("keeps the floating paw chrome compact enough for first-screen command cards", () => {
+  for (const platform of ["android", "web"]) {
+    const metrics = getFloatingTabChromeMetrics({ platform, bottomInset: 0 });
+    const bottomChromeClearance = Math.max(
+      metrics.tabBarBottom + metrics.tabBarHeight,
+      metrics.centerFabBottom + metrics.centerFabSize,
+    );
+
+    assert.ok(bottomChromeClearance <= 86, `${platform} bottom chrome should not eat the route`);
+    assert.ok(metrics.centerFabSize >= MIN_MOBILE_TOUCH_TARGET, `${platform} center paw stays tappable`);
+    assert.ok(metrics.tabBarHeight >= 72, `${platform} tab bar keeps labels readable`);
+  }
+
+  const iosMetrics = getFloatingTabChromeMetrics({ platform: "ios", bottomInset: 34 });
+  const iosBottomChromeClearance = Math.max(
+    iosMetrics.tabBarBottom + iosMetrics.tabBarHeight,
+    iosMetrics.centerFabBottom + iosMetrics.centerFabSize,
+  );
+
+  assert.ok(iosBottomChromeClearance <= 110);
+  assert.ok(iosMetrics.centerFabSize >= MIN_MOBILE_TOUCH_TARGET);
+});
+
+test("keeps standalone routes independent from the bottom tab chrome", () => {
+  assert.equal(getStandaloneRouteBottomPadding({ platform: "ios", bottomInset: 34 }), 74);
+  assert.equal(getStandaloneRouteBottomPadding({ platform: "android", bottomInset: 0 }), 72);
+  assert.equal(getStandaloneRouteBottomPadding({ platform: "web", bottomInset: 34 }), 72);
 });
 
 test("keeps route headers clear of native notches and web chrome", () => {
-  assert.equal(getRouteTopPadding(0, "tabbed", false), 8);
-  assert.equal(getRouteTopPadding(44, "tabbed", false), 52);
-  assert.equal(getRouteTopPadding(0, "tabbed", true), 32);
-  assert.equal(getRouteTopPadding(0, "standalone", false), 12);
-  assert.equal(getRouteTopPadding(44, "standalone", false), 56);
-  assert.equal(getRouteTopPadding(0, "standalone", true), 30);
-  assert.equal(getRouteTopPadding(0, "setup", false), 14);
-  assert.equal(getRouteTopPadding(0, "setup", true), 38);
-  assert.equal(getRouteTopPadding(44, "auth", false), 92);
-  assert.equal(getRouteTopPadding(0, "auth", true), 72);
+  assert.equal(getRouteTopPadding({ platform: "ios", topInset: 0, surface: "tabbed" }), 8);
+  assert.equal(getRouteTopPadding({ platform: "ios", topInset: 44, surface: "tabbed" }), 52);
+  assert.equal(getRouteTopPadding({ platform: "web", topInset: 44, surface: "tabbed" }), 32);
+  assert.equal(getRouteTopPadding({ platform: "ios", topInset: 44, surface: "standalone" }), 56);
+  assert.equal(getRouteTopPadding({ platform: "web", topInset: 44, surface: "standalone" }), 30);
+  assert.equal(getRouteTopPadding({ platform: "ios", topInset: 44, surface: "setup" }), 58);
+  assert.equal(getRouteTopPadding({ platform: "web", topInset: 44, surface: "setup" }), 38);
+  assert.equal(getRouteTopPadding({ platform: "ios", topInset: 44, surface: "auth" }), 92);
+  assert.equal(getRouteTopPadding({ platform: "web", topInset: 44, surface: "auth" }), 72);
 });
 
-test("keeps standalone routes clear of the home indicator", () => {
-  assert.equal(getStandaloneRouteBottomPadding(0), 88);
-  assert.equal(getStandaloneRouteBottomPadding(34), 88);
-  assert.equal(getStandaloneRouteBottomPadding(40), 94);
+test("keeps docked composer controls close enough to the thumb zone", () => {
+  assert.equal(getDockedComposerBottomPadding({ platform: "ios", bottomInset: 34 }), 46);
+  assert.equal(getDockedComposerBottomPadding({ platform: "android", bottomInset: 0 }), 12);
+  assert.equal(getDockedComposerBottomPadding({ platform: "web", bottomInset: 99 }), 46);
 });
 
-test("keeps standalone composer controls clear on flat and notched devices", () => {
-  assert.equal(getStandaloneComposerBottomPadding(0, false), 24);
-  assert.equal(getStandaloneComposerBottomPadding(34, false), 46);
-  assert.equal(getStandaloneComposerBottomPadding(0, true), 46);
-});
-
-test("keeps docked modal sheets clear of flat and notched home indicators", () => {
-  assert.equal(getModalSheetBottomPadding(0), 32);
-  assert.equal(getModalSheetBottomPadding(18), 38);
-  assert.equal(getModalSheetBottomPadding(34), 54);
-});
-
-test("keeps centered text modals away from notches and home indicators", () => {
-  assert.deepEqual(getCenteredModalBackdropPadding(0, 0), {
-    paddingHorizontal: 28,
-    paddingTop: 24,
-    paddingBottom: 24,
-  });
-  assert.deepEqual(getCenteredModalBackdropPadding(44, 34), {
+test("keeps modal, feedback, debug, and keyboard offsets on shared contracts", () => {
+  assert.equal(getModalSheetBottomPadding({ platform: "ios", bottomInset: 34 }), 54);
+  assert.equal(getModalSheetBottomPadding({ platform: "android", bottomInset: 0 }), 32);
+  assert.deepEqual(getCenteredModalBackdropPadding({ platform: "ios", topInset: 44, bottomInset: 34 }), {
     paddingHorizontal: 28,
     paddingTop: 60,
     paddingBottom: 50,
   });
+  assert.equal(getFloatingFeedbackBottomOffset({ platform: "ios", bottomInset: 34, surface: "tabbed" }), 130);
+  assert.equal(getFloatingFeedbackBottomOffset({ platform: "web", bottomInset: 34, surface: "standalone" }), 56);
+  assert.equal(getFloatingDebugButtonTopOffset({ platform: "ios", topInset: 44 }), 60);
+  assert.equal(getKeyboardAvoidingVerticalOffset({ platform: "ios", topInset: 44, surface: "setup" }), 58);
+  assert.equal(getKeyboardAvoidingVerticalOffset({ platform: "web", topInset: 44, surface: "setup" }), 0);
 });
 
-test("keeps floating feedback above tab chrome and home indicators", () => {
-  assert.equal(getFloatingFeedbackBottomOffset(0, "tabbed", false), 96);
-  assert.equal(getFloatingFeedbackBottomOffset(34, "tabbed", false), 130);
-  assert.equal(getFloatingFeedbackBottomOffset(0, "standalone", false), 22);
-  assert.equal(getFloatingFeedbackBottomOffset(34, "standalone", false), 56);
-  assert.equal(getFloatingFeedbackBottomOffset(0, "standalone", true), 56);
-});
-
-test("keeps floating debug controls below notches and web preview chrome", () => {
-  assert.equal(getFloatingDebugButtonTopOffset(0, false), 16);
-  assert.equal(getFloatingDebugButtonTopOffset(44, false), 60);
-  assert.equal(getFloatingDebugButtonTopOffset(0, true), 40);
-});
-
-test("keeps keyboard avoidance aligned with route safe-area chrome", () => {
-  assert.equal(getKeyboardAvoidingVerticalOffset(0, "tabbed", false), 8);
-  assert.equal(getKeyboardAvoidingVerticalOffset(44, "tabbed", false), 52);
-  assert.equal(getKeyboardAvoidingVerticalOffset(44, "standalone", false), 56);
-  assert.equal(getKeyboardAvoidingVerticalOffset(44, "setup", false), 58);
-  assert.equal(getKeyboardAvoidingVerticalOffset(44, "standalone", true), 0);
-});
-
-test("keeps the shared mobile touch target at release-safe size", () => {
+test("keeps mobile touch and inline hit targets release-safe", () => {
   assert.equal(MIN_MOBILE_TOUCH_TARGET, 48);
-});
-
-test("keeps inline route actions on a shared hit slop contract", () => {
   assert.equal(MOBILE_INLINE_HIT_SLOP, 10);
 });

@@ -2,12 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  buildCarePass,
-  createCarePassArtifact,
-  createPetCredentialArtifact,
-  createProgressReportArtifact,
-} from "../../../lib/care-domain/src/index.ts";
-import { deriveWoofGuideActions } from "./woofGuideActions.ts";
+  deriveWoofGuideActions,
+  deriveWoofGuideVetNoteAction,
+  resolveWoofGuideAssistantGate,
+  WOOFGUIDE_ASSISTANT_FALLBACK_LINKS,
+} from "./woofGuideActions.ts";
 
 const NOW = new Date("2026-06-06T15:00:00-07:00").getTime();
 
@@ -114,279 +113,82 @@ test("creates an owner-reviewed meal log draft when the first meal is missing", 
 
   const mealAction = actions.find((action) => action.id === "log-meal");
   assert.equal(mealAction?.draft?.kind, "log_entry");
+  assert.equal(mealAction?.draft?.title, "Review meal served draft");
+  assert.match(mealAction?.draft?.body ?? "", /outcome pending/i);
   assert.equal(mealAction?.draft?.entry?.type, "meal");
   assert.equal(mealAction?.draft?.entry?.details?.expectedPortion, "1 cup");
-  assert.equal(mealAction?.draft?.entry?.details?.mealCompletion, "complete");
+  assert.equal(mealAction?.draft?.entry?.details?.mealCompletion, "served");
+  assert.equal(mealAction?.draft?.entry?.details?.mealLifecycle, "outcome-pending");
+  assert.equal(mealAction?.draft?.entry?.details?.requiresOutcomeUpdate, true);
   assert.equal(mealAction?.draft?.entry?.details?.householdVisible, true);
 });
 
-test("creates an owner-reviewed mood summary from shared mood energy logs", () => {
-  const actions = deriveWoofGuideActions(
-    {
-      profile: { name: "Phoenix" },
-      dietProfile: {
-        primaryFood: "Sensitive kibble",
-        normalPortion: "1 cup",
-        mealSchedule: "7 AM and 6 PM",
-      },
-      routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
-      records: [
-        { id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" },
-        { id: "chip", type: "microchip", title: "HomeAgain", due: "985112003004551" },
-        { id: "insurance", type: "insurance", title: "Lemonade", due: "Policy WW-1042" },
-      ],
-      entries: [
-        {
-          id: "mood-low",
-          type: "mood",
-          title: "Mood - Visitors",
-          caregiver: "Emma",
-          mood: "anxious",
-          occurredAt: "2026-06-06T18:00:00.000Z",
-          details: {
-            energyLevel: "low",
-            moodContext: "Visitors came by",
-            householdVisible: true,
-          },
-        },
-        {
-          id: "private-mood",
-          type: "mood",
-          caregiver: "Apollo",
-          mood: "happy",
-          occurredAt: "2026-06-06T17:00:00.000Z",
-          details: {
-            energyLevel: "high",
-            householdVisible: false,
-          },
-        },
-      ],
-    },
-    NOW,
-  );
-
-  const moodAction = actions.find((action) => action.id === "mood-summary");
-
-  assert.equal(moodAction?.urgency, "watch");
-  assert.equal(moodAction?.draft?.kind, "mood_summary");
-  assert.match(moodAction?.detail ?? "", /1 shared mood check-ins/);
-  assert.match(moodAction?.draft?.body ?? "", /Mood & Energy Review/);
-  assert.match(moodAction?.draft?.body ?? "", /Visitors came by/);
-  assert.match(moodAction?.draft?.body ?? "", /owner-reported/i);
-  assert.deepEqual(moodAction?.draft?.sourceEntryIds, ["mood-low"]);
-});
-
-test("creates an owner-reviewed records attachment prep draft without claiming cloud storage", () => {
-  const actions = deriveWoofGuideActions(
-    {
-      profile: { name: "Phoenix" },
-      dietProfile: {
-        primaryFood: "Sensitive kibble",
-        normalPortion: "1 cup",
-        mealSchedule: "7 AM and 6 PM",
-      },
-      routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
-      records: [
-        { id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" },
-        { id: "chip", type: "microchip", title: "HomeAgain", due: "985112003004551" },
-        { id: "insurance", type: "insurance", title: "Lemonade", due: "Policy WW-1042" },
-        {
-          id: "receipt-attached",
-          type: "receipt",
-          title: "Wellness visit receipt",
-          attachmentUri: "file:///local/wellness-receipt.pdf",
-        },
-        { id: "lab-missing", type: "document", title: "Latest lab panel" },
-      ],
-      entries: [],
-    },
-    NOW,
-  );
-
-  const prepAction = actions.find((action) => action.id === "records-attachment-prep");
-
-  assert.equal(prepAction?.route, "/records");
-  assert.equal(prepAction?.urgency, "watch");
-  assert.equal(prepAction?.draft?.kind, "records_attachment_prep");
-  assert.match(prepAction?.detail ?? "", /1 of 2 receipt\/document records have local files attached/i);
-  assert.match(prepAction?.draft?.body ?? "", /Latest lab panel/);
-  assert.match(prepAction?.draft?.body ?? "", /saved locally on this device/i);
-  assert.match(prepAction?.draft?.safety ?? "", /cloud storage is not enabled/i);
-});
-
-test("creates an owner-reviewed Dog ID prep draft from shared credential readiness", () => {
-  const actions = deriveWoofGuideActions(
-    {
-      profile: {
-        name: "Phoenix",
-        breed: "Shepherd mix",
-        primaryVet: "River City Vet",
-      },
-      dietProfile: {
-        primaryFood: "Sensitive kibble",
-        normalPortion: "1 cup",
-        mealSchedule: "7 AM and 6 PM",
-      },
-      caregivers: [{ name: "Apollo", role: "Owner" }],
-      routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
-      records: [{ id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" }],
-      entries: [
-        {
-          id: "breakfast",
-          type: "meal",
-          title: "Breakfast",
-          caregiver: "Apollo",
-          occurredAt: "2026-06-06T14:00:00.000Z",
-          details: { householdVisible: true },
-        },
-      ],
-    },
-    NOW,
-  );
-
-  const dogIdAction = actions.find((action) => action.id === "dog-id-prep");
-
-  assert.equal(dogIdAction?.route, "/records");
-  assert.equal(dogIdAction?.urgency, "watch");
-  assert.equal(dogIdAction?.draft?.kind, "pet_credential_prep");
-  assert.match(dogIdAction?.detail ?? "", /Dog ID needs/i);
-  assert.match(dogIdAction?.draft?.body ?? "", /Phoenix Dog ID Prep/);
-  assert.match(dogIdAction?.draft?.body ?? "", /Missing fields:/);
-  assert.match(dogIdAction?.draft?.body ?? "", /provider-backed credential\/PDF storage is approved/i);
-  assert.match(dogIdAction?.draft?.safety ?? "", /Owner-reviewed prep only/i);
-});
-
-test("surfaces saved Dog ID credential history without claiming provider storage", () => {
-  const artifact = createPetCredentialArtifact(
-    {
-      name: "Phoenix",
-      generatedAt: "2026-06-08T06:30:00.000Z",
-      message: "Phoenix Dog ID\nPrimary vet: River City Vet",
-    },
-    "2026-06-08T06:30:00.000Z",
-  );
-  const actions = deriveWoofGuideActions(
-    {
-      profile: {
-        name: "Phoenix",
-        breed: "Shepherd mix",
-        primaryVet: "River City Vet",
-        emergencyContact: "Apollo - 555-0100",
-        microchipNumber: "985112003004551",
-        insuranceProvider: "Lemonade",
-        insurancePolicy: "WW-1042",
-      },
-      dietProfile: {
-        primaryFood: "Sensitive kibble",
-        normalPortion: "1 cup",
-        mealSchedule: "7 AM and 6 PM",
-      },
-      caregivers: [{ name: "Apollo", role: "Owner" }],
-      routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
-      records: [{ id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" }],
-      reportArtifacts: [artifact],
-      entries: [
-        {
-          id: "breakfast",
-          type: "meal",
-          title: "Breakfast",
-          caregiver: "Apollo",
-          occurredAt: "2026-06-06T14:00:00.000Z",
-          details: { householdVisible: true },
-        },
-      ],
-    },
-    NOW,
-  );
-
-  const historyAction = actions.find((action) => action.id === "dog-id-history");
-
-  assert.equal(historyAction?.route, "/records");
-  assert.equal(historyAction?.urgency, "normal");
-  assert.equal(historyAction?.draft?.kind, "pet_credential_history");
-  assert.match(historyAction?.detail ?? "", /local Dog ID credential/i);
-  assert.match(historyAction?.draft?.body ?? "", /Report History/);
-  assert.match(historyAction?.draft?.body ?? "", /local credential sources/i);
-  assert.doesNotMatch(historyAction?.draft?.body ?? "", /cloud storage ready|PDF export ready/i);
-});
-
-test("surfaces saved report history without claiming native or server-backed export", () => {
-  const carePass = createCarePassArtifact(
-    buildCarePass({
-      audience: "sitter",
-      profile: { name: "Phoenix" },
-      routines: [{ id: "walk", type: "walk", label: "Morning walk", time: "8:00 AM" }],
-      entries: [
-        {
-          id: "walk-log",
-          type: "walk",
-          title: "Morning walk",
-          caregiver: "Apollo",
-          occurredAt: "2026-06-06T14:00:00.000Z",
-          details: { householdVisible: true },
-        },
-      ],
-      records: [{ id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" }],
-    }),
-    "2026-06-08T06:30:00.000Z",
-  );
-  const progressReport = createProgressReportArtifact({
-    dogName: "Phoenix",
-    periodDays: 30,
-    generatedAt: "Jun 9, 7:30 AM",
-    createdAt: "2026-06-09T06:30:00.000Z",
-    summary: "30-day progress report for caregiver and vet review.",
-    sections: [{ title: "Care Summary", lines: ["Total entries logged: 14"] }],
+test("keeps the assistant gated off until provider proof and an API domain exist", () => {
+  const noProof = resolveWoofGuideAssistantGate({
+    apiBaseUrl: "https://example.com",
+    liveAiProofReady: false,
   });
+  assert.equal(noProof.enabled, false);
+  assert.equal(noProof.reason, "provider-proof-missing");
+  assert.equal(noProof.statusLabel, "Not in this build");
+  assert.match(noProof.headline, /isn't enabled in this build/);
+  assert.match(noProof.privacyNote, /Nothing you type here is sent anywhere/);
+  assert.doesNotMatch(noProof.headline, /try again/i, "the gated state must not pretend the outage is transient");
+  assert.doesNotMatch(noProof.composerNote, /try again/i);
 
-  const actions = deriveWoofGuideActions(
+  const noDomain = resolveWoofGuideAssistantGate({ apiBaseUrl: "  ", liveAiProofReady: true });
+  assert.equal(noDomain.enabled, false);
+  assert.equal(noDomain.reason, "api-domain-missing");
+
+  const ready = resolveWoofGuideAssistantGate({
+    apiBaseUrl: "https://example.com",
+    liveAiProofReady: true,
+  });
+  assert.equal(ready.enabled, true);
+  assert.equal(ready.reason, "ready");
+});
+
+test("keeps working non-assistant destinations for the gated WoofGuide state", () => {
+  assert.deepEqual(
+    WOOFGUIDE_ASSISTANT_FALLBACK_LINKS.map((link) => link.route),
+    ["/health", "/records", "/"],
+  );
+  for (const link of WOOFGUIDE_ASSISTANT_FALLBACK_LINKS) {
+    assert.ok(link.label.trim().length > 0);
+    assert.ok(link.detail.trim().length > 0);
+  }
+});
+
+test("builds the owner-reviewed vet-note draft for the Health Watch funnel", () => {
+  const action = deriveWoofGuideVetNoteAction(
     {
-      profile: {
-        name: "Phoenix",
-        breed: "Shepherd mix",
-        primaryVet: "River City Vet",
-        emergencyContact: "Apollo - 555-0100",
-        microchipNumber: "985112003004551",
-        insuranceProvider: "Lemonade",
-        insurancePolicy: "WW-1042",
-      },
+      profile: { name: "Phoenix" },
       dietProfile: {
         primaryFood: "Sensitive kibble",
         normalPortion: "1 cup",
         mealSchedule: "7 AM and 6 PM",
       },
-      caregivers: [{ name: "Apollo", role: "Owner" }],
-      routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
-      records: [{ id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" }],
-      reportArtifacts: [carePass, progressReport],
+      routines: [{ id: "dinner", type: "meal", label: "Dinner", time: "6:00 PM" }],
+      records: [],
       entries: [
         {
-          id: "breakfast",
-          type: "meal",
-          title: "Breakfast",
+          id: "vomit",
+          type: "vomit",
+          title: "Yellow bile",
           caregiver: "Apollo",
           occurredAt: "2026-06-06T14:00:00.000Z",
-          details: { householdVisible: true },
+          severity: "watch",
+          details: { kind: "yellow bile" },
         },
       ],
     },
     NOW,
   );
 
-  const reportAction = actions.find((action) => action.id === "report-history");
-
-  assert.equal(reportAction?.route, "/records");
-  assert.equal(reportAction?.urgency, "normal");
-  assert.equal(reportAction?.draft?.kind, "report_history");
-  assert.match(reportAction?.detail ?? "", /2 local report sources saved/);
-  assert.match(reportAction?.draft?.body ?? "", /Phoenix Report History Review/);
-  assert.match(reportAction?.draft?.body ?? "", /Care Pass/);
-  assert.match(reportAction?.draft?.body ?? "", /Progress Report/);
-  assert.match(reportAction?.draft?.body ?? "", /Resend or share printable source/);
-  assert.match(reportAction?.draft?.body ?? "", /Review the latest local source/);
-  assert.match(reportAction?.draft?.body ?? "", /routines, medications, records, and audience/);
-  assert.match(reportAction?.draft?.body ?? "", /Remove obsolete local sources only after review/);
-  assert.match(reportAction?.draft?.body ?? "", /does not revoke shares/);
-  assert.match(reportAction?.draft?.safety ?? "", /server-backed report storage/);
-  assert.doesNotMatch(reportAction?.draft?.body ?? "", /cloud storage ready|PDF export ready/i);
+  assert.equal(action.id, "health-review-vet-note");
+  assert.equal(action.urgency, "watch");
+  assert.equal(action.draft?.kind, "vet_note");
+  assert.match(action.draft?.body ?? "", /Health Pattern Review/i);
+  assert.match(action.draft?.body ?? "", /not a diagnosis/i);
+  assert.equal(action.prompt, undefined, "the funnel draft must not depend on a live assistant prompt");
 });

@@ -15,6 +15,9 @@ export const householdMembersTable = pgTable(
       .references(() => usersTable.id, { onDelete: "cascade" }),
     role: text("role").notNull().default("member"),
     displayName: text("display_name"),
+    accessPassExpiresAt: timestamp("access_pass_expires_at", {
+      withTimezone: true,
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

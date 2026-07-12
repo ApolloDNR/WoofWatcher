@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventDetails, type CareEventType } from "./events.ts";
+import { resolvePetName } from "./pet-identity.ts";
 import { deriveRoutineBoard, type RoutineBoardCaregiver, type RoutineBoardRoutine } from "./routine-board.ts";
 import { deriveCareDayStatus } from "./status.ts";
 
@@ -26,6 +27,8 @@ export interface CareIntelligenceInput {
   routines?: readonly RoutineBoardRoutine[];
   caregivers?: readonly RoutineBoardCaregiver[];
   now?: number;
+  /** Display name for owner-facing copy; resolved via resolvePetName so renamed dogs never read "Phoenix". */
+  petName?: string | null;
 }
 
 export interface CareIntelligenceMetric {
@@ -47,6 +50,8 @@ export interface CareIntelligenceOpenLoop {
   label: string;
   detail: string;
   priority: "high" | "medium" | "low";
+  targetEntryId?: string;
+  targetRoutineId?: string;
 }
 
 export interface CareIntelligenceNextAction {
@@ -60,6 +65,8 @@ export interface CareIntelligenceNextAction {
   label: string;
   detail: string;
   priority: "high" | "medium" | "low";
+  targetEntryId?: string;
+  targetRoutineId?: string;
 }
 
 export interface CareIntelligence {
@@ -99,6 +106,7 @@ const FIELD_GROUPS: Record<CareEventType, readonly (readonly string[])[]> = {
   weight: [["weight", "value", "amount", "$amount"], ["unit"], ["bodyCondition"]],
   vomit: [["what", "kind", "color"], ["severity", "$severity"], ["timeSinceFood", "foodGap"], ["appetiteAfter"], ["energyAfter"]],
   symptom: [["what", "kind"], ["severity", "$severity"], ["duration", "$duration"], ["notes"]],
+  incident: [["incidentType", "kind"], ["incidentTrigger", "trigger", "context"], ["incidentExposure", "exposure", "involved"], ["incidentInjury", "injury"], ["incidentFollowUp", "followUp"]],
   grooming: [["groomingCondition", "condition"], ["groomingProducts", "products"], ["groomingNextDue", "nextDue"], ["coatNotes"]],
   alone: [["aloneOutcome", "returnState", "outcome"], ["aloneTrigger", "trigger"], ["calmingSupport", "support"], ["recoveryMinutes", "$duration"]],
   note: [["note", "$note"], ["stickyNotes"], ["tag"]],
@@ -168,6 +176,23 @@ function isPendingMeal(entry: CareIntelligenceEntry): boolean {
   const lifecycle = lower(details.mealLifecycle);
   return ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(completion) ||
     ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(lifecycle);
+}
+
+/**
+ * Same cross-midnight window as lib/todayCommand's pending-meal outcome: a
+ * meal served on the current local day always keeps its open loop, and a
+ * previous day's served meal (e.g. dinner at 23:58, now 00:02) stays
+ * actionable for 12 hours before it quietly expires. Keep these two windows
+ * in lockstep so Home's command card and the Care IQ open loops never
+ * disagree about whether an outcome is still owed.
+ */
+const PENDING_MEAL_OUTCOME_WINDOW_MS = 12 * 60 * 60 * 1000;
+
+function isPendingMealActionable(entry: CareIntelligenceEntry, now: number): boolean {
+  if (!isPendingMeal(entry)) return false;
+  if (isSameLocalDay(entry.occurredAt, now)) return true;
+  const occurred = new Date(entry.occurredAt).getTime();
+  return Number.isFinite(occurred) && occurred <= now && now - occurred <= PENDING_MEAL_OUTCOME_WINDOW_MS;
 }
 
 function mealCarePoint(entry: CareIntelligenceEntry): number {
@@ -241,9 +266,9 @@ function titleFor(status: CareIntelligenceStatus): string {
   return "Care record is building";
 }
 
-function subtitleFor(status: CareIntelligenceStatus, nextAction: CareIntelligenceNextAction): string {
+function subtitleFor(status: CareIntelligenceStatus, nextAction: CareIntelligenceNextAction, petName: string): string {
   if (status === "excellent") return "Routines, logs, and proof are lining up today.";
-  if (status === "steady") return "Phoenix has a strong record today; keep closing the open loops.";
+  if (status === "steady") return `${petName} has a strong record today; keep closing the open loops.`;
   if (status === "needs-attention") return nextAction.detail;
   return "Log the next real care moment and the day will sharpen fast.";
 }
@@ -259,6 +284,7 @@ function nextActionFromLoops(
       label: "Retry household sync",
       detail: failed.detail,
       priority: "high",
+      targetEntryId: failed.targetEntryId,
     };
   }
   const pendingMeal = loops.find((loop) => loop.kind === "pending-meal");
@@ -268,6 +294,7 @@ function nextActionFromLoops(
       label: "Update meal outcome",
       detail: pendingMeal.detail,
       priority: pendingMeal.priority,
+      targetEntryId: pendingMeal.targetEntryId,
     };
   }
   const routine = loops.find((loop) => loop.kind === "overdue-routine" || loop.kind === "due-routine");
@@ -277,6 +304,7 @@ function nextActionFromLoops(
       label: routine.label,
       detail: routine.detail,
       priority: routine.priority,
+      targetRoutineId: routine.targetRoutineId,
     };
   }
   const sparse = loops.find((loop) => loop.kind === "low-confidence");
@@ -286,6 +314,7 @@ function nextActionFromLoops(
       label: "Add detail to logs",
       detail: sparse.detail,
       priority: "low",
+      targetEntryId: sparse.targetEntryId,
     };
   }
   if (coreProgress < 70) {
@@ -307,6 +336,7 @@ function nextActionFromLoops(
 export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntelligence {
   const now = input.now ?? Date.now();
   const routines = input.routines ?? [];
+  const petName = resolvePetName(input.petName);
   const visibleToday = input.entries.filter((entry) => isSameLocalDay(entry.occurredAt, now) && isHouseholdVisible(entry));
   const status = deriveCareDayStatus(visibleToday, routines, now);
   const board = deriveRoutineBoard({
@@ -341,7 +371,11 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
         ? 90
         : 100;
 
-  const pendingMeals = mealEntries.filter(isPendingMeal);
+  // Pending outcomes span the midnight rollover (not just visibleToday), so
+  // an unresolved late-night meal still counts as an open loop after 00:00.
+  const pendingMeals = input.entries.filter(
+    (entry) => isHouseholdVisible(entry) && isPendingMealActionable(entry, now),
+  );
   const overdueRoutines = board.items.filter((item) => item.status === "overdue");
   const dueRoutines = board.items.filter((item) => item.status === "due");
   const lowConfidenceCount = confidenceScores.filter((score) => score > 0 && score < 58).length;
@@ -354,15 +388,23 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
       label: "Sync needs retry",
       detail: entry.syncError ? clean(entry.syncError) : `${entry.title ?? "A care log"} has not reached the household yet.`,
       priority: "high",
+      targetEntryId: entry.id,
     });
   }
   for (const entry of pendingMeals.slice(0, 3)) {
+    const servedEarlierDay = !isSameLocalDay(entry.occurredAt, now);
     loops.push({
       id: `pending-meal:${entry.id ?? entry.occurredAt}`,
       kind: "pending-meal",
       label: "Meal outcome pending",
-      detail: `${entry.title ?? "Meal"} was served. Confirm whether Phoenix ate all, some, refused, or is still grazing.`,
+      // Short enough for clamped mobile cards; the meal log offers the full
+      // ate all / some / refused / grazing outcome choices. A meal served
+      // before midnight owns the rollover honestly in its copy.
+      detail: servedEarlierDay
+        ? `Last night's ${clean(entry.title) || "meal"} - how did it go?`
+        : `${entry.title ?? "Meal"} served. Confirm how much ${petName} ate.`,
       priority: "medium",
+      targetEntryId: entry.id,
     });
   }
   for (const routine of overdueRoutines.slice(0, 2)) {
@@ -372,6 +414,7 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
       label: `${routine.label} overdue`,
       detail: `${routine.owner || "Care team"} owns ${routine.label}. Log it, skip it, or reassign it.`,
       priority: "high",
+      targetRoutineId: routine.id,
     });
   }
   for (const routine of dueRoutines.slice(0, 2)) {
@@ -381,6 +424,7 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
       label: `${routine.label} due now`,
       detail: `${routine.owner || "Care team"} can close this with a matching log.`,
       priority: "medium",
+      targetRoutineId: routine.id,
     });
   }
   if (lowConfidenceCount > 0) {
@@ -406,7 +450,10 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
   const rawScore = round(coreProgress * 0.38 + routineProgress * 0.25 + confidenceScore * 0.25 + syncScore * 0.12);
   const loopPenalty = Math.min(openLoopCount * 3, 12);
   const healthPenalty = status.healthAlert ? 8 : 0;
-  const score = clamp(rawScore - loopPenalty - healthPenalty);
+  // With zero household-visible logs today nothing has been earned yet: the
+  // day's Care IQ is honestly 0, not the ~9% the perfect-sync term would
+  // invent for an empty record. The score starts with the first real log.
+  const score = visibleToday.length === 0 ? 0 : clamp(rawScore - loopPenalty - healthPenalty);
   const nextAction = nextActionFromLoops(loops, coreProgress);
   const hasAttentionLoop = failedSyncEntries.length > 0 || status.healthAlert || overdueRoutines.length > 1;
   const intelligenceStatus = scoreStatus(score, hasAttentionLoop);
@@ -415,7 +462,7 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
     score,
     status: intelligenceStatus,
     title: titleFor(intelligenceStatus),
-    subtitle: subtitleFor(intelligenceStatus, nextAction),
+    subtitle: subtitleFor(intelligenceStatus, nextAction, petName),
     coreProgress,
     routineProgress,
     confidenceScore,

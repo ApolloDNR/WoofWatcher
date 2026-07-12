@@ -29,6 +29,8 @@ export interface DietProgress {
   percent: number;
   unit: string;
   mealCount: number;
+  pendingMealCount: number;
+  estimatedMealCount: number;
   targetMeals: number;
   label: string;
   summary: string;
@@ -141,29 +143,55 @@ function sameDay(occurredAt: string | null | undefined, now: number): boolean {
   return new Date(entryTime).toISOString().slice(0, 10) === new Date(now).toISOString().slice(0, 10);
 }
 
-function mealAmount(entry: DietProgressEntry, perMealAmount: number | null): number | null {
+interface MealAmountResult {
+  amount: number | null;
+  pending: boolean;
+  estimated: boolean;
+}
+
+function isPendingMealOutcome(completion: string, lifecycle: string): boolean {
+  return completion === "served" || completion === "grazing" || lifecycle === "outcome-pending";
+}
+
+function mealAmount(entry: DietProgressEntry, perMealAmount: number | null): MealAmountResult {
   const details = asObject(entry.details);
   const completion = typeof details.mealCompletion === "string" ? details.mealCompletion.toLowerCase().trim() : "";
+  const lifecycle = typeof details.mealLifecycle === "string" ? details.mealLifecycle.toLowerCase().trim() : "";
   const portion = typeof details.portion === "string" ? details.portion.toLowerCase().trim() : "";
-  if (completion === "skipped" || portion === "skipped") return 0;
+  if (isPendingMealOutcome(completion, lifecycle)) return { amount: null, pending: true, estimated: false };
+  if (completion === "skipped" || portion === "skipped") return { amount: 0, pending: false, estimated: false };
 
   const eatenAmount = numberFromUnknown(details.eatenAmount, { allowZero: true });
-  if (eatenAmount != null) return eatenAmount;
+  if (eatenAmount != null) {
+    return { amount: eatenAmount, pending: false, estimated: details.eatenAmountEstimated === true };
+  }
 
   const servedAmount = numberFromUnknown(details.servedAmount);
-  if (servedAmount != null) return servedAmount;
+  if (completion === "partial" && servedAmount != null) {
+    return { amount: roundAmount(servedAmount * 0.5), pending: false, estimated: true };
+  }
+  if (servedAmount != null) return { amount: servedAmount, pending: false, estimated: false };
 
   const servingAmount = numberFromUnknown(details.servingAmount);
-  if (servingAmount != null) return servingAmount;
+  if (completion === "partial" && servingAmount != null) {
+    return { amount: roundAmount(servingAmount * 0.5), pending: false, estimated: true };
+  }
+  if (servingAmount != null) return { amount: servingAmount, pending: false, estimated: false };
 
   const detailAmount = numberFromUnknown(details.amount);
-  if (detailAmount != null) return detailAmount;
+  if (detailAmount != null) return { amount: detailAmount, pending: false, estimated: false };
 
   const entryAmount = numberFromUnknown(entry.amount);
-  if (entryAmount != null) return entryAmount;
+  if (entryAmount != null) return { amount: entryAmount, pending: false, estimated: false };
 
   const factor = PORTION_FACTORS[portion];
-  return factor != null && perMealAmount != null ? roundAmount(perMealAmount * factor) : null;
+  if (factor != null && perMealAmount != null) {
+    return { amount: roundAmount(perMealAmount * factor), pending: false, estimated: false };
+  }
+  if (completion === "partial" && perMealAmount != null) {
+    return { amount: roundAmount(perMealAmount * 0.5), pending: false, estimated: true };
+  }
+  return { amount: null, pending: false, estimated: false };
 }
 
 function entryUnit(entry: DietProgressEntry): string | null {
@@ -203,6 +231,8 @@ export function deriveDietProgress(input: DietProgressInput): DietProgress {
 
   let fedAmount = 0;
   let mealCount = 0;
+  let pendingMealCount = 0;
+  let estimatedMealCount = 0;
   let detectedUnit: string | null = null;
 
   for (const entry of input.entries) {
@@ -210,8 +240,10 @@ export function deriveDietProgress(input: DietProgressInput): DietProgress {
     if (normalizeCareEventType(entry.type, entry.details) !== "meal") continue;
     mealCount += 1;
     detectedUnit ??= entryUnit(entry);
-    const amount = mealAmount(entry, perMealAmount);
-    if (amount != null) fedAmount += amount;
+    const meal = mealAmount(entry, perMealAmount);
+    if (meal.pending) pendingMealCount += 1;
+    if (meal.estimated) estimatedMealCount += 1;
+    if (meal.amount != null) fedAmount += meal.amount;
   }
 
   const finalUnit = parsedPortion?.unit ?? detectedUnit ?? unit;
@@ -228,11 +260,21 @@ export function deriveDietProgress(input: DietProgressInput): DietProgress {
     percent,
     unit: finalUnit,
     mealCount,
+    pendingMealCount,
+    estimatedMealCount,
     targetMeals,
     label: "Daily food",
     summary:
-      targetAmount == null
+      (targetAmount == null
         ? `${mealCount} meal${mealCount === 1 ? "" : "s"} logged today`
-        : `${formatAmount(roundedFed)} of ${formatAmount(targetAmount)} ${pluralizeUnit(finalUnit, targetAmount)} today`,
+        : `${formatAmount(roundedFed)} of ${formatAmount(targetAmount)} ${pluralizeUnit(finalUnit, targetAmount)} today`) +
+      [
+        pendingMealCount
+          ? `${pendingMealCount} outcome${pendingMealCount === 1 ? "" : "s"} pending`
+          : "",
+        estimatedMealCount
+          ? `${estimatedMealCount} estimated partial amount${estimatedMealCount === 1 ? "" : "s"}`
+          : "",
+      ].filter(Boolean).map((note) => `; ${note}`).join(""),
   };
 }

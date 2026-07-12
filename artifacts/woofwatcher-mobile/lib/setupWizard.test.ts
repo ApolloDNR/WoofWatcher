@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { applySetupWizardDraft, buildSetupConfirmation, createSetupWizardDraft } from "./setupWizard.ts";
+import { applySetupWizardDraft, buildSetupWizardConfirmation, createSetupWizardDraft } from "./setupWizard.ts";
 
 const NOW = "2026-06-08T06:00:00.000Z";
 
@@ -24,6 +24,12 @@ function defaultDoc() {
       vetBoundary: "Care notes are not veterinary diagnosis.",
     },
     caregivers: [],
+    householdSetup: {
+      mode: "create",
+      householdName: "",
+      inviteCode: "",
+      providerStatus: "local-only",
+    },
     dietProfile: {
       primaryFood: "",
       normalPortion: "",
@@ -55,13 +61,15 @@ test("applies first-run setup draft while preserving existing care document data
       careFocus: "Support anxious eating and steady routines.",
       caregiverName: "Apollo",
       caregiverRole: "Primary caregiver",
+      householdMode: "create",
+      householdName: "Phoenix House",
+      inviteCode: "",
       primaryFood: "Sensitive kibble",
       normalPortion: "1 cup",
       mealSchedule: "7 AM and 6 PM",
       routineType: "meal",
       routineLabel: "Breakfast",
       routineTime: "7:30 AM",
-      householdSetupIntent: "decide_later",
     },
     NOW,
   );
@@ -74,6 +82,13 @@ test("applies first-run setup draft while preserving existing care document data
   assert.equal(next.profile.weight.unit, "lb");
   assert.equal(next.profile.careFocus, "Support anxious eating and steady routines.");
   assert.deepEqual(next.caregivers, [{ name: "Apollo", role: "Primary caregiver" }]);
+  assert.deepEqual(next.householdSetup, {
+    mode: "create",
+    householdName: "Phoenix House",
+    inviteCode: "",
+    providerStatus: "pending-provider",
+    updatedAt: NOW,
+  });
   assert.equal(next.dietProfile.primaryFood, "Sensitive kibble");
   assert.equal(next.dietProfile.normalPortion, "1 cup");
   assert.equal(next.dietProfile.mealSchedule, "7 AM and 6 PM");
@@ -103,13 +118,14 @@ test("creates an editable setup draft from current care state", () => {
   assert.equal(draft.weightUnit, "lb");
   assert.equal(draft.caregiverName, "Emma");
   assert.equal(draft.caregiverRole, "Primary");
+  assert.equal(draft.householdMode, "create");
+  assert.equal(draft.householdName, "Dog household");
   assert.equal(draft.routineType, "walk");
   assert.equal(draft.routineLabel, "Morning walk");
   assert.equal(draft.routineTime, "8:30 AM");
-  assert.equal(draft.householdSetupIntent, "decide_later");
 });
 
-test("builds a truthful post-setup confirmation from the saved care foundation", () => {
+test("stages a join-by-invite household plan without pretending remote invites are live", () => {
   const next = applySetupWizardDraft(
     defaultDoc(),
     {
@@ -117,64 +133,35 @@ test("builds a truthful post-setup confirmation from the saved care foundation",
       breed: "German Shepherd mix",
       weight: "68",
       weightUnit: "lb",
-      careFocus: "Support anxious eating and steady routines.",
+      careFocus: "Coordinate between homes.",
       caregiverName: "Apollo",
-      caregiverRole: "Primary caregiver",
-      primaryFood: "Sensitive kibble",
-      normalPortion: "1 cup",
-      mealSchedule: "7 AM and 6 PM",
-      routineType: "meal",
-      routineLabel: "Breakfast",
-      routineTime: "7:30 AM",
-      householdSetupIntent: "decide_later",
-    },
-    NOW,
-  );
-
-  const confirmation = buildSetupConfirmation(next);
-
-  assert.equal(confirmation.title, "Phoenix's care foundation is ready");
-  assert.match(confirmation.body, /Breakfast at 7:30 AM/);
-  assert.match(confirmation.body, /Apollo/);
-  assert.match(confirmation.body, /Sensitive kibble/);
-  assert.match(confirmation.body, /Today, Log, Records, reports, and WoofGuide/);
-  assert.match(confirmation.nextStep, /household invite and sync controls stay in More/i);
-});
-
-test("names the active household in setup confirmation without claiming onboarding sync is complete", () => {
-  const next = applySetupWizardDraft(
-    defaultDoc(),
-    {
-      dogName: "Phoenix",
-      breed: "German Shepherd mix",
-      weight: "68",
-      weightUnit: "lb",
-      careFocus: "Support anxious eating and steady routines.",
-      caregiverName: "Emma",
-      caregiverRole: "Sitter",
+      caregiverRole: "Adult Admin",
+      householdMode: "join",
+      householdName: "Emma's Home",
+      inviteCode: " ww-42 ",
       primaryFood: "Sensitive kibble",
       normalPortion: "1 cup",
       mealSchedule: "7 AM and 6 PM",
       routineType: "walk",
-      routineLabel: "Morning walk",
-      routineTime: "8:30 AM",
-      householdSetupIntent: "decide_later",
+      routineLabel: "Evening walk",
+      routineTime: "5:30 PM",
     },
     NOW,
   );
 
-  const confirmation = buildSetupConfirmation(next, {
-    activeHouseholdName: "Phoenix Family Pack",
-    householdCount: 2,
-  });
+  assert.equal(next.householdSetup?.mode, "join");
+  assert.equal(next.householdSetup?.householdName, "Emma's Home");
+  assert.equal(next.householdSetup?.inviteCode, "WW-42");
+  assert.equal(next.householdSetup?.providerStatus, "pending-provider");
 
-  assert.match(confirmation.nextStep, /Active household: Phoenix Family Pack/);
-  assert.match(confirmation.nextStep, /2 packs in More/);
-  assert.match(confirmation.nextStep, /setup only saved the care foundation/i);
-  assert.doesNotMatch(confirmation.nextStep, /sync is complete/i);
+  const confirmation = buildSetupWizardConfirmation(next, { isClerkConfigured: true, isSignedIn: false });
+  assert.match(confirmation.title, /invite/i);
+  assert.match(confirmation.detail, /WW-42/);
+  assert.match(confirmation.syncLabel, /Account needed/);
+  assert.match(confirmation.providerBoundary, /does not send or accept remote invites/i);
 });
 
-test("keeps household setup intent truthful and routed to More after saving the foundation", () => {
+test("describes local preview setup as device-only until account sync is configured", () => {
   const next = applySetupWizardDraft(
     defaultDoc(),
     {
@@ -182,38 +169,28 @@ test("keeps household setup intent truthful and routed to More after saving the 
       breed: "German Shepherd mix",
       weight: "68",
       weightUnit: "lb",
-      careFocus: "Support anxious eating and steady routines.",
+      careFocus: "Keep a local care baseline.",
       caregiverName: "Apollo",
-      caregiverRole: "Owner",
+      caregiverRole: "Primary caregiver",
+      householdMode: "local",
+      householdName: "",
+      inviteCode: "",
       primaryFood: "Sensitive kibble",
       normalPortion: "1 cup",
       mealSchedule: "7 AM and 6 PM",
       routineType: "meal",
       routineLabel: "Breakfast",
       routineTime: "7:30 AM",
-      householdSetupIntent: "start_pack",
     },
     NOW,
   );
 
-  const startPack = buildSetupConfirmation(next, {
-    activeHouseholdName: "Phoenix Family Pack",
-    householdCount: 1,
-    householdSetupIntent: "start_pack",
-  });
-  const joinPack = buildSetupConfirmation(next, {
-    householdSetupIntent: "join_pack",
-  });
-  const decideLater = buildSetupConfirmation(next, {
-    householdSetupIntent: "decide_later",
-  });
+  assert.equal(next.householdSetup?.mode, "local");
+  assert.equal(next.householdSetup?.householdName, "Phoenix's Household");
+  assert.equal(next.householdSetup?.providerStatus, "local-only");
 
-  assert.match(startPack.nextStep, /share the owner\/admin invite code/i);
-  assert.match(startPack.nextStep, /review Household Access/i);
-  assert.match(joinPack.nextStep, /Join another household/i);
-  assert.match(joinPack.nextStep, /invite code from the pack owner/i);
-  assert.match(decideLater.nextStep, /keep using Today/i);
-  assert.match(decideLater.nextStep, /invite, join, sync health, and switching controls/i);
-  assert.doesNotMatch(startPack.nextStep, /invite approval is complete/i);
-  assert.doesNotMatch(joinPack.nextStep, /joined/i);
+  const confirmation = buildSetupWizardConfirmation(next, { isClerkConfigured: false, isSignedIn: false });
+  assert.match(confirmation.title, /local/i);
+  assert.match(confirmation.syncLabel, /Local preview/);
+  assert.match(confirmation.nextActions.join(" "), /backup\/export/i);
 });

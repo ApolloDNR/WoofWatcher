@@ -8,6 +8,7 @@ import {
   isUnsyncedEntry,
   shouldRetryCreate,
   shouldRetryUpdate,
+  buildCareEntryRefreshPlan,
   mergeServerAndLocalEntries,
   withSyncedStatus,
 } from "./careSync.ts";
@@ -99,6 +100,20 @@ test("keeps failed server edits without duplicating the matching server row", ()
       ["server_2", "synced"],
     ],
   );
+});
+
+test("keeps care-entry refresh full until the API has a real update cursor", () => {
+  const plan = buildCareEntryRefreshPlan({
+    hasUpdatedAtCursor: false,
+    hasDeleteTombstones: false,
+  });
+
+  assert.deepEqual(plan, {
+    mode: "full",
+    params: undefined,
+    boundary:
+      "Full care-entry refresh required until the API exposes an updatedAt cursor and delete tombstones.",
+  });
 });
 
 test("separates create retries from update retries", () => {

@@ -91,6 +91,24 @@ export interface CareDocRefreshPlan<T extends SyncableCareDoc> {
   message: string;
 }
 
+export type CareEntryRefreshPlan =
+  | {
+      mode: "full";
+      params: undefined;
+      boundary: string;
+    }
+  | {
+      mode: "incremental";
+      params: { since: string };
+      boundary: string;
+    };
+
+export interface CareEntryRefreshPlanInput {
+  hasUpdatedAtCursor: boolean;
+  hasDeleteTombstones: boolean;
+  latestSyncedAt?: string;
+}
+
 export function withSyncedStatus<T extends SyncableEntry>(
   entries: readonly T[],
 ): Array<T & { syncStatus: "synced"; syncError: undefined }> {
@@ -231,6 +249,34 @@ export function reconcileCareDocFromServer<T extends SyncableCareDoc>({
     version: serverVersion,
     shouldPushLocal: false,
     message: "Using the latest household care from the server.",
+  };
+}
+
+export function buildCareEntryRefreshPlan({
+  hasUpdatedAtCursor,
+  hasDeleteTombstones,
+  latestSyncedAt,
+}: CareEntryRefreshPlanInput): CareEntryRefreshPlan {
+  const latestSyncedTime = Date.parse(latestSyncedAt ?? "");
+  const canUseIncremental =
+    hasUpdatedAtCursor &&
+    hasDeleteTombstones &&
+    !Number.isNaN(latestSyncedTime);
+
+  if (canUseIncremental) {
+    return {
+      mode: "incremental",
+      params: { since: new Date(latestSyncedTime).toISOString() },
+      boundary:
+        "Incremental care-entry refresh uses a server update cursor with delete tombstones.",
+    };
+  }
+
+  return {
+    mode: "full",
+    params: undefined,
+    boundary:
+      "Full care-entry refresh required until the API exposes an updatedAt cursor and delete tombstones.",
   };
 }
 

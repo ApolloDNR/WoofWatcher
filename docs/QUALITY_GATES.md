@@ -26,6 +26,8 @@ Current evidence, 2026-06-11: Water quick logs now record household-visible fres
 
 Current evidence, 2026-06-11: Walk quick logs now explicitly record household-visible activity evidence, and shared Walk Activity logic derives duration, places/routes, dog interactions, social outcomes, last log, caregiver participation, and next-step copy from visible walk logs.
 
+Current evidence, 2026-06-19: Walk quick logs can now become active sessions instead of only past logs. Home and Log start the same household-visible walk session, Home shows Walk active in the room/presence/Next Up surfaces, and the Log finish panel records route/place, distance, dog interactions, social outcome, note, duration, and audit history before feeding Walk Activity and Saved Routes.
+
 Current evidence, 2026-06-11: The full Log composer now captures walk route/place, distance, dog interactions, social outcome notes, and household visibility. Shared Saved Routes logic derives repeat route templates from visible route logs, while private walks stay out of shared route status.
 
 Current evidence, 2026-06-11: Potty quick logs now record household-visible potty evidence, the Log composer captures pee/poop kind and condition with sticky notes, and shared Potty Health logic derives pee/poop counts, stool review signals, conditions, last log, caregiver participation, and next-step copy from visible potty logs.
@@ -54,15 +56,21 @@ Current evidence, 2026-06-11: Medication History excludes private medication log
 
 Current evidence, 2026-06-11: Medication History search and outcome filters make skipped and missed medication evidence easier to find without exposing private medication logs.
 
+Current evidence, 2026-06-19: Medication proof attachment now records local photo proof URI/name/source, local-only storage status, attached-by/at metadata, audit history, and proof-attached timeline state while keeping medication logs pending adult confirmation until owner review.
+
 Current evidence, 2026-06-11: Hydration status ignores private water logs and shows caregiver participation in Records, keeping daily water care visible as household evidence.
 
 Current evidence, 2026-06-11: Walk Activity ignores private walk logs and shows caregiver participation, places, and social outcome notes in Records, keeping dog park and walker context visible to the household.
+
+Current evidence, 2026-06-19: Active walk sessions preserve one shared log from start to finish. Re-tapping Walk while a session is open routes to the Log finish flow, and completing the session appends a finish audit event instead of creating a disconnected duplicate.
 
 Current evidence, 2026-06-11: Saved Routes ignores private walk logs and stale route evidence, grouping only visible route/place logs into shared route templates for household and report context.
 
 Current evidence, 2026-06-11: Potty Health ignores private potty logs and shows caregiver participation, latest detail, and stool review count in Records, keeping bathroom and stool context visible to the household without exposing private notes.
 
 Current evidence, 2026-06-11: Records Potty Health now shows stool colors and context labels from visible logs, making accident, urgency, and straining details visible to the household without requiring timeline search.
+
+Current evidence, 2026-06-19: Potty detail correction now has a tested Log detail sheet flow for outcome, location, pee detail, stool consistency/color, and context. Updating a parent potty attempt rewrites stale pee/stool fields, preserves routine/household context, records audit history, and feeds Records Potty Health without turning quick tap logs into fake precision.
 
 Current evidence, 2026-06-11: Durable sync outbox derives local, pending, and failed care entries into visible retryable create/update counts, exposes that state through CareContext, and shows a Log screen Offline Outbox banner with a Retry sync action so owners can recover care changes instead of trusting hidden sync internals.
 
@@ -72,85 +80,23 @@ Current evidence, 2026-06-11: Care document refresh now reconciles local and ser
 
 Current evidence, 2026-06-11: Weekly Care Trends derives a household-visible 7-day care picture, including current-versus-previous comparison, top caregivers, meal completion, walk minutes, water refill equivalents, and review signals while excluding private logs.
 
+Current evidence, 2026-06-26: Weekly Care Trends now keeps pending meal outcomes separate from complete, partial, and skipped meals. Served, outcome-pending, and grazing meals appear as pending in trend summaries, highlights, watch signals, Care Pass trend lines, and the Records Care Trends `Meal open` metric instead of silently reading as resolved weekly progress.
+
 Current evidence, 2026-06-11: Training logs now capture skill/cue, win/practice/struggle outcome, duration, next-practice notes, sticky notes, and household visibility, and Training Progress derives visible 30-day sessions, minutes, wins, struggles, skills, caregivers, and latest context.
-
-Current evidence, 2026-06-27: Mood logs now capture low/steady/high energy, optional care context, sticky notes, and household visibility in the Log composer while keeping the top-level mood field that Records Mood Trend and care-twin state already consume.
-
-Current evidence, 2026-06-28: Records Mood Trend now derives from shared care-domain logic. Private and stale mood logs stay out of the household trend, while visible check-ins carry energy counts, latest caregiver/context, watch status, owner-readable summary, and safe next-step copy.
-
-Current evidence, 2026-06-28: Care Pass reports now reuse the shared Mood Trend derivation for a Mood & Energy handoff section. Recent household-visible mood check-ins carry low/steady/high energy counts, latest caregiver/context, and non-diagnostic owner-reported boundary language into sitter, trainer, and vet reports while private and stale mood logs stay out.
-
-Current evidence, 2026-06-28: WoofGuide now reuses the shared Mood Trend derivation for an owner-reviewed Mood & Energy summary action. Shared recent mood check-ins can be summarized with energy counts, latest caregiver/context, and owner-reported/non-diagnostic boundary language, and approving the draft inserts only an assistant message instead of mutating care records.
-
-Current evidence, 2026-06-28: Records Mood Timeline now reuses the same shared Mood Trend derivation for a longer-range mobile review. Household-visible mood check-ins over 90 days show caregiver, relative date, energy, context, and notes, while private/stale logs stay excluded and the UI labels mood and energy as owner-reported context, not a diagnosis.
-
-Current evidence, 2026-06-28: Records Mood Trend now offers Week, Month, and Quarter views plus compact period comparison visuals from `deriveMoodTrendPeriods`. The period summaries reuse the same shared mood evidence boundary, keeping private/stale logs excluded and avoiding diagnostic claims.
-
-Current evidence, 2026-06-29: Records Mood Trend now filters shared mood review by caregiver and care context. `deriveMoodTrend` and `deriveMoodTrendPeriods` apply the same filters after the household-visible and lookback boundaries, so private/stale logs remain excluded while owners can narrow the summary and 90-day timeline to a specific caregiver or trigger/context.
-
-Current evidence, 2026-06-29: Records Mood Trend now includes a compact sparkline from `deriveMoodTrendSparkline`. The sparkline buckets the same selected-period, caregiver-filtered, and care-context-filtered household-visible mood evidence into owner-readable bars, preserving private/stale exclusions and non-diagnostic framing.
-
-Current evidence, 2026-06-29: Records Progress Reports now include a Mood & Energy snapshot from `deriveMoodEnergyReportSnapshot`. The shared snapshot uses the same mood-trend boundary, excludes private/stale mood logs, includes energy counts plus latest caregiver/context, and carries owner-reported/non-diagnostic language into the shareable progress report.
-
-Current evidence, 2026-06-29: Records Progress Reports now save print-ready report artifacts in Report History. The shared artifact helper stores escaped HTML, stable filenames, section metadata, and Mood & Energy owner-reported boundary lines, and Records can resend or share printable source for both Care Pass and Progress Report artifacts.
-
-Current evidence, 2026-06-29: Records Vault now summarizes local receipt/document attachment readiness from shared record-vault logic. Mobile Records shows per-section attachment counts, missing local file titles, and a boundary that attachments are local until provider-backed document storage is approved.
-
-Current evidence, 2026-06-29: Care Pass and Progress Reports now reuse the Records Vault local attachment summary for report handoff prep. Sitter/vet/trainer reports can show attached-versus-attachable receipt/document counts, missing local file titles, and the local-only storage boundary without claiming provider-backed document storage, binary PDF generation, or cloud sharing is ready.
-
-Current evidence, 2026-06-30: Care Pass reports now reuse shared Dog ID credential readiness for report handoff prep. Sitter/vet/trainer/caregiver reports can show ready-versus-missing Dog ID fields and the local printable-source boundary without claiming image/PDF export, provider-backed credential storage, or cloud sharing is ready.
-
-Current evidence, 2026-06-30: Progress Reports now reuse shared Dog ID credential readiness for report-history prep. Mobile Records saves Dog ID ready-versus-missing lines and the local printable-source boundary into print-ready Progress Report artifacts without claiming native PDF export, provider-backed credential storage, or server-backed report storage is ready.
-
-Current evidence, 2026-06-30: Dog ID shares now save reusable local credential artifacts in Report History. `createPetCredentialArtifact` stores escaped printable Dog ID HTML with a stable file name and Mobile Records labels those saved rows as Dog ID Credential while keeping image/PDF export, cloud sharing, provider-backed credential storage, and server-backed report storage gated.
-
-Current evidence, 2026-06-30: Records Report History now summarizes saved local handoff sources across Care Pass, Progress Report, and Dog ID artifacts. `summarizeReportArtifacts` counts the local source mix, identifies the latest reusable source, and Mobile Records keeps native PDF export, server-backed report storage, cloud sharing, retention, and deletion policy explicitly gated.
-
-Current evidence, 2026-06-30: WoofGuide now summarizes saved local Dog ID credential artifacts from Report History. The owner-reviewed `pet_credential_history` draft points owners back to Records for resend or printable-source sharing while keeping provider-backed credential storage, native PDF/image export, cloud sharing, retention, and deletion policy gated.
-
-Current evidence, 2026-06-30: WoofGuide now summarizes saved local report-history readiness from the same shared Report History helper. The owner-reviewed `report_history` draft appears when reusable Care Pass or Progress Report sources exist, routes owners to Records Report History for resend or printable-source sharing, inserts only reviewed assistant text, and keeps native PDF export, server-backed report storage, cloud sharing, retention, deletion, and unsupervised assistant actions gated.
-
-Current evidence, 2026-06-30: Records Report History rows and WoofGuide saved report-history drafts now reuse `describeReportArtifactSource` for the latest source label, section count, print-ready/restored status, printable file name, and local-only lifecycle copy so both surfaces explain reusable handoff sources without claiming native PDF export, server-backed report storage, cloud sharing, retention, or deletion policy is enabled.
-
-Current evidence, 2026-07-01: Records and WoofGuide saved-report review now reuse `summarizeReportArtifacts.cleanupLine` so cleanup guidance tells owners to remove obsolete local sources only after review and clarifies that local cleanup does not revoke shares or change provider retention.
 
 Current evidence, 2026-06-11: Household Responsibility now derives care-team ownership, open/overdue/unassigned routine counts, visible today log activity, and the next household action from routine-board truth, then shows that shared status in Calendar and More.
 
 Current evidence, 2026-06-11: Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step guidance from shared care-domain logic, then shows that access plan in More.
 
+Current evidence, 2026-06-19: Access Pass now derives local sitter/trainer/vet/emergency helper drafts, allowed/blocked permissions, active/upcoming/draft status, provider-gated sharing boundaries, and My Care Today assigned-care workload from shared care-domain logic, then shows both surfaces in More.
+
+Current evidence, 2026-06-24: Provider-durable household audit events now have an owner/admin review API. `GET /household/audit-events` is authenticated, active-household scoped, owner/admin-only, newest-first, filterable by action/lifecycle state, generated-client typed, and locally verified without claiming provider migration, RLS, retention, export/deletion, or scheduled expiry cleanup is approved.
+
 Current evidence, 2026-06-11: Care Log Audit Trail now records create, edit, sticky-note, and delete evidence with shared care-domain sanitization. Log details show audit history, handoff text includes audit summaries, and successful deletes create a separate non-health audit note instead of silently disappearing.
 
-Current evidence, 2026-06-22: Server-backed care-entry deletes now retain the same non-health audit shape in the API. A household-scoped delete creates an audit note with the deleted-entry snapshot, audit subject id, caregiver, and audit trail, while mobile Log suppresses duplicate local audit notes for server-backed deletes and keeps local/offline deletion audits intact.
+Current evidence, 2026-06-19: Log details now show a Correction history card above the raw Audit trail. It summarizes the latest update, correction count, and changed-field chips so owners can understand corrections before reading the full audit rows.
 
-Current evidence, 2026-06-23: API care-state writes now make optimistic concurrency atomic by updating only when the household id and current version still match. If another device updates the shared care document after the initial read, the API refetches the latest household state and returns the same recoverable 409 response shape instead of overwriting newer Dog Profile, routine, record, or report data.
-
-Current evidence, 2026-06-23: API household member profile updates now constrain the member display-name write by both authenticated user id and active household id. This keeps a caregiver's name change for one pack from mutating membership rows in other households before provider-backed role enforcement and multi-household management are complete.
-
-Current evidence, 2026-06-23: API household rename now requires the authenticated user's active-household membership role to be owner or admin. Invited members can still belong to the pack and contribute care, but they cannot rename the shared household before fuller provider-backed role enforcement, invite approval, and caregiver administration exist.
-
-Current evidence, 2026-06-23: API household invite joins now provision the authenticated user directly instead of creating a default personal pack before accepting the invite. The join route ensures the invited household has care state, avoids duplicate membership inserts, and adds new caregivers as ordinary members so a first-time invite accept lands on the real shared pack first.
-
-Current evidence, 2026-06-23: API household invite accepts now persist the joined pack as `users.activeHouseholdId`, and the active-household helper prefers that valid membership for later care-state, care-entry, profile, and rename routes. This prevents a caregiver from seeing the joined pack once and then accidentally syncing care back into an older default household before explicit household switching exists.
-
-Current evidence, 2026-06-23: API active-household switching now requires existing membership before changing `users.activeHouseholdId`. `PATCH /me/active-household` ensures the selected household has care state and returns that household's `/me` context, so later care-state and care-entry routes can be pointed at the intended shared pack without allowing arbitrary household id selection.
-
-Current evidence, 2026-06-24: Mobile More now exposes the active-household switcher for memberships returned by `/me.households`. Caregivers can choose an existing pack, the UI shows selected/disabled and pending/error state, and successful switches refresh both `/me` and care state so later routines and logs sync into the selected household.
-
-Current evidence, 2026-06-27: Setup-to-More household handoff stays truthful and self-clearing. Share invite and Join pack setup choices still route owners to the real More household tools, and More hides the setup next-step card after the owner opens the invite share or invite-code modal instead of leaving a stale onboarding prompt.
-
-Current evidence, 2026-06-27: Successful invite-code joins now confirm the active care sync pack in More. The join flow names the household returned by `/household/join`, refreshes `/me` and care state, and keeps switching, Household Access, Sync Health, and provider-backed invite approval boundaries visible in More.
-
-Current evidence, 2026-06-27: Mobile More display-name copy now names the active pack in the row, edit modal, and save confirmation. This matches the API boundary where `/me` updates the global display name plus the authenticated user's active-household membership row, without implying a caregiver identity change across every household or future provider-backed admin surface.
-
-Current evidence, 2026-06-24: API household audit review now has an owner/admin-scoped contract. `household_audit_events` stores durable household audit rows, and `GET /household/audit-events` returns newest-first events with bounded `limit`, `action`, and `lifecycleState` filters before final provider-backed audit retention policy exists.
-
-Current evidence, 2026-06-24: Sensitive household actions now produce durable audit rows for owner/admin review. Default household creation, household rename, active-household switching, and invite acceptance insert `household.created`, `household.renamed`, `household.active_changed`, and `household.member_joined` events into `household_audit_events` before final provider-backed account audit policy exists.
-
-Current evidence, 2026-06-25: API household member role updates now require owner/admin membership, stay scoped to existing active-household members, refuse owner demotion, return the refreshed `/me` household context, and write durable `household.member_role_changed` audit events before full provider-backed caregiver administration exists.
-
-Current evidence, 2026-06-25: Mobile More now exposes bounded Care Team role management for existing synced non-owner members. The surface calls the generated member-role update hook, shows accessible admin/member/sitter/trainer/vet viewer chips with selected/disabled state, refreshes `/me`, refetches Pack Audit on success, and keeps owner transfer, member removal, invite approval, and final role policy provider-gated.
-
-Current evidence, 2026-06-26: Mobile Pack Audit now renders role-change audit details with owner-readable role labels and previous-to-new context, so rows and screen-reader labels say transitions such as Sitter to Vet viewer instead of exposing internal role ids before final audit retention/export policy exists.
+Current evidence, 2026-06-20: Incident Watch now derives owner follow-up tasks and trainer goal suggestions from household-visible incident evidence. Records routes those follow-up rows to the Incident composer or trainer Care Pass preview, so incident review becomes a connected household workflow rather than a static warning card.
 
 Current evidence, 2026-06-11: Alone Time ignores private departure logs and shows visible caregiver participation, trigger/context, support, recovery, anxious/distress counts, and next-step copy in Records, keeping separation context shared only when the household marks it visible.
 
@@ -180,13 +126,9 @@ Current evidence, 2026-06-14: Records Record Vault, Diet on File, and Records Ca
 
 Current evidence, 2026-06-14: Records Weight Trend, Mood Trend, and Hydration now use shared board sections while preserving the weight chart, mood distribution bars, hydration progress meter, latest-log context, and safe care-summary copy.
 
-Current evidence, 2026-06-28: Records Mood Trend period controls remain on the shared board anatomy with accessible button labels and selected state, while the 90-day Mood Timeline remains a separate longer-range owner review surface.
-
-Current evidence, 2026-06-29: Records Mood Trend caregiver/context filters use compact accessible chips with selected state, mobile-safe touch targets, and filtered empty states instead of hiding unmatched evidence behind a blank card.
-
 Current evidence, 2026-06-14: Records Walk Activity, Training Progress, and Potty Health now use shared board sections while preserving saved routes, training focus/latest practice context, stool color/context, and care-safe next steps.
 
-Current evidence, 2026-06-14: Records has been cleared of the older one-off `padCard` and local section-header pattern. Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Lookback, and Medication Plan now use shared board primitives while preserving share/print actions, medication routine routing, follow-ups, search/filter history, and non-diagnostic care copy.
+Current evidence, 2026-06-14: Records has been cleared of the older one-off `padCard` and local section-header pattern. Care Trends, Dog ID heading, Alone Time, Grooming Care, Incident Watch, and Medication Plan now use shared board primitives while preserving share/print actions, medication routine routing, follow-ups, search/filter history, and non-diagnostic care copy.
 
 Current evidence, 2026-06-14: Mobile More now uses shared board sections for Care Team, Household Access, Responsibility Center, Sync Health, Tools & Sharing, and Diet Profile while preserving invite sharing, household rename, routine-board routing, sync refresh, tool links, and diet edit/detail actions.
 
@@ -200,59 +142,9 @@ Current evidence, 2026-06-14: Mobile Premium now uses shared board anatomy for W
 
 Current evidence, 2026-06-14: Mobile Avatar Studio now uses shared board anatomy for the animated scan canvas, live/generated avatar preview, mood-state set, and photo guidance while preserving library/camera generation, saved avatar state, and revert-to-default behavior.
 
-Current evidence, 2026-06-18: Mobile Avatar Studio now separates template thumbnails from production-scale template base stills. The first Shepherd, Retriever, Husky, and Doodle base PNGs render in the hero preview with subtle breathing motion, while unfinished templates fall back safely to the live Phoenix room or thumbnail registry.
-
-Current evidence, 2026-06-18: Mobile Avatar Studio now surfaces template pack truth per choice, not only in aggregate. Template cards show pack-stage labels, accessory tiles mark `Live art ready` versus `Art pending`, and mood chips mark `Live mood` versus `Still preview`, so owners can see exactly which breeds have real production art before they save a care twin.
-
-Current evidence, 2026-06-18: Avatar Studio pack truth, next-pack priority, and PixelLab asset verification now derive from one shared template-pack manifest, so Retriever, Husky, and Doodle can move into live art without the UI, readiness logic, and verifier drifting out of sync.
-
-Current evidence, 2026-06-19: Every non-shepherd launch template now has a full animated launch pack with file-backed overlays, the full mood still set, and seven registered preview strips. Avatar Studio promotes Retriever, Husky, Bully, Doodle, Terrier, Hound, Dachshund, Spaniel, Toy, Slender, and Mixed Breed to `Animated pack ready`, while Shepherd/Phoenix remains the benchmark live pack.
-
-Current evidence, 2026-06-19: Native safe-area QA now has a shared code baseline before device screenshots exist. The floating tab shell plus Home, Log, Plans, Health, More, Records, Avatar Studio, Setup, Premium, Privacy, and the shared auth shell derive bottom clearance from one helper with focused tests, reducing the risk that the floating nav or home indicator clips core actions on runtime devices.
-
-Current evidence, 2026-06-19: WoofGuide's owner-reviewed assistant composer now derives bottom clearance from shared mobile layout logic instead of local inset math. Focused tests cover flat native, notched native, and web composer clearance while the remaining native simulator/device screenshot pass stays open.
-
-Current evidence, 2026-06-19: Docked care workflow sheets now derive bottom clearance from `getModalSheetBottomPadding` instead of local `insets.bottom + 16/18/20` formulas. Focused tests cover flat and notched native modal clearance, and static readiness protects Plans routine/event sheets, Log detail/edit sheets, Records Care Pass/record sheets, More diet/profile sheets, and the app error recovery sheet before native screenshot QA is available.
-
-Current evidence, 2026-06-20: Floating feedback toasts now derive bottom position from `getFloatingFeedbackBottomOffset` instead of local `insets.bottom + 96/22` formulas. Focused tests cover tabbed Home feedback, standalone Avatar Studio feedback, notched devices, and web fallback before native screenshot QA is available.
-
-Current evidence, 2026-06-20: Centered text-entry modals now derive backdrop top, bottom, and horizontal clearance from `getCenteredModalBackdropPadding` instead of fixed horizontal-only modal padding. Focused tests cover flat and notched devices, and static readiness protects the Log sticky-note prompt plus More household/name prompt modals before native screenshot QA is available.
-
-Current evidence, 2026-06-20: Route header top clearance now derives from `getRouteTopPadding` instead of per-screen `topInset + 8/12/14/48` formulas. Focused tests cover flat native, notched native, and web chrome clearance, and static readiness protects Home, Log, Plans, Health, More, Records, Avatar Studio, Setup, Premium, Privacy, and the shared auth shell before native screenshot QA is available.
-
-Current evidence, 2026-06-20: WoofGuide owner-review draft sheets now derive docked bottom clearance from `getModalSheetBottomPadding` instead of fixed-only sheet padding. Static mobile readiness protects the assistant review surface alongside the composer before native screenshot QA is available.
-
-Current evidence, 2026-06-20: Keyboard-heavy Setup, WoofGuide, Log sticky-note prompt, and Records Care Pass/record sheets now derive keyboard avoidance from `getKeyboardAvoidingVerticalOffset` instead of the React Native default zero offset. Focused tests cover tabbed, setup, standalone, notched-device, and web behavior while native screenshot QA remains blocked.
-
-Current evidence, 2026-06-21: Inline mobile route actions now derive extra tappable area from `MOBILE_INLINE_HIT_SLOP` instead of route-local `hitSlop={8}` or `hitSlop={10}` literals. Focused tests cover the shared value and static readiness protects Home, Plans, More, Records, Privacy, and WoofGuide before native accessibility traversal is available.
-
-Current evidence, 2026-06-21: Route-local mobile action controls now derive compact control size from `MIN_MOBILE_TOUCH_TARGET` instead of local 40-42px boxes. Focused readiness protects Plans add/discover controls, Log sync/detail controls, Premium hero mark, and Setup finish-later action before native accessibility traversal is available.
-
-Current evidence, 2026-06-21: Avatar Studio compact owner-input controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of local 40/42/36px sizing. Focused readiness protects Studio tabs, coat swatches, and face-marking option pills before native accessibility traversal is available.
-
-Current evidence, 2026-06-21: Health/Bile Watch route controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of local 36/42px sizing. Focused readiness protects the segmented Health/Bile tabs plus Log health note and Records hero actions before native accessibility traversal is available.
-
-Current evidence, 2026-06-21: Plans schedule and routine controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of local 21/30/32/36px sizing. Focused readiness protects the schedule tabs, schedule mark-done status control, Daily Routine add button, and routine done button before native accessibility traversal is available.
-
-Current evidence, 2026-06-21: Log, Records, and More compact owner-action controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of route-local sub-48px sizing. Focused readiness protects Quick Log type chips, timeline filters, search clear, Records medication search/filter controls, report artifact actions, report period tabs, More invite, and dog-profile unit pills before native accessibility traversal is available.
-
-Current evidence, 2026-06-21: Calendar event discovery and upcoming-event controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of route-local 28/38/40px sizing. Focused readiness protects the discover icon, suggested-event icon, upcoming-event icon, and remove-event control before native accessibility traversal is available.
-
-Current evidence, 2026-06-21: Error recovery debug and close controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of route-local 44px sizing. Focused readiness protects the development error-details button and error-details modal close control before native accessibility traversal is available.
-
-Current evidence, 2026-06-21: Home header navigation controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of route-local 42px sizing. Focused readiness protects the More menu and Health Watch notification buttons on the first screen before native accessibility traversal is available.
-
-Current evidence, 2026-06-22: Plans routine/event modal controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of padding-only local sizing. Focused readiness protects routine type chips, owner quick chips, save buttons, delete routine, and add-event save controls before native accessibility traversal is available.
-
-Current evidence, 2026-06-22: Auth onboarding action controls now derive their tap area from `MIN_MOBILE_TOUCH_TARGET` instead of relying only on visual padding. Focused readiness protects the shared primary auth button and Google SSO button before native accessibility traversal is available.
-
-Current evidence, 2026-06-22: The living Phoenix room now shares the mobile tap contract. The animated care-twin room pressable uses `MOBILE_INLINE_HIT_SLOP`, and the visible status/next-action cue chips use `MIN_MOBILE_TOUCH_TARGET` before native accessibility traversal is available.
+Current evidence, 2026-06-18: Mobile Avatar Studio now separates template thumbnails from production-scale template base stills, then uses the cleaned live `LivingPhoenixRoom` Studio presentation as the primary hero so `/portrait` keeps one living care twin without Home HUD overlap. All 12 launch template base PNGs remain registered for the ID card, picker, and fallback/reference previews.
 
 Current evidence, 2026-06-14: Mobile Setup now uses shared board anatomy for the care-foundation route header, setup-progress meter, and profile/diet/routine/caregiver setup sections while preserving draft save and finish-later behavior.
-
-Current evidence, 2026-06-26: Mobile Setup now shows a post-save care-foundation confirmation before returning to Today. The confirmation summarizes the saved dog, starter routine, caregiver, and diet baseline, states that Today, Log, Records, reports, and WoofGuide will use the context, and keeps household invite/sync controls truthfully in More instead of implying provider-backed onboarding is complete.
-
-Current evidence, 2026-06-27: Mobile Setup now passes Share invite or Join pack handoff intent into More. More renders a setup next-step card with accessible actions for the existing owner/admin invite share path or invite-code join modal, while provider-backed invite approval, cloud onboarding, and arbitrary membership changes remain gated.
 
 ## Gate 5: Health Safety
 
@@ -288,11 +180,7 @@ Current evidence, 2026-06-09: Records Report History now shows whether a Care Pa
 
 Current evidence, 2026-06-09: Dog ID credentials now render escaped print-ready HTML with stable file names, and mobile Records exposes separate accessible actions for sharing the normal ID card text and printable source.
 
-Current evidence, 2026-06-30: Dog ID credentials now show shared readiness before sharing. `derivePetCredentialReadiness` combines Dog Profile fallback fields and saved records, counts ready-versus-total credential fields, lists missing fields in Mobile Records, and repeats that the Dog ID is a local printable source until provider-backed credential/PDF storage is approved.
-
 Current evidence, 2026-06-08: Records now derives expired, due-soon, and missing-critical reminders from the shared record vault and shows the top reminders in mobile Records without treating microchip or policy numbers as dates.
-
-Current evidence, 2026-06-29: Records Vault now treats receipts and documents as local-file-ready records when they have an attachment URI, counts missing local attachments, and keeps provider-backed document storage, retention, and cloud sharing clearly gated.
 
 Current evidence, 2026-06-08: WoofGuide record-review actions can create owner-reviewed calendar reminders from record-vault due status, while Care Pass actions route to preview before sharing.
 
@@ -318,18 +206,6 @@ Current evidence, 2026-06-11: Care Pass reports now include a Weight Trend secti
 
 Current evidence, 2026-06-11: Care Pass reports now include a Grooming Care section with recent grooming count, type counts, latest grooming context, products, next due date, and owner-reported/non-diagnostic boundary language.
 
-Current evidence, 2026-06-28: Care Pass reports now include a Mood & Energy section with recent shared mood check-ins, energy counts, latest caregiver/context, and owner-reported/non-diagnostic boundary language for sitter, trainer, and vet handoffs.
-
-Current evidence, 2026-06-29: Records Mood Trend now adds a filtered sparkline for owner review before report export. It does not diagnose or predict mood; it only visualizes recent shared check-in density and tone from the same care-domain evidence boundary.
-
-Current evidence, 2026-06-29: Progress Reports now include report-ready Mood & Energy lines before binary PDF/server-backed reports exist. The share payload includes only shared recent mood evidence, low/steady/high energy counts, latest caregiver/context, and an owner-reported boundary that states the snapshot is not diagnosis or emergency triage.
-
-Current evidence, 2026-06-29: Progress Reports now join saved Report History before binary PDF/server-backed report storage exists. Printable Progress Report artifacts carry escaped source HTML, stable filenames, section titles, and the same Mood & Energy non-diagnostic lines used by the share payload.
-
-Current evidence, 2026-06-30: Progress Reports now include Dog ID Prep lines before native credential/PDF export or server-backed report storage. Printable Progress Report artifacts carry ready-versus-missing Dog ID credential fields and the local printable-source boundary from shared credential readiness.
-
-Current evidence, 2026-07-01: Report History now includes shared pre-share review guidance before native PDF/export or server-backed report storage exists. `summarizeReportArtifacts.reviewLine` tells owners to review the latest local source for stale routines, medications, records, and audience before resending, and Mobile Records plus WoofGuide owner-reviewed report-history drafts reuse that same line without claiming cloud sharing, retention, deletion, native export, server-backed storage, or unsupervised assistant actions are ready.
-
 Current evidence, 2026-06-14: Mobile Records now presents Care Pass audience previews, saved report artifacts, and Progress Report controls as shared board sections with accessible resend, printable-source, and share actions preserved for sitter/vet/trainer handoff workflows.
 
 Current evidence, 2026-06-14: Mobile Records now keeps credential vault sections, diet context, and the records cabinet in the same board anatomy as report handoffs, making vaccines, visits, receipts, insurance, microchip, diet, and documents easier to scan as one care vault.
@@ -337,6 +213,8 @@ Current evidence, 2026-06-14: Mobile Records now keeps credential vault sections
 Current evidence, 2026-06-14: Mobile Records trend sections now present weight, mood, and hydration evidence inside the same board system as printable handoffs, strengthening report scanability without changing the non-diagnostic owner-reported boundaries.
 
 Current evidence, 2026-06-14: Mobile Records activity and potty sections now present walk, training, and bathroom evidence inside the same board system as Care Pass report content, improving scanability for sitters, trainers, and vets.
+
+Current evidence, 2026-06-20: Incident Watch reports now include trend label/detail, owner follow-up task labels, and trainer goal ideas in Care Pass output while preserving factual owner-reported and non-diagnostic boundary language.
 
 ## Gate 7: Revenue Readiness
 
@@ -372,11 +250,79 @@ Current evidence, 2026-06-11: Grooming Care strengthens the sitter/vet/report we
 
 Current evidence, 2026-06-11: Household Access strengthens the Family-tier wedge by making synced members, pending invites, routine-only owners, and practical permission labels visible before real provider-backed role enforcement is enabled.
 
+Current evidence, 2026-06-19: Access Pass strengthens the Family/helper revenue wedge by showing temporary permission drafts and personal care ownership while truthfully keeping remote enforcement provider-gated.
+
+Current evidence, 2026-06-19: Adventure Mode strengthens the emotional retention and Family memory wedge by deriving private real-care quests, XP, levels, completed proof, and local memory drafts from household-visible walks, training, play, and alone-time evidence while keeping media, maps, public sharing, and community discovery provider-gated.
+
 Current evidence, 2026-06-11: Reminder Center strengthens the Plus/Family reminders wedge by making existing routine, medication, record, and grooming follow-up candidates visible in Calendar without enabling checkout, push notifications, or automatic care writes.
+
+Current evidence, 2026-07-03: The Push notifications proof manifest strengthens the reminder-delivery launch gate by making Expo push project config, APNs credentials, Firebase/FCM credentials, permission copy, quiet-hours/opt-out behavior, and delivery QA visible on `/care-twin-qa?qaSurface=push-notifications-proof` while keeping `Reminder delivery allowed: No` until real provider proof and native delivery evidence are attached.
+
+Current evidence, 2026-07-04: Push notification native delivery proof now requires two concrete platform/provider-specific proofs instead of generic APNs/FCM/delivery QA strings: iOS APNs delivery and Android FCM delivery. Each proof needs platform/provider naming, image MIME, positive byte size, token registration, delivered reminder, permission preference, quiet-hours or opt-out, and fallback capture. Local verification passed `pushNotificationsProof.test.ts` `4/4`, focused push handoff/QA/readiness tests `148/148`, and direct JSON doctor source-backed checks. Branch CI proved this stricter guard in `WoofWatcher Verify` run `28695138006`, job `85103354696`, on commit `1772aed`. Real Expo/APNs/FCM configuration, native delivery evidence, prompt/legal approval, store privacy review, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: Reminder Center now consumes the Push notifications proof manifest instead of treating configured/provider-approved push as enough for provider-backed notification readiness. `buildReminderNotificationPreferencesForCenter` calls `buildPushNotificationsProofManifest`, keeps `providerConfigured` false until `reminderDeliveryAllowed` is true, and gives Calendar staged-but-unproven copy when provider setup is present but proof is missing. Fresh red/green verification first showed configured/provider-approved push plus granted permission producing `providerConfigured: true`, then passed focused Reminder Center/push/mobile readiness tests `125/125`, the full zero-dependency suite `586/586`, root TypeScript, mobile TypeScript, and direct JSON doctor source-backed checks including `reminder center push proof guard is source-backed`. Implementation commit `c36e36e` is pushed, but fresh branch CI for that commit is still pending because manual workflow dispatch was blocked in this Codex thread; prior green run `28705671803` predates `c36e36e`. Real Expo/APNs/FCM configuration, native delivery evidence, prompt/legal approval, store privacy review, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-03: The focused Auth/Setup proof manifest strengthens the first native-auth launch gate by making Clerk production app, redirect/deep-link, native Auth screenshot, Setup local-preview, household sync, and launch-gate blockers visible on `/care-twin-qa?qaSurface=auth-setup-onboarding-proof` while keeping `Native proof allowed: No` until structured Clerk, redirect/deep-link, household membership, Apollo auth launch, and iOS/Android screenshot proof is attached. Branch CI proved the focused manifest guard in `WoofWatcher Verify` run `28690620657`, job `85091134806`, on commit `e8a1ea9`.
+
+Current evidence, 2026-07-04: Auth/Setup native proof now requires four concrete platform-and-surface-specific screenshot proofs instead of generic approval flags: iOS Auth gateway, Android Auth gateway, iOS Setup local-preview, and Android Setup local-preview. Each proof needs platform/surface naming, image MIME, positive byte size, and provider-boundary copy; Setup proof also needs reachable controls. Local verification passed `authProviderProof.test.ts` `4/4`, focused Auth/Setup/doctor tests `118/118`, and direct JSON doctor source-backed checks. Branch CI proved this stricter guard in `WoofWatcher Verify` run `28694530592`, job `85101746726`, on commit `581b8b1`. Real native screenshots, provider-backed auth, household sync, store approval, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: Auth/Setup provider proof now also requires four structured provider proof files instead of approval booleans: Clerk production, redirect/deep-link URLs, household membership policy, and Apollo auth launch approval. Each proof needs a locator, acceptable MIME, positive byte size, required row fields, and row-specific approval booleans. Fresh red/green verification first showed staged provider approval booleans plus complete native screenshot evidence incorrectly making the manifest ready, then passed `authProviderProof.test.ts` `5/5`, focused Auth/Setup/release-QA/Share Beta Handoff/smoke/readiness tests `149/149`, the full zero-dependency API/mobile/PWA/care-domain suite `577/577`, root TypeScript, mobile TypeScript, direct JSON doctor source-backed checks, and `git diff --check`. Branch CI proved commit `6da692b` in `WoofWatcher Verify` run `28701069572`, job `85119051428`. Real Clerk configuration, OAuth, provider-backed household creation, native screenshots, store approval, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: WoofGuide AI provider proof now requires six structured proof files instead of generic provider/model/source/write-gate/veterinary/fallback approval strings: OpenAI secret storage, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, and fallback/incident handling. Each proof needs proof naming, acceptable MIME, positive byte size, required policy fields, and row-specific safety booleans. Fresh red/green verification first showed generic strings incorrectly making the manifest `ready-for-review`, then passed `aiProviderProof.test.ts` `3/3`, targeted AI proof plus mobile readiness/release-QA tests `143/143`, the full zero-dependency API/mobile/PWA/care-domain suite `572/572`, root TypeScript, PixelLab asset verification `ok=149 missing=0 invalid=0`, `git diff --check`, and direct JSON doctor source-backed checks. Branch CI proved this stricter guard in `WoofWatcher Verify` run `28697142992`, job `85108676301`, on commit `c40ac84`. Real OpenAI configuration, model approval, live AI, source/citation review, automatic-write approval, veterinary safety approval, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: Privacy & Safety now consumes that same WoofGuide AI proof boundary instead of treating `aiProviderConfigured` as enough for the AI disclosure gate. `deriveAccountSafetyPlan` calls `buildAiProviderProofManifest` and keeps the disclosure `limited` until structured OpenAI key storage, model policy, source rules, owner-reviewed write gate, veterinary safety, and fallback handling proof files are present. Fresh red/green verification first showed configured AI plus complete storage/deletion/payments producing `ready`, then passed focused Privacy & Safety/mobile readiness tests `121/121`, the full zero-dependency suite `583/583`, root TypeScript, mobile TypeScript, and direct JSON doctor source-backed checks including `privacy safety AI proof guard is source-backed`. Branch CI proved implementation commit `eb7234b` in `WoofWatcher Verify` run `28703163755`, job `85124450034`, with mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe builds all passing. Real OpenAI configuration, model approval, live AI, source/citation review, automatic-write approval, veterinary safety approval, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: The PWA WoofGuide surface now consumes that same AI proof boundary before treating a server OpenAI key signal as live AI. `assistantStatus` separates `configured` from `proofReady`, the UI now shows `Provider proof pending` and `Structured AI proof needed` instead of `Live OpenAI` or `Credential found`, and `reviewAssistantQuestion` only posts to `/api/care-helper` when `isAssistantLiveReady()` is true. Fresh red/green verification first showed the PWA still had live OpenAI copy and no `proofReady` live-call gate, then passed PWA readiness `15/15`, mobile readiness `114/114`, direct JSON doctor source-backed checks including `PWA WoofGuide AI proof guard is source-backed`, the full zero-dependency API/mobile/PWA/care-domain suite `588/588`, root TypeScript, and mobile TypeScript. Fresh branch CI is still pending because manual dispatch is blocked in this Codex thread. Real OpenAI configuration, structured AI provider proof files, live AI approval, source/citation review, automatic-write approval, veterinary safety approval, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: The PWA cloud sync plan now consumes the same care-entry provider-sync proof boundary before treating staged backend setup as cross-device sync readiness. `buildCloudSyncPlan` separates `backendConfigured` from `providerProofReady`, returns `provider_proof_pending` when a backend URL and household id exist without structured proof, and only returns `ready_to_connect` after proof covers Supabase project id, migration/backfill, active-household RLS, retention/export/deletion, dependency-complete build proof, mobile full-refresh sign-off, and Apollo approval. Fresh red/green verification first showed backend URL plus household id producing `ready_to_connect`, then passed PWA readiness `16/16`, mobile readiness `114/114`, direct JSON doctor source-backed checks including `PWA cloud sync proof guard is source-backed`, the full zero-dependency API/mobile/PWA/care-domain suite `589/589`, root TypeScript, mobile TypeScript, and `git diff --check`. Implementation commit `101fdf5` is pushed, but fresh branch CI is still pending because the latest visible run list only shows earlier `workflow_dispatch` successes through run `28705671803`, which predates this implementation commit. Real Supabase configuration, migrations, RLS, retention/export/deletion, dependency-complete provider build, native/mobile sign-off, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: The PWA hosted nudge plan now consumes the push/delivery proof boundary before treating staged backend and push provider setup as closed-app delivery readiness. `buildHostedNudgePlan` separates backend/push setup from `providerProofReady`, returns `provider_proof_pending` when backend URL, household id, and push provider exist without structured proof, keeps jobs empty while proof is missing, and only returns `ready_to_schedule` after proof covers backend jobs, caregiver consent, provider delivery, caregiver privacy, quiet-hours and daily-budget enforcement, missed-delivery fallback, native delivery, and Apollo approval. Fresh red/green verification first showed backend URL plus household id plus push provider producing `ready_to_schedule`, then passed PWA readiness `17/17`, mobile readiness `114/114`, direct JSON doctor source-backed checks including `PWA hosted nudge proof guard is source-backed`, the full zero-dependency API/mobile/PWA/care-domain suite `590/590`, root TypeScript, mobile TypeScript, and `git diff --check`. Implementation commit `3c933a0` is pushed, but fresh branch CI is still pending because the latest visible run list only shows earlier `workflow_dispatch` successes through run `28705671803`, which predates this implementation commit. Real backend job runners, provider delivery setup, caregiver consent/privacy approval, native delivery proof, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: The focused Records local-file handoff proof manifest strengthens the native Records file-proof gate by making Care Pass Report History local HTML, Dog ID local HTML credential, Dog ID SVG image source, native share-sheet behavior, Android content URI or saved-file proof, fallback copy, and generated PDF/PNG/provider boundary rows visible on `/care-twin-qa?qaSurface=records-local-file-handoff` while keeping `Native file proof allowed: No` until real iOS/Android share evidence and notes are attached. Branch CI proved the focused manifest guard in `WoofWatcher Verify` run `28691115501`, job `85092467507`, on commit `8268809`.
+
+Current evidence, 2026-07-04: Records local-file proof now requires six concrete native local-file proofs instead of generic native share-sheet notes: iOS and Android Care Pass local HTML, iOS and Android Dog ID local HTML, and iOS and Android Dog ID SVG image source. Android content URI or saved-file proof requires Android `content://` or `file://` URI evidence for the three Android file slots. Local verification passed `reportArtifactExportFile.test.ts` `8/8`, focused Records local-file/doctor tests `122/122`, direct JSON doctor source-backed checks, the full zero-dependency suite `563/563`, root TypeScript, and mobile TypeScript. Branch CI proved commit `97fa65a` in `WoofWatcher Verify` run `28693966672`, job `85100292756`. Real native device capture remains required.
+
+Current evidence, 2026-07-04: The focused Report Binary Export Proof manifest strengthens the generated artifact gate by making Care Pass PDF, Dog ID PNG, provider storage, and native artifact proof rows visible on `/care-twin-qa?qaSurface=report-binary-export-proof` while keeping `Generated artifacts allowed: No` until real file name, file size, MIME, native share/reopen, renderer, structured provider storage proof, iOS/Android artifact proof, and Apollo approval are attached. Local verification passed focused care-twin/doctor readiness `114/114`, the full zero-dependency suite `559/559`, root TypeScript, mobile TypeScript, and direct JSON doctor source-backed checks. Branch CI proved the focused manifest guard in `WoofWatcher Verify` run `28691498890`, job `85093511875`, on commit `822ff54`.
+
+Current evidence, 2026-07-04: Generated Report Binary Export proof now requires four concrete native artifact proofs before readiness can open: iOS Care Pass PDF, Android Care Pass PDF, iOS Dog ID PNG, and Android Dog ID PNG. Generic native approval no longer marks the manifest ready; each artifact proof needs platform/artifact naming in the file name or URI, MIME, positive byte size, share proof, and reopen proof. Local verification passed focused report-binary/doctor tests `119/119`, direct JSON doctor source-backed checks, the full zero-dependency suite `562/562`, root TypeScript, and mobile TypeScript. Branch CI proved commit `41de898` in `WoofWatcher Verify` run `28693395380`, job `85098728807`. Real native iOS/Android capture and structured provider storage proof remain required.
+
+Current evidence, 2026-07-04: Report Binary Export provider-storage proof now requires structured storage evidence before generated artifact readiness can open. A staged `storageProviderConfigured` boolean now leaves the provider row at `Provider storage pending structured proof`; readiness requires a proof locator, acceptable MIME, positive byte size, bucket names, signed upload/download, household scope, retention/export/deletion, QA evidence storage, and approval booleans. Local verification passed focused report-binary/release-QA/Share Beta Handoff/smoke/readiness tests `149/149`, direct JSON doctor source-backed checks, the full zero-dependency suite `576/576`, root TypeScript, mobile TypeScript, and `git diff --check`. Branch CI proved commit `eaa3b2e` in `WoofWatcher Verify` run `28700214241`, job `85116859609`. Real storage-provider proof files, native iOS/Android capture, store review, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: Shared attachment storage proof now requires structured storage evidence before local attachment queues can become upload-ready. A staged `storageProviderConfigured` boolean now keeps medication proof photos, record documents, Adventure memories, Care Pass reports, and QA screenshots `local-only`; readiness requires proof file naming, acceptable MIME, positive byte size, bucket names, signed upload/download policies, household scope, retention/export/deletion rules, QA evidence storage policy, approval owner, and approval booleans. Fresh red/green verification first showed the checkbox incorrectly making all local attachments upload-ready, then passed `attachmentManifest.test.ts` `6/6`, focused attachment/privacy/launch/release/store/mobile readiness tests `142/142`, the full zero-dependency API/mobile/PWA/care-domain suite `581/581`, root TypeScript, mobile TypeScript, direct JSON doctor source-backed checks, and `git diff --check`. Branch CI proved implementation commit `84c6fac` in `WoofWatcher Verify` run `28701902248`, job `85121219768`, with mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe builds all passing. Real storage-provider proof files, native iOS/Android capture, store review, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: Care Pass report artifact storage now requires structured storage evidence before saved printable HTML reports can become upload-ready. A staged `storageProviderConfigured` boolean keeps report artifacts `Saved locally`; readiness requires a proof locator, acceptable MIME, positive byte size, bucket names, signed upload/download, household scope, retention/export/deletion, QA evidence storage, approval owner, and approval booleans. Fresh red/green verification first showed provider setup alone incorrectly producing `upload-ready` and `Ready to upload`, then passed focused Care Pass/mobile readiness/beta handoff/release QA/smoke checklist tests `169/169`, the full zero-dependency API/mobile/PWA/care-domain suite `587/587`, root TypeScript, mobile TypeScript, and direct JSON doctor source-backed checks including `Care Pass storage proof guard is source-backed`. Fresh branch CI is still pending because manual dispatch is blocked in this Codex thread. Real storage-provider proof files, native iOS/Android capture, store review, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: Durable Provider Launch Setup storage evidence now reaches the storage-specific Records and Privacy gates instead of being stripped from saved care documents. `LaunchProviderProfile.storageProviderEvidence` is normalized and preserved, `deriveLaunchProviderSetup` forwards it through `providerInput`, Records sends it into Care Pass artifact export and Report Binary Export proof manifests, and Privacy & Safety sends it into `deriveAccountSafetyPlan`. Fresh verification passed focused provider/mobile readiness `121/121`, focused Care Pass/report/Privacy/provider/mobile proof tests `161/161`, root TypeScript, mobile TypeScript, and the full zero-dependency suite with the dot reporter. Real storage-provider proof files, native device proof, store review, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: The focused Report Binary Export Proof helper route now consumes the same saved Provider Launch Setup storage evidence. `/care-twin-qa?qaSurface=report-binary-export-proof` derives `launchProviderSetupPlan` from care state, feeds `providerInput.storageProviderConfigured`, and passes saved `storageProviderEvidence` into the manifest as provider storage evidence instead of hardcoding storage unavailable. Red-first verification failed on missing `useCare`/`deriveLaunchProviderSetup` and `storageProviderConfigured: false`, then passed focused report-binary/provider/mobile readiness tests `126/126`, root TypeScript, mobile TypeScript, the full zero-dependency suite `594/594`, direct JSON mobile beta doctor source-backed checks, and `git diff --check`. Real local PDF/PNG native share/reopen proof, structured provider storage files, store review, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-06: More Launch Readiness now consumes the same saved Provider Launch Setup storage evidence for the shared attachment queue. `deriveAttachmentManifest` receives `launchProviderSetupPlan.providerInput.storageProviderConfigured` and saved `storageProviderEvidence` instead of `{ storageProviderConfigured: false }`, so valid structured storage proof can reach the Records Storage launch tile without weakening upload/native/store/public-launch blockers. Red-first verification failed on the old hardcoded false path, then passed mobile readiness `114/114`, focused attachment/provider/mobile readiness tests `127/127`, mobile TypeScript, root TypeScript, the full zero-dependency suite `594/594`, and direct JSON mobile beta doctor source-backed checks. The doctor remains truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack. Real storage-provider proof files, provider upload, native share/reopen proof, store review, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-06: Store Screenshot QA now consumes the saved Provider Launch Setup, Support Runbook, and attachment-storage proof paths when building the Store Submission screenshot checklist. `/care-twin-qa` derives `launchProviderSetupPlan`, `launchSupportPlan`, and `attachmentManifest` from saved care state, forwards provider proof-ready flags, support/legal proof variables, and `attachmentManifest.launchQueue` into `storeLaunchReadinessPlan`, and keeps `nativeQa: null` so the packet stays preparation evidence only. Red-first verification failed because the route lacked `deriveAttachmentManifest`/`deriveSupportRunbookPlan` and hardcoded store provider gates false; after implementation, mobile readiness passed `114/114`, the focused attachment/launch-provider/support/store/mobile QA suite passed `177/177`, root TypeScript, mobile TypeScript, the full zero-dependency suite `594/594`, and direct JSON mobile beta doctor source-backed checks. The doctor remains truthfully `BLOCKED` on local pnpm `11.7.0` versus pinned `10.24.0` and missing Corepack. Real native screenshots, provider proof files, store-account proof, store review, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: Privacy export and deletion-request attachment summaries now consume the same saved structured storage proof. `buildPrivacyExportBundle` and `buildAccountDeletionRequest` derive attachment storage options from normalized `launchProviderProfile.storageProviderEvidence`, so export metadata and deletion copy can move from `waiting for approved storage rules` to `ready for provider upload` only when the shared attachment-storage proof validator accepts the saved evidence. Fresh red/green verification passed `privacySafety.test.ts` `12/12`, focused privacy/attachment/mobile readiness tests `132/132`, root TypeScript, mobile TypeScript, and the full zero-dependency suite with the dot reporter. Real storage-provider proof files, provider upload, native proof, store review, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: Launch Readiness now requires aggregate structured proof flags before provider/store/approval booleans can make the app store-ready. Complete native QA, complete local gates, and raw provider-approved booleans still stay `provider-gated` until auth provider proof, care-entry provider sync proof, AI provider proof, payments proof, account-deletion proof, push delivery proof, store-account proof, privacy/legal proof, support/refund proof, and storage proof flags are present. Fresh red/green verification first showed those booleans incorrectly producing `storeLaunchReady: true`, then passed focused launch/release/store/mobile readiness tests `131/131`, the full zero-dependency API/mobile/PWA/care-domain suite `582/582`, root TypeScript, mobile TypeScript, direct JSON doctor source-backed checks including `aggregate launch readiness proof guard is source-backed`, and `git diff --check`. Branch CI proved implementation commit `e257e4f` in `WoofWatcher Verify` run `28702584181`, job `85122931741`, with mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe builds all passing. Real provider proof files, native evidence, store review, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: Route Visual proof now requires route-named evidence instead of accepting screenshot counts by platform. The manifest still displays total attached iOS and Android screenshots, but a row is only ready when that platform's evidence file name or URI names Home, Log, Plans, Health, Records, or More. Fresh red/green verification first showed generic six-iOS/six-Android attachments incorrectly marking the manifest ready, then passed focused Route Visual tests `26/26`, route/doctor readiness `114/114`, the full zero-dependency suite `560/560`, root TypeScript, mobile TypeScript, direct JSON doctor source-backed checks, and `git diff --check` with expected Windows CRLF warnings only. Branch CI proved commit `f273d3e` in `WoofWatcher Verify` run `28691984899`, job `85094842263`. Actual native screenshots and human visual approval remain required.
+
+Current evidence, 2026-07-04: Route Visual capture handoff now tells testers how to satisfy the route-named proof gate. Share Beta Handoff, the Release Smoke Checklist, the Route Visual QA mission model, the mobile beta doctor, the native QA tooling doctor, the two-day beta plan, and the native QA matrix all require route label plus platform evidence names such as `Home-iOS`, `Home-Android`, and `More-Android`. Focused handoff/smoke/readiness tests passed `144/144`, focused doctor readiness passed `114/114`, and the full zero-dependency suite passed `560/560`. Branch CI proved commit `fd3a98f` in `WoofWatcher Verify` run `28692423522`, job `85096033279`; this is instruction/proof routing only, not native screenshot evidence.
+
+Current evidence, 2026-07-03: The Payments provider proof manifest strengthens the paid-checkout launch gate by making product catalog, billing path decision, sandbox receipts, entitlements and restore, refund/support policy, and checkout gate evidence visible on `/care-twin-qa?qaSurface=payments-provider-proof` while keeping `Checkout allowed: No` until real billing, receipt, restore, refund/support, store, and Apollo checkout proof are attached. Branch CI proved the focused manifest guard in `WoofWatcher Verify` run `28690249414`, job `85090172228`, on commit `12c63eb`.
+
+Current evidence, 2026-07-04: The Payments provider proof manifest now rejects generic receipt approvals. Sandbox receipts, restore proof, and checkout remain blocked until separate iOS App Store and Android Google Play JSON receipt evidence is attached with platform/store naming, positive byte size, product id, transaction id, purchase, renewal, cancellation, refund, expiration, and `restorePurchaseConfirmed`. Focused payments/handoff/smoke/checklist/readiness tests passed `148/148`, the full zero-dependency suite passed `569/569`, root TypeScript passed, mobile TypeScript passed, and direct JSON mobile beta doctor source-backed checks pass while still blocking on the local pnpm `11.7.0` vs pinned `10.24.0` mismatch. Branch CI proved commit `b579885` in `WoofWatcher Verify` run `28695703283`, job `85104771524`.
+
+Current evidence, 2026-07-03: The Store accounts proof manifest strengthens the app-submission launch gate by making Apple Developer/App Store Connect access, Google Play package record, bundle/signing ownership, reviewer access, screenshots/metadata ownership, privacy-label readiness, and release role approval visible on `/care-twin-qa?qaSurface=store-accounts-proof` while keeping `App submission allowed: No` until real Apple/Google account and approval proof are attached.
+
+Current evidence, 2026-07-04: The Store accounts proof manifest now rejects generic account approval notes. App submission stays blocked until structured platform/store-named proof files cover iOS App Store Connect developer access, Android Google Play package record, shared bundle/signing ownership, reviewer access, metadata/privacy labels, and Apollo release approval/no-submit boundary, including MIME, byte size, ids, roles, ownership fields, and approval booleans. Focused store/handoff/smoke/readiness tests passed `148/148`, the full zero-dependency suite passed `571/571`, root TypeScript passed, mobile TypeScript passed, and direct JSON doctor source-backed checks pass while still blocking on local pnpm/native-tooling environment gaps. Branch CI proved commit `0c495a1` in `WoofWatcher Verify` run `28696518769`, job `85106928992`, with JSON mobile beta doctor, focused behavior tests, and Typecheck plus CI-safe builds all passing.
 
 Current evidence, 2026-06-11: Full Log search strengthens the paid history/trust wedge by making rich care evidence findable across notes, caregivers, routes, medication details, and sticky notes before server search indexes or long-history retention policy exist.
 
 Current evidence, 2026-06-11: Medication History search/filter strengthens the paid health-history wedge by making dose and adherence evidence findable inside Records before provider-backed medication reports or server search exist.
+
+Current evidence, 2026-06-19: CareTwin Roster readiness gives WoofWatcher a local multi-dog platform seam without fake switching. The care document persists `activePetId` and planned `pets`, More exposes a provider-gated roster card and Add future dog sheet, focused tests protect the roster model and mobile wiring, and owner export/deletion scope includes staged pet roster data.
+
+Current evidence, 2026-07-04: Privacy & Safety now consumes the Payments provider proof boundary instead of treating `paymentsEnabled` as enough for checkout readiness. `deriveAccountSafetyPlan` calls `buildPaymentsProviderProofManifest` and keeps payments `blocked` until structured product catalog, billing path, sandbox receipt, restore, refund/support, and checkout approval proof files are present. Fresh red/green verification first showed enabled payments producing `ready`, then passed focused Privacy & Safety/mobile readiness tests `123/123`, the full zero-dependency suite `585/585`, root TypeScript, mobile TypeScript, and direct JSON doctor source-backed checks including `privacy safety payments proof guard is source-backed`. Branch CI proved implementation commit `5774048` in `WoofWatcher Verify` run `28704399568`, job `85127644483`. Real paid tiers, store billing, iOS App Store and Android Google Play receipts, restore purchases, refund/support approval, store review, money movement, public launch, and Apollo sign-off remain required.
 
 ## Gate 8: Production Safety
 
@@ -386,7 +332,23 @@ Current evidence, 2026-06-08: The owner-reviewed WoofGuide action model is cover
 
 Current evidence, 2026-06-08: Mobile now has a Privacy & Safety surface for owner care-data export, non-destructive account deletion request preparation, WoofGuide AI disclosure, document storage gates, and payment launch blockers. The model is covered by focused tests and keeps live deletion/storage disabled until provider rules are approved.
 
+Current evidence, 2026-07-03: The Account deletion proof manifest strengthens the destructive-deletion compliance gate by making deletion route/auth, export-before-delete handoff, data/object deletion receipt, audit/support receipt, recovery/cancellation policy, and legal/store approval visible on `/care-twin-qa?qaSurface=account-deletion-proof` while keeping `Destructive deletion allowed: No` until real provider, legal, store, and Apollo approval proof are attached.
+
+Current evidence, 2026-07-04: Account deletion proof now requires six structured proof files instead of generic deletion-route/export/receipt/audit/recovery/legal approval strings: deletion-route/auth, export-before-delete, data/object deletion receipt, audit/support receipt, recovery/cancellation policy, and legal/store/Apollo approval. Each proof needs matching locator text, acceptable MIME, positive byte size, required row fields, and row-specific approval booleans. Fresh red/green verification first showed generic strings incorrectly making the manifest `ready-for-review`, then passed focused Account Deletion proof plus release-QA/handoff/smoke/readiness tests `148/148`, the full zero-dependency API/mobile/PWA/care-domain suite `574/574`, root TypeScript, mobile TypeScript, and direct JSON doctor source-backed checks. Branch CI proved this stricter guard in `WoofWatcher Verify` run `28697969135`, job `85110888132`, on commit `49b0f47`. Real provider deletion, storage/object deletion receipts, legal/privacy approval, App Store/Play Store deletion compliance, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: Privacy & Safety now consumes that same Account deletion proof boundary instead of treating `accountDeletionEnabled` as enough for the destructive deletion gate. `deriveAccountSafetyPlan` calls `buildAccountDeletionProofManifest` and keeps account deletion `blocked` until structured route/auth, export-before-delete, data/object receipt, audit/support, recovery/cancellation, and legal/store proof files are present. Fresh red/green verification first showed enabled deletion plus complete storage/payments producing `ready`, then passed focused Privacy & Safety/mobile readiness tests `122/122`, the full zero-dependency suite `584/584`, root TypeScript, mobile TypeScript, and direct JSON doctor source-backed checks including `privacy safety account deletion proof guard is source-backed`. Branch CI proved implementation commit `4357cf7` in `WoofWatcher Verify` run `28703690180`, job `85125840962`. Real provider deletion, storage/object deletion receipts, legal/privacy approval, App Store/Play Store deletion compliance, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-03: The Support legal readiness proof manifest strengthens the public-launch approval gate by making support inbox, privacy policy and terms links, refund/subscription policy, veterinary and emergency boundary, deletion escalation, incident response owner, and Apollo approval visible on `/care-twin-qa?qaSurface=support-legal-readiness-proof` while keeping `Public launch allowed: No` until real support/legal, store-review, and Apollo approval proof are attached.
+
+Current evidence, 2026-07-04: Support legal readiness proof now requires seven structured proof files instead of generic support inbox/privacy-terms/refund/veterinary/deletion/incident/Apollo approval strings: support inbox, privacy policy and terms, refund/subscription, veterinary/emergency boundary, deletion escalation, incident response owner, and Apollo launch approval/no-launch boundary. Each proof needs matching locator text, acceptable MIME, positive byte size, required row fields, and row-specific approval booleans. Fresh red/green verification first showed generic strings incorrectly making the manifest `ready-for-review`, then passed focused Support Runbook proof tests `6/6`, focused Support Legal plus release-QA/handoff/smoke/readiness tests `150/150`, the full zero-dependency API/mobile/PWA/care-domain suite `576/576`, root TypeScript, mobile TypeScript, and direct JSON doctor source-backed checks. Branch CI proved this stricter guard in `WoofWatcher Verify` run `28698684465`, job `85112820340`, on commit `4082e30`. Real legal/privacy approval, refund/subscription approval, support operations, veterinary-boundary sign-off, App Store/Play Store support review, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: The Support runbook now consumes the Support legal readiness proof manifest instead of treating support/legal approval booleans and privacy/terms links as enough for public launch readiness. `deriveSupportRunbookPlan` calls `buildSupportLegalReadinessProofManifest`, keeps `launchReady`, `supportRunbookApproved`, and `privacyLegalApproved` blocked until structured support/legal proof files are attached, and shows staged-but-not-proven sections as blocked. Privacy & Safety now applies the same verdict to support status display, save, and owner export: `Provider-approved packet` appears only when `supportPlan.launchReady` is true, attempted `provider-approved` saves are downgraded to `owner-reviewed` unless the draft support runbook is launch-ready, and exported launch support/provider statuses are clamped through `deriveSupportRunbookPlan` and `deriveLaunchProviderSetup` before serialization. Fresh red/green verification first showed complete approval booleans producing `launchReady: true`, then passed focused Support Runbook/mobile readiness tests `121/121`, the full zero-dependency suite `586/586`, root TypeScript, mobile TypeScript, and direct JSON doctor source-backed checks including `support runbook proof guard is source-backed`. The Privacy status/export clamps additionally passed `privacySafety.test.ts` `10/10`, mobile readiness `114/114`, direct JSON doctor source-backed checks including `privacy support status proof guard is source-backed` and `privacy export launch status proof guard is source-backed`, the full zero-dependency suite with the dot reporter, root TypeScript, mobile TypeScript, and `git diff --check`. Branch CI proved implementation commit `ceecc55` in `WoofWatcher Verify` run `28705194968`, job `85129614020`, and proof-doc commit `58fe904` in run `28705426671`, job `85130189337`. Real support inbox, privacy/terms, refund/subscription, veterinary/emergency boundary, deletion escalation, incident response, Apollo launch approval/no-launch-boundary proof files, store review, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-07-04: Care-entry provider sync proof now requires six structured proof files instead of generic Supabase ids, migration notes, RLS notes, policy notes, CI URLs, or mobile sign-off strings: Supabase project id, migration/backfill, active-household cursor/tombstone RLS, retention/export/deletion, dependency-complete build, and mobile incremental sign-off. Each proof needs matching file name or URI tokens, acceptable MIME, positive byte size, required row fields, and row-specific booleans or approvals. Fresh red/green verification first showed legacy provider strings incorrectly making the packet reviewable, then passed focused care-entry/provider-setup/handoff/release-QA/smoke/readiness tests `153/153`, the full zero-dependency API/mobile/PWA/care-domain suite `576/576`, root TypeScript, mobile TypeScript, `git diff --check`, and direct JSON doctor source-backed checks. Branch CI proved this stricter guard in `WoofWatcher Verify` run `28699549834`, job `85115170898`, on commit `2721de1`. Real Supabase migration execution, production RLS/privacy approval, retention/export/deletion policy, native incremental QA, rollback approval, public launch, and Apollo sign-off remain required.
+
 Current evidence, 2026-06-14: Mobile Privacy & Safety now uses shared board anatomy for Export Summary, Launch Safety Gates, and Before Public Launch blockers while preserving owner data export, deletion-request sharing, AI/document/payment gating, and provider-backed truth boundaries.
+
+Current evidence, 2026-06-19: Owner export and deletion scope now include local Adventure memories. The Adventure route labels memories as private household care evidence and creates `local-draft` memory records without claiming provider-backed photo storage, map data, or public sharing.
 
 Current evidence, 2026-06-08: Focused tests now include static mobile readiness smoke for critical route registration, tab coverage, string router links, and safety copy on premium/privacy/WoofGuide surfaces. Expo runtime, visual, and accessibility QA remain open.
 
@@ -400,30 +362,744 @@ Current evidence, 2026-06-13: Expo/EAS build and submit profiles now exist for i
 
 Current evidence, 2026-06-08: Focused tests now cover the Home avatar motion state model and static wiring check. Native animation runtime verification, Rive/Lottie/Reanimated asset QA, and screenshot review remain open.
 
+Current evidence, 2026-06-19: PixelLab asset verification now checks 148 assets across the full Phoenix sprite manifest, dogless room variants, 12 template previews, 12 template base stills, the 10-state Phoenix/Shepherd emote pack, the 10-state Retriever emote pack, the 10-state Husky/Spitz emote pack, the 10-state Bully compact-body emote pack, the 10-item accessory inventory pack, two subscription seed animation strips, the full current Option B hard-pixel Phoenix runtime candidate family including the dedicated bark/tap reaction, and live idle/walk sprite strips for every non-Phoenix launch template. Mobile readiness tests also verify Avatar Studio uses selected-template emote routing, applies crisp pixel image rendering, uses the Studio presentation of `LivingPhoenixRoom` instead of the old static hero path, and protects the Option B Phoenix runtime asset filenames/dimensions.
+
+Current evidence, 2026-06-19: The care-twin runtime now has a tested native QA
+matrix covering all 12 avatar motion states. Each scenario verifies expected
+sprite action, room variant, zone, scene phase, priority need, and layered
+readiness, and `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md` gives the matching
+manual phone-size checks for iOS/Android QA.
+
+Current evidence, 2026-06-19: The mobile app now exposes that care-twin matrix
+through a development/internal `/care-twin-qa` route. The route renders every
+scenario with production `LivingPhoenixRoom` assets and native QA prompts, and
+static readiness tests protect the route, More-screen dev link, and matrix
+wiring before the device pass.
+
+Current evidence, 2026-06-19: The `/care-twin-qa` route now captures
+session-level device review evidence with Pass/Needs tune controls, per-state
+notes, summary counts, and a native shareable QA report. The report explicitly
+keeps iOS/Android screenshot evidence as still required before launch approval.
+
+Current evidence, 2026-06-20: The same internal QA route now captures broader
+mobile release workflow evidence for Phoenix Home, Care Twin State Lab, Avatar
+Studio, Incident Composer, Records Incident Watch, and Trainer Care Pass. The
+tested `mobileReleaseQa.ts` model tracks required screenshot slots, Pass/Needs
+tune status, per-surface notes, launch risks, route targets, and a combined
+share report while preserving the boundary that real iOS/Android screenshots
+are still required before launch approval.
+
+Current evidence, 2026-06-20: The internal QA route now persists session evidence
+locally through tested `mobileQaSession.ts` snapshot parsing plus AsyncStorage
+wiring. Device testers can leave `/care-twin-qa`, inspect the target workflow,
+return, and keep the same Pass/Needs tune state and notes before sharing the
+combined report. The persistence is local-only QA convenience, not provider
+storage or launch approval.
+
+Current evidence, 2026-06-20: The care-twin room now has a tested choreography
+model for game-like behavior. `careTwinChoreography.ts` derives the primary
+sprite loop, ambient micro-loops, state-aware tap reaction, reaction duration,
+and QA summary from the `AvatarLifePlan`; Home room taps use that model instead
+of forcing every state into `bark-loop`, so rest and Health Watch states stay
+calm while happy states can still bark. `/care-twin-qa` exposes the motion
+recipe for device review.
+
+Current evidence, 2026-06-20: The internal Mobile Release QA cockpit now accepts
+local screenshot evidence from the device photo library for each release surface
+and each care-twin state. Tested helpers sanitize attachment metadata, local QA
+session persistence restores attached evidence, summary models count attached
+and missing screenshots, and the native share reports include attached file
+names. This improves the handoff packet for native QA, but final launch
+confidence still requires real iOS/Android screenshot review and human visual
+approval.
+
+Current evidence, 2026-06-20: QA screenshot evidence is now platform-aware.
+The cockpit automatically tags local attachments with the runtime platform, the
+release summary tracks required iOS, Android, and general screenshot slots
+separately, and share reports list file names with platform labels. This prevents
+iOS-only or Android-only screenshots from falsely satisfying the full native QA
+gate.
+
+Current evidence, 2026-06-20: Mobile Release QA platform proof now uses tested
+helper functions for complete evidence, flexible screenshot-slot satisfaction,
+platform evidence labels, and missing-evidence copy. `/care-twin-qa` shows Native
+proof open/ready, iOS/Android/flexible counts, and the exact evidence gap in the
+summary and Launch Workflow header instead of relying on one aggregate screenshot
+badge.
+
+Current evidence, 2026-06-21: Store submission screenshot prep now flows through
+the same internal QA cockpit. `mobileReleaseQa.ts` converts
+`storeSubmissionPacket.ts` screenshot checklist rows into iOS/Android evidence
+surfaces with route targets, store-safe prompts, and launch-risk copy.
+`/care-twin-qa` renders Store Screenshot QA, includes those screens in platform
+evidence counts, and can share the Store Submission packet from the QA route
+without claiming App Store or Play Store approval.
+
+Current evidence, 2026-06-21: saved Mobile Release QA proof now feeds the main
+Launch Readiness model. `mobileLaunchQaEvidence.ts` derives a native QA summary
+from the saved `/care-twin-qa` session, requires actual review data before
+returning a summary, and More reloads that local session on focus before calling
+`deriveLaunchReadiness`. The launch cockpit can now truthfully move from
+"Device proof required" to the exact missing iOS/Android/flexible evidence state
+after local device QA evidence is attached.
+
+Current evidence, 2026-06-21: Launch Readiness now also exposes a tested Native
+QA next-captures panel. The capture-plan model computes open surfaces, complete
+surfaces, and missing evidence labels from the saved QA session, then More shows
+the next capture targets as direct route jumps. This reduces manual checklist
+drift during device QA without claiming that screenshots are complete.
+
+Current evidence, 2026-06-21: Native QA next-captures now has a shareable guide.
+`buildMobileLaunchQaCaptureShareText` formats the same capture plan into an
+owner/tester script with progress, routes, missing proof, attached counts, and
+the final device-review boundary. More exposes this through `Share QA Plan`
+inside the launch cockpit.
+
+Current evidence, 2026-06-23: Mobile Release QA surfaces now carry explicit
+numbered device verification steps in the shared `mobileReleaseQa.ts` model.
+The `/care-twin-qa` cockpit renders those Device steps and generated Store
+steps before evidence capture, Mobile Release QA share reports include the
+same route-check instructions, and More's Native QA Next Captures panel shows
+the first concrete step for each next target. This makes the phone QA handoff
+more executable without claiming iOS/Android screenshots are complete.
+
+Current evidence, 2026-06-23: The same Mobile Release QA surfaces now carry
+setup/precondition steps before the numbered verification steps. The handoff
+can tell testers how to prepare demo-safe state for pending meal, active walk,
+Alone Time, Incident Watch, Avatar Studio, and blocked store-screenshot review
+before attaching native screenshots. `/care-twin-qa` renders Setup first/Store
+prep ahead of evidence capture, More shows the first prep step in Native QA
+Next Captures, and share text includes both setup and verification instructions.
+
+Current evidence, 2026-06-23: Mobile Release QA and generated Store Screenshot
+surfaces now include explicit pass criteria plus Needs tune failure escalation.
+`/care-twin-qa` renders pass criteria before capture, More's Native QA Next
+Captures rows surface the first criterion, and Mobile Release QA / Native QA
+share scripts carry the pass/failure language. This prevents fake visual passes
+and tells testers exactly when to mark a route Needs tune.
+
+Current evidence, 2026-06-21: Provider launch readiness is now a durable,
+truthful owner workflow. `launchProviderSetup.ts` derives an eight-gate
+production setup plan for auth, database sync, storage, AI, payments, push,
+store accounts, and self-serve deletion; More renders it inside Launch
+Readiness with an edit sheet and share action; `CareContext` persists
+`launchProviderProfile`; Privacy export includes the profile; and the shared
+launch-readiness model consumes the saved gates. The model intentionally clamps
+partial "provider approved" state back to owner-reviewed until every gate is
+ready, and the share packet states that it is not App Store or Play Store
+approval.
+
+Current evidence, 2026-07-04: Provider Launch Setup row readiness now requires
+row-level structured proof flags before launch gates can become ready. A saved
+provider profile can stage configured auth, database sync, storage, AI,
+payments, push, store accounts, and self-serve deletion, but
+`deriveLaunchProviderSetup` keeps each row staged as `Proof pending` until the
+row is configured, `providerStatus` is `provider-approved`, and the matching
+proof-ready flag is true. The same row-ready verdict controls the provider
+input forwarded into Launch Readiness, so provider-approved booleans alone
+cannot make release or store-submission packets claim provider readiness.
+More's Provider Launch Setup save path now uses the same row proof-key mapping,
+so the persisted `launchProviderProfile.providerStatus` is saved back as
+`owner-reviewed` unless every row has both configured setup and its matching
+structured proof-ready flag.
+Local verification passed `launchProviderSetup.test.ts` `7/7`, focused
+Provider Launch Setup plus mobile readiness tests `121/121`, the full
+zero-dependency API/mobile/PWA/care-domain suite `591/591`, root TypeScript,
+mobile TypeScript, the JSON doctor source-backed guard, and `git diff --check`
+with expected Windows line-ending warnings only. Additional save-path proof
+passed mobile readiness `114/114`, the full zero-dependency suite with the dot
+reporter, root TypeScript, mobile TypeScript, direct mobile beta doctor
+source-backed checks, and `git diff --check`. Real provider proof files, store
+evidence, native proof, public launch, and Apollo sign-off remain required.
+
+Current evidence, 2026-06-19: The Option B living-room polish pass keeps Phoenix as one layered main sprite instead of a second-avatar illusion. Home quick-log actions now request action-specific sprite reactions, the room renderer adds ambient micro-behaviors and rest-state safeguards, Avatar Studio suppresses oversized still/accessory overlays when a live sprite pack is active, and PixelIcon paths use crisp pixel rendering on web.
+
+Current evidence, 2026-06-19: PixelLab subscription review did not promote weaker replacement candidates. The clean single still candidate is archived for reference, while the duplicate/cropped and gray identity-drift candidates are explicitly rejected in the PixelLab generation log. The current hard-pixel Option B runtime family remains the approved live source until native QA or a stronger reference-guided generation beats it.
+
 Current evidence, 2026-06-13: Focused tests now cover durable sync outbox derivation, household Sync Health derivation, Household Responsibility derivation/mobile wiring, Household Access derivation/mobile wiring, Care Log Audit Trail derivation/mobile wiring, Full Log search derivation/mobile wiring, Medication History search/filter derivation/mobile wiring, conflict-safe care document refresh reconciliation, Saved Routes derivation/report/mobile wiring, Weekly Care Trends derivation/report/mobile wiring, Training Progress derivation/report/mobile wiring, Alone Time derivation/report/mobile wiring, Weight Trend derivation/report/mobile wiring, Grooming Care derivation/mobile wiring, Reminder Center derivation/mobile wiring/action routing, static mobile wiring, EAS profile readiness, and mobile release runbook coverage. Local focused tests pass at 195 tests. Local `pnpm run build:ci` remains blocked only because `pnpm` is unavailable in this Windows shell.
 
 Current evidence, 2026-06-14: `WoofWatcher Verify` uses Node 24-compatible action majors for checkout, setup-node, and pnpm setup, and keeps the project test/build runtime pinned to Node 24.
 
-Current evidence, 2026-06-22: Focused API readiness now protects care-entry delete retention in addition to household scoping, optimistic care-state conflicts, append-safe care-entry writes, and list query contracts. Synced deletes retain a server-side household audit note instead of relying only on a local mobile audit artifact.
+Current evidence, 2026-06-20: The local behavior/readiness suite passes at 300 tests after the Mobile Release QA platform-proof refinement and shared safe-area passes, covering mobile readiness, QA reporting, platform-aware screenshot evidence, privacy export, PWA contracts, shared care-domain behavior, tabbed-route bottom clearance, standalone-route bottom clearance, auth shell spacing, and docked WoofGuide composer spacing. Mobile TypeScript, PixelLab asset verification at 149 files, Expo web export, and `git diff --check` also pass locally.
 
-Current evidence, 2026-06-23: Focused API readiness now also protects the care-state update predicate itself, requiring household-and-version matching plus a refreshed 409 path when concurrent writes race before live database/provider-auth integration tests are available.
+Current evidence, 2026-06-20: Mobile tab clearance is now centralized in `mobileLayout.ts`. The tab shell derives tab bar and center-paw metrics from one helper, and Home, Log, Plans, Health, More, and Records all call `getTabbedRouteBottomPadding` so iOS, Android, and web route content stays clear of the floating paw navigation without route-local magic numbers.
 
-Current evidence, 2026-06-24: Focused API readiness protects household invite joins from creating a throwaway default household before accepting an invite. `POST /household/join` now provisions the user directly, ensures invited-household care state, and keeps new invitees at the `member` role unless provider-backed administration later changes the policy. Focused readiness also protects membership-scoped active-household switching, the OpenAPI/zod/generated React client contract for `PATCH /me/active-household`, and the `/me.households` list used by the mobile switcher.
+Current evidence, 2026-06-20: Standalone route and docked-composer spacing are now centralized in `mobileLayout.ts`. Adventure, Avatar Studio, Care Twin QA, Premium, Privacy, Setup, and the auth shell call `getStandaloneRouteBottomPadding`, while WoofGuide calls `getDockedComposerBottomPadding`, so non-tab screens and bottom input controls share the same iOS/Android/web safe-area contract before real device QA.
 
-Current evidence, 2026-06-24: Focused API readiness protects owner/admin household audit review, including the durable audit-row schema, sensitive household action producers, route-level role gate, safe list-query normalization, newest-first ordering, and OpenAPI/zod/generated React client contract for `GET /household/audit-events`.
+Current evidence, 2026-06-20: First-run setup now has an auth-aware household path without fake cloud claims. The setup wizard persists `householdSetup` with create, join-by-invite, or local-preview intent; join codes are normalized and required before saving; confirmation copy distinguishes local-only state from Clerk/account-ready state; Privacy export includes household setup metadata; and static mobile readiness protects the new setup copy. Local verification passed 302 behavior/readiness tests, mobile TypeScript, PixelLab asset verification at 149 files, Expo web export to `tmp/woofwatcher-household-setup-export`, and `git diff --check`.
 
-Current evidence, 2026-06-25: Mobile More now surfaces household audit review for owner/admin trust inspection. The Pack Audit board reads the generated household audit-events hook, lists recent pack creation, rename, active-household switching, invite-join, and role-change events, supports event-type and lifecycle filters through the existing `action` and `lifecycleState` query contract, summarizes stored audit details in owner-readable rows and screen-reader labels, and shows truthful loading/empty/offline states without exposing lifecycle actions before provider-backed retention policy exists.
+Current evidence, 2026-06-21: Mobile interaction spacing is now a shared release
+contract, not route-local arithmetic. `mobileLayout.ts` owns top safe-area
+padding for tabbed, standalone, setup, and auth surfaces; modal sheet bottom
+padding; centered modal backdrop padding; keyboard avoiding offsets; feedback
+and debug offsets; minimum 48px touch targets; and shared inline hit slop. Home,
+Log, Plans, Health, More, Records, Adventure, Avatar Studio, Care Twin QA,
+Premium, Privacy, Setup, AuthShell, WoofGuide, ErrorFallback, and board
+primitives call the shared helpers. Static readiness tests reject hard-coded
+top safe-area formulas, unsafe modal bottom padding, and literal 8/10 hit slop.
+Local verification passed 306 behavior/readiness tests, focused mobile
+layout/readiness tests at 76 tests, mobile TypeScript, PixelLab asset
+verification at 149 files, and Expo web export to
+`tmp/woofwatcher-mobile-interaction-contract-export`.
 
-Current evidence, 2026-06-25: Household Access now maps the launch caregiver role set to truthful owner-readable labels and permission summaries. Owner, admin, sitter, trainer, and vet viewer roles no longer collapse into generic owner/caregiver copy or leak internal role ids, and Mobile More shows the scoped permission summary under each Care Team person before provider-backed role enforcement exists.
+Current evidence, 2026-06-24: Access Pass expiry is now enforced at request
+time for helper roles before public-launch cleanup jobs exist. Activated helper
+memberships persist `accessPassExpiresAt`; expired sitter/trainer/walker/vet
+viewer helper passes resolve to `expired access pass` inside authorization;
+care-entry writes treat that state as read-only; and `/me`, OpenAPI, Zod, and
+React generated member schemas expose `accessPassExpiresAt` plus
+`accessPassExpired` so the UI can tell the truth. Local verification passed the
+RED/GREEN Access Pass/API readiness tests, 378 focused behavior/readiness tests,
+mobile TypeScript, syntax checks, PixelLab asset verification at 149 files,
+`git diff --check`, and package-local Expo export. Provider migration, RLS,
+retention/export/deletion policy, provider invite UI/delivery, expired-invite
+cleanup, and expired-helper cleanup remain launch gates.
 
-Current evidence, 2026-06-26: Pack Audit role-change details now reuse the launch role labels in mobile review rows and accessibility labels, preserving owner-readable household trust evidence after role updates without adding lifecycle actions or provider-backed audit export/delete controls.
+Current evidence, 2026-06-24: Household invitation lifecycle readiness is now a
+durable provider-facing contract instead of a legacy static invite code only.
+`household_invitations` stores unique invite codes, invited email/user metadata,
+canonical roles, pending/approved/accepted/revoked/expired/rejected lifecycle
+states, actor timestamps, notes, expiry windows, and provider metadata.
+Owner/admin invite list/create/revoke APIs are authenticated and active-household
+scoped; `/household/join` prefers durable invitation rows, blocks unsafe states,
+marks accepted invites, applies invitation roles, and keeps the legacy code path
+only as a fallback. Local verification passed RED/GREEN invitation/API readiness
+tests, 381 focused behavior/readiness tests, mobile TypeScript, syntax checks,
+PixelLab asset verification at 149 files, `git diff --check`, and package-local
+Expo export. Provider migration, RLS, invite notification delivery, provider UI
+wiring, scheduled expired-invite cleanup, retention/export/deletion policy, and
+legal/privacy approval remain launch gates.
 
-Current evidence, 2026-06-26: Pack Audit role-change details now include the affected caregiver's display name or email-derived name when the API writes a role-change audit event, so owner/admin review can show who changed roles, not only the previous-to-new role transition. Older audit rows still fall back to the generic role-change copy.
+Current evidence, 2026-06-24: Household sharing cleanup review is now a
+non-destructive owner/admin provider-readiness API. `GET
+/household/sharing-cleanup` is authenticated, active-household scoped,
+owner/admin-only, validates `limit` and `kind` filters, derives `review-only`
+stale candidates from runtime-expired invitation rows and expired Access Pass
+helper memberships, and exposes OpenAPI, Zod, and React generated contracts.
+Local verification passed RED/GREEN cleanup/API readiness tests, 384 focused
+behavior/readiness tests, mobile TypeScript, syntax checks, PixelLab asset
+verification at 149 files, and package-local Expo export. Applying cleanup,
+Supabase migration/RLS, retention/export/deletion policy, invite delivery/UI,
+legal/privacy approval, and native iOS/Android screenshots remain launch gates.
 
-Current evidence, 2026-06-25: API shared care writes now honor the launch role boundary for vet viewers before final provider-backed permission policy. Vet viewers can review household care context but cannot change care plans or logs.
+Current evidence, 2026-06-25: The release packet now separates two-day internal
+beta readiness from public App Store / Play Store readiness. More's Launch
+Readiness board shows a 48-hour beta card backed by `betaShipStatus`,
+`betaVerdictLabel`, `betaSummary`, and `betaNextActions`; share text includes a
+48-hour beta target while preserving "not ready for public launch" when provider,
+payment, legal, native QA, or store gates are open. Targeted release/readiness
+verification passed 81 tests, the broader focused behavior/readiness suite passed
+at 386 tests, mobile TypeScript passed, PixelLab verified 149 assets, and
+package-local Expo web export emitted HTML/JavaScript output. Native iOS/Android
+screenshots and human visual approval remain required before the beta goes
+outside the owner/builder loop.
 
-Current evidence, 2026-06-26: API care-plan writes now use a stricter role boundary than care-log writes before final provider-backed permission policy. `PUT /care-state` is limited to owner/admin/member roles so sitters and trainers cannot change the shared Dog Profile, routines, records, or reports document, while `POST/PATCH/DELETE /care-entries` still allows owner/admin/member/sitter/trainer roles to log and correct care evidence.
+Current evidence, 2026-06-25: More's Launch Readiness board now makes the
+two-day beta path actionable in-app. The 48-hour beta card renders the release
+packet's first three `betaNextActions` and provides an accessible CTA that opens
+`/care-twin-qa` when device proof is still needed or shares the beta packet when
+internal circulation is ready. Local verification passed 81 targeted
+release/readiness tests, 386 focused behavior/readiness tests, mobile
+TypeScript, PixelLab verification at 149 files, `git diff --check`, and
+package-local Expo web export with HTML/JavaScript output verified and cleaned.
+Real iOS/Android screenshot proof remains the next quality gate.
 
-Current evidence, 2026-06-26: API sitter and trainer care-log corrections are now scoped to their own entries before final provider-backed permission policy. `PATCH /care-entries/:id` and `DELETE /care-entries/:id` add `caregiverUserId` matching for sitter/trainer roles, while owner/admin/member roles retain household-wide correction authority and vet viewers remain read-only.
+Current evidence, 2026-06-25: `/care-twin-qa` now begins with a 48-hour beta
+run card that derives the next native capture target from saved QA evidence,
+shows the missing proof, complete/open count, and direct `Open Next Surface`
+plus `Share QA` actions. Local verification passed 85 targeted QA/readiness
+tests, 386 focused behavior/readiness tests, mobile TypeScript, PixelLab
+verification at 149 files, `git diff --check`, and package-local Expo web export
+with HTML/JavaScript output verified and cleaned. The card reduces device-test
+friction but does not replace real iOS/Android screenshot capture.
 
-Current evidence, 2026-06-27: The interactive animated care twin now exposes a screen-reader button contract. `AnimatedAvatar` names Phoenix's current care-twin mood, includes the visible speech or a tap-response fallback, and states that tapping only plays a gentle response without changing care records; focused mobile readiness protects this before native accessibility traversal is available.
+Current evidence, 2026-06-25: `/care-twin-qa` now includes explicit screenshot
+platform tagging for the two-day beta run. Testers choose iOS, Android, or Web
+before attaching from Photos; new evidence persists the selected `targetPlatform`;
+and attached screenshot rows display the counted platform label. Local
+verification passed 85 targeted QA/readiness tests, 386 focused
+behavior/readiness tests, mobile TypeScript, PixelLab verification at 149 files,
+`git diff --check`, and package-local Expo web export with HTML/JavaScript output
+verified and cleaned. Real device capture and human visual approval remain
+required before broader beta circulation.
+
+Current evidence, 2026-06-25: The native QA capture loop now has a route-level
+return path. `/care-twin-qa` opens target routes with `qaReturn=care-twin-qa`,
+`qaSurface`, and `qaTitle`; shared board-header routes render a temporary
+`Return to QA Cockpit` banner during those sessions; and the banner returns to
+`/care-twin-qa` so testers can attach proof and mark Pass or Needs tune. Local
+verification passed 85 targeted QA/readiness tests, 386 focused
+behavior/readiness tests, mobile TypeScript, PixelLab verification at 149 files,
+`git diff --check`, and package-local Expo web export with HTML/JavaScript output
+verified and cleaned. This improves capture flow but still requires real iOS and
+Android screenshots plus human review.
+
+Current evidence, 2026-06-25: The `/care-twin-qa` 48-hour beta run now includes
+a `Next device mission` briefing before testers leave the cockpit. The briefing
+shows the next route, priority, current status, attached evidence count, setup
+steps, pass criteria, and the exact `Needs tune if` escalation copy for that
+surface. Static mobile readiness verification passed 85 targeted QA/readiness
+tests and now protects that mission briefing. Broader local verification also
+passed 386 focused behavior/readiness tests, mobile TypeScript, PixelLab
+verification at 149 files, `git diff --check`, and package-local Expo web export
+with HTML/JavaScript output verified and cleaned. This reduces two-day beta
+capture friction, but it is still preparation only; native iOS/Android
+screenshots and human approval remain required before wider beta circulation.
+
+Current evidence, 2026-06-25: The `/care-twin-qa` 48-hour beta run now keeps the
+active mission's evidence and review actions in the top card. The card resolves
+the active QA surface from `nextBetaTarget`, lets testers attach proof using the
+selected iOS/Android/Web evidence tag, and lets them mark the current mission
+Pass or Needs tune without scrolling to the long checklist. Static mobile
+readiness protects those accessible mission controls and shared 48px touch
+targets. Local verification passed 85 targeted QA/readiness tests, 386 focused
+behavior/readiness tests, mobile TypeScript, PixelLab verification at 149 files,
+`git diff --check`, and package-local Expo web export with HTML/JavaScript
+output verified and cleaned. This improves the internal beta capture loop but
+does not replace real device screenshots or human approval.
+
+Current evidence, 2026-06-25: Mobile Release QA now includes a launch-critical
+`Owner Preview Core Loop` surface so the two-day beta does not pass on isolated
+screen polish alone. The surface requires Home, Log, Plans, Health, More,
+Records, Avatar Studio, and Care Pass to be reachable without dead ends; asks
+testers to quick-log one safe care event or open the detail sheet; checks Plans
+reachability, Health Watch/Bile Watch non-diagnostic language, and More's Launch
+Readiness truth boundaries; and requires iOS Quick Log/Log evidence plus Android
+Launch Readiness evidence. Local verification passed 86 targeted QA/readiness
+tests, 387 focused behavior/readiness tests, mobile TypeScript, PixelLab
+verification at 149 files, `git diff --check`, and package-local Expo web export
+with HTML/JavaScript output verified and cleaned. Real iOS/Android screenshots,
+human visual approval, provider setup, legal/privacy review, and store approval
+remain launch gates.
+
+Current evidence, 2026-06-25: The owner-preview path is now guided inside the
+QA cockpit instead of living only in docs. `/care-twin-qa` renders an `Owner
+route loop` panel for the Owner Preview Core Loop, and the launch capture model
+exports the same Home, Log, Plans, Health, More, Records, Avatar Studio, and Care
+Pass checklist into the share script. Local verification passed 87 targeted
+QA/readiness tests, 388 focused behavior/readiness tests, mobile TypeScript,
+PixelLab verification at 149 files, `git diff --check`, and package-local Expo
+web export with HTML/JavaScript output verified and cleaned. Real iOS/Android
+screenshots and human visual approval remain the next beta gate.
+
+Current evidence, 2026-06-25: Required owner-preview QA notes are now enforced by
+the capture plan. Required `Note ...` evidence keeps a surface open until a
+surface note exists, and `/care-twin-qa` exposes a top-card `Mission note` input
+that is labeled Required when the active beta target needs note proof. Targeted
+QA/readiness verification passed 88 tests, focused behavior/readiness
+verification passed 389 tests, mobile TypeScript passed, PixelLab verification
+passed at 149 files, `git diff --check` passed, and package-local Expo web
+export emitted HTML/JavaScript output that was verified and cleaned. Real
+iOS/Android screenshots and human visual approval remain the next beta gate.
+
+Current evidence, 2026-06-25: `/care-twin-qa` now includes the live native
+capture plan inside its own `Share QA` packet. The shared text starts with
+`buildMobileLaunchQaCaptureShareText(betaCapturePlan, reviewedAtIso)` before the
+full mobile release QA, store submission packet, and care-twin state report, so
+the actual cockpit handoff carries the same next target, missing evidence,
+Owner route loop, Mission note requirement, and done condition shown in the
+48-hour beta run card. Targeted QA/readiness verification passed 88 tests,
+focused behavior/readiness verification passed 389 tests, mobile TypeScript
+passed, PixelLab verification passed at 149 files, `git diff --check` passed,
+and package-local Expo web export emitted HTML/JavaScript output that was
+verified and cleaned.
+
+Current evidence, 2026-06-25: `/care-twin-qa` now guards against a false Pass
+state in the 48-hour beta run card. When the next mission is marked Pass but
+required screenshots or Mission note proof are still missing, the cockpit shows
+`Pass pending proof`, explains that the mission stays open until proof is
+attached and the Mission note is saved, and lists the first missing evidence
+items in the same mission card. Targeted QA/readiness verification passed 88
+tests, focused behavior/readiness verification passed 389 tests, mobile
+TypeScript passed, PixelLab verification passed at 149 files, `git diff --check`
+passed, and package-local Expo web export emitted HTML/JavaScript output that
+was verified and cleaned.
+
+Current evidence, 2026-06-25: More's Launch Readiness board now preserves that
+same proof truth. The Native QA Next Captures panel renders a `Proof status`
+row for each target, labels proof-incomplete Pass rows as `Pass pending proof`,
+uses that label in the accessibility description, and the shareable QA capture
+script now exports the same owner-readable status. Targeted QA/readiness
+verification passed 88 tests, focused behavior/readiness verification passed
+389 tests, mobile TypeScript passed, PixelLab verification passed at 149 files,
+`git diff --check` passed, and package-local Expo web export emitted
+HTML/JavaScript output that was verified and cleaned.
+
+Current evidence, 2026-06-25: More's Native QA Next Captures panel now gives
+testers a direct proof-completion route. The action rail includes `Share QA
+Plan` and a second 48px mobile action that says `Finish Proof` when any target
+is `Pass pending proof`, otherwise `Open QA Cockpit`, and routes directly to
+`/care-twin-qa` with accessible copy. Red/green mobile readiness passed after
+the guard caught the missing action, targeted QA/readiness verification passed
+88 tests, focused behavior/readiness verification passed 389 tests, mobile
+TypeScript passed, PixelLab verification passed at 149 files, `git diff
+--check` passed, and package-local Expo web export emitted HTML/JavaScript
+output that was verified and cleaned.
+
+Current evidence, 2026-06-25: `/care-twin-qa` now uses the shared mobile touch
+target contract for the cockpit controls a tester must hit during the two-day
+beta run: screenshot platform tags, Open Next Surface, Share QA, Share QA
+Summary, evidence attach/clear, per-surface Open Surface, and Pass/Needs tune
+review buttons. The readiness test now parses named style blocks and fails when
+those controls drift back to route-local undersized heights. Red/green mobile
+readiness passed after first failing on the 44px platform picker, targeted
+QA/readiness verification passed 88 tests, focused behavior/readiness
+verification passed 389 tests, mobile TypeScript passed, PixelLab verification
+passed at 149 files, `git diff --check` passed, and package-local Expo web
+export emitted HTML/JavaScript output that was verified and cleaned.
+
+Current evidence, 2026-06-25: Quick Log's owner-preview actions now share the
+same mobile touch-target contract. The Log route uses `MIN_MOBILE_TOUCH_TARGET`
+for retry/sync recovery, care-type tabs, quick-feedback Undo/Add details,
+alone-time return outcomes, active-walk finish, trust proof attachment,
+trust-review actions, meal outcome updates, potty outcome options, and potty
+detail save. Static readiness now protects those named style blocks. Red/green
+mobile readiness passed after first failing on the 36px `outboxButton`,
+targeted QA/readiness verification passed 88 tests, focused behavior/readiness
+verification passed 389 tests, mobile TypeScript passed, PixelLab verification
+passed at 149 files, `git diff --check` passed, and package-local Expo web
+export emitted HTML/JavaScript output that was verified and cleaned.
+
+Current evidence, 2026-06-25: Health Watch's owner-preview controls now share
+the same mobile touch-target contract. The Health route uses
+`MIN_MOBILE_TOUCH_TARGET` for the Health/Bile segmented tabs plus the `Log
+health note` and `Records` hero actions, while decorative pixel health meters
+remain visual-only. Static readiness now protects those named style blocks so
+Health Watch and Bile Watch stay tappable during the two-day beta route loop.
+Red/green mobile readiness passed after first failing on the 36px `tabPill`,
+targeted QA/readiness verification passed 88 tests, focused behavior/readiness
+verification passed 389 tests, mobile TypeScript passed, PixelLab verification
+passed at 149 files, `git diff --check` passed with expected Windows
+line-ending warnings only, and package-local Expo web export emitted
+HTML/JavaScript output that was verified and cleaned.
+
+Current evidence, 2026-06-25: Plans' owner-preview controls now share the same
+mobile touch-target contract. The Plans route uses `MIN_MOBILE_TOUCH_TARGET` for
+Add plan, Find event, suggestion add, schedule tabs, schedule completion,
+routine add, event remove, routine done, modal type chips, owner chips, save,
+and delete controls. Static readiness now protects those named Plans style
+blocks so schedule and routine work cannot regress to cramped route-local
+28-42px controls during beta review. Red/green mobile readiness passed after
+first failing on the 40px `addBtn`, targeted QA/readiness verification passed
+89 tests, focused behavior/readiness verification passed 390 tests, mobile
+TypeScript passed, PixelLab verification passed at 149 files, `git diff
+--check` passed with expected Windows line-ending warnings only, and
+package-local Expo web export emitted HTML/JavaScript output that was verified
+and cleaned.
+
+Current evidence, 2026-06-25: More's launch and household gateway actions now
+share the same mobile touch-target contract. The More route uses
+`MIN_MOBILE_TOUCH_TARGET` for profile edit, Care Intelligence action, provider
+setup actions, native QA share/cockpit actions, beta next action, Launch/Store
+packet share actions, Access Pass share and role chips, household invite,
+prompt modal actions, provider status chips, weight-unit chips, and
+profile/diet/provider save buttons. Static readiness now protects those named
+More style blocks so Launch Readiness, household handoff, provider setup, and
+Care Pass gateway actions stay tappable during the two-day beta route loop.
+Red/green mobile readiness passed after first failing on the 32px
+`profileEditBtn`, targeted QA/readiness verification passed 90 tests, focused
+behavior/readiness verification passed 391 tests, mobile TypeScript passed,
+PixelLab verification passed at 149 files, `git diff --check` passed with
+expected Windows line-ending warnings only, and package-local Expo web export
+emitted HTML/JavaScript output that was verified and cleaned.
+
+Current evidence, 2026-06-25: Records and Care Pass actions now share the same
+mobile touch-target contract. The Records route uses `MIN_MOBILE_TOUCH_TARGET`
+for Dog ID share/print actions, medication search clear and filter chips, Care
+Pass preview rows, saved report artifact resend/print actions, progress report
+period tabs, record delete, empty add, record type chips, attachment, and sheet
+cancel/save controls. Static readiness now protects those named Records style
+blocks so report, credential, medication, and vault handoff actions stay
+tappable during the two-day beta route loop. Red/green mobile readiness passed
+after first failing on `shareInline`, targeted QA/readiness verification passed
+91 tests, focused behavior/readiness verification passed 392 tests, mobile
+TypeScript passed, PixelLab verification passed at 149 files, `git diff
+--check` passed with expected Windows line-ending warnings only, and
+package-local Expo web export emitted HTML/JavaScript output that was verified
+and cleaned.
+
+Current evidence, 2026-06-25: Avatar Studio creator actions now share the same
+mobile touch-target contract. The Avatar Studio route uses
+`MIN_MOBILE_TOUCH_TARGET` for creator tabs, gallery/take-photo/reset/save
+buttons, coat swatches, face-marking options, mood preview chips, and
+shared-constant-backed large template/accessory tiles. Static readiness protects
+those named style blocks so the scan-assisted creator stays tappable during the
+two-day beta route loop without shrinking the larger pixel-art template tiles.
+Red/green mobile readiness passed after first failing on the 40px `tab`,
+targeted QA/readiness verification passed 92 tests, focused behavior/readiness
+verification passed 393 tests, mobile TypeScript passed, PixelLab verification
+passed at 149 files, `git diff --check` passed with expected Windows
+line-ending warnings only, and package-local Expo web export emitted
+HTML/JavaScript output that was verified and cleaned.
+
+Current evidence, 2026-06-25: Adventure Mode's owner-preview memory actions now
+share the same mobile touch-target contract. The Adventure route uses
+`MIN_MOBILE_TOUCH_TARGET` for the `Save Memory` primary action and the `Share
+Adventure` secondary action, while leaving the illustrated quest cards and
+private real-care adventure copy unchanged. Static readiness protects
+`primaryBtn` and `secondaryBtn` so the beta's care-RPG layer cannot quietly
+return to route-local 47px controls. Red/green mobile readiness passed after
+first failing on `primaryBtn`, targeted QA/readiness verification passed 93
+tests, focused behavior/readiness verification passed 394 tests, PixelLab
+verification passed at 149 files, and `git diff --check` passed with expected
+Windows line-ending warnings only. Mobile TypeScript is currently
+dependency-blocked in this cleaned Windows shell because the Expo/mobile
+dependency layer is absent (`expo/tsconfig.base` not found). Package-local Expo
+web export was not completed for this slice in the current Windows shell: the
+first attempt lacked `pnpm`, and the network-enabled bundled-pnpm attempt
+reached the registry but failed before export because the root preinstall script
+calls `sh`, which is unavailable in this shell. Re-run export from a
+shell-compatible environment or preinstalled dependency layer before treating
+this slice as export-proven.
+
+Current evidence, 2026-06-25: Phoenix Home's owner-preview first screen now
+shares the same mobile touch-target contract. Home imports
+`MIN_MOBILE_TOUCH_TARGET` and uses it for `headerButton`, `heroStudioButton`,
+`presencePanel`, and `adventureInline`, covering the menu/header action, Avatar
+Studio hero entry, household presence card, and Adventure inline entry. Static
+readiness protects those named style blocks so the beta's opening route cannot
+quietly return to cramped 39-42px controls. Red/green mobile readiness passed
+after first failing on the 42px `headerButton`, targeted QA/readiness
+verification passed 94 tests, focused behavior/readiness verification passed
+395 tests, PixelLab verification passed at 149 files, and `git diff --check`
+passed with expected Windows line-ending warnings only. Mobile TypeScript is
+currently dependency-blocked in this cleaned Windows shell because the
+Expo/mobile dependency layer is absent (`expo/tsconfig.base` not found). Package
+export should be re-run from Git Bash, WSL, CI, or a preinstalled dependency
+layer before treating this slice as export-proven.
+
+Current evidence, 2026-06-25: WoofGuide's prompt, send, and owner-review
+actions now share the same mobile touch-target contract. WoofGuide imports
+`MIN_MOBILE_TOUCH_TARGET` and uses it for `quickChip`, `actionRow`, `sendBtn`,
+`reviewCancel`, and `reviewApply`, covering quick questions, suggested
+owner-reviewed actions, the chat composer send control, and the draft review
+modal's Cancel/Apply controls. Static readiness protects those named style
+blocks so the beta's assistant route cannot quietly return to cramped prompt or
+review controls. Red/green mobile readiness passed after first failing on
+`quickChip`, targeted QA/readiness verification passed 95 tests, focused
+behavior/readiness verification passed 396 tests, PixelLab verification passed
+at 149 files, and `git diff --check` passed with expected Windows line-ending
+warnings only. Mobile TypeScript is currently dependency-blocked in this cleaned
+Windows shell because the Expo/mobile dependency layer is absent
+(`expo/tsconfig.base` not found). Package export should be re-run from Git Bash,
+WSL, CI, or a preinstalled dependency layer before treating this slice as
+export-proven.
+
+Current evidence, 2026-06-25: More's Launch Readiness beta card now has a
+one-tap 48-hour beta handoff packet for Apollo, testers, or design-polish tools.
+`betaHandoffPacket.ts` combines the release packet with the live native QA
+capture plan, including the beta verdict, public-launch verdict, QA progress,
+next device mission, missing proof, setup/device steps, pass criteria, Needs
+tune copy, Owner route loop run order, Pass pending proof instruction, and
+truth boundaries for public launch, provider-backed services, and WoofGuide.
+More imports `buildBetaHandoffPacketShareText`, adds a `Share Beta Handoff`
+action on the beta card, and keeps the new action on `MIN_MOBILE_TOUCH_TARGET`
+through `betaHandoffShareButton`. Red/green verification passed after the new
+helper and More wiring were absent, targeted beta QA/readiness verification
+passed 97 tests, focused behavior/readiness verification passed 398 tests,
+PixelLab verification passed at 149 files, and `git diff --check` passed with
+expected Windows line-ending warnings only. Mobile TypeScript and Expo export
+remain dependency/shell-gated in this cleaned Windows shell and should be rerun
+from Git Bash, WSL, CI, or a preinstalled dependency layer.
+
+Current evidence, 2026-06-25: Native QA now has a focused Needs Tune repair
+packet for the two-day beta run. `mobileLaunchQaEvidence.ts` stores
+`firstNeedsTuneTarget` on the capture plan even when the first Needs tune route
+is outside the visible next-four capture rows, and
+`buildMobileLaunchQaFixBriefShareText` produces an owner-readable fix brief with
+route, priority, QA note, proof gaps, setup/repro steps, optional Owner route
+loop, done condition, Needs tune rule, and return-to-`/care-twin-qa`
+instructions. More's Native QA Next Captures panel shows `Share Fix Brief` only
+when a Needs tune target exists, and the button uses the shared
+`MIN_MOBILE_TOUCH_TARGET` contract through `nativeQaCaptureFixBrief`.
+Red/green verification passed after the helper export and More wiring were
+absent: `mobileLaunchQaEvidence.test.ts` passed 12 tests and
+`mobileReadiness.test.ts` passed 78 tests. Follow-up local verification passed
+the 100-test targeted beta QA/readiness suite, the 401-test focused
+behavior/readiness suite, PixelLab verification at 149 files, and `git diff
+--check` with expected Windows line-ending warnings only. Real iOS/Android
+capture remains the external gate; mobile TypeScript and Expo export remain
+dependency/shell-gated in this cleaned Windows shell and should be rerun from
+Git Bash, WSL, CI, or a preinstalled dependency layer with Expo/mobile deps.
+
+Current evidence, 2026-06-25: The root install guard no longer depends on a
+Unix shell before package install/export can start. `package.json` now calls
+`node scripts/enforce-pnpm-install.mjs` for `preinstall`; the Node guard still
+removes forbidden `package-lock.json` and `yarn.lock` files and still rejects
+npm/yarn user agents, but it runs in Windows-friendly Node instead of `sh -c`.
+Static mobile readiness protects the root command and guard behavior because
+this directly affects the two-day mobile beta export path. Red/green readiness
+passed after first failing on the missing guard script. Direct guard checks
+passed with `npm_config_user_agent=pnpm/9.0.0` and failed as expected with
+`npm_config_user_agent=npm/10.0.0`. Follow-up verification passed the 101-test
+targeted beta QA/readiness suite, the 402-test focused behavior/readiness
+suite, PixelLab verification at 149 files, and `git diff --check` with expected
+Windows line-ending warnings only. Real Expo export still requires pnpm and the
+Expo/mobile dependency layer in the execution environment; real iOS/Android
+capture remains the external beta gate.
+
+Current evidence, 2026-06-25: The mobile Expo app config now exposes the
+intended export surfaces instead of relying on implicit defaults.
+`artifacts/woofwatcher-mobile/app.json` declares `ios`, `android`, and `web`
+platforms and sets `expo.web.bundler` to `metro`. Static mobile readiness now
+protects those values inside the Expo web export smoke wiring test. Red/green
+readiness first failed on the missing app-config assertions, then passed after
+the config was wired. A direct package-local Expo CLI export attempt advanced
+past the earlier `No platforms are configured to use the Metro bundler` error
+and now stops at the dependency-layer blocker: `Cannot determine the project's
+Expo SDK version because the module 'expo' is not installed`. Do not mark Expo
+export proven until a dependency-complete mobile environment runs the smoke
+export and verifies emitted HTML/JavaScript output.
+
+Current evidence, 2026-06-25: The two-day beta now has a root environment
+doctor before export. `pnpm run doctor:mobile-beta` runs
+`scripts/mobile-beta-doctor.mjs`, which checks pnpm availability, the
+Windows-friendly install guard, mobile `smoke:web`, Expo iOS/Android/web +
+Metro config, mobile Expo dependency resolution, PixelLab verifier presence,
+and the required `/care-twin-qa` owner-preview proof steps. Static mobile
+readiness protects the command and its QA proof language. The doctor currently
+exits blocked in this cleaned Windows shell because `pnpm` is unavailable and
+the mobile package cannot resolve `expo`; those must clear before package-local
+Expo export can count as proven.
+
+Current evidence, 2026-06-25: The root package manager is now pinned to the
+same pnpm version used by the verify workflow. `package.json` declares
+`packageManager: pnpm@10.24.0`, `.github/workflows/verify.yml` configures pnpm
+`10.24.0`, and `scripts/mobile-beta-doctor.mjs` checks those two values before
+handoff. Static mobile readiness protects the root package-manager pin, the CI
+workflow version, and the doctor check. The doctor now passes this gate while
+still reporting the truthful local blockers: no `pnpm` on PATH and no mobile
+`expo` dependency resolution in this cleaned Windows shell.
+
+Current evidence, 2026-06-25: The beta doctor now gives a deterministic
+bootstrap path for the missing-pnpm gate. `scripts/mobile-beta-doctor.mjs`
+checks Corepack as a warning-level helper and prints
+`corepack prepare pnpm@10.24.0 --activate` when pnpm is missing. Static mobile
+readiness protects the Corepack copy and exact activation command. In this
+cleaned Windows shell Corepack is not on PATH, so the warning correctly tells a
+helper to install pnpm 10.24.0 directly or use Replit/WSL; the true export
+blockers remain missing pnpm and missing mobile Expo dependency resolution.
+
+Current evidence, 2026-06-25: The beta doctor now verifies native environment
+readiness before handoff. `scripts/mobile-beta-doctor.mjs` blocks below Node 24
+and checks `artifacts/woofwatcher-mobile/eas.json` for preview and production
+iOS/Android build profile coverage. Static mobile readiness protects both
+doctor contracts. In this cleaned Windows shell those new checks pass, while
+the doctor still correctly blocks on missing pnpm and missing mobile Expo
+dependency resolution until a dependency-complete environment runs install and
+export proof. Follow-up verification passed 102 targeted beta QA/readiness
+tests, 403 focused behavior/readiness tests, PixelLab verification at 149 files,
+and `git diff --check` with expected Windows line-ending warnings only.
+
+Current evidence, 2026-06-25: The beta doctor now enforces exact pnpm CLI
+alignment. `scripts/mobile-beta-doctor.mjs` derives `expectedPackageManager`
+from `expectedPnpmVersion` and blocks any available pnpm command whose
+`pnpm --version` output is not `10.24.0`. Static readiness protects the exact
+version comparison. The default doctor run still blocks this shell on missing
+pnpm and missing mobile Expo dependency resolution; a bundled pnpm 11.x library
+does not count as export-ready.
+
+Current evidence, 2026-06-26: The beta doctor now has a machine-readable mode
+for helper environments. `pnpm run doctor:mobile-beta:json` calls
+`scripts/mobile-beta-doctor.mjs --json` and emits a parseable payload with the
+doctor result, all pass/warn/blocked checks, issues, warnings, and next actions.
+Static mobile readiness executes that command, parses the JSON, and protects the
+current truthful `BLOCKED` result along with the Node 24 and EAS pass checks.
+The JSON gate is ready for Replit/native helpers, but it still correctly blocks
+this shell until pnpm 10.24.0 and the mobile Expo dependency layer are present.
+
+Current evidence, 2026-06-26: Weekly Care Trends, Records, and Care Pass now
+keep open meal outcomes visible instead of treating served-only meals as
+resolved care. `deriveCareTrends` separates pending outcomes from complete,
+partial, and skipped meal counts; report highlights and Meal Watch signals tell
+the household to update served meal outcomes before treating the week as
+resolved; Records exposes a `Meal open` metric; and Care Pass trend copy
+includes pending outcome counts. Local verification passed focused Care
+Trends/Care Pass tests, mobile readiness, the 418-test zero-dependency
+behavior/readiness suite, PixelLab asset verification at 149 files, and
+`git diff --check` with expected Windows line-ending warnings only. Remote
+verify run `28234625027` failed before job execution with zero steps and no
+logs, matching the standing GitHub billing/spending-limit blocker rather than a
+local code regression.
+
+Current evidence, 2026-06-26: Care Pass report history now carries explicit
+local/provider storage truth. New Care Pass artifacts are marked `local-only`
+by default, `describeCarePassArtifactStorage` exposes owner-readable local,
+upload-ready, uploaded, and failed labels, and Records shows the storage label
+plus `Cloud storage pending` detail beside saved report resend and print-source
+actions. This keeps internal beta users from mistaking local print-ready HTML
+for cloud-backed PDF storage. Local verification passed focused Care Pass tests,
+mobile readiness, the 419-test zero-dependency behavior/readiness suite,
+PixelLab asset verification at 149 files, and `git diff --check` with expected
+Windows line-ending warnings only. Remote verify run `28235628241` failed
+before job execution with zero steps and no logs, matching the standing GitHub
+billing/spending-limit blocker rather than a local code regression.
+
+Current evidence, 2026-06-26: Care Pass report storage truth is now
+provider-aware while still blocking fake provider-backed claims. Local report
+artifacts remain `Saved on this device` until Provider Launch Setup marks
+storage rules configured. Once `launchProviderProfile.storageProviderConfigured`
+is true, the shared care-domain helper and Records Report History show
+`Ready to upload`, but `providerBacked` stays false and the detail still says
+signed access, retention, export, and deletion rules must be approved before
+cloud storage can be treated as real. Local verification passed focused Care
+Pass tests, mobile readiness, the 420-test zero-dependency behavior/readiness
+suite, PixelLab asset verification at 149 files, and `git diff --check` with
+expected Windows line-ending warnings only. Remote verify run `28236929754` for
+commit `2636b04` failed before job execution with job `83653949111`,
+`steps: []`, and `log not found: 83653949111`, matching the standing GitHub
+billing/spending-limit blocker rather than a local code regression.
+
+Current evidence, 2026-06-26: The mobile beta doctor now source-validates the
+provider-aware Care Pass report storage chain. Its JSON payload includes
+`provider-aware Care Pass storage is source-backed` only when `care-pass.ts`
+still exposes the storage-provider option and local false-provider-backed
+boundary, and `records.tsx` still feeds `launchProviderProfile` storage setup
+into the report-history status helper. This keeps dependency-complete export
+helpers from missing a regression in Records/Care Pass provider truth while
+native beta proof remains the external gate. Local verification passed mobile
+readiness, the 420-test zero-dependency behavior/readiness suite, PixelLab asset
+verification at 149 files, and `git diff --check` with expected Windows
+line-ending warnings only. Remote verify run `28237677413` for commit `64c4968`
+failed before job execution with job `83656402075`, `steps: []`, and
+`log not found: 83656402075`, matching the standing GitHub
+billing/spending-limit blocker rather than a local code regression.
+
+Current evidence, 2026-06-26: The Owner Preview Core Loop native QA surface now
+requires a real tester note for Care Pass Report History storage truth. The
+route loop asks testers to confirm Records/Care Pass shows `Saved on this
+device` or `Ready to upload` without implying provider-backed upload, includes
+that as pass criteria, and keeps the proof as a QA note so it does not add a
+third screenshot requirement to the owner loop. Local verification passed
+release QA tests, native capture-plan tests, the 420-test zero-dependency
+behavior/readiness suite, PixelLab asset verification at 149 files, and
+`git diff --check` with expected Windows line-ending warnings only. Remote
+verify run `28238656796` for commit `35b4735` failed before job execution with
+job `83659654553`, `steps: []`, and `log not found: 83659654553`, matching the
+standing GitHub billing/spending-limit blocker rather than a local code
+regression.
+
+Current evidence, 2026-06-26: The mobile beta doctor now source-validates the
+Owner Preview Care Pass storage proof chain. Its JSON payload includes
+`owner-preview Care Pass storage proof is source-backed` only when
+`mobileReleaseQa.ts` still requires the Care Pass Report History storage-status
+proof, `mobileLaunchQaEvidence.ts` still carries route-check `Proof:` lines into
+the shareable Native QA script, and `/care-twin-qa` still renders the Owner
+route-loop proof text. Local verification passed mobile readiness, release
+QA/native capture readiness, the 420-test zero-dependency behavior/readiness
+suite, PixelLab asset verification at 149 files, and `git diff --check` with
+expected Windows line-ending warnings only. Direct JSON doctor output remains
+truthfully blocked on missing pnpm and missing mobile Expo dependency
+resolution.
+
+Current evidence, 2026-06-26: The mobile beta doctor now source-validates the
+Beta Handoff packet's truth-boundary section. Its JSON payload includes
+`beta handoff truth boundaries are source-backed` only when the owner-readable
+handoff packet still separates local beta evidence from App Store/Play Store
+approval, provider-backed auth/database/storage/AI/push/payments, and
+non-diagnostic WoofGuide boundaries. Local verification passed mobile
+readiness, direct JSON doctor output, the 382-test zero-dependency
+behavior/readiness suite, PixelLab asset verification at 149 files, and
+`git diff --check` with expected Windows line-ending warnings only. Direct JSON
+doctor output remains truthfully blocked on missing pnpm and missing mobile
+Expo dependency resolution.

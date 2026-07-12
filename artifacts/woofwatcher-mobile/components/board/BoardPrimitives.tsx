@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { type ReactNode } from "react";
 import {
   Pressable,
@@ -12,11 +13,22 @@ import {
 
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useColors } from "@/hooks/useColors";
-import { MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
+import { hapticSelect } from "@/lib/haptics";
+import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+// Storybook mockup: big warm serif route titles, sans everywhere else.
+const TITLE_SERIF = "Fraunces_700Bold";
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function buildQaReturnToCockpitRoute(qaSurface: string | undefined): string {
+  return qaSurface ? `/care-twin-qa?qaSurface=${encodeURIComponent(qaSurface)}` : "/care-twin-qa";
+}
 
 export function BoardRouteHeader({
   kicker,
@@ -48,72 +60,263 @@ export function BoardRouteHeader({
   plain?: boolean;
 }) {
   const colors = useColors();
+  const router = useRouter();
+  const qaParams = useLocalSearchParams<{
+    qaReturn?: string | string[];
+    qaSurface?: string | string[];
+    qaTitle?: string | string[];
+  }>();
+  const qaReturn = firstParam(qaParams.qaReturn);
+  const qaSurface = firstParam(qaParams.qaSurface);
+  const qaTitle = firstParam(qaParams.qaTitle);
+  const showQaReturn = qaReturn === "care-twin-qa";
 
   return (
-    <View style={[styles.routeHeader, centered && styles.routeHeaderCentered, style]}>
-      {back ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          onPress={onBack}
-          style={({ pressed }) => [
-            styles.routeIconButton,
-            plain && styles.routeIconButtonPlain,
-            {
-              backgroundColor: plain ? "transparent" : pressed ? colors.secondary : colors.card,
-              borderColor: plain ? "transparent" : colors.border,
-            },
-          ]}
-        >
-          <Ionicons name="chevron-back" size={plain ? 24 : 20} color={colors.foreground} />
-        </Pressable>
-      ) : icon ? (
-        <View
-          style={[
-            styles.routeIconButton,
-            plain && styles.routeIconButtonPlain,
-            {
-              backgroundColor: plain ? "transparent" : colors.secondary,
-              borderColor: plain ? "transparent" : colors.border,
-            },
-          ]}
-        >
-          <Ionicons name={icon} size={20} color={colors.foreground} />
-        </View>
-      ) : null}
-      <View style={[styles.routeHeaderText, centered && styles.routeHeaderTextCentered]}>
-        {kicker ? (
-          <Text style={[styles.routeKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>{kicker}</Text>
+    <>
+      <View style={[styles.routeHeader, centered && styles.routeHeaderCentered, style]}>
+        {back ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            onPress={onBack}
+            style={({ pressed }) => [
+              styles.routeIconButton,
+              plain && styles.routeIconButtonPlain,
+              {
+                backgroundColor: plain ? "transparent" : pressed ? colors.secondary : colors.card,
+                borderColor: plain ? "transparent" : colors.border,
+              },
+            ]}
+          >
+            <Ionicons name="chevron-back" size={plain ? 24 : 20} color={colors.foreground} />
+          </Pressable>
+        ) : icon ? (
+          <View
+            style={[
+              styles.routeIconButton,
+              plain && styles.routeIconButtonPlain,
+              {
+                backgroundColor: plain ? "transparent" : colors.secondary,
+                borderColor: plain ? "transparent" : colors.border,
+              },
+            ]}
+          >
+            <Ionicons name={icon} size={20} color={colors.foreground} />
+          </View>
         ) : null}
-        <Text style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: DISPLAY }]}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text style={[styles.routeSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-            {subtitle}
+        <View style={[styles.routeHeaderText, centered && styles.routeHeaderTextCentered]}>
+          {kicker ? (
+            <Text style={[styles.routeKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>{kicker}</Text>
+          ) : null}
+          <Text style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: TITLE_SERIF }]}>
+            {title}
           </Text>
+          {subtitle ? (
+            <Text style={[styles.routeSubtitle, centered && styles.routeSubtitleCentered, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+        {actionIcon && onAction ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={actionLabel ?? title}
+            onPress={onAction}
+            disabled={actionDisabled}
+            style={({ pressed }) => [
+              styles.routeIconButton,
+              plain && styles.routeIconButtonPlain,
+              {
+                backgroundColor: plain ? "transparent" : pressed || actionDisabled ? colors.secondary : colors.card,
+                borderColor: plain ? "transparent" : colors.border,
+                opacity: actionDisabled ? 0.55 : 1,
+              },
+            ]}
+          >
+            <Ionicons name={actionIcon} size={plain ? 21 : 19} color={colors.foreground} />
+          </Pressable>
         ) : null}
       </View>
-      {actionIcon && onAction ? (
+      {showQaReturn ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={actionLabel ?? title}
-          onPress={onAction}
-          disabled={actionDisabled}
+          accessibilityLabel={`Return to QA Cockpit${qaTitle ? ` for ${qaTitle}` : ""}`}
+          onPress={() => router.push(buildQaReturnToCockpitRoute(qaSurface) as never)}
           style={({ pressed }) => [
-            styles.routeIconButton,
-            plain && styles.routeIconButtonPlain,
+            styles.qaReturnBanner,
             {
-              backgroundColor: plain ? "transparent" : pressed || actionDisabled ? colors.secondary : colors.card,
-              borderColor: plain ? "transparent" : colors.border,
-              opacity: actionDisabled ? 0.55 : 1,
+              backgroundColor: pressed ? `${colors.sage}28` : `${colors.sage}16`,
+              borderColor: `${colors.sage}66`,
             },
           ]}
         >
-          <Ionicons name={actionIcon} size={plain ? 21 : 19} color={colors.foreground} />
+          <Ionicons name="camera-outline" size={17} color={colors.sage} />
+          <View style={styles.qaReturnText}>
+            <Text style={[styles.qaReturnTitle, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
+              Return to QA Cockpit
+            </Text>
+            <Text style={[styles.qaReturnDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]} numberOfLines={1}>
+              Capture done? Attach proof{qaTitle ? ` for ${qaTitle}` : qaSurface ? ` for ${qaSurface}` : ""}.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={15} color={colors.sage} />
         </Pressable>
       ) : null}
+    </>
+  );
+}
+
+export type BoardStatusPillTone =
+  | "done"
+  | "due"
+  | "upNext"
+  | "upcoming"
+  | "neutral";
+
+/** Storybook-mockup status pill: Done / Due / Up Next / Upcoming. */
+export function BoardStatusPill({
+  label,
+  tone = "neutral",
+  style,
+}: {
+  label: string;
+  tone?: BoardStatusPillTone;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const colors = useColors();
+  const palette: Record<BoardStatusPillTone, { bg: string; fg: string }> = {
+    done: { bg: colors.sageSoft, fg: colors.forest },
+    due: { bg: colors.amberSoft, fg: colors.amber },
+    upNext: { bg: colors.amberSoft, fg: colors.amber },
+    upcoming: { bg: colors.blueSoft, fg: colors.blue },
+    neutral: { bg: colors.muted, fg: colors.mutedForeground },
+  };
+  const swatch = palette[tone];
+  return (
+    <View style={[styles.statusPill, { backgroundColor: swatch.bg }, style]}>
+      <Text style={[styles.statusPillText, { color: swatch.fg, fontFamily: "Inter_700Bold" }]}>
+        {label}
+      </Text>
     </View>
+  );
+}
+
+/** Storybook-mockup segmented chip tabs (Schedule | Routines | Reminders). */
+export function BoardSegmentTabs<T extends string>({
+  segments,
+  active,
+  onChange,
+  style,
+}: {
+  segments: readonly { key: T; label: string }[];
+  active: T;
+  onChange: (key: T) => void;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const colors = useColors();
+  return (
+    <View style={[styles.segmentRow, style]}>
+      {segments.map((segment) => {
+        const isActive = segment.key === active;
+        return (
+          <Pressable
+            key={segment.key}
+            accessibilityRole="button"
+            accessibilityLabel={segment.label}
+            accessibilityState={{ selected: isActive }}
+            onPress={() => {
+              if (!isActive) hapticSelect();
+              onChange(segment.key);
+            }}
+            style={({ pressed }) => [
+              styles.segmentChip,
+              {
+                backgroundColor: isActive
+                  ? colors.primary
+                  : pressed
+                    ? colors.secondary
+                    : colors.card,
+                borderColor: isActive ? colors.primary : colors.border,
+              },
+            ]}
+          >
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.segmentChipText,
+                {
+                  color: isActive ? colors.primaryForeground : colors.foreground,
+                  fontFamily: "Inter_700Bold",
+                },
+              ]}
+            >
+              {segment.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Storybook-mockup action button: forest primary, soft sage, or outline. */
+export function BoardActionButton({
+  label,
+  onPress,
+  variant = "primary",
+  icon,
+  disabled,
+  accessibilityLabel,
+  style,
+  compact,
+}: {
+  label: string;
+  onPress: () => void;
+  variant?: "primary" | "soft" | "outline";
+  icon?: IoniconName;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+  style?: StyleProp<ViewStyle>;
+  compact?: boolean;
+}) {
+  const colors = useColors();
+  const background =
+    variant === "primary"
+      ? colors.primary
+      : variant === "soft"
+        ? colors.secondary
+        : "transparent";
+  const foreground =
+    variant === "primary" ? colors.primaryForeground : colors.forest;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [
+        styles.actionButton,
+        compact && styles.actionButtonCompact,
+        {
+          backgroundColor: background,
+          borderColor: variant === "outline" ? colors.border : background,
+          opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
+        },
+        style,
+      ]}
+    >
+      {icon ? <Ionicons name={icon} size={compact ? 14 : 16} color={foreground} /> : null}
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.actionButtonText,
+          compact && styles.actionButtonTextCompact,
+          { color: variant === "outline" ? colors.foreground : foreground, fontFamily: "Inter_700Bold" },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -200,7 +403,7 @@ export function BoardCard({
   const colors = useColors();
   const navy = tone === "navy";
   const backgroundColor = navy ? colors.brandNavy : tone === "soft" ? colors.accent : colors.card;
-  const borderColor = navy ? colors.shellNavy : colors.border;
+  const borderColor = navy ? colors.copper + "66" : tone === "soft" ? colors.stone : colors.border;
 
   return (
     <View
@@ -239,14 +442,20 @@ export function BoardSectionHeader({
 }) {
   const colors = useColors();
   return (
-    <View style={[styles.sectionHeader, style]}>
-      <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }, textStyle]}>
+    <View style={[styles.sectionHeader, { borderBottomColor: colors.border }, style]}>
+      <Text
+        numberOfLines={1}
+        style={[styles.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }, textStyle]}
+      >
         {title}
       </Text>
       {accessory ? (
         accessory
       ) : action ? (
-        <Text style={[styles.sectionAction, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+        <Text
+          numberOfLines={1}
+          style={[styles.sectionAction, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+        >
           {action}
         </Text>
       ) : null}
@@ -261,6 +470,9 @@ export function StatusMeter({
   icon,
   tone,
   segments,
+  onPress,
+  accessibilityLabel,
+  accessibilityHint,
 }: {
   label: string;
   value: number;
@@ -268,6 +480,9 @@ export function StatusMeter({
   icon?: PixelIconName;
   tone?: string;
   segments?: number;
+  onPress?: () => void;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }) {
   const colors = useColors();
   const count = segments ?? colors.pixelUi.statusSegments;
@@ -275,8 +490,8 @@ export function StatusMeter({
   const filled = Math.max(1, Math.round(pct * count));
   const active = tone ?? colors.sage;
 
-  return (
-    <View style={styles.meterRow}>
+  const content = (
+    <>
       <View style={styles.meterLabelWrap}>
         {icon ? <PixelIcon name={icon} size={20} /> : null}
         <Text style={[styles.meterLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
@@ -302,6 +517,34 @@ export function StatusMeter({
           {valueLabel}
         </Text>
       ) : null}
+    </>
+  );
+
+  if (onPress) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? `${label} ${valueLabel ?? `${Math.round(pct * 100)} percent`}`}
+        accessibilityHint={accessibilityHint}
+        hitSlop={MOBILE_INLINE_HIT_SLOP}
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.meterRow,
+          styles.meterPressable,
+          {
+            backgroundColor: pressed ? colors.secondary : "transparent",
+            borderColor: pressed ? active : "transparent",
+          },
+        ]}
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={styles.meterRow}>
+      {content}
     </View>
   );
 }
@@ -310,27 +553,36 @@ export function QuickActionTile({
   icon,
   label,
   onPress,
+  onLongPress,
   accessibilityLabel,
+  accessibilityHint,
   accent,
   style,
   iconSize = 28,
   labelStyle,
+  delayLongPress,
 }: {
   icon: PixelIconName;
   label: string;
   onPress: () => void;
+  onLongPress?: () => void;
   accessibilityLabel?: string;
+  accessibilityHint?: string;
   accent?: string;
   style?: StyleProp<ViewStyle>;
   iconSize?: number;
   labelStyle?: StyleProp<TextStyle>;
+  delayLongPress?: number;
 }) {
   const colors = useColors();
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? `Log ${label}`}
+      accessibilityHint={accessibilityHint}
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={onLongPress ? (delayLongPress ?? 350) : undefined}
       style={({ pressed }) => [
         styles.quickTile,
         {
@@ -369,12 +621,14 @@ export function CareRow({
   detail,
   meta,
   onPress,
+  accessibilityLabel,
 }: {
   icon: PixelIconName;
   title: string;
   detail?: string;
   meta?: string;
   onPress?: () => void;
+  accessibilityLabel?: string;
 }) {
   const colors = useColors();
   const content = (
@@ -403,7 +657,7 @@ export function CareRow({
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${title}. ${detail ?? ""}`}
+        accessibilityLabel={accessibilityLabel ?? `${title}. ${detail ?? ""}`}
         onPress={onPress}
         style={({ pressed }) => [styles.careRow, { opacity: pressed ? 0.72 : 1 }]}
       >
@@ -419,12 +673,35 @@ const styles = StyleSheet.create({
   routeHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 12,
   },
   routeHeaderCentered: {
     minHeight: 46,
-    marginBottom: 12,
+    marginBottom: 10,
+  },
+  qaReturnBanner: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 9,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: -6,
+    marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+  qaReturnText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  qaReturnTitle: {
+    fontSize: 12.5,
+  },
+  qaReturnDetail: {
+    marginTop: 1,
+    fontSize: 11,
   },
   routeIconButton: {
     width: MIN_MOBILE_TOUCH_TARGET,
@@ -447,40 +724,93 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   routeKicker: {
-    fontSize: 10,
+    fontSize: 9.5,
     letterSpacing: 0,
     textTransform: "uppercase",
-    marginBottom: 2,
+    marginBottom: 1,
   },
   routeTitle: {
-    fontSize: 26,
-    lineHeight: 30,
+    fontSize: 28,
+    lineHeight: 34,
     letterSpacing: 0,
   },
   routeTitleCentered: {
-    fontSize: 22,
-    lineHeight: 26,
+    fontSize: 21,
+    lineHeight: 25,
   },
   routeSubtitle: {
-    fontSize: 12.5,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
     marginTop: 2,
+  },
+  routeSubtitleCentered: {
+    textAlign: "center",
+  },
+  statusPill: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    minHeight: 24,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusPillText: {
+    fontSize: 10.5,
+    letterSpacing: 0.2,
+  },
+  segmentRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 14,
+  },
+  segmentChip: {
+    flexShrink: 1,
+    minHeight: 36,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  segmentChipText: {
+    fontSize: 12.5,
+  },
+  actionButton: {
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  actionButtonCompact: {
+    minHeight: 36,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+  },
+  actionButtonText: {
+    fontSize: 13.5,
+  },
+  actionButtonTextCompact: {
+    fontSize: 12,
   },
   pill: {
     alignSelf: "flex-start",
-    borderWidth: 1,
-    borderRadius: 5,
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderWidth: 0,
+    borderRadius: 999,
+    minHeight: 28,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
   },
   pillText: {
-    fontSize: 10.5,
-    textTransform: "uppercase",
-    letterSpacing: 0,
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
   metricTile: {
     borderWidth: 1,
@@ -521,7 +851,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardPadded: {
-    padding: 12,
+    padding: 16,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -529,13 +859,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 10,
     marginBottom: 10,
+    paddingBottom: 2,
+    borderBottomWidth: 0,
   },
   sectionTitle: {
-    fontSize: 13,
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
+    flexShrink: 1,
+    minWidth: 0,
+    fontSize: 16,
+    letterSpacing: 0,
   },
   sectionAction: {
+    flexShrink: 0,
     fontSize: 11,
   },
   meterRow: {
@@ -543,6 +877,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     minHeight: 28,
+  },
+  meterPressable: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
   },
   meterLabelWrap: {
     width: 94,
@@ -571,18 +912,18 @@ const styles = StyleSheet.create({
   },
   quickTile: {
     width: "23.5%",
-    minHeight: 72,
+    minHeight: 76,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
-    paddingVertical: 8,
+    gap: 6,
+    paddingVertical: 9,
   },
   quickIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 7,
+    width: 38,
+    height: 38,
+    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
   },

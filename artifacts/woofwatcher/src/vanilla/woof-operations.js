@@ -35,6 +35,22 @@ export const AUDIT_RESOURCE_TYPES = [
 
 const PRIVACY_LEVELS = ["household_private", "care_pass_scoped", "system_private", "public_demo_safe"];
 const SECRET_KEY_PATTERN = /(token|secret|password|api[-_ ]?key|auth|session|credential)/i;
+const ACCEPTED_HOSTED_NUDGE_PROOF_MIME_TYPES = new Set([
+  "application/json",
+  "text/markdown",
+  "text/plain"
+]);
+
+export const HOSTED_NUDGE_PROVIDER_PROOF_REQUIREMENTS = [
+  "backend job policy",
+  "caregiver consent policy",
+  "provider delivery policy",
+  "caregiver privacy policy",
+  "quiet-hours and daily-budget policy",
+  "missed-delivery fallback policy",
+  "native delivery proof",
+  "Apollo approval"
+];
 
 export function createAuditEvent(input = {}, now = new Date().toISOString()) {
   const action = normalizeChoice(input.action, AUDIT_ACTIONS, "update");
@@ -113,6 +129,8 @@ export function buildHostedNudgePlan(input = {}, options = {}, now = new Date().
   const backendConfigured = Boolean(options.backendConfigured || cleanText(options.backendUrl));
   const householdId = cleanText(options.householdId, 120);
   const pushProviderConfigured = Boolean(options.pushProviderConfigured || cleanText(options.pushProvider));
+  const providerEvidence = options.providerEvidence || options.hostedNudgeProviderEvidence || null;
+  const providerProofReady = backendConfigured && pushProviderConfigured && isHostedNudgeProviderProofReady(providerEvidence);
   const quietHours = normalizeQuietHours(options.quietHours);
   const quietNow = isWithinQuietHours(now, quietHours);
   const maxDailyNudges = clampWholeNumber(options.maxDailyNudges, 4);
@@ -123,6 +141,11 @@ export function buildHostedNudgePlan(input = {}, options = {}, now = new Date().
   if (!backendConfigured) blockers.push("Choose and configure a backend before hosted nudges can run.");
   if (!householdId) blockers.push("Create a household id before scheduling caregiver-specific nudges.");
   if (!pushProviderConfigured) blockers.push("Configure a push/email/SMS provider before closed-app delivery.");
+  if (backendConfigured && pushProviderConfigured && !providerProofReady) {
+    blockers.push(
+      "Attach structured hosted nudge delivery proof covering backend jobs, caregiver consent, provider delivery, caregiver privacy, quiet-hours and daily-budget enforcement, missed-delivery fallback, native delivery, and Apollo approval before closed-app nudges can run.",
+    );
+  }
 
   const candidates = reminders.items
     .filter((item) => ["overdue", "due", "upcoming"].includes(item.status))
@@ -135,9 +158,24 @@ export function buildHostedNudgePlan(input = {}, options = {}, now = new Date().
     packageType: "woofwatcher.hosted-nudge-plan",
     version: 1,
     generatedAt: normalizeTimestamp(now),
-    status: blockers.length ? "local_only" : remainingToday === 0 ? "budget_exhausted" : quietNow ? "quiet_hold" : "ready_to_schedule",
+    status: !backendConfigured || !householdId || !pushProviderConfigured
+      ? "local_only"
+      : !providerProofReady
+        ? "provider_proof_pending"
+        : remainingToday === 0
+          ? "budget_exhausted"
+          : quietNow
+            ? "quiet_hold"
+            : "ready_to_schedule",
     householdId,
     petName: state.profile.name,
+    delivery: {
+      backendConfigured,
+      pushProviderConfigured,
+      provider: cleanText(options.pushProvider, 80) || "undecided",
+      proofReady: providerProofReady,
+      proofRequirements: HOSTED_NUDGE_PROVIDER_PROOF_REQUIREMENTS
+    },
     budget: {
       maxDailyNudges,
       nudgesSentToday,
@@ -151,8 +189,31 @@ export function buildHostedNudgePlan(input = {}, options = {}, now = new Date().
     jobs,
     blockers,
     deliveryBoundary:
-      "Hosted nudges are a backend plan only. Closed-app push, email, or SMS delivery requires account consent, provider setup, and caregiver privacy rules."
+      "Hosted nudges are a backend plan only. Closed-app push, email, or SMS delivery requires account consent, provider setup, caregiver privacy rules, native delivery proof, fallback proof, and Apollo approval."
   };
+}
+
+export function isHostedNudgeProviderProofReady(evidence = {}) {
+  return Boolean(
+    cleanText(evidence?.proofLocator, 240) &&
+      ACCEPTED_HOSTED_NUDGE_PROOF_MIME_TYPES.has(cleanText(evidence?.proofMimeType, 80).toLowerCase()) &&
+      Number(evidence?.proofByteSize) > 0 &&
+      cleanText(evidence?.backendJobPolicy, 240) &&
+      cleanText(evidence?.caregiverConsentPolicy, 240) &&
+      cleanText(evidence?.providerDeliveryPolicy, 240) &&
+      cleanText(evidence?.caregiverPrivacyPolicy, 240) &&
+      cleanText(evidence?.quietHoursPolicy, 240) &&
+      cleanText(evidence?.fallbackPolicy, 240) &&
+      cleanText(evidence?.nativeDeliveryProof, 240) &&
+      evidence?.backendJobApproved === true &&
+      evidence?.caregiverConsentApproved === true &&
+      evidence?.providerDeliveryApproved === true &&
+      evidence?.caregiverPrivacyApproved === true &&
+      evidence?.quietHoursApproved === true &&
+      evidence?.fallbackApproved === true &&
+      evidence?.nativeDeliveryApproved === true &&
+      evidence?.apolloApproved === true,
+  );
 }
 
 export function buildReportArtifact(input = {}, options = {}, now = new Date().toISOString()) {

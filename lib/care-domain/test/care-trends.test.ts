@@ -156,3 +156,68 @@ test("ignores private logs when deriving care trends", () => {
   assert.equal(trends.summary, "No shared care logs in the last 7 days");
   assert.match(trends.nextStep, /Start with meals, water, walks, potty, and medication/i);
 });
+
+test("keeps pending meal outcomes separate in weekly trend summaries", () => {
+  const trends = deriveCareTrends({
+    now: NOW,
+    entries: [
+      {
+        id: "breakfast-complete",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Emma",
+        occurredAt: "2026-06-08T07:00:00-07:00",
+        details: { mealCompletion: "complete", householdVisible: true },
+      },
+      {
+        id: "dinner-served",
+        type: "meal",
+        title: "Dinner",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-07T18:00:00-07:00",
+        details: {
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 1,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "snack-grazing",
+        type: "meal",
+        title: "Bedtime snack",
+        caregiver: "Emma",
+        occurredAt: "2026-06-07T21:00:00-07:00",
+        details: {
+          mealCompletion: "grazing",
+          mealLifecycle: "outcome-pending",
+          servedAmount: 0.25,
+          servedUnit: "cup",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  assert.equal(trends.current.meals.total, 3);
+  assert.equal(trends.current.meals.complete, 1);
+  assert.equal(trends.current.meals.partial, 0);
+  assert.equal(trends.current.meals.skipped, 0);
+  assert.equal(trends.current.meals.pending, 2);
+  assert.equal(trends.current.meals.completionPercent, 33);
+  assert.match(trends.summary, /33% meal completion, 2 outcomes pending/);
+  assert.ok(
+    trends.highlights.some((line) =>
+      /Meals: 1 complete, 0 partial, 0 skipped, 2 pending outcomes/.test(line),
+    ),
+  );
+  assert.ok(
+    trends.signals.some(
+      (signal) =>
+        signal.kind === "meal-watch" &&
+        /2 outcomes pending/.test(signal.detail) &&
+        /update served meal outcomes/i.test(signal.action),
+    ),
+  );
+});

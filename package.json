@@ -1,11 +1,21 @@
 {
   "name": "workspace",
   "version": "0.0.0",
+  "packageManager": "pnpm@10.24.0",
   "license": "MIT",
   "scripts": {
-    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "preinstall": "node scripts/enforce-pnpm-install.mjs",
+    "doctor:mobile-beta": "node scripts/mobile-beta-doctor.mjs",
+    "doctor:mobile-beta:json": "node scripts/mobile-beta-doctor.mjs --json",
+    "doctor:native-qa": "node scripts/native-qa-tooling-doctor.mjs",
+    "doctor:native-qa:json": "node scripts/native-qa-tooling-doctor.mjs --json",
+    "proof:live-preview": "pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",
+    "preview": "node scripts/replit-preview.mjs",
+    "preview:rebuild": "node scripts/replit-preview.mjs --rebuild",
+    "start": "node scripts/replit-preview.mjs",
+    "preview:mobile-beta": "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
     "test:focused": "node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js lib/care-domain/test/*.test.ts",
-    "build:ci": "pnpm run typecheck && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/woofwatcher run build && pnpm --filter @workspace/mockup-sandbox run build && pnpm --filter @workspace/woofwatcher-mobile run smoke:web",
+    "build:ci": "pnpm run typecheck && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/woofwatcher run build && pnpm --filter @workspace/mockup-sandbox run build && pnpm --filter @workspace/woofwatcher-mobile run smoke:web && pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime && pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"

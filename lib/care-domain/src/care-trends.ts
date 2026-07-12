@@ -46,6 +46,7 @@ export interface CareTrendWindow {
     complete: number;
     partial: number;
     skipped: number;
+    pending: number;
     completionPercent: number;
   };
   walks: {
@@ -201,13 +202,20 @@ function waterRefillEquivalent(entry: CareTrendsEntry): number {
   return WATER_FACTORS[waterKind(entry)] ?? 0.5;
 }
 
-function mealOutcome(entry: CareTrendsEntry): "complete" | "partial" | "skipped" | "logged" {
+function mealOutcome(entry: CareTrendsEntry): "complete" | "partial" | "skipped" | "pending" | "logged" {
   const details = asObject(entry.details);
-  const outcome = clean(details.mealCompletion ?? details.completion ?? details.status).toLowerCase();
+  const outcome = clean(details.mealCompletion ?? details.completion ?? details.outcome ?? details.status).toLowerCase();
+  const lifecycle = clean(details.mealLifecycle).toLowerCase();
   const portion = clean(details.portion).toLowerCase();
-  if (["skip", "skipped", "missed"].includes(outcome) || portion === "skipped") return "skipped";
-  if (["partial", "some", "half"].includes(outcome)) return "partial";
-  if (["complete", "completed", "full", "ate it", "done"].includes(outcome) || portion === "full") return "complete";
+  if (
+    ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(outcome) ||
+    ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(lifecycle)
+  ) {
+    return "pending";
+  }
+  if (["skip", "skipped", "missed", "refused"].includes(outcome) || portion === "skipped") return "skipped";
+  if (["partial", "some", "half", "ate some"].includes(outcome)) return "partial";
+  if (["complete", "completed", "full", "ate it", "ate all", "ate most", "most", "done"].includes(outcome) || portion === "full") return "complete";
   return "logged";
 }
 
@@ -242,7 +250,7 @@ function emptyWindow(): CareTrendWindow {
     caregiverCount: 0,
     caregivers: [],
     topCaregiver: null,
-    meals: { total: 0, complete: 0, partial: 0, skipped: 0, completionPercent: 0 },
+    meals: { total: 0, complete: 0, partial: 0, skipped: 0, pending: 0, completionPercent: 0 },
     walks: { count: 0, totalMinutes: 0, averageMinutes: 0, distanceMiles: 0, dogInteractions: 0 },
     water: { logs: 0, refillEquivalent: 0, days: 0 },
     potty: { total: 0, watchCount: 0 },
@@ -272,6 +280,7 @@ function summarizeWindow(entries: readonly CareTrendsEntry[]): CareTrendWindow {
       if (outcome === "complete") result.meals.complete += 1;
       if (outcome === "partial") result.meals.partial += 1;
       if (outcome === "skipped") result.meals.skipped += 1;
+      if (outcome === "pending") result.meals.pending += 1;
     }
 
     if (type === "walk") {
@@ -326,7 +335,10 @@ function buildHighlights(current: CareTrendWindow, deltas: CareTrendDeltas): str
     highlights.push(`${current.walks.totalMinutes} walk minutes this week${delta}`);
   }
   if (current.meals.total > 0) {
-    highlights.push(`Meals: ${current.meals.complete} complete, ${current.meals.partial} partial, ${current.meals.skipped} skipped`);
+    const pending = current.meals.pending
+      ? `, ${current.meals.pending} pending outcome${current.meals.pending === 1 ? "" : "s"}`
+      : "";
+    highlights.push(`Meals: ${current.meals.complete} complete, ${current.meals.partial} partial, ${current.meals.skipped} skipped${pending}`);
   }
   if (current.water.logs > 0) {
     highlights.push(`${formatAmount(current.water.refillEquivalent)} bowl ${current.water.refillEquivalent === 1 ? "refill" : "refills"} tracked`);
@@ -336,14 +348,15 @@ function buildHighlights(current: CareTrendWindow, deltas: CareTrendDeltas): str
 
 function buildSignals(current: CareTrendWindow, deltas: CareTrendDeltas): CareTrendSignal[] {
   const signals: CareTrendSignal[] = [];
-  const mealWatch = current.meals.partial + current.meals.skipped;
+  const mealWatch = current.meals.partial + current.meals.skipped + current.meals.pending;
   if (mealWatch > 0) {
+    const pendingLabel = `${current.meals.pending} outcome${current.meals.pending === 1 ? "" : "s"} pending`;
     signals.push({
       kind: "meal-watch",
-      label: "Meal consistency",
-      detail: `${current.meals.partial} partial and ${current.meals.skipped} skipped meal ${current.meals.total === 1 ? "log" : "logs"} this week.`,
+      label: "Meal follow-up",
+      detail: `${current.meals.partial} partial, ${current.meals.skipped} skipped, and ${pendingLabel} this week.`,
       tone: "watch",
-      action: "Keep logging served and eaten amounts so appetite patterns are clear.",
+      action: "Keep logging served and eaten amounts; update served meal outcomes before treating the week as resolved.",
     });
   }
   if (current.potty.watchCount > 0) {
@@ -420,7 +433,7 @@ export function deriveCareTrends(input: CareTrendsInput): CareTrends {
     summary:
       current.totalLogs === 0
         ? `No shared care logs in the last ${windowDays} days`
-        : `${current.totalLogs} visible care logs over ${current.loggedDays} ${current.loggedDays === 1 ? "day" : "days"} - ${current.caregiverCount} ${current.caregiverCount === 1 ? "caregiver" : "caregivers"}, ${current.walks.totalMinutes} walk minutes, ${current.meals.completionPercent}% meal completion.`,
+        : `${current.totalLogs} visible care logs over ${current.loggedDays} ${current.loggedDays === 1 ? "day" : "days"} - ${current.caregiverCount} ${current.caregiverCount === 1 ? "caregiver" : "caregivers"}, ${current.walks.totalMinutes} walk minutes, ${current.meals.completionPercent}% meal completion${current.meals.pending ? `, ${current.meals.pending} outcome${current.meals.pending === 1 ? "" : "s"} pending` : ""}.`,
     highlights,
     signals,
     nextStep:
