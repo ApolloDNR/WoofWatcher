@@ -965,44 +965,8 @@ export default function HomeScreen() {
   );
   const adventureQuest = adventureMode.quests[0];
 
-  const statusTiles = [
-    {
-      label: "Happiness",
-      value: status.meta.label,
-      icon: "happy" as PixelIconName,
-      tone: colors.amber,
-      target: "mood" as StatusTileTarget,
-      actionLabel: "Open mood details",
-      progress: undefined as number | undefined,
-    },
-    {
-      label: "Energy",
-      value: `${status.energy}%`,
-      icon: "energy" as PixelIconName,
-      tone: colors.sage,
-      target: "health" as StatusTileTarget,
-      actionLabel: "Open Health Watch",
-      progress: status.energy as number | undefined,
-    },
-    {
-      label: "Hunger",
-      value: hungerLabel,
-      icon: "hunger" as PixelIconName,
-      tone: fed ? colors.sage : colors.copper,
-      target: "diet" as StatusTileTarget,
-      actionLabel: "Open Diet Profile",
-      progress: hungerScore as number | undefined,
-    },
-    {
-      label: "Bond",
-      value: bondLabel,
-      icon: "heart" as PixelIconName,
-      tone: colors.rose,
-      target: "bond" as StatusTileTarget,
-      actionLabel: "Open play details",
-      progress: bondScore as number | undefined,
-    },
-  ];
+  // The old four-tile status grid folded into Care Sense; the Care Status
+  // card now carries only Bond and the diet-profile door via openStatusTile.
   const openStatusTile = (target: StatusTileTarget) => {
     void Haptics.selectionAsync();
     if (target === "mood") {
@@ -2497,115 +2461,32 @@ export default function HomeScreen() {
           </Pressable>
           )}
 
+          {/* Care Status keeps only what Care Sense doesn't already show:
+              the presence pill, the Bond meter, and the diet-profile door.
+              Mood/energy/hunger live in the Care Sense card up top - one
+              meters surface, exactly like the mock boards. */}
           <BoardCard style={s.careStatusCard}>
             <BoardSectionHeader
               title="Care Status"
               accessory={<BoardPill label={careStatusLabel} tone={careStatusTone} />}
             />
-            <View
-              style={[
-                s.statusTiles,
-                {
-                  gap: homeFirstScreenLayout.statusTileGap,
-                  marginBottom: 0,
-                },
-              ]}
-            >
-              {statusTiles.map((tile) => (
-                <Pressable
-                  key={tile.label}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${tile.label}. ${tile.value}. ${tile.actionLabel}`}
-                  onPress={() => openStatusTile(tile.target)}
-                  style={({ pressed }) => [
-                    s.statusTile,
-                    {
-                      minHeight: homeFirstScreenLayout.statusTileMinHeight,
-                      backgroundColor: pressed ? colors.secondary : colors.background,
-                      borderColor: colors.border,
-                      opacity: pressed ? 0.78 : 1,
-                      transform: [{ scale: pressed ? 0.98 : 1 }],
-                    },
-                  ]}
-                >
-                  {hasMedallion(tile.icon) ? (
-                    <BoardMedallion
-                      name={tile.icon}
-                      size={homeFirstScreenLayout.statusTileIconBoxSize}
-                    />
-                  ) : (
-                    <View
-                      style={[
-                        s.statusTileIcon,
-                        {
-                          width: homeFirstScreenLayout.statusTileIconBoxSize,
-                          height: homeFirstScreenLayout.statusTileIconBoxSize,
-                          backgroundColor: tile.tone + "16",
-                        },
-                      ]}
-                    >
-                      <PixelIcon
-                        name={tile.icon}
-                        size={homeFirstScreenLayout.statusTileIconSize}
-                      />
-                    </View>
-                  )}
-                  <Text
-                    style={[
-                      s.statusTileLabel,
-                      { color: colors.navy, fontFamily: "Inter_700Bold" },
-                    ]}
-                  >
-                    {tile.label}
-                  </Text>
-                  {tile.progress != null ? (
-                    <View style={s.statusTileSegments}>
-                      {Array.from({ length: 8 }).map((_, index) => (
-                        <View
-                          key={`${tile.label}-seg-${index}`}
-                          style={[
-                            s.statusTileSegment,
-                            {
-                              backgroundColor:
-                                index <
-                                Math.max(
-                                  1,
-                                  Math.round(((tile.progress ?? 0) / 100) * 8),
-                                )
-                                  ? tile.tone
-                                  : colors.muted,
-                              // Hairline keeps empty segments legible on the
-                              // dark board, where the muted fill nearly
-                              // matches the card behind it.
-                              borderColor: colors.border,
-                            },
-                          ]}
-                        />
-                      ))}
-                    </View>
-                  ) : (
-                    <View
-                      style={[
-                        s.statusTileValuePill,
-                        {
-                          backgroundColor: tile.tone + "1C",
-                          borderColor: tile.tone + "55",
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          s.statusTileValue,
-                          { color: tile.tone, fontFamily: "Inter_700Bold" },
-                        ]}
-                      >
-                        {tile.value}
-                      </Text>
-                    </View>
-                  )}
-                </Pressable>
-              ))}
-            </View>
+            <StatusMeter
+              label="Bond"
+              icon="heart"
+              value={bondScore / 100}
+              valueLabel={bondLabel}
+              tone={colors.rose}
+              onPress={() => openStatusTile("bond")}
+              accessibilityLabel={`Bond ${bondLabel}`}
+              accessibilityHint="Opens play details - shared play grows the bond."
+            />
+            <CareRow
+              icon="meal"
+              title="Diet profile"
+              detail="Meals, portions, and sensitivities on file"
+              onPress={() => openStatusTile("diet")}
+              accessibilityLabel="Open Diet Profile"
+            />
           </BoardCard>
 
           <BoardCard style={s.careerCard}>

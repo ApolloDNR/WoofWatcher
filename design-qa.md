@@ -90,3 +90,48 @@ Date: 2026-07-06
 - Level thresholds and title ladder are a first tuning pass; Apollo may want different pacing before launch.
 - Native haptics/celebration timing needs on-device QA.
 - Adventure map, career stats board, and shareable Care Pass QR from the vision board remain future slices.
+
+# Design QA - Mockup Parity Sweep (Apollo's July Boards)
+
+Date: 2026-07-12
+
+## Scope
+
+- Visual source: Apollo's three July 2026 mock boards (uploaded this session),
+  now canonical in APOLLO_MASTER_VISION_PROMPT.md.
+- Foundation: lighter parchment palette (#F7F1E1 page / #FDF9EE card), deep
+  forest #33582F primary, Care Sense meter tones, 7-pip meters, quiet sage
+  kickers, edge-to-edge compact web preview (navy letterbox removed).
+- New shared motion kit (components/motion/GameFeel.tsx): PressScale squish,
+  staggered BoardCard entrances, MeterPip pop-fills, paw-FAB bounce,
+  ProgressFill - one spring language everywhere, reduced-motion aware.
+- Home: mood card + recency chips + duplicate status-tile grid folded into
+  the mock-board Care Sense card (mood/energy/hunger/alone, all real);
+  Quick Log is a card with Meal/Potty/Walk/Meds + real More tile; Care
+  Status slimmed to Bond meter + diet door.
+- Log + fastlog: parchment consoles, segmented option chips, forest save
+  pills, red-text delete, light Add Log sheet.
+- Plan: light command deck, mock-board timeline rows, Week tab = This
+  Week's Plan with real M-S day dots + weekly goal + streak.
+- Health: Next Reminder / Health Summary (honest "Not on file" states) /
+  Medications; Records: light stat chips.
+- Pack: new Supplies segment (Essentials + Travel bag) - user-set statuses
+  only, no fake countdowns, AsyncStorage persistence, 12-test pure lib.
+- Story: month-grouped Memories grid, honest journal cards (hearts omitted -
+  no real reaction model exists); More: parchment launch hub; Avatar
+  Studio: forest segments.
+
+## Checks Run
+
+- Focused behavior/readiness suite: 693 tests, 0 failures (Node 24).
+- Mobile TypeScript: clean.
+- Expo web export: passed; headless Chromium screenshots of every route at
+  390x844 plus interaction flows (Week tab, Pack status cycling, meal
+  detail chips, fastlog meal -> Home meter/Next Up/Today's Story ripple).
+- Zero console/page errors across the sweep.
+
+## Remaining QA
+
+- Native iOS/Android device pass (safe areas, haptics timing, 60fps motion).
+- Dark-mode audit of the new meter tones (EXPO_PUBLIC_WEB_COLOR_SCHEME=auto).
+- Real-photo Memories grid check once photo logs exist on device.

@@ -1398,7 +1398,6 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(home, /getHomeFirstScreenLayout/);
   assert.match(home, /homeFirstScreenLayout\.heroAspectRatio/);
   assert.match(home, /homeFirstScreenLayout\.presencePanelMinHeight/);
-  assert.match(home, /homeFirstScreenLayout\.statusTileMinHeight/);
   assert.match(home, /getHomeMissionDeckLayout/);
   assert.match(home, /useWindowDimensions/);
   assert.match(home, /missionLayout\.qaLabel/);
@@ -1500,10 +1499,15 @@ test("keeps Home first-screen status grouped as a care status board", () => {
     home,
     /<BoardPill label=\{careStatusLabel\} tone=\{careStatusTone\}/,
   );
-  assert.match(home, /s\.statusTiles/);
-  assert.match(
+  // Per the 2026-07 mock boards there is exactly ONE meters surface (Care
+  // Sense). Care Status keeps only what that card doesn't show: the Bond
+  // meter and the diet-profile door.
+  assert.match(home, /label="Bond"/);
+  assert.match(home, /title="Diet profile"/);
+  assert.doesNotMatch(
     home,
-    /backgroundColor: pressed \? colors\.secondary : colors\.background/,
+    /label:\s*"Happiness"/,
+    "the duplicate Happiness/Energy/Hunger tile grid should stay folded into Care Sense",
   );
 });
 
@@ -1729,11 +1733,10 @@ test("keeps Home owner-preview section actions as real route targets", () => {
     home,
     /router\.push\(\s*`\/log\?type=play&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
   );
-  assert.match(
-    home,
-    /accessibilityLabel=\{`\$\{tile\.label\}\. \$\{tile\.value\}\. \$\{tile\.actionLabel\}`\}/,
-  );
-  assert.match(home, /onPress=\{\(\) => openStatusTile\(tile\.target\)\}/);
+  // Care Status is now the slim mock-board card: Bond meter + diet door,
+  // both still wired through openStatusTile's real route targets.
+  assert.match(home, /onPress=\{\(\) => openStatusTile\("bond"\)\}/);
+  assert.match(home, /onPress=\{\(\) => openStatusTile\("diet"\)\}/);
   assert.match(
     more,
     /useLocalSearchParams<\{\s*section\?: string \| string\[\];\s*\}>/,
