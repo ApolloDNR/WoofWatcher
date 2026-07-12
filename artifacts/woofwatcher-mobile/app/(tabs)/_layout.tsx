@@ -3,7 +3,9 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBounce } from "@/components/motion/GameFeel";
 import { useColors } from "@/hooks/useColors";
 import { getFloatingTabChromeMetrics } from "@/lib/mobileLayout";
 
@@ -37,6 +39,7 @@ function CenterToday() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { style: bounceStyle, bounce } = useBounce();
   const chrome = getFloatingTabChromeMetrics({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -56,26 +59,30 @@ function CenterToday() {
           if (Platform.OS !== "web") {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           }
+          bounce();
           if (onToday) {
             router.push("/fastlog" as never);
             return;
           }
           router.push("/");
         }}
-        style={({ pressed }) => [
-          s.fab,
-          {
-            width: chrome.centerFabSize,
-            height: chrome.centerFabSize,
-            borderRadius: chrome.centerFabSize / 2,
-            backgroundColor: colors.forest,
-            borderColor: colors.card,
-            shadowColor: colors.brandNavy,
-            transform: [{ scale: pressed ? 0.94 : 1 }],
-          },
-        ]}
       >
-        <Ionicons name="paw" size={26} color={colors.primaryForeground} />
+        <Animated.View
+          style={[
+            s.fab,
+            {
+              width: chrome.centerFabSize,
+              height: chrome.centerFabSize,
+              borderRadius: chrome.centerFabSize / 2,
+              backgroundColor: colors.forest,
+              borderColor: colors.card,
+              shadowColor: colors.brandNavy,
+            },
+            bounceStyle,
+          ]}
+        >
+          <Ionicons name="paw" size={26} color={colors.primaryForeground} />
+        </Animated.View>
       </Pressable>
       <Text style={[s.fabLabel, { color: colors.forest }]}>Today</Text>
     </View>
@@ -97,8 +104,7 @@ export default function TabLayout() {
           headerShown: false,
           tabBarActiveTintColor: colors.forest,
           tabBarInactiveTintColor: colors.mutedForeground,
-          tabBarActiveBackgroundColor: colors.secondary,
-          tabBarLabelStyle: { fontFamily: "Inter_600SemiBold", fontSize: 10, lineHeight: 12 },
+          tabBarLabelStyle: { fontFamily: "Inter_700Bold", fontSize: 10, lineHeight: 12 },
           tabBarItemStyle: {
             paddingTop: 2,
             paddingBottom: 3,

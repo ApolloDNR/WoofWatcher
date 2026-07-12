@@ -255,6 +255,19 @@ function AppFrame() {
   const frameWidth = Math.min(viewportWidth, 390);
   const frameHeight = Math.min(viewportHeight, 932);
 
+  // Phone-sized viewports get the real app edge-to-edge, exactly like the
+  // mock boards - no navy letterboxing, no rounded shell. The framed
+  // presentation only appears on desktop-sized windows where the phone
+  // canvas needs a stage to sit on.
+  if (shouldAnchorCompactPreview) {
+    return (
+      <View style={[styles.webFullBleed, { width: viewportWidth, minHeight: viewportHeight }]}>
+        <RootLayoutNav />
+        <WebDialogHost />
+      </View>
+    );
+  }
+
   return (
     <View
       style={[
@@ -262,7 +275,7 @@ function AppFrame() {
         {
           width: viewportWidth,
           minHeight: viewportHeight,
-          alignItems: shouldAnchorCompactPreview ? "flex-start" : "center",
+          alignItems: "center",
         },
       ]}
     >
@@ -338,6 +351,13 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
+  webFullBleed: {
+    flex: 1,
+    minWidth: 0,
+    overflow: "hidden",
+    backgroundColor: "#F7F1E1",
+    alignSelf: "flex-start",
+  },
   webBackdrop: {
     flex: 1,
     alignItems: "center",
@@ -353,7 +373,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     overflow: "hidden",
-    backgroundColor: "#FFF9EF",
+    backgroundColor: "#F7F1E1",
     borderColor: "rgba(255, 249, 239, 0.18)",
     borderRadius: 36,
     borderWidth: 1,

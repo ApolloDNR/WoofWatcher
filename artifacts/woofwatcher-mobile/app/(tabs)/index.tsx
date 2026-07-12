@@ -25,6 +25,8 @@ import {
   type CareEventType,
 } from "@workspace/care-domain";
 
+import Reanimated from "react-native-reanimated";
+
 import {
   BoardCard,
   BoardPill,
@@ -33,6 +35,8 @@ import {
   QuickActionTile,
   StatusMeter,
 } from "@/components/board/BoardPrimitives";
+import { enterUp, PressScale } from "@/components/motion/GameFeel";
+import { notifyDialog } from "@/lib/confirmDialog";
 import {
   LivingPhoenixRoom,
   type PhoenixRoomReaction,
@@ -404,6 +408,32 @@ export default function HomeScreen() {
       status.mood === "calm")
       ? restWord
       : HOME_MOOD_WORD[status.mood];
+
+  // Care Sense card derivations - each meter is a presentation of the same
+  // real, derived state the old chips carried. Mood maps ordinally (the word
+  // stays the source of truth in the value label), hunger reads meals done
+  // against target, alone time fills over a four-hour window while an away
+  // session is actually open. No invented numbers.
+  const careSenseHeadline =
+    status.mood === "unwell"
+      ? "Extra-gentle day underway."
+      : status.mood === "anxious"
+        ? "A gentle day - stay close."
+        : status.mood === "excited"
+          ? "Ready for adventure!"
+          : status.mood === "happy"
+            ? "Great day so far!"
+            : "A calm, steady day.";
+  const careSenseMoodRatio =
+    status.mood === "happy"
+      ? 0.95
+      : status.mood === "excited"
+        ? 0.8
+        : status.mood === "calm"
+          ? 0.7
+          : status.mood === "anxious"
+            ? 0.45
+            : 0.3;
   const careIntelligence = useMemo(
     () =>
       deriveCareIntelligence({
@@ -535,6 +565,16 @@ export default function HomeScreen() {
     if (!Number.isFinite(startedAt)) return 0;
     return Math.max(0, Math.round((now - startedAt) / 60000));
   }, [now, openWalkStartedAt]);
+  // Care Sense meter ratios that depend on live sessions/counts.
+  const careSenseMealsRatio = status.counts.meals.target
+    ? Math.min(1, status.counts.meals.done / status.counts.meals.target)
+    : status.counts.meals.done > 0
+      ? 1
+      : 0;
+  const careSenseAloneRatio = openAloneSession
+    ? Math.min(1, openAloneMinutes / 240)
+    : 0;
+
   const presenceState = openAloneSession
     ? "home-alone"
     : openWalkSession
@@ -737,95 +777,8 @@ export default function HomeScreen() {
     return parts.join(" · ");
   }, [nextUp, openWalkSession, status.minutesUntilNext, todayCommand.primaryAction.detail]);
 
-  // Recency chips: Fed / Potty / Walk / Alone Time, each from the latest
-  // real log of that care lane.
-  const formatAgo = (iso: string): string => {
-    const then = Date.parse(iso);
-    if (!Number.isFinite(then)) return "logged";
-    const minutes = Math.max(0, Math.round((now - then) / 60000));
-    if (minutes < 1) return "just now";
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.round(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.round(hours / 24)}d ago`;
-  };
-  const recencyChips = useMemo(() => {
-    const latestOf = (lane: CareEventType) =>
-      [...state.entries]
-        .filter(
-          (entry) => normalizeCareEventType(entry.type, careDetails(entry.details)) === lane,
-        )
-        .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))[0] ?? null;
-    const lastMeal = latestOf("meal");
-    const lastPotty = latestOf("potty");
-    const lastWalk = latestOf("walk");
-    const nextWalkSoon =
-      !openWalkSession &&
-      status.minutesUntilNext !== null &&
-      status.minutesUntilNext <= 90 &&
-      nextUp[0]?.icon === "walk";
-    return [
-      {
-        key: "fed",
-        icon: "meal" as PixelIconName,
-        label: "Fed",
-        value: lastMeal ? formatAgo(lastMeal.occurredAt) : "None yet",
-        route: homeLogDetailRoute("meal", now),
-        hint: "Opens the meal detail flow.",
-      },
-      {
-        key: "potty",
-        icon: "pee" as PixelIconName,
-        label: "Potty",
-        value: lastPotty ? formatAgo(lastPotty.occurredAt) : "None yet",
-        route: homeLogDetailRoute("potty", now),
-        hint: "Opens the potty detail flow.",
-      },
-      {
-        key: "walk",
-        icon: "walk" as PixelIconName,
-        label: "Walk",
-        value: openWalkSession
-          ? "Now"
-          : nextWalkSoon
-            ? "Soon"
-            : lastWalk
-              ? formatAgo(lastWalk.occurredAt)
-              : "None yet",
-        route: openWalkSession
-          ? openWalkSession.id
-            ? homeLogEntryRoute(openWalkSession.id)
-            : homeLogDetailRoute("walk", now)
-          : homeLogDetailRoute("walk", now),
-        hint: openWalkSession
-          ? "Opens the active walk log."
-          : "Opens the walk detail flow.",
-      },
-      {
-        key: "alone",
-        icon: "clock" as PixelIconName,
-        label: "Alone",
-        value: openAloneSession ? formatDuration(openAloneMinutes) : "OK",
-        route: openAloneSession
-          ? openAloneSession.id
-            ? homeLogEntryRoute(openAloneSession.id)
-            : homeLogDetailRoute("alone", now)
-          : homeLogDetailRoute("alone", now),
-        hint: openAloneSession
-          ? "Opens the return check-in for the active alone time."
-          : "Opens the Alone Time detail flow.",
-      },
-    ];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    state.entries,
-    now,
-    nextUp,
-    openAloneMinutes,
-    openAloneSession,
-    openWalkSession,
-    status.minutesUntilNext,
-  ]);
+  // The old Fed/Potty/Walk/Alone recency chips folded into the Care Sense
+  // meters above - same real-log truth, one calmer surface.
 
   const todayCommandTone =
     todayCommand.primaryAction.urgency === "alert"
@@ -1573,9 +1526,6 @@ export default function HomeScreen() {
   // unit, so the fixed 150px twin rig shrinks with its floor instead of
   // dwarfing the screen or wandering under the floating tab pill.
   const isShortViewport = viewportHeight > 0 && viewportHeight < 640;
-  // Under 360pt the four recency chips truncate ("Fed No...", "Al... OK"),
-  // so they reflow into a 2x2 grid with room for their real values.
-  const narrowViewport = viewportWidth > 0 && viewportWidth < 360;
   const heroStageWidth = Math.max(
     240,
     viewportWidth - routeHorizontalPadding * 2,
@@ -1896,176 +1846,250 @@ export default function HomeScreen() {
           </View>
           </Animated.View>
 
-          {/* Mock-board heart status card: "<Pet> is happy." over the real
-              next-up glance line. It is still the Today Command surface -
-              tapping opens the recommended care workflow. */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Today Command. ${petName} is ${homeMoodWord}. ${glanceLine}`}
-            accessibilityHint="Opens the exact care workflow behind today's recommended action."
-            hitSlop={MOBILE_INLINE_HIT_SLOP}
-            onPress={() =>
-              router.push(todayCommand.primaryAction.route as never)
-            }
-            style={({ pressed }) => [
-              s.moodCard,
-              s.softShadow,
-              {
-                backgroundColor: pressed ? colors.secondary : colors.card,
-                borderColor: pressed ? todayCommandTone : colors.border,
-              },
-            ]}
-          >
-            <View style={s.moodCardBody}>
-              <View style={s.moodTitleRow}>
-                <Ionicons
-                  name="heart"
-                  size={20}
-                  color={
-                    status.mood === "unwell"
-                      ? colors.rose
-                      : status.mood === "anxious"
-                        ? colors.amber
-                        : colors.forest
-                  }
-                />
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    s.moodTitle,
-                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
-                  ]}
-                >
-                  {petName} is {homeMoodWord}.
-                </Text>
-              </View>
-              <Text
-                numberOfLines={1}
-                style={[
-                  s.moodSub,
-                  {
-                    color: colors.mutedForeground,
-                    fontFamily: "Inter_500Medium",
-                  },
-                ]}
-              >
-                {glanceLine}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-          </Pressable>
-
-          {/* Recency chips: Fed · Potty · Walk · Alone Time from real logs. */}
-          <View style={[s.recencyRow, narrowViewport ? s.recencyRowNarrow : null]}>
-            {recencyChips.map((chip) => (
-              <Pressable
-                key={chip.key}
-                accessibilityRole="button"
-                accessibilityLabel={`${chip.label}. ${chip.value}.`}
-                accessibilityHint={chip.hint}
-                onPress={() => {
-                  void Haptics.selectionAsync();
-                  router.push(chip.route as never);
-                }}
-                style={({ pressed }) => [
-                  s.recencyChip,
-                  s.softShadow,
-                  narrowViewport ? s.recencyChipNarrow : null,
-                  {
-                    backgroundColor: pressed ? colors.secondary : colors.card,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <PixelIcon name={chip.icon} size={18} />
-                <View style={s.recencyCopy}>
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      s.recencyLabel,
-                      { color: colors.navy, fontFamily: "Inter_700Bold" },
-                    ]}
-                  >
-                    {chip.label}
-                  </Text>
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      s.recencyValue,
-                      {
-                        color: colors.mutedForeground,
-                        fontFamily: "Inter_600SemiBold",
-                      },
-                    ]}
-                  >
-                    {chip.value}
-                  </Text>
-                </View>
-              </Pressable>
-            ))}
-          </View>
-
-          <View style={s.homeSplit}>
-            {/* Mock-board Quick Log: bare section title over a row of six
-                circular tiles floating on the parchment. */}
-            <View style={s.quickHomeCard}>
-              <View style={s.quickSectionHeader}>
+          {/* Mock-board Care Sense card: mood, energy, hunger, and alone
+              time as chunky pip meters. Every fill derives from real logged
+              care - the same truth the old chips carried, now at a glance.
+              The headline row is still the Today Command surface. */}
+          <Reanimated.View entering={enterUp(0)}>
+            <BoardCard style={s.careSenseCard}>
+              <View style={s.careSenseHeader}>
                 <Text
                   style={[
-                    s.quickSectionTitle,
-                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                    s.careSenseKicker,
+                    { color: colors.sage, fontFamily: "Inter_700Bold" },
                   ]}
                 >
-                  Quick Log
+                  Care Sense
                 </Text>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Open full Quick Log"
+                  accessibilityLabel="How Care Sense works"
                   hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  onPress={() => router.push("/log")}
+                  onPress={() =>
+                    notifyDialog(
+                      "Care Sense",
+                      `Every meter reads from real logged care only. Mood and energy derive from today's walks, meals, potty, and notes. Hunger tracks meals against ${petName}'s daily target. Alone Time fills while an away session is open. Nothing here is invented.`,
+                    )
+                  }
                   style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
                 >
                   <Ionicons
-                    name="chevron-forward"
-                    size={16}
+                    name="information-circle-outline"
+                    size={17}
                     color={colors.mutedForeground}
                   />
                 </Pressable>
               </View>
-              <View style={s.homeQuickGrid}>
-                {HOME_QUICK_LOG.slice(0, 6).map((item) => (
-                  <Pressable
-                    key={item.key}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Log ${item.label}`}
-                    accessibilityHint={
-                      item.forceDetail
-                        ? "Opens details before saving."
-                        : "Long press opens details before saving."
-                    }
-                    onPress={() => logQuick(item)}
-                    onLongPress={() => openQuickDetails(item)}
-                    style={({ pressed }) => [
-                      s.homeQuickTile,
-                      { transform: [{ scale: pressed ? 0.94 : 1 }] },
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Today Command. ${petName} is ${homeMoodWord}. ${glanceLine}`}
+                accessibilityHint="Opens the exact care workflow behind today's recommended action."
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                onPress={() =>
+                  router.push(todayCommand.primaryAction.route as never)
+                }
+                style={({ pressed }) => [
+                  s.careSenseHeadlineRow,
+                  { opacity: pressed ? 0.72 : 1 },
+                ]}
+              >
+                <View style={s.careSenseHeadlineCopy}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      s.careSenseHeadline,
+                      { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
                     ]}
                   >
-                    {hasMedallion(item.icon) ? (
-                      <BoardMedallion name={item.icon} size={54} style={s.softShadow} />
-                    ) : (
-                      <View
+                    {careSenseHeadline}
+                  </Text>
+                  <Text
+                    numberOfLines={2}
+                    style={[
+                      s.careSenseSub,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    {petName} is {homeMoodWord}. {glanceLine}
+                  </Text>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.mutedForeground}
+                />
+              </Pressable>
+              <View style={s.careSenseMeters}>
+                <StatusMeter
+                  label="Mood"
+                  icon={MOOD_ICON[status.mood]}
+                  value={careSenseMoodRatio}
+                  valueLabel={status.meta.label}
+                  tone={colors.meterMood}
+                  onPress={() =>
+                    router.push(todayCommand.primaryAction.route as never)
+                  }
+                  accessibilityLabel={`Mood ${status.meta.label}`}
+                  accessibilityHint="Opens today's recommended care workflow."
+                />
+                <StatusMeter
+                  label="Energy"
+                  icon="energy"
+                  value={status.energy / 100}
+                  valueLabel={`${status.energy}%`}
+                  tone={colors.meterEnergy}
+                  onPress={() =>
+                    router.push(homeLogDetailRoute("walk", now) as never)
+                  }
+                  accessibilityLabel={`Energy ${status.energy} percent`}
+                  accessibilityHint="Opens the walk detail flow - activity builds energy."
+                />
+                <StatusMeter
+                  label="Hunger"
+                  icon="hunger"
+                  value={careSenseMealsRatio}
+                  valueLabel={`${status.counts.meals.done}/${Math.max(
+                    status.counts.meals.target,
+                    status.counts.meals.done,
+                  )}`}
+                  tone={colors.meterHunger}
+                  onPress={() =>
+                    router.push(homeLogDetailRoute("meal", now) as never)
+                  }
+                  accessibilityLabel={`Meals ${status.counts.meals.done} of ${status.counts.meals.target} logged`}
+                  accessibilityHint="Opens the meal detail flow."
+                />
+                <StatusMeter
+                  label="Alone"
+                  icon="clock"
+                  value={careSenseAloneRatio}
+                  valueLabel={
+                    openAloneSession ? formatDuration(openAloneMinutes) : "OK"
+                  }
+                  tone={colors.meterAlone}
+                  onPress={() =>
+                    router.push(
+                      (openAloneSession?.id
+                        ? homeLogEntryRoute(openAloneSession.id)
+                        : homeLogDetailRoute("alone", now)) as never,
+                    )
+                  }
+                  accessibilityLabel={
+                    openAloneSession
+                      ? `Alone time active, ${formatDuration(openAloneMinutes)}`
+                      : "Alone time none logged today"
+                  }
+                  accessibilityHint={
+                    openAloneSession
+                      ? "Opens the return check-in for the active alone time."
+                      : "Opens the Alone Time detail flow."
+                  }
+                />
+              </View>
+            </BoardCard>
+          </Reanimated.View>
+
+          <View style={s.homeSplit}>
+            {/* Mock-board Quick Log card: Meal · Potty · Walk · Meds · More
+                as springy medallion tiles inside one cream card. More opens
+                the fast-log sheet where Water, Note, and the rest live. */}
+            <Reanimated.View entering={enterUp(1)}>
+              <BoardCard style={s.quickHomeCard}>
+                <View style={s.quickSectionHeader}>
+                  <Text
+                    style={[
+                      s.quickSectionTitle,
+                      { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                    ]}
+                  >
+                    Quick Log
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Open full Quick Log"
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() => router.push("/log")}
+                    style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                  >
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={colors.mutedForeground}
+                    />
+                  </Pressable>
+                </View>
+                <View style={s.homeQuickGrid}>
+                  {HOME_QUICK_LOG.slice(0, 4).map((item) => (
+                    <PressScale
+                      key={item.key}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Log ${item.label}`}
+                      accessibilityHint={
+                        item.forceDetail
+                          ? "Opens details before saving."
+                          : "Long press opens details before saving."
+                      }
+                      onPress={() => logQuick(item)}
+                      onLongPress={() => openQuickDetails(item)}
+                      scaleTo={0.92}
+                      containerStyle={s.homeQuickTileLayout}
+                      style={s.homeQuickTile}
+                    >
+                      {hasMedallion(item.icon) ? (
+                        <BoardMedallion name={item.icon} size={54} style={s.softShadow} />
+                      ) : (
+                        <View
+                          style={[
+                            s.homeQuickCircle,
+                            s.softShadow,
+                            {
+                              backgroundColor: colors.card,
+                              borderColor: colors.border,
+                            },
+                          ]}
+                        >
+                          <PixelIcon name={item.icon} size={26} />
+                        </View>
+                      )}
+                      <Text
+                        numberOfLines={1}
                         style={[
-                          s.homeQuickCircle,
-                          s.softShadow,
-                          {
-                            backgroundColor: colors.card,
-                            borderColor: colors.border,
-                          },
+                          s.homeQuickText,
+                          { color: colors.navy, fontFamily: "Inter_600SemiBold" },
                         ]}
                       >
-                        <PixelIcon name={item.icon} size={26} />
-                      </View>
-                    )}
+                        {item.label}
+                      </Text>
+                    </PressScale>
+                  ))}
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityLabel="More quick log options"
+                    accessibilityHint="Opens the fast log sheet with water, notes, and every other care lane."
+                    onPress={() => router.push("/fastlog" as never)}
+                    scaleTo={0.92}
+                    containerStyle={s.homeQuickTileLayout}
+                    style={s.homeQuickTile}
+                  >
+                    <View
+                      style={[
+                        s.homeQuickCircle,
+                        s.softShadow,
+                        {
+                          backgroundColor: colors.secondary,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="ellipsis-horizontal"
+                        size={22}
+                        color={colors.forest}
+                      />
+                    </View>
                     <Text
                       numberOfLines={1}
                       style={[
@@ -2073,14 +2097,14 @@ export default function HomeScreen() {
                         { color: colors.navy, fontFamily: "Inter_600SemiBold" },
                       ]}
                     >
-                      {item.label}
+                      More
                     </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
+                  </PressScale>
+                </View>
+              </BoardCard>
+            </Reanimated.View>
 
-            <BoardCard style={s.nextCard}>
+            <BoardCard style={s.nextCard} enter={2}>
               <BoardSectionHeader
                 title="Next Up"
                 accessory={
@@ -2364,7 +2388,7 @@ export default function HomeScreen() {
               <Text
                 style={[
                   s.todayStoryKicker,
-                  { color: colors.copper, fontFamily: "Fredoka_600SemiBold" },
+                  { color: colors.sage, fontFamily: "Inter_700Bold", letterSpacing: 1.1, textTransform: "uppercase", fontSize: 9 },
                 ]}
               >
                 Today's Story
@@ -3034,7 +3058,7 @@ export default function HomeScreen() {
                 <Text
                   style={[
                     s.questKicker,
-                    { color: colors.copper, fontFamily: "Fredoka_600SemiBold" },
+                    { color: colors.sage, fontFamily: "Inter_700Bold", letterSpacing: 1.1, textTransform: "uppercase", fontSize: 9 },
                   ]}
                 >
                   Care quest
@@ -3522,75 +3546,47 @@ const s = StyleSheet.create({
     fontSize: 13,
   },
 
-  // Mock-board heart status card
-  moodCard: {
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
+  // Mock-board Care Sense card: quiet kicker, big honest headline, four
+  // chunky pip meters (mood / energy / hunger / alone time).
+  careSenseCard: {
     marginTop: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    marginBottom: 4,
+  },
+  careSenseHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 2,
+  },
+  careSenseKicker: {
+    fontSize: 9,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+    opacity: 0.85,
+  },
+  careSenseHeadlineRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
   },
-  moodCardBody: {
+  careSenseHeadlineCopy: {
     flex: 1,
     minWidth: 0,
   },
-  moodTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+  careSenseHeadline: {
+    fontSize: 18,
+    lineHeight: 23,
   },
-  moodTitle: {
-    flexShrink: 1,
-    minWidth: 0,
-    fontSize: 17,
-    lineHeight: 22,
-  },
-  moodSub: {
+  careSenseSub: {
     fontSize: 11.5,
     lineHeight: 16,
-    marginTop: 3,
+    marginTop: 2,
   },
-
-  // Recency chips: Fed · Potty · Walk · Alone Time
-  recencyRow: {
-    flexDirection: "row",
-    gap: 6,
-    marginTop: 10,
-    marginBottom: 4,
-  },
-  // Under-360 reflow: two chips per row so values never truncate.
-  recencyRowNarrow: {
-    flexWrap: "wrap",
-  },
-  recencyChipNarrow: {
-    flexBasis: "48%",
-  },
-  recencyChip: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  recencyCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-  recencyLabel: {
-    fontSize: 10,
-  },
-  recencyValue: {
-    fontSize: 9.5,
-    marginTop: 1,
+  careSenseMeters: {
+    marginTop: 8,
+    gap: 2,
   },
   presenceAvatar: {
     width: 38,
@@ -3963,9 +3959,13 @@ const s = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "nowrap",
     justifyContent: "space-between",
+    marginTop: 4,
+  },
+  homeQuickTileLayout: {
+    width: "18.5%",
   },
   homeQuickTile: {
-    width: "15.5%",
+    width: "100%",
     minHeight: 74,
     alignItems: "center",
     gap: 5,
