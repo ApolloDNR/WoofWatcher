@@ -135,3 +135,54 @@ Date: 2026-07-12
 - Native iOS/Android device pass (safe areas, haptics timing, 60fps motion).
 - Dark-mode audit of the new meter tones (EXPO_PUBLIC_WEB_COLOR_SCHEME=auto).
 - Real-photo Memories grid check once photo logs exist on device.
+
+# Design QA - Standalone Board Screens (Trends / Profile / Reminders / Calendar)
+
+Date: 2026-07-12
+
+## Scope
+
+Built the four screens Apollo's July boards show as standalone but the app had
+folded into other tabs, completing the mockup screen set. Each is a Stack card
+that renders its own header, is registered in app/_layout.tsx (headerShown
+false), derives from real logged care, and has a real entry point.
+
+- app/trends.tsx (+lib/trendsChart.ts +test): Day/Week/Month/Year windows; Mood
+  line chart (react-native-svg) + Activity (walk+play+training minutes) bars +
+  Potty bars. No sleep event type exists in the data model, so it charts Potty
+  in the mockup's third-chart slot instead of fabricating sleep. Honest
+  per-chart empty states; This Week summary from deriveCareTrends. Entry: the
+  "Trends" link on the Home Care Sense card.
+- app/profile.tsx: full-bleed park hero + gold-ringed avatar; Details table
+  from real profile fields. Birthday and Sex have NO field in the data model,
+  so they render honest "Not tracked yet / Not on file" rather than invented
+  values. About card from profile.background; edit routes to setup/portrait.
+  Entry: the Home header dog chip.
+- app/reminders.tsx: Upcoming/Past; items from deriveCareReminderCenter grouped
+  Today/Tomorrow/Later by real daysUntil (dateless routine/med items -> Today,
+  others -> "No date"); honest Past empty state; honest notification-readiness
+  line (does not claim push is enabled). New Reminder -> Plan. Entry: Home bell.
+- app/calendar-month.tsx (+lib/monthCalendar.ts +test): real month grid with
+  day dots from real entries/routines; selected-day timeline with colored type
+  spines; row -> log detail; FAB -> fastlog. Entry: "Month view" under Plan.
+
+Entry-point rewiring (Home dog chip -> profile, bell -> reminders, Care Sense
+-> trends) required updating the mobileReadiness navigation contracts to the new
+truth.
+
+## Checks Run
+
+- Focused behavior/readiness suite: 711 tests, 0 failures (Node 24) - includes
+  18 new pure-lib tests (trendsChart 9, monthCalendar 9).
+- Mobile TypeScript: clean.
+- Expo web export: passed. Headless Chromium screenshots at 390x844 of all four
+  new screens plus the changed Home and Plan; zero console/page errors. On a
+  fresh/empty account the charts, timeline, and reminder groups correctly show
+  honest empty states.
+
+## Remaining QA
+
+- Native iOS/Android device pass (safe areas, 60fps motion, haptics).
+- Re-check the four screens on a device with a populated account (real charts,
+  day dots, reminder grouping).
+- Widgets + Apple Watch faces (native-only) remain future work.

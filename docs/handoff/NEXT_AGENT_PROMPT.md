@@ -28,7 +28,7 @@ CONTEXT YOU NEED:
 - Recent work is on branch claude/mockup-parity-polish: every screen was
   restyled to the boards, a shared motion kit was added
   (components/motion/GameFeel.tsx), and Home got a Care Sense meters card.
-  693/693 focused tests pass, typecheck clean, verified on the Expo web export.
+  711/711 focused tests pass, typecheck clean, verified on the Expo web export.
 - pnpm workspace, pnpm@10.24.0. NODE 24 IS REQUIRED — the focused test suite
   asserts a Node-24 runtime; on Node 22 one test fails. Use Node 24.
 
@@ -48,7 +48,7 @@ NON-NEGOTIABLE RULES (do not trade these for visuals):
 HOW TO VERIFY EVERY CHANGE (the loop to run before you call anything done):
   pnpm install
   pnpm run typecheck                 # must be clean
-  pnpm run test:focused              # must stay green (currently 693/693), Node 24
+  pnpm run test:focused              # must stay green (currently 711/711), Node 24
   cd artifacts/woofwatcher-mobile
   node scripts/smoke-web-export.js   # expo web export must succeed
   node scripts/serve-smoke-preview.js 4194   # then screenshot the changed
@@ -63,11 +63,12 @@ PICK THE NEXT SLICE (highest value first — see HANDOFF §4 for detail):
    safe areas, 60fps of the new Reanimated motion, haptics, touch targets.
 2. Dark-mode audit of the new meter tones
    (EXPO_PUBLIC_WEB_COLOR_SCHEME=auto on the web export, or a device in dark).
-3. Build the standalone board screens the app currently folds into other tabs,
-   IF Apollo wants literal 1:1 with every mockup tile: a dedicated Trends
-   screen (mood line / energy bars / sleep bars / weekly summary), a Calendar
-   month-grid view, a Profile screen, and a Reminders (Upcoming/Past) screen.
-   Reuse lib/care-domain derivations and the board primitives + GameFeel motion.
+3. The standalone Trends, Profile, Reminders, and month Calendar screens are
+   already built and wired (app/trends.tsx, app/profile.tsx, app/reminders.tsx,
+   app/calendar-month.tsx). Remaining board items are Widgets + Apple Watch
+   faces (native-only). Otherwise: polish on a device with real data, and reuse
+   lib/care-domain derivations + the board primitives + GameFeel motion for any
+   new work.
 
 WORKFLOW: implement the smallest coherent slice toward the boards, run the full
 verify loop above, screenshot-review against the mockups, then commit with a
