@@ -866,6 +866,20 @@ export default function CalendarScreen() {
             }}
           />
 
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open month calendar"
+            accessibilityHint="Shows a month grid of logged care and lets you pick any day."
+            onPress={() => router.push("/calendar-month" as never)}
+            style={({ pressed }) => [s.monthViewLink, { opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Ionicons name="calendar-outline" size={15} color={colors.sage} />
+            <Text style={[s.monthViewText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+              Month view
+            </Text>
+            <Ionicons name="chevron-forward" size={13} color={colors.sage} />
+          </Pressable>
+
           <BoardCard enter={0} style={s.commandDeckCard}>
             <View style={s.commandDeckStage} testID="plans-command-pixel-stage">
               <View style={s.commandDeckTop}>
@@ -2068,6 +2082,20 @@ const s = StyleSheet.create({
 
   commandDeckCard: {
     marginBottom: 10,
+  },
+  monthViewLink: {
+    flexDirection: "row",
+    alignSelf: "flex-end",
+    alignItems: "center",
+    gap: 3,
+    marginTop: -2,
+    marginBottom: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  monthViewText: {
+    fontSize: 11.5,
+    letterSpacing: 0.2,
   },
   commandDeckStage: {
     minHeight: 146,

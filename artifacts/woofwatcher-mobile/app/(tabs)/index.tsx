@@ -1564,9 +1564,9 @@ export default function HomeScreen() {
           <View style={[s.header, { backgroundColor: colors.card }]}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${petName}. ${careStatusLabel}. Open the Pack`}
-              accessibilityHint="Opens pets and people who share the care."
-              onPress={() => router.push("/pack" as never)}
+              accessibilityLabel={`${petName}. ${careStatusLabel}. Open profile`}
+              accessibilityHint={`Opens ${petName}'s profile.`}
+              onPress={() => router.push("/profile" as never)}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={({ pressed }) => [s.identityWrap, { opacity: pressed ? 0.75 : 1 }]}
             >
@@ -1614,13 +1614,13 @@ export default function HomeScreen() {
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Open Health Watch"
+              accessibilityLabel="Open reminders"
               accessibilityHint={
                 watchSignalCount > 0
                   ? `${watchSignalCount} ${watchSignalCount === 1 ? "signal needs" : "signals need"} attention`
-                  : "No active signals"
+                  : "Upcoming care reminders"
               }
-              onPress={() => router.push("/health?tab=health" as never)}
+              onPress={() => router.push("/reminders" as never)}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[
                 s.headerButton,
@@ -1825,24 +1825,47 @@ export default function HomeScreen() {
                 >
                   Care Sense
                 </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="How Care Sense works"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  onPress={() =>
-                    notifyDialog(
-                      "Care Sense",
-                      `Every meter reads from real logged care only. Mood and energy derive from today's walks, meals, potty, and notes. Hunger tracks meals against ${petName}'s daily target. Alone Time fills while an away session is open. Nothing here is invented.`,
-                    )
-                  }
-                  style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
-                >
-                  <Ionicons
-                    name="information-circle-outline"
-                    size={17}
-                    color={colors.mutedForeground}
-                  />
-                </Pressable>
+                <View style={s.careSenseHeaderActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Open Trends and Insights"
+                    accessibilityHint="Charts these meters over time from real logged care."
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() => router.push("/trends" as never)}
+                    style={({ pressed }) => [
+                      s.careSenseTrendsLink,
+                      { opacity: pressed ? 0.6 : 1 },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.careSenseTrendsText,
+                        { color: colors.sage, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
+                      Trends
+                    </Text>
+                    <Ionicons name="chevron-forward" size={13} color={colors.sage} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="How Care Sense works"
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() =>
+                      notifyDialog(
+                        "Care Sense",
+                        `Every meter reads from real logged care only. Mood and energy derive from today's walks, meals, potty, and notes. Hunger tracks meals against ${petName}'s daily target. Alone Time fills while an away session is open. Nothing here is invented.`,
+                      )
+                    }
+                    style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                  >
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={17}
+                      color={colors.mutedForeground}
+                    />
+                  </Pressable>
+                </View>
               </View>
               <Pressable
                 accessibilityRole="button"
@@ -3439,6 +3462,20 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     gap: 8,
     marginBottom: 2,
+  },
+  careSenseHeaderActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  careSenseTrendsLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 1,
+  },
+  careSenseTrendsText: {
+    fontSize: 11.5,
+    letterSpacing: 0.2,
   },
   careSenseKicker: {
     fontSize: 9,

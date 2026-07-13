@@ -165,6 +165,25 @@ function RootLayoutNav() {
           presentation: "card",
         }}
       />
+      {/* Standalone board screens from Apollo's mockups. Each renders its own
+          BoardRouteHeader (or a full-bleed hero with a back chip), so the
+          native stack header stays hidden. */}
+      <Stack.Screen
+        name="trends"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen
+        name="profile"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen
+        name="reminders"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen
+        name="calendar-month"
+        options={{ headerShown: false, presentation: "card" }}
+      />
       <Stack.Screen name="+not-found" options={{ title: "Not Found" }} />
     </Stack>
   );

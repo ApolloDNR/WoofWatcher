@@ -1712,11 +1712,20 @@ test("keeps Home owner-preview section actions as real route targets", () => {
     home,
     /router\.push\(\s*`\/log\?entry=\$\{encodeURIComponent\(entry\.id\)\}` as never,?\s*\)/,
   );
-  // The bottom "Phoenix status" meters card was removed as a duplicate of the
-  // Care Status tiles above; the header bell still routes to Health Watch.
+  // Home header + Care Sense route to the standalone board screens from
+  // Apollo's mockups: the dog identity chip opens the Profile, the bell opens
+  // Reminders, and Care Sense links to Trends. Every target is a real route.
   assert.match(
     home,
-    /accessibilityLabel="Open Health Watch"[\s\S]*router\.push\("\/health\?tab=health" as never\)/,
+    /accessibilityLabel=\{`\$\{petName\}\. \$\{careStatusLabel\}\. Open profile`\}[\s\S]*router\.push\("\/profile" as never\)/,
+  );
+  assert.match(
+    home,
+    /accessibilityLabel="Open reminders"[\s\S]*router\.push\("\/reminders" as never\)/,
+  );
+  assert.match(
+    home,
+    /accessibilityLabel="Open Trends and Insights"[\s\S]*router\.push\("\/trends" as never\)/,
   );
   assert.match(
     home,
