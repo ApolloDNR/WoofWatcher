@@ -242,3 +242,56 @@ scrolled, plus a high-DPI light-vs-dark capture of the Care Sense card.
   haptics) - device-only, still owed.
 - Re-check the dark meters and docks on a device with a populated account.
 - Widgets + Apple Watch faces (native-only) remain future work.
+
+# Design QA - Populated-Account Pass + Full build:ci
+
+Date: 2026-07-14
+
+## Scope
+
+Closed the "re-check on a populated account" item every prior pass deferred
+(each had only exercised the honest empty states of a fresh account). Seeded
+~14 days of realistic care into the web export's local cache
+(woofwatcher.v2.state -> { entries }) - meals, potty, water, walks with place
+names, play, training, daily mood checks, and weigh-ins (133 entries) - then
+swept the data-driven screens in a headless Chromium at 390x844. Harness added
+as artifacts/woofwatcher-mobile/scripts/qa-seed-populated.mjs so it is
+repeatable (QA_COLOR_SCHEME=dark also supported).
+
+## Result - everything derives correctly from real data, 0 console errors
+
+- Home Care Sense: meters read real values (Mood "Content", Energy 81%, Hunger
+  2/2 once the day's meals are logged, Alone OK); glance line reflects state.
+- Trends: Week view charts the mood line (4.1/5 avg with the anxious-day dip),
+  312 activity minutes, and 24 potty logs; Month view spreads the same data
+  across a 30-day axis (labels every 5 days) and correctly leaves the
+  pre-history half empty rather than inventing points.
+- Month Calendar: day dots land on every day with entries; selected-day
+  timeline shows the 12 real entries with correct colored type spines and
+  caregiver attribution.
+- Health: score derives (91) with a full 7-day rhythm; vet-share checklist
+  computes the real longest food gap; Health Summary weight row shows the trend
+  delta + sparkline; vet visit / vaccinations / sensitivities stay honest
+  "None on file" (not seeded). Non-diagnostic language intact.
+- Story: walks with place names became discovered trail spots with real visit
+  counts and average durations ("River Loop ~29 min, 12 visits";
+  "Neighborhood ~20 min, 7 visits").
+- Records correctly still reads 0 (it tracks formal documents, not care logs,
+  which were not seeded).
+
+No rendering bugs surfaced; the fresh-account empty states and the populated
+states are both correct.
+
+## Checks Run
+
+- Full `pnpm run build:ci`: passed (typecheck + api-server build + web build +
+  mockup-sandbox build + mobile smoke:web + smoke:runtime + live-preview proof).
+- Focused suite: 710/711 (the one failure is the Node-24 doctor assertion, an
+  environment artifact on this Node-22 box).
+- Populated sweep: 9 data-driven routes, top + scrolled, 0 console/page errors.
+
+## Remaining QA
+
+- Native iOS/Android device pass (safe areas, 60fps motion, haptics) - the last
+  owed item, and it needs real hardware / a simulator.
+- Widgets + Apple Watch faces (native-only) remain future work.
