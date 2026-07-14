@@ -447,6 +447,7 @@ test("keeps the web preview frame inside compact mobile screenshots", () => {
   const layout = readAppFile("_layout.tsx");
   const backdropBlock = getStyleBlock(layout, "webBackdrop");
   const frameBlock = getStyleBlock(layout, "webFrame");
+  const fullBleedBlock = getStyleBlock(layout, "webFullBleed");
 
   assert.match(backdropBlock, /paddingHorizontal:\s*0/);
   assert.match(backdropBlock, /paddingVertical:\s*18/);
@@ -464,7 +465,13 @@ test("keeps the web preview frame inside compact mobile screenshots", () => {
   assert.match(layout, /webDocument\.body\.style\.margin = "0"/);
   assert.match(layout, /const viewportWidth = webViewport\?\.width \?\? width/);
   assert.match(layout, /const shouldAnchorCompactPreview = viewportWidth <= 520/);
-  assert.match(layout, /alignItems: shouldAnchorCompactPreview \? "flex-start" : "center"/);
+  // Per Apollo's 2026-07 storybook boards, phone-sized viewports render the
+  // app edge-to-edge on parchment - no navy letterbox, no rounded shell. The
+  // framed presentation only survives on desktop-sized windows.
+  assert.match(layout, /if \(shouldAnchorCompactPreview\) \{/);
+  assert.match(fullBleedBlock, /backgroundColor:\s*"#F7F1E1"/);
+  assert.doesNotMatch(fullBleedBlock, /borderRadius/);
+  assert.doesNotMatch(fullBleedBlock, /padding/);
   assert.match(layout, /const frameWidth = Math\.min\(viewportWidth,\s*390\)/);
   assert.match(layout, /const frameHeight = Math\.min\(viewportHeight,\s*932\)/);
   assert.match(layout, /width: frameWidth/);
@@ -1262,7 +1269,7 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
     /deriveCareTwinChoreography\(deriveCareTwinScene\(avatarMotion\)\)/,
   );
   assert.match(home, /avatarMotion\.line/);
-  assert.match(home, /Phoenix Room/);
+  assert.match(home, /\$\{petName\} Room/);
   assert.match(home, /heroStudioButton/);
   assert.match(home, /const openAvatarStudio/);
   assert.match(home, /onPress=\{openAvatarStudio\}/);
@@ -1391,7 +1398,6 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(home, /getHomeFirstScreenLayout/);
   assert.match(home, /homeFirstScreenLayout\.heroAspectRatio/);
   assert.match(home, /homeFirstScreenLayout\.presencePanelMinHeight/);
-  assert.match(home, /homeFirstScreenLayout\.statusTileMinHeight/);
   assert.match(home, /getHomeMissionDeckLayout/);
   assert.match(home, /useWindowDimensions/);
   assert.match(home, /missionLayout\.qaLabel/);
@@ -1464,7 +1470,11 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
   assert.match(home, /Reassign/);
   assert.match(home, /Quick Log/);
   assert.match(home, /s\.quickSectionHeader/);
-  assert.match(home, /HOME_QUICK_LOG\.slice\(0,\s*6\)\.map/);
+  // Mock-board Quick Log card: four core lanes plus a real More tile that
+  // opens the fast-log sheet (Water, Note, and the rest live there).
+  assert.match(home, /HOME_QUICK_LOG\.slice\(0,\s*4\)\.map/);
+  assert.match(home, /More quick log options/);
+  assert.match(home, /router\.push\("\/fastlog" as never\)/);
   assert.match(home, /Today's Missions/);
 });
 
@@ -1489,10 +1499,15 @@ test("keeps Home first-screen status grouped as a care status board", () => {
     home,
     /<BoardPill label=\{careStatusLabel\} tone=\{careStatusTone\}/,
   );
-  assert.match(home, /s\.statusTiles/);
-  assert.match(
+  // Per the 2026-07 mock boards there is exactly ONE meters surface (Care
+  // Sense). Care Status keeps only what that card doesn't show: the Bond
+  // meter and the diet-profile door.
+  assert.match(home, /label="Bond"/);
+  assert.match(home, /title="Diet profile"/);
+  assert.doesNotMatch(
     home,
-    /backgroundColor: pressed \? colors\.secondary : colors\.background/,
+    /label:\s*"Happiness"/,
+    "the duplicate Happiness/Energy/Hunger tile grid should stay folded into Care Sense",
   );
 });
 
@@ -1697,11 +1712,20 @@ test("keeps Home owner-preview section actions as real route targets", () => {
     home,
     /router\.push\(\s*`\/log\?entry=\$\{encodeURIComponent\(entry\.id\)\}` as never,?\s*\)/,
   );
-  // The bottom "Phoenix status" meters card was removed as a duplicate of the
-  // Care Status tiles above; the header bell still routes to Health Watch.
+  // Home header + Care Sense route to the standalone board screens from
+  // Apollo's mockups: the dog identity chip opens the Profile, the bell opens
+  // Reminders, and Care Sense links to Trends. Every target is a real route.
   assert.match(
     home,
-    /accessibilityLabel="Open Health Watch"[\s\S]*router\.push\("\/health\?tab=health" as never\)/,
+    /accessibilityLabel=\{`\$\{petName\}\. \$\{careStatusLabel\}\. Open profile`\}[\s\S]*router\.push\("\/profile" as never\)/,
+  );
+  assert.match(
+    home,
+    /accessibilityLabel="Open reminders"[\s\S]*router\.push\("\/reminders" as never\)/,
+  );
+  assert.match(
+    home,
+    /accessibilityLabel="Open Trends and Insights"[\s\S]*router\.push\("\/trends" as never\)/,
   );
   assert.match(
     home,
@@ -1718,11 +1742,10 @@ test("keeps Home owner-preview section actions as real route targets", () => {
     home,
     /router\.push\(\s*`\/log\?type=play&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
   );
-  assert.match(
-    home,
-    /accessibilityLabel=\{`\$\{tile\.label\}\. \$\{tile\.value\}\. \$\{tile\.actionLabel\}`\}/,
-  );
-  assert.match(home, /onPress=\{\(\) => openStatusTile\(tile\.target\)\}/);
+  // Care Status is now the slim mock-board card: Bond meter + diet door,
+  // both still wired through openStatusTile's real route targets.
+  assert.match(home, /onPress=\{\(\) => openStatusTile\("bond"\)\}/);
+  assert.match(home, /onPress=\{\(\) => openStatusTile\("diet"\)\}/);
   assert.match(
     more,
     /useLocalSearchParams<\{\s*section\?: string \| string\[\];\s*\}>/,
@@ -2002,7 +2025,23 @@ test("renders Today Command on Home as a real care workflow control", () => {
   assert.match(home, /avatarMotion\.state === "tired"[\s\S]*?"resting"/);
   assert.match(home, /HOME_MOOD_WORD\[status\.mood\]/);
   assert.match(home, /const glanceLine = useMemo/);
-  assertStyleUsesSharedTouchTarget(home, "moodCard");
+  // The Today Command surface now lives as the Care Sense headline row, per
+  // the 2026-07 mock boards: four honest pip meters under one glance line.
+  assertStyleUsesSharedTouchTarget(home, "careSenseHeadlineRow");
+  assert.match(home, /Care Sense/);
+  assert.match(home, /careSenseHeadline/);
+  for (const meter of ["meterMood", "meterEnergy", "meterHunger", "meterAlone"]) {
+    assert.match(
+      home,
+      new RegExp(`colors\\.${meter}`),
+      `Care Sense should tone the ${meter} meter from the shared palette`,
+    );
+  }
+  // Meters stay honest: mood maps the derived word, hunger reads real meal
+  // counts, alone time only fills while an away session is actually open.
+  assert.match(home, /careSenseMoodRatio/);
+  assert.match(home, /status\.counts\.meals\.done/);
+  assert.match(home, /openAloneSession\s*\?\s*Math\.min\(1, openAloneMinutes \/ 240\)\s*:\s*0/);
 });
 
 test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () => {
@@ -2146,8 +2185,13 @@ test("locks the mobile pixel UI foundation to Apollo's reference boards", () => 
 
   assert.match(colors, /#081424/);
   assert.match(colors, /#0D182A/);
-  assert.match(colors, /#FBF6E7/);
-  assert.match(colors, /#2E5B3C/);
+  // 2026-07 storybook boards: lighter parchment surfaces, deeper forest
+  // primary, and the Care Sense meter tones sampled straight from the art.
+  assert.match(colors, /#F7F1E1/);
+  assert.match(colors, /#FDF9EE/);
+  assert.match(colors, /#33582F/);
+  assert.match(colors, /meterHunger/);
+  assert.match(colors, /meterAlone/);
   assert.match(colors, /#A8CBE8/);
   assert.match(colors, /pixelUi/);
   assert.ok(existsSync(primitivesPath), "board primitives should exist");
@@ -2174,7 +2218,12 @@ test("locks the mobile pixel UI foundation to Apollo's reference boards", () => 
   assert.match(home, /QuickActionTile/);
   assert.match(home, /LivingPhoenixRoom/);
   assert.match(tabs, /colors\.brandNavy/);
-  assert.match(tabs, /tabBarActiveBackgroundColor/);
+  // Mock boards show plain icons+labels in the floating bar - the active
+  // state is the forest tint alone, no pill wash behind the item.
+  assert.doesNotMatch(tabs, /tabBarActiveBackgroundColor/);
+  assert.match(tabs, /tabBarActiveTintColor:\s*colors\.forest/);
+  // The paw FAB pops with the shared game-feel bounce on every press.
+  assert.match(tabs, /useBounce/);
 });
 
 test("extends the mobile pixel board system across core v1.5 routes", () => {

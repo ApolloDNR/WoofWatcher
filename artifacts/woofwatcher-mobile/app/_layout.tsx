@@ -155,7 +155,7 @@ function RootLayoutNav() {
           // build ignores it, so the fastlog screen runs its own mount
           // fade/rise there.
           animation: "slide_from_bottom",
-          contentStyle: { backgroundColor: "#32362B" },
+          contentStyle: { backgroundColor: "#F7F1E1" },
         }}
       />
       <Stack.Screen
@@ -164,6 +164,25 @@ function RootLayoutNav() {
           title: "Care Twin QA",
           presentation: "card",
         }}
+      />
+      {/* Standalone board screens from Apollo's mockups. Each renders its own
+          BoardRouteHeader (or a full-bleed hero with a back chip), so the
+          native stack header stays hidden. */}
+      <Stack.Screen
+        name="trends"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen
+        name="profile"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen
+        name="reminders"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen
+        name="calendar-month"
+        options={{ headerShown: false, presentation: "card" }}
       />
       <Stack.Screen name="+not-found" options={{ title: "Not Found" }} />
     </Stack>
@@ -255,6 +274,19 @@ function AppFrame() {
   const frameWidth = Math.min(viewportWidth, 390);
   const frameHeight = Math.min(viewportHeight, 932);
 
+  // Phone-sized viewports get the real app edge-to-edge, exactly like the
+  // mock boards - no navy letterboxing, no rounded shell. The framed
+  // presentation only appears on desktop-sized windows where the phone
+  // canvas needs a stage to sit on.
+  if (shouldAnchorCompactPreview) {
+    return (
+      <View style={[styles.webFullBleed, { width: viewportWidth, minHeight: viewportHeight }]}>
+        <RootLayoutNav />
+        <WebDialogHost />
+      </View>
+    );
+  }
+
   return (
     <View
       style={[
@@ -262,7 +294,7 @@ function AppFrame() {
         {
           width: viewportWidth,
           minHeight: viewportHeight,
-          alignItems: shouldAnchorCompactPreview ? "flex-start" : "center",
+          alignItems: "center",
         },
       ]}
     >
@@ -338,6 +370,13 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
+  webFullBleed: {
+    flex: 1,
+    minWidth: 0,
+    overflow: "hidden",
+    backgroundColor: "#F7F1E1",
+    alignSelf: "flex-start",
+  },
   webBackdrop: {
     flex: 1,
     alignItems: "center",
@@ -353,7 +392,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     overflow: "hidden",
-    backgroundColor: "#FFF9EF",
+    backgroundColor: "#F7F1E1",
     borderColor: "rgba(255, 249, 239, 0.18)",
     borderRadius: 36,
     borderWidth: 1,

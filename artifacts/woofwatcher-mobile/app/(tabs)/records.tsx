@@ -74,7 +74,9 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
+import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { PressScale } from "@/components/motion/GameFeel";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
@@ -483,6 +485,15 @@ export default function RecordsScreen() {
     Haptics.selectionAsync();
   };
 
+  // Stage checklist button: opens the add-record form on the first missing
+  // critical section so the "Checklist" state always has a real next step.
+  const openRecordsChecklist = () => {
+    const missingKind = recordVault.sections.find(
+      (section) => section.label === recordVault.missingCritical[0],
+    )?.kind;
+    openRecordForm(missingKind ?? "document");
+  };
+
   const pickRecordAttachment = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -841,11 +852,15 @@ export default function RecordsScreen() {
     return Math.floor(daysBetween(incidents[0].occurredAt, now));
   }, [incidents, now]);
 
-  const reportStats: { icon: PulseIconName; label: string; value: string }[] = [
+  // `icon` tints the stat chip; `pixelIcon` (when set) overrides the glyph with
+  // a shared pixel-art icon. Potty reads as the same green "pee" leaf used on
+  // every care timeline (its "heart" tint just keeps the chip green); the blue
+  // "drop" glyph stays reserved for Water.
+  const reportStats: { icon: PulseIconName; pixelIcon?: PixelIconName; label: string; value: string }[] = [
     { icon: "bowl", label: "Meals", value: String(report.meals) },
     { icon: "paw", label: "Walks", value: `${report.walks} - ${report.walkMinutes}m` },
     { icon: "candy", label: "Play & train", value: String(report.play) },
-    { icon: "drop", label: "Potty", value: String(report.potty) },
+    { icon: "heart", pixelIcon: "pee", label: "Potty", value: String(report.potty) },
     { icon: "bone", label: "Treats", value: String(report.treats) },
     { icon: "vomit", label: "Incidents", value: String(report.incidents) },
   ];
@@ -896,7 +911,7 @@ export default function RecordsScreen() {
         ? `${recordReminders[0].label} is worth checking.`
         : recordVault.total > 0
           ? "Dog ID and care files are ready."
-          : "Let's build Phoenix's care vault.";
+          : `Let's build ${resolvePetName(state.profile.name)}'s care vault.`;
   const recordsVaultTone =
     recordVault.missingCritical.length > 0
       ? colors.amber
@@ -1025,7 +1040,7 @@ export default function RecordsScreen() {
             icon="folder-open-outline"
           />
 
-          <BoardCard padded={false} style={s.recordsCredentialStageCard}>
+          <BoardCard padded={false} style={s.recordsCredentialStageCard} enter={0}>
             <ImageBackground
               source={
                 recordsStageIsNight
@@ -1040,7 +1055,7 @@ export default function RecordsScreen() {
               <View style={s.recordsCredentialStageShade} />
               <View style={s.recordsCredentialStageTop}>
                 <View style={s.recordsCredentialBubble}>
-                  <Text style={[s.recordsCredentialKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                  <Text style={[s.recordsCredentialKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                     Records Command Vault
                   </Text>
                   {/* brandNavy: constant ink for the fixed-light bubble in both themes
@@ -1050,12 +1065,23 @@ export default function RecordsScreen() {
                   </Text>
                   <View style={s.recordsCredentialBubbleTail} />
                 </View>
-                <View style={[s.recordsCredentialChip, { backgroundColor: colors.brandNavy + "DD", borderColor: colors.ivory + "55" }]}>
-                  <Ionicons name={recordsVaultScore >= 80 ? "shield-checkmark" : "folder-open"} size={16} color={colors.ivory} />
-                  <Text style={[s.recordsCredentialChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                {/* Soft cream checklist button (was a navy HUD chip). brandNavy:
+                    constant ink for this fixed-light surface in both themes,
+                    same rule as the speech bubble above. */}
+                <PressScale
+                  accessibilityRole="button"
+                  accessibilityLabel={`Records checklist: ${recordsVaultStatus}. Opens the add record form.`}
+                  onPress={openRecordsChecklist}
+                  haptic="none"
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  scaleTo={0.95}
+                  style={[s.recordsCredentialChip, { backgroundColor: colors.ivory + "F2", borderColor: colors.brandNavy + "33" }]}
+                >
+                  <Ionicons name={recordsVaultScore >= 80 ? "shield-checkmark" : "folder-open"} size={16} color={colors.brandNavy} />
+                  <Text style={[s.recordsCredentialChipText, { color: colors.brandNavy, fontFamily: "Inter_700Bold" }]}>
                     {recordsVaultStatus}
                   </Text>
-                </View>
+                </PressScale>
               </View>
 
               <View pointerEvents="none" style={s.recordsCredentialSprite}>
@@ -1075,7 +1101,7 @@ export default function RecordsScreen() {
                   <Ionicons name="paw" size={16} color={recordsVaultTone} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[s.recordsCredentialIdLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                  <Text style={[s.recordsCredentialIdLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                     WOOFWATCHER DOG ID
                   </Text>
                   <Text numberOfLines={1} style={[s.recordsCredentialIdName, { color: colors.brandNavy, fontFamily: DISPLAY }]}>
@@ -1087,29 +1113,35 @@ export default function RecordsScreen() {
                 </View>
               </View>
 
-              <View style={[s.recordsCredentialHud, { backgroundColor: colors.brandNavy, borderColor: colors.brandNavy + "22" }]}>
+              {/* Light parchment stat chips (was a navy strip): sage caps
+                  labels, ink values - same real vault numbers. */}
+              <View style={s.recordsCredentialHud}>
                 {[
                   { label: "Saved", value: String(recordVault.total) },
                   { label: "Vault", value: `${recordsVaultScore}%` },
                   { label: "To set up", value: String(recordRemindersAll.length) },
                 ].map((item) => (
-                  <View key={item.label} style={s.recordsCredentialHudCell}>
-                    <Text style={[s.recordsCredentialHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>{item.label}</Text>
-                    <Text style={[s.recordsCredentialHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>{item.value}</Text>
+                  <View
+                    key={item.label}
+                    style={[s.recordsCredentialHudCell, { backgroundColor: colors.cream, borderColor: colors.border }]}
+                  >
+                    <Text style={[s.recordsCredentialHudLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
+                    <Text style={[s.recordsCredentialHudValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>{item.value}</Text>
                   </View>
                 ))}
               </View>
             </View>
           </BoardCard>
 
-          <BoardCard style={s.recordsCommandCard}>
+          <BoardCard style={s.recordsCommandCard} enter={1}>
             <BoardSectionHeader title="Vault Command" accessory={<BoardPill label={`${recordsVaultScore}% ready`} tone={recordsVaultTone} />} />
             <View style={s.recordsCommandList}>
               {recordsCommandItems.map((item) => (
-                <Pressable
+                <PressScale
                   key={item.id}
                   onPress={item.onPress}
                   hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  scaleTo={0.97}
                   style={[s.recordsCommandRow, { borderColor: colors.border }]}
                   accessibilityRole="button"
                   accessibilityLabel={`${item.label}. ${item.detail}. ${item.actionLabel}`}
@@ -1118,14 +1150,15 @@ export default function RecordsScreen() {
                     <Ionicons name={item.icon} size={18} color={item.tone} />
                   </View>
                   <View style={s.recordsCommandCopy}>
-                    <Text style={[s.recordsCommandEyebrow, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}>{item.eyebrow}</Text>
+                    {/* Quiet sage caps eyebrow (was tone-colored copper/orange). */}
+                    <Text style={[s.recordsCommandEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{item.eyebrow}</Text>
                     <Text style={[s.recordsCommandTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{item.label}</Text>
                     <Text style={[s.recordsCommandDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{item.detail}</Text>
                   </View>
                   <View style={[s.recordsCommandAction, { backgroundColor: item.tone + "14" }]}>
                     <Text style={[s.recordsCommandActionText, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}>{item.actionLabel}</Text>
                   </View>
-                </Pressable>
+                </PressScale>
               ))}
             </View>
           </BoardCard>
@@ -1145,7 +1178,7 @@ export default function RecordsScreen() {
           </View>
 
           {/* Care trends */}
-          <BoardCard style={s.recordsBoardCard}>
+          <BoardCard style={s.recordsBoardCard} enter={2}>
             <BoardSectionHeader title="Care Trends" accessory={<BoardPill label="7 days" tone={colors.primary} />} />
             <View style={s.trendHeroRow}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.primary + "14" }]}>
@@ -1247,7 +1280,7 @@ export default function RecordsScreen() {
               <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>PNG</Text>
             </Pressable>
           </View>
-          <BoardCard tone="navy" padded={false} style={s.idCard}>
+          <BoardCard tone="navy" padded={false} style={s.idCard} enter={3}>
             <View style={s.idCardTop}>
               <View style={[s.idBadge, { backgroundColor: colors.copper }]}>
                 <Ionicons name="paw" size={16} color="#FFFFFF" />
@@ -1280,7 +1313,7 @@ export default function RecordsScreen() {
           </BoardCard>
 
           {/* Record vault */}
-          <BoardCard style={s.recordsBoardCard}>
+          <BoardCard style={s.recordsBoardCard} enter={4}>
             <BoardSectionHeader
               title="Record Vault"
               accessory={
@@ -1295,13 +1328,17 @@ export default function RecordsScreen() {
                 const option = RECORD_OPTIONS.find((item) => item.kind === section.kind) ?? RECORD_OPTIONS[0];
                 const tone = section.status === "On file" ? colors.sage : colors.amber;
                 return (
-                  <Pressable
+                  <PressScale
                     key={section.kind}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${section.label}. ${section.count > 0 ? `${section.count} on file` : "Nothing filed yet"}. Add a ${option.label.toLowerCase()} record.`}
                     onPress={() => openRecordForm(section.kind)}
-                    style={({ pressed }) => [
+                    scaleTo={0.96}
+                    containerStyle={s.vaultCardLayout}
+                    style={[
                       s.vaultCard,
                       {
-                        backgroundColor: pressed ? colors.secondary : colors.background,
+                        backgroundColor: colors.background,
                         borderColor: section.status === "On file" ? colors.border : colors.amber + "66",
                       },
                     ]}
@@ -1313,7 +1350,7 @@ export default function RecordsScreen() {
                     <Text style={[s.vaultMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       {section.count > 0 ? `${section.count} on file` : "Add now"}
                     </Text>
-                  </Pressable>
+                  </PressScale>
                 );
               })}
             </View>
@@ -1358,7 +1395,7 @@ export default function RecordsScreen() {
           {/* Baselines checklist - every zero-data trend section as one
               tappable row; full cards below render only with real data. */}
           {baselineChecklist.length > 0 ? (
-            <BoardCard style={s.recordsBoardCard}>
+            <BoardCard style={s.recordsBoardCard} enter={5}>
               <BoardSectionHeader
                 title="Baselines Checklist"
                 accessory={
@@ -1373,16 +1410,16 @@ export default function RecordsScreen() {
                 entry; each grows into a full trend card with real data.
               </Text>
               {baselineChecklist.map((row, index) => (
-                <Pressable
+                <PressScale
                   key={row.key}
                   accessibilityRole="button"
                   accessibilityLabel={`${row.label}. ${row.status}. Log the first entry.`}
                   hitSlop={MOBILE_INLINE_HIT_SLOP}
                   onPress={() => openBaselineLog(row.type)}
-                  style={({ pressed }) => [
+                  scaleTo={0.97}
+                  style={[
                     s.baselineRow,
                     {
-                      backgroundColor: pressed ? colors.secondary : "transparent",
                       borderTopColor: colors.border,
                       borderTopWidth: index > 0 ? 1 : 0,
                     },
@@ -1398,7 +1435,7 @@ export default function RecordsScreen() {
                     {row.status}
                   </Text>
                   <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
-                </Pressable>
+                </PressScale>
               ))}
             </BoardCard>
           ) : null}
@@ -2483,13 +2520,16 @@ export default function RecordsScreen() {
             <BoardSectionHeader title="Care Pass" accessory={<BoardPill label="Preview" tone={colors.copper} />} />
             <View style={s.carePassList}>
               {CARE_PASS_OPTIONS.map((option) => (
-                <Pressable
+                <PressScale
                   key={option.audience}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Preview the ${option.label} Care Pass. ${option.detail}.`}
                   onPress={() => openCarePassPreview(option.audience)}
-                  style={({ pressed }) => [
+                  scaleTo={0.97}
+                  style={[
                     s.carePassRow,
                     {
-                      backgroundColor: pressed ? colors.secondary : colors.background,
+                      backgroundColor: colors.background,
                       borderColor: colors.border,
                     },
                   ]}
@@ -2506,7 +2546,7 @@ export default function RecordsScreen() {
                     </Text>
                   </View>
                   <Ionicons name="share-outline" size={16} color={colors.copper} />
-                </Pressable>
+                </PressScale>
               ))}
             </View>
           </BoardCard>
@@ -2784,7 +2824,11 @@ export default function RecordsScreen() {
               {reportStats.map((r) => (
                 <View key={r.label} style={[s.reportCell, { backgroundColor: colors.background }]}>
                   <View style={[s.reportIcon, { backgroundColor: PULSE_COLORS[r.icon] + "16" }]}>
-                    <PulseIcon name={r.icon} size={16} />
+                    {r.pixelIcon ? (
+                      <PixelIcon name={r.pixelIcon} size={16} />
+                    ) : (
+                      <PulseIcon name={r.icon} size={16} />
+                    )}
                   </View>
                   <Text style={[s.reportValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{r.value}</Text>
                   <Text style={[s.reportLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{r.label}</Text>
@@ -2820,7 +2864,7 @@ export default function RecordsScreen() {
             </View>
             {dietHistory.length > 0 && (
               <View style={{ marginTop: 4 }}>
-                <Text style={[s.subHeading, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>RECENT MEAL NOTES</Text>
+                <Text style={[s.subHeading, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>RECENT MEAL NOTES</Text>
                 {dietHistory.map((e) => (
                   <View key={e.id} style={s.dietNoteRow}>
                     <View style={[s.dot, { backgroundColor: colors.copper }]} />
@@ -3121,10 +3165,11 @@ const s = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
   },
+  // Quiet sage caps kicker (mockup parity: no copper/orange kickers).
   recordsCredentialKicker: {
     fontSize: 9,
     textTransform: "uppercase",
-    letterSpacing: 0.7,
+    letterSpacing: 1.1,
     marginBottom: 2,
   },
   recordsCredentialSpeech: {
@@ -3205,9 +3250,9 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   recordsCredentialIdLabel: {
-    fontSize: 9.8,
+    fontSize: 9,
     textTransform: "uppercase",
-    letterSpacing: 0.8,
+    letterSpacing: 1.1,
   },
   recordsCredentialIdName: {
     fontSize: 21,
@@ -3218,22 +3263,25 @@ const s = StyleSheet.create({
     fontSize: 11.5,
     marginTop: 2,
   },
+  // Parchment stat chips (was one navy strip): each cell is its own light
+  // chip with a sage caps label over an ink value.
   recordsCredentialHud: {
     flexDirection: "row",
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    gap: 7,
   },
   recordsCredentialHudCell: {
     flex: 1,
     alignItems: "center",
     gap: 2,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
   },
   recordsCredentialHudLabel: {
-    fontSize: 10,
+    fontSize: 9,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1.1,
   },
   recordsCredentialHudValue: {
     fontSize: 16,
@@ -3268,10 +3316,10 @@ const s = StyleSheet.create({
     minWidth: 0,
   },
   recordsCommandEyebrow: {
-    fontSize: 9.5,
+    fontSize: 9,
     lineHeight: 12,
     textTransform: "uppercase",
-    letterSpacing: 0,
+    letterSpacing: 1.1,
   },
   recordsCommandTitle: {
     fontSize: 14.6,
@@ -3317,8 +3365,11 @@ const s = StyleSheet.create({
   idFooterText: { fontSize: 12.5, lineHeight: 17 },
 
   vaultGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  // Springy vault tiles: layout width lives on the PressScale container,
+  // visuals on the inner scaled card.
+  vaultCardLayout: { width: "48%" },
   vaultCard: {
-    width: "48%",
+    width: "100%",
     minHeight: 92,
     borderRadius: 14,
     borderWidth: 1,
@@ -3618,7 +3669,7 @@ const s = StyleSheet.create({
   reportValue: { fontSize: 18, letterSpacing: -0.3 },
   reportLabel: { fontSize: 11, marginTop: 2 },
   dietHead: { flexDirection: "row", alignItems: "center", gap: 12, paddingBottom: 6 },
-  subHeading: { fontSize: 11, letterSpacing: 0.6, marginTop: 10, marginBottom: 4 },
+  subHeading: { fontSize: 9, letterSpacing: 1.1, textTransform: "uppercase", marginTop: 10, marginBottom: 4 },
   dietNoteRow: { flexDirection: "row", gap: 10, paddingVertical: 7, alignItems: "flex-start" },
   dot: { width: 7, height: 7, borderRadius: 4, marginTop: 6 },
 

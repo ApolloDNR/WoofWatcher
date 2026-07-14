@@ -35,18 +35,36 @@ a household, sitter, or vet can trust. Real care. Pixel heart.
    Watch non-diagnostic language, Records, Care Pass, privacy gates, and
    the 605-test suite are never sacrificed for visuals.
 
-## Locked Brand
+## Locked Brand (2026-07 storybook boards — canonical)
+
+Apollo's July 2026 mock boards are the visual bible. When any older note
+conflicts with them, the boards win.
 
 - Logo: the 2B Phoenix Mark — navy dog-head profile, copper heart at the
   chest (assets/brand/phoenix-mark.png) + "Woof" navy / "Watcher" copper in
   Fraunces serif.
-- Palette: cream #F7F2E8 / ivory #FFF9EF surfaces, navy #081424 / ink
-  #142033, copper #C85A2A / #E07A2F, amber #D8A852, sage #4D8A56, pale sky.
-- Type: Fredoka 600/700 display, Inter 400-800 body/UI, Fraunces 700 wordmark
-  only. All weights must be loaded in app/_layout.tsx before use.
-- Look: calm premium — 20-24px radii, soft diffuse shadows, sentence-case
-  labels, rounded chips, no scanlines, no hard pixel card edges. Pixel style
-  lives in the ART (dog, room, icons), not the container chrome.
+- Palette: parchment page #F7F1E1 / card #FDF9EE surfaces, deep forest
+  #33582F as THE primary action color, ink #2A2519, quiet sage #4D8A56 for
+  kickers, warm gold #BC833D + navy #081424 reserved for brand accents.
+  Care Sense meter tones: mood/energy green #3D6C33, hunger orange #DE7A14,
+  alone-time blue #4E9CC7, sleep plum #6B4E93.
+- Type: Fredoka 600/700 card headlines, Inter 400-800 body/UI, Fraunces 700
+  for big route titles + wordmark. All weights load in app/_layout.tsx.
+- Look: calm premium — 16-22px radii, hairline warm borders, soft diffuse
+  shadows, sentence-case labels, rounded chips. NO navy/dark HUD strips on
+  light screens; consoles read parchment. Kickers are quiet: sage,
+  Inter_700Bold, 9px, uppercase, letterSpacing 1.1 — never shouty orange.
+  Pixel style lives in the ART (dog, room, icons), not container chrome.
+- One meters surface: the Home Care Sense card (mood / energy / hunger /
+  alone time as 7 chunky pips) is the only meter cluster on Home. Every
+  fill derives from real logged care.
+- Motion: the shared game-feel kit (components/motion/GameFeel.tsx) is the
+  ONLY motion language — springy PressScale on every pressable, staggered
+  card entrances, MeterPip pop-fills, paw-FAB bounce, ProgressFill bars.
+  Crisp, consistent, reduced-motion aware. Motion presents real state; it
+  never fakes progress.
+- Web preview: phone-sized viewports render edge-to-edge parchment (no
+  letterbox); the framed stage is desktop-only.
 
 ## Screen Targets (from Apollo's vision boards)
 

@@ -31,8 +31,9 @@ import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
-import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
+import { PressScale, ProgressFill } from "@/components/motion/GameFeel";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
+import { deriveCareStreak } from "@/lib/careCareer";
 import { confirmThroughSteps } from "@/lib/confirmDialog";
 import { parseLocalDate } from "@/lib/time";
 import { resolvePetName } from "@/lib/petIdentity";
@@ -66,13 +67,16 @@ const PLANS_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day
 const PLANS_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
 const PLANS_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
 
+// Potty carries a green tint here (its glyph is drawn from the shared pixel
+// "pee" leaf at render time, matching every care timeline); the blue "drop"
+// glyph stays reserved for Water.
 const ROUTINE_ICON: Record<string, PulseIconName> = {
   meal: "bowl",
   walk: "paw",
   treat: "bone",
   play: "candy",
   training: "star",
-  potty: "drop",
+  potty: "heart",
   note: "heart",
 };
 
@@ -82,7 +86,7 @@ const ROUTINE_TYPES: { key: string; label: string; icon: PulseIconName }[] = [
   { key: "treat", label: "Treat", icon: "bone" },
   { key: "play", label: "Play", icon: "candy" },
   { key: "training", label: "Training", icon: "star" },
-  { key: "potty", label: "Potty", icon: "drop" },
+  { key: "potty", label: "Potty", icon: "heart" },
   { key: "note", label: "Check-in", icon: "heart" },
 ];
 
@@ -144,6 +148,23 @@ function nextRoundHourLabel(now: Date = new Date()): string {
   const period = hours24 >= 12 ? "PM" : "AM";
   const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
   return `${hours12}:00 ${period}`;
+}
+
+// Mockup week board runs Monday-first: M T W T F S S.
+const WEEK_DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"] as const;
+const WEEK_DAY_NAMES = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
+
+/** Local-calendar day key, matching deriveCareStreak's day bucketing. */
+function localDayKey(date: Date): string {
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 }
 
 function dayLabel(iso: string): string {
@@ -337,6 +358,53 @@ export default function CalendarScreen() {
     }
     return rows;
   }, [routineBoard.items, scheduleTab]);
+
+  // Monday-start week containing today, for the mockup M T W T F S S dots.
+  const weekDays = useMemo(() => {
+    const monday = new Date(now);
+    monday.setHours(12, 0, 0, 0);
+    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    return Array.from({ length: 7 }, (_, index) => {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + index);
+      return day;
+    });
+  }, [now]);
+  const todayWeekIndex = weekDays.findIndex((day) => localDayKey(day) === localDayKey(new Date(now)));
+
+  // Week-board dot fills reuse the exact routine board derivation the Today
+  // tab shows: deriveRoutineBoard scoped to each past day of this week marks
+  // a routine "done" only when a real completing log matches it that local
+  // day (routineId link, then type + time window, then title match). Today's
+  // column reads straight from the live routineBoard; future days can hold
+  // no logs yet, so they never fill.
+  const weeklyRoutineDots = useMemo(() => {
+    const todayKey = localDayKey(new Date(now));
+    return weekDays.map((day) => {
+      const dayKey = localDayKey(day);
+      if (dayKey === todayKey) {
+        return new Map(routineBoard.items.map((item) => [item.id, item.status === "done"]));
+      }
+      if (day.getTime() > now) return new Map<string, boolean>();
+      const dayBoard = deriveRoutineBoard({ routines: sortedRoutines, entries, caregivers, now: day.getTime() });
+      return new Map(dayBoard.items.map((item) => [item.id, item.status === "done"]));
+    });
+  }, [weekDays, routineBoard.items, sortedRoutines, entries, caregivers, now]);
+
+  // Weekly goal counts the days of this week with at least one real care
+  // log - the same day-with-a-log rule deriveCareStreak counts, so the goal
+  // and the streak chip tell one coherent story.
+  const weeklyGoalDays = useMemo(() => {
+    const loggedDays = new Set<string>();
+    for (const entry of entries) {
+      const occurred = Date.parse(entry.occurredAt ?? "");
+      if (!Number.isFinite(occurred) || occurred > now) continue;
+      loggedDays.add(localDayKey(new Date(occurred)));
+    }
+    return weekDays.filter((day) => loggedDays.has(localDayKey(day))).length;
+  }, [entries, weekDays, now]);
+  const careStreak = useMemo(() => deriveCareStreak(entries, now), [entries, now]);
+
   const householdResponsibility = useMemo(
     () => deriveHouseholdResponsibility({ routines: sortedRoutines, entries, caregivers, now }),
     [sortedRoutines, entries, caregivers, now],
@@ -388,7 +456,14 @@ export default function CalendarScreen() {
     ? "Here's a sample day. Add your first routine to make it yours."
     : nextScheduleRow
       ? `${nextScheduleRow.label} is next at ${nextScheduleRow.time}.`
-      : "Phoenix has a clear care board.";
+      : `${resolvePetName(profile.name)} has a clear care board.`;
+  const commandDeckStatusTone: BoardStatusPillTone = isSampleSchedule
+    ? "neutral"
+    : nextScheduleRow?.status === "done"
+      ? "done"
+      : nextScheduleRow?.status === "overdue" || nextScheduleRow?.status === "due"
+        ? "due"
+        : "upcoming";
 
   // Group upcoming one-off events by date.
   const upcoming = useMemo(() => {
@@ -794,59 +869,77 @@ export default function CalendarScreen() {
             }}
           />
 
-          <BoardCard style={s.commandDeckCard}>
-            <ImageBackground
-              source={PLANS_COMMAND_STAGE_ROOM}
-              resizeMode="cover"
-              imageStyle={[stageImageFill, s.commandDeckImage, pixelImageStyle]}
-              style={[s.commandDeckStage, { borderColor: colors.border }]}
-              testID="plans-command-pixel-stage"
-            >
-              <View style={[s.commandDeckShade, { backgroundColor: colors.card + "CC" }]} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open month calendar"
+            accessibilityHint="Shows a month grid of logged care and lets you pick any day."
+            onPress={() => router.push("/calendar-month" as never)}
+            style={({ pressed }) => [s.monthViewLink, { opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Ionicons name="calendar-outline" size={15} color={colors.sage} />
+            <Text style={[s.monthViewText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+              Month view
+            </Text>
+            <Ionicons name="chevron-forward" size={13} color={colors.sage} />
+          </Pressable>
+
+          <BoardCard enter={0} style={s.commandDeckCard}>
+            <View style={s.commandDeckStage} testID="plans-command-pixel-stage">
               <View style={s.commandDeckTop}>
-                <View style={[s.commandDeckBubble, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <Text style={[s.commandDeckKicker, { color: colors.forest, fontFamily: DISPLAY_SEMI }]}>
+                <View style={s.commandDeckCopy}>
+                  <Text style={[s.commandDeckKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                     Plans Command Deck
                   </Text>
-                  <Text style={[s.commandDeckSpeech, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  <Text style={[s.commandDeckSpeech, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                     {commandDeckSpeech}
                   </Text>
-                  <View style={[s.commandDeckBubbleTail, { backgroundColor: colors.card, borderColor: colors.border }]} />
+                  <BoardStatusPill
+                    label={isSampleSchedule ? "Sample day" : nextScheduleStatus}
+                    tone={commandDeckStatusTone}
+                    style={s.commandDeckStatusPill}
+                  />
                 </View>
-                <View style={[s.commandDeckChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <PixelIcon name={nextScheduleRow ? routinePixelIcon(nextScheduleRow.type) : "clock"} size={17} />
-                  <Text style={[s.commandDeckChipText, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
-                    {isSampleSchedule ? "Sample" : nextScheduleStatus}
-                  </Text>
-                </View>
+                <ImageBackground
+                  source={PLANS_COMMAND_STAGE_ROOM}
+                  resizeMode="cover"
+                  imageStyle={[stageImageFill, s.commandDeckSceneImage, pixelImageStyle]}
+                  style={[s.commandDeckScene, { borderColor: colors.border }]}
+                >
+                  <SpriteSheetPlayer
+                    asset={PLANS_COMMAND_STAGE_SPRITE}
+                    track={PLANS_COMMAND_STAGE_TRACK}
+                    width={58}
+                    height={58}
+                    testID="plans-command-pixel-sprite"
+                  />
+                </ImageBackground>
               </View>
 
-              <View pointerEvents="none" style={s.commandDeckSprite}>
-                <View style={s.commandDeckSpriteShadow} />
-                <SpriteSheetPlayer
-                  asset={PLANS_COMMAND_STAGE_SPRITE}
-                  track={PLANS_COMMAND_STAGE_TRACK}
-                  width={88}
-                  height={88}
-                  testID="plans-command-pixel-sprite"
-                />
-              </View>
-
-              <View style={[s.commandDeckHud, { backgroundColor: colors.card + "F2", borderColor: colors.border }]}>
-                <View style={s.commandDeckHudCell}>
-                  <Text style={[s.commandDeckHudLabel, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>Done</Text>
-                  <Text style={[s.commandDeckHudValue, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
-                    {isSampleSchedule ? "—" : `${completedScheduleCount}/${scheduleRows.length}`}
-                  </Text>
-                </View>
-                <View style={s.commandDeckHudCell}>
-                  <Text style={[s.commandDeckHudLabel, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>Open</Text>
-                  <Text style={[s.commandDeckHudValue, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
-                    {isSampleSchedule ? "—" : openScheduleCount}
-                  </Text>
-                </View>
-                <View style={s.commandDeckHudCell}>
-                  <Text style={[s.commandDeckHudLabel, { color: colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>Signal</Text>
+              <View style={s.commandDeckStats}>
+                {[
+                  { key: "done", label: "Done", value: isSampleSchedule ? "—" : `${completedScheduleCount}/${scheduleRows.length}` },
+                  { key: "open", label: "Open", value: isSampleSchedule ? "—" : `${openScheduleCount}` },
+                ].map((stat) => (
+                  <View
+                    key={stat.key}
+                    accessible
+                    accessibilityLabel={`${stat.label}: ${stat.value}`}
+                    style={[s.commandDeckStatChip, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  >
+                    <Text style={[s.commandDeckStatLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                      {stat.label}
+                    </Text>
+                    <Text style={[s.commandDeckStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                      {stat.value}
+                    </Text>
+                  </View>
+                ))}
+                <View
+                  accessible
+                  accessibilityLabel={`Signal: ${isSampleSchedule ? 1 : Math.max(1, Math.min(5, openScheduleCount + 1))} of 5`}
+                  style={[s.commandDeckStatChip, { backgroundColor: colors.background, borderColor: colors.border }]}
+                >
+                  <Text style={[s.commandDeckStatLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Signal</Text>
                   <View style={s.commandDeckSignalRow}>
                     {[0, 1, 2, 3, 4].map((bar) => {
                       const activeBars = isSampleSchedule ? 1 : Math.max(1, Math.min(5, openScheduleCount + 1));
@@ -871,18 +964,20 @@ export default function CalendarScreen() {
                   </View>
                 </View>
               </View>
-            </ImageBackground>
+            </View>
           </BoardCard>
 
-          <BoardCard style={s.scheduleCard}>
+          <BoardCard enter={1} style={s.scheduleCard}>
             <View style={s.scheduleCardHeader}>
               <View style={s.scheduleHeaderCopy}>
-                <Text style={[s.scheduleEyebrow, { color: colors.forest, fontFamily: DISPLAY_SEMI }]}>Mission Schedule</Text>
+                <Text style={[s.scheduleEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Mission Schedule</Text>
                 <Text style={[s.scheduleHeaderTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {scheduleTab === "today" ? "Today's care plan" : scheduleTab === "tomorrow" ? "Tomorrow preview" : "Weekly rhythm"}
+                  {scheduleTab === "today" ? "Today's care plan" : scheduleTab === "tomorrow" ? "Tomorrow preview" : "This week's plan"}
                 </Text>
               </View>
-              {isSampleSchedule ? (
+              {scheduleTab === "week" ? (
+                <BoardPill label={`${weeklyGoalDays}/7 days`} tone={colors.sage} />
+              ) : isSampleSchedule ? (
                 <BoardPill label="Sample day" tone={colors.mutedForeground} />
               ) : (
                 <BoardPill
@@ -905,19 +1000,145 @@ export default function CalendarScreen() {
               style={s.scheduleTabs}
             />
 
+            {scheduleTab === "week" ? (
+              <>
+                <View
+                  accessible
+                  accessibilityLabel={`Weekly goal: ${weeklyGoalDays} of 7 days with care logged this week. Current streak ${careStreak} ${careStreak === 1 ? "day" : "days"}.`}
+                  style={[s.weeklyGoalPanel, { backgroundColor: colors.background, borderColor: colors.border }]}
+                >
+                  <View style={s.weeklyGoalTop}>
+                    <View style={s.weeklyGoalCopy}>
+                      <Text style={[s.weeklyGoalKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                        Weekly goal
+                      </Text>
+                      <Text style={[s.weeklyGoalValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                        {weeklyGoalDays}/7 days
+                      </Text>
+                    </View>
+                    <View style={[s.weeklyStreakChip, { backgroundColor: colors.sageSoft }]}>
+                      <Ionicons name="flame" size={13} color={colors.forest} />
+                      <Text style={[s.weeklyStreakText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
+                        Current streak {careStreak} {careStreak === 1 ? "day" : "days"}
+                      </Text>
+                    </View>
+                  </View>
+                  <ProgressFill
+                    ratio={weeklyGoalDays / 7}
+                    color={colors.forest}
+                    trackColor={colors.muted}
+                    height={8}
+                    style={s.weeklyGoalBar}
+                  />
+                  <Text style={[s.weeklyGoalHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    Days with at least one care log count toward the goal.
+                  </Text>
+                </View>
+
+                {routineBoard.items.length === 0 ? (
+                  <View style={[s.weekPlanEmpty, { backgroundColor: colors.background }]}>
+                    <PixelIcon name="clock" size={26} />
+                    <Text style={[s.weekPlanEmptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                      No routines yet. Add one below and this board fills in as real care gets logged.
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={s.weekPlanList}>
+                    {routineBoard.items.map((routine, index) => {
+                      const dotFills = weeklyRoutineDots.map((dayMap) => dayMap.get(routine.id) === true);
+                      const doneDays = dotFills.filter(Boolean).length;
+                      return (
+                        <PressScale
+                          key={routine.id}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${routine.label}: completed ${doneDays} of 7 days this week. Opens the routine editor.`}
+                          haptic="none"
+                          scaleTo={0.98}
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            openBoardRoutine(routine);
+                          }}
+                          style={[s.weekPlanRow, index > 0 && { borderTopColor: colors.border, borderTopWidth: 1 }]}
+                        >
+                          <View style={[s.scheduleIconChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                            <PixelIcon name={routinePixelIcon(routine.normalizedType)} size={20} />
+                          </View>
+                          <View style={s.weekPlanCopy}>
+                            <View style={s.weekPlanTitleLine}>
+                              <Text
+                                numberOfLines={1}
+                                style={[s.weekPlanTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                              >
+                                {routine.label}
+                              </Text>
+                              <Text style={[s.weekPlanMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                                {routine.time}
+                              </Text>
+                            </View>
+                            <View style={s.weekDotRow}>
+                              {WEEK_DAY_LETTERS.map((letter, dayIndex) => {
+                                const filled = dotFills[dayIndex];
+                                const isToday = dayIndex === todayWeekIndex;
+                                const isFuture = dayIndex > todayWeekIndex;
+                                return (
+                                  <View
+                                    key={`${routine.id}-${WEEK_DAY_NAMES[dayIndex]}`}
+                                    accessible
+                                    accessibilityLabel={`${WEEK_DAY_NAMES[dayIndex]}${isToday ? ", today" : ""}: ${filled ? "done" : isFuture ? "upcoming" : "not done"}`}
+                                    style={[s.weekDotRing, { borderColor: isToday ? colors.forest : "transparent" }]}
+                                  >
+                                    <View
+                                      style={[
+                                        s.weekDot,
+                                        {
+                                          backgroundColor: filled ? colors.forest : "transparent",
+                                          borderColor: filled ? colors.forest : colors.border,
+                                          opacity: isFuture ? 0.5 : 1,
+                                        },
+                                      ]}
+                                    >
+                                      <Text
+                                        style={[
+                                          s.weekDotText,
+                                          {
+                                            color: filled
+                                              ? colors.primaryForeground
+                                              : isToday
+                                                ? colors.forest
+                                                : colors.mutedForeground,
+                                            fontFamily: "Inter_700Bold",
+                                          },
+                                        ]}
+                                      >
+                                        {letter}
+                                      </Text>
+                                    </View>
+                                  </View>
+                                );
+                              })}
+                            </View>
+                          </View>
+                          <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+                        </PressScale>
+                      );
+                    })}
+                  </View>
+                )}
+              </>
+            ) : (
             <View style={s.scheduleList}>
               {scheduleRows.map((row, index) => {
                 const done = row.status === "done";
                 const pill = scheduleStatusPill(row.status, index === firstUpcomingScheduleIndex);
+                const showRowPill = pill.label !== "Upcoming";
                 const band = scheduleBandForTime(row.time);
                 const showBandHeader =
-                  scheduleTab !== "week" &&
-                  (index === 0 || scheduleBandForTime(scheduleRows[index - 1].time) !== band);
+                  index === 0 || scheduleBandForTime(scheduleRows[index - 1].time) !== band;
                 const showNowLine =
                   scheduleTab === "today" && !isSampleSchedule && index === firstUpcomingScheduleIndex;
                 const bandHeader = showBandHeader ? (
                   <View style={s.scheduleBand}>
-                    <Text style={[s.scheduleBandText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                    <Text style={[s.scheduleBandText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                       {band.toUpperCase()}
                     </Text>
                     <View style={[s.scheduleBandRule, { backgroundColor: colors.border }]} />
@@ -951,22 +1172,20 @@ export default function CalendarScreen() {
                       <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                         {row.time}
                       </Text>
+                      <View style={[s.scheduleIconChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                        <PixelIcon name={routinePixelIcon(row.type)} size={20} />
+                      </View>
                       <View style={s.scheduleRowCopy}>
                         <Text style={[s.scheduleTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                           {row.label}
                         </Text>
                         <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                          {scheduleTab === "week" ? `${dayLabel(today)} - ${row.detail}` : row.detail}
+                          {row.detail}
                         </Text>
-                        <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
+                        {showRowPill ? (
+                          <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
+                        ) : null}
                       </View>
-                      {hasMedallion(routinePixelIcon(row.type)) ? (
-                        <BoardMedallion name={routinePixelIcon(row.type) as never} size={44} />
-                      ) : (
-                        <View style={[s.scheduleIconBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                          <PixelIcon name={routinePixelIcon(row.type)} size={22} />
-                        </View>
-                      )}
                     </View>
                     </React.Fragment>
                   );
@@ -976,9 +1195,11 @@ export default function CalendarScreen() {
                   <React.Fragment key={`${row.id}-${index}`}>
                   {bandHeader}
                   {nowLine}
-                  <Pressable
+                  <PressScale
                     accessibilityRole="button"
                     accessibilityLabel={`${row.time} ${row.label}`}
+                    haptic="none"
+                    scaleTo={0.98}
                     onPress={() => {
                       Haptics.selectionAsync();
                       if (sourceRoutine) openBoardRoutine(sourceRoutine);
@@ -991,6 +1212,9 @@ export default function CalendarScreen() {
                     <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                       {row.time}
                     </Text>
+                    <View style={[s.scheduleIconChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <PixelIcon name={routinePixelIcon(row.type)} size={20} />
+                    </View>
                     <View style={s.scheduleRowCopy}>
                       <Text style={[s.scheduleTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                         {row.label}
@@ -1007,18 +1231,13 @@ export default function CalendarScreen() {
                         </View>
                       ) : row.detail ? (
                         <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                          {scheduleTab === "week" ? `${dayLabel(today)} - ${row.detail}` : row.detail}
+                          {row.detail}
                         </Text>
                       ) : null}
-                      <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
+                      {showRowPill ? (
+                        <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
+                      ) : null}
                     </View>
-                    {hasMedallion(routinePixelIcon(row.type)) ? (
-                      <BoardMedallion name={routinePixelIcon(row.type) as never} size={44} />
-                    ) : (
-                      <View style={[s.scheduleIconBadge, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-                        <PixelIcon name={routinePixelIcon(row.type)} size={22} />
-                      </View>
-                    )}
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Mark ${row.label} done`}
@@ -1036,13 +1255,14 @@ export default function CalendarScreen() {
                     >
                       {done ? <Ionicons name="checkmark" size={13} color="#FFFFFF" /> : null}
                     </Pressable>
-                  </Pressable>
+                  </PressScale>
                   </React.Fragment>
                 );
               })}
             </View>
+            )}
 
-            {isSampleSchedule ? (
+            {isSampleSchedule && scheduleTab !== "week" ? (
               <Text style={[s.scheduleSampleNote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 This is a sample day to show how your plan will look. Add your first routine to make it real.
               </Text>
@@ -1060,7 +1280,7 @@ export default function CalendarScreen() {
             />
           </BoardCard>
 
-          <BoardCard style={s.planMissionBoard}>
+          <BoardCard enter={2} style={s.planMissionBoard}>
             <BoardSectionHeader
               title="Today's Missions"
               accessory={
@@ -1184,7 +1404,7 @@ export default function CalendarScreen() {
           )}
 
           {/* Upcoming one-off events */}
-          <BoardCard style={s.upcomingBoardCard}>
+          <BoardCard enter={3} style={s.upcomingBoardCard}>
             <BoardSectionHeader
               title="Upcoming Events"
               accessory={<BoardPill label={upcoming.length ? `${upcoming.length} days` : "Add one"} tone={colors.primary} />}
@@ -1243,7 +1463,7 @@ export default function CalendarScreen() {
           </BoardCard>
 
           {/* Reminder Center */}
-          <BoardCard style={[s.plansBoardCard, { borderColor: reminderTone + "44" }]}>
+          <BoardCard enter={4} style={[s.plansBoardCard, { borderColor: reminderTone + "44" }]}>
             <BoardSectionHeader
               title="Reminder Center"
               accessory={<BoardPill label={reminderCount === 0 ? "Clear" : `${reminderCount} active`} tone={reminderTone} />}
@@ -1402,7 +1622,7 @@ export default function CalendarScreen() {
           </BoardCard>
 
           {/* Daily routine */}
-          <BoardCard style={s.plansBoardCard}>
+          <BoardCard enter={5} style={s.plansBoardCard}>
             <BoardSectionHeader
               title="Daily Routine"
               accessory={
@@ -1514,7 +1734,11 @@ export default function CalendarScreen() {
                       </View>
                       <View style={[s.routineCard, { backgroundColor: colors.card, shadowColor: colors.primary, opacity: done ? 0.72 : 1 }]}>
                         <View style={[s.routineIconWrap, { backgroundColor: statusColor + "16" }]}>
-                          <PulseIcon name={icon} size={20} color={done ? colors.sage : undefined} />
+                          {r.normalizedType === "potty" ? (
+                            <PixelIcon name="pee" size={20} />
+                          ) : (
+                            <PulseIcon name={icon} size={20} color={done ? colors.sage : undefined} />
+                          )}
                         </View>
                         <View style={s.routineMain}>
                           <Text style={[s.routineLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{r.label}</Text>
@@ -1643,7 +1867,11 @@ export default function CalendarScreen() {
                 const active = rType === t.key;
                 return (
                   <Pressable key={t.key} onPress={() => { Haptics.selectionAsync(); setRType(t.key); }} style={[s.typeChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}>
-                    <PulseIcon name={t.icon} size={14} color={active ? "#fff" : undefined} />
+                    {t.key === "potty" ? (
+                      <PixelIcon name="pee" size={14} />
+                    ) : (
+                      <PulseIcon name={t.icon} size={14} color={active ? "#fff" : undefined} />
+                    )}
                     <Text style={[s.typeChipText, { color: active ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
                   </Pressable>
                 );
@@ -1864,119 +2092,84 @@ const s = StyleSheet.create({
   sugAdd: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 11, alignItems: "center", justifyContent: "center" },
 
   commandDeckCard: {
-    padding: 10,
     marginBottom: 10,
+  },
+  monthViewLink: {
+    flexDirection: "row",
+    alignSelf: "flex-end",
+    alignItems: "center",
+    gap: 3,
+    marginTop: -2,
+    marginBottom: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  monthViewText: {
+    fontSize: 11.5,
+    letterSpacing: 0.2,
   },
   commandDeckStage: {
     minHeight: 146,
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: "hidden",
-    padding: 10,
-  },
-  commandDeckImage: {
-    borderRadius: 12,
-  },
-  commandDeckShade: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(243,236,218,0.12)",
+    justifyContent: "space-between",
+    gap: 12,
   },
   commandDeckTop: {
-    position: "relative",
-    zIndex: 5,
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 8,
+    gap: 12,
   },
-  commandDeckBubble: {
-    maxWidth: "63%",
-    minHeight: 50,
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-  },
-  commandDeckKicker: {
-    fontSize: 8.5,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  commandDeckSpeech: {
-    fontSize: 12,
-    lineHeight: 14,
-    marginTop: 3,
-  },
-  commandDeckBubbleTail: {
-    position: "absolute",
-    right: 20,
-    bottom: -7,
-    width: 12,
-    height: 12,
-    borderLeftWidth: 1,
-    borderBottomWidth: 1,
-    transform: [{ rotate: "-45deg" }],
-  },
-  commandDeckChip: {
-    minHeight: 29,
-    borderRadius: 7,
-    borderWidth: 1,
-    paddingHorizontal: 7,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  commandDeckChipText: {
-    fontSize: 10.5,
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
-  },
-  commandDeckSprite: {
-    position: "absolute",
-    zIndex: 4,
-    right: 22,
-    bottom: 46,
-    width: 94,
-    height: 94,
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  commandDeckSpriteShadow: {
-    position: "absolute",
-    bottom: 8,
-    width: 66,
-    height: 10,
-    borderRadius: 999,
-    backgroundColor: "rgba(8,26,42,0.25)",
-  },
-  commandDeckHud: {
-    position: "absolute",
-    zIndex: 6,
-    left: 12,
-    right: 12,
-    bottom: 8,
-    minHeight: 34,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  commandDeckHudCell: {
+  commandDeckCopy: {
     flex: 1,
     minWidth: 0,
   },
-  commandDeckHudLabel: {
-    fontSize: 8.5,
-    letterSpacing: 0.5,
+  commandDeckKicker: {
+    fontSize: 9,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
   },
-  commandDeckHudValue: {
-    fontSize: 12,
-    marginTop: 1,
+  commandDeckSpeech: {
+    fontSize: 12.5,
+    lineHeight: 17,
+    marginTop: 3,
+  },
+  commandDeckStatusPill: {
+    marginTop: 8,
+  },
+  commandDeckScene: {
+    width: 92,
+    height: 84,
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingBottom: 2,
+  },
+  commandDeckSceneImage: {
+    borderRadius: 14,
+  },
+  commandDeckStats: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  commandDeckStatChip: {
+    flex: 1,
+    minWidth: 0,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 3,
+  },
+  commandDeckStatLabel: {
+    fontSize: 9,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+  },
+  commandDeckStatValue: {
+    fontSize: 15,
+    lineHeight: 19,
   },
   commandDeckSignalRow: {
     minHeight: 15,
@@ -2073,8 +2266,8 @@ const s = StyleSheet.create({
     minWidth: 0,
   },
   scheduleEyebrow: {
-    fontSize: 10,
-    letterSpacing: 0.65,
+    fontSize: 9,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
   },
   scheduleHeaderTitle: {
@@ -2105,8 +2298,8 @@ const s = StyleSheet.create({
     marginBottom: 2,
   },
   scheduleBandText: {
-    fontSize: 11,
-    letterSpacing: 1.4,
+    fontSize: 9,
+    letterSpacing: 1.1,
   },
   scheduleBandRule: {
     flex: 1,
@@ -2160,9 +2353,9 @@ const s = StyleSheet.create({
     gap: 4,
     marginTop: 1,
   },
-  scheduleIconBadge: {
-    width: 44,
-    height: 44,
+  scheduleIconChip: {
+    width: 36,
+    height: 36,
     borderRadius: 999,
     borderWidth: 1,
     alignItems: "center",
@@ -2191,6 +2384,117 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   scheduleAddButton: { marginTop: 12 },
+
+  weeklyGoalPanel: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 13,
+    marginBottom: 6,
+  },
+  weeklyGoalTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+  weeklyGoalCopy: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  weeklyGoalKicker: {
+    fontSize: 9,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+  },
+  weeklyGoalValue: {
+    fontSize: 20,
+    lineHeight: 25,
+    marginTop: 2,
+  },
+  weeklyStreakChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  weeklyStreakText: {
+    fontSize: 11,
+    letterSpacing: 0.2,
+  },
+  weeklyGoalBar: {
+    marginTop: 10,
+  },
+  weeklyGoalHint: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 7,
+  },
+  weekPlanList: {
+    marginTop: 2,
+  },
+  weekPlanRow: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+  },
+  weekPlanCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  weekPlanTitleLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  weekPlanTitle: {
+    flexShrink: 1,
+    minWidth: 0,
+    fontSize: 13.5,
+  },
+  weekPlanMeta: {
+    flexShrink: 0,
+    fontSize: 10.5,
+  },
+  weekDotRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    marginTop: 7,
+  },
+  weekDotRing: {
+    borderWidth: 1.5,
+    borderRadius: 999,
+    padding: 1,
+  },
+  weekDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  weekDotText: {
+    fontSize: 8.5,
+    lineHeight: 11,
+  },
+  weekPlanEmpty: {
+    borderRadius: 14,
+    padding: 20,
+    alignItems: "center",
+    gap: 10,
+  },
+  weekPlanEmptyText: {
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 19,
+  },
 
   plansBoardCard: { marginTop: 14 },
   routineHeaderAccessory: { flexDirection: "row", alignItems: "center", gap: 10 },

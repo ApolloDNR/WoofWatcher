@@ -1,9 +1,16 @@
 # WoofWatcher Agent Operating Notes
 
+> **PICKING THIS UP FRESH? START HERE:** `docs/handoff/HANDOFF_2026-07-12.md`
+> is the current state-of-the-app brief (mockup-parity work on branch
+> `claude/mockup-parity-polish`, 693/693 tests green, Node 24 required). Read it
+> before anything else, then the vision doc below. A paste-ready kickoff prompt
+> for a new assistant is at `docs/handoff/NEXT_AGENT_PROMPT.md`.
+
 ## Source Of Truth Order
 
 When working in this repo, use this order:
 
+0. `docs/handoff/HANDOFF_2026-07-12.md` (latest handoff — current state)
 1. `AGENTS.md`
 2. `docs/V1_COMPLETION_AUDIT.md`
 3. `docs/V1_PLAN.md`

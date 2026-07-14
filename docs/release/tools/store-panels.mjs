@@ -14,7 +14,7 @@ const PANELS = [
   ["02-fastlog", "Log care", "in two taps."],
   ["03-plan", "Routines the whole", "pack can follow."],
   ["04-story", "Real care becomes", "a living story."],
-  ["05-pack", "Everyone who", "shares the care."],
+  ["05-pack", "Keep the whole", "pack stocked."],
   ["06-health", "Gentle watch on", "health patterns."],
 ];
 
@@ -50,19 +50,26 @@ for (const [name, line1, line2] of PANELS) {
 }
 
 // Play feature graphic 1024x500: forest field, icon art left, wordmark right.
+// Text is width-constrained with textLength so the wordmark and tagline can
+// never overflow the 1024px canvas (icon occupies x:52..412, text lives in the
+// remaining ~572px column with a safe right margin).
 const icon = await sharp("/home/user/WoofWatcher/artifacts/woofwatcher-mobile/assets/images/app-icon.png")
-  .resize(380, 380).png().toBuffer();
-const iconMask = Buffer.from(`<svg width="380" height="380"><rect width="380" height="380" rx="76"/></svg>`);
+  .resize(360, 360).png().toBuffer();
+const iconMask = Buffer.from(`<svg width="360" height="360"><rect width="360" height="360" rx="72"/></svg>`);
 const iconRounded = await sharp(icon).composite([{ input: iconMask, blend: "dest-in" }]).png().toBuffer();
+// Font sizes are chosen so each line's natural width clears the 1024px canvas
+// (the SVG renderer here ignores textLength, so we size to fit instead of
+// stretching). Text column starts at x=440, right of the 360px icon.
+const TX = 440;
 const fg = Buffer.from(`<svg width="1024" height="500">
   <rect width="1024" height="500" fill="#2E5B3C"/>
   <rect width="1024" height="500" fill="#26221C" opacity="0.12"/>
-  <text x="470" y="215" font-family="DejaVu Serif" font-weight="bold" font-size="86" fill="#F9F4E4">WoofWatcher</text>
-  <text x="472" y="295" font-family="DejaVu Sans" font-size="40" fill="#F6EAD1">Your dog's day, brought to life.</text>
-  <text x="472" y="360" font-family="DejaVu Sans" font-size="32" fill="#C9DFC0">Real care. Pixel heart.</text>
+  <text x="${TX}" y="205" font-family="DejaVu Serif" font-weight="bold" font-size="70" fill="#F9F4E4">WoofWatcher</text>
+  <text x="${TX}" y="285" font-family="DejaVu Sans" font-size="33" fill="#F6EAD1">Your dog's day, brought to life.</text>
+  <text x="${TX}" y="345" font-family="DejaVu Sans" font-size="30" fill="#C9DFC0">Real care. Pixel heart.</text>
 </svg>`);
 await sharp(fg)
-  .composite([{ input: iconRounded, left: 56, top: 60 }])
+  .composite([{ input: iconRounded, left: 52, top: 70 }])
   .png({ palette: true, quality: 95 })
   .toFile(`${OUT_FEATURE}/play-feature-graphic.png`);
 console.log("feature graphic done");

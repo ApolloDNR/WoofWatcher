@@ -10,6 +10,24 @@ The v1 listing must NOT claim: cloud sync, backups, accounts/sign-in, push notif
 
 WoofWatcher
 
+## Store URLs and required links
+
+Both stores require a publicly reachable Privacy Policy URL before submission. WoofWatcher's policy and terms are hosted on one page with in-page anchors, so the same base URL satisfies every field:
+
+- **Privacy Policy URL** (App Store Connect · Play Data safety): `https://claude.ai/code/artifact/623bc970-911f-4a50-952e-709f33e348f9#privacy`
+- **Terms of Service URL** (App Store "License Agreement" / EULA link, optional): `https://claude.ai/code/artifact/623bc970-911f-4a50-952e-709f33e348f9#terms`
+- Base page (both, no anchor): `https://claude.ai/code/artifact/623bc970-911f-4a50-952e-709f33e348f9`
+
+The page content is transcribed verbatim from `docs/legal/PRIVACY_POLICY.md` and `docs/legal/TERMS_OF_SERVICE.md` (Pegasus Dreamscapes, effective 2026-07-09, v1.0).
+
+Before pasting these into the store forms:
+1. The hosted page is private by default — open it and use the page's **Share** menu to make it public, or the store reviewer's crawler will 404.
+2. Optional but recommended for a polished listing: republish this same content on your own domain (e.g. `pegasusdreamscapes.com/woofwatcher/privacy`) and swap the URLs above. The claude.ai link is a valid, functional interim host.
+
+Still needed from the publisher (not fabricated here):
+- **Support URL or email** (Apple requires one of the two; Play requires an email). Provide a real contact you monitor — do not reuse the privacy page.
+- **Marketing URL** (optional on both stores; leave blank if there is no product site).
+
 ## iOS subtitle (30 characters max)
 
 Real care. Pixel heart.
@@ -108,7 +126,7 @@ Capture the same five screens per device class, in this order (matches the app's
 1. Today — full-screen living room with the pixel dog, level strip, and care status (the hero shot).
 2. Plan — routines/calendar view showing the day's care schedule.
 3. Log — Quick Log with meal/potty flows (mid-log state, showing how fast entry is).
-4. Pack — household/pack view (caregivers on the same page).
+4. Pack — Supplies checklist (Essentials + Travel bag), showing the household keeps the dog stocked. (The People/caregivers tab is intentionally empty in the sample data, so Supplies is the richer hero for this slot.)
 5. Story — memories, streaks, and achievements.
 
 Optional 6th: Records/Care Pass (the shareable care summary), which supports the "serious enough for a vet" positioning.

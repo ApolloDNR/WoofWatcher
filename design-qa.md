@@ -90,3 +90,155 @@ Date: 2026-07-06
 - Level thresholds and title ladder are a first tuning pass; Apollo may want different pacing before launch.
 - Native haptics/celebration timing needs on-device QA.
 - Adventure map, career stats board, and shareable Care Pass QR from the vision board remain future slices.
+
+# Design QA - Mockup Parity Sweep (Apollo's July Boards)
+
+Date: 2026-07-12
+
+## Scope
+
+- Visual source: Apollo's three July 2026 mock boards (uploaded this session),
+  now canonical in APOLLO_MASTER_VISION_PROMPT.md.
+- Foundation: lighter parchment palette (#F7F1E1 page / #FDF9EE card), deep
+  forest #33582F primary, Care Sense meter tones, 7-pip meters, quiet sage
+  kickers, edge-to-edge compact web preview (navy letterbox removed).
+- New shared motion kit (components/motion/GameFeel.tsx): PressScale squish,
+  staggered BoardCard entrances, MeterPip pop-fills, paw-FAB bounce,
+  ProgressFill - one spring language everywhere, reduced-motion aware.
+- Home: mood card + recency chips + duplicate status-tile grid folded into
+  the mock-board Care Sense card (mood/energy/hunger/alone, all real);
+  Quick Log is a card with Meal/Potty/Walk/Meds + real More tile; Care
+  Status slimmed to Bond meter + diet door.
+- Log + fastlog: parchment consoles, segmented option chips, forest save
+  pills, red-text delete, light Add Log sheet.
+- Plan: light command deck, mock-board timeline rows, Week tab = This
+  Week's Plan with real M-S day dots + weekly goal + streak.
+- Health: Next Reminder / Health Summary (honest "Not on file" states) /
+  Medications; Records: light stat chips.
+- Pack: new Supplies segment (Essentials + Travel bag) - user-set statuses
+  only, no fake countdowns, AsyncStorage persistence, 12-test pure lib.
+- Story: month-grouped Memories grid, honest journal cards (hearts omitted -
+  no real reaction model exists); More: parchment launch hub; Avatar
+  Studio: forest segments.
+
+## Checks Run
+
+- Focused behavior/readiness suite: 693 tests, 0 failures (Node 24).
+- Mobile TypeScript: clean.
+- Expo web export: passed; headless Chromium screenshots of every route at
+  390x844 plus interaction flows (Week tab, Pack status cycling, meal
+  detail chips, fastlog meal -> Home meter/Next Up/Today's Story ripple).
+- Zero console/page errors across the sweep.
+
+## Remaining QA
+
+- Native iOS/Android device pass (safe areas, haptics timing, 60fps motion).
+- Dark-mode audit of the new meter tones (EXPO_PUBLIC_WEB_COLOR_SCHEME=auto).
+- Real-photo Memories grid check once photo logs exist on device.
+
+# Design QA - Standalone Board Screens (Trends / Profile / Reminders / Calendar)
+
+Date: 2026-07-12
+
+## Scope
+
+Built the four screens Apollo's July boards show as standalone but the app had
+folded into other tabs, completing the mockup screen set. Each is a Stack card
+that renders its own header, is registered in app/_layout.tsx (headerShown
+false), derives from real logged care, and has a real entry point.
+
+- app/trends.tsx (+lib/trendsChart.ts +test): Day/Week/Month/Year windows; Mood
+  line chart (react-native-svg) + Activity (walk+play+training minutes) bars +
+  Potty bars. No sleep event type exists in the data model, so it charts Potty
+  in the mockup's third-chart slot instead of fabricating sleep. Honest
+  per-chart empty states; This Week summary from deriveCareTrends. Entry: the
+  "Trends" link on the Home Care Sense card.
+- app/profile.tsx: full-bleed park hero + gold-ringed avatar; Details table
+  from real profile fields. Birthday and Sex have NO field in the data model,
+  so they render honest "Not tracked yet / Not on file" rather than invented
+  values. About card from profile.background; edit routes to setup/portrait.
+  Entry: the Home header dog chip.
+- app/reminders.tsx: Upcoming/Past; items from deriveCareReminderCenter grouped
+  Today/Tomorrow/Later by real daysUntil (dateless routine/med items -> Today,
+  others -> "No date"); honest Past empty state; honest notification-readiness
+  line (does not claim push is enabled). New Reminder -> Plan. Entry: Home bell.
+- app/calendar-month.tsx (+lib/monthCalendar.ts +test): real month grid with
+  day dots from real entries/routines; selected-day timeline with colored type
+  spines; row -> log detail; FAB -> fastlog. Entry: "Month view" under Plan.
+
+Entry-point rewiring (Home dog chip -> profile, bell -> reminders, Care Sense
+-> trends) required updating the mobileReadiness navigation contracts to the new
+truth.
+
+## Checks Run
+
+- Focused behavior/readiness suite: 711 tests, 0 failures (Node 24) - includes
+  18 new pure-lib tests (trendsChart 9, monthCalendar 9).
+- Mobile TypeScript: clean.
+- Expo web export: passed. Headless Chromium screenshots at 390x844 of all four
+  new screens plus the changed Home and Plan; zero console/page errors. On a
+  fresh/empty account the charts, timeline, and reminder groups correctly show
+  honest empty states.
+
+## Remaining QA
+
+- Native iOS/Android device pass (safe areas, 60fps motion, haptics).
+- Re-check the four screens on a device with a populated account (real charts,
+  day dots, reminder grouping).
+- Widgets + Apple Watch faces (native-only) remain future work.
+
+# Design QA - Dark-Mode Audit (meter tones + fixed-light docks)
+
+Date: 2026-07-14
+
+## Scope
+
+Closed the "dark-mode audit of the new meter tones" item the prior passes left
+open (handoff §4-B). The Care Sense meter tones and the restyled screens
+shipped a dark theme that had never actually been looked at. Method: Expo web
+export built with EXPO_PUBLIC_WEB_COLOR_SCHEME=auto, then a headless Chromium
+sweep of 16 routes at 390x844 with prefers-color-scheme: dark emulated (Home,
+Log, Plan, Health, Records, Pack, Story, More, fastlog, portrait, Trends,
+Profile, Reminders, month Calendar, Adventure, WoofGuide), each shot top and
+scrolled, plus a high-DPI light-vs-dark capture of the Care Sense card.
+
+## Findings and fixes
+
+- Care Sense empty pip track was near-invisible in dark. StatusMeter drew empty
+  pips with `colors.muted` (#102C40), which sits ~1.16:1 against the dark card
+  (#0D182A), so the seven chunky pips collapsed into a plain colored bar and the
+  Hunger row (all empty) barely read. Added a dedicated `meterTrack` token:
+  dark #223A52 (lifted well above the card so the segmented track reads), light
+  #EDE5CF (identical to the old value, so light mode is unchanged). StatusMeter
+  now uses `colors.meterTrack`.
+- Records credential HUD and Log command HUD stat chips flipped dark on their
+  fixed-light cream docks. Both sit on a deliberately theme-independent cream
+  "physical card / console" surface (`colors.ivory`), but their inner stat chips
+  used `colors.background` for the fill and `colors.ink`/`colors.foreground` for
+  the value - all of which flip with the theme - so in dark mode the chips
+  rendered as dark navy tiles floating on cream (the code comments call for
+  "light parchment stat chips"). Pinned the chip fill to `colors.cream` and the
+  value ink to `colors.brandNavy` (both constant-light / constant-dark), so the
+  chips stay light parchment with dark ink in both themes. Light mode is
+  unchanged (light `cream` == light `background`; `brandNavy` ~= `ink`).
+- All other 13 screens and the other fixed-light surfaces (WoofGuide boundary
+  card, auth/setup stage HUD + proof manifest) already used constant inks
+  (`brandNavy`, `copper`, `BUBBLE_INK`) on their cream surfaces and rendered
+  correctly in dark; no change needed.
+
+## Checks Run
+
+- Mobile + workspace TypeScript: clean.
+- Focused behavior/readiness suite: 710/711. The one failure is the mobile beta
+  doctor test that asserts a Node-24 runtime; this environment is Node 22, so it
+  is an environment artifact, not a regression (same failure before and after).
+- Expo web export: passed (262 files).
+- Dark sweep: 16 routes, 0 console/page errors; both fixes confirmed against the
+  boards. Light-mode regression check (Records, Log, Home) confirmed unchanged.
+
+## Remaining QA
+
+- Native iOS/Android device pass in dark mode (safe areas, 60fps motion,
+  haptics) - device-only, still owed.
+- Re-check the dark meters and docks on a device with a populated account.
+- Widgets + Apple Watch faces (native-only) remain future work.

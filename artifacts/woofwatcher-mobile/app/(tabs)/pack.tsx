@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
@@ -10,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import Animated, {
@@ -41,17 +43,30 @@ import {
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { BoardMedallion, type MedallionName } from "@/components/BoardMedallion";
 import { PersonPortrait } from "@/components/PersonPortrait";
+import { PressScale } from "@/components/motion/GameFeel";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
-import { notifyDialog } from "@/lib/confirmDialog";
+import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { deriveCareCareer, deriveCareStreak } from "@/lib/careCareer";
 import {
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
   MIN_MOBILE_TOUCH_TARGET,
 } from "@/lib/mobileLayout";
+import {
+  addItem,
+  cycleStatus,
+  isDefaultUntouched,
+  parseSupplies,
+  removeItem,
+  renameItem,
+  serializeSupplies,
+  type SupplyGroup,
+  type SupplyItem,
+  type SupplyStatus,
+} from "@/lib/packSupplies";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { resolvePetName } from "@/lib/petIdentity";
 import { relativeTime } from "@/lib/time";
@@ -67,14 +82,201 @@ type HouseholdMemberSummary = {
   role?: string | null;
 };
 
-type PackSegment = "pets" | "people" | "access" | "carepass";
+type PackSegment = "supplies" | "pets" | "people" | "access" | "carepass";
 
 const PACK_SEGMENTS: readonly { key: PackSegment; label: string }[] = [
+  { key: "supplies", label: "Supplies" },
   { key: "pets", label: "Pets" },
   { key: "people", label: "People" },
   { key: "access", label: "Access" },
   { key: "carepass", label: "Care Pass" },
 ];
+
+// Device-local supplies checklist (the mockup Pack page's Essentials and
+// Travel Bag boards). Keeps the "woofwatcher" key prefix so the privacy
+// erase-all-data flow removes it with every other WoofWatcher key.
+const PACK_SUPPLIES_KEY = "woofwatcher.packSupplies.v1";
+
+/** Mockup icon language for the starter items; custom items stay neutral. */
+const SUPPLY_ICONS: Record<string, PixelIconName> = {
+  "essentials-food": "meal",
+  "essentials-treats": "treat",
+  "essentials-medications": "medication",
+  "essentials-poop-bags": "poo",
+  "essentials-toys": "play",
+  "travel-harness": "bond",
+  "travel-leash": "walk",
+  "travel-portable-bowl": "meal",
+};
+
+function supplyIcon(item: SupplyItem): PixelIconName {
+  return SUPPLY_ICONS[item.id] ?? "note";
+}
+
+const SUPPLY_GROUP_TITLES: Record<SupplyGroup, string> = {
+  essentials: "Essentials",
+  travel: "Travel bag",
+};
+
+/**
+ * Supplies status pill. BoardStatusPill (read-only primitive) has no rose
+ * tone and no icon slot, so this clones its exact geometry and typography
+ * and adds the two supply-specific looks: rose "Out" and the checkmarked
+ * sage "Packed". Every word is the owner's own answer - no predictions.
+ */
+function SupplyStatusPill({ status }: { status: SupplyStatus }) {
+  const colors = useColors();
+  const look: Record<SupplyStatus, { label: string; bg: string; fg: string; icon?: IoniconName }> = {
+    plenty: { label: "Plenty", bg: colors.sageSoft, fg: colors.forest },
+    low: { label: "Low", bg: colors.amberSoft, fg: colors.amber },
+    out: { label: "Out", bg: colors.rose + "1C", fg: colors.rose },
+    packed: { label: "Packed", bg: colors.sageSoft, fg: colors.forest, icon: "checkmark" },
+    unpacked: { label: "Unpacked", bg: colors.muted, fg: colors.mutedForeground },
+  };
+  const swatch = look[status];
+  return (
+    <View style={[s.supplyPill, { backgroundColor: swatch.bg }]}>
+      {swatch.icon ? <Ionicons name={swatch.icon} size={11} color={swatch.fg} /> : null}
+      <Text style={[s.supplyPillText, { color: swatch.fg, fontFamily: "Inter_700Bold" }]}>
+        {swatch.label}
+      </Text>
+    </View>
+  );
+}
+
+/**
+ * One checklist row: pixel icon chip, ink name, user-set status pill, and -
+ * only once the owner has actually answered - an honest "Updated ..." line.
+ * Tap cycles the status (springy PressScale with its built-in haptic);
+ * long-press opens the inline rename/remove editor.
+ */
+function SupplyRow({
+  item,
+  now,
+  onCycle,
+  onEdit,
+  last,
+}: {
+  item: SupplyItem;
+  now: number;
+  onCycle: (item: SupplyItem) => void;
+  onEdit: (item: SupplyItem) => void;
+  last?: boolean;
+}) {
+  const colors = useColors();
+  const rel = item.updatedAt ? relativeTime(item.updatedAt, now) : null;
+  const updatedLabel = rel ? (rel === "Just now" ? "Updated just now" : `Updated ${rel}`) : null;
+  return (
+    <PressScale
+      accessibilityRole="button"
+      accessibilityLabel={`${item.name}: ${item.status}${updatedLabel ? `. ${updatedLabel}` : ""}`}
+      accessibilityHint="Tap to cycle the status. Long press to rename or remove."
+      onPress={() => onCycle(item)}
+      onLongPress={() => onEdit(item)}
+      delayLongPress={350}
+      scaleTo={0.97}
+      style={[s.supplyRow, !last && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+    >
+      <View style={[s.linkChip, { backgroundColor: colors.secondary }]}>
+        <PixelIcon name={supplyIcon(item)} size={20} />
+      </View>
+      <View style={s.linkCopy}>
+        <Text
+          numberOfLines={1}
+          style={[s.supplyName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+        >
+          {item.name}
+        </Text>
+        {updatedLabel ? (
+          <Text
+            numberOfLines={1}
+            style={[s.supplyUpdated, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+          >
+            {updatedLabel}
+          </Text>
+        ) : null}
+      </View>
+      <SupplyStatusPill status={item.status} />
+    </PressScale>
+  );
+}
+
+/**
+ * Inline rename/remove editor, opened by long-pressing a row. confirmDialog
+ * has no text-prompt utility (Alert has no cross-platform input), so rename
+ * happens on this cream in-card editor; remove still confirms through the
+ * themed destructive dialog.
+ */
+function SupplyEditCard({
+  item,
+  name,
+  onChangeName,
+  onSave,
+  onRemove,
+  onCancel,
+}: {
+  item: SupplyItem;
+  name: string;
+  onChangeName: (value: string) => void;
+  onSave: () => void;
+  onRemove: () => void;
+  onCancel: () => void;
+}) {
+  const colors = useColors();
+  return (
+    <View style={[s.supplyEditCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+      <TextInput
+        value={name}
+        onChangeText={onChangeName}
+        placeholder="Item name"
+        placeholderTextColor={colors.mutedForeground}
+        autoFocus
+        maxLength={40}
+        returnKeyType="done"
+        onSubmitEditing={onSave}
+        accessibilityLabel={`Rename ${item.name}`}
+        style={[
+          s.supplyInput,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            color: colors.foreground,
+            fontFamily: "Inter_600SemiBold",
+          },
+        ]}
+      />
+      <View style={s.supplyEditActions}>
+        <BoardActionButton
+          label="Save"
+          variant="primary"
+          compact
+          onPress={onSave}
+          accessibilityLabel={`Save the new name for ${item.name}`}
+        />
+        <BoardActionButton
+          label="Cancel"
+          variant="soft"
+          compact
+          onPress={onCancel}
+          accessibilityLabel="Cancel editing this item"
+        />
+        <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={`Remove ${item.name} from the ${SUPPLY_GROUP_TITLES[item.group]} checklist`}
+          onPress={onRemove}
+          scaleTo={0.95}
+          containerStyle={s.supplyRemoveLayout}
+          style={[s.supplyRemoveButton, { backgroundColor: colors.rose + "14" }]}
+        >
+          <Ionicons name="trash-outline" size={14} color={colors.rose} />
+          <Text style={[s.supplyRemoveText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>
+            Remove
+          </Text>
+        </PressScale>
+      </View>
+    </View>
+  );
+}
 
 /** Storybook-mockup link row: soft round icon chip, bold title, chevron. */
 function PackLinkRow({
@@ -224,7 +426,31 @@ export default function PackScreen() {
   const { avatarConfig, getAvatarSource } = useAvatar();
   const me = useGetMe();
   const now = Date.now();
-  const [segment, setSegment] = useState<PackSegment>("pets");
+  const [segment, setSegment] = useState<PackSegment>("supplies");
+
+  // Supplies checklist: null until the stored list loads, so the starter
+  // defaults never flash in over a user's saved answers (same pattern as
+  // HOME_WELCOME_DISMISSED_KEY on Home).
+  const [supplies, setSupplies] = useState<SupplyItem[] | null>(null);
+  const [editingSupplyId, setEditingSupplyId] = useState<string | null>(null);
+  const [editSupplyName, setEditSupplyName] = useState("");
+  const [addSupplyOpen, setAddSupplyOpen] = useState(false);
+  const [addSupplyName, setAddSupplyName] = useState("");
+  const [addSupplyGroup, setAddSupplyGroup] = useState<SupplyGroup>("essentials");
+
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(PACK_SUPPLIES_KEY)
+      .then((raw) => {
+        if (!cancelled) setSupplies(parseSupplies(raw));
+      })
+      .catch(() => {
+        if (!cancelled) setSupplies(parseSupplies(null));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const household = me.data?.household;
   const members: HouseholdMemberSummary[] = me.data?.members ?? [];
@@ -344,6 +570,123 @@ export default function PackScreen() {
     setSegment(key);
   };
 
+  const essentialSupplies = useMemo(
+    () => (supplies ?? []).filter((item) => item.group === "essentials"),
+    [supplies],
+  );
+  const travelSupplies = useMemo(
+    () => (supplies ?? []).filter((item) => item.group === "travel"),
+    [supplies],
+  );
+  const restockCount = essentialSupplies.filter(
+    (item) => item.status === "low" || item.status === "out",
+  ).length;
+  const packedCount = travelSupplies.filter((item) => item.status === "packed").length;
+  const suppliesUntouched = supplies ? isDefaultUntouched(supplies) : false;
+
+  /** Save on every change, fire-and-forget like the Home welcome flag. */
+  const commitSupplies = (next: SupplyItem[]) => {
+    setSupplies(next);
+    AsyncStorage.setItem(PACK_SUPPLIES_KEY, serializeSupplies(next)).catch(() => {});
+  };
+
+  const cycleSupply = (item: SupplyItem) => {
+    if (!supplies) return;
+    const stampedAt = new Date().toISOString();
+    commitSupplies(
+      supplies.map((entry) =>
+        entry.id === item.id
+          ? { ...entry, status: cycleStatus(entry), updatedAt: stampedAt }
+          : entry,
+      ),
+    );
+  };
+
+  const openSupplyEditor = (item: SupplyItem) => {
+    Haptics.selectionAsync();
+    setAddSupplyOpen(false);
+    setEditingSupplyId(item.id);
+    setEditSupplyName(item.name);
+  };
+
+  const closeSupplyEditor = () => {
+    setEditingSupplyId(null);
+    setEditSupplyName("");
+  };
+
+  const saveSupplyRename = () => {
+    if (!supplies || !editingSupplyId) return;
+    const trimmed = editSupplyName.trim();
+    if (!trimmed) {
+      notifyDialog("Name needed", "Give this item a short name, or cancel the edit.");
+      return;
+    }
+    const next = renameItem(supplies, editingSupplyId, editSupplyName);
+    if (!next) {
+      notifyDialog(
+        "Already on the list",
+        `"${trimmed}" is already in this group. Pick a different name.`,
+      );
+      return;
+    }
+    commitSupplies(next);
+    closeSupplyEditor();
+  };
+
+  const removeSupply = (item: SupplyItem) => {
+    confirmThroughSteps(
+      [
+        {
+          title: `Remove ${item.name}?`,
+          message: `This takes ${item.name} off the ${SUPPLY_GROUP_TITLES[item.group]} checklist. You can add it back any time.`,
+          confirmLabel: "Remove",
+          destructive: true,
+        },
+      ],
+      () => {
+        // Functional update: the themed dialog resolves later, so never
+        // trust the list captured at press time.
+        setSupplies((current) => {
+          if (!current) return current;
+          const next = removeItem(current, item.id);
+          AsyncStorage.setItem(PACK_SUPPLIES_KEY, serializeSupplies(next)).catch(() => {});
+          return next;
+        });
+        closeSupplyEditor();
+      },
+    );
+  };
+
+  const openAddSupply = () => {
+    closeSupplyEditor();
+    setAddSupplyOpen(true);
+  };
+
+  const cancelAddSupply = () => {
+    setAddSupplyOpen(false);
+    setAddSupplyName("");
+  };
+
+  const saveSupplyAdd = () => {
+    if (!supplies) return;
+    const trimmed = addSupplyName.trim();
+    if (!trimmed) {
+      notifyDialog("Name needed", "Give the new item a short name, like Water bottle or Towel.");
+      return;
+    }
+    const next = addItem(supplies, addSupplyName, addSupplyGroup);
+    if (!next) {
+      notifyDialog(
+        "Already on the list",
+        `"${trimmed}" is already in ${SUPPLY_GROUP_TITLES[addSupplyGroup]}. Rename that item instead of doubling it.`,
+      );
+      return;
+    }
+    commitSupplies(next);
+    setAddSupplyName("");
+    setAddSupplyOpen(false);
+  };
+
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -358,11 +701,12 @@ export default function PackScreen() {
           paddingHorizontal: 16,
         }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <BoardRouteHeader
           kicker="Household"
           title="Pack"
-          subtitle="Pets & people who share the care."
+          subtitle="Supplies, pets & people who share the care."
           icon="people-outline"
           actionIcon="key-outline"
           actionLabel="Manage household from Pack"
@@ -371,7 +715,241 @@ export default function PackScreen() {
           style={s.routeHeaderCompact}
         />
 
-        <BoardSegmentTabs segments={PACK_SEGMENTS} active={segment} onChange={changeSegment} style={s.segmentTabs} />
+        {/* Five segments outgrow one 390pt row, so the chips scroll sideways
+            at natural width instead of squeezing their labels into ellipses. */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={s.segmentScroll}
+          contentContainerStyle={s.segmentScrollContent}
+        >
+          <BoardSegmentTabs
+            segments={PACK_SEGMENTS}
+            active={segment}
+            onChange={changeSegment}
+            style={s.segmentTabsInline}
+          />
+        </ScrollView>
+
+        {/* Supplies - the mockup Pack page's Essentials / Travel Bag boards.
+            Every status is the owner's own answer; untouched defaults say so
+            instead of pretending someone already checked the shelf. */}
+        {segment === "supplies" && supplies ? (
+          <>
+            <BoardCard style={s.sectionCard} enter={0}>
+              <BoardSectionHeader
+                title="Essentials"
+                accessory={
+                  <BoardPill
+                    label={
+                      essentialSupplies.length === 0
+                        ? "Empty"
+                        : suppliesUntouched
+                          ? "Starter list"
+                          : restockCount > 0
+                            ? `${restockCount} to restock`
+                            : "All plenty"
+                    }
+                    tone={
+                      essentialSupplies.length === 0 || suppliesUntouched
+                        ? colors.mutedForeground
+                        : restockCount > 0
+                          ? colors.amber
+                          : colors.sage
+                    }
+                  />
+                }
+              />
+              {suppliesUntouched ? (
+                <Text style={[s.suppliesHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Starter checklist - the statuses are yours to set. Tap a row to
+                  update it, long-press to rename or remove.
+                </Text>
+              ) : null}
+              {essentialSupplies.length === 0 ? (
+                <Text style={[s.emptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Nothing tracked here yet. Add an item below.
+                </Text>
+              ) : (
+                essentialSupplies.map((item, index) =>
+                  editingSupplyId === item.id ? (
+                    <SupplyEditCard
+                      key={item.id}
+                      item={item}
+                      name={editSupplyName}
+                      onChangeName={setEditSupplyName}
+                      onSave={saveSupplyRename}
+                      onRemove={() => removeSupply(item)}
+                      onCancel={closeSupplyEditor}
+                    />
+                  ) : (
+                    <SupplyRow
+                      key={item.id}
+                      item={item}
+                      now={now}
+                      onCycle={cycleSupply}
+                      onEdit={openSupplyEditor}
+                      last={index === essentialSupplies.length - 1}
+                    />
+                  ),
+                )
+              )}
+            </BoardCard>
+
+            <BoardCard style={s.sectionCard} enter={1}>
+              <BoardSectionHeader
+                title="Travel bag"
+                accessory={
+                  <BoardPill
+                    label={
+                      travelSupplies.length === 0
+                        ? "Empty"
+                        : `${packedCount}/${travelSupplies.length} packed`
+                    }
+                    icon={
+                      travelSupplies.length > 0 && packedCount === travelSupplies.length
+                        ? "checkmark"
+                        : undefined
+                    }
+                    tone={
+                      travelSupplies.length > 0 && packedCount === travelSupplies.length
+                        ? colors.sage
+                        : colors.mutedForeground
+                    }
+                  />
+                }
+              />
+              {travelSupplies.length === 0 ? (
+                <Text style={[s.emptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                  Nothing tracked here yet. Add an item below.
+                </Text>
+              ) : (
+                travelSupplies.map((item, index) =>
+                  editingSupplyId === item.id ? (
+                    <SupplyEditCard
+                      key={item.id}
+                      item={item}
+                      name={editSupplyName}
+                      onChangeName={setEditSupplyName}
+                      onSave={saveSupplyRename}
+                      onRemove={() => removeSupply(item)}
+                      onCancel={closeSupplyEditor}
+                    />
+                  ) : (
+                    <SupplyRow
+                      key={item.id}
+                      item={item}
+                      now={now}
+                      onCycle={cycleSupply}
+                      onEdit={openSupplyEditor}
+                      last={index === travelSupplies.length - 1}
+                    />
+                  ),
+                )
+              )}
+            </BoardCard>
+
+            {addSupplyOpen ? (
+              /* Inline add flow: confirmDialog has no prompt-style utility,
+                 so the mockup's "+ Add Item" opens this cream card instead
+                 of a dead button. */
+              <BoardCard style={s.sectionCard} enter={2}>
+                <BoardSectionHeader title="Add item" />
+                <View style={s.addGroupRow}>
+                  {(
+                    [
+                      { key: "essentials", label: "Essentials" },
+                      { key: "travel", label: "Travel bag" },
+                    ] as const
+                  ).map((option) => {
+                    const active = addSupplyGroup === option.key;
+                    return (
+                      <Pressable
+                        key={option.key}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Add to ${option.label}`}
+                        accessibilityState={{ selected: active }}
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          setAddSupplyGroup(option.key);
+                        }}
+                        style={({ pressed }) => [
+                          s.addGroupChip,
+                          {
+                            backgroundColor: active
+                              ? colors.primary
+                              : pressed
+                                ? colors.secondary
+                                : colors.card,
+                            borderColor: active ? colors.primary : colors.border,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.addGroupChipText,
+                            {
+                              color: active ? colors.primaryForeground : colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <TextInput
+                  value={addSupplyName}
+                  onChangeText={setAddSupplyName}
+                  placeholder="Item name (Water bottle, Towel...)"
+                  placeholderTextColor={colors.mutedForeground}
+                  autoFocus
+                  maxLength={40}
+                  returnKeyType="done"
+                  onSubmitEditing={saveSupplyAdd}
+                  accessibilityLabel={`Name for the new ${SUPPLY_GROUP_TITLES[addSupplyGroup]} item`}
+                  style={[
+                    s.supplyInput,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      color: colors.foreground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                />
+                <View style={s.supplyEditActions}>
+                  <BoardActionButton
+                    label="Add to list"
+                    icon="add"
+                    variant="primary"
+                    compact
+                    onPress={saveSupplyAdd}
+                    accessibilityLabel={`Add the new item to ${SUPPLY_GROUP_TITLES[addSupplyGroup]}`}
+                  />
+                  <BoardActionButton
+                    label="Cancel"
+                    variant="soft"
+                    compact
+                    onPress={cancelAddSupply}
+                    accessibilityLabel="Cancel adding an item"
+                  />
+                </View>
+              </BoardCard>
+            ) : (
+              <BoardActionButton
+                label="Add item"
+                icon="add"
+                variant="soft"
+                onPress={openAddSupply}
+                accessibilityLabel="Add an item to the supplies checklist"
+                style={s.addSupplyButton}
+              />
+            )}
+          </>
+        ) : null}
 
         {/* Pets */}
         {segment === "pets" ? (
@@ -937,8 +1515,8 @@ export default function PackScreen() {
                  summary, straight from the report artifact. */
               <View style={[s.lastPassCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <View style={s.lastPassHead}>
-                  <Text style={[s.lastPassKicker, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
-                    LAST BUILT
+                  <Text style={[s.lastPassKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    Last built
                   </Text>
                   <Text style={[s.lastPassFreshness, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                     {relativeTime(latestReport.createdAt, now)}
@@ -989,7 +1567,7 @@ export default function PackScreen() {
         ) : null}
 
         <View style={[s.boundaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[s.boundaryLabel, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>CARE BOUNDARY</Text>
+          <Text style={[s.boundaryLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Care boundary</Text>
           <Text style={[s.boundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             {state.profile.vetBoundary}
           </Text>
@@ -1005,12 +1583,108 @@ const s = StyleSheet.create({
   routeHeaderCompact: {
     marginBottom: 10,
   },
-  segmentTabs: {
+  segmentScroll: {
+    flexGrow: 0,
     marginBottom: 2,
+  },
+  segmentScrollContent: {
+    flexGrow: 1,
+  },
+  segmentTabsInline: {
+    flex: 1,
+    marginBottom: 0,
   },
   sectionCard: { marginTop: 10 },
   segmentAction: {
     marginTop: 12,
+  },
+
+  suppliesHint: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginBottom: 4,
+  },
+  supplyRow: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 9,
+  },
+  supplyName: {
+    fontSize: 13,
+  },
+  supplyUpdated: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  supplyPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+    borderRadius: 999,
+    minHeight: 24,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  supplyPillText: {
+    fontSize: 10.5,
+    letterSpacing: 0.2,
+  },
+  supplyEditCard: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    marginVertical: 6,
+  },
+  supplyInput: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 13.5,
+  },
+  supplyEditActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 10,
+  },
+  supplyRemoveLayout: {
+    marginLeft: "auto",
+  },
+  supplyRemoveButton: {
+    minHeight: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
+  supplyRemoveText: {
+    fontSize: 12,
+  },
+  addGroupRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 10,
+  },
+  addGroupChip: {
+    minHeight: 36,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addGroupChipText: {
+    fontSize: 12.5,
+  },
+  addSupplyButton: {
+    marginTop: 10,
   },
 
   petHero: {
@@ -1339,8 +2013,9 @@ const s = StyleSheet.create({
     gap: 8,
   },
   lastPassKicker: {
-    fontSize: 10,
-    letterSpacing: 0.4,
+    fontSize: 9,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
   },
   lastPassFreshness: {
     fontSize: 11,
@@ -1361,6 +2036,6 @@ const s = StyleSheet.create({
     padding: 12,
     marginTop: 14,
   },
-  boundaryLabel: { fontSize: 10.5, letterSpacing: 0.5 },
+  boundaryLabel: { fontSize: 9, letterSpacing: 1.1, textTransform: "uppercase" },
   boundary: { fontSize: 12, lineHeight: 18, marginTop: 5 },
 });

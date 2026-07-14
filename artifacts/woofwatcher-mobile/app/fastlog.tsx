@@ -15,9 +15,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { normalizeCareEventType, type CareEventType } from "@workspace/care-domain";
 
+import { BoardCard } from "@/components/board/BoardPrimitives";
+import { PressScale } from "@/components/motion/GameFeel";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useCare, type Entry } from "@/context/CareContext";
 import { careXpForEntry } from "@/lib/careCareer";
+import { useColors } from "@/hooks/useColors";
 import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
 import {
   buildQuickLogEntry,
@@ -29,24 +32,12 @@ import { MEAL_OUTCOME_UPDATE_OPTIONS } from "@/lib/mealOutcomeUpdate";
 import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 
 /**
- * Fast-log sheet from the mock boards: a dark full-screen moment with six
- * white tiles ("What would you like to log?"), the freshest real logs with
- * green outcome checks, and one door into the full Log. The palette is a
- * constant night-forest surface in both color schemes, exactly like the
- * board art.
+ * Fast-log sheet from Apollo's FINAL mock boards: a light parchment moment
+ * with six cream tiles ("What would you like to log?"), the freshest real
+ * logs with green outcome checks inside a cream board card, and one forest
+ * pill into the full Log. Warm parchment, ink text, no dark HUD chrome -
+ * exactly like the board art.
  */
-const SHEET_BG = "#32362B";
-const SHEET_SECTION = "#2A2E24";
-const SHEET_ROW = "#3A3E32";
-const SHEET_CLOSE = "#454A3C";
-const TILE_BG = "#FBF6E7";
-const TILE_BORDER = "#E7DFC9";
-const TILE_INK = "#26221C";
-const CREAM = "#F7F1E1";
-const CREAM_MUTED = "rgba(247,241,225,0.62)";
-const CHECK_GREEN = "#5F8C5A";
-const OUTCOME_AMBER = "#D8B26A";
-const BUTTON_FOREST = "#4A6741";
 
 interface FastLogTile {
   key: string;
@@ -129,6 +120,7 @@ function outcomeLabel(entry: {
 }
 
 export default function FastLogScreen() {
+  const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { state, addEntry } = useCare();
@@ -267,12 +259,12 @@ export default function FastLogScreen() {
         s.root,
         {
           paddingTop: Math.max(insets.top, 14),
-          // Web only (progress is pinned to 1 on native): the sheet washes
-          // from the app's cream field into the night-forest surface while
-          // the content rises, instead of flipping dark in a single frame.
+          // Web only (progress is pinned to 1 on native): the sheet warms
+          // from the app's ivory field into the parchment surface while the
+          // content rises, instead of cutting in a single frame.
           backgroundColor: sheetProgress.interpolate({
             inputRange: [0, 1],
-            outputRange: ["#FFF9EF", SHEET_BG],
+            outputRange: [colors.ivory, colors.background],
           }),
         },
       ]}
@@ -305,18 +297,24 @@ export default function FastLogScreen() {
           accessibilityLabel="Close quick log"
           hitSlop={MOBILE_INLINE_HIT_SLOP}
           onPress={close}
-          style={({ pressed }) => [s.closeButton, { opacity: pressed ? 0.7 : 1 }]}
+          style={({ pressed }) => [
+            s.closeButton,
+            {
+              backgroundColor: pressed ? colors.secondary : colors.card,
+              borderColor: colors.border,
+            },
+          ]}
         >
-          <Ionicons name="close" size={20} color={CREAM} />
+          <Ionicons name="close" size={20} color={colors.foreground} />
         </Pressable>
 
-        <Text style={[s.title, { fontFamily: "Fredoka_600SemiBold" }]}>
+        <Text style={[s.title, { color: colors.foreground, fontFamily: "Fredoka_700Bold" }]}>
           What would you like{"\n"}to log?
         </Text>
 
         <View style={s.tileGrid}>
           {FAST_LOG_TILES.map((tile) => (
-            <Pressable
+            <PressScale
               key={tile.key}
               accessibilityRole="button"
               accessibilityLabel={`Log ${tile.label}`}
@@ -327,24 +325,35 @@ export default function FastLogScreen() {
               }
               onPress={() => logTile(tile)}
               onLongPress={() => openDetail(tile)}
-              style={({ pressed }) => [
+              scaleTo={0.94}
+              haptic="none"
+              containerStyle={s.tileLayout}
+              style={[
                 s.tile,
-                { transform: [{ scale: pressed ? 0.95 : 1 }] },
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  shadowColor: colors.navy,
+                },
               ]}
             >
               {justLogged === tile.key ? (
-                <View style={s.tileLoggedBadge}>
+                <View style={[s.tileLoggedBadge, { backgroundColor: colors.sage }]}>
                   <Ionicons name="checkmark" size={13} color="#FFFFFF" />
                 </View>
               ) : null}
               <PixelIcon name={tile.icon} size={34} />
-              <Text style={[s.tileLabel, { fontFamily: "Inter_600SemiBold" }]}>{tile.label}</Text>
-            </Pressable>
+              <Text style={[s.tileLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {tile.label}
+              </Text>
+            </PressScale>
           ))}
         </View>
 
-        <View style={s.recentSection}>
-          <Text style={[s.recentTitle, { fontFamily: "Inter_700Bold" }]}>Recent</Text>
+        <BoardCard style={s.recentSection}>
+          <Text style={[s.recentTitle, { color: colors.foreground, fontFamily: "Fredoka_600SemiBold" }]}>
+            Recent
+          </Text>
           {recent.length ? (
             recent.map((entry) => (
               <Pressable
@@ -354,41 +363,61 @@ export default function FastLogScreen() {
                 onPress={() =>
                   router.replace(`/log?entry=${encodeURIComponent(entry.id)}` as never)
                 }
-                style={({ pressed }) => [s.recentRow, { opacity: pressed ? 0.75 : 1 }]}
+                style={({ pressed }) => [
+                  s.recentRow,
+                  {
+                    backgroundColor: pressed ? colors.secondary : colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
               >
-                <View style={s.recentIcon}>
+                <View style={[s.recentIcon, { backgroundColor: colors.secondary }]}>
                   <PixelIcon name={tileIconFor(entry.type)} size={20} />
                 </View>
                 <View style={s.recentCopy}>
-                  <Text numberOfLines={1} style={[s.recentName, { fontFamily: "Inter_600SemiBold" }]}>
+                  <Text
+                    numberOfLines={1}
+                    style={[s.recentName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                  >
                     {entry.title.split(" - ")[0]}
                   </Text>
-                  <Text numberOfLines={1} style={[s.recentMeta, { fontFamily: "Inter_500Medium" }]}>
+                  <Text
+                    numberOfLines={1}
+                    style={[s.recentMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                  >
                     {shortTime(entry.occurredAt, Date.now())} · {entry.caregiver}
                   </Text>
                 </View>
-                <Text numberOfLines={1} style={[s.recentOutcome, { fontFamily: "Inter_600SemiBold" }]}>
+                <Text
+                  numberOfLines={1}
+                  style={[s.recentOutcome, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}
+                >
                   {outcomeLabel(entry)}
                 </Text>
-                <View style={s.recentCheck}>
+                <View style={[s.recentCheck, { backgroundColor: colors.sage }]}>
                   <Ionicons name="checkmark" size={13} color="#FFFFFF" />
                 </View>
               </Pressable>
             ))
           ) : (
-            <Text style={[s.recentEmpty, { fontFamily: "Inter_500Medium" }]}>
+            <Text style={[s.recentEmpty, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               No care logged yet. Tap a tile above and it appears here instantly.
             </Text>
           )}
-        </View>
+        </BoardCard>
 
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="View full log"
           onPress={() => router.replace("/log" as never)}
-          style={({ pressed }) => [s.fullLogButton, { opacity: pressed ? 0.85 : 1 }]}
+          style={({ pressed }) => [
+            s.fullLogButton,
+            { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
+          ]}
         >
-          <Text style={[s.fullLogText, { fontFamily: "Inter_700Bold" }]}>View Full Log</Text>
+          <Text style={[s.fullLogText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+            View Full Log
+          </Text>
         </Pressable>
       </ScrollView>
       </Animated.View>
@@ -399,7 +428,6 @@ export default function FastLogScreen() {
 const s = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: SHEET_BG,
   },
   sheetBody: {
     flex: 1,
@@ -408,13 +436,12 @@ const s = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 999,
-    backgroundColor: SHEET_CLOSE,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 18,
   },
   title: {
-    color: CREAM,
     fontSize: 27,
     lineHeight: 34,
     marginBottom: 20,
@@ -426,24 +453,23 @@ const s = StyleSheet.create({
     rowGap: 12,
     marginBottom: 22,
   },
-  tile: {
+  tileLayout: {
     width: "31.5%",
+  },
+  tile: {
+    width: "100%",
     aspectRatio: 0.92,
-    borderRadius: 20,
-    backgroundColor: TILE_BG,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: TILE_BORDER,
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    shadowColor: "#000000",
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2,
   },
   tileLabel: {
-    color: TILE_INK,
     fontSize: 13,
   },
   tileLoggedBadge: {
@@ -453,19 +479,15 @@ const s = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 999,
-    backgroundColor: CHECK_GREEN,
     alignItems: "center",
     justifyContent: "center",
   },
   recentSection: {
-    backgroundColor: SHEET_SECTION,
-    borderRadius: 22,
-    padding: 14,
     marginBottom: 18,
+    padding: 14,
   },
   recentTitle: {
-    color: CREAM,
-    fontSize: 13.5,
+    fontSize: 15,
     marginBottom: 10,
     marginLeft: 2,
   },
@@ -474,8 +496,8 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: SHEET_ROW,
-    borderRadius: 15,
+    borderWidth: 1,
+    borderRadius: 12,
     paddingHorizontal: 11,
     paddingVertical: 9,
     marginBottom: 8,
@@ -484,7 +506,6 @@ const s = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 999,
-    backgroundColor: "rgba(247,241,225,0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -493,16 +514,13 @@ const s = StyleSheet.create({
     minWidth: 0,
   },
   recentName: {
-    color: CREAM,
     fontSize: 13.5,
   },
   recentMeta: {
-    color: CREAM_MUTED,
     fontSize: 11,
     marginTop: 1,
   },
   recentOutcome: {
-    color: OUTCOME_AMBER,
     fontSize: 11,
     maxWidth: 74,
   },
@@ -510,25 +528,21 @@ const s = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 999,
-    backgroundColor: CHECK_GREEN,
     alignItems: "center",
     justifyContent: "center",
   },
   recentEmpty: {
-    color: CREAM_MUTED,
     fontSize: 12.5,
     lineHeight: 18,
     paddingVertical: 4,
   },
   fullLogButton: {
     minHeight: 48,
-    borderRadius: 16,
-    backgroundColor: BUTTON_FOREST,
+    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
   },
   fullLogText: {
-    color: CREAM,
     fontSize: 14.5,
   },
 });

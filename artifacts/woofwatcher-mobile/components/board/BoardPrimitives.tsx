@@ -11,6 +11,9 @@ import {
   type ViewStyle,
 } from "react-native";
 
+import Reanimated from "react-native-reanimated";
+
+import { enterUp, MeterPip, PressScale } from "@/components/motion/GameFeel";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useColors } from "@/hooks/useColors";
 import { hapticSelect } from "@/lib/haptics";
@@ -106,7 +109,7 @@ export function BoardRouteHeader({
         ) : null}
         <View style={[styles.routeHeaderText, centered && styles.routeHeaderTextCentered]}>
           {kicker ? (
-            <Text style={[styles.routeKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>{kicker}</Text>
+            <Text style={[styles.routeKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{kicker}</Text>
           ) : null}
           <Text style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: TITLE_SERIF }]}>
             {title}
@@ -289,20 +292,21 @@ export function BoardActionButton({
   const foreground =
     variant === "primary" ? colors.primaryForeground : colors.forest;
   return (
-    <Pressable
+    <PressScale
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       onPress={onPress}
       disabled={disabled}
-      style={({ pressed }) => [
+      scaleTo={0.96}
+      containerStyle={style}
+      style={[
         styles.actionButton,
         compact && styles.actionButtonCompact,
         {
           backgroundColor: background,
           borderColor: variant === "outline" ? colors.border : background,
-          opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
+          opacity: disabled ? 0.5 : 1,
         },
-        style,
       ]}
     >
       {icon ? <Ionicons name={icon} size={compact ? 14 : 16} color={foreground} /> : null}
@@ -316,7 +320,7 @@ export function BoardActionButton({
       >
         {label}
       </Text>
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -394,18 +398,21 @@ export function BoardCard({
   style,
   padded = true,
   tone = "card",
+  enter,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   padded?: boolean;
   tone?: "card" | "soft" | "navy";
+  /** Staggered entrance slot: 0, 1, 2... plays the shared fade+rise spring. */
+  enter?: number;
 }) {
   const colors = useColors();
   const navy = tone === "navy";
   const backgroundColor = navy ? colors.brandNavy : tone === "soft" ? colors.accent : colors.card;
   const borderColor = navy ? colors.copper + "66" : tone === "soft" ? colors.stone : colors.border;
 
-  return (
+  const card = (
     <View
       style={[
         styles.card,
@@ -425,6 +432,9 @@ export function BoardCard({
       {children}
     </View>
   );
+
+  if (enter === undefined) return card;
+  return <Reanimated.View entering={enterUp(enter)}>{card}</Reanimated.View>;
 }
 
 export function BoardSectionHeader({
@@ -470,6 +480,7 @@ export function StatusMeter({
   icon,
   tone,
   segments,
+  polarity = "normal",
   onPress,
   accessibilityLabel,
   accessibilityHint,
@@ -480,6 +491,7 @@ export function StatusMeter({
   icon?: PixelIconName;
   tone?: string;
   segments?: number;
+  polarity?: "normal" | "inverse";
   onPress?: () => void;
   accessibilityLabel?: string;
   accessibilityHint?: string;
@@ -487,7 +499,13 @@ export function StatusMeter({
   const colors = useColors();
   const count = segments ?? colors.pixelUi.statusSegments;
   const pct = Math.max(0, Math.min(1, value > 1 ? value / 100 : value));
-  const filled = Math.max(1, Math.round(pct * count));
+  // A true zero reads as an empty meter - no phantom lit pip for "0 of 2"
+  // meals or a quiet Alone timer. Only a genuinely nonzero value keeps >=1 pip.
+  const rawFilled = pct <= 0 ? 0 : Math.max(1, Math.round(pct * count));
+  // Alone Time runs on inverse polarity: a full meter reads "together / not
+  // alone" (good) and drains as away-time accumulates, so its lit pips never
+  // read as the same "achievement" the Mood/Energy/Hunger meters show.
+  const filled = polarity === "inverse" ? count - rawFilled : rawFilled;
   const active = tone ?? colors.sage;
 
   const content = (
@@ -500,15 +518,12 @@ export function StatusMeter({
       </View>
       <View style={styles.meterSegments} accessibilityLabel={`${label} ${valueLabel ?? `${Math.round(pct * 100)} percent`}`}>
         {Array.from({ length: count }).map((_, index) => (
-          <View
+          <MeterPip
             key={`${label}-${index}`}
-            style={[
-              styles.meterSegment,
-              {
-                backgroundColor: index < filled ? active : colors.muted,
-                borderColor: index < filled ? active : colors.border,
-              },
-            ]}
+            filled={index < filled}
+            color={active}
+            emptyColor={colors.meterTrack}
+            index={index}
           />
         ))}
       </View>
@@ -576,21 +591,21 @@ export function QuickActionTile({
 }) {
   const colors = useColors();
   return (
-    <Pressable
+    <PressScale
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? `Log ${label}`}
       accessibilityHint={accessibilityHint}
       onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={onLongPress ? (delayLongPress ?? 350) : undefined}
-      style={({ pressed }) => [
+      scaleTo={0.94}
+      containerStyle={[styles.quickTileLayout, style]}
+      style={[
         styles.quickTile,
         {
           borderColor: colors.border,
-          backgroundColor: pressed ? colors.secondary : colors.card,
-          transform: [{ scale: pressed ? 0.97 : 1 }],
+          backgroundColor: colors.card,
         },
-        style,
       ]}
     >
       <View style={[styles.quickIcon, { backgroundColor: accent ?? colors.secondary }]}>
@@ -599,7 +614,7 @@ export function QuickActionTile({
       <Text style={[styles.quickText, { color: colors.foreground, fontFamily: "Inter_700Bold" }, labelStyle]}>
         {label}
       </Text>
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -724,10 +739,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   routeKicker: {
-    fontSize: 9.5,
-    letterSpacing: 0,
+    fontSize: 9,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
     marginBottom: 1,
+    opacity: 0.85,
   },
   routeTitle: {
     fontSize: 28,
@@ -897,21 +913,18 @@ const styles = StyleSheet.create({
   meterSegments: {
     flex: 1,
     flexDirection: "row",
-    gap: 3,
-  },
-  meterSegment: {
-    flex: 1,
-    height: 12,
-    borderWidth: 1,
-    borderRadius: 2,
+    gap: 4,
   },
   meterValue: {
     minWidth: 42,
     textAlign: "right",
     fontSize: 11,
   },
-  quickTile: {
+  quickTileLayout: {
     width: "23.5%",
+  },
+  quickTile: {
+    width: "100%",
     minHeight: 76,
     borderWidth: 1,
     borderRadius: 16,
