@@ -295,3 +295,41 @@ states are both correct.
 - Native iOS/Android device pass (safe areas, 60fps motion, haptics) - the last
   owed item, and it needs real hardware / a simulator.
 - Widgets + Apple Watch faces (native-only) remain future work.
+
+# Design QA - Home Care-Twin Scale + Grounding
+
+Date: 2026-07-14
+
+## Scope
+
+Fixed the scale of the Home living-room hero: the care twin was rendered at
+150x150 over the full-bleed storybook room, which measured ~2x the width of the
+window behind it and overlapped/hid the potted plant and bookshelf - the dog
+read as oversized and the room felt cramped. Retuned getImmersiveSpriteZone
+(the Home-only immersive path; other screens use getCompactSpriteZone and are
+untouched) to 112x112 and re-grounded it (top 22% -> 42%, left 30% -> 35%) so
+the twin plants its paws on the rug instead of dominating/floating.
+
+Tuned empirically: measured the current render against a 10% grid, then
+previewed vertical grounding live (the rig `top` is a plain inline style
+Reanimated does not animate) to land the paws on the rug in one export.
+
+## Result
+
+- The twin now reads as a believably-sized dog inside the room: comparable to
+  the plant and bookshelf, smaller than before relative to the window, still
+  the clear focal point, paws grounded on the rug.
+- Verified light + dark, empty + populated account; 0 console errors; the dog
+  stays clear of the Care Sense card (no clipping) in every state.
+- Guardrail suite still 710/711 (the one failure is the Node-24 doctor
+  assertion). The getCompactSpriteZone contract (width/height 150, used by the
+  other screens' room hero cards) is unchanged.
+
+## Not in scope this pass
+
+- The roaming/walking rig (ROAM_RIG_SIZE, active only when the twin is awake and
+  roaming the floor) still uses its original 150 size. It anchors its top-left
+  to floor waypoints, so shrinking it needs grounding re-tuning that can only be
+  verified in the awake/day roam state (not reachable in a static export).
+- The other screens' compact room hero cards (getCompactSpriteZone) were left
+  as-is; they use a different baked landscape room and a smaller card frame.

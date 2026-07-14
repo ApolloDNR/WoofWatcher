@@ -219,16 +219,18 @@ function getCompactSpriteZone(zone: SpriteStageZone): SpriteStageZone {
   };
 }
 
-// Immersive mode grounds the care twin on the framed room card's floor
-// band: the storybook card is shorter than the old full-bleed stage, so the
-// rig anchors higher to keep paws inside the frame at every density.
+// Immersive Home stage: the twin is sized to sit believably inside the
+// full-bleed storybook room rather than dominate it (a larger rig read as
+// ~2x the window and overlapped the plant/shelf). 112px keeps the dog the
+// clear focal point while the room objects breathe; top 42% plants its paws
+// on the rug instead of floating above it.
 function getImmersiveSpriteZone(zone: SpriteStageZone): SpriteStageZone {
   return {
     ...zone,
-    left: "30%",
-    top: "22%",
-    width: 150,
-    height: 150,
+    left: "35%",
+    top: "42%",
+    width: 112,
+    height: 112,
   };
 }
 
