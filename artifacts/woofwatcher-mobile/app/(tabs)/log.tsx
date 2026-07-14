@@ -1378,7 +1378,10 @@ export default function LogScreen() {
       }
 
       if (mealOutcomeNeedsEatenAmount(completion) && eaten == null) {
-        notifyDialog("Add eaten amount", "For a partial meal, enter how much Phoenix actually ate.");
+        notifyDialog(
+          "Add eaten amount",
+          `For a partial meal, enter how much ${resolvePetName(state.profile.name)} actually ate.`,
+        );
         return null;
       }
 
@@ -1632,6 +1635,7 @@ export default function LogScreen() {
     currentCaregiverRole,
     state.dietProfile.normalPortion,
     state.profile.weight.unit,
+    state.profile.name,
   ]);
 
   const handleLog = useCallback(() => {
@@ -2256,10 +2260,18 @@ export default function LogScreen() {
     markQuickSave("alone");
     const entry = buildAloneTimeStartEntry({ caregiver, now });
     const id = addEntry(entry);
-    setLastQuickLog({ id, title: "Phoenix is home alone" });
+    setLastQuickLog({ id, title: `${petDisplayName} is home alone` });
     setSelectedType("alone");
     setSelectedLauncherKey("alone:Alone Time");
-  }, [addEntry, caregiver, isDuplicateQuickTap, markQuickSave, now, openAloneSession]);
+  }, [
+    addEntry,
+    caregiver,
+    isDuplicateQuickTap,
+    markQuickSave,
+    now,
+    openAloneSession,
+    petDisplayName,
+  ]);
 
   const handleReturnHome = useCallback(
     (outcome: AloneTimeReturnOutcome) => {
@@ -2769,7 +2781,7 @@ export default function LogScreen() {
                       WALK ACTIVE
                     </Text>
                     <Text style={[s.aloneActiveTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                      Phoenix is on a walk
+                      {petDisplayName} is on a walk
                     </Text>
                     <Text style={[s.aloneActiveMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       Started by {openWalkSession.caregiver || "household"} - {formatAloneDuration(openWalkMinutes)}
@@ -2854,7 +2866,7 @@ export default function LogScreen() {
                       HOME ALONE ACTIVE
                     </Text>
                     <Text style={[s.aloneActiveTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                      Phoenix is home alone
+                      {petDisplayName} is home alone
                     </Text>
                     <Text style={[s.aloneActiveMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       Started by {openAloneSession.caregiver || "household"} - {formatAloneDuration(openAloneMinutes)}
@@ -2869,7 +2881,7 @@ export default function LogScreen() {
                     <Pressable
                       key={option.id}
                       accessibilityRole="button"
-                      accessibilityLabel={`I'm Home. Phoenix was ${option.label}`}
+                      accessibilityLabel={`I'm Home. ${petDisplayName} was ${option.label}`}
                       onPress={() => handleReturnHome(option.id)}
                       style={({ pressed }) => [
                         s.returnOutcomeButton,
@@ -2907,7 +2919,7 @@ export default function LogScreen() {
 
             <View style={[s.moodPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <Text style={[s.moodQuestion, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                How is Phoenix feeling?
+                How is {petDisplayName} feeling?
               </Text>
               <View style={s.moodRow}>
                 {MOOD_LAUNCHER.map((mood) => {
@@ -2916,7 +2928,7 @@ export default function LogScreen() {
                     <Pressable
                       key={mood.label}
                       accessibilityRole="button"
-                      accessibilityLabel={`Phoenix feels ${mood.label}`}
+                      accessibilityLabel={`${petDisplayName} feels ${mood.label}`}
                       accessibilityState={{ selected: active }}
                       onPress={() => selectMoodLauncher(mood)}
                       style={({ pressed }) => [
@@ -2997,7 +3009,7 @@ export default function LogScreen() {
                     Saved on this device
                   </Text>
                   <Text style={[s.outboxMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    Nothing waiting. Phoenix's care record lives safely in this device's local storage.
+                    Nothing waiting. {petDisplayName}'s care record lives safely in this device's local storage.
                   </Text>
                 </View>
               </View>
@@ -3051,7 +3063,7 @@ export default function LogScreen() {
                     {syncOutbox.status === "needs-retry" ? "Saved on this device" : "Syncing safely"}
                   </Text>
                   <Text style={[s.outboxMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {syncOutbox.message} Phoenix's local record is safe on this device.
+                    {syncOutbox.message} {petDisplayName}'s local record is safe on this device.
                   </Text>
                 </View>
                 <Pressable
@@ -4475,7 +4487,7 @@ export default function LogScreen() {
                           Update outcome
                         </Text>
                         <Text style={[s.mealOutcomeHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                          Close this open meal loop when Phoenix finishes or refuses.
+                          Close this open meal loop when {petDisplayName} finishes or refuses.
                         </Text>
                       </View>
                     </View>

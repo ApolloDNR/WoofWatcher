@@ -1080,7 +1080,7 @@ export default function HomeScreen() {
           detail:
             state.records.length || state.reportArtifacts.length
               ? `${state.records.length} records and ${state.reportArtifacts.length} reports ready`
-              : "Build a vet, sitter, or trainer packet from Phoenix's care history",
+              : `Build a vet, sitter, or trainer packet from ${petName}'s care history`,
           ready: Boolean(state.records.length || state.reportArtifacts.length),
         },
       }),
@@ -1741,7 +1741,7 @@ export default function HomeScreen() {
           >
           <View style={s.heroBackdrop}>
             <View
-              accessibilityLabel="Phoenix Room"
+              accessibilityLabel={`${petName} Room`}
               accessibilityHint={homeFirstScreenLayout.qaLabel}
               style={[
                 s.heroWrap,
@@ -1953,6 +1953,7 @@ export default function HomeScreen() {
                   label="Alone"
                   icon="clock"
                   value={careSenseAloneRatio}
+                  polarity="inverse"
                   valueLabel={
                     openAloneSession ? formatDuration(openAloneMinutes) : "OK"
                   }
@@ -2355,7 +2356,7 @@ export default function HomeScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Today's Story. ${todayStoryLine} Open Story.`}
-            accessibilityHint="Opens Phoenix's living story."
+            accessibilityHint={`Opens ${petName}'s living story.`}
             onPress={() => router.push("/story" as never)}
             style={({ pressed }) => [
               s.todayStoryCard,

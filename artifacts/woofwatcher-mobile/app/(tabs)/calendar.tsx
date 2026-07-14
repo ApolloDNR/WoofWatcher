@@ -67,13 +67,16 @@ const PLANS_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day
 const PLANS_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
 const PLANS_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
 
+// Potty carries a green tint here (its glyph is drawn from the shared pixel
+// "pee" leaf at render time, matching every care timeline); the blue "drop"
+// glyph stays reserved for Water.
 const ROUTINE_ICON: Record<string, PulseIconName> = {
   meal: "bowl",
   walk: "paw",
   treat: "bone",
   play: "candy",
   training: "star",
-  potty: "drop",
+  potty: "heart",
   note: "heart",
 };
 
@@ -83,7 +86,7 @@ const ROUTINE_TYPES: { key: string; label: string; icon: PulseIconName }[] = [
   { key: "treat", label: "Treat", icon: "bone" },
   { key: "play", label: "Play", icon: "candy" },
   { key: "training", label: "Training", icon: "star" },
-  { key: "potty", label: "Potty", icon: "drop" },
+  { key: "potty", label: "Potty", icon: "heart" },
   { key: "note", label: "Check-in", icon: "heart" },
 ];
 
@@ -453,7 +456,7 @@ export default function CalendarScreen() {
     ? "Here's a sample day. Add your first routine to make it yours."
     : nextScheduleRow
       ? `${nextScheduleRow.label} is next at ${nextScheduleRow.time}.`
-      : "Phoenix has a clear care board.";
+      : `${resolvePetName(profile.name)} has a clear care board.`;
   const commandDeckStatusTone: BoardStatusPillTone = isSampleSchedule
     ? "neutral"
     : nextScheduleRow?.status === "done"
@@ -1731,7 +1734,11 @@ export default function CalendarScreen() {
                       </View>
                       <View style={[s.routineCard, { backgroundColor: colors.card, shadowColor: colors.primary, opacity: done ? 0.72 : 1 }]}>
                         <View style={[s.routineIconWrap, { backgroundColor: statusColor + "16" }]}>
-                          <PulseIcon name={icon} size={20} color={done ? colors.sage : undefined} />
+                          {r.normalizedType === "potty" ? (
+                            <PixelIcon name="pee" size={20} />
+                          ) : (
+                            <PulseIcon name={icon} size={20} color={done ? colors.sage : undefined} />
+                          )}
                         </View>
                         <View style={s.routineMain}>
                           <Text style={[s.routineLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{r.label}</Text>
@@ -1860,7 +1867,11 @@ export default function CalendarScreen() {
                 const active = rType === t.key;
                 return (
                   <Pressable key={t.key} onPress={() => { Haptics.selectionAsync(); setRType(t.key); }} style={[s.typeChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}>
-                    <PulseIcon name={t.icon} size={14} color={active ? "#fff" : undefined} />
+                    {t.key === "potty" ? (
+                      <PixelIcon name="pee" size={14} />
+                    ) : (
+                      <PulseIcon name={t.icon} size={14} color={active ? "#fff" : undefined} />
+                    )}
                     <Text style={[s.typeChipText, { color: active ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
                   </Pressable>
                 );

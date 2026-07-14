@@ -480,6 +480,7 @@ export function StatusMeter({
   icon,
   tone,
   segments,
+  polarity = "normal",
   onPress,
   accessibilityLabel,
   accessibilityHint,
@@ -490,6 +491,7 @@ export function StatusMeter({
   icon?: PixelIconName;
   tone?: string;
   segments?: number;
+  polarity?: "normal" | "inverse";
   onPress?: () => void;
   accessibilityLabel?: string;
   accessibilityHint?: string;
@@ -497,7 +499,13 @@ export function StatusMeter({
   const colors = useColors();
   const count = segments ?? colors.pixelUi.statusSegments;
   const pct = Math.max(0, Math.min(1, value > 1 ? value / 100 : value));
-  const filled = Math.max(1, Math.round(pct * count));
+  // A true zero reads as an empty meter - no phantom lit pip for "0 of 2"
+  // meals or a quiet Alone timer. Only a genuinely nonzero value keeps >=1 pip.
+  const rawFilled = pct <= 0 ? 0 : Math.max(1, Math.round(pct * count));
+  // Alone Time runs on inverse polarity: a full meter reads "together / not
+  // alone" (good) and drains as away-time accumulates, so its lit pips never
+  // read as the same "achievement" the Mood/Energy/Hunger meters show.
+  const filled = polarity === "inverse" ? count - rawFilled : rawFilled;
   const active = tone ?? colors.sage;
 
   const content = (

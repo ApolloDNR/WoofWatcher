@@ -74,6 +74,7 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
+import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { PressScale } from "@/components/motion/GameFeel";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
@@ -851,11 +852,15 @@ export default function RecordsScreen() {
     return Math.floor(daysBetween(incidents[0].occurredAt, now));
   }, [incidents, now]);
 
-  const reportStats: { icon: PulseIconName; label: string; value: string }[] = [
+  // `icon` tints the stat chip; `pixelIcon` (when set) overrides the glyph with
+  // a shared pixel-art icon. Potty reads as the same green "pee" leaf used on
+  // every care timeline (its "heart" tint just keeps the chip green); the blue
+  // "drop" glyph stays reserved for Water.
+  const reportStats: { icon: PulseIconName; pixelIcon?: PixelIconName; label: string; value: string }[] = [
     { icon: "bowl", label: "Meals", value: String(report.meals) },
     { icon: "paw", label: "Walks", value: `${report.walks} - ${report.walkMinutes}m` },
     { icon: "candy", label: "Play & train", value: String(report.play) },
-    { icon: "drop", label: "Potty", value: String(report.potty) },
+    { icon: "heart", pixelIcon: "pee", label: "Potty", value: String(report.potty) },
     { icon: "bone", label: "Treats", value: String(report.treats) },
     { icon: "vomit", label: "Incidents", value: String(report.incidents) },
   ];
@@ -906,7 +911,7 @@ export default function RecordsScreen() {
         ? `${recordReminders[0].label} is worth checking.`
         : recordVault.total > 0
           ? "Dog ID and care files are ready."
-          : "Let's build Phoenix's care vault.";
+          : `Let's build ${resolvePetName(state.profile.name)}'s care vault.`;
   const recordsVaultTone =
     recordVault.missingCritical.length > 0
       ? colors.amber
@@ -2819,7 +2824,11 @@ export default function RecordsScreen() {
               {reportStats.map((r) => (
                 <View key={r.label} style={[s.reportCell, { backgroundColor: colors.background }]}>
                   <View style={[s.reportIcon, { backgroundColor: PULSE_COLORS[r.icon] + "16" }]}>
-                    <PulseIcon name={r.icon} size={16} />
+                    {r.pixelIcon ? (
+                      <PixelIcon name={r.pixelIcon} size={16} />
+                    ) : (
+                      <PulseIcon name={r.icon} size={16} />
+                    )}
                   </View>
                   <Text style={[s.reportValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{r.value}</Text>
                   <Text style={[s.reportLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{r.label}</Text>

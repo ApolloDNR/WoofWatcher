@@ -1269,7 +1269,7 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
     /deriveCareTwinChoreography\(deriveCareTwinScene\(avatarMotion\)\)/,
   );
   assert.match(home, /avatarMotion\.line/);
-  assert.match(home, /Phoenix Room/);
+  assert.match(home, /\$\{petName\} Room/);
   assert.match(home, /heroStudioButton/);
   assert.match(home, /const openAvatarStudio/);
   assert.match(home, /onPress=\{openAvatarStudio\}/);
