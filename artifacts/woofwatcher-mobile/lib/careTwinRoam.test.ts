@@ -101,12 +101,12 @@ test("roam pose interpolates walks, holds dwells, and wraps the loop", () => {
 test("waypoints keep the sprite rig inside the immersive stage", () => {
   for (const waypoint of Object.values(IMMERSIVE_ROAM_WAYPOINTS)) {
     assert.ok(
-      waypoint.xPct >= 2 && waypoint.xPct <= 51,
-      `${waypoint.zone} xPct ${waypoint.xPct} must keep the 184px rig on a 390pt stage`,
+      waypoint.xPct >= 2 && waypoint.xPct <= 60,
+      `${waypoint.zone} xPct ${waypoint.xPct} must keep the 118px rig on a 390pt stage`,
     );
     assert.ok(
-      waypoint.yPct >= 22 && waypoint.yPct <= 32,
-      `${waypoint.zone} yPct ${waypoint.yPct} must keep paws on the framed card's floor band`,
+      waypoint.yPct >= 30 && waypoint.yPct <= 42,
+      `${waypoint.zone} yPct ${waypoint.yPct} must keep paws on the room's floor line`,
     );
     assert.ok(
       waypoint.scale >= 0.94 && waypoint.scale <= 1.08,

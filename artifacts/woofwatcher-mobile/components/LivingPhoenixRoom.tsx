@@ -220,15 +220,17 @@ function getCompactSpriteZone(zone: SpriteStageZone): SpriteStageZone {
 }
 
 // Immersive mode grounds the care twin on the framed room card's floor
-// band: the storybook card is shorter than the old full-bleed stage, so the
-// rig anchors higher to keep paws inside the frame at every density.
+// band. The rig is intentionally sized well under the old 150 so the dog
+// reads as a real dog in the room (head near the window sill, not the
+// curtain rod) rather than a giant filling the stage; the anchor sits low
+// enough that a smaller, bottom-aligned sprite keeps its paws on the rug.
 function getImmersiveSpriteZone(zone: SpriteStageZone): SpriteStageZone {
   return {
     ...zone,
-    left: "30%",
-    top: "22%",
-    width: 150,
-    height: 150,
+    left: "33%",
+    top: "35%",
+    width: 118,
+    height: 118,
   };
 }
 
@@ -1498,7 +1500,10 @@ export function LivingPhoenixRoom({
   );
 }
 
-const ROAM_RIG_SIZE = 150;
+// Rig box for the roaming twin. Kept in step with getImmersiveSpriteZone's
+// width/height so the walking dog and the anchored dog read at the same
+// believable scale against the room furniture.
+const ROAM_RIG_SIZE = 118;
 const ROAM_BOB_MS = 340;
 
 /**
