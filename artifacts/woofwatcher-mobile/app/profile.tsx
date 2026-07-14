@@ -303,23 +303,35 @@ export default function ProfileScreen() {
         <View style={[s.hero, { height: insets.top + HERO_CONTENT_HEIGHT, backgroundColor: colors.secondary }]}>
           <Image source={colors.isDark ? HERO_PARK_NIGHT : HERO_PARK_DAY} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
           {/* Top scrim seats the cream chips + name; bottom scrim melts the
-              scene into the parchment so the avatar seam feels intentional. */}
+              scene into the parchment so the avatar seam feels intentional.
+              The day scene is pale (bright sky + pale skyline), so a lighter top
+              scrim keeps it from muddying and the bottom melt is pushed down so
+              the skyline/park survives rather than washing into cream. The night
+              scene has natural contrast (stars + dark silhouette), so it keeps
+              the deeper scrim + earlier melt that already reads well. */}
           <LinearGradient
-            colors={["rgba(26,23,20,0.46)", "rgba(26,23,20,0.08)", "transparent"]}
+            colors={
+              colors.isDark
+                ? ["rgba(26,23,20,0.46)", "rgba(26,23,20,0.08)", "transparent"]
+                : ["rgba(26,23,20,0.34)", "rgba(26,23,20,0.06)", "transparent"]
+            }
             locations={[0, 0.4, 0.7]}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
           <LinearGradient
             colors={["transparent", colors.background]}
-            locations={[0.55, 1]}
+            locations={colors.isDark ? [0.55, 1] : [0.74, 1]}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
           <View style={[s.heroBar, { paddingTop: heroTopPadding }]}>
             <HeroChip icon="chevron-back" accessibilityLabel="Back" onPress={goBack} />
             <View style={s.heroTitleWrap} pointerEvents="none">
-              <Text style={[s.heroKicker, { color: colors.sageSoft, fontFamily: "Inter_700Bold" }]}>
+              {/* sageSoft is a dark surface token in dark mode (#233C2E) and is
+                  illegible on the night hero, so use the bright cream token there;
+                  both scrim-safe over the dark top gradient. */}
+              <Text style={[s.heroKicker, { color: colors.isDark ? colors.cream : colors.sageSoft, fontFamily: "Inter_700Bold" }]}>
                 PROFILE
               </Text>
               <Text

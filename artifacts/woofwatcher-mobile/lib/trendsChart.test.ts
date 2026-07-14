@@ -53,7 +53,10 @@ test("month window is 30 daily buckets with a thinned label stride", () => {
   const win = buildTrendWindow("month", NOW);
   assert.equal(win.buckets.length, 30);
   assert.equal(win.labelStride, 5);
-  assert.equal(win.buckets[win.buckets.length - 1].label, "8"); // day-of-month for May 8
+  // Labels are the short month + day so the two-month window is unambiguous and
+  // the wider ticks never clip to "2.." (rendered overflow-safe on the axis).
+  assert.equal(win.buckets[win.buckets.length - 1].label, "May 8"); // last bucket = May 8
+  assert.equal(win.buckets[0].label, "Apr 9"); // first bucket = Apr 9
   assert.equal(win.rangeLabel, "Apr 9 – May 8");
 });
 

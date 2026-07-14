@@ -100,7 +100,15 @@ function whenLabel(item: CareReminderItem): string {
     if (days === 1) return "Due tomorrow";
     return `In ${days} days`;
   }
-  return item.urgency === "alert" ? "Overdue" : "Due now";
+  // No clock time and no day offset. Routine/medication doses without a date are
+  // still genuinely "today" (see bucketFor), so a time-based status fits them.
+  // Everything else here (missing records, undated grooming) lands under the
+  // "No date" header — claiming "Due now" there is contradictory, so use a
+  // neutral action line instead of inventing urgency.
+  if (item.kind === "routine" || item.kind === "medication") {
+    return item.urgency === "alert" ? "Overdue" : "Due now";
+  }
+  return "Add to complete";
 }
 
 function urgencyPill(urgency: CareReminderUrgency): { label: string; tone: BoardStatusPillTone } {
@@ -215,7 +223,7 @@ export default function RemindersScreen() {
           <Text style={[s.rowWhen, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
             {when}
           </Text>
-          <Text numberOfLines={1} style={[s.rowLabel, { color: colors.ink, fontFamily: "Inter_700Bold" }]}>
+          <Text numberOfLines={2} style={[s.rowLabel, { color: colors.ink, fontFamily: "Inter_700Bold" }]}>
             {item.label}
           </Text>
           {item.detail ? (
@@ -274,10 +282,10 @@ export default function RemindersScreen() {
               ))}
 
               <BoardActionButton
-                label="New Reminder"
-                icon="add"
+                label="Plan care"
+                icon="calendar-outline"
                 variant="primary"
-                accessibilityLabel="Create a new reminder in Plans"
+                accessibilityLabel="Open the Plan tab to schedule routines and care"
                 onPress={() => router.push("/calendar")}
                 style={s.newButton}
               />
@@ -306,10 +314,10 @@ export default function RemindersScreen() {
                 Routines, medication schedules, and record renewals surface here as they come due. Add one to get started.
               </Text>
               <BoardActionButton
-                label="New Reminder"
-                icon="add"
+                label="Plan care"
+                icon="calendar-outline"
                 variant="primary"
-                accessibilityLabel="Create a new reminder in Plans"
+                accessibilityLabel="Open the Plan tab to schedule routines and care"
                 onPress={() => router.push("/calendar")}
                 style={s.emptyAction}
               />

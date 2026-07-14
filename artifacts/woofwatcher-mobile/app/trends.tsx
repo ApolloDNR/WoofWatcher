@@ -77,20 +77,47 @@ function Kicker({ text }: { text: string }) {
 
 function AxisLabels({ buckets, labelStride }: { buckets: TrendBucket[]; labelStride: number }) {
   const colors = useColors();
+  // Month buckets are ~12px wide, so a 2-digit "Jun 20" tick would clip to an
+  // ambiguous "2.." inside its own cell. For dense axes we let the label overflow
+  // its cell instead of truncating: first/last labels hug the chart edges so they
+  // never spill past it, and the rest center on their tick over the empty
+  // neighbour cells (only every Nth cell carries a label).
+  const dense = buckets.length > 14;
+  const lastIndex = buckets.length - 1;
   return (
-    <View style={styles.axisRow}>
-      {buckets.map((bucket, i) => (
-        <View key={i} style={styles.axisCell}>
-          {i % labelStride === 0 || i === buckets.length - 1 ? (
-            <Text
-              numberOfLines={1}
-              style={[styles.axisText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-            >
-              {bucket.label}
-            </Text>
-          ) : null}
-        </View>
-      ))}
+    <View style={[styles.axisRow, dense && styles.axisRowDense]}>
+      {buckets.map((bucket, i) => {
+        const show = i % labelStride === 0 || i === lastIndex;
+        if (!show) return <View key={i} style={styles.axisCell} />;
+        const label = (
+          <Text
+            numberOfLines={1}
+            style={[styles.axisText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+          >
+            {bucket.label}
+          </Text>
+        );
+        if (!dense) {
+          return (
+            <View key={i} style={styles.axisCell}>
+              {label}
+            </View>
+          );
+        }
+        const anchorStyle =
+          i === 0
+            ? styles.axisLabelStart
+            : i === lastIndex
+              ? styles.axisLabelEnd
+              : styles.axisLabelCenter;
+        return (
+          <View key={i} style={styles.axisCell}>
+            <View style={[styles.axisLabelAnchor, anchorStyle]} pointerEvents="none">
+              {label}
+            </View>
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -379,8 +406,13 @@ export default function TrendsScreen() {
   const activityTotal = activityValues.reduce((sum, value) => sum + value, 0);
   const pottyTotal = pottyValues.reduce((sum, value) => sum + value, 0);
   const hasMood = moodInWindow.length > 0;
-  const hasActivity = activitySamples.some((sample) => inWindow(sample.at));
-  const hasPotty = pottyTimes.some((at) => inWindow(at));
+  // Gate charts on real logged quantity, not mere presence. An in-progress walk
+  // is a 0-minute sample, so `activitySamples.some(inWindow)` would render a tall
+  // empty plot (axis + "0 min", no bars). Requiring the completed total > 0 keeps
+  // the chart honest and falls back to the ChartEmpty until there's something to
+  // plot; potty follows the same completed-count guard for consistency.
+  const hasActivity = activityTotal > 0;
+  const hasPotty = pottyTotal > 0;
 
   // The summary card is always a weekly digest (matches the mock label), so it
   // stays honest even when the charts are windowed to Day / Month / Year.
@@ -417,14 +449,14 @@ export default function TrendsScreen() {
         <ChartCard
           enter={0}
           kicker="Mood Trend"
-          title="Mood"
+          title="Mood Check-ins"
           stat={hasMood ? `${moodAvg.toFixed(1)}/5` : "—"}
           statTone={hasMood ? colors.forest : undefined}
         >
           {hasMood ? (
             <MoodLineChart averages={moodAverages} buckets={win.buckets} labelStride={win.labelStride} />
           ) : (
-            <ChartEmpty message="No mood logs yet — they'll chart here." height={LINE_HEIGHT} />
+            <ChartEmpty message="No mood check-ins yet — they'll chart here." height={LINE_HEIGHT} />
           )}
         </ChartCard>
 
@@ -583,6 +615,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginTop: 7,
   },
+  // Dense (month) axis labels are absolutely positioned, so the row needs an
+  // explicit height to reserve their vertical space.
+  axisRowDense: {
+    minHeight: 14,
+  },
   axisCell: {
     flex: 1,
     alignItems: "center",
@@ -590,6 +627,26 @@ const styles = StyleSheet.create({
   axisText: {
     fontSize: 9.5,
     letterSpacing: 0.1,
+  },
+  // Overflow-safe anchors for the dense month axis (see AxisLabels): a wider box
+  // than the cell so "Jun 20" renders in full instead of clipping.
+  axisLabelAnchor: {
+    position: "absolute",
+    top: 0,
+    width: 60,
+  },
+  axisLabelStart: {
+    left: 0,
+    alignItems: "flex-start",
+  },
+  axisLabelEnd: {
+    right: 0,
+    alignItems: "flex-end",
+  },
+  axisLabelCenter: {
+    left: "50%",
+    marginLeft: -30,
+    alignItems: "center",
   },
   emptyWrap: {
     alignItems: "center",

@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
-import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -119,7 +119,17 @@ export default function CalendarMonthScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
+  const { width: screenWidth } = useWindowDimensions();
   const { state } = useCare();
+
+  // The quick-add FAB floats bottom-right (right: 20 + width 60 = 80px lane). On
+  // short/narrow viewports the timeline header lands in that lane, so the
+  // "N logged" pill hides behind the FAB. Inset the header's right edge past the
+  // FAB lane on small screens so the pill always clears it; wide reference
+  // screens (393) are unaffected and keep the pill hugging the card edge.
+  const FAB_LANE = 20 + 60;
+  const CONTENT_PADDING_H = 16;
+  const pillFabClearance = screenWidth <= 360 ? FAB_LANE - CONTENT_PADDING_H + 8 : 0;
 
   const topPadding = getRouteTopPadding({ platform: Platform.OS, topInset: insets.top, surface: "standalone" });
   const bottomPadding = getStandaloneRouteBottomPadding({ platform: Platform.OS, bottomInset: insets.bottom });
@@ -318,7 +328,7 @@ export default function CalendarMonthScreen() {
 
         {/* Selected day timeline */}
         <BoardCard enter={1} style={s.timelineCard}>
-          <View style={s.timelineHeader}>
+          <View style={[s.timelineHeader, pillFabClearance ? { paddingRight: pillFabClearance } : null]}>
             <View style={s.timelineHeaderCopy}>
               <Text style={[s.timelineEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                 {selectedSubLabel}

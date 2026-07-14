@@ -181,7 +181,10 @@ export function buildTrendWindow(key: TrendWindowKey, now: number): TrendWindow 
   const buckets =
     key === "week"
       ? dayBuckets(start, days, (bStart) => WEEKDAYS_SHORT[new Date(bStart).getDay()])
-      : dayBuckets(start, days, (bStart) => String(new Date(bStart).getDate()));
+      : // Month spans two calendar months, so a bare day-of-month ("20") is
+        // ambiguous. Label with the short month + day ("Jun 20") — the axis
+        // thins these to the labelStride and renders them overflow-safe.
+        dayBuckets(start, days, (bStart) => formatMonthDay(bStart));
   return {
     key,
     start,
