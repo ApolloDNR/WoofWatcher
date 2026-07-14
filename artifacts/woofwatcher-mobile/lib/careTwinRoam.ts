@@ -56,17 +56,18 @@ const MAX_WALK_MS = 6000;
 const DEFAULT_DWELL_MS = 3600;
 
 /**
- * Floor-band positions tuned to the immersive backdrops: the rig is 184px
- * wide on a 390pt stage (~47% of the width), so xPct stays within 2-51 to
- * keep paws inside the room. yPct hugs the floor line with a small depth
- * wobble that the scale cue mirrors.
+ * Floor-band positions tuned to the immersive backdrops: the rig is 118px
+ * wide on a 390pt stage (~30% of the width), so xPct stays within 2-51 to
+ * keep paws inside the room. yPct sits lower than the old giant-rig band so
+ * the smaller, bottom-aligned sprite still plants its paws on the rug's
+ * floor line, with a small depth wobble that the scale cue mirrors.
  */
 export const IMMERSIVE_ROAM_WAYPOINTS: Record<AvatarRoomZone, RoamWaypoint> = {
-  door: { zone: "door", xPct: 4, yPct: 23, scale: 0.99 },
-  window: { zone: "window", xPct: 13, yPct: 22, scale: 0.97 },
-  rug: { zone: "rug", xPct: 30, yPct: 24, scale: 1 },
-  bed: { zone: "bed", xPct: 42, yPct: 23, scale: 1 },
-  bowl: { zone: "bowl", xPct: 50, yPct: 25, scale: 1.03 },
+  door: { zone: "door", xPct: 6, yPct: 36, scale: 0.99 },
+  window: { zone: "window", xPct: 15, yPct: 35, scale: 0.97 },
+  rug: { zone: "rug", xPct: 33, yPct: 37, scale: 1 },
+  bed: { zone: "bed", xPct: 45, yPct: 36, scale: 1 },
+  bowl: { zone: "bowl", xPct: 52, yPct: 38, scale: 1.03 },
 };
 
 const ROAM_STOP_ORDER: readonly AvatarRoomZone[] = [
