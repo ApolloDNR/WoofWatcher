@@ -2509,7 +2509,7 @@ export default function LogScreen() {
                 {logCommandHud.map((metric) => (
                   <View
                     key={metric.label}
-                    style={[s.logCommandHudCell, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    style={[s.logCommandHudCell, { backgroundColor: colors.cream, borderColor: colors.border }]}
                   >
                     <Text style={[s.logCommandHudLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                       {metric.label}
@@ -2517,7 +2517,7 @@ export default function LogScreen() {
                     <Text
                       numberOfLines={1}
                       adjustsFontSizeToFit
-                      style={[s.logCommandHudValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+                      style={[s.logCommandHudValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
                     >
                       {metric.value}
                     </Text>

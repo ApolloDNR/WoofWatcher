@@ -59,6 +59,9 @@ const lightTheme = {
   meterHunger: "#DE7A14",
   meterAlone: "#4E9CC7",
   meterSleep: "#6B4E93",
+  // Empty Care Sense pip track. On cream the muted parchment already reads as
+  // crisp chunky pips, so this matches it.
+  meterTrack: "#EDE5CF",
   gold: "#BC833D",
   goldSoft: "#F2E4C8",
 };
@@ -117,6 +120,10 @@ const darkTheme = {
   meterHunger: "#E8963C",
   meterAlone: "#6FB3D8",
   meterSleep: "#9B7FC0",
+  // Empty Care Sense pip track. Lifted well above the card (#0D182A) so the
+  // seven chunky pips still read as a segmented track in dark mode; muted
+  // (#102C40) sat too close to the card and the empty pips disappeared.
+  meterTrack: "#223A52",
   gold: "#D8A852",
   goldSoft: "#33290F",
 };

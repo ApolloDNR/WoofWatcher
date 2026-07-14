@@ -186,3 +186,59 @@ truth.
 - Re-check the four screens on a device with a populated account (real charts,
   day dots, reminder grouping).
 - Widgets + Apple Watch faces (native-only) remain future work.
+
+# Design QA - Dark-Mode Audit (meter tones + fixed-light docks)
+
+Date: 2026-07-14
+
+## Scope
+
+Closed the "dark-mode audit of the new meter tones" item the prior passes left
+open (handoff §4-B). The Care Sense meter tones and the restyled screens
+shipped a dark theme that had never actually been looked at. Method: Expo web
+export built with EXPO_PUBLIC_WEB_COLOR_SCHEME=auto, then a headless Chromium
+sweep of 16 routes at 390x844 with prefers-color-scheme: dark emulated (Home,
+Log, Plan, Health, Records, Pack, Story, More, fastlog, portrait, Trends,
+Profile, Reminders, month Calendar, Adventure, WoofGuide), each shot top and
+scrolled, plus a high-DPI light-vs-dark capture of the Care Sense card.
+
+## Findings and fixes
+
+- Care Sense empty pip track was near-invisible in dark. StatusMeter drew empty
+  pips with `colors.muted` (#102C40), which sits ~1.16:1 against the dark card
+  (#0D182A), so the seven chunky pips collapsed into a plain colored bar and the
+  Hunger row (all empty) barely read. Added a dedicated `meterTrack` token:
+  dark #223A52 (lifted well above the card so the segmented track reads), light
+  #EDE5CF (identical to the old value, so light mode is unchanged). StatusMeter
+  now uses `colors.meterTrack`.
+- Records credential HUD and Log command HUD stat chips flipped dark on their
+  fixed-light cream docks. Both sit on a deliberately theme-independent cream
+  "physical card / console" surface (`colors.ivory`), but their inner stat chips
+  used `colors.background` for the fill and `colors.ink`/`colors.foreground` for
+  the value - all of which flip with the theme - so in dark mode the chips
+  rendered as dark navy tiles floating on cream (the code comments call for
+  "light parchment stat chips"). Pinned the chip fill to `colors.cream` and the
+  value ink to `colors.brandNavy` (both constant-light / constant-dark), so the
+  chips stay light parchment with dark ink in both themes. Light mode is
+  unchanged (light `cream` == light `background`; `brandNavy` ~= `ink`).
+- All other 13 screens and the other fixed-light surfaces (WoofGuide boundary
+  card, auth/setup stage HUD + proof manifest) already used constant inks
+  (`brandNavy`, `copper`, `BUBBLE_INK`) on their cream surfaces and rendered
+  correctly in dark; no change needed.
+
+## Checks Run
+
+- Mobile + workspace TypeScript: clean.
+- Focused behavior/readiness suite: 710/711. The one failure is the mobile beta
+  doctor test that asserts a Node-24 runtime; this environment is Node 22, so it
+  is an environment artifact, not a regression (same failure before and after).
+- Expo web export: passed (262 files).
+- Dark sweep: 16 routes, 0 console/page errors; both fixes confirmed against the
+  boards. Light-mode regression check (Records, Log, Home) confirmed unchanged.
+
+## Remaining QA
+
+- Native iOS/Android device pass in dark mode (safe areas, 60fps motion,
+  haptics) - device-only, still owed.
+- Re-check the dark meters and docks on a device with a populated account.
+- Widgets + Apple Watch faces (native-only) remain future work.

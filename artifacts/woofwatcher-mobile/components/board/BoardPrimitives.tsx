@@ -522,7 +522,7 @@ export function StatusMeter({
             key={`${label}-${index}`}
             filled={index < filled}
             color={active}
-            emptyColor={colors.muted}
+            emptyColor={colors.meterTrack}
             index={index}
           />
         ))}

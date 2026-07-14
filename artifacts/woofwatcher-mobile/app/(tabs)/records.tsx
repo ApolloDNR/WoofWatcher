@@ -1123,10 +1123,10 @@ export default function RecordsScreen() {
                 ].map((item) => (
                   <View
                     key={item.label}
-                    style={[s.recordsCredentialHudCell, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    style={[s.recordsCredentialHudCell, { backgroundColor: colors.cream, borderColor: colors.border }]}
                   >
                     <Text style={[s.recordsCredentialHudLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
-                    <Text style={[s.recordsCredentialHudValue, { color: colors.ink, fontFamily: DISPLAY_SEMI }]}>{item.value}</Text>
+                    <Text style={[s.recordsCredentialHudValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>{item.value}</Text>
                   </View>
                 ))}
               </View>
