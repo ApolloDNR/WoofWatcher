@@ -1,3 +1,42 @@
+/* Self-hosted storybook display type — the exact Fraunces + Fredoka faces the
+   mobile app loads via @expo-google-fonts, served locally so the PWA needs no
+   font CDN and works offline. Body copy stays Inter/system. */
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/Fraunces_600SemiBold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/Fraunces_700Bold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Fredoka";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/Fredoka_500Medium.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Fredoka";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/Fredoka_600SemiBold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Fredoka";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/Fredoka_700Bold.ttf") format("truetype");
+}
+
 :root {
   color-scheme: light;
   --ivory: #FFF9EF;
@@ -28,6 +67,10 @@
   --radius-card: 14px;
   --radius-button: 10px;
   --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Storybook display type, matching the mobile app: Fraunces for the wordmark
+     and big titles, Fredoka for card/section headlines. Body stays Inter. */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-head: "Fredoka", var(--font);
 }
 
 :root[data-theme="dark"] {
@@ -37,7 +80,7 @@
   --surface: #102C40;
   --surface-nested: #0B2132;
   --sage: #173B35;
-  --forest: #8FC48E;
+  --forest: #6DA36F;
   --on-forest: #06131F;
   --navy: #050D16;
   --navy-2: #081A2A;
@@ -98,8 +141,9 @@ html, body {
 
 .brand-title {
   margin: 0;
-  font-weight: 800;
-  font-size: 1.25rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.3rem;
 }
 .brand-title .woof { color: var(--forest); }
 .brand-title .watcher { color: var(--copper); }
@@ -671,7 +715,7 @@ input:focus, select:focus, textarea:focus {
   color: var(--status-alert);
 }
 
-h2, h3, h4 { margin: 0; color: var(--text-strong); }
+h2, h3, h4 { margin: 0; color: var(--text-strong); font-family: var(--font-head); font-weight: 600; }
 p { margin: 0; }
 .micro {
   font-size: 0.75rem;
@@ -1181,7 +1225,7 @@ p { margin: 0; }
   padding: 4px 8px 26px;
 }
 .side-logo { width: 36px; height: 36px; border-radius: 10px; }
-.side-brand-text { font-weight: 800; font-size: 1.05rem; letter-spacing: -0.2px; }
+.side-brand-text { font-family: var(--font-display); font-weight: 700; font-size: 1.12rem; letter-spacing: -0.2px; }
 .side-brand-text .woof { color: #fff; }
 .side-brand-text .watcher { color: var(--copper); }
 
@@ -1277,7 +1321,7 @@ p { margin: 0; }
   gap: 16px;
   margin-bottom: 26px;
 }
-.greeting { font-size: 1.65rem; font-weight: 800; margin: 0; letter-spacing: -0.4px; }
+.greeting { font-family: var(--font-display); font-size: 1.85rem; font-weight: 700; margin: 0; letter-spacing: -0.4px; }
 .greeting span { font-size: 1.3rem; }
 .greeting-sub { color: var(--text-muted); margin: 4px 0 0; }
 .top-right {

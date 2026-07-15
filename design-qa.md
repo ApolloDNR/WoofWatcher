@@ -401,3 +401,39 @@ PWA/phone (420px) widths:
 - Dark-theme green could be nudged from `#8FC48E` toward mobile's dark forest
   family in a follow-up (needs its own contrast pass on the active nav).
 - Typography (mobile's Fraunces/Fredoka display faces) not yet brought to web.
+
+# Design QA - Web/PWA Typography + Dark-Green Alignment
+
+Date: 2026-07-15
+
+## Scope
+
+Continued the web/PWA alignment (PR #5). Brought the mobile app's storybook type
+system to the web and nudged the dark-theme green to the mobile family.
+
+- Self-hosted the exact faces the mobile app uses (Fraunces 600/700, Fredoka
+  500/600/700) from @expo-google-fonts into artifacts/woofwatcher/public/fonts,
+  wired via @font-face (font-display: swap). No font CDN, so the PWA needs no
+  external request and works offline.
+- Applied Fraunces to the wordmark + page greeting (matching mobile route
+  titles), Fredoka to section/card headings (matching mobile card headlines);
+  body copy stays Inter/system.
+- Dark-theme --forest 8FC48E -> 6DA36F so the dark accent matches the mobile
+  dark forest family (the active nav keeps readable dark ink via --on-forest).
+
+## Verification
+
+Rebuilt and screenshotted light + dark at desktop (1200px) and PWA/phone (420px):
+- Fonts actually resolve (document.fonts reports Fraunces 700 + Fredoka 600
+  loaded from the local /fonts path).
+- Greeting + wordmark render in Fraunces; section/card headings in Fredoka;
+  deep forest primary intact; dark active nav readable.
+- PWA/phone: greeting + headings restyle, bottom tab bar active tab deep forest,
+  layout intact.
+- 0 console/page errors; web typecheck clean.
+
+## Not in scope
+
+- Inter body face not self-hosted yet (falls back to system-ui, near-identical);
+  can be added for exact parity.
+- Deeper component-level parity (card chrome, spacing) beyond palette + type.
