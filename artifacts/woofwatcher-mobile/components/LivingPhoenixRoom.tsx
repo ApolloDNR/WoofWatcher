@@ -219,16 +219,18 @@ function getCompactSpriteZone(zone: SpriteStageZone): SpriteStageZone {
   };
 }
 
-// Immersive mode grounds the care twin on the framed room card's floor
-// band: the storybook card is shorter than the old full-bleed stage, so the
-// rig anchors higher to keep paws inside the frame at every density.
+// Immersive Home stage: the twin is sized to sit believably inside the
+// full-bleed storybook room rather than dominate it (a larger rig read as
+// ~2x the window and overlapped the plant/shelf). 112px keeps the dog the
+// clear focal point while the room objects breathe; top 42% plants its paws
+// on the rug instead of floating above it.
 function getImmersiveSpriteZone(zone: SpriteStageZone): SpriteStageZone {
   return {
     ...zone,
-    left: "30%",
-    top: "22%",
-    width: 150,
-    height: 150,
+    left: "35%",
+    top: "42%",
+    width: 112,
+    height: 112,
   };
 }
 
@@ -1498,7 +1500,14 @@ export function LivingPhoenixRoom({
   );
 }
 
-const ROAM_RIG_SIZE = 150;
+// The roaming twin matches the resting twin's scale (getImmersiveSpriteZone)
+// so the dog is one consistent size whether it is curled up or pacing the
+// floor. ROAM_RIG_BASELINE is the size the floor waypoints were originally
+// tuned against; the rig is bottom-aligned, so nudging its `top` by the
+// (baseline - size) delta keeps the paws planted on the floor line when the
+// size shrinks (see styles.roamRig).
+const ROAM_RIG_BASELINE = 150;
+const ROAM_RIG_SIZE = 112;
 const ROAM_BOB_MS = 340;
 
 /**
@@ -1918,7 +1927,9 @@ const styles = StyleSheet.create({
   roamRig: {
     position: "absolute",
     left: 0,
-    top: 0,
+    // Bottom-aligned rig: shifting top by the size delta keeps the paws on the
+    // same floor line as the old 150px rig now that the twin is smaller.
+    top: ROAM_RIG_BASELINE - ROAM_RIG_SIZE,
     width: ROAM_RIG_SIZE,
     height: ROAM_RIG_SIZE,
     alignItems: "center",
