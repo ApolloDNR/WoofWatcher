@@ -105,9 +105,14 @@ function parseAmount(text: string | number | null | undefined): ParsedAmount | n
 
 function mealTargetCount(profileText: string): number {
   const text = profileText.toLowerCase();
-  if (/\b(three|3)\b|\b3x\b/.test(text)) return 3;
-  if (/\b(twice|two|2)\b|\b2x\b/.test(text)) return 2;
-  if (/\b(once|one|1)\b|\b1x\b/.test(text)) return 1;
+  // Only treat a number as a meal frequency when it is unambiguously one: a
+  // frequency word, an "Nx"/"xN" form, or "N times/meals/feedings". A BARE
+  // digit is usually a portion size ("1 cup", "1.5 cups") and must not be read
+  // as the meal count — doing so forced two-meal schedules down to one meal and
+  // produced false over-feeding readouts (e.g. "2 of 1 cup today", 200%).
+  if (/\b(three|thrice)\b|\b3x\b|\bx3\b|\b3\s*(?:times|meals|feedings)\b/.test(text)) return 3;
+  if (/\b(twice|two)\b|\b2x\b|\bx2\b|\b2\s*(?:times|meals|feedings)\b/.test(text)) return 2;
+  if (/\b(once|one)\b|\b1x\b|\bx1\b|\b1\s*(?:time|meal|feeding)\b/.test(text)) return 1;
 
   const scheduleMatches = ["breakfast", "lunch", "dinner"].filter((word) =>
     text.includes(word),
@@ -140,7 +145,18 @@ function sameDay(occurredAt: string | null | undefined, now: number): boolean {
   if (!occurredAt) return false;
   const entryTime = new Date(occurredAt).getTime();
   if (!Number.isFinite(entryTime)) return false;
-  return new Date(entryTime).toISOString().slice(0, 10) === new Date(now).toISOString().slice(0, 10);
+  // Compare local calendar dates so "today" matches the caregiver's day, not
+  // UTC. Using toISOString here dropped evening meals in the Americas (where
+  // the UTC date has already rolled over) out of the day's diet progress. Every
+  // sibling module (potty-health, water, status, routine-board, medication)
+  // compares local Y/M/D — keep this consistent with them.
+  const entry = new Date(entryTime);
+  const current = new Date(now);
+  return (
+    entry.getFullYear() === current.getFullYear() &&
+    entry.getMonth() === current.getMonth() &&
+    entry.getDate() === current.getDate()
+  );
 }
 
 interface MealAmountResult {
