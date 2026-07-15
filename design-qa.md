@@ -363,3 +363,34 @@ content (fed + walked) dog, then sampled the roaming rig across frames:
   bookshelf - instead of dominating the room.
 - Focused suite 710/711 (the one failure is the Node-24 doctor assertion). The
   roaming-rig testID contract is intact.
+
+# Design QA - Web App (mobile export) Installable PWA
+
+Date: 2026-07-15
+
+## Scope
+
+The web app IS the mobile app's Expo web export (the .replit deployment builds
+and serves woofwatcher-mobile) - confirmed after removing the stray, non-deployed
+artifacts/woofwatcher dashboard from consideration. That web app shipped with no
+PWA manifest, so it couldn't be installed to a home screen. Added installability
+without touching the mobile runtime.
+
+- New public/manifest.json (name, standalone display, portrait, theme/background
+  #F7F1E1, three icon entries) + public/icon.png (1024x1024, from the app icon);
+  Expo copies public/ to the export root.
+- The export is single-output (SPA), so Expo's +html.tsx (static-only) is ignored
+  and the app isn't SSR-safe for `static` output. Instead, smoke-web-export.js now
+  injects the PWA head tags into the built index.html after export (idempotent):
+  manifest link, apple-touch-icon, apple/mobile web-app-capable, title, and
+  light/dark theme-color. The deploy uses smoke:web, so production gets it too.
+
+## Verification
+
+Rebuilt + served the export:
+- /manifest.json and /icon.png serve 200; in-page check reports a valid manifest
+  (name WoofWatcher, display standalone, 3 icons, theme-color #F7F1E1).
+- index.html carries the manifest link + apple-touch-icon + light/dark
+  theme-color; the expo-reset (ScrollView) style shell is intact.
+- App renders the storybook home with 0 console/page errors after the head
+  change; mobile typecheck clean. Native build path untouched (web-only files).
