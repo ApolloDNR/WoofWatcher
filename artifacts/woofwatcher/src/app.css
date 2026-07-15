@@ -5,7 +5,12 @@
   --surface: #FFF9EF;
   --surface-nested: #F7F2E8;
   --sage: #E8F3E7;
-  --forest: #6DA36F;
+  /* Aligned to the mobile storybook primary (deep forest) so the web and app
+     read as one product. --on-forest is the readable ink for text/icons that
+     sit ON a --forest fill; it flips per theme so the deep light-mode green
+     takes cream and the lighter dark-mode green keeps its dark ink. */
+  --forest: #33582F;
+  --on-forest: #F4EFE0;
   --navy: #081A2A;
   --navy-2: #102C40;
   --copper: #C85A2A;
@@ -33,6 +38,7 @@
   --surface-nested: #0B2132;
   --sage: #173B35;
   --forest: #8FC48E;
+  --on-forest: #06131F;
   --navy: #050D16;
   --navy-2: #081A2A;
   --copper: #E07A2F;
@@ -1209,7 +1215,7 @@ p { margin: 0; }
 }
 .side-link svg { width: 20px; height: 20px; flex-shrink: 0; }
 .side-link:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
-.side-link.active { background: var(--forest); color: var(--navy); }
+.side-link.active { background: var(--forest); color: var(--on-forest); }
 .side-link.secondary { font-size: 0.84rem; color: rgba(232, 236, 234, 0.58); }
 .side-link.secondary svg { opacity: 0.72; }
 

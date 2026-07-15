@@ -363,3 +363,41 @@ content (fed + walked) dog, then sampled the roaming rig across frames:
   bookshelf - instead of dominating the room.
 - Focused suite 710/711 (the one failure is the Node-24 doctor assertion). The
   roaming-rig testID contract is intact.
+
+# Design QA - Web/PWA Palette Alignment (deep-forest primary)
+
+Date: 2026-07-15
+
+## Scope
+
+Started the "web/PWA visually aligns after mobile is strong" priority
+(CLAUDE.md #9). The web dashboard's brand green was a medium `#6DA36F` while the
+mobile storybook primary is the deep forest `#33582F`, so the two surfaces read
+as different products. Aligned the light-theme `--forest` to `#33582F`.
+
+Because `--forest` does double duty (fills AND text), every fill rule already
+used white/`#fff` ink except `.side-link.active`, which used `--navy` (invisible
+on a deep green). Added a theme-flipping `--on-forest` ink token (light
+`#F4EFE0`, dark `#06131F`) and pointed the active nav at it, so the deep
+light-mode green takes cream while the lighter dark-mode green keeps its dark
+ink. Dark `--forest` left unchanged (dark themes legitimately run a lighter
+accent; mobile does the same), so the dark surface is untouched.
+
+## Verification
+
+Rebuilt the web app and screenshotted light + dark at desktop (1200px) and
+PWA/phone (420px) widths:
+- Light: active nav, links, avatars, energy bar, and status text now render the
+  deep forest, matching the mobile app; cream ink on the active nav is clearly
+  readable.
+- Dark: unchanged (active nav keeps dark-on-light-green via `--on-forest`); no
+  regression.
+- PWA/phone width: the collapsed bottom tab bar's active tab is now deep forest;
+  layout intact.
+- 0 console/page errors; web typecheck clean; vanilla web tests 18/18.
+
+## Not in scope
+
+- Dark-theme green could be nudged from `#8FC48E` toward mobile's dark forest
+  family in a follow-up (needs its own contrast pass on the active nav).
+- Typography (mobile's Fraunces/Fredoka display faces) not yet brought to web.
