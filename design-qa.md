@@ -333,3 +333,33 @@ Reanimated does not animate) to land the paws on the rug in one export.
   verified in the awake/day roam state (not reachable in a static export).
 - The other screens' compact room hero cards (getCompactSpriteZone) were left
   as-is; they use a different baked landscape room and a smaller card frame.
+
+# Design QA - Roaming Twin Scale Match
+
+Date: 2026-07-15
+
+## Scope
+
+Followed the Home resting-twin scale fix through to the roaming/awake twin so
+the dog is ONE consistent size whether it is curled up (night, resting) or
+pacing the floor (day, awake). The roaming rig still used the old
+ROAM_RIG_SIZE 150, so the awake dog measured about as tall as the bookshelf and
+~2x the dog house/plant - the same oversized read the resting twin had before.
+
+Set ROAM_RIG_SIZE to 112 (matching getImmersiveSpriteZone). The rig is
+bottom-aligned and top-left anchored to floor waypoints tuned for 150, so
+shrinking naively would lift the paws ~38px off the floor; kept it grounded by
+nudging the rig's `top` by (ROAM_RIG_BASELINE - ROAM_RIG_SIZE), which the
+depth-scale math holds to sub-pixel.
+
+## Verification
+
+Forced the awake/roam state by mocking the clock to mid-afternoon and seeding a
+content (fed + walked) dog, then sampled the roaming rig across frames:
+- Rig is 112x112 (matches the resting twin) and travels as it walks.
+- Paws stay planted on the rug at multiple floor positions (left + right);
+  feet landed within ~8px of the old 150 rig's floor line.
+- The awake dog now reads believably - comparable to the dog house, plant, and
+  bookshelf - instead of dominating the room.
+- Focused suite 710/711 (the one failure is the Node-24 doctor assertion). The
+  roaming-rig testID contract is intact.
