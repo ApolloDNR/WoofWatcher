@@ -436,8 +436,8 @@ export default function AdventureScreen() {
                 },
               ]}
             >
-              <Ionicons name={questIcon(availableQuest.id)} size={16} color="#FFFFFF" />
-              <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>
+              <Ionicons name={questIcon(availableQuest.id)} size={16} color={colors.primaryForeground} />
+              <Text style={[s.primaryBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
                 {primaryQuestActionLabel}
               </Text>
             </Pressable>

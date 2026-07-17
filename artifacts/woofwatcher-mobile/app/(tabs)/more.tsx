@@ -2873,7 +2873,7 @@ export default function MoreScreen() {
                 style={({ pressed }) => [s.shareBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
                 <Ionicons name="share-outline" size={16} color="#fff" />
-                <Text style={[s.shareBtnText, { fontFamily: "Inter_700Bold" }]}>Invite</Text>
+                <Text style={[s.shareBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Invite</Text>
               </Pressable>
             </View>
 
@@ -3465,7 +3465,7 @@ export default function MoreScreen() {
                 onPress={saveDiet}
                 style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
-                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save diet profile</Text>
+                <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save diet profile</Text>
               </Pressable>
             </ScrollView>
           </Pressable>
@@ -3555,7 +3555,7 @@ export default function MoreScreen() {
                 accessibilityLabel="Save future dog to CareTwin roster"
                 style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
-                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save planned slot</Text>
+                <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save planned slot</Text>
               </Pressable>
             </View>
           </Pressable>
@@ -3618,7 +3618,7 @@ export default function MoreScreen() {
                 accessibilityLabel="Save Access Pass draft"
                 style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
-                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save Local Draft</Text>
+                <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save Local Draft</Text>
               </Pressable>
             </View>
           </Pressable>
@@ -3730,7 +3730,7 @@ export default function MoreScreen() {
                 accessibilityLabel="Save provider launch setup"
                 style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
-                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save provider setup</Text>
+                <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save provider setup</Text>
               </Pressable>
             </ScrollView>
           </Pressable>
@@ -3865,7 +3865,7 @@ export default function MoreScreen() {
               onPress={saveProfile}
               style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
             >
-              <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save profile</Text>
+              <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save profile</Text>
             </Pressable>
             </ScrollView>
           </Pressable>
@@ -3933,7 +3933,7 @@ function PromptModal({
               disabled={loading}
               style={({ pressed }) => [s.modalConfirm, { backgroundColor: colors.primary, opacity: pressed || loading ? 0.7 : 1 }]}
             >
-              <Text style={[s.modalConfirmText, { fontFamily: "Inter_700Bold" }]}>{loading ? "…" : confirmLabel}</Text>
+              <Text style={[s.modalConfirmText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{loading ? "…" : confirmLabel}</Text>
             </Pressable>
           </View>
         </Pressable>

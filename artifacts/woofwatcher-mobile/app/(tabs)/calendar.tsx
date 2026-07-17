@@ -1933,7 +1933,7 @@ export default function CalendarScreen() {
             />
 
             <Pressable onPress={submitRoutine} disabled={!rLabel.trim()} style={[s.saveBtn, { backgroundColor: rLabel.trim() ? colors.primary : colors.border }]}>
-              <Text style={[s.saveBtnText, { color: rLabel.trim() ? "#fff" : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
+              <Text style={[s.saveBtnText, { color: rLabel.trim() ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
             </Pressable>
             {/* Validation feedback lives next to the submit button so the
                 sheet never looks silently broken when a field above is off. */}
@@ -2032,7 +2032,7 @@ export default function CalendarScreen() {
             />
 
             <Pressable onPress={submitEvent} disabled={!evTitle.trim()} style={[s.saveBtn, { backgroundColor: evTitle.trim() ? colors.primary : colors.border }]}>
-              <Text style={[s.saveBtnText, { fontFamily: "Inter_700Bold" }]}>Add to Calendar</Text>
+              <Text style={[s.saveBtnText, { color: evTitle.trim() ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Add to Calendar</Text>
             </Pressable>
             {/* Validation feedback lives next to the submit button so the
                 sheet never looks silently broken when a field above is off. */}

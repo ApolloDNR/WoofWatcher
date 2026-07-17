@@ -376,7 +376,7 @@ function PremiumScreenBody() {
               style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
             >
               <Ionicons name="clipboard-outline" size={18} color="#FFFFFF" />
-              <Text style={[s.primaryText, { fontFamily: "Inter_700Bold" }]}>Launch checklist</Text>
+              <Text style={[s.primaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Launch checklist</Text>
             </Pressable>
             <Pressable
               onPress={() => {

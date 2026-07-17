@@ -2987,7 +2987,7 @@ export default function RecordsScreen() {
                       onPress={() => shareCarePass(carePassPreview)}
                       style={({ pressed }) => [s.sheetSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                     >
-                      <Text style={[s.sheetSaveText, { fontFamily: "Inter_700Bold" }]}>Save & share</Text>
+                      <Text style={[s.sheetSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save & share</Text>
                     </Pressable>
                   </View>
                 </>
@@ -3082,7 +3082,7 @@ export default function RecordsScreen() {
                   onPress={saveRecord}
                   style={({ pressed }) => [s.sheetSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                 >
-                  <Text style={[s.sheetSaveText, { fontFamily: "Inter_700Bold" }]}>Save record</Text>
+                  <Text style={[s.sheetSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save record</Text>
                 </Pressable>
               </View>
             </Pressable>

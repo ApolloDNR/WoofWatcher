@@ -374,7 +374,7 @@ export default function PrivacyScreen() {
             style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
           >
             <Ionicons name="download-outline" size={18} color="#FFFFFF" />
-            <Text style={[s.primaryText, { fontFamily: "Inter_700Bold" }]}>Export care data</Text>
+            <Text style={[s.primaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Export care data</Text>
           </Pressable>
           {/* The email-based "Deletion request" only makes sense once a
               provider account exists. In the local-first build there is no
@@ -619,7 +619,7 @@ export default function PrivacyScreen() {
                       { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 },
                     ]}
                   >
-                    <Text style={[s.confirmPrimaryText, { fontFamily: "Inter_800ExtraBold" }]}>
+                    <Text style={[s.confirmPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>
                       Done
                     </Text>
                   </Pressable>
@@ -775,7 +775,7 @@ export default function PrivacyScreen() {
                   { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 },
                 ]}
               >
-                <Text style={[s.modalPrimaryText, { fontFamily: "Inter_800ExtraBold" }]}>Owner-reviewed</Text>
+                <Text style={[s.modalPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Owner-reviewed</Text>
               </Pressable>
             </View>
           </Pressable>

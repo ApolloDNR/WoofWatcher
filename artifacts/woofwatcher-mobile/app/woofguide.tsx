@@ -755,7 +755,7 @@ export default function WoofGuideScreen() {
                     accessibilityLabel="Apply reviewed WoofGuide draft"
                     style={[s.reviewApply, { backgroundColor: colors.primary }]}
                   >
-                    <Text style={[s.reviewApplyText, { fontFamily: "Inter_700Bold" }]}>{reviewAction.draft.cta}</Text>
+                    <Text style={[s.reviewApplyText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{reviewAction.draft.cta}</Text>
                   </Pressable>
                 </View>
               </>

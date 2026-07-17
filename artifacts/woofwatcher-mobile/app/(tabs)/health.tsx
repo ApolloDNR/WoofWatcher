@@ -928,7 +928,7 @@ export default function HealthScreen() {
                 { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
               ]}
             >
-              <Text style={[s.heroActionPrimaryText, { fontFamily: "Inter_700Bold" }]}>Log health note</Text>
+              <Text style={[s.heroActionPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Log health note</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"

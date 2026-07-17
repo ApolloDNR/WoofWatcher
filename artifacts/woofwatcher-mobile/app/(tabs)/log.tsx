@@ -5037,7 +5037,7 @@ export default function LogScreen() {
                   onPress={saveQuickNote}
                   style={({ pressed }) => [s.modalSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                 >
-                  <Text style={[s.modalSaveText, { fontFamily: "Inter_700Bold" }]}>Save sticky</Text>
+                  <Text style={[s.modalSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save sticky</Text>
                 </Pressable>
               </View>
             </Pressable>
