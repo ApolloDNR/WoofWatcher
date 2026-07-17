@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 
 import { EntryTypeIcon, entryTypeColor } from "@/components/EntryTypeIcon";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
@@ -12,12 +11,15 @@ import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 /**
  * DayTrailScene - the Story hero before any walk records a real route.
  *
- * Instead of a static painting, the trail is drawn in code and every marker on
- * it is a real care log from today, placed in the order it happened. The care
- * twin stands at the latest stop - literally "where the day is now" - and the
- * sky follows the actual time of day, the same honesty rule as the living
- * room: the scene only ever presents real state, it never invents it.
+ * Same architecture as the living room: the hand-painted pixel world is the
+ * stage, and everything alive on it is real state. The painted map's own
+ * dashed trail is the path; every marker pinned along it is one of today's
+ * actual care logs in the order they happened, the care twin walks the trail
+ * to the latest stop, and nightfall washes over the map on the real clock.
+ * The scene never invents a stop.
  */
+
+const MAP_ART = require("@/assets/story/adventure-map.png");
 
 export interface DayTrailStop {
   id: string;
@@ -37,78 +39,6 @@ interface Props {
 
 type DayPhase = "morning" | "day" | "evening" | "night";
 
-/** Scene palette per phase. The scene is its own little world (like the room
- *  art), so these are scene constants, not theme tokens. */
-const PHASES: Record<
-  DayPhase,
-  {
-    sky: [string, string];
-    orb: string;
-    orbGlow: string;
-    treeCanopy: string;
-    treeTrunk: string;
-    meadow: string;
-    ground: string;
-    pebbleA: string;
-    pebbleB: string;
-    wash: string;
-    stars: boolean;
-  }
-> = {
-  morning: {
-    sky: ["#F9DFAE", "#F6EFD8"],
-    orb: "#F4C86A",
-    orbGlow: "rgba(244, 200, 106, 0.35)",
-    treeCanopy: "#4D7A48",
-    treeTrunk: "#7A5B3A",
-    meadow: "#A9C18F",
-    ground: "#D9C29A",
-    pebbleA: "#C2A97E",
-    pebbleB: "#B39A70",
-    wash: "rgba(244, 200, 106, 0.08)",
-    stars: false,
-  },
-  day: {
-    sky: ["#BFD9E8", "#EAF2E0"],
-    orb: "#F7E3A4",
-    orbGlow: "rgba(247, 227, 164, 0.4)",
-    treeCanopy: "#4D8A56",
-    treeTrunk: "#7A5B3A",
-    meadow: "#A9C18F",
-    ground: "#DCC7A0",
-    pebbleA: "#C2A97E",
-    pebbleB: "#B39A70",
-    wash: "rgba(255, 255, 255, 0)",
-    stars: false,
-  },
-  evening: {
-    sky: ["#EDA96C", "#F3DEB9"],
-    orb: "#E8935A",
-    orbGlow: "rgba(232, 147, 90, 0.38)",
-    treeCanopy: "#3E6B44",
-    treeTrunk: "#6E4F33",
-    meadow: "#96AD7F",
-    ground: "#CBB48D",
-    pebbleA: "#B39A70",
-    pebbleB: "#A28960",
-    wash: "rgba(232, 147, 90, 0.10)",
-    stars: false,
-  },
-  night: {
-    sky: ["#0D1D33", "#22364E"],
-    orb: "#E8E2CE",
-    orbGlow: "rgba(232, 226, 206, 0.28)",
-    treeCanopy: "#2C4A3C",
-    treeTrunk: "#4A3826",
-    meadow: "#4E6650",
-    ground: "#6E5F45",
-    pebbleA: "#8A785A",
-    pebbleB: "#7A6A4E",
-    wash: "rgba(13, 29, 51, 0.16)",
-    stars: true,
-  },
-};
-
 function phaseFor(now: number): DayPhase {
   const hour = new Date(now).getHours();
   if (hour < 6 || hour >= 20) return "night";
@@ -117,31 +47,40 @@ function phaseFor(now: number): DayPhase {
   return "evening";
 }
 
-/** Fixed star field (night only) - stable positions, no randomness. */
+/** Atmosphere over the painted map. Scenery only - data never tints. */
+const PHASE_WASH: Record<DayPhase, string> = {
+  morning: "rgba(255, 214, 140, 0.10)",
+  day: "rgba(255, 255, 255, 0)",
+  evening: "rgba(220, 118, 60, 0.16)",
+  night: "rgba(8, 20, 36, 0.44)",
+};
+
+/** Fixed star field (night only) - stable positions, upper sky of the map. */
 const STARS: readonly { x: number; y: number; s: number }[] = [
-  { x: 0.08, y: 0.06, s: 3 }, { x: 0.22, y: 0.12, s: 2 }, { x: 0.34, y: 0.05, s: 2 },
-  { x: 0.52, y: 0.1, s: 3 }, { x: 0.66, y: 0.04, s: 2 }, { x: 0.79, y: 0.13, s: 2 },
-  { x: 0.91, y: 0.07, s: 3 }, { x: 0.45, y: 0.17, s: 2 },
+  { x: 0.07, y: 0.05, s: 3 }, { x: 0.2, y: 0.1, s: 2 }, { x: 0.33, y: 0.04, s: 2 },
+  { x: 0.5, y: 0.08, s: 3 }, { x: 0.63, y: 0.03, s: 2 }, { x: 0.78, y: 0.09, s: 2 },
+  { x: 0.9, y: 0.05, s: 3 }, { x: 0.44, y: 0.13, s: 2 },
 ];
 
-/** Distant treeline - chunky pixel trees at fixed spots along the horizon. */
-const TREES: readonly { x: number; h: number; w: number }[] = [
-  { x: 0.02, h: 34, w: 26 }, { x: 0.15, h: 26, w: 20 }, { x: 0.3, h: 38, w: 28 },
-  { x: 0.52, h: 24, w: 18 }, { x: 0.66, h: 34, w: 26 }, { x: 0.84, h: 28, w: 22 },
-];
-
-/** The trail: a wandering S-curve, bottom-left trailhead to upper-right. */
+/**
+ * The painted map's own dashed trail, traced as fractions of the artwork.
+ * It runs from the trailhead sign at the bottom-left up past the fire sign
+ * to the paw badge. The card and the artwork share a 5:4 aspect, so cover
+ * cropping is negligible and these fractions map straight onto the card.
+ */
 const ANCHORS: readonly { x: number; y: number }[] = [
-  { x: 0.1, y: 0.9 },
-  { x: 0.46, y: 0.82 },
-  { x: 0.78, y: 0.68 },
-  { x: 0.48, y: 0.56 },
-  { x: 0.22, y: 0.47 },
-  { x: 0.5, y: 0.4 },
-  { x: 0.82, y: 0.34 },
+  { x: 0.245, y: 0.8 },
+  { x: 0.27, y: 0.66 },
+  { x: 0.255, y: 0.56 },
+  { x: 0.3, y: 0.47 },
+  { x: 0.38, y: 0.425 },
+  { x: 0.475, y: 0.37 },
+  { x: 0.555, y: 0.335 },
+  { x: 0.625, y: 0.28 },
+  { x: 0.645, y: 0.245 },
 ];
 
-const SAMPLES_PER_SEGMENT = 10;
+const SAMPLES_PER_SEGMENT = 8;
 
 /** Sample the anchor chain as smoothed quadratic segments (midpoint spline). */
 function samplePath(width: number, height: number): { x: number; y: number }[] {
@@ -172,13 +111,11 @@ const WALK_SPRITE = getCareTwinSpriteAsset("walk-loop");
 const IDLE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
 
 const MAX_STOPS = 6;
-const SPRITE_SIZE = 68;
 
 export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props) {
   const colors = useColors();
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
   const phase = phaseFor(now ?? Date.now());
-  const palette = PHASES[phase];
 
   const shown = stops.slice(-MAX_STOPS);
 
@@ -186,17 +123,17 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
     if (!size) return null;
     const path = samplePath(size.width, size.height);
     const last = path.length - 1;
-    // Waypoints sit along the walked stretch of the trail; the twin stands
-    // one step past the latest stop. An empty day parks the twin at the
-    // trailhead with the whole path still ahead.
+    // Waypoints cover the walked stretch of the painted trail; the twin is a
+    // step past the latest stop. An empty day parks the twin at the trailhead
+    // with the whole path still ahead of it.
     const waypoints = shown.map((stop, index) => {
-      const t = shown.length === 1 ? 0.18 : 0.08 + (0.62 * index) / (shown.length - 1);
+      const t = shown.length === 1 ? 0.16 : 0.05 + (0.58 * index) / (shown.length - 1);
       const p = path[Math.round(t * last)];
       return { stop, x: p.x, y: p.y };
     });
-    const twinT = shown.length === 0 ? 0.02 : shown.length === 1 ? 0.3 : 0.08 + 0.62 + 0.1;
+    const twinT = shown.length === 0 ? 0.01 : shown.length === 1 ? 0.28 : 0.05 + 0.58 + 0.1;
     const twinPoint = path[Math.min(last, Math.round(twinT * last))];
-    return { path, waypoints, twinPoint };
+    return { waypoints, twinPoint };
   }, [size, shown]);
 
   const summaryLabel =
@@ -206,6 +143,8 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
 
   const spriteAsset = shown.length > 0 ? WALK_SPRITE : IDLE_SPRITE;
   const spriteTrack = shown.length > 0 ? WALK_TRACK : IDLE_TRACK;
+  // The trail climbs "into" the map: the farther along, the smaller the twin.
+  const spriteSize = layout ? Math.round(46 + 28 * (layout.twinPoint.y / Math.max(1, size?.height ?? 1))) : 64;
 
   return (
     <View
@@ -216,9 +155,68 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
         if (width > 0 && height > 0) setSize({ width, height });
       }}
     >
-      {/* Sky */}
-      <LinearGradient colors={palette.sky} style={styles.sky} />
-      {palette.stars
+      {/* The hand-painted world - the same stagecraft as the living room. */}
+      <Image source={MAP_ART} style={styles.mapArt} resizeMode="cover" fadeDuration={0} />
+
+      {/* Real care stops pinned along the painted trail, in the order they
+          happened. A nested Pressable claims the touch, so tapping a stop
+          opens its log without triggering the hero press. */}
+      {layout
+        ? layout.waypoints.map(({ stop, x, y }, index) => (
+            <Animated.View
+              key={stop.id}
+              entering={FadeInDown.delay(Math.min(index, 6) * 70).springify().damping(20).stiffness(240)}
+              style={{ position: "absolute", left: x - 15, top: y - 15 }}
+            >
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${stop.label}, ${stop.timeLabel}. Open this log.`}
+                hitSlop={8}
+                onPress={onPressStop ? () => onPressStop(stop.id) : undefined}
+                style={({ pressed }) => [
+                  styles.waypoint,
+                  {
+                    backgroundColor: colors.ivory,
+                    borderColor: entryTypeColor(stop.type, colors),
+                    transform: [{ scale: pressed ? 0.9 : 1 }],
+                  },
+                ]}
+              >
+                <EntryTypeIcon type={stop.type} size={15} />
+              </Pressable>
+            </Animated.View>
+          ))
+        : null}
+
+      {/* The care twin, walking the painted trail to where the day is now. */}
+      {layout && spriteAsset ? (
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            left: layout.twinPoint.x - spriteSize / 2,
+            top: layout.twinPoint.y - spriteSize + 8,
+          }}
+        >
+          <View
+            style={[
+              styles.twinShadow,
+              { width: spriteSize * 0.52, backgroundColor: "rgba(20, 26, 16, 0.3)" },
+            ]}
+          />
+          <SpriteSheetPlayer
+            asset={spriteAsset}
+            track={spriteTrack}
+            width={spriteSize}
+            height={spriteSize}
+            testID="story-day-trail-sprite"
+          />
+        </View>
+      ) : null}
+
+      {/* Nightfall / dawn wash over the whole scene - atmosphere, never data. */}
+      <View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { backgroundColor: PHASE_WASH[phase] }]} />
+      {phase === "night"
         ? STARS.map((star, index) => (
             <View
               key={`star-${index}`}
@@ -230,127 +228,11 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
                 width: star.s,
                 height: star.s,
                 backgroundColor: "#F3ECDA",
-                opacity: 0.9,
+                opacity: 0.85,
               }}
             />
           ))
         : null}
-      {/* Sun / moon */}
-      <View pointerEvents="none" style={styles.orbWrap}>
-        <View style={[styles.orbGlow, { backgroundColor: palette.orbGlow }]} />
-        <View style={[styles.orb, { backgroundColor: palette.orb }]} />
-      </View>
-
-      {/* Distant treeline on the horizon */}
-      {size
-        ? TREES.map((tree, index) => (
-            <View
-              key={`tree-${index}`}
-              pointerEvents="none"
-              style={{ position: "absolute", left: tree.x * size.width, top: size.height * 0.42 - tree.h }}
-            >
-              <View style={{ width: tree.w, height: tree.h * 0.44, backgroundColor: palette.treeCanopy }} />
-              <View
-                style={{
-                  width: tree.w * 0.62,
-                  height: tree.h * 0.34,
-                  marginTop: -tree.h * 0.1,
-                  alignSelf: "center",
-                  backgroundColor: palette.treeCanopy,
-                }}
-              />
-              <View
-                style={{
-                  width: 6,
-                  height: tree.h * 0.3,
-                  alignSelf: "center",
-                  backgroundColor: palette.treeTrunk,
-                }}
-              />
-            </View>
-          ))
-        : null}
-
-      {/* Meadow and ground */}
-      <View style={[styles.meadow, { backgroundColor: palette.meadow }]} />
-      <View style={[styles.ground, { backgroundColor: palette.ground }]} />
-
-      {/* Trail pebbles - the day's path, drawn not painted */}
-      {layout
-        ? layout.path.map((point, index) => {
-            if (index % 2 !== 0) return null;
-            const depth = 1 - (index / layout.path.length) * 0.45;
-            const pebble = 5 * depth;
-            return (
-              <View
-                key={`pebble-${index}`}
-                pointerEvents="none"
-                style={{
-                  position: "absolute",
-                  left: point.x - pebble / 2,
-                  top: point.y - pebble / 2,
-                  width: pebble + (index % 4 === 0 ? 1.5 : 0),
-                  height: pebble,
-                  borderRadius: 1.5,
-                  backgroundColor: index % 4 === 0 ? palette.pebbleA : palette.pebbleB,
-                  opacity: shown.length === 0 ? 0.6 : 0.95,
-                }}
-              />
-            );
-          })
-        : null}
-
-      {/* Real care stops as waypoints, in the order they happened */}
-      {layout
-        ? layout.waypoints.map(({ stop, x, y }, index) => (
-            <Animated.View
-              key={stop.id}
-              entering={FadeInDown.delay(Math.min(index, 6) * 70).springify().damping(20).stiffness(240)}
-              style={{ position: "absolute", left: x - 17, top: y - 17 }}
-            >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${stop.label}, ${stop.timeLabel}. Open this log.`}
-                hitSlop={6}
-                onPress={onPressStop ? () => onPressStop(stop.id) : undefined}
-                style={({ pressed }) => [
-                  styles.waypoint,
-                  {
-                    backgroundColor: colors.ivory,
-                    borderColor: entryTypeColor(stop.type, colors),
-                    transform: [{ scale: pressed ? 0.9 : 1 }],
-                  },
-                ]}
-              >
-                <EntryTypeIcon type={stop.type} size={16} />
-              </Pressable>
-            </Animated.View>
-          ))
-        : null}
-
-      {/* The care twin, standing where the day is now */}
-      {layout && spriteAsset ? (
-        <View
-          pointerEvents="none"
-          style={{
-            position: "absolute",
-            left: layout.twinPoint.x - SPRITE_SIZE / 2,
-            top: layout.twinPoint.y - SPRITE_SIZE + 10,
-          }}
-        >
-          <View style={[styles.twinShadow, { backgroundColor: "rgba(42, 37, 25, 0.22)" }]} />
-          <SpriteSheetPlayer
-            asset={spriteAsset}
-            track={spriteTrack}
-            width={SPRITE_SIZE}
-            height={SPRITE_SIZE}
-            testID="story-day-trail-sprite"
-          />
-        </View>
-      ) : null}
-
-      {/* Phase wash for cohesion */}
-      <View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { backgroundColor: palette.wash }]} />
 
       {/* Day chip: honest stop count */}
       <View style={[styles.dayChip, { backgroundColor: colors.card + "F0", borderColor: colors.border }]}>
@@ -369,67 +251,30 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
   },
-  sky: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    height: "46%",
-  },
-  orbWrap: {
-    position: "absolute",
-    right: "12%",
-    top: "6%",
-    width: 58,
-    height: 58,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  orbGlow: {
-    position: "absolute",
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-  },
-  orb: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-  },
-  meadow: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: "42%",
-    height: "22%",
-  },
-  ground: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: "60%",
-    bottom: 0,
+  mapArt: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
   },
   waypoint: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#2A2519",
-    shadowOpacity: 0.18,
+    shadowColor: "#141A10",
+    shadowOpacity: 0.3,
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    elevation: 4,
   },
   twinShadow: {
     position: "absolute",
-    bottom: 2,
+    bottom: 1,
     alignSelf: "center",
-    width: SPRITE_SIZE * 0.56,
-    height: 9,
-    borderRadius: 5,
+    height: 8,
+    borderRadius: 4,
   },
   dayChip: {
     position: "absolute",
