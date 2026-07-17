@@ -117,7 +117,7 @@ export default function LegalScreen() {
           active={doc}
           onChange={setDoc}
         />
-        <BoardCard>
+        <BoardCard enter={0}>
           {blocks.map((block, index) => {
             if (block.kind === "h1") {
               return (

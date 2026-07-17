@@ -405,7 +405,7 @@ export default function AdventureScreen() {
           {petName}'s lifetime care level lives on Pack and More.
         </Text>
 
-        <BoardCard style={s.board}>
+        <BoardCard enter={0} style={s.board}>
           <BoardSectionHeader
             title="Next quest"
             accessory={<BoardPill label={adventure.status === "needs-outing" ? "Start simple" : "Ready"} tone={colors.amber} />}
@@ -452,7 +452,7 @@ export default function AdventureScreen() {
           </View>
         </BoardCard>
 
-        <BoardCard style={s.board}>
+        <BoardCard enter={1} style={s.board}>
           <BoardSectionHeader
             title="Quest board"
             accessory={<BoardPill label={`${adventure.quests.length} quests`} tone={colors.primary} />}
@@ -514,7 +514,7 @@ export default function AdventureScreen() {
           ) : null}
         </BoardCard>
 
-        <BoardCard style={s.board}>
+        <BoardCard enter={2} style={s.board}>
           <BoardSectionHeader
             title="Adventure Trail"
             accessory={
@@ -589,7 +589,7 @@ export default function AdventureScreen() {
           )}
         </BoardCard>
 
-        <BoardCard style={s.board}>
+        <BoardCard enter={3} style={s.board}>
           <BoardSectionHeader
             title="Care proof"
             accessory={<BoardPill label={`${adventure.completedProof.length} today`} tone={colors.sage} />}
@@ -627,7 +627,7 @@ export default function AdventureScreen() {
           )}
         </BoardCard>
 
-        <BoardCard style={s.board}>
+        <BoardCard enter={4} style={s.board}>
           <BoardSectionHeader
             title="Memory shelf"
             accessory={<BoardPill label={adventure.memories.length ? "Private" : "Empty"} tone={colors.copperBright} />}

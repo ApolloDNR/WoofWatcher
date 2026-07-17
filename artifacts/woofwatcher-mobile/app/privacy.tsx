@@ -332,7 +332,7 @@ export default function PrivacyScreen() {
           </Text>
         </LinearGradient>
 
-        <BoardCard style={s.privacyBoard}>
+        <BoardCard enter={0} style={s.privacyBoard}>
           <BoardSectionHeader
             title="Export summary"
             accessory={<BoardPill label="Local bundle" tone={colors.sage} />}
@@ -345,7 +345,7 @@ export default function PrivacyScreen() {
           </View>
         </BoardCard>
 
-        <BoardCard style={s.privacyBoard}>
+        <BoardCard enter={1} style={s.privacyBoard}>
           <BoardSectionHeader
             title="Attachment queue"
             accessory={<BoardPill label={`${bundle.storage.attachmentQueue.total} files`} tone={colors.copper} />}
@@ -393,7 +393,7 @@ export default function PrivacyScreen() {
           ) : null}
         </View>
 
-        <BoardCard style={s.privacyBoard}>
+        <BoardCard enter={2} style={s.privacyBoard}>
           <BoardSectionHeader
             title="Your data, your rules"
             accessory={<BoardPill label="On this device" tone={colors.sage} />}
@@ -446,7 +446,7 @@ export default function PrivacyScreen() {
 
         {ownerOps ? (
           <>
-        <BoardCard style={s.privacyBoard}>
+        <BoardCard enter={3} style={s.privacyBoard}>
           <BoardSectionHeader
             title="Support runbook"
             accessory={<BoardPill label="Launch gate" tone={colors.amber} />}
@@ -524,7 +524,7 @@ export default function PrivacyScreen() {
           </View>
         </BoardCard>
 
-        <BoardCard style={s.privacyBoard}>
+        <BoardCard enter={4} style={s.privacyBoard}>
           <BoardSectionHeader
             title="Launch safety gates"
             accessory={<BoardPill label={`${sections.length} gates`} tone={colors.primary} />}
@@ -536,7 +536,7 @@ export default function PrivacyScreen() {
           </View>
         </BoardCard>
 
-        <BoardCard style={[s.noticeBoard, { backgroundColor: colors.amber + "14", borderColor: colors.amber + "45" }]}>
+        <BoardCard enter={5} style={[s.noticeBoard, { backgroundColor: colors.amber + "14", borderColor: colors.amber + "45" }]}>
           <View style={s.noticeContent}>
             <Ionicons name="alert-circle-outline" size={17} color={colors.amber} />
             <View style={{ flex: 1 }}>
