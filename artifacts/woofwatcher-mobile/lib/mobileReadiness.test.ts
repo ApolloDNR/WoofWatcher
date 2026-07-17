@@ -2688,14 +2688,14 @@ test("keeps Quick Log search and timeline on shared board card anatomy", () => {
 test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
   const guide = readAppFile("woofguide.tsx");
 
-  assert.match(guide, /<BoardCard style=\{s\.guideIntroCard\}/);
+  assert.match(guide, /<BoardCard(?: enter=\{\d+\})? style=\{s\.guideIntroCard\}/);
   assert.match(
     guide,
     /<BoardCard style=\{s\.quickQuestionBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Quick questions"/,
   );
   assert.match(
     guide,
-    /<BoardCard style=\{s\.actionBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Suggested actions"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.actionBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Suggested actions"/,
   );
   assert.match(
     guide,
@@ -2799,7 +2799,7 @@ test("keeps Premium value, plan, and entitlement surfaces on shared board anatom
   assert.match(premium, /@\/components\/board\/BoardPrimitives/);
   assert.match(
     premium,
-    /<BoardCard style=\{s\.premiumBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Why upgrade"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.premiumBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Why upgrade"/,
   );
   assert.match(
     premium,
@@ -2816,11 +2816,11 @@ test("keeps Premium value, plan, and entitlement surfaces on shared board anatom
   );
   assert.match(
     premium,
-    /<BoardCard style=\{s\.entitlementCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch entitlements"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.entitlementCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch entitlements"/,
   );
   assert.match(
     premium,
-    /<BoardCard style=\{s\.paymentsProofCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Payments proof manifest"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.paymentsProofCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Payments proof manifest"/,
   );
   assert.match(
     premium,
@@ -2860,7 +2860,7 @@ test("keeps Privacy export and launch safety surfaces on shared board anatomy", 
   assert.doesNotMatch(privacy, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(
     privacy,
-    /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Export summary"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Export summary"/,
   );
   assert.match(
     privacy,
@@ -2872,7 +2872,7 @@ test("keeps Privacy export and launch safety surfaces on shared board anatomy", 
   );
   assert.match(
     privacy,
-    /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Support runbook"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Support runbook"/,
   );
   assert.match(
     privacy,
@@ -2880,13 +2880,13 @@ test("keeps Privacy export and launch safety surfaces on shared board anatomy", 
   );
   assert.match(
     privacy,
-    /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch safety gates"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch safety gates"/,
   );
   assert.match(
     privacy,
     /BoardSectionHeader\s+title="Launch safety gates"[\s\S]*<BoardPill\s+label=\{`\$\{sections\.length\} gates`\}/,
   );
-  assert.match(privacy, /<BoardCard style=\{\[s\.noticeBoard/);
+  assert.match(privacy, /<BoardCard(?: enter=\{\d+\})? style=\{\[s\.noticeBoard/);
   assert.match(privacy, /Export care data/);
   assert.match(privacy, /Deletion request/);
   assert.match(privacy, /Before public launch/);

@@ -41,6 +41,7 @@ import {
   CareRow,
 } from "@/components/board/BoardPrimitives";
 import { enterUp, PressScale, ProgressFill } from "@/components/motion/GameFeel";
+import { DayTrailScene, type DayTrailStop } from "@/components/DayTrailScene";
 import { PixelIcon } from "@/components/PixelIcon";
 import { TrailMap } from "@/components/TrailMap";
 import { useCare, type Entry } from "@/context/CareContext";
@@ -88,7 +89,6 @@ const MAX_BADGE_LADDER_LEVEL = 40;
 // Mock-board pixel art: the adventure map hero and its trail thumbnails are
 // decorative game art; every name, date, and count layered on top comes from
 // real logged walks only.
-const ADVENTURE_MAP_ART = require("@/assets/story/adventure-map.png");
 const TRAIL_THUMBS = [
   require("@/assets/story/trail-thumb-1.png"),
   require("@/assets/story/trail-thumb-2.png"),
@@ -344,6 +344,38 @@ export default function StoryScreen() {
     return routed[0] ?? null;
   }, [state.entries]);
 
+  /* Day Trail: today's real, household-visible care logs in the order they
+     happened - the waypoints of the empty-state hero. The scene draws only
+     what was actually logged; it never invents stops. */
+  const dayTrailStops = useMemo<DayTrailStop[]>(() => {
+    const today = new Date(now);
+    const stops: { at: number; stop: DayTrailStop }[] = [];
+    for (const entry of state.entries) {
+      if (entry.details?.householdVisible === false) continue;
+      const occurred = Date.parse(entry.occurredAt);
+      if (!Number.isFinite(occurred) || occurred > now) continue;
+      const when = new Date(occurred);
+      if (
+        when.getFullYear() !== today.getFullYear() ||
+        when.getMonth() !== today.getMonth() ||
+        when.getDate() !== today.getDate()
+      ) {
+        continue;
+      }
+      stops.push({
+        at: occurred,
+        stop: {
+          id: entry.id,
+          type: normalizeCareEventType(entry.type, entry.details),
+          label: entry.title || "Care log",
+          timeLabel: when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+        },
+      });
+    }
+    stops.sort((a, b) => a.at - b.at);
+    return stops.map((item) => item.stop);
+  }, [state.entries, now]);
+
   const routedWalkChip = useMemo(() => {
     if (!routedWalk) return "";
     const details = routedWalk.entry.details ?? {};
@@ -532,15 +564,16 @@ export default function StoryScreen() {
                 </TrailMap>
               </Pressable>
             ) : (
-            /* Adventure map hero (empty state until a walk records a route):
-                mock-board pixel map with the latest real trail stop layered
-                on top. */
+            /* Day Trail hero (until a walk records a real route): the day's
+                actual care logs drawn as waypoints along a living trail, with
+                the care twin standing at the latest stop. Drawn in code from
+                real state - never a static painting. */
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={
                 trailStops.length > 0
-                  ? `Adventure map. Latest discovery: ${trailStops[0].name}, ${formatMemoryDate(trailStops[0].latestAt)}. Open Adventure Mode.`
-                  : "Adventure map. No places discovered yet. Open Adventure Mode."
+                  ? `Today's trail. Latest discovery: ${trailStops[0].name}, ${formatMemoryDate(trailStops[0].latestAt)}. Open Adventure Mode.`
+                  : "Today's trail. Open Adventure Mode."
               }
               onPress={openAdventure}
               style={({ pressed }) => [
@@ -548,12 +581,20 @@ export default function StoryScreen() {
                 { borderColor: colors.border, opacity: pressed ? 0.92 : 1 },
               ]}
             >
-              <Image
-                source={ADVENTURE_MAP_ART}
-                style={s.mapArt}
-                resizeMode="cover"
-                fadeDuration={0}
+              <DayTrailScene
+                stops={dayTrailStops}
+                petName={petName}
+                now={now}
+                onPressStop={(stopId) =>
+                  router.push(`/log?entry=${encodeURIComponent(stopId)}` as never)
+                }
               />
+              {/* The overlay card earns its place: a real discovered spot, or
+                  first-run guidance on an empty day. Once the day has stops,
+                  the scene itself is the content - the card steps aside so no
+                  waypoint hides behind it (discovery guidance lives in Recent
+                  Adventures right below). */}
+              {trailStops.length === 0 && dayTrailStops.length > 0 ? null : (
               <QuestMarkerPulse
                 style={[s.mapOverlayCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
@@ -603,6 +644,7 @@ export default function StoryScreen() {
                   </View>
                 )}
               </QuestMarkerPulse>
+              )}
             </Pressable>
             )}
 
@@ -1187,11 +1229,6 @@ const s = StyleSheet.create({
     paddingVertical: 6,
   },
   trailStyleToggleText: { fontSize: 11.5 },
-  mapArt: {
-    ...StyleSheet.absoluteFillObject,
-    width: "100%",
-    height: "100%",
-  },
   mapOverlayCard: {
     position: "absolute",
     right: 12,
