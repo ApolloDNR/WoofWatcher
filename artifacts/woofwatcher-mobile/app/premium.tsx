@@ -139,7 +139,7 @@ function PremiumScreenBody() {
         contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 20, paddingBottom: bottomPadding }}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
-          <BoardCard padded={false} style={s.premiumValueStageCard}>
+          <BoardCard padded={false} enter={0} style={s.premiumValueStageCard}>
             <ImageBackground
               source={PREMIUM_VALUE_STAGE_ROOM}
               resizeMode="stretch"
@@ -265,7 +265,7 @@ function PremiumScreenBody() {
             </Text>
           </View>
 
-          <BoardCard style={s.paymentsProofCard}>
+          <BoardCard enter={1} style={s.paymentsProofCard}>
             <BoardSectionHeader
               title="Payments proof manifest"
               accessory={<BoardPill label="Checkout disabled" tone={colors.amber} />}
@@ -308,7 +308,7 @@ function PremiumScreenBody() {
             ))}
           </BoardCard>
 
-          <BoardCard style={s.premiumBoard}>
+          <BoardCard enter={2} style={s.premiumBoard}>
             <BoardSectionHeader
               title="Why upgrade"
               accessory={<BoardPill label={`${preview.valueSignals.length} signals`} tone={colors.sage} />}
@@ -344,7 +344,7 @@ function PremiumScreenBody() {
             ))}
           </View>
 
-          <BoardCard style={s.entitlementCard}>
+          <BoardCard enter={3} style={s.entitlementCard}>
             <BoardSectionHeader title="Launch entitlements" accessory={<BoardPill label="Current: Free" tone={colors.primary} />} />
             <Text style={[s.entitlementSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               Current plan: Free

@@ -375,7 +375,7 @@ export default function WoofGuideScreen() {
           ListEmptyComponent={
             !loading ? (
               <View style={s.emptyArea}>
-                <BoardCard padded={false} style={s.guideStageCard}>
+                <BoardCard padded={false} enter={0} style={s.guideStageCard}>
                   <ImageBackground
                     source={WOOFGUIDE_STAGE_ROOM}
                     resizeMode="cover"
@@ -498,7 +498,7 @@ export default function WoofGuideScreen() {
                     </View>
                   </ImageBackground>
                 </BoardCard>
-                <BoardCard style={s.guideIntroCard}>
+                <BoardCard enter={1} style={s.guideIntroCard}>
                   <View style={s.guideIntroRow}>
                     <View style={[s.guideIntroIcon, { backgroundColor: colors.sage + "18", borderColor: colors.sage + "44" }]}>
                       <Ionicons name="chatbubbles-outline" size={21} color={colors.brandNavy} />
@@ -586,7 +586,7 @@ export default function WoofGuideScreen() {
                     </View>
                   </BoardCard>
                 )}
-                <BoardCard style={s.actionBoard}>
+                <BoardCard enter={2} style={s.actionBoard}>
                   <BoardSectionHeader
                     title="Suggested actions"
                     accessory={<BoardPill label="Owner reviewed" tone={colors.amber} />}
