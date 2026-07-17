@@ -3,6 +3,7 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -38,6 +39,7 @@ export function SpriteSheetPlayer({
   style,
   testID = "care-twin-sprite-player",
 }: Props) {
+  const reduced = useReducedMotion();
   const frameProgress = useSharedValue(0);
   const totalFrames = Math.max(1, Math.min(track.frameCount, (asset?.columns ?? 0) * (asset?.rows ?? 0)));
   const durationMs = Math.max(160, Math.round((totalFrames / Math.max(1, track.fps)) * 1000));
@@ -45,12 +47,19 @@ export function SpriteSheetPlayer({
   useEffect(() => {
     frameProgress.value = 0;
     if (!asset || !playing) return;
+    // Honor Reduce Motion: never run the perpetual sprite loop. Hold a single
+    // static frame so the care twin still reads as present without continuous
+    // motion. Brief one-shot tracks still resolve to their end pose.
+    if (reduced) {
+      if (!track.loop) frameProgress.value = totalFrames - 0.001;
+      return;
+    }
 
     const target = track.loop ? totalFrames : totalFrames - 0.001;
     frameProgress.value = track.loop
       ? withRepeat(withTiming(target, { duration: durationMs, easing: Easing.linear }), -1, false)
       : withTiming(target, { duration: durationMs, easing: Easing.linear });
-  }, [asset, durationMs, frameProgress, playing, totalFrames, track.loop]);
+  }, [asset, durationMs, frameProgress, playing, totalFrames, track.loop, reduced]);
 
   const frameMetrics = useMemo(() => {
     if (!asset) return null;

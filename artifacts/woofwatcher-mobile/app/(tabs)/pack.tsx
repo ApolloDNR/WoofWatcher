@@ -18,6 +18,7 @@ import Animated, {
   cancelAnimation,
   Easing,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -383,8 +384,8 @@ function PackInfoTile({
 /**
  * Idle breathe for the pet-card hero sprite: a slow ~3.5s scale pulse
  * (1.0 -> 1.012), mirroring the LivingPhoenixRoom breath pattern. The
- * amplitude stays tiny so the portrait reads alive without pulling focus
- * (there is no app-wide reduced-motion setting yet, so subtle is the rule).
+ * amplitude stays tiny so the portrait reads alive without pulling focus, and
+ * it holds completely still when the OS Reduce Motion setting is on.
  */
 function BreathingPetSprite({
   source,
@@ -393,16 +394,18 @@ function BreathingPetSprite({
   source: ImageSourcePropType;
   accessibilityLabel: string;
 }) {
+  const reduced = useReducedMotion();
   const breath = useSharedValue(0);
 
   useEffect(() => {
+    if (reduced) return; // Reduce Motion: hold the portrait still, no breathing loop
     breath.value = withRepeat(
       withTiming(1, { duration: 1750, easing: Easing.inOut(Easing.sin) }),
       -1,
       true,
     );
     return () => cancelAnimation(breath);
-  }, [breath]);
+  }, [breath, reduced]);
 
   const breathStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 1 + breath.value * 0.012 }],

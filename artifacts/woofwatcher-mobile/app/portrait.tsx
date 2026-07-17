@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReducedMotion } from "react-native-reanimated";
 
 import {
   BoardCard,
@@ -214,6 +215,7 @@ export default function PortraitScreen() {
   const scanAnim = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(0)).current;
   const templateLife = useRef(new Animated.Value(0)).current;
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     setDraft(avatarConfig);
@@ -250,8 +252,12 @@ export default function PortraitScreen() {
         }),
       ]),
     );
-    scanLoop.start();
-    pulseLoop.start();
+    // Reduce Motion: skip the scan/pulse loops; the working phase still
+    // completes on its own timer below.
+    if (!reduced) {
+      scanLoop.start();
+      pulseLoop.start();
+    }
     const lineTimer = setInterval(
       () => setScanLine((idx) => (idx + 1) % SCAN_LINES.length),
       900,
@@ -273,9 +279,10 @@ export default function PortraitScreen() {
       scanAnim.setValue(0);
       pulse.setValue(0);
     };
-  }, [phase, pulse, scanAnim, scanSuggestion.suggestedConfig]);
+  }, [phase, pulse, reduced, scanAnim, scanSuggestion.suggestedConfig]);
 
   useEffect(() => {
+    if (reduced) return; // Reduce Motion: template preview holds still
     const lifeLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(templateLife, {
@@ -298,7 +305,7 @@ export default function PortraitScreen() {
       lifeLoop.stop();
       templateLife.setValue(0);
     };
-  }, [templateLife]);
+  }, [reduced, templateLife]);
 
   const selectedTemplate = getAvatarTemplate(draft.templateId);
   const faceMarkingLabel =

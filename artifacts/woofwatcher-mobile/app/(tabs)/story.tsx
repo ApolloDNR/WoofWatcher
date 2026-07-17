@@ -17,6 +17,7 @@ import Animated, {
   cancelAnimation,
   Easing,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -175,16 +176,18 @@ function QuestMarkerPulse({
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
+  const reduced = useReducedMotion();
   const pulse = useSharedValue(0);
 
   useEffect(() => {
+    if (reduced) return; // Reduce Motion: hold the marker steady, no pulsing loop
     pulse.value = withRepeat(
       withTiming(1, { duration: 1250, easing: Easing.inOut(Easing.sin) }),
       -1,
       true,
     );
     return () => cancelAnimation(pulse);
-  }, [pulse]);
+  }, [pulse, reduced]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     opacity: 1 - pulse.value * 0.04,
