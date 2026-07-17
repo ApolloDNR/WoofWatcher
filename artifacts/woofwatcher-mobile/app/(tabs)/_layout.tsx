@@ -100,6 +100,18 @@ export default function TabLayout() {
   return (
     <View style={{ flex: 1 }}>
       <Tabs
+        screenListeners={{
+          // The standard nav tabs used the default expo-router buttons, which
+          // fire no haptic - the app's most frequent interaction had the least
+          // feedback. A selection tick on every tab press matches the toggle /
+          // segment feel used elsewhere. (The center paw keeps its own Medium
+          // impact via CenterToday.)
+          tabPress: () => {
+            if (Platform.OS !== "web") {
+              Haptics.selectionAsync();
+            }
+          },
+        }}
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: colors.forest,

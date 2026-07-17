@@ -81,7 +81,10 @@ export function BoardRouteHeader({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Back"
-            onPress={onBack}
+            onPress={() => {
+              hapticSelect();
+              onBack?.();
+            }}
             style={({ pressed }) => [
               styles.routeIconButton,
               plain && styles.routeIconButtonPlain,
@@ -124,7 +127,10 @@ export function BoardRouteHeader({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={actionLabel ?? title}
-            onPress={onAction}
+            onPress={() => {
+              hapticSelect();
+              onAction();
+            }}
             disabled={actionDisabled}
             style={({ pressed }) => [
               styles.routeIconButton,
@@ -542,7 +548,10 @@ export function StatusMeter({
         accessibilityLabel={accessibilityLabel ?? `${label} ${valueLabel ?? `${Math.round(pct * 100)} percent`}`}
         accessibilityHint={accessibilityHint}
         hitSlop={MOBILE_INLINE_HIT_SLOP}
-        onPress={onPress}
+        onPress={() => {
+          hapticSelect();
+          onPress();
+        }}
         style={({ pressed }) => [
           styles.meterRow,
           styles.meterPressable,
@@ -673,7 +682,10 @@ export function CareRow({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel ?? `${title}. ${detail ?? ""}`}
-        onPress={onPress}
+        onPress={() => {
+          hapticSelect();
+          onPress();
+        }}
         style={({ pressed }) => [styles.careRow, { opacity: pressed ? 0.72 : 1 }]}
       >
         {content}
