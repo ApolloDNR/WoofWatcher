@@ -2019,10 +2019,10 @@ export default function MoreScreen() {
                 { backgroundColor: intelligenceTone, opacity: pressed ? 0.82 : 1 },
               ]}
             >
-              <Text style={[s.intelligenceActionText, { fontFamily: "Inter_700Bold" }]}>
+              <Text style={[s.intelligenceActionText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
                 {careIntelligence.nextAction.label}
               </Text>
-              <Ionicons name="chevron-forward" size={17} color="#FFFFFF" />
+              <Ionicons name="chevron-forward" size={17} color={colors.primaryForeground} />
             </Pressable>
           </BoardCard>
 
@@ -3056,8 +3056,8 @@ export default function MoreScreen() {
                 { backgroundColor: colors.primary, opacity: pressed ? 0.78 : 1 },
               ]}
             >
-              <Ionicons name="share-outline" size={16} color="#FFFFFF" />
-              <Text style={[s.passActionText, { fontFamily: "Inter_700Bold" }]}>Share Draft Summary</Text>
+              <Ionicons name="share-outline" size={16} color={colors.primaryForeground} />
+              <Text style={[s.passActionText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Share Draft Summary</Text>
             </Pressable>
           </BoardCard>
 
