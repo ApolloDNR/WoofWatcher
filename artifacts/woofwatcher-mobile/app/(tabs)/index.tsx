@@ -25,7 +25,14 @@ import {
   type CareEventType,
 } from "@workspace/care-domain";
 
-import Reanimated from "react-native-reanimated";
+import Reanimated, {
+  Easing as ReanimatedEasing,
+  runOnJS,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 import {
   BoardCard,
@@ -511,7 +518,11 @@ export default function HomeScreen() {
   const welcomeShouldShow = isFreshStart && welcomeDismissed === false;
   const [welcomeCollapsed, setWelcomeCollapsed] = useState(false);
   const welcomeWasShown = useRef(false);
-  const welcomeCollapse = useRef(new Animated.Value(1)).current;
+  // Reanimated shared value so the fold runs on the UI thread - RN Animated
+  // could only tween maxHeight on the JS thread, a drop-frame risk right
+  // after the first quick log. Reduce Motion collapses instantly.
+  const reducedMotion = useReducedMotion();
+  const welcomeCollapse = useSharedValue(1);
   const [welcomeCardHeight, setWelcomeCardHeight] = useState(0);
   useEffect(() => {
     if (welcomeShouldShow) {
@@ -519,16 +530,25 @@ export default function HomeScreen() {
       return;
     }
     if (!welcomeWasShown.current || welcomeCollapsed) return;
-    Animated.timing(welcomeCollapse, {
-      toValue: 0,
-      duration: 250,
-      easing: Easing.out(Easing.cubic),
-      // Height cannot animate on the native driver; this is a one-off exit.
-      useNativeDriver: false,
-    }).start(({ finished }) => {
-      if (finished) setWelcomeCollapsed(true);
-    });
-  }, [welcomeCollapse, welcomeCollapsed, welcomeShouldShow]);
+    if (reducedMotion) {
+      welcomeCollapse.value = 0;
+      setWelcomeCollapsed(true);
+      return;
+    }
+    welcomeCollapse.value = withTiming(
+      0,
+      { duration: 250, easing: ReanimatedEasing.out(ReanimatedEasing.cubic) },
+      (finished) => {
+        if (finished) runOnJS(setWelcomeCollapsed)(true);
+      },
+    );
+  }, [reducedMotion, welcomeCollapse, welcomeCollapsed, welcomeShouldShow]);
+  const welcomeCardAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: welcomeCollapse.value,
+    ...(welcomeCardHeight > 0
+      ? { maxHeight: welcomeCollapse.value * welcomeCardHeight }
+      : {}),
+  }));
   const welcomeVisible =
     welcomeShouldShow || (welcomeWasShown.current && !welcomeCollapsed);
   const timeLabel = useMemo(
@@ -1204,15 +1224,22 @@ export default function HomeScreen() {
       pendingMeal &&
       quickFeedback.id === pendingMeal.id,
   );
-  const mealChipReveal = useRef(new Animated.Value(0)).current;
+  const mealChipReveal = useSharedValue(0);
   useEffect(() => {
-    Animated.timing(mealChipReveal, {
-      toValue: pendingMealChipSuppressed ? 0 : 1,
+    const target = pendingMealChipSuppressed ? 0 : 1;
+    if (reducedMotion) {
+      mealChipReveal.value = target;
+      return;
+    }
+    mealChipReveal.value = withTiming(target, {
       duration: 220,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [mealChipReveal, pendingMealChipSuppressed]);
+      easing: ReanimatedEasing.out(ReanimatedEasing.cubic),
+    });
+  }, [mealChipReveal, pendingMealChipSuppressed, reducedMotion]);
+  const mealChipAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: mealChipReveal.value,
+    maxHeight: 88 * mealChipReveal.value,
+  }));
   const showToast = (
     msg: string,
     feedback?: { id: string; title: string; type: CareEventType },
@@ -1505,6 +1532,12 @@ export default function HomeScreen() {
   // stage cannot both fit above the tab pill, so the room stays folded
   // behind the welcome card and grows in as the card folds away.
   const heroDeferredForWelcome = isShortViewport && welcomeVisible;
+  // Mirror of the welcome fold for the deferred hero: grows in on the UI
+  // thread as the card folds away.
+  const welcomeHeroAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: 1 - welcomeCollapse.value,
+    maxHeight: heroStageHeight * (1 - welcomeCollapse.value),
+  }));
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
   useEffect(() => {
     if (isWebRoutePreview) return;
@@ -1643,7 +1676,7 @@ export default function HomeScreen() {
           </View>
 
           {welcomeVisible ? (
-            <Animated.View
+            <Reanimated.View
               pointerEvents={welcomeShouldShow ? "auto" : "none"}
               onLayout={(event) => {
                 const measured = Math.round(event.nativeEvent.layout.height);
@@ -1651,18 +1684,7 @@ export default function HomeScreen() {
                   setWelcomeCardHeight((prev) => Math.max(prev, measured));
                 }
               }}
-              style={{
-                opacity: welcomeCollapse,
-                overflow: "hidden",
-                ...(welcomeCardHeight > 0
-                  ? {
-                      maxHeight: welcomeCollapse.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, welcomeCardHeight],
-                      }),
-                    }
-                  : {}),
-              }}
+              style={[{ overflow: "hidden" }, welcomeCardAnimatedStyle]}
             >
             <View style={[s.welcomeCard, s.softShadow, { backgroundColor: colors.forest }]}>
               <Pressable
@@ -1713,7 +1735,7 @@ export default function HomeScreen() {
                 </Pressable>
               </View>
             </View>
-            </Animated.View>
+            </Reanimated.View>
           ) : null}
 
           {/* The room is a framed storybook card: day/night art fills the
@@ -1721,21 +1743,11 @@ export default function HomeScreen() {
               storybook mockup Home. On short phones the stage height is
               clamped (uniform scale) and it stays folded while the first-run
               welcome card is up, growing in as the card folds away. */}
-          <Animated.View
+          <Reanimated.View
             pointerEvents={heroDeferredForWelcome ? "none" : "auto"}
             style={
               heroDeferredForWelcome
-                ? {
-                    overflow: "hidden",
-                    opacity: welcomeCollapse.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [1, 0],
-                    }),
-                    maxHeight: welcomeCollapse.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [heroStageHeight, 0],
-                    }),
-                  }
+                ? [{ overflow: "hidden" }, welcomeHeroAnimatedStyle]
                 : null
             }
           >
@@ -1808,7 +1820,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           </View>
-          </Animated.View>
+          </Reanimated.View>
 
           {/* Mock-board Care Sense card: mood, energy, hunger, and alone
               time as chunky pip meters. Every fill derives from real logged
@@ -2112,16 +2124,9 @@ export default function HomeScreen() {
                 }
               />
               {pendingMealOpenLoop ? (
-                <Animated.View
+                <Reanimated.View
                   pointerEvents={pendingMealChipSuppressed ? "none" : "auto"}
-                  style={{
-                    opacity: mealChipReveal,
-                    overflow: "hidden",
-                    maxHeight: mealChipReveal.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, 88],
-                    }),
-                  }}
+                  style={[{ overflow: "hidden" }, mealChipAnimatedStyle]}
                 >
                 <Pressable
                   accessibilityRole="button"
@@ -2181,7 +2186,7 @@ export default function HomeScreen() {
                     </Text>
                   </View>
                 </Pressable>
-                </Animated.View>
+                </Reanimated.View>
               ) : null}
               {nextPrimary ? (
                 <View style={s.nextPrimaryRow}>
