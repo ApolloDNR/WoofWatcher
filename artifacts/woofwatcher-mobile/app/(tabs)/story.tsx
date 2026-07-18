@@ -945,9 +945,35 @@ export default function StoryScreen() {
               </BoardCard>
             </>
           ) : (
-            /* Honest empty state: no saved memories or proof photos yet. */
+            /* Honest empty state: no saved memories or proof photos yet. The
+                dashed tiles preview the real grid shape (same size and radius
+                as filled memory tiles) so the promise is visual, not just
+                copy - nothing in them pretends to be data. */
             <BoardCard style={s.board} enter={0}>
               <BoardSectionHeader title="Memories" />
+              <View style={s.memoryEmptyRow}>
+                {(["walk", "heart", "note"] as const).map((icon) => (
+                  <View
+                    key={icon}
+                    style={[
+                      s.memoryEmptyTile,
+                      {
+                        // Grid tiles are sized for the full-bleed grid; inside
+                        // the padded card, size to its inner width instead so
+                        // the third tile never clips.
+                        width: Math.floor((windowWidth - 32 - 32 - 16) / 3),
+                        height: Math.round(((windowWidth - 32 - 32 - 16) / 3) * (4 / 3)),
+                        borderColor: colors.border,
+                        backgroundColor: colors.accent,
+                      },
+                    ]}
+                  >
+                    <View style={s.memoryEmptyIcon}>
+                      <PixelIcon name={icon} size={24} />
+                    </View>
+                  </View>
+                ))}
+              </View>
               <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 Photos from walks and stories land here.
               </Text>
@@ -1272,6 +1298,21 @@ const s = StyleSheet.create({
   quietLabel: { fontSize: 14, marginBottom: 8, marginLeft: 2, marginTop: 2 },
   memoryMonth: { marginBottom: 14 },
   memoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  memoryEmptyRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 14,
+  },
+  memoryEmptyTile: {
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  memoryEmptyIcon: {
+    opacity: 0.5,
+  },
   memoryPhoto: { borderRadius: 14 },
   memoryNoteTile: {
     borderRadius: 14,
