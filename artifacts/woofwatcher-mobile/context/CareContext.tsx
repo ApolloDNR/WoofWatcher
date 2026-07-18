@@ -576,15 +576,19 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       if (!isConflict(err)) return;
       if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
       // Another device wrote first. Adopt their doc + version, replay our
-      // change on top (last-writer-wins per field), and retry once.
+      // side on top (last-writer-wins per field), and retry once. Replay the
+      // LATEST local doc, not the snapshot this push captured - by conflict
+      // time the owner may have made further edits, and overlaying the stale
+      // snapshot erased them locally and then pushed the erasure.
       const envelope = err.data as CareStateEnvelope | null;
       if (!envelope) return;
       const merged: CareDoc = {
         ...mergeDoc(envelope.doc as Partial<CareDoc>),
-        ...next,
+        ...docRef.current,
         updatedAt: new Date().toISOString(),
       };
       setServerVersion(envelope.version);
+      docRef.current = merged;
       setDoc(merged);
       try {
         const res = await putCareState({
@@ -780,11 +784,15 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       // right row is removed locally AND on the server.
       const realId = realIdByTemp.current.get(id) ?? id;
       const eraseGenerationAtStart = eraseGenerationRef.current;
-      let removed: Entry | undefined;
-      setEntries((prev) => {
-        removed = prev.find((e) => e.id === realId || e.id === id);
-        return prev.filter((e) => e.id !== realId && e.id !== id);
-      });
+      // Computed outside the updater (see updateEntry): a deferred updater
+      // left `removed` undefined, silently losing the failure-restore.
+      const removed = entriesRef.current.find(
+        (e) => e.id === realId || e.id === id,
+      );
+      entriesRef.current = entriesRef.current.filter(
+        (e) => e.id !== realId && e.id !== id,
+      );
+      setEntries((prev) => prev.filter((e) => e.id !== realId && e.id !== id));
       if (!signedInRef.current || realId.startsWith("temp_")) return true;
       try {
         await deleteCareEntry(realId);
@@ -809,28 +817,33 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const updateEntry = useCallback(
     (id: string, patch: Partial<Omit<Entry, "id">>) => {
       const realId = realIdByTemp.current.get(id) ?? id;
-      let merged: Entry | undefined;
-      setEntries((prev) =>
-        prev.map((e) => {
-          if (e.id !== realId) return e;
-          merged = {
-            ...e,
-            ...patch,
-            syncStatus: signedInRef.current
-              ? "pending"
-              : realId.startsWith("temp_")
-                ? e.syncStatus
-                : "local",
-            syncError: signedInRef.current
-              ? undefined
-              : realId.startsWith("temp_")
-                ? e.syncError
-                : "Saved offline. Sign in or refresh to sync.",
-          };
-          return merged;
-        }),
+      // Compute the merge OUTSIDE the setState updater. The old pattern
+      // (assign inside the updater, read synchronously after) silently
+      // skipped the server patch whenever React deferred the updater - the
+      // entry stayed "pending" forever with nothing in flight. entriesRef is
+      // committed-fresh and updated eagerly below so sequential same-tick
+      // updates compose.
+      const current = entriesRef.current.find((e) => e.id === realId);
+      if (!current) return;
+      const merged: Entry = {
+        ...current,
+        ...patch,
+        syncStatus: signedInRef.current
+          ? "pending"
+          : realId.startsWith("temp_")
+            ? current.syncStatus
+            : "local",
+        syncError: signedInRef.current
+          ? undefined
+          : realId.startsWith("temp_")
+            ? current.syncError
+            : "Saved offline. Sign in or refresh to sync.",
+      };
+      entriesRef.current = entriesRef.current.map((e) =>
+        e.id === realId ? merged : e,
       );
-      if (!signedInRef.current || !merged) return;
+      setEntries((prev) => prev.map((e) => (e.id === realId ? merged : e)));
+      if (!signedInRef.current) return;
       // Create still in flight; remember the patch and apply it on resolve.
       if (realId.startsWith("temp_")) {
         pendingPatch.current.set(realId, {
@@ -868,14 +881,18 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const updateCareDoc = useCallback(
     (updater: (doc: CareDoc) => CareDoc) => {
-      setDoc((prev) => {
-        const next: CareDoc = {
-          ...updater(prev),
-          updatedAt: new Date().toISOString(),
-        };
-        if (signedInRef.current) void pushDoc(next);
-        return next;
-      });
+      // Compute OUTSIDE the setState updater: calling pushDoc from inside it
+      // was a render-phase side effect (duplicate PUTs under StrictMode /
+      // replayed concurrent renders). docRef is updated eagerly so two
+      // synchronous back-to-back updates compose instead of the second one
+      // reading a stale base.
+      const next: CareDoc = {
+        ...updater(docRef.current),
+        updatedAt: new Date().toISOString(),
+      };
+      docRef.current = next;
+      setDoc(next);
+      if (signedInRef.current) void pushDoc(next);
     },
     [pushDoc],
   );
