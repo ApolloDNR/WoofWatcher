@@ -28,6 +28,7 @@ import {
 import Reanimated, {
   Easing as ReanimatedEasing,
   runOnJS,
+  useAnimatedScrollHandler,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -522,6 +523,15 @@ export default function HomeScreen() {
   // could only tween maxHeight on the JS thread, a drop-frame risk right
   // after the first quick log. Reduce Motion collapses instantly.
   const reducedMotion = useReducedMotion();
+  // Scroll position for the hero parallax; heroExitStart is measured from
+  // the hero wrapper's layout (a huge default keeps parallax off until then).
+  const scrollY = useSharedValue(0);
+  const heroExitStart = useSharedValue(1_000_000);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
   const welcomeCollapse = useSharedValue(1);
   const [welcomeCardHeight, setWelcomeCardHeight] = useState(0);
   useEffect(() => {
@@ -1538,6 +1548,24 @@ export default function HomeScreen() {
     opacity: 1 - welcomeCollapse.value,
     maxHeight: heroStageHeight * (1 - welcomeCollapse.value),
   }));
+  // Storybook depth: once the room's top edge passes the viewport top, the
+  // scene drifts down inside its clipped frame (scrolling away ~16% slower)
+  // and dims a touch - the page recedes instead of just leaving. Gap-free by
+  // construction: the translation only starts after the frame's top is
+  // offscreen, so the seam it opens is never visible. Reduce Motion keeps
+  // the room fixed.
+  const heroParallaxStyle = useAnimatedStyle(() => {
+    if (reducedMotion) return { transform: [{ translateY: 0 }], opacity: 1 };
+    const height = Math.max(1, heroStageHeight);
+    const progress = Math.min(
+      Math.max((scrollY.value - heroExitStart.value) / height, 0),
+      1,
+    );
+    return {
+      transform: [{ translateY: progress * height * 0.16 }],
+      opacity: 1 - progress * 0.18,
+    };
+  });
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
   useEffect(() => {
     if (isWebRoutePreview) return;
@@ -1584,7 +1612,7 @@ export default function HomeScreen() {
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
-      <ScrollView
+      <Reanimated.ScrollView
         style={s.container}
         contentContainerStyle={{
           paddingTop: topPadding,
@@ -1592,6 +1620,8 @@ export default function HomeScreen() {
           paddingHorizontal: routeHorizontalPadding,
         }}
         showsVerticalScrollIndicator={false}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
       >
         <Animated.View style={{ opacity: fade }}>
           <View style={[s.header, { backgroundColor: colors.card }]}>
@@ -1745,6 +1775,12 @@ export default function HomeScreen() {
               welcome card is up, growing in as the card folds away. */}
           <Reanimated.View
             pointerEvents={heroDeferredForWelcome ? "none" : "auto"}
+            onLayout={(event) => {
+              // Where the hero's top crosses the viewport top: its offset in
+              // the scroll content (the fade wrapper starts at the content
+              // top) plus the container's top padding.
+              heroExitStart.value = topPadding + event.nativeEvent.layout.y;
+            }}
             style={
               heroDeferredForWelcome
                 ? [{ overflow: "hidden" }, welcomeHeroAnimatedStyle]
@@ -1760,6 +1796,7 @@ export default function HomeScreen() {
                 { height: heroStageHeight, overflow: "hidden" },
               ]}
             >
+             <Reanimated.View style={heroParallaxStyle}>
              <View
                style={
                  heroStageScale < 1
@@ -1801,6 +1838,7 @@ export default function HomeScreen() {
                 accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
               />
             </View>
+            </Reanimated.View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
@@ -3200,7 +3238,7 @@ export default function HomeScreen() {
             </Pressable>
           </BoardCard>
         </Animated.View>
-      </ScrollView>
+      </Reanimated.ScrollView>
 
       {toast && (
         <Animated.View
