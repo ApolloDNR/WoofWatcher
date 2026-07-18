@@ -1,7 +1,7 @@
 import { Tabs, usePathname, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,7 +28,21 @@ function TabIcon({
   ionFilled: IoniconName;
   size?: number;
 }) {
-  return <Ionicons name={focused ? ionFilled : ion} size={size} color={color} />;
+  // Becoming the active tab pops the icon with the shared bounce - the same
+  // game-feel the paw button has, so navigation answers back visually, not
+  // just with the selection haptic. Reduce Motion keeps it still (useBounce
+  // is already gated).
+  const { style, bounce } = useBounce();
+  const wasFocused = useRef(focused);
+  useEffect(() => {
+    if (focused && !wasFocused.current) bounce();
+    wasFocused.current = focused;
+  }, [bounce, focused]);
+  return (
+    <Animated.View style={style}>
+      <Ionicons name={focused ? ionFilled : ion} size={size} color={color} />
+    </Animated.View>
+  );
 }
 
 /* Today is the elevated center tab: the paw button drops the owner into
