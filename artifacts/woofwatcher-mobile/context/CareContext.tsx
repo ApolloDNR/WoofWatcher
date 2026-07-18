@@ -379,13 +379,17 @@ function toEntry(c: ApiCareEntry): Entry {
   };
 }
 
-function toCreateInput(e: Omit<Entry, "id">): CareEntryInput {
+function toCreateInput(e: Omit<Entry, "id">, clientKey?: string): CareEntryInput {
   const details: { [key: string]: unknown } = { ...(e.details ?? {}) };
   if (e.title) details.title = e.title;
   if (e.durationMinutes != null) details.durationMinutes = e.durationMinutes;
   if (e.amount != null) details.amount = e.amount;
   if (e.dogInteractions != null) details.dogInteractions = e.dogInteractions;
   if (e.food != null) details.food = e.food;
+  // Idempotency key: the entry's temp id, stable across retries, so a create
+  // whose response was lost can be re-sent without duplicating the row (the
+  // server dedupes on details.clientKey).
+  if (clientKey) details.clientKey = clientKey;
   return {
     type: e.type,
     occurredAt: e.occurredAt,
@@ -614,7 +618,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             : e,
         ),
       );
-      createCareEntry(toCreateInput(entry))
+      createCareEntry(toCreateInput(entry, tempId))
         .then((created) => {
           const real = toEntry(created);
           realIdByTemp.current.set(tempId, real.id);

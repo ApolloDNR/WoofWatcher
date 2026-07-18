@@ -30,6 +30,8 @@ export interface CareEntriesRouterDependencies {
     desc: QueryOperator;
     eq: QueryOperator;
     gte: QueryOperator;
+    /** drizzle sql tag, used for the jsonb clientKey idempotency lookup. */
+    sql?: (strings: TemplateStringsArray, ...values: unknown[]) => unknown;
   };
   requireAuth: (req: Request, res: Response, next: NextFunction) => void;
   getUserId: (req: Request) => string;
@@ -136,21 +138,64 @@ export function createCareEntriesRouter(dependencies: CareEntriesRouterDependenc
       return;
     }
 
-    const [entry] = await db
-      .insert(careEntriesTable)
-      .values({
-        householdId,
-        petId: parsed.data.petId ?? null,
-        type: normalizeCareEventType(parsed.data.type, policy.details),
-        occurredAt: parsed.data.occurredAt ?? now(),
-        caregiverUserId: userId,
-        caregiverName,
-        mood: parsed.data.mood ?? null,
-        severity: parsed.data.severity ?? null,
-        note: parsed.data.note ?? null,
-        details: policy.details,
-      })
-      .returning();
+    // Idempotent create: clients stamp details.clientKey (their temp id,
+    // stable across retries), so a create whose response was lost can be
+    // retried without duplicating the row. A partial unique index on
+    // (household_id, details->>'clientKey') backstops the read-then-insert
+    // race; on that conflict we return the winning row.
+    const clientKeyValue = (policy.details as Record<string, unknown> | null | undefined)?.clientKey;
+    const clientKey = typeof clientKeyValue === "string" && clientKeyValue.length > 0 ? clientKeyValue : null;
+    const { sql } = queryOps;
+    const findByClientKey = async (): Promise<unknown | undefined> => {
+      if (!clientKey || !sql) return undefined;
+      const [existing] = await db
+        .select()
+        .from(careEntriesTable)
+        .where(
+          and(
+            eq(careEntriesTable.householdId, householdId),
+            sql`${careEntriesTable.details} ->> 'clientKey' = ${clientKey}`,
+          ),
+        )
+        .limit(1);
+      return existing;
+    };
+
+    const alreadyCreated = await findByClientKey();
+    if (alreadyCreated) {
+      res.status(200).json(ListCareEntriesResponseItem.parse(alreadyCreated));
+      return;
+    }
+
+    let entry: unknown;
+    try {
+      const [inserted] = await db
+        .insert(careEntriesTable)
+        .values({
+          householdId,
+          petId: parsed.data.petId ?? null,
+          type: normalizeCareEventType(parsed.data.type, policy.details),
+          occurredAt: parsed.data.occurredAt ?? now(),
+          caregiverUserId: userId,
+          caregiverName,
+          mood: parsed.data.mood ?? null,
+          severity: parsed.data.severity ?? null,
+          note: parsed.data.note ?? null,
+          details: policy.details,
+        })
+        .returning();
+      entry = inserted;
+    } catch (err) {
+      // Unique-violation on the clientKey index: a concurrent identical
+      // create won the race - return its row instead of an error.
+      const code = (err as { code?: string; cause?: { code?: string } })?.code ??
+        (err as { cause?: { code?: string } })?.cause?.code;
+      if (code !== "23505") throw err;
+      const winner = await findByClientKey();
+      if (!winner) throw err;
+      res.status(200).json(ListCareEntriesResponseItem.parse(winner));
+      return;
+    }
 
     res.status(201).json(ListCareEntriesResponseItem.parse(entry));
   });
