@@ -341,7 +341,7 @@ export default function HomeScreen() {
   const { width: viewportWidth, height: viewportHeight } =
     useWindowDimensions();
   const router = useRouter();
-  const { state, addEntry, deleteEntry, updateEntry, refresh } = useCare();
+  const { state, addEntry, deleteEntry, updateEntry, refresh, storageWarning } = useCare();
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
 
   const topPadding = getRouteTopPadding({
@@ -1821,6 +1821,27 @@ export default function HomeScreen() {
           </View>
           </View>
           </Reanimated.View>
+
+          {/* Local-first means a failing device store IS a data risk - never
+              hide it. Shown only when storage reads/writes actually fail. */}
+          {storageWarning ? (
+            <View
+              accessibilityRole="alert"
+              style={[
+                s.storageWarningCard,
+                { backgroundColor: colors.amberSoft, borderColor: colors.amber + "66" },
+              ]}
+            >
+              <Ionicons name="warning-outline" size={17} color={colors.amber} />
+              <Text style={[s.storageWarningText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {storageWarning === "save-failed"
+                  ? "Device storage is failing - new care logs may not survive an app restart."
+                  : storageWarning === "read-failed"
+                    ? "Couldn't read saved care data. Saving is paused this session to protect what's stored."
+                    : "Saved care data couldn't be read and was reset. A recovery copy was kept on this device."}
+              </Text>
+            </View>
+          ) : null}
 
           {/* Mock-board Care Sense card: mood, energy, hunger, and alone
               time as chunky pip meters. Every fill derives from real logged
@@ -3458,6 +3479,21 @@ const s = StyleSheet.create({
 
   // Mock-board Care Sense card: quiet kicker, big honest headline, four
   // chunky pip meters (mood / energy / hunger / alone time).
+  storageWarningCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  storageWarningText: {
+    flex: 1,
+    fontSize: 12.5,
+    lineHeight: 17,
+  },
   careSenseCard: {
     marginTop: 12,
     marginBottom: 4,

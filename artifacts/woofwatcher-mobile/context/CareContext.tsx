@@ -240,7 +240,12 @@ function getDefaultDoc(): CareDoc {
   const now = new Date().toISOString();
   return {
     createdAt: now,
-    updatedAt: now,
+    // Epoch, deliberately: a pristine, never-edited doc must never win
+    // wall-clock reconciliation. Stamping install time here made a fresh
+    // device look "newer" than the household's real server doc on first
+    // sign-in - and push its empty defaults over everyone's data. Real edits
+    // stamp a real updatedAt.
+    updatedAt: new Date(0).toISOString(),
     activePetId: "primary",
     profile: {
       name: "My Dog",
@@ -432,6 +437,15 @@ interface CareContextValue {
   syncOutbox: CareSyncOutbox;
   isLoaded: boolean;
   isSyncing: boolean;
+  /**
+   * Local-storage health. Local-first means a failing device store IS a data
+   * risk, so it must be visible ("sync failures visible" applies doubly to
+   * the primary store): "save-failed" = writes are erroring, recent logs may
+   * not survive a restart; "read-failed" = stored data could not be read, so
+   * persistence is paused to protect it; "reset" = the cache was corrupt and
+   * was reset, with the raw blob kept under a recovery key.
+   */
+  storageWarning: "save-failed" | "read-failed" | "reset" | null;
 }
 
 const CareContext = createContext<CareContextValue | null>(null);
@@ -445,6 +459,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const [serverVersion, setServerVersion] = useState(0);
   const [hydrated, setHydrated] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [storageWarning, setStorageWarning] = useState<
+    "save-failed" | "read-failed" | "reset" | null
+  >(null);
 
   // Refs mirror state so async callbacks read fresh values without re-binding.
   const docRef = useRef(doc);
@@ -473,43 +490,91 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   }, [isSignedIn]);
 
   // Hydrate instantly from the offline cache so the UI never flashes empty.
+  // Failure handling is data-safety-critical: `hydrated` gates the persist
+  // effect below, so it must only flip true after a read that actually
+  // completed - otherwise the persist effect overwrites intact stored data
+  // with in-memory defaults.
   useEffect(() => {
+    const applyRaw = (raw: string | null) => {
+      if (!raw) return;
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed?.doc) setDoc(mergeDoc(parsed.doc));
+        if (Array.isArray(parsed?.entries)) {
+          // Drop malformed rows (an id-less entry crashes outbox derivation
+          // on every launch - an unrecoverable boot loop, since the persist
+          // effect never gets a chance to repair the cache).
+          setEntries(
+            parsed.entries.filter(
+              (entry: unknown): entry is Entry =>
+                !!entry && typeof (entry as Entry).id === "string",
+            ),
+          );
+        }
+        if (typeof parsed?.serverVersion === "number") {
+          setServerVersion(parsed.serverVersion);
+        }
+      } catch {
+        // Corrupt cache: preserve the evidence under a recovery key BEFORE
+        // the persist effect overwrites the primary key with defaults, and
+        // tell the owner instead of silently resetting.
+        AsyncStorage.setItem(`${STORAGE_KEY}.recovery`, raw).catch(() => {});
+        setStorageWarning("reset");
+      }
+    };
     AsyncStorage.getItem(STORAGE_KEY)
       .then((raw) => {
-        if (raw) {
-          try {
-            const parsed = JSON.parse(raw);
-            if (parsed?.doc) setDoc(mergeDoc(parsed.doc));
-            if (Array.isArray(parsed?.entries)) setEntries(parsed.entries);
-            if (typeof parsed?.serverVersion === "number") {
-              setServerVersion(parsed.serverVersion);
-            }
-          } catch {
-            // Ignore corrupt cache; fall back to defaults.
-          }
-        }
+        applyRaw(raw);
+        setHydrated(true);
       })
-      .finally(() => setHydrated(true));
+      .catch(() => {
+        // The read itself failed (transient storage error). Retry once;
+        // if it still fails, stay un-hydrated so persistence is paused for
+        // the session - in-memory care still works, but we never clobber
+        // the stored data we couldn't read.
+        setTimeout(() => {
+          AsyncStorage.getItem(STORAGE_KEY)
+            .then((raw) => {
+              applyRaw(raw);
+              setHydrated(true);
+            })
+            .catch(() => setStorageWarning("read-failed"));
+        }, 1500);
+      });
   }, []);
 
-  // Persist the offline cache whenever synced state changes.
+  // Persist the offline cache whenever synced state changes. A failing
+  // device store is a data risk in a local-first app, so surface it instead
+  // of swallowing it - and clear the warning when writes recover.
   useEffect(() => {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({ doc, entries, serverVersion }),
-    ).catch(() => {});
+    )
+      .then(() => {
+        setStorageWarning((current) =>
+          current === "save-failed" ? null : current,
+        );
+      })
+      .catch(() => setStorageWarning("save-failed"));
   }, [doc, entries, serverVersion, hydrated]);
 
   const pushDoc = useCallback(async (next: CareDoc) => {
+    // Guard every post-await state write against an owner wipe: a push (or
+    // its conflict-retry) that resolves after "All data deleted" must not
+    // write the pre-wipe doc back into memory, disk, or the server.
+    const eraseGenerationAtStart = eraseGenerationRef.current;
     try {
       const res = await putCareState({
         version: versionRef.current,
         doc: next as unknown as CareStateEnvelope["doc"],
       });
+      if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
       setServerVersion(res.version);
     } catch (err) {
       if (!isConflict(err)) return;
+      if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
       // Another device wrote first. Adopt their doc + version, replay our
       // change on top (last-writer-wins per field), and retry once.
       const envelope = err.data as CareStateEnvelope | null;
@@ -526,6 +591,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           version: envelope.version,
           doc: merged as unknown as CareStateEnvelope["doc"],
         });
+        if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
         setServerVersion(res.version);
       } catch {
         // Give up; the next full refresh reconciles.
@@ -644,6 +710,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           version: plan.version,
           doc: plan.doc as unknown as CareStateEnvelope["doc"],
         });
+        // Re-check after the await: a wipe during the PUT must not have its
+        // pre-wipe doc restored into memory (and re-persisted) here.
+        if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
         setDoc(mergeDoc(res.doc as Partial<CareDoc>));
         setServerVersion(res.version);
       } else {
@@ -710,6 +779,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       // its temp id for the server id; resolve through the mapping so the
       // right row is removed locally AND on the server.
       const realId = realIdByTemp.current.get(id) ?? id;
+      const eraseGenerationAtStart = eraseGenerationRef.current;
       let removed: Entry | undefined;
       setEntries((prev) => {
         removed = prev.find((e) => e.id === realId || e.id === id);
@@ -723,7 +793,10 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         });
         return true;
       } catch {
-        if (removed) {
+        // Never restore across an owner wipe: a slow delete that fails after
+        // "All data deleted" must not resurrect the entry into the freshly
+        // wiped store.
+        if (removed && eraseGenerationRef.current === eraseGenerationAtStart) {
           const restored = removed;
           setEntries((prev) => [restored, ...prev]);
         }
@@ -869,6 +942,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       syncOutbox,
       isLoaded: hydrated,
       isSyncing,
+      storageWarning,
     }),
     [
       state,
@@ -881,6 +955,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       syncOutbox,
       hydrated,
       isSyncing,
+      storageWarning,
     ],
   );
 

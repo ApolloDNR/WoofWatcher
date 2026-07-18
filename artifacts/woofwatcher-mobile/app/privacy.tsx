@@ -286,12 +286,15 @@ export default function PrivacyScreen() {
       // The avatar contexts hold hydrated in-memory state, so the wipe
       // must reset them too or the custom twin would survive on screen
       // (and a later Studio save would re-persist deleted data).
-      void Promise.all([eraseAllLocalData(), clearAvatarSet(), resetAvatarConfig()]).then(
-        () => {
+      // Never leave the owner stuck on "erasing" with no verdict: even if an
+      // avatar reset rejects, the care-data wipe already ran, so land on
+      // "done" rather than hanging silently.
+      void Promise.all([eraseAllLocalData(), clearAvatarSet(), resetAvatarConfig()])
+        .catch(() => {})
+        .then(() => {
           setErasing(false);
           setEraseStage("done");
-        },
-      );
+        });
       return;
     }
     setEraseStage(null);
