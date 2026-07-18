@@ -72,6 +72,34 @@ if (fs.existsSync(indexHtmlPath)) {
     fs.writeFileSync(indexHtmlPath, html);
     console.log("[smoke-web-export] Injected PWA head tags into index.html.");
   }
+  // Register the offline service worker (public/sw.js ships with the export).
+  // The app is local-first, so a cached shell makes the installed PWA fully
+  // usable offline. Registered after load so it never competes with boot.
+  if (!html.includes("serviceWorker.register")) {
+    const swScript =
+      '<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(){})})}</script>';
+    html = html.replace("</body>", `  ${swScript}\n</body>`);
+    fs.writeFileSync(indexHtmlPath, html);
+    console.log("[smoke-web-export] Injected service worker registration.");
+  }
+  // Bake the real hashed bundle paths into the service worker's precache list
+  // and version the cache by the entry bundle's content hash, so every deploy
+  // invalidates cleanly and offline never relies on the HTTP cache.
+  const swPath = path.join(outputDir, "sw.js");
+  if (fs.existsSync(swPath)) {
+    const bundlePaths = Array.from(
+      new Set(html.match(/\/_expo\/static\/js\/web\/[^"']+\.js/g) ?? []),
+    );
+    const hashMatch = bundlePaths[0]?.match(/-([0-9a-f]{8,})\.js$/);
+    const buildVersion = hashMatch ? hashMatch[1].slice(0, 12) : String(Date.now());
+    let sw = fs.readFileSync(swPath, "utf8");
+    sw = sw.replace('const SHELL_VERSION = "__BUILD__";', `const SHELL_VERSION = "${buildVersion}";`);
+    sw = sw.replace("const EXTRA_SHELL_URLS = [];", `const EXTRA_SHELL_URLS = ${JSON.stringify(bundlePaths)};`);
+    fs.writeFileSync(swPath, sw);
+    console.log(
+      `[smoke-web-export] Service worker precaches ${bundlePaths.length} bundle(s), cache version ${buildVersion}.`,
+    );
+  }
 }
 
 const files = walk(outputDir);
