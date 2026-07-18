@@ -4,7 +4,7 @@
 
 Before changing code, read these files in order:
 
-0. `docs/handoff/HANDOFF_2026-07-12.md` (latest handoff - current state of the app)
+0. `docs/handoff/HANDOFF_2026-07-18.md` (latest handoff - current state of the app)
 0.5. `docs/design/APOLLO_MASTER_VISION_PROMPT.md` (the operative vision - hold every change against it)
 1. `AGENTS.md`
 2. `README.md`
