@@ -22,6 +22,7 @@ import {
   type AdventureQuest,
 } from "@workspace/care-domain";
 import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { DayPhaseWash } from "@/components/DayPhaseWash";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
@@ -333,6 +334,9 @@ export default function AdventureScreen() {
           style={s.hero}
         >
           <View style={s.heroShade} />
+          {/* Shared painted-stage atmosphere: the park follows the real clock,
+              matching the Story Day Trail it links from. */}
+          <DayPhaseWash now={now} />
           <View style={s.heroTop}>
             <Pressable
               accessibilityRole="button"

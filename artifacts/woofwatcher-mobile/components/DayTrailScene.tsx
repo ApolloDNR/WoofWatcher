@@ -2,9 +2,11 @@ import React, { useMemo, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
+import { DayPhaseWash } from "@/components/DayPhaseWash";
 import { EntryTypeIcon, entryTypeColor } from "@/components/EntryTypeIcon";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { useColors } from "@/hooks/useColors";
+import { hapticSelect } from "@/lib/haptics";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 
@@ -36,31 +38,6 @@ interface Props {
   onPressStop?: (stopId: string) => void;
   style?: StyleProp<ViewStyle>;
 }
-
-type DayPhase = "morning" | "day" | "evening" | "night";
-
-function phaseFor(now: number): DayPhase {
-  const hour = new Date(now).getHours();
-  if (hour < 6 || hour >= 20) return "night";
-  if (hour < 11) return "morning";
-  if (hour < 17) return "day";
-  return "evening";
-}
-
-/** Atmosphere over the painted map. Scenery only - data never tints. */
-const PHASE_WASH: Record<DayPhase, string> = {
-  morning: "rgba(255, 214, 140, 0.10)",
-  day: "rgba(255, 255, 255, 0)",
-  evening: "rgba(220, 118, 60, 0.16)",
-  night: "rgba(8, 20, 36, 0.44)",
-};
-
-/** Fixed star field (night only) - stable positions, upper sky of the map. */
-const STARS: readonly { x: number; y: number; s: number }[] = [
-  { x: 0.07, y: 0.05, s: 3 }, { x: 0.2, y: 0.1, s: 2 }, { x: 0.33, y: 0.04, s: 2 },
-  { x: 0.5, y: 0.08, s: 3 }, { x: 0.63, y: 0.03, s: 2 }, { x: 0.78, y: 0.09, s: 2 },
-  { x: 0.9, y: 0.05, s: 3 }, { x: 0.44, y: 0.13, s: 2 },
-];
 
 /**
  * The painted map's own dashed trail, traced as fractions of the artwork.
@@ -115,7 +92,6 @@ const MAX_STOPS = 6;
 export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props) {
   const colors = useColors();
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
-  const phase = phaseFor(now ?? Date.now());
 
   const shown = stops.slice(-MAX_STOPS);
 
@@ -172,7 +148,14 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
                 accessibilityRole="button"
                 accessibilityLabel={`${stop.label}, ${stop.timeLabel}. Open this log.`}
                 hitSlop={8}
-                onPress={onPressStop ? () => onPressStop(stop.id) : undefined}
+                onPress={
+                  onPressStop
+                    ? () => {
+                        hapticSelect();
+                        onPressStop(stop.id);
+                      }
+                    : undefined
+                }
                 style={({ pressed }) => [
                   styles.waypoint,
                   {
@@ -215,24 +198,7 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
       ) : null}
 
       {/* Nightfall / dawn wash over the whole scene - atmosphere, never data. */}
-      <View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { backgroundColor: PHASE_WASH[phase] }]} />
-      {phase === "night"
-        ? STARS.map((star, index) => (
-            <View
-              key={`star-${index}`}
-              pointerEvents="none"
-              style={{
-                position: "absolute",
-                left: `${star.x * 100}%`,
-                top: `${star.y * 100}%`,
-                width: star.s,
-                height: star.s,
-                backgroundColor: "#F3ECDA",
-                opacity: 0.85,
-              }}
-            />
-          ))
-        : null}
+      <DayPhaseWash now={now} />
 
       {/* Day chip: honest stop count */}
       <View style={[styles.dayChip, { backgroundColor: colors.card + "F0", borderColor: colors.border }]}>

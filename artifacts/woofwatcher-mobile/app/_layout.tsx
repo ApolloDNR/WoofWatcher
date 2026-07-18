@@ -155,7 +155,9 @@ function RootLayoutNav() {
           // build ignores it, so the fastlog screen runs its own mount
           // fade/rise there.
           animation: "slide_from_bottom",
-          contentStyle: { backgroundColor: "#F7F1E1" },
+          // Themed, not hardcoded cream: a hardcoded light background flashed
+          // behind the slide-up for a beat in dark mode.
+          contentStyle: { backgroundColor: colors.background },
         }}
       />
       <Stack.Screen

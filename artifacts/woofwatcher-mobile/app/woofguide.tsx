@@ -670,8 +670,8 @@ export default function WoofGuideScreen() {
               style={[s.sendBtn, { backgroundColor: input.trim() && !loading ? colors.primary : colors.card, borderColor: colors.border }]}
             >
               {loading
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Ionicons name="arrow-up" size={20} color={input.trim() ? "#fff" : colors.mutedForeground} />
+                ? <ActivityIndicator size="small" color={colors.primaryForeground} />
+                : <Ionicons name="arrow-up" size={20} color={input.trim() ? colors.primaryForeground : colors.mutedForeground} />
               }
             </Pressable>
           </View>
