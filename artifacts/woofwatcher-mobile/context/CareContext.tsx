@@ -1,5 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient } from "@tanstack/react-query";
+import { Platform } from "react-native";
+import * as FileSystem from "expo-file-system/legacy";
 import React, {
   createContext,
   useCallback,
@@ -944,6 +946,18 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Best effort: the in-memory reset above already cleared the live
       // document, and the persist effect overwrites the primary cache key.
+    }
+    // "All data deleted" must include the files WoofWatcher wrote, not just
+    // its key-value store: exported report artifacts and durable record
+    // attachments both live under documentDirectory on native.
+    if (Platform.OS !== "web" && FileSystem.documentDirectory) {
+      await Promise.all(
+        ["WoofWatcherReports", "woofwatcher-attachments"].map((dir) =>
+          FileSystem.deleteAsync(`${FileSystem.documentDirectory}${dir}/`, {
+            idempotent: true,
+          }).catch(() => {}),
+        ),
+      );
     }
   }, []);
 
