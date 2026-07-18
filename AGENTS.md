@@ -12,7 +12,7 @@
 
 When working in this repo, use this order:
 
-0. `docs/handoff/HANDOFF_2026-07-12.md` (latest handoff — current state)
+0. `docs/handoff/HANDOFF_2026-07-18.md` (latest handoff — current state)
 1. `AGENTS.md`
 2. `docs/V1_COMPLETION_AUDIT.md`
 3. `docs/V1_PLAN.md`
