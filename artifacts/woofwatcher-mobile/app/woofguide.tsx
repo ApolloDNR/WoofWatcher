@@ -415,7 +415,13 @@ export default function WoofGuideScreen() {
                         testID="woofguide-pixel-guidance-sprite"
                       />
                     </View>
-
+                  </ImageBackground>
+                  {/* Data dock BELOW the painting (the log/records pattern):
+                      the HUD and actions used to overlay the art, covering
+                      the floor so the dog read as levitating at wall height.
+                      Now the scene breathes and the dog sits in the lamplit
+                      floor pool. */}
+                  <View style={[s.guideDock, { backgroundColor: colors.ivory + "F4", borderTopColor: colors.border }]}>
                     <View style={[s.guideHud, { backgroundColor: colors.brandNavy + "DF", borderColor: colors.ivory + "44" }]}>
                       {guideHud.map((metric) => (
                         <View key={metric.label} style={s.guideHudCell}>
@@ -496,7 +502,7 @@ export default function WoofGuideScreen() {
                         </Pressable>
                       )}
                     </View>
-                  </ImageBackground>
+                  </View>
                 </BoardCard>
                 <BoardCard enter={1} style={s.guideIntroCard}>
                   <View style={s.guideIntroRow}>
@@ -774,7 +780,7 @@ const s = StyleSheet.create({
   // cards keep no extra side margin - they used to stack margin 12 on top of
   // the padding and sit at a 28px gutter no other screen uses.
   guideStageCard: { alignSelf: "stretch", marginTop: 4, overflow: "hidden" },
-  guideStage: { minHeight: 294, overflow: "hidden", justifyContent: "space-between" },
+  guideStage: { minHeight: 260, overflow: "hidden" },
   guideStageImage: { borderRadius: 8 },
   guideStageShade: {
     ...StyleSheet.absoluteFillObject,
@@ -827,9 +833,12 @@ const s = StyleSheet.create({
   },
   guideReviewChipText: { flexShrink: 1, fontSize: 10, lineHeight: 12 },
   guideSprite: {
+    // Seated in the art's lamplit floor pool, right of the armchair, feet
+    // on the floor line with the shadow visible - the scene is unobstructed
+    // now that the HUD lives in the dock below.
     position: "absolute",
-    right: 18,
-    bottom: 98,
+    right: 52,
+    bottom: 44,
     width: 112,
     height: 112,
     zIndex: 2,
@@ -844,16 +853,11 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(8,20,36,0.24)",
   },
   guideHud: {
-    position: "absolute",
-    left: 14,
-    right: 14,
-    bottom: 70,
     borderRadius: 8,
     borderWidth: 1,
     padding: 8,
     flexDirection: "row",
     gap: 8,
-    zIndex: 3,
   },
   guideHudCell: { flex: 1, minWidth: 0 },
   guideHudLabel: { fontSize: 6.5, lineHeight: 10, textTransform: "uppercase" },
@@ -867,14 +871,15 @@ const s = StyleSheet.create({
   },
   guideSignalBar: { width: 5, borderRadius: 2 },
   guideStageFooter: {
-    position: "absolute",
-    left: 14,
-    right: 14,
-    bottom: 10,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    zIndex: 4,
+  },
+  guideDock: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 10,
+    borderTopWidth: 1,
   },
   guideBoundaryCard: {
     flex: 1,
