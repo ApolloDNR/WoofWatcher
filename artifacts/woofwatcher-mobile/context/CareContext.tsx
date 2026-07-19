@@ -41,6 +41,13 @@ import {
   type ReminderNotificationPreferences,
 } from "@/lib/reminderNotificationPreferences";
 import { normalizeLaunchProviderProfile, type LaunchStorageProviderEvidence } from "@/lib/launchProviderSetup";
+import {
+  convertLegacyState,
+  parseLegacyState,
+  LEGACY_IMPORT_FLAG_KEY,
+  LEGACY_STATE_KEY,
+  type LegacyImportResult,
+} from "@/lib/legacyImport";
 import type { SupportLegalReadinessProofEvidence } from "@/lib/supportRunbook";
 
 const STORAGE_KEY = "woofwatcher.v2.state";
@@ -452,6 +459,14 @@ interface CareContextValue {
    * was reset, with the raw blob kept under a recovery key.
    */
   storageWarning: "save-failed" | "read-failed" | "reset" | null;
+  /**
+   * Set (for this session only) when boot found and adopted care data from
+   * the legacy web PWA's localStorage. Home shows a one-time welcome-back
+   * notice from it. The import runs only into a pristine v2 store, never
+   * merges into established data, and never deletes the legacy key - the
+   * original stays as its own backup until an owner wipe removes both.
+   */
+  legacyImport: LegacyImportResult["summary"] | null;
 }
 
 const CareContext = createContext<CareContextValue | null>(null);
@@ -467,6 +482,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [storageWarning, setStorageWarning] = useState<
     "save-failed" | "read-failed" | "reset" | null
+  >(null);
+  const [legacyImport, setLegacyImport] = useState<
+    LegacyImportResult["summary"] | null
   >(null);
 
   // Refs mirror state so async callbacks read fresh values without re-binding.
@@ -501,36 +519,94 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   // completed - otherwise the persist effect overwrites intact stored data
   // with in-memory defaults.
   useEffect(() => {
-    const applyRaw = (raw: string | null) => {
-      if (!raw) return;
+    // Returns whether the store is pristine (no cache, or a cache holding
+    // zero entries and a never-edited doc) - the only state the legacy web
+    // import below is allowed to write into.
+    const applyRaw = (raw: string | null): boolean => {
+      if (!raw) return true;
       try {
         const parsed = JSON.parse(raw);
         if (parsed?.doc) setDoc(mergeDoc(parsed.doc));
+        let cachedEntries: Entry[] = [];
         if (Array.isArray(parsed?.entries)) {
           // Drop malformed rows (an id-less entry crashes outbox derivation
           // on every launch - an unrecoverable boot loop, since the persist
           // effect never gets a chance to repair the cache).
-          setEntries(
-            parsed.entries.filter(
-              (entry: unknown): entry is Entry =>
-                !!entry && typeof (entry as Entry).id === "string",
-            ),
+          cachedEntries = parsed.entries.filter(
+            (entry: unknown): entry is Entry =>
+              !!entry && typeof (entry as Entry).id === "string",
           );
+          setEntries(cachedEntries);
         }
         if (typeof parsed?.serverVersion === "number") {
           setServerVersion(parsed.serverVersion);
         }
+        const docUpdatedAt = typeof parsed?.doc?.updatedAt === "string" ? parsed.doc.updatedAt : "";
+        return (
+          cachedEntries.length === 0 &&
+          (!docUpdatedAt || docUpdatedAt === new Date(0).toISOString())
+        );
       } catch {
         // Corrupt cache: preserve the evidence under a recovery key BEFORE
         // the persist effect overwrites the primary key with defaults, and
         // tell the owner instead of silently resetting.
         AsyncStorage.setItem(`${STORAGE_KEY}.recovery`, raw).catch(() => {});
         setStorageWarning("reset");
+        return false;
+      }
+    };
+    // One-time adoption of the legacy web PWA's data (see lib/legacyImport).
+    // Runs only into a pristine store; the legacy key is left in place as
+    // its own backup (the owner wipe removes every woofwatcher* key).
+    const maybeImportLegacyState = async () => {
+      try {
+        const [flag, legacyRaw] = await Promise.all([
+          AsyncStorage.getItem(LEGACY_IMPORT_FLAG_KEY),
+          AsyncStorage.getItem(LEGACY_STATE_KEY),
+        ]);
+        if (flag || !legacyRaw) return;
+        const stamp = (payload: object) =>
+          AsyncStorage.setItem(
+            LEGACY_IMPORT_FLAG_KEY,
+            JSON.stringify({ at: new Date().toISOString(), ...payload }),
+          ).catch(() => {});
+        const result = convertLegacyState(parseLegacyState(legacyRaw));
+        if (!result) {
+          await stamp({ status: "nothing-to-import" });
+          return;
+        }
+        if (Object.keys(result.docPatch).length) {
+          const importedAt = new Date().toISOString();
+          setDoc((prev) => ({
+            ...prev,
+            ...result.docPatch,
+            profile: result.docPatch.profile
+              ? {
+                  ...prev.profile,
+                  ...result.docPatch.profile,
+                  weight: { ...prev.profile.weight, ...result.docPatch.profile.weight },
+                }
+              : prev.profile,
+            dietProfile: result.docPatch.dietProfile
+              ? { ...prev.dietProfile, ...result.docPatch.dietProfile }
+              : prev.dietProfile,
+            // A real import is a real edit: the doc must not stay pristine
+            // or reconciliation could discard the adopted data.
+            updatedAt: importedAt,
+          }));
+        }
+        if (result.entries.length) {
+          setEntries((prev) => [...prev, ...result.entries]);
+        }
+        setLegacyImport(result.summary);
+        await stamp({ status: "imported", summary: result.summary });
+      } catch {
+        // A legacy read must never break boot; the store stays as hydrated.
       }
     };
     AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => {
-        applyRaw(raw);
+      .then(async (raw) => {
+        if (applyRaw(raw)) await maybeImportLegacyState();
         setHydrated(true);
       })
       .catch(() => {
@@ -540,8 +616,8 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         // the stored data we couldn't read.
         setTimeout(() => {
           AsyncStorage.getItem(STORAGE_KEY)
-            .then((raw) => {
-              applyRaw(raw);
+            .then(async (raw) => {
+              if (applyRaw(raw)) await maybeImportLegacyState();
               setHydrated(true);
             })
             .catch(() => setStorageWarning("read-failed"));
@@ -978,6 +1054,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       isLoaded: hydrated,
       isSyncing,
       storageWarning,
+      legacyImport,
     }),
     [
       state,
@@ -991,6 +1068,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       hydrated,
       isSyncing,
       storageWarning,
+      legacyImport,
     ],
   );
 

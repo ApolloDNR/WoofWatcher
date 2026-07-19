@@ -343,7 +343,7 @@ export default function HomeScreen() {
   const { width: viewportWidth, height: viewportHeight } =
     useWindowDimensions();
   const router = useRouter();
-  const { state, addEntry, deleteEntry, updateEntry, refresh, storageWarning } = useCare();
+  const { state, addEntry, deleteEntry, updateEntry, refresh, storageWarning, legacyImport } = useCare();
   // The data-loss warning must reach screen-reader users on every platform.
   useEffect(() => {
     if (storageWarning === "save-failed") {
@@ -1264,6 +1264,7 @@ export default function HomeScreen() {
   const showToast = (
     msg: string,
     feedback?: { id: string; title: string; type: CareEventType },
+    holdMs?: number,
   ) => {
     setToast(msg);
     setQuickFeedback(feedback ?? null);
@@ -1287,7 +1288,7 @@ export default function HomeScreen() {
           setQuickFeedback(null);
         });
       },
-      feedback ? 5200 : 1400,
+      holdMs ?? (feedback ? 5200 : 1400),
     );
   };
   useEffect(
@@ -1296,6 +1297,27 @@ export default function HomeScreen() {
     },
     [],
   );
+
+  // Welcome-back notice when boot adopted the legacy web app's saved data
+  // (one session only; see CareContext.legacyImport). Held longer than a
+  // quick-log toast - a returning owner should actually catch it.
+  const legacyImportShown = useRef(false);
+  useEffect(() => {
+    if (!legacyImport || legacyImportShown.current) return;
+    legacyImportShown.current = true;
+    const logs =
+      legacyImport.entries === 1 ? "1 care log" : `${legacyImport.entries} care logs`;
+    showToast(
+      legacyImport.entries
+        ? `Welcome back. Brought over ${logs} from the earlier WoofWatcher.`
+        : "Welcome back. Brought over your care plan from the earlier WoofWatcher.",
+      undefined,
+      6500,
+    );
+    // showToast is stable in practice (state setters + refs); the ref guard
+    // above makes this effect one-shot regardless.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legacyImport]);
 
   const undoQuickFeedback = () => {
     if (!quickFeedback) return;
