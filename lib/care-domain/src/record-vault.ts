@@ -227,24 +227,28 @@ function parseDueDateMs(value: unknown): number | null {
   const text = clean(value).replace(/^(due|expires?|expiry|renewal)\s*:?\s*/i, "");
   if (!text || !/\d{4}/.test(text)) return null;
 
+  // Local midnight, deliberately (house rule, same as diet-progress): due
+  // dates are calendar days in the owner's world. Anchoring to UTC midnight
+  // flipped records to "expired" at 5 PM local on the due date itself for
+  // anyone west of UTC, and shifted every evening day-count off by one.
   const iso = text.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
   if (iso) {
     const [, year, month, day] = iso;
-    return Date.UTC(Number(year), Number(month) - 1, Number(day));
+    return new Date(Number(year), Number(month) - 1, Number(day)).getTime();
   }
 
   const monthDayYear = text.match(/\b([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?[,]?\s+(\d{4})\b/);
   if (monthDayYear) {
     const [, monthName, day, year] = monthDayYear;
     const month = MONTH_INDEX[monthName.toLowerCase()];
-    if (month != null) return Date.UTC(Number(year), month, Number(day));
+    if (month != null) return new Date(Number(year), month, Number(day)).getTime();
   }
 
   const monthYear = text.match(/\b([A-Za-z]{3,9})\.?\s+(\d{4})\b/);
   if (monthYear) {
     const [, monthName, year] = monthYear;
     const month = MONTH_INDEX[monthName.toLowerCase()];
-    if (month != null) return Date.UTC(Number(year), month, 1);
+    if (month != null) return new Date(Number(year), month, 1).getTime();
   }
 
   return null;
@@ -367,7 +371,7 @@ export function deriveRecordReminders(
         {
           kind: "due_soon",
           label: `${title} due soon`,
-          detail: dueStatus.date ? `${title} is due in ${days} days (${dueStatus.date}).` : `${title} is due soon.`,
+          detail: dueStatus.date ? `${title} is due in ${days} ${days === 1 ? "day" : "days"} (${dueStatus.date}).` : `${title} is due soon.`,
           urgency: "watch",
           action: "Schedule the renewal or add the updated document when ready.",
           recordId: record.id,

@@ -804,7 +804,13 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const now = input.now ?? Date.now();
   const profile = input.profile ?? {};
   const diet = input.dietProfile ?? {};
-  const entries = input.entries ?? [];
+  // Privacy chokepoint: the Care Pass is a SHARED artifact, so private
+  // (household-hidden) logs are excluded here, before any section derives
+  // from them. Filtering once at the entrance guarantees no downstream
+  // helper - including sibling modules that do not self-filter - can leak a
+  // private entry into the pass, and keeps every section consistent with
+  // the Care Trends section, which already honored the flag.
+  const entries = (input.entries ?? []).filter(isHouseholdVisible);
   const routines = input.routines ?? [];
   const records = input.records ?? [];
   // The share artifact must agree with every app surface: the stored "My Dog"
