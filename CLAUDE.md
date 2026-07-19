@@ -5,6 +5,10 @@
 Before changing code, read these files in order:
 
 0. `docs/handoff/HANDOFF_2026-07-18.md` (latest handoff - current state of the app)
+0.1. The `premium-living-app` project skill (`.claude/skills/premium-living-app/`) -
+   the operating SOP for all product work in this repo: honesty rules, craft
+   bar, verification recipes, audit procedures, data-safety laws, release
+   pipeline. Invoke it before changing product code.
 0.5. `docs/design/APOLLO_MASTER_VISION_PROMPT.md` (the operative vision - hold every change against it)
 1. `AGENTS.md`
 2. `README.md`
