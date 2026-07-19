@@ -2872,7 +2872,7 @@ export default function MoreScreen() {
                 accessibilityLabel="Share household invite"
                 style={({ pressed }) => [s.shareBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
-                <Ionicons name="share-outline" size={16} color="#fff" />
+                <Ionicons name="share-outline" size={16} color={colors.primaryForeground} />
                 <Text style={[s.shareBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Invite</Text>
               </Pressable>
             </View>
@@ -4633,7 +4633,7 @@ const s = StyleSheet.create({
   codeLabel: { fontSize: 10.5, letterSpacing: 0.6 },
   codeValue: { fontSize: 21, letterSpacing: 1, marginTop: 3 },
   shareBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 13 },
-  shareBtnText: { color: "#fff", fontSize: 14 },
+  shareBtnText: { fontSize: 14 },
 
   signOut: {
     flexDirection: "row",
@@ -4665,7 +4665,7 @@ const s = StyleSheet.create({
   modalCancel: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   modalCancelText: { fontSize: 15 },
   modalConfirm: { flex: 2, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  modalConfirmText: { color: "#fff", fontSize: 15 },
+  modalConfirmText: { fontSize: 15 },
 
   linkRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 15 },
   linkIconWrap: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
@@ -4755,5 +4755,5 @@ const s = StyleSheet.create({
   unitPill: { minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 16, paddingVertical: 11, borderRadius: 13, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   unitText: { fontSize: 14 },
   profSaveBtn: { marginTop: 24, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, paddingVertical: 15, alignItems: "center", justifyContent: "center" },
-  profSaveBtnText: { color: "#fff", fontSize: 15.5 },
+  profSaveBtnText: { fontSize: 15.5 },
 });

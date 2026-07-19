@@ -2686,7 +2686,7 @@ const s = StyleSheet.create({
   ownerQuickChip: { borderWidth: 1, borderRadius: 11, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 12, paddingVertical: 8 },
   ownerQuickText: { fontSize: 12.5 },
   saveBtn: { marginTop: 24, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, paddingVertical: 15, alignItems: "center", justifyContent: "center" },
-  saveBtnText: { color: "#fff", fontSize: 15.5 },
+  saveBtnText: { fontSize: 15.5 },
   sheetSubmitHint: { fontSize: 12, lineHeight: 16, marginTop: 10, textAlign: "center" },
   deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingVertical: 10 },
   deleteBtnText: { fontSize: 14 },

@@ -782,7 +782,7 @@ const s = StyleSheet.create({
   authSetupProofBlocker: { fontSize: 10.5, lineHeight: 15, marginTop: 8 },
   actions: { gap: 12, marginTop: 8 },
   saveBtn: { height: 54, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
-  saveText: { color: "#fff", fontSize: 15.5 },
+  saveText: { fontSize: 15.5 },
   saveHint: { fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: -4, paddingHorizontal: 8 },
   laterBtn: { height: 42, alignItems: "center", justifyContent: "center" },
   laterText: { fontSize: 14 },

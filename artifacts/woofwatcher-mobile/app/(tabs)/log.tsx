@@ -2471,24 +2471,31 @@ export default function LogScreen() {
               />
               <View style={s.logCommandStageTop}>
                 <View style={s.logCommandBubble}>
-                  <Text style={[s.logCommandKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                  {/* The bubble is a fixed ivory painted-stage overlay, so its
+                      ink is fixed too - theme foreground goes near-white in
+                      dark mode and vanished against the bubble. Matches
+                      LivingPhoenixRoom's OVERLAY_INK treatment. */}
+                  <Text style={[s.logCommandKicker, { color: "#4F7B57", fontFamily: "Inter_700Bold" }]}>
                     Quick Care Console
                   </Text>
                   <Text
                     numberOfLines={2}
-                    style={[s.logCommandSpeech, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+                    style={[s.logCommandSpeech, { color: "#26221C", fontFamily: DISPLAY_SEMI }]}
                   >
                     {logCommandSpeech}
                   </Text>
                   <View style={s.logCommandBubbleTail} />
                 </View>
-                <View style={[s.logCommandChip, { backgroundColor: colors.ivory + "F2", borderColor: colors.border }]}>
+                {/* Ivory stays cream in BOTH themes, so the chip ink is fixed
+                    to the light-board forest/amber - the dark-palette tokens
+                    lighten and washed out against the cream chip. */}
+                <View style={[s.logCommandChip, { backgroundColor: colors.ivory + "F2", borderColor: "#08142433" }]}>
                   <PixelIcon name={selectedLauncherAction?.icon ?? "heart"} size={17} />
                   <Text
                     style={[
                       s.logCommandChipText,
                       {
-                        color: selectedLauncherRequiresDetail ? colors.amber : colors.forest,
+                        color: selectedLauncherRequiresDetail ? "#8A5A0C" : "#33582F",
                         fontFamily: "Inter_700Bold",
                       },
                     ]}
@@ -2517,7 +2524,10 @@ export default function LogScreen() {
                     key={metric.label}
                     style={[s.logCommandHudCell, { backgroundColor: colors.cream, borderColor: colors.border }]}
                   >
-                    <Text style={[s.logCommandHudLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    {/* Cream cells stay cream in dark mode; the dark-palette
+                        sage lightens and drops below AA there, so the label
+                        ink is fixed to the light-board sage. */}
+                    <Text style={[s.logCommandHudLabel, { color: "#4D8A56", fontFamily: "Inter_700Bold" }]}>
                       {metric.label}
                     </Text>
                     <Text
@@ -6182,5 +6192,5 @@ const s = StyleSheet.create({
   modalSkip: { flex: 1, height: 48, alignItems: "center", justifyContent: "center" },
   modalSkipText: { fontSize: 15 },
   modalSave: { flex: 2, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  modalSaveText: { color: "#fff", fontSize: 15 },
+  modalSaveText: { fontSize: 15 },
 });

@@ -695,7 +695,7 @@ export default function WoofGuideScreen() {
                 { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
               ]}
             >
-              <Text style={[s.gateComposerLinkText, { fontFamily: "Inter_700Bold" }]}>Health</Text>
+              <Text style={[s.gateComposerLinkText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Health</Text>
             </Pressable>
           </View>
         )}
@@ -922,7 +922,7 @@ const s = StyleSheet.create({
   gateComposerNotice: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 18, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 14, paddingVertical: 10 },
   gateComposerText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
   gateComposerLink: { minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
-  gateComposerLinkText: { color: "#fff", fontSize: 13 },
+  gateComposerLinkText: { fontSize: 13 },
   actionBoard: { alignSelf: "stretch", marginTop: 8 },
   guideActionList: { gap: 10 },
   actionRow: { flexDirection: "row", alignItems: "center", gap: 11, borderRadius: 16, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, padding: 13 },
@@ -952,5 +952,5 @@ const s = StyleSheet.create({
   reviewCancel: { flex: 1, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", minHeight: MIN_MOBILE_TOUCH_TARGET },
   reviewCancelText: { fontSize: 14 },
   reviewApply: { flex: 1.4, borderRadius: 16, alignItems: "center", justifyContent: "center", minHeight: MIN_MOBILE_TOUCH_TARGET },
-  reviewApplyText: { color: "#fff", fontSize: 14 },
+  reviewApplyText: { fontSize: 14 },
 });
