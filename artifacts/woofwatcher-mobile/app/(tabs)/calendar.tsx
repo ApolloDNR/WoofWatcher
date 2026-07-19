@@ -28,6 +28,7 @@ import {
   type RoutineBoardStatus,
 } from "@workspace/care-domain";
 import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
+import { announce } from "@/lib/announce";
 import { useColors } from "@/hooks/useColors";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
@@ -651,6 +652,8 @@ export default function CalendarScreen() {
   const showRoutineFeedback = (feedback: { id: string; title: string; type: string }) => {
     clearRoutineFeedbackTimer();
     setRoutineFeedback(feedback);
+    // The feedback card auto-dismisses in 9s - announce for screen readers.
+    announce(`${feedback.title} logged. Undo available.`);
     routineFeedbackTimer.current = setTimeout(() => {
       setRoutineFeedback(null);
       routineFeedbackTimer.current = null;
@@ -1392,8 +1395,15 @@ export default function CalendarScreen() {
                             <Text numberOfLines={2} style={[s.sugNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{sug.note}</Text>
                           ) : null}
                         </View>
-                        <Pressable onPress={() => !added && addSuggestion(sug)} hitSlop={MOBILE_INLINE_HIT_SLOP} style={[s.sugAdd, { backgroundColor: added ? colors.sage + "22" : colors.primary }]}>
-                          <Ionicons name={added ? "checkmark" : "add"} size={18} color={added ? colors.sage : "#fff"} />
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={added ? `${sug.title} added` : `Add ${sug.title}`}
+                          aria-disabled={added}
+                          onPress={() => !added && addSuggestion(sug)}
+                          hitSlop={MOBILE_INLINE_HIT_SLOP}
+                          style={[s.sugAdd, { backgroundColor: added ? colors.sage + "22" : colors.primary }]}
+                        >
+                          <Ionicons name={added ? "checkmark" : "add"} size={18} color={added ? colors.sage : colors.primaryForeground} />
                         </Pressable>
                       </View>
                     );
@@ -1451,7 +1461,13 @@ export default function CalendarScreen() {
                             <Text numberOfLines={2} style={[s.eventNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{e.note}</Text>
                           ) : null}
                         </View>
-                        <Pressable onPress={() => removeEvent(e.id)} hitSlop={MOBILE_INLINE_HIT_SLOP} style={s.removeBtn}>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Remove ${e.title}`}
+                          onPress={() => removeEvent(e.id)}
+                          hitSlop={MOBILE_INLINE_HIT_SLOP}
+                          style={s.removeBtn}
+                        >
                           <Ionicons name="close" size={16} color={colors.mutedForeground} />
                         </Pressable>
                       </View>
@@ -1632,8 +1648,13 @@ export default function CalendarScreen() {
                       {routineBoard.doneCount}/{routineBoard.items.length} done today
                     </Text>
                   )}
-                  <Pressable onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }} style={[s.sectionAddBtn, { backgroundColor: colors.primary }]}>
-                    <Ionicons name="add" size={18} color="#fff" />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Add routine"
+                    onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }}
+                    style={[s.sectionAddBtn, { backgroundColor: colors.primary }]}
+                  >
+                    <Ionicons name="add" size={18} color={colors.primaryForeground} />
                   </Pressable>
                 </View>
               }
@@ -1845,8 +1866,8 @@ export default function CalendarScreen() {
 
       {/* Routine editor modal */}
       <Modal visible={routineOpen} transparent animationType="slide" onRequestClose={() => setRoutineOpen(false)}>
-        <Pressable style={s.modalBackdrop} onPress={() => setRoutineOpen(false)}>
-          <Pressable style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+        <Pressable accessible={false} style={s.modalBackdrop} onPress={() => setRoutineOpen(false)}>
+          <Pressable accessible={false} accessibilityViewIsModal style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.modalHandle} />
             <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
               {routineEditId ? "Edit Routine" : "New Routine"}
@@ -1942,7 +1963,7 @@ export default function CalendarScreen() {
                 Add a label above to save this routine.
               </Text>
             ) : rTimeError ? (
-              <Text accessibilityLiveRegion="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
+              <Text aria-live="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
                 {rTimeError}
               </Text>
             ) : null}
@@ -1959,8 +1980,8 @@ export default function CalendarScreen() {
 
       {/* Add-event modal */}
       <Modal visible={addOpen} transparent animationType="slide" onRequestClose={() => setAddOpen(false)}>
-        <Pressable style={s.modalBackdrop} onPress={() => setAddOpen(false)}>
-          <Pressable style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+        <Pressable accessible={false} style={s.modalBackdrop} onPress={() => setAddOpen(false)}>
+          <Pressable accessible={false} accessibilityViewIsModal style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.modalHandle} />
             <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>New Event</Text>
 
@@ -2041,7 +2062,7 @@ export default function CalendarScreen() {
                 Add a title above to save this event.
               </Text>
             ) : dateError ? (
-              <Text accessibilityLiveRegion="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
+              <Text aria-live="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
                 {dateError}
               </Text>
             ) : null}

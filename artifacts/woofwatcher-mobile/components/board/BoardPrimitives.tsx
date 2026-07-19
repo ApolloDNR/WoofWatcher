@@ -120,7 +120,10 @@ export function BoardRouteHeader({
           {kicker ? (
             <Text style={[styles.routeKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{kicker}</Text>
           ) : null}
-          <Text style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: TITLE_SERIF }]}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: TITLE_SERIF }]}
+          >
             {title}
           </Text>
           {subtitle ? (
@@ -275,7 +278,7 @@ export function BoardSegmentTabs<T extends string>({
             key={segment.key}
             accessibilityRole="button"
             accessibilityLabel={segment.label}
-            accessibilityState={{ selected: isActive }}
+            aria-selected={isActive}
             onLayout={(event: LayoutChangeEvent) => {
               const { x, width, height } = event.nativeEvent.layout;
               setRects((prev) => {
@@ -519,6 +522,7 @@ export function BoardSectionHeader({
   return (
     <View style={[styles.sectionHeader, { borderBottomColor: colors.border }, style]}>
       <Text
+        accessibilityRole="header"
         numberOfLines={1}
         style={[styles.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }, textStyle]}
       >
@@ -740,7 +744,10 @@ export function CareRow({
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel ?? `${title}. ${detail ?? ""}`}
+        accessibilityLabel={
+          accessibilityLabel ??
+          [title, detail, meta].filter(Boolean).join(". ")
+        }
         onPress={() => {
           hapticSelect();
           onPress();

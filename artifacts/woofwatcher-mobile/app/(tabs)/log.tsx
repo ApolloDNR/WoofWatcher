@@ -36,6 +36,7 @@ import {
   type StickyNoteColor,
 } from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
+import { announce } from "@/lib/announce";
 import { isClerkConfigured } from "@/lib/auth";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { resolvePetName } from "@/lib/petIdentity";
@@ -1181,6 +1182,11 @@ export default function LogScreen() {
   // the Quick Log fallback always land on the composer instead of a guess.
   const composerSectionY = useRef<number | null>(null);
   const [lastQuickLog, setLastQuickLog] = useState<{ id: string; title: string } | null>(null);
+  // Screen readers can't see the feedback card and its Undo vanishes on a
+  // timer - every quick log announces, whichever of the five paths set it.
+  useEffect(() => {
+    if (lastQuickLog) announce(`${lastQuickLog.title} logged. Undo available.`);
+  }, [lastQuickLog]);
 
   // Entry editor
   const [detailEntryId, setDetailEntryId] = useState<string | null>(null);
@@ -2583,7 +2589,7 @@ export default function LogScreen() {
                     key={tab.key}
                     accessibilityRole="button"
                     accessibilityLabel={`Show ${tab.label} quick log actions`}
-                    accessibilityState={{ selected: active }}
+                    aria-selected={active}
                     onPress={() => {
                       Haptics.selectionAsync();
                       setLauncherTab(tab.key);
@@ -2622,7 +2628,7 @@ export default function LogScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={launcherPresentation.accessibilityLabel}
                     accessibilityHint={launcherPresentation.feedbackHint}
-                    accessibilityState={{ selected: active }}
+                    aria-selected={active}
                     onPress={() => handleQuickLauncherAction(action)}
                     onLongPress={() => focusFullComposerForLauncherAction(action)}
                     scaleTo={0.94}
@@ -2929,7 +2935,7 @@ export default function LogScreen() {
                       key={mood.label}
                       accessibilityRole="button"
                       accessibilityLabel={`${petDisplayName} feels ${mood.label}`}
-                      accessibilityState={{ selected: active }}
+                      aria-selected={active}
                       onPress={() => selectMoodLauncher(mood)}
                       style={({ pressed }) => [
                         s.moodOption,
@@ -4154,8 +4160,10 @@ export default function LogScreen() {
         animationType="slide"
         onRequestClose={() => setLauncherDetailAction(null)}
       >
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setLauncherDetailAction(null)}>
+        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setLauncherDetailAction(null)}>
           <Pressable
+            accessible={false}
+            accessibilityViewIsModal
             style={[s.launcherDetailSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
             onPress={(e) => e.stopPropagation()}
           >
@@ -4297,8 +4305,8 @@ export default function LogScreen() {
 
       {/* Entry detail modal */}
       <Modal visible={detailEntry !== null} transparent animationType="slide" onRequestClose={() => setDetailEntryId(null)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDetailEntryId(null)}>
-          <Pressable style={[s.detailSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDetailEntryId(null)}>
+          <Pressable accessible={false} accessibilityViewIsModal style={[s.detailSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.editHandle} />
             {detailEntry ? (
               <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
@@ -4503,7 +4511,7 @@ export default function LogScreen() {
                             key={outcome.id}
                             accessibilityRole="button"
                             accessibilityLabel={`Update meal outcome: ${outcome.label}`}
-                            accessibilityState={{ selected: active }}
+                            aria-selected={active}
                             onPress={() => updateMealOutcomeFromDetail(detailEntry, outcome.id)}
                             style={({ pressed }) => [
                               s.mealOutcomeButton,
@@ -4966,8 +4974,8 @@ export default function LogScreen() {
 
       {/* Entry editor modal */}
       <Modal visible={editEntry !== null} transparent animationType="slide" onRequestClose={() => setEditEntry(null)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setEditEntry(null)}>
-          <Pressable style={[s.editSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setEditEntry(null)}>
+          <Pressable accessible={false} accessibilityViewIsModal style={[s.editSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.editHandle} />
             <Text style={[s.editSheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Edit entry</Text>
             <Text style={[s.editFieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Title</Text>
@@ -4999,9 +5007,9 @@ export default function LogScreen() {
 
       {/* Post-log quick-note prompt */}
       <Modal visible={promptId !== null} transparent animationType="fade" onRequestClose={() => setPromptId(null)}>
-        <Pressable style={[s.modalBackdrop, centeredModalPadding]} onPress={saveQuickNote}>
+        <Pressable accessible={false} style={[s.modalBackdrop, centeredModalPadding]} onPress={saveQuickNote}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalCenter}>
-            <Pressable style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
+            <Pressable accessible={false} accessibilityViewIsModal style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
               <View style={[s.modalIcon, { backgroundColor: colors.sage + "1A" }]}>
                 <Ionicons name="checkmark" size={22} color={colors.sage} />
               </View>

@@ -2126,7 +2126,7 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
     health,
     /accessibilityLabel=\{`\$\{row\.label\}\. \$\{row\.status\}\. \$\{row\.detail\}\. \$\{row\.actionLabel\}`\}/,
   );
-  assert.match(health, /accessibilityState=\{\{ selected: active \}\}/);
+  assert.match(health, /aria-selected=\{active\}/);
   assert.match(health, /Not veterinary advice/);
 });
 
@@ -2488,7 +2488,7 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   assert.match(log, /router\.push\("\/health\?tab=health" as never\)/);
   assert.match(log, /launcherActionKey/);
   assert.match(log, /selectedLauncherKey === launcherActionKey\(action\)/);
-  assert.match(log, /accessibilityState=\{\{ selected: active \}\}/);
+  assert.match(log, /aria-selected=\{active\}/);
   assert.match(log, /width: "31\.5%"/);
   assert.match(log, /composerTrustRail/);
   assert.match(log, /Care IQ/);

@@ -964,7 +964,7 @@ export default function PortraitScreen() {
               <PressScale
                 key={key}
                 accessibilityRole="button"
-                accessibilityState={{ selected: active }}
+                aria-selected={active}
                 accessibilityLabel={`Avatar Studio ${label}`}
                 hitSlop={MOBILE_INLINE_HIT_SLOP}
                 onPress={() => selectStudioTab(key as StudioTab)}
@@ -1204,7 +1204,7 @@ export default function PortraitScreen() {
                     <PressScale
                       key={template.id}
                       accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
+                      aria-selected={active}
                       accessibilityLabel={`Choose ${template.label} avatar template`}
                       onPress={() => selectTemplate(template.id)}
                       haptic="none"
@@ -1608,7 +1608,7 @@ export default function PortraitScreen() {
                     <PressScale
                       key={swatch}
                       accessibilityRole="button"
-                      accessibilityState={{ selected: primary || secondary }}
+                      aria-selected={primary || secondary}
                       accessibilityLabel={`Set coat color ${swatch}`}
                       accessibilityHint={
                         primary
@@ -1665,7 +1665,7 @@ export default function PortraitScreen() {
                     <PressScale
                       key={marking.id}
                       accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
+                      aria-selected={active}
                       accessibilityLabel={`Set ${marking.label} face marking`}
                       accessibilityHint="Double tap to apply this marking to the pixel twin."
                       hitSlop={MOBILE_INLINE_HIT_SLOP}
@@ -1747,7 +1747,7 @@ export default function PortraitScreen() {
                     <PressScale
                       key={item.id}
                       accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
+                      aria-selected={active}
                       accessibilityLabel={`Set ${item.label} ${item.slot} accessory`}
                       onPress={() => setAccessory(item)}
                       haptic="none"
@@ -1848,7 +1848,7 @@ export default function PortraitScreen() {
                   <PressScale
                     key={emote}
                     accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
+                    aria-selected={active}
                     accessibilityLabel={`Preview ${emoteLabel(emote)} mood`}
                     accessibilityHint="Double tap to update the live care-twin preview mood."
                     hitSlop={MOBILE_INLINE_HIT_SLOP}

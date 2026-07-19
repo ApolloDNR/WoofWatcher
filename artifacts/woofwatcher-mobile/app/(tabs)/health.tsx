@@ -657,7 +657,7 @@ export default function HealthScreen() {
                 key={tab.key}
                 accessibilityRole="button"
                 accessibilityLabel={`Open ${tab.label}`}
-                accessibilityState={{ selected: active }}
+                aria-selected={active}
                 onPress={() => setActiveTab(tab.key)}
                 style={[
                   s.tabPill,

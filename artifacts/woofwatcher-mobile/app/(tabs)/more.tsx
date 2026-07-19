@@ -3680,7 +3680,7 @@ export default function MoreScreen() {
                       key={field.key}
                       onPress={() => toggleProviderDraft(field.key)}
                       accessibilityRole="checkbox"
-                      accessibilityState={{ checked }}
+                      aria-checked={checked}
                       accessibilityLabel={`${field.label}. ${field.detail}`}
                       style={({ pressed }) => [
                         s.providerChecklistRow,

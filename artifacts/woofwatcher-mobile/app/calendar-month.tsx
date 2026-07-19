@@ -287,7 +287,7 @@ export default function CalendarMonthScreen() {
                     <PressScale
                       key={cell.dateKey}
                       accessibilityRole="button"
-                      accessibilityState={{ selected }}
+                      aria-selected={selected}
                       accessibilityLabel={`${dayNarration(cell)}${cell.isToday ? ", today" : ""}${
                         cell.hasEntries
                           ? `, ${cell.entryCount} ${cell.entryCount === 1 ? "log" : "logs"}`

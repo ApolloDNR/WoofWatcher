@@ -54,6 +54,7 @@ import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type Entry } from "@/context/CareContext";
+import { announce } from "@/lib/announce";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import {
@@ -343,6 +344,16 @@ export default function HomeScreen() {
     useWindowDimensions();
   const router = useRouter();
   const { state, addEntry, deleteEntry, updateEntry, refresh, storageWarning } = useCare();
+  // The data-loss warning must reach screen-reader users on every platform.
+  useEffect(() => {
+    if (storageWarning === "save-failed") {
+      announce("Device storage is failing. Recent care logs may not be saved.");
+    } else if (storageWarning === "read-failed") {
+      announce("Could not read saved care data. Saving is paused this session.");
+    } else if (storageWarning === "reset") {
+      announce("Saved care data could not be read and was reset. A recovery copy was kept.");
+    }
+  }, [storageWarning]);
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
 
   const topPadding = getRouteTopPadding({
@@ -1256,6 +1267,9 @@ export default function HomeScreen() {
   ) => {
     setToast(msg);
     setQuickFeedback(feedback ?? null);
+    // The toast is invisible to screen readers and its Undo button vanishes
+    // on a timer - announce so the core loop is not silent under VoiceOver.
+    announce(feedback ? `${msg}. Undo available.` : msg);
     Animated.timing(toastOpacity, {
       toValue: 1,
       duration: 160,
@@ -1865,6 +1879,9 @@ export default function HomeScreen() {
           {storageWarning ? (
             <View
               accessibilityRole="alert"
+              // role="alert" only maps to a live region on web; Android needs
+              // the explicit live region and iOS the announcement effect below.
+              aria-live="assertive"
               style={[
                 s.storageWarningCard,
                 { backgroundColor: colors.amberSoft, borderColor: colors.amber + "66" },

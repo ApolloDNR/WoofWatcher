@@ -515,7 +515,7 @@ export default function TrendsScreen() {
               <PressScale
                 accessibilityRole="button"
                 accessibilityLabel={showSignals ? "Hide weekly signals" : "Show weekly signals"}
-                accessibilityState={{ expanded: showSignals }}
+                aria-expanded={showSignals}
                 onPress={() => setShowSignals((prev) => !prev)}
                 haptic="light"
                 containerStyle={styles.summaryToggleLayout}

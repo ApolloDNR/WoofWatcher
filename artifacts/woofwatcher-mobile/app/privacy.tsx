@@ -921,7 +921,7 @@ function PolicyToggle({
   return (
     <Pressable
       accessibilityRole="checkbox"
-      accessibilityState={{ checked: value }}
+      aria-checked={value}
       accessibilityLabel={label}
       onPress={onPress}
       style={({ pressed }) => [

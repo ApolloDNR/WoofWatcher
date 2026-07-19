@@ -94,8 +94,7 @@ export function SpriteSheetPlayer({
 
   return (
     <View
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
+      aria-hidden
       pointerEvents="none"
       style={[styles.viewport, { width, height }, style]}
       testID={testID}

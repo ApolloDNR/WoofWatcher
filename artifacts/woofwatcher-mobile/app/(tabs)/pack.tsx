@@ -871,7 +871,7 @@ export default function PackScreen() {
                         key={option.key}
                         accessibilityRole="button"
                         accessibilityLabel={`Add to ${option.label}`}
-                        accessibilityState={{ selected: active }}
+                        aria-selected={active}
                         onPress={() => {
                           Haptics.selectionAsync();
                           setAddSupplyGroup(option.key);

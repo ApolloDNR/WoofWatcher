@@ -325,7 +325,7 @@ export default function SetupScreen() {
                 <Pressable
                   accessibilityRole="switch"
                   accessibilityLabel="Match twin to breed on save"
-                  accessibilityState={{ checked: matchTwinToBreed }}
+                  aria-checked={matchTwinToBreed}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setMatchTwinToBreed((value) => !value);
@@ -379,7 +379,7 @@ export default function SetupScreen() {
                     key={item.value}
                     accessibilityRole="button"
                     accessibilityLabel={`Routine type ${item.label}`}
-                    accessibilityState={{ selected }}
+                    aria-selected={selected}
                     onPress={() => {
                       Haptics.selectionAsync();
                       setField("routineType", item.value);
@@ -412,7 +412,7 @@ export default function SetupScreen() {
                   <Pressable
                     key={item.value}
                     accessibilityRole="button"
-                    accessibilityState={{ selected }}
+                    aria-selected={selected}
                     accessibilityLabel={`${item.label}. ${item.detail}`}
                     onPress={() => {
                       Haptics.selectionAsync();
@@ -530,7 +530,7 @@ export default function SetupScreen() {
               accessibilityRole="button"
               accessibilityLabel={householdReady ? "Save foundation" : "Add invite code"}
               accessibilityHint={canSave ? undefined : saveBlockedMessage}
-              accessibilityState={{ disabled: !canSave }}
+              aria-disabled={!canSave}
               style={({ pressed }) => [
                 s.saveBtn,
                 { backgroundColor: canSave ? colors.primary : colors.border, opacity: pressed ? 0.82 : 1 },
@@ -543,7 +543,7 @@ export default function SetupScreen() {
             </Pressable>
             {!canSave && saveBlockedMessage ? (
               <Text
-                accessibilityLiveRegion="polite"
+                aria-live="polite"
                 style={[s.saveHint, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
               >
                 {saveBlockedMessage}

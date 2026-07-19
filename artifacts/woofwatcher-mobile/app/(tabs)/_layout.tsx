@@ -64,6 +64,7 @@ function CenterToday() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={onToday ? "Quick log" : "Today"}
+        aria-selected={onToday}
         accessibilityHint={
           onToday
             ? "Opens the fast log sheet"
@@ -98,7 +99,12 @@ function CenterToday() {
           <Ionicons name="paw" size={26} color={colors.primaryForeground} />
         </Animated.View>
       </Pressable>
-      <Text style={[s.fabLabel, { color: colors.forest }]}>Today</Text>
+      {/* Visual caption only - the paw button already carries the accessible
+          label, so this Text would read as a stray duplicate "Today".
+          aria-hidden is the one alias RN maps on native AND web. */}
+      <Text aria-hidden style={[s.fabLabel, { color: colors.forest }]}>
+        Today
+      </Text>
     </View>
   );
 }
