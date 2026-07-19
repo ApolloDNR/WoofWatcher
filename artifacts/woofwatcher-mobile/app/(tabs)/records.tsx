@@ -74,6 +74,7 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
+import { PetPortrait } from "@/components/PetPortrait";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { PressScale } from "@/components/motion/GameFeel";
@@ -1117,9 +1118,9 @@ export default function RecordsScreen() {
             </ImageBackground>
             <View style={[s.recordsCredentialDock, { backgroundColor: colors.ivory + "F4", borderColor: colors.border }]}>
               <View style={[s.recordsCredentialIdPlate, { backgroundColor: colors.ivory, borderColor: colors.navy + "22" }]}>
-                <View style={[s.recordsCredentialIdBadge, { backgroundColor: recordsVaultTone + "1F" }]}>
-                  <Ionicons name="paw" size={16} color={recordsVaultTone} />
-                </View>
+                {/* A real ID card carries a photo, not a glyph: the canonical
+                    portrait makes the credential read as a document. */}
+                <PetPortrait size={38} ringColor={recordsVaultTone + "55"} />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[s.recordsCredentialIdLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                     WOOFWATCHER DOG ID
@@ -3261,13 +3262,6 @@ const s = StyleSheet.create({
     shadowOpacity: 0.14,
     shadowRadius: 16,
     elevation: 5,
-  },
-  recordsCredentialIdBadge: {
-    width: 38,
-    height: 38,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
   },
   recordsCredentialIdLabel: {
     fontSize: 9,

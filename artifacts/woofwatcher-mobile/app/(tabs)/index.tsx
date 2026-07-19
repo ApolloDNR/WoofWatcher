@@ -50,6 +50,7 @@ import {
   type PhoenixRoomReaction,
   type PhoenixRoomStat,
 } from "@/components/LivingPhoenixRoom";
+import { PetPortrait } from "@/components/PetPortrait";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
 import { useAvatar } from "@/context/AvatarContext";
@@ -1669,10 +1670,7 @@ export default function HomeScreen() {
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={({ pressed }) => [s.identityWrap, { opacity: pressed ? 0.75 : 1 }]}
             >
-              <Image
-                source={require("@/assets/images/phoenix-avatar.png")}
-                style={[s.identityAvatar, { borderColor: colors.border, backgroundColor: colors.secondary }]}
-              />
+              <PetPortrait size={42} />
               <View style={s.identityCopy}>
                 <View style={s.identityNameRow}>
                   <Text
@@ -2288,12 +2286,7 @@ export default function HomeScreen() {
               ) : null}
               {nextPrimary ? (
                 <View style={s.nextPrimaryRow}>
-                  <Image
-                    source={require("@/assets/images/phoenix-avatar.png")}
-                    style={[s.nextThumb, { borderColor: colors.border, backgroundColor: colors.secondary }]}
-                    resizeMode="cover"
-                    accessibilityLabel={`${petName} thumbnail`}
-                  />
+                  <PetPortrait size={56} />
                   <View style={s.nextPrimaryCopy}>
                     <Text
                       numberOfLines={1}
@@ -3397,12 +3390,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  identityAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    borderWidth: 1,
-  },
   identityCopy: {
     flex: 1,
     minWidth: 0,
@@ -4051,12 +4038,6 @@ const s = StyleSheet.create({
     alignItems: "flex-start",
     gap: 12,
     paddingTop: 2,
-  },
-  nextThumb: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    borderWidth: 1,
   },
   nextPrimaryCopy: {
     flex: 1,
