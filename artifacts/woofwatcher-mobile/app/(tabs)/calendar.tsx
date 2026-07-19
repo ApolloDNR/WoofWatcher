@@ -1340,17 +1340,19 @@ export default function CalendarScreen() {
 
           {/* WoofGuide discovery banner */}
           <Pressable
+            accessibilityRole="button"
+            aria-expanded={discoverOpen}
             onPress={() => { Haptics.selectionAsync(); setDiscoverOpen((v) => !v); }}
             style={[s.discoverCard, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
           >
             <View style={s.discoverIcon}>
-              <Ionicons name="sparkles" size={20} color="#fff" />
+              <Ionicons name="sparkles" size={20} color={colors.primaryForeground} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[s.discoverTitle, { fontFamily: DISPLAY_SEMI }]}>Discover nearby dog events</Text>
-              <Text style={[s.discoverSub, { fontFamily: "Inter_400Regular" }]}>WoofGuide curates outings for {resolvePetName(profile.name)}</Text>
+              <Text style={[s.discoverTitle, { color: colors.primaryForeground, fontFamily: DISPLAY_SEMI }]}>Discover nearby dog events</Text>
+              <Text style={[s.discoverSub, { color: colors.primaryForeground, opacity: 0.85, fontFamily: "Inter_400Regular" }]}>WoofGuide curates outings for {resolvePetName(profile.name)}</Text>
             </View>
-            <Ionicons name={discoverOpen ? "chevron-up" : "chevron-down"} size={20} color="#fff" />
+            <Ionicons name={discoverOpen ? "chevron-up" : "chevron-down"} size={20} color={colors.primaryForeground} />
           </Pressable>
 
           {discoverOpen && (
@@ -2095,8 +2097,8 @@ const s = StyleSheet.create({
     elevation: 4,
   },
   discoverIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
-  discoverTitle: { fontSize: 16, color: "#fff" },
-  discoverSub: { fontSize: 13, color: "rgba(255,255,255,0.85)", marginTop: 1 },
+  discoverTitle: { fontSize: 16 },
+  discoverSub: { fontSize: 13, marginTop: 1 },
 
   discoverPanel: { borderRadius: 20, padding: 14, marginTop: 10, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 2 },
   discoverInputRow: { flexDirection: "row", alignItems: "center", gap: 8 },

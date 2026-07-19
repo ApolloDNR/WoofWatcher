@@ -3199,6 +3199,9 @@ export default function LogScreen() {
                 return (
                   <Pressable
                     key={q.type}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Log ${q.label}`}
+                    aria-selected={active}
                     onPress={() => {
                       Haptics.selectionAsync();
                       setSelectedLauncherKey(null);
@@ -3293,6 +3296,9 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3417,6 +3423,9 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3466,6 +3475,9 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3527,6 +3539,9 @@ export default function LogScreen() {
                   </View>
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3608,6 +3623,9 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3668,6 +3686,9 @@ export default function LogScreen() {
                   </View>
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3748,6 +3769,9 @@ export default function LogScreen() {
                   </View>
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3802,6 +3826,9 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3956,6 +3983,9 @@ export default function LogScreen() {
                 style={s.filterScroll}
               >
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Show all log types"
+                aria-selected={filter === null}
                 onPress={() => {
                   Haptics.selectionAsync();
                   setFilter(null);
@@ -3969,6 +3999,9 @@ export default function LogScreen() {
                   return (
                     <Pressable
                       key={q.type}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Filter by ${q.label}`}
+                      aria-selected={active}
                       onPress={() => {
                         Haptics.selectionAsync();
                         setFilter(active ? null : q.type);
