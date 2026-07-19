@@ -1099,7 +1099,7 @@ test("shows premium entitlement policy before checkout is enabled", () => {
   assert.match(premium, /Locked until upgrade/);
   assert.match(premium, /buildPaymentsProviderProofManifest/);
   assert.match(premium, /const paymentsProofManifest = buildPaymentsProviderProofManifest/);
-  assert.match(premium, /Payments proof manifest/);
+  assert.match(premium, /Payments proof/);
   assert.match(premium, /paymentsProofManifest\.rows\.map/);
   assert.match(premium, /paymentsProofManifest\.blockers\.map/);
   assert.match(premium, /Checkout disabled/);
@@ -2820,7 +2820,7 @@ test("keeps Premium value, plan, and entitlement surfaces on shared board anatom
   );
   assert.match(
     premium,
-    /<BoardCard(?: enter=\{\d+\})? style=\{s\.paymentsProofCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Payments proof manifest"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.paymentsProofCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Payments proof"/,
   );
   assert.match(
     premium,

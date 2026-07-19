@@ -95,11 +95,14 @@ function PremiumScreenBody() {
     lockedEntitlements[0]
       ? `${recommendedPlan.name} unlocks ${lockedEntitlements[0].label.toLowerCase()} when checkout is approved.`
       : `${recommendedPlan.name} is ready to review once launch gates close.`;
+  // The HUD strip is fixed dark navy in BOTH themes, so its value inks are
+  // fixed bright tones (the dark-palette variants) - the light-theme
+  // primary/amber/sage are dark pigments that vanish on navy.
   const premiumStageHud = [
-    { label: "Plan", value: recommendedPlan.name, tone: colors.primary },
-    { label: "Price", value: recommendedPlan.monthlyPrice, tone: colors.amber },
-    { label: "Signals", value: String(preview.valueSignals.length), tone: colors.sage },
-    { label: "Gate", value: "Checkout", tone: colors.amber },
+    { label: "Plan", value: recommendedPlan.name, tone: "#FBF6E7" },
+    { label: "Price", value: recommendedPlan.monthlyPrice, tone: "#D8A852" },
+    { label: "Signals", value: String(preview.valueSignals.length), tone: "#6DA36F" },
+    { label: "Gate", value: "Checkout", tone: "#D8A852" },
   ];
   const paymentsProofManifest = buildPaymentsProviderProofManifest();
 
@@ -266,8 +269,10 @@ function PremiumScreenBody() {
           </View>
 
           <BoardCard enter={1} style={s.paymentsProofCard}>
+            {/* Short title: "Payments proof manifest" truncated to "manife..."
+                beside the accessory pill on phone widths. */}
             <BoardSectionHeader
-              title="Payments proof manifest"
+              title="Payments proof"
               accessory={<BoardPill label="Checkout disabled" tone={colors.amber} />}
             />
             <Text style={[s.paymentsProofIntro, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>

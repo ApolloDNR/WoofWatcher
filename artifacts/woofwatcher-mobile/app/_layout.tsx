@@ -103,10 +103,13 @@ function RootLayoutNav() {
         name="portrait"
         options={{ headerShown: false, presentation: "card" }}
       />
+      {/* Empty titles where the screen paints its own rich header right
+          below - the navigator title read as a stray duplicate ("Setup" over
+          "Set up WoofWatcher"). Native keeps the back affordance. */}
       <Stack.Screen
         name="setup"
         options={{
-          title: "Setup",
+          title: "",
           presentation: "card",
         }}
       />
@@ -127,7 +130,7 @@ function RootLayoutNav() {
       <Stack.Screen
         name="privacy"
         options={{
-          title: "Privacy & Safety",
+          title: "",
           presentation: "card",
         }}
       />
