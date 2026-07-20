@@ -227,7 +227,9 @@ export default function AdventureScreen() {
     if (quest.action === "start-walk") {
       if (openWalkSession?.id) {
         setQuestFeedback({ id: openWalkSession.id, title: "Walk already active" });
-        router.push(`/log?entry=${encodeURIComponent(openWalkSession.id)}` as never);
+        // Land on the FINISH form, not the read-only record sheet: the
+        // sheet says "In progress" with no way to end the walk.
+        router.push("/log?walk=finish" as never);
         return;
       }
       // A rapid second tap lands before the open session exists in state;
@@ -805,12 +807,15 @@ const s = StyleSheet.create({
     justifyContent: "flex-end",
   },
   heroSpriteShadow: {
+    // At the feet line and strong enough to read over the busy path art -
+    // at bottom:15/0.34 it hid behind the stat band and the trot looked
+    // ungrounded.
     position: "absolute",
-    bottom: 15,
-    width: 126,
+    bottom: 7,
+    width: 132,
     height: 18,
     borderRadius: 999,
-    backgroundColor: "rgba(8,26,42,0.34)",
+    backgroundColor: "rgba(8,26,42,0.45)",
   },
   // Dark scrim panel behind the hero text stack so the eyebrow/title/copy stay
   // readable over bright pixel art; matches the Level/XP chip treatment below.

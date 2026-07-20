@@ -152,10 +152,13 @@ function notificationPreferenceSummaryFor(preferences: CareReminderNotificationP
   const optedOut = preferences.optOut === true;
 
   if (!providerConfigured) {
+    // Owner-facing copy: say what it means for THEM, not which vendor
+    // credentials engineering still owes. The honesty (no push claims)
+    // stays; the Expo/APNs/FCM checklist lives in the QA cockpit.
     if (preferences.providerStaged === true && preferences.providerProofReady !== true) {
-      return "Push provider is staged, but Reminder Center stays in-app until structured Expo/APNs/FCM, permission, quiet-hours, opt-out, and native delivery proof is attached.";
+      return "Push delivery is being set up and verified; until then, reminders live here in the app.";
     }
-    return "Push provider not configured; push notifications stay in-app until Expo, APNs, and Firebase/FCM proof is attached.";
+    return "Push notifications aren't part of this build yet, so reminders live here in the app.";
   }
   if (optedOut) {
     return "Notifications are off by your choice; Reminder Center stays visible in app until you turn them back on.";
@@ -328,7 +331,9 @@ export function deriveCareReminderCenter(input: CareReminderCenterInput): CareRe
     nextStep: nextStepFor(status),
     notificationReadiness: providerBackedNotifications
       ? "Reminder candidates are ready for owner review; push delivery is eligible for delivery QA, but launch still needs delivered-notification proof."
-      : `Reminder candidates are ready for owner review; ${notificationPreferenceSummary}`,
+      : // Do not embed the preference summary here - screens render both
+        // fields adjacently and the same sentence appeared twice.
+        "Reminder candidates are ready for owner review.",
     notificationPreferenceSummary,
     notificationQuietHours: notificationQuietHoursFor(input.notificationPreferences),
     notificationOptOut: notificationOptOutFor(input.notificationPreferences),

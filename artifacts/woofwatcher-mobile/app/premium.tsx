@@ -23,6 +23,7 @@ import {
   type PremiumValueSignal,
 } from "@workspace/care-domain";
 import { useCare } from "@/context/CareContext";
+import { homeImmersiveRoomIsNight } from "./(tabs)/index";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
@@ -105,6 +106,7 @@ function PremiumScreenBody() {
     { label: "Gate", value: "Checkout", tone: "#D8A852" },
   ];
   const paymentsProofManifest = buildPaymentsProviderProofManifest();
+  const premiumStageIsNight = colors.isDark || homeImmersiveRoomIsNight(new Date().getHours());
 
   const isWebRoutePreview = (Platform.OS as string) === "web";
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
@@ -150,7 +152,15 @@ function PremiumScreenBody() {
               style={s.premiumValueStage}
               testID="premium-value-pixel-stage"
             >
-              <View style={s.premiumValueStageShade} />
+              <View
+                style={[
+                  s.premiumValueStageShade,
+                  // Evening/dark parity with the other stages: Home and
+                  // Records swap to night art, so the always-daylight Plus
+                  // room gets a night wash instead of glowing at midnight.
+                  premiumStageIsNight ? { backgroundColor: "rgba(9,17,32,0.38)" } : null,
+                ]}
+              />
 
               <View style={s.premiumValueStageTop}>
                 <View style={s.premiumValueBubble}>
@@ -188,7 +198,11 @@ function PremiumScreenBody() {
                   testID="premium-value-pixel-sprite"
                 />
               </View>
-
+            </ImageBackground>
+            {/* Data dock BELOW the painting (log/records/woofguide pattern):
+                the HUD and plan/CTA row used to overlay the art's floor,
+                cutting the dog's base so it floated mid-window. */}
+            <View style={[s.premiumValueDock, { backgroundColor: colors.ivory + "F4", borderTopColor: colors.border }]}>
               <View
                 style={[
                   s.premiumValueHud,
@@ -258,7 +272,7 @@ function PremiumScreenBody() {
                   <Ionicons name="arrow-forward" size={15} color={colors.ivory} />
                 </Pressable>
               </View>
-            </ImageBackground>
+            </View>
           </BoardCard>
 
           <View style={[s.notice, { backgroundColor: colors.amber + "14", borderColor: colors.amber + "45" }]}>
@@ -319,7 +333,9 @@ function PremiumScreenBody() {
               accessory={<BoardPill label={`${preview.valueSignals.length} signals`} tone={colors.sage} />}
             />
             <View style={s.signalGrid}>
-              {preview.valueSignals.slice(0, 4).map((signal) => (
+              {/* All signals render - the badge says "5 signals", so five
+                  cards appear; slice(0,4) made the count read as a bug. */}
+              {preview.valueSignals.map((signal) => (
                 <View key={signal.key} style={[s.signalTile, { backgroundColor: colors.background, borderColor: colors.border }]}>
                   <View style={[s.signalIcon, { backgroundColor: colors.sage + "16" }]}>
                     <Ionicons name={signalIcon(signal.key)} size={18} color={colors.sage} />
@@ -499,9 +515,14 @@ const s = StyleSheet.create({
     borderRadius: 8,
   },
   premiumValueStage: {
-    minHeight: 372,
+    minHeight: 292,
     overflow: "hidden",
-    justifyContent: "space-between",
+  },
+  premiumValueDock: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 10,
+    borderTopWidth: 1,
   },
   premiumValueStageImage: {
     borderRadius: 8,
@@ -570,9 +591,11 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
   },
   premiumValueSprite: {
+    // Seated on the rug at the room's floor, base and shadow fully
+    // visible - was bottom:134 with its lower body cut by the overlaid HUD.
     position: "absolute",
-    right: 20,
-    bottom: 134,
+    right: 26,
+    bottom: 18,
     width: 146,
     height: 146,
     alignItems: "center",
@@ -587,10 +610,6 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(8, 20, 36, 0.24)",
   },
   premiumValueHud: {
-    position: "absolute",
-    left: 14,
-    right: 14,
-    bottom: 86,
     borderWidth: 1,
     borderRadius: 8,
     padding: 10,
@@ -623,10 +642,6 @@ const s = StyleSheet.create({
     borderRadius: 2,
   },
   premiumValueFooter: {
-    position: "absolute",
-    left: 14,
-    right: 14,
-    bottom: 14,
     flexDirection: "row",
     gap: 10,
     alignItems: "stretch",
@@ -679,7 +694,10 @@ const s = StyleSheet.create({
   paymentsProofBlocker: { fontSize: 10.5, lineHeight: 15, marginTop: 8 },
   premiumBoard: { marginTop: 18 },
   signalGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  signalTile: { width: "48.5%", borderWidth: 1, borderRadius: 16, padding: 14 },
+  // flexBasis + grow, not a fixed 48.5% width: 48.5% + 48.5% + 10px gap
+  // exceeded 100%, so every second tile wrapped and the section rendered
+  // as a single left-hand column with dead space beside it.
+  signalTile: { flexGrow: 1, flexBasis: "44%", borderWidth: 1, borderRadius: 16, padding: 14 },
   signalIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 12 },
   signalLabel: { fontSize: 14 },
   signalDetail: { fontSize: 12.5, lineHeight: 18, marginTop: 5 },

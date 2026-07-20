@@ -100,14 +100,16 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
     const path = samplePath(size.width, size.height);
     const last = path.length - 1;
     // Waypoints cover the walked stretch of the painted trail; the twin is a
-    // step past the latest stop. An empty day parks the twin at the trailhead
-    // with the whole path still ahead of it.
+    // step past the latest stop. An empty day parks the twin a few steps up
+    // the trail (t=0.24, not the t=0.01 trailhead): Story's "trail is
+    // waiting" guidance card overlays the scene's bottom band on empty days
+    // and was covering the twin's paws at the trailhead.
     const waypoints = shown.map((stop, index) => {
       const t = shown.length === 1 ? 0.16 : 0.05 + (0.58 * index) / (shown.length - 1);
       const p = path[Math.round(t * last)];
       return { stop, x: p.x, y: p.y };
     });
-    const twinT = shown.length === 0 ? 0.01 : shown.length === 1 ? 0.28 : 0.05 + 0.58 + 0.1;
+    const twinT = shown.length === 0 ? 0.24 : shown.length === 1 ? 0.28 : 0.05 + 0.58 + 0.1;
     const twinPoint = path[Math.min(last, Math.round(twinT * last))];
     return { waypoints, twinPoint };
   }, [size, shown]);

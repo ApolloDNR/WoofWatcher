@@ -1627,7 +1627,7 @@ test("keeps Home Quick Log header action as a real route target", () => {
   );
   assert.match(
     log,
-    /useLocalSearchParams<\{\s*type\?: string \| string\[\];\s*detail\?: string \| string\[\];\s*intent\?: string \| string\[\];\s*entry\?: string \| string\[\];\s*\}>/,
+    /useLocalSearchParams<\{\s*type\?: string \| string\[\];\s*detail\?: string \| string\[\];\s*intent\?: string \| string\[\];\s*entry\?: string \| string\[\];\s*walk\?: string \| string\[\];\s*\}>/,
   );
   assert.match(log, /const routeWantsDetailSheet =/);
   assert.match(log, /const routeDetailIntentKey =/);
@@ -2592,7 +2592,8 @@ test("keeps Quick Log aligned to the mobile design-system recovery recipe", () =
   assert.match(log, /logCommandStage:[\s\S]*width: "100%"[\s\S]*minHeight: 82/);
   assert.match(log, /resizeMode="cover"[\s\S]*testID="quick-log-command-pixel-stage"/);
   assert.match(log, /logCommandBubble:[\s\S]*maxWidth: "68%"/);
-  assert.match(log, /logCommandSprite:[\s\S]*right: 12/);
+  // Sprite moved out of the Ready/Details chip's column (heart-emote collision).
+  assert.match(log, /logCommandSprite:[\s\S]*right: 96/);
   assert.match(log, /logCommandDock/);
   assert.doesNotMatch(log, /logCommandMission/);
   assert.doesNotMatch(log, />\s*Selected\s*</);

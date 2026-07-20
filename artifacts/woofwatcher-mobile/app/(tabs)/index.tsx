@@ -3499,6 +3499,10 @@ const s = StyleSheet.create({
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
+    // The card's text stack renders after this absolute button, so without
+    // an explicit z-order the full-width kicker Text sits on top and eats
+    // every tap - the X looked tappable but was dead.
+    zIndex: 5,
     backgroundColor: "rgba(255,255,255,0.14)",
   },
   welcomeKicker: {

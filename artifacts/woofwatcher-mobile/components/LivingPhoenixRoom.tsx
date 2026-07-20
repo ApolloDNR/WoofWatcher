@@ -1038,7 +1038,11 @@ export function LivingPhoenixRoom({
         </View>
       ) : null}
 
-      {layeredStageReady && !roamActive ? (
+      {/* The stationary rig also covers the roam gap: if roamActive flips
+          while roamPlan/stageSize momentarily reset (a welcome-card
+          collapse re-layout does this), the roaming rig renders nothing
+          and the dog blinked out of the room entirely. */}
+      {layeredStageReady && (!roamActive || !roamPlan || !stageSize) ? (
         <Animated.View
           pointerEvents="none"
           entering={FadeIn.duration(180)}
@@ -1058,7 +1062,7 @@ export function LivingPhoenixRoom({
           <Animated.View
             style={[
               styles.spriteGroundShadow,
-              { backgroundColor: theme.glow },
+              { backgroundColor: "rgba(8,20,36,0.55)" },
               spriteShadowStyle,
             ]}
           />
@@ -1116,7 +1120,7 @@ export function LivingPhoenixRoom({
         </Animated.View>
       ) : null}
 
-      {useFallbackAvatarLayer && !roamActive ? (
+      {useFallbackAvatarLayer && (!roamActive || !roamPlan || !stageSize) ? (
         <Animated.View
           pointerEvents="none"
           entering={FadeIn.duration(180)}
@@ -1136,7 +1140,7 @@ export function LivingPhoenixRoom({
           <Animated.View
             style={[
               styles.spriteGroundShadow,
-              { backgroundColor: theme.glow },
+              { backgroundColor: "rgba(8,20,36,0.55)" },
               spriteShadowStyle,
             ]}
           />
@@ -1794,7 +1798,7 @@ function RoamingTwinRig({
         pointerEvents="none"
         style={[
           styles.spriteGroundShadow,
-          { backgroundColor: glowColor },
+          { backgroundColor: "rgba(8,20,36,0.55)" },
           shadowStyle,
         ]}
       />

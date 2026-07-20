@@ -1410,7 +1410,7 @@ export default function MoreScreen() {
   const nativeQaCaptureHasProofPending = nativeQaCapturePlan.nextTargets.some(
     (target) => mobileLaunchQaCaptureTargetStatusLabel(target) === "Pass pending proof",
   ) || ownerPreviewProofHasPending || storeScreenshotProofStatus.statusLabel === "Pass pending proof";
-  const nativeQaCaptureCockpitActionLabel = nativeQaCaptureHasProofPending ? "Finish Proof" : "Open QA Cockpit";
+  const nativeQaCaptureCockpitActionLabel = nativeQaCaptureHasProofPending ? "Finish Proof" : "QA Cockpit";
   const moreCommandOpenGates = launchReadinessPlan.tiles.filter((tile) => tile.status !== "ready").length;
   const moreCommandProviderOpen = launchProviderSetupPlan.rows.filter((row) => row.status !== "ready").length;
   const moreCommandStatusLabel =
@@ -2710,7 +2710,7 @@ export default function MoreScreen() {
                       color="#FFFFFF"
                     />
                     <Text style={[s.betaNextActionButtonText, { fontFamily: "Inter_800ExtraBold" }]}>
-                      {launchReleasePacket.betaShipStatus === "qa-first" ? "Open QA Cockpit" : "Share Beta Packet"}
+                      {launchReleasePacket.betaShipStatus === "qa-first" ? "QA Cockpit" : "Share Beta Packet"}
                     </Text>
                   </Pressable>
                   <Pressable
@@ -3372,8 +3372,14 @@ export default function MoreScreen() {
                 <PulseIcon name="bowl" size={22} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.dietTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{dietProfile.primaryFood}</Text>
-                <Text style={[s.dietSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{dietProfile.mealSchedule}</Text>
+                {/* Honest empty state (matches the Records screen's diet
+                    card) - an unset diet rendered a completely blank body. */}
+                <Text style={[s.dietTitle, { color: dietProfile.primaryFood ? colors.foreground : colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>
+                  {dietProfile.primaryFood || "No diet set yet"}
+                </Text>
+                <Text style={[s.dietSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {dietProfile.mealSchedule || "Add food and portions with Edit."}
+                </Text>
               </View>
             </View>
             {dietOpen && (
@@ -3384,7 +3390,7 @@ export default function MoreScreen() {
                       <PulseIcon name={d.icon} size={14} />
                     </View>
                     <Text style={[s.dietLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{d.label}</Text>
-                    <Text style={[s.dietValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{d.value}</Text>
+                    <Text style={[s.dietValue, { color: d.value ? colors.foreground : colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{d.value || "Not set"}</Text>
                   </View>
                 ))}
                 {dietProfile.vetNotes ? (

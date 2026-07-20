@@ -311,6 +311,10 @@ export default function CalendarScreen() {
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [suggestions, setSuggestions] = useState<SuggestedEvent[]>([]);
   const [discoverMode, setDiscoverMode] = useState<string | null>(null);
+  // Terminal state of the last event search: the Find button must never
+  // resolve to silence - an unreachable endpoint or zero results without
+  // feedback reads as a dead button.
+  const [discoverStatus, setDiscoverStatus] = useState<"idle" | "empty" | "error">("idle");
 
   const sortedRoutines = useMemo(
     () => [...routines].sort((a, b) => routineMinutes(a.time) - routineMinutes(b.time)),
@@ -715,6 +719,7 @@ export default function CalendarScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoadingEvents(true);
     setSuggestions([]);
+    setDiscoverStatus("idle");
     try {
       const token = await getToken();
       const res = await fetch(`${BASE_URL}/api/woofguide-events`, {
@@ -729,10 +734,17 @@ export default function CalendarScreen() {
         }),
       });
       const data = await res.json();
-      setSuggestions(Array.isArray(data.events) ? data.events : []);
+      const events = Array.isArray(data.events) ? data.events : [];
+      setSuggestions(events);
       setDiscoverMode(data.mode ?? null);
+      if (!events.length) {
+        setDiscoverStatus("empty");
+        announce("No dog events found for that area yet.");
+      }
     } catch {
       setSuggestions([]);
+      setDiscoverStatus("error");
+      announce("Event search is unreachable right now.");
     } finally {
       setLoadingEvents(false);
     }
@@ -778,7 +790,8 @@ export default function CalendarScreen() {
             id: "next-plan",
             eyebrow: "Next Mission",
             title: nextScheduleRow.label,
-            detail: `${nextScheduleRow.time} - ${nextScheduleRow.detail}`,
+            // No dangling "6:30 PM -" when the routine carries no note.
+            detail: [nextScheduleRow.time, nextScheduleRow.detail].filter(Boolean).join(" - "),
             icon: routinePixelIcon(nextScheduleRow.type),
             tone: commandDeckTone,
             actionLabel: nextScheduleRoutine ? "Open" : nextScheduleStatus,
@@ -1372,6 +1385,17 @@ export default function CalendarScreen() {
                   {loadingEvents ? <ActivityIndicator size="small" color="#fff" /> : <Text style={[s.discoverGoText, { fontFamily: "Inter_700Bold" }]}>Find</Text>}
                 </Pressable>
               </View>
+
+              {suggestions.length === 0 && discoverStatus !== "idle" && (
+                <Text
+                  aria-live="polite"
+                  style={[s.discoverHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium", marginTop: 6 }]}
+                >
+                  {discoverStatus === "empty"
+                    ? `No dog events found near "${location.trim() || "your area"}" yet - try a nearby city, or plan your own outing below.`
+                    : "Couldn't reach event search - check your connection and try again."}
+                </Text>
+              )}
 
               {suggestions.length > 0 && (
                 <View style={{ marginTop: 4 }}>

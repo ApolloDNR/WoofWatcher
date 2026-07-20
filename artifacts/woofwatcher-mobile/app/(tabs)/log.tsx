@@ -377,7 +377,7 @@ const LOG_TYPES: LogType[] = [
         ],
       },
     ],
-    noteField: { placeholder: "Sticky note: barking, pacing, damage, recovery, or what helped..." },
+    noteField: { placeholder: "Sticky note: what happened and what helped..." },
   },
   {
     type: "medication",
@@ -467,7 +467,7 @@ const LOG_TYPES: LogType[] = [
         ],
       },
     ],
-    noteField: { placeholder: "Sticky note: factual timeline, body language, handler response, injury check, or what helped..." },
+    noteField: { placeholder: "Sticky note: timeline, response, injury check..." },
   },
   {
     type: "grooming",
@@ -612,6 +612,12 @@ function CareTypeIcon({
   if (isPottyType(type)) {
     return <PixelIcon name="pee" size={size} />;
   }
+  if (icon === "bowl") {
+    // The SVG bowl reads as a flat featureless oval next to the pixel set;
+    // meal is the most common log type, so it gets the same rich pixel
+    // food-bowl sprite the rest of the app uses.
+    return <PixelIcon name="meal" size={size} />;
+  }
   return <PulseIcon name={icon} size={size} color={color} />;
 }
 
@@ -755,6 +761,15 @@ function humanizeKey(key: string): string {
   return DETAIL_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+// Humanize only slug-like enum ids ("dog-conflict" -> "Dog Conflict").
+// Free-text prose must render verbatim: title-casing a user's own words
+// corrupts their record ("Neighbor's collie" -> "Neighbor'S Collie").
+const SLUG_VALUE_PATTERN = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
+
+function humanizeDetailValue(text: string): string {
+  return SLUG_VALUE_PATTERN.test(text) ? humanizeKey(text) : text;
+}
+
 function detailValue(value: unknown): string | null {
   if (value == null) return null;
   if (typeof value === "string") return value.trim() || null;
@@ -818,7 +833,7 @@ function buildEntryDetailRows(entry: Entry): { label: string; value: string }[] 
     const text = detailValue(value);
     if (!text) return;
     const timestamp = formatDetailTimestamp(text);
-    rows.push({ label: humanizeKey(key), value: timestamp ?? humanizeKey(text) });
+    rows.push({ label: humanizeKey(key), value: timestamp ?? humanizeDetailValue(text) });
   });
 
   return rows;
@@ -984,6 +999,7 @@ export default function LogScreen() {
     detail?: string | string[];
     intent?: string | string[];
     entry?: string | string[];
+    walk?: string | string[];
   }>();
   const routeSelectedType = useMemo(() => {
     const rawType = Array.isArray(routeParams.type) ? routeParams.type[0] : routeParams.type;
@@ -999,9 +1015,12 @@ export default function LogScreen() {
       ? `${routeSelectedType}:${routeIntentParam ?? routeDetailParam ?? "detail"}`
       : null;
   const routeEntryParam = Array.isArray(routeParams.entry) ? routeParams.entry[0] : routeParams.entry;
+  const routeWalkParam = Array.isArray(routeParams.walk) ? routeParams.walk[0] : routeParams.walk;
   const lastRouteSelectedType = useRef<string | null>(null);
   const lastRouteDetailIntentKey = useRef<string | null>(null);
   const lastRouteEntryParam = useRef<string | null>(null);
+  const lastRouteWalkParam = useRef<string | null>(null);
+  const walkCardYRef = useRef(0);
 
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
@@ -1200,6 +1219,7 @@ export default function LogScreen() {
     setDetailEntryId(routeEntryParam);
     lastRouteEntryParam.current = routeEntryParam;
   }, [routeEntryParam, state.entries]);
+
 
   const stickyColor = (color: StickyNoteColor) => {
     if (color === "sun") return colors.amber;
@@ -1869,6 +1889,21 @@ export default function LogScreen() {
     if (!Number.isFinite(startedAt)) return 0;
     return Math.max(0, Math.round((now - startedAt) / 60000));
   }, [now, openWalkStartedAt]);
+  // "Finish walk" deep-link (Adventure's CTA): land the user ON the finish
+  // form, not in the read-only record sheet - that sheet says "In progress"
+  // and offers no way to end the walk, a dead end for the quest loop.
+  useEffect(() => {
+    if (routeWalkParam !== "finish" || routeWalkParam === lastRouteWalkParam.current) return;
+    if (!openWalkSession) return;
+    lastRouteWalkParam.current = routeWalkParam;
+    setDetailEntryId(null);
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, walkCardYRef.current - 84), animated: true });
+      announce("Finish details are ready.");
+    }, 380);
+    return () => clearTimeout(timer);
+  }, [routeWalkParam, openWalkSession]);
+
   // Honest route-recorder state: only ever says "recording" while location
   // fixes are actually landing; otherwise it explains what would enable it.
   const walkRouteCapture = useWalkRouteCaptureStatus();
@@ -2787,7 +2822,12 @@ export default function LogScreen() {
             ) : null}
 
             {openWalkSession ? (
-              <View style={[s.aloneActivePanel, { backgroundColor: colors.card, borderColor: colors.sage + "55" }]}>
+              <View
+                onLayout={(event) => {
+                  walkCardYRef.current = event.nativeEvent.layout.y;
+                }}
+                style={[s.aloneActivePanel, { backgroundColor: colors.card, borderColor: colors.sage + "55" }]}
+              >
                 <View style={s.aloneActiveTop}>
                   <View style={[s.aloneActiveIcon, { backgroundColor: colors.sageSoft, borderColor: colors.sage + "55" }]}>
                     <PixelIcon name="walk" size={34} />
@@ -2816,7 +2856,7 @@ export default function LogScreen() {
                     onChangeText={setWalkFinishRouteName}
                     placeholder="Route or place"
                     placeholderTextColor={colors.mutedForeground}
-                    style={[s.returnInput, s.returnInputNote, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
                     value={walkFinishDistanceMiles}
@@ -2824,7 +2864,7 @@ export default function LogScreen() {
                     placeholder="Miles"
                     placeholderTextColor={colors.mutedForeground}
                     keyboardType="decimal-pad"
-                    style={[s.returnInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
                 <View style={s.returnDetailRow}>
@@ -2834,14 +2874,14 @@ export default function LogScreen() {
                     placeholder="Dogs met"
                     placeholderTextColor={colors.mutedForeground}
                     keyboardType="number-pad"
-                    style={[s.returnInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
                     value={walkFinishSocialOutcome}
                     onChangeText={setWalkFinishSocialOutcome}
                     placeholder="Social outcome"
                     placeholderTextColor={colors.mutedForeground}
-                    style={[s.returnInput, s.returnInputNote, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
                 <TextInput
@@ -2920,14 +2960,14 @@ export default function LogScreen() {
                     placeholder="Recovery min"
                     placeholderTextColor={colors.mutedForeground}
                     keyboardType="number-pad"
-                    style={[s.returnInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
                     value={returnNote}
                     onChangeText={setReturnNote}
                     placeholder="What helped?"
                     placeholderTextColor={colors.mutedForeground}
-                    style={[s.returnInput, s.returnInputNote, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
               </View>
@@ -5186,8 +5226,11 @@ const s = StyleSheet.create({
     lineHeight: 13,
   },
   logCommandSprite: {
+    // Out of the Ready/Details chip's column: the ear-perk frames draw a
+    // heart emote above the dog's head, and at right:12 both heart and ear
+    // collided with the chrome chip in the banner's top-right corner.
     position: "absolute",
-    right: 12,
+    right: 96,
     bottom: -2,
     width: 68,
     height: 68,
@@ -5591,8 +5634,12 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
     fontSize: 12.5,
   },
-  returnInputNote: {
+  // Every input in a two-column returnDetailRow must flex: a bare
+  // TextInput keeps its ~217px intrinsic width on web and shoves the row
+  // off the right edge of the screen.
+  returnInputHalf: {
     flex: 1,
+    minWidth: 0,
   },
   walkFinishButton: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,

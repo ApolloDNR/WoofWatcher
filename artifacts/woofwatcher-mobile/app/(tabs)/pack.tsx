@@ -1161,6 +1161,11 @@ export default function PackScreen() {
               })
             )}
 
+            {/* Own heading: without it these care-hub links visually caption
+                under "People in the Pack", which reads as a labeling error. */}
+            <Text style={[s.peoplePreviewTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI, marginTop: 16 }]}>
+              {petName}'s care spaces
+            </Text>
             <View style={[s.linkList, { borderTopColor: colors.border }]}>
               <PackLinkRow
                 icon="health"
