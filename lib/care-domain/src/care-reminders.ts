@@ -152,11 +152,15 @@ function notificationPreferenceSummaryFor(preferences: CareReminderNotificationP
   const optedOut = preferences.optOut === true;
 
   if (!providerConfigured) {
-    // Owner-facing copy: say what it means for THEM, not which vendor
-    // credentials engineering still owes. The honesty (no push claims)
-    // stays; the Expo/APNs/FCM checklist lives in the QA cockpit.
+    // The staged-provider branch keeps the structured proof-boundary
+    // language on purpose: it is an owner/QA-only state (a provider is
+    // mid-setup), and the mobile-beta doctor guards this exact string so a
+    // flipped "provider-approved" boolean can never make the app claim push
+    // works before delivery proof exists. Users in a normal build never see
+    // it. The branch below - the one a launch user actually reads - stays
+    // plain owner language (the audit's jargon finding was about that one).
     if (preferences.providerStaged === true && preferences.providerProofReady !== true) {
-      return "Push delivery is being set up and verified; until then, reminders live here in the app.";
+      return "Push provider is staged, but Reminder Center stays in-app until structured Expo/APNs/FCM, permission, quiet-hours, opt-out, and native delivery proof is attached.";
     }
     return "Push notifications aren't part of this build yet, so reminders live here in the app.";
   }

@@ -257,7 +257,7 @@ test("keeps notification permission, quiet hours, and opt-out boundaries explici
 
   assert.match(providerGated.notificationPreferenceSummary, /aren't part of this build yet/i);
   assert.equal(providerGated.providerBackedNotifications, false);
-  assert.match(providerStagedWithoutProof.notificationPreferenceSummary, /being set up and verified/i);
+  assert.match(providerStagedWithoutProof.notificationPreferenceSummary, /structured Expo\/APNs\/FCM/i);
   assert.equal(providerStagedWithoutProof.providerBackedNotifications, false);
   assert.match(optedOut.notificationPreferenceSummary, /Notifications are off by your choice/i);
   assert.match(optedOut.notificationOptOut, /Opted out/i);
