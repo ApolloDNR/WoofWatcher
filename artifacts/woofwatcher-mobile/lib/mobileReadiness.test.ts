@@ -2732,7 +2732,12 @@ test("keeps WoofGuide rooted in a live pixel guidance stage", () => {
   assert.match(guide, /woofguide-stage\.png/);
   assert.match(guide, /SpriteSheetPlayer/);
   assert.match(guide, /testID="woofguide-pixel-guidance-stage"/);
-  assert.match(guide, /guideStage:\s*\{[\s\S]*minHeight:\s*294/);
+  // Stage height dropped 294 -> 260 when the HUD moved into the dock below
+  // the painting (the scene no longer hosts overlaid chrome).
+  assert.match(guide, /guideStage:\s*\{[\s\S]*minHeight:\s*260/);
+  // The dock pattern itself is load-bearing: HUD + boundary/action row sit
+  // BELOW the art so the dog keeps its floor contact.
+  assert.match(guide, /guideDock/);
   assert.match(guide, /getCareTwinSpriteAsset\("idle-breathe"\)/);
   assert.match(guide, /CARE_TWIN_SPRITE_MANIFEST\["idle-breathe"\]/);
   assert.match(guide, /pixelImageStyle/);
