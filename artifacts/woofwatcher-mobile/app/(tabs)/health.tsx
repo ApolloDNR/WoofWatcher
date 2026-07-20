@@ -217,7 +217,10 @@ function HealthSummaryRow({
           {label}
         </Text>
         {detail ? (
-          <Text numberOfLines={1} style={[s.summaryRowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+          // 2 lines: the empty-state instructions ("Add a vet visit record to
+          // the vault") are squeezed by the right-aligned value and clipped
+          // the destination word off on one line. Short details stay 1 line.
+          <Text numberOfLines={2} style={[s.summaryRowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             {detail}
           </Text>
         ) : null}

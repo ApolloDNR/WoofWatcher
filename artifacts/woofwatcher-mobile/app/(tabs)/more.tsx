@@ -1738,7 +1738,11 @@ export default function MoreScreen() {
                     <Text style={[s.moreDirectoryEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                       {item.eyebrow}
                     </Text>
-                    <Text numberOfLines={1} style={[s.moreDirectoryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {/* Wraps to a 2nd line rather than clipping mid-word: the
+                        action chip squeezes this column, and the longest title
+                        ("Owner Preview Core Loop") overran ~7px on one line.
+                        Short titles still render on a single line. */}
+                    <Text numberOfLines={2} style={[s.moreDirectoryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                       {item.label}
                     </Text>
                     <Text numberOfLines={2} style={[s.moreDirectoryDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
