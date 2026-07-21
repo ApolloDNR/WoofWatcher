@@ -997,7 +997,7 @@ export default function PortraitScreen() {
         {phase === "result" ? (
           <BoardCard style={s.avatarBoard}>
             <BoardSectionHeader
-              title="Generated mood set"
+              title="Suggested starting traits"
               accessory={<BoardPill label="Owner review" tone={colors.amber} />}
             />
             <Text

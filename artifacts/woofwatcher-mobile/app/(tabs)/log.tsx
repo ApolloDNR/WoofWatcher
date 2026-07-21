@@ -1763,7 +1763,12 @@ export default function LogScreen() {
             notifyDialog("Delete failed", "WoofWatcher kept the log because the household sync rejected the delete. Try again after refresh.");
             return;
           }
-          if (entry) {
+          // Shared-household accountability only: the deletion audit note
+          // says "from the shared care log", so it is truthful and useful
+          // only when more than one caregiver exists. For a solo owner it
+          // would leave a "Deleted log - ..." row in their own timeline and
+          // read as if the delete failed - so a solo delete just deletes.
+          if (entry && state.caregivers.length > 1) {
             addEntry(
               buildCareLogDeletionAuditEntry({
                 id: auditId(),
@@ -1777,7 +1782,7 @@ export default function LogScreen() {
         },
       );
     },
-    [addEntry, caregiver, deleteEntry, state.entries],
+    [addEntry, caregiver, deleteEntry, state.caregivers.length, state.entries],
   );
 
   const openEditEntry = useCallback((e: Entry) => {
@@ -2021,32 +2026,10 @@ export default function LogScreen() {
   }, [state.entries]);
   const todaySignalCards = useMemo(
     () => [
-      {
-        label: "Care IQ",
-        // Zero-log day: "--" instead of a fabricated percentage, matching
-        // Home - the score starts with the first real log.
-        value: careIntelligence.visibleLogCount === 0 ? "--" : `${careIntelligence.score}%`,
-        detail:
-          careIntelligence.visibleLogCount === 0
-            ? "starts with first log"
-            : careIntelligence.status === "needs-attention"
-              ? "review loops"
-              : "day rhythm",
-        icon: "sparkles-outline" as const,
-        tone:
-          careIntelligence.status === "needs-attention"
-            ? colors.amber
-            : careIntelligence.status === "excellent"
-              ? colors.sage
-              : colors.primary,
-      },
-      {
-        label: "Today",
-        value: String(todaySnapshot.total),
-        detail: "care logs",
-        icon: "reader-outline" as const,
-        tone: colors.copper,
-      },
+      // Care IQ and Today already live in the console HUD above (single source
+      // of truth). This support rail carries only the signals the HUD does not
+      // show - portion progress and where the data is saved - so nothing is
+      // repeated down the page.
       {
         label: "Food",
         value: dietProgress.targetAmount == null ? "Set" : `${dietProgress.percent}%`,

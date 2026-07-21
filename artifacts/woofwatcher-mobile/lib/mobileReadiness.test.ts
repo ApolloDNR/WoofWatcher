@@ -1909,15 +1909,16 @@ test("keeps care intelligence wired across Home, Log, More, and the shared domai
   assert.match(log, /deriveCareIntelligence/);
   assert.match(log, /Care IQ/);
   assert.match(log, /careIntelligence\.status/);
-  // /log tells the same zero-state story as Home: the console HUD, the
-  // signal card, and the composer trust rail all read "--" with the
-  // first-log promise instead of a fabricated "0%".
+  // /log tells the same zero-state story as Home: the console HUD and the
+  // composer trust rail both read "--" with the first-log promise instead of
+  // a fabricated "0%". (Care IQ lives once, in the console HUD - the support
+  // rail no longer repeats it, so the zero-state is pinned via the HUD value
+  // and the composer rail's "-- Care IQ".)
   assert.match(
     log,
     /careIntelligence\.visibleLogCount === 0 \? "--" : `\$\{careIntelligence\.score\}%`/,
   );
   assert.match(log, /"-- Care IQ"/);
-  assert.match(log, /starts with first log/);
   assert.match(more, /deriveCareIntelligence/);
   assert.match(more, /Care Intelligence/);
   assert.match(more, /careIntelligence\.metrics/);
@@ -3039,7 +3040,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   );
   assert.match(
     avatarStudio,
-    /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Generated mood set"/,
+    /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Suggested starting traits"/,
   );
   assert.match(
     avatarStudio,
@@ -3048,7 +3049,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.doesNotMatch(avatarStudio, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(
     avatarStudio,
-    /BoardSectionHeader\s+title="Generated mood set"[\s\S]*<BoardPill\s+label="Owner review"/,
+    /BoardSectionHeader\s+title="Suggested starting traits"[\s\S]*<BoardPill\s+label="Owner review"/,
   );
   assert.match(
     avatarStudio,
