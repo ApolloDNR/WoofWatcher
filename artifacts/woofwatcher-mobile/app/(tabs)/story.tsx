@@ -41,8 +41,8 @@ import {
   CareRow,
 } from "@/components/board/BoardPrimitives";
 import { enterUp, PressScale, ProgressFill } from "@/components/motion/GameFeel";
-import { DayTrailScene, type DayTrailStop } from "@/components/DayTrailScene";
-import { PixelIcon } from "@/components/PixelIcon";
+import { type DayTrailStop } from "@/components/DayTrailScene";
+import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { TrailMap } from "@/components/TrailMap";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
@@ -54,6 +54,7 @@ import {
   deriveCareStreak,
 } from "@/lib/careCareer";
 import {
+  MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
@@ -76,10 +77,31 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 type StorySegment = "adventures" | "memories" | "badges";
 
 const STORY_SEGMENTS: readonly { key: StorySegment; label: string }[] = [
-  { key: "adventures", label: "Adventures" },
+  { key: "adventures", label: "Today" },
   { key: "memories", label: "Memories" },
-  { key: "badges", label: "Badges" },
+  { key: "badges", label: "Progress" },
 ];
+
+/** Care-log type -> pixel glyph for the real day timeline. Falls back to a
+ *  neutral note glyph so an unmapped type never renders blank. */
+const STORY_STOP_ICON: Record<string, PixelIconName> = {
+  meal: "meal",
+  walk: "walk",
+  potty: "pee",
+  medication: "medication",
+  treat: "treat",
+  play: "play",
+  training: "training",
+  note: "note",
+  symptom: "health",
+  incident: "health",
+  grooming: "heart",
+  hydration: "note",
+  alone: "clock",
+  weight: "energy",
+  mood: "happy",
+  bile: "bile",
+};
 
 /** How far up the level curve to scan for distinct badge titles. The top
  *  title lands at Lv 20 today; scanning past it keeps the ladder complete if
@@ -376,6 +398,13 @@ export default function StoryScreen() {
     return stops.map((item) => item.stop);
   }, [state.entries, now]);
 
+  /* One-line recap that pays off Home's "Today's Story" promise - the same
+     real logs, summarized. Empty state is honest, never a fake highlight. */
+  const latestTodayStop = dayTrailStops.length > 0 ? dayTrailStops[dayTrailStops.length - 1] : null;
+  const todayRecap = latestTodayStop
+    ? `${dayTrailStops.length} care moment${dayTrailStops.length === 1 ? "" : "s"} today - latest: ${latestTodayStop.label}.`
+    : `${petName}'s story is ready for its first care moment today.`;
+
   const routedWalkChip = useMemo(() => {
     if (!routedWalk) return "";
     const details = routedWalk.entry.details ?? {};
@@ -494,6 +523,39 @@ export default function StoryScreen() {
 
         {segment === "adventures" ? (
           <>
+            {/* Today: the real recap + progress, paying off Home's "Today's
+                Story" promise with the same real logs instead of a painting. */}
+            <BoardCard style={s.board} enter={0}>
+              <Text style={[s.todayRecap, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                {todayRecap}
+              </Text>
+              <View style={s.levelStrip}>
+                <View style={[s.levelBadge, { backgroundColor: colors.sageSoft, borderColor: colors.sage + "55" }]}>
+                  <Text style={[s.levelBadgeValue, { color: colors.forest, fontFamily: TITLE_SERIF }]}>
+                    {career.level}
+                  </Text>
+                  <Text style={[s.levelBadgeLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    Level
+                  </Text>
+                </View>
+                <View style={s.levelCopy}>
+                  <Text style={[s.levelTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {career.title}
+                  </Text>
+                  <ProgressFill
+                    ratio={Math.max(0.02, career.levelProgress)}
+                    color={colors.forest}
+                    trackColor={colors.muted}
+                    height={10}
+                    style={s.xpTrack}
+                  />
+                  <Text style={[s.levelMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    +{career.todayXp} XP today - {careStreak > 0 ? `${careStreak}-day streak` : "start your streak"}
+                  </Text>
+                </View>
+              </View>
+            </BoardCard>
+
             {routedWalk ? (
               /* Real trail map hero: OSM tiles + the recorded route of the
                  most recent routed walk. Tapping opens that walk's log. */
@@ -564,88 +626,57 @@ export default function StoryScreen() {
                 </TrailMap>
               </Pressable>
             ) : (
-            /* Day Trail hero (until a walk records a real route): the day's
-                actual care logs drawn as waypoints along a living trail, with
-                the care twin standing at the latest stop. Drawn in code from
-                real state - never a static painting. */
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={
-                trailStops.length > 0
-                  ? `Today's trail. Latest discovery: ${trailStops[0].name}, ${formatMemoryDate(trailStops[0].latestAt)}. Open Adventure Mode.`
-                  : "Today's trail. Open Adventure Mode."
-              }
-              onPress={openAdventure}
-              style={({ pressed }) => [
-                s.mapCard,
-                { borderColor: colors.border, opacity: pressed ? 0.92 : 1 },
-              ]}
-            >
-              <DayTrailScene
-                stops={dayTrailStops}
-                petName={petName}
-                now={now}
-                onPressStop={(stopId) =>
-                  router.push(`/log?entry=${encodeURIComponent(stopId)}` as never)
-                }
-              />
-              {/* The overlay card earns its place: a real discovered spot, or
-                  first-run guidance on an empty day. Once the day has stops,
-                  the scene itself is the content - the card steps aside so no
-                  waypoint hides behind it (discovery guidance lives in Recent
-                  Adventures right below). */}
-              {trailStops.length === 0 && dayTrailStops.length > 0 ? null : (
-              <QuestMarkerPulse
-                style={[s.mapOverlayCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              >
-                {trailStops.length > 0 ? (
-                  <>
-                    <View style={s.mapOverlayCopy}>
-                      <Text
-                        numberOfLines={1}
-                        style={[s.mapOverlayTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+              /* Real day timeline: today's actual care logs in the order they
+                 happened - the honest record, not a painted fantasy trail.
+                 Each row opens that log. */
+              <BoardCard style={s.board} enter={1}>
+                <BoardSectionHeader
+                  title="Today's timeline"
+                  accessory={
+                    dayTrailStops.length > 0 ? (
+                      <BoardPill label={`${dayTrailStops.length} logged`} tone={colors.sage} />
+                    ) : undefined
+                  }
+                />
+                {dayTrailStops.length > 0 ? (
+                  <View style={s.todayTimeline}>
+                    {dayTrailStops.map((stop, index) => (
+                      <Pressable
+                        key={stop.id}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${stop.label} at ${stop.timeLabel}. Open this log.`}
+                        onPress={() => router.push(`/log?entry=${encodeURIComponent(stop.id)}` as never)}
+                        style={({ pressed }) => [
+                          s.todayStopRow,
+                          {
+                            borderBottomColor: colors.border,
+                            borderBottomWidth: index === dayTrailStops.length - 1 ? 0 : 1,
+                            opacity: pressed ? 0.6 : 1,
+                          },
+                        ]}
                       >
-                        {trailStops[0].name}
-                      </Text>
-                      <Text
-                        numberOfLines={1}
-                        style={[s.mapOverlayMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-                      >
-                        {formatMemoryDate(trailStops[0].latestAt)}
-                      </Text>
-                      <Text
-                        numberOfLines={1}
-                        style={[s.mapOverlayState, { color: colors.forest, fontFamily: "Inter_600SemiBold" }]}
-                      >
-                        Discovered
-                      </Text>
-                    </View>
-                    <Image
-                      source={TRAIL_THUMBS[0]}
-                      style={[s.mapOverlayThumb, { borderColor: colors.border }]}
-                      resizeMode="cover"
-                    />
-                    <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
-                  </>
-                ) : (
-                  <View style={s.mapOverlayCopy}>
-                    <Text
-                      numberOfLines={1}
-                      style={[s.mapOverlayTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
-                    >
-                      The trail is waiting
-                    </Text>
-                    <Text
-                      numberOfLines={2}
-                      style={[s.mapOverlayMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-                    >
-                      Log a walk with a place name to discover your first spot.
-                    </Text>
+                        <View style={[s.todayStopIcon, { backgroundColor: colors.sageSoft }]}>
+                          <PixelIcon name={STORY_STOP_ICON[stop.type] ?? "note"} size={18} />
+                        </View>
+                        <Text
+                          numberOfLines={1}
+                          style={[s.todayStopLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                        >
+                          {stop.label}
+                        </Text>
+                        <Text style={[s.todayStopTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          {stop.timeLabel}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+                      </Pressable>
+                    ))}
                   </View>
+                ) : (
+                  <Text style={[s.todayEmpty, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    Nothing logged yet today. Log a meal, walk, or potty and it shows up here as it happens.
+                  </Text>
                 )}
-              </QuestMarkerPulse>
-              )}
-            </Pressable>
+              </BoardCard>
             )}
 
             {/* Recent adventures: real visited places from logged walks. */}
@@ -1197,6 +1228,25 @@ export default function StoryScreen() {
 const s = StyleSheet.create({
   root: { flex: 1 },
   board: { marginBottom: 12 },
+  todayRecap: { fontSize: 16, lineHeight: 22, marginBottom: 14 },
+  todayTimeline: { marginTop: 2 },
+  todayStopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 11,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+  },
+  todayStopIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  todayStopLabel: { flex: 1, fontSize: 14 },
+  todayStopTime: { fontSize: 12.5 },
+  todayEmpty: { fontSize: 13.5, lineHeight: 19, paddingVertical: 4 },
   sectionCopy: { fontSize: 13, lineHeight: 19, marginBottom: 12 },
   emptyText: { fontSize: 12.5, lineHeight: 18, marginBottom: 6 },
   footnote: { fontSize: 11.5, lineHeight: 16, marginTop: 2 },
