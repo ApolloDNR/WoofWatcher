@@ -103,7 +103,7 @@ import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
-import { BoardActionButton, BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardActionButton, BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader, BoardSegmentTabs } from "@/components/board/BoardPrimitives";
 import { PressScale } from "@/components/motion/GameFeel";
 import { homeImmersiveRoomIsNight } from "./index";
 
@@ -1134,7 +1134,9 @@ export default function LogScreen() {
     setSelectedLauncherKey(launcherActionKey(routeDetailAction));
     setSelectedType(routeDetailAction.type);
     // Detail intents land straight in the pre-focused composer - no
-    // interstitial between "add details" and the real form.
+    // interstitial between "add details" and the real form. The composer
+    // lives in the Log view, so make sure we're on it.
+    setLogView("log");
     setTimeout(() => scrollToComposer(), 350);
     lastRouteDetailIntentKey.current = routeDetailIntentKey;
   }, [routeDetailIntentKey, routeSelectedType, routeWantsDetailSheet]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1323,6 +1325,17 @@ export default function LogScreen() {
   // settles. Rendering everything at once blocked the switch-to-Log frame
   // for ~80-100ms.
   const [belowFoldReady, setBelowFoldReady] = useState(false);
+  // Two clear places instead of one long scroll: "Log" is the quick-log menu
+  // + composer wizard; "History" is the day snapshot + search + timeline,
+  // reachable in one tap at the top instead of below the whole logging stack.
+  const [view, setLogView] = useState<"log" | "history">("log");
+  const logViewSegments = useMemo(
+    () => [
+      { key: "log" as const, label: "Log" },
+      { key: "history" as const, label: "History" },
+    ],
+    [],
+  );
   useEffect(() => {
     let cancelled = false;
     const interaction = InteractionManager.runAfterInteractions(() => {
@@ -1902,6 +1915,8 @@ export default function LogScreen() {
     if (!openWalkSession) return;
     lastRouteWalkParam.current = routeWalkParam;
     setDetailEntryId(null);
+    // The WALK ACTIVE finish panel lives in the Log view.
+    setLogView("log");
     const timer = setTimeout(() => {
       scrollRef.current?.scrollTo({ y: Math.max(0, walkCardYRef.current - 84), animated: true });
       announce("Finish details are ready.");
@@ -2470,6 +2485,15 @@ export default function LogScreen() {
             }}
           />
 
+          <BoardSegmentTabs
+            segments={logViewSegments}
+            active={view}
+            onChange={setLogView}
+            style={s.logViewTabs}
+          />
+
+          {view === "log" ? (
+            <>
           <BoardCard padded={false} style={s.logCommandStageCard}>
             <ImageBackground
               source={LOG_COMMAND_STAGE_ROOM}
@@ -3162,9 +3186,12 @@ export default function LogScreen() {
               composerSectionY.current = event.nativeEvent.layout.y + topPadding;
             }}
           />
-          {/* Everything from the composer down is below the fold and mounts
-              one frame after the tab switch (two-phase render). */}
-          {belowFoldReady ? (
+            </>
+          ) : null}
+          {/* The composer (Log view) and the history sections (History view)
+              are both below the fold and mount one frame after the tab switch
+              (two-phase render), then split by the Log|History segment. */}
+          {belowFoldReady && view === "log" ? (
             <>
           <BoardCard style={s.composerHero}>
             <View style={s.quickLogDetailDock}>
@@ -3943,6 +3970,9 @@ export default function LogScreen() {
               style={s.logSaveAction}
             />
           </BoardCard>
+            </>
+          ) : belowFoldReady && view === "history" ? (
+            <>
 
           {/* Today at a glance */}
           {todaySnapshot.total > 0 && (
@@ -5773,6 +5803,7 @@ const s = StyleSheet.create({
   requiredChoiceHint: { fontSize: 12, lineHeight: 16, marginTop: 14, textAlign: "center" },
 
   logBoardCard: { marginTop: 12 },
+  logViewTabs: { marginBottom: 12 },
   searchPanel: {
     flexDirection: "row",
     alignItems: "center",
