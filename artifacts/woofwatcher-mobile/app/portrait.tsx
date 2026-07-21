@@ -754,7 +754,12 @@ export default function PortraitScreen() {
                           source={selectedTemplateStillSource}
                           style={[s.templateHeroDog, pixelImageStyle]}
                           contentFit="contain"
-                          transition={180}
+                          // Hard cut, not a cross-dissolve: fading a shepherd
+                          // into a dachshund (very different bodies) morphed
+                          // one dog into another - "two different dogs, legs
+                          // grow." Swapping cleanly reads as a new dog, not a
+                          // creature mutating.
+                          transition={0}
                         />
                         {previewAccessoryLayers.map((layer) => {
                           if (layer.kind !== "bed" && layer.source) {
