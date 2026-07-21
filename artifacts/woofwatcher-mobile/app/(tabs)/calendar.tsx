@@ -91,6 +91,32 @@ const ROUTINE_TYPES: { key: string; label: string; icon: PulseIconName }[] = [
   { key: "note", label: "Check-in", icon: "heart" },
 ];
 
+/**
+ * Type-keyed quick-pick suggestions so a routine can be built by tapping
+ * instead of typing. Time chips emit the exact "H:MM AM/PM" string the routine
+ * board parses (routineMinutes / routineDateMs), so a tapped time always reads
+ * back cleanly - a free-typed "0700" never would.
+ */
+const ROUTINE_LABEL_SUGGESTIONS: Record<string, string[]> = {
+  meal: ["Breakfast", "Lunch", "Dinner", "Bedtime snack"],
+  walk: ["Morning walk", "Evening walk", "Lunch walk"],
+  treat: ["Afternoon treat"],
+  play: ["Play session"],
+  training: ["Training session"],
+  potty: ["Potty break"],
+  note: ["Check-in", "Medication"],
+};
+const ROUTINE_TIME_SUGGESTIONS: Record<string, string[]> = {
+  meal: ["7:00 AM", "12:00 PM", "6:00 PM"],
+  walk: ["8:00 AM", "5:30 PM"],
+  treat: ["3:00 PM"],
+  play: ["4:00 PM"],
+  training: ["10:00 AM"],
+  potty: ["7:00 AM", "9:00 PM"],
+  note: ["9:00 PM"],
+};
+const DEFAULT_TIME_SUGGESTIONS = ["7:00 AM", "12:00 PM", "6:00 PM"];
+
 const EVENT_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
   beach: "sunny",
   hike: "trail-sign",
@@ -1907,6 +1933,21 @@ export default function CalendarScreen() {
               placeholderTextColor={colors.mutedForeground}
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
+            {(ROUTINE_LABEL_SUGGESTIONS[rType] ?? []).length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.ownerQuickRow}>
+                {(ROUTINE_LABEL_SUGGESTIONS[rType] ?? []).map((sug) => (
+                  <Pressable
+                    key={sug}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Use label ${sug}`}
+                    onPress={() => { Haptics.selectionAsync(); setRLabel(sug); }}
+                    style={[s.ownerQuickChip, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  >
+                    <Text style={[s.ownerQuickText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{sug}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : null}
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TYPE</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
@@ -1950,6 +1991,25 @@ export default function CalendarScreen() {
                 />
               </View>
             </View>
+
+            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>QUICK TIMES</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.ownerQuickRow}>
+              {(ROUTINE_TIME_SUGGESTIONS[rType] ?? DEFAULT_TIME_SUGGESTIONS).map((t) => {
+                const active = rTime.trim() === t;
+                return (
+                  <Pressable
+                    key={t}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Set time ${t}`}
+                    aria-selected={active}
+                    onPress={() => { Haptics.selectionAsync(); setRTime(t); setRTimeError(null); }}
+                    style={[s.ownerQuickChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}
+                  >
+                    <Text style={[s.ownerQuickText, { color: active ? "#fff" : colors.foreground, fontFamily: "Inter_700Bold" }]}>{t}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
 
             {caregivers.length > 0 && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.ownerQuickRow}>
