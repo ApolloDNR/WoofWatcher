@@ -44,7 +44,7 @@ test("builds the selected template production review card from registered sprite
   const review = buildAvatarSpriteProductionTemplateReview("shepherd");
 
   assert.equal(review.template.templateId, "shepherd");
-  assert.match(review.headline, /Shepherd: 2\/2 live loops registered/);
+  assert.match(review.headline, /Shepherd: 2\/2 animations live/);
   assert.match(review.proofStatusLabel, /Ready for native review/);
   assert.match(review.actionSummary, /Shepherd live idle: 8 frames at 7 fps/);
   assert.match(review.actionSummary, /Shepherd walk loop: 8 frames at 9 fps/);

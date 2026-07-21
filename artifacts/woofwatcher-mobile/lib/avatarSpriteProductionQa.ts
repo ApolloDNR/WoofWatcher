@@ -143,7 +143,7 @@ export function buildAvatarSpriteProductionTemplateReview(
 
   return {
     template,
-    headline: `${template.label}: ${template.actions.length}/${SPRITE_ACTION_ORDER.length} live loops registered`,
+    headline: `${template.label}: ${template.actions.length}/${SPRITE_ACTION_ORDER.length} animations live`,
     actionSummary: template.actions
       .map((action) => `${action.label}: ${action.frameCount} frames at ${action.fps} fps`)
       .join("; "),
