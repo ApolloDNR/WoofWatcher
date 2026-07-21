@@ -1556,7 +1556,8 @@ export default function MoreScreen() {
             kicker="WOOFWATCHER"
             title="More"
             subtitle={`${petName}'s care tools, records, household, and settings.`}
-            centered
+            back
+            onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
             plain
             style={s.moreRouteHeader}
           />

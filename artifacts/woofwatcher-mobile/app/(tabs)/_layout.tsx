@@ -120,6 +120,11 @@ export default function TabLayout() {
   return (
     <View style={{ flex: 1 }}>
       <Tabs
+        // history back behavior: when the user opens a deep-linked screen
+        // (Records/Health/More reached from Pack, Story, etc.) the hardware /
+        // router back returns to the tab they actually came from, instead of
+        // the default "firstRoute" jump to Today that used to strand them.
+        backBehavior="history"
         screenListeners={{
           // The standard nav tabs used the default expo-router buttons, which
           // fire no haptic - the app's most frequent interaction had the least
