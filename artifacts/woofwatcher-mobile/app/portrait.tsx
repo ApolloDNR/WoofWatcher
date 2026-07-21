@@ -1646,8 +1646,9 @@ export default function PortraitScreen() {
                   },
                 ]}
               >
-                Tap a swatch to set the primary coat, then tap it again to set
-                the secondary.
+                Tap a swatch for the primary coat, then tap it again for the
+                secondary. Saved to your dog's identity - the painted twin
+                recolors once this template's sprite pack lands.
               </Text>
             </BoardCard>
 
@@ -1698,6 +1699,18 @@ export default function PortraitScreen() {
                   );
                 })}
               </View>
+              <Text
+                style={[
+                  s.swatchLegend,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
+                Saved to your dog's identity. Markings paint onto the pixel twin
+                when this template's sprite pack lands.
+              </Text>
             </BoardCard>
 
             <BoardCard style={s.avatarBoard}>
@@ -1836,6 +1849,16 @@ export default function PortraitScreen() {
                 />
               }
             />
+            <Text
+              style={[
+                s.copy,
+                { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+              ]}
+            >
+              Every mood swaps the preview. "Live" moods animate in the room
+              today; "Still" moods show a hand-drawn pose until this template's
+              animation pack lands.
+            </Text>
             <View style={s.moodGrid}>
               {AVATAR_EMOTE_STATES.map((emote) => {
                 const active = previewEmote === emote;
@@ -1843,6 +1866,14 @@ export default function PortraitScreen() {
                 const moodStill = getAvatarTemplateEmoteSource(
                   draft.templateId,
                   emote,
+                );
+                // Honest live/still: only moods that resolve to a real sprite
+                // rig animate. The rest show a still pose - badge it so a
+                // still mood never reads as a broken one.
+                const chipIsLive = Boolean(
+                  getAvatarTemplateSpritePreview(draft.templateId, emote) ||
+                    deriveAvatarPreviewMotion(draft.templateId, emote)
+                      .spriteAction,
                 );
                 return (
                   <PressScale
@@ -1898,6 +1929,33 @@ export default function PortraitScreen() {
                         style={[s.emoteIcon, { backgroundColor: colors.ivory }]}
                       >
                         <PixelIcon name={EMOTE_ICON[emote]} size={18} />
+                      </View>
+                      <View
+                        style={[
+                          s.moodLiveBadge,
+                          {
+                            backgroundColor: chipIsLive
+                              ? colors.primary
+                              : colors.ivory,
+                            borderColor: chipIsLive
+                              ? colors.primary
+                              : colors.border,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.moodLiveBadgeText,
+                            {
+                              color: chipIsLive
+                                ? colors.primaryForeground
+                                : colors.mutedForeground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {chipIsLive ? "Live" : "Still"}
+                        </Text>
                       </View>
                     </View>
                     <Text
@@ -2623,6 +2681,20 @@ const s = StyleSheet.create({
     borderRadius: 7,
     alignItems: "center",
     justifyContent: "center",
+  },
+  moodLiveBadge: {
+    position: "absolute",
+    top: 5,
+    left: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  moodLiveBadgeText: {
+    fontSize: 8.5,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
   },
   moodChipLabel: { fontSize: 10.5, textAlign: "center" },
   tipBoard: { marginTop: 2 },
