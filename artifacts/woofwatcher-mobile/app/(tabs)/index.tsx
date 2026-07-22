@@ -10,7 +10,6 @@ import {
   Image,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -25,7 +24,15 @@ import {
   type CareEventType,
 } from "@workspace/care-domain";
 
-import Reanimated from "react-native-reanimated";
+import Reanimated, {
+  Easing as UIEasing,
+  interpolate,
+  runOnJS,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 import {
   BoardCard,
@@ -511,24 +518,26 @@ export default function HomeScreen() {
   const welcomeShouldShow = isFreshStart && welcomeDismissed === false;
   const [welcomeCollapsed, setWelcomeCollapsed] = useState(false);
   const welcomeWasShown = useRef(false);
-  const welcomeCollapse = useRef(new Animated.Value(1)).current;
+  // 1 = welcome card expanded (room rig deferred), 0 = folded away. Runs as
+  // a Reanimated shared value so the fold animates on the UI thread instead
+  // of the old JS-driver Animated.Value that could stutter under load.
+  const welcomeProgress = useSharedValue(0);
   const [welcomeCardHeight, setWelcomeCardHeight] = useState(0);
   useEffect(() => {
     if (welcomeShouldShow) {
       welcomeWasShown.current = true;
+      welcomeProgress.value = 1;
       return;
     }
     if (!welcomeWasShown.current || welcomeCollapsed) return;
-    Animated.timing(welcomeCollapse, {
-      toValue: 0,
-      duration: 250,
-      easing: Easing.out(Easing.cubic),
-      // Height cannot animate on the native driver; this is a one-off exit.
-      useNativeDriver: false,
-    }).start(({ finished }) => {
-      if (finished) setWelcomeCollapsed(true);
-    });
-  }, [welcomeCollapse, welcomeCollapsed, welcomeShouldShow]);
+    welcomeProgress.value = withTiming(
+      0,
+      { duration: 250, easing: UIEasing.out(UIEasing.cubic) },
+      (finished) => {
+        if (finished) runOnJS(setWelcomeCollapsed)(true);
+      },
+    );
+  }, [welcomeCollapsed, welcomeProgress, welcomeShouldShow]);
   const welcomeVisible =
     welcomeShouldShow || (welcomeWasShown.current && !welcomeCollapsed);
   const timeLabel = useMemo(
@@ -1204,15 +1213,19 @@ export default function HomeScreen() {
       pendingMeal &&
       quickFeedback.id === pendingMeal.id,
   );
-  const mealChipReveal = useRef(new Animated.Value(0)).current;
+  const mealChipProgress = useSharedValue(0);
   useEffect(() => {
-    Animated.timing(mealChipReveal, {
-      toValue: pendingMealChipSuppressed ? 0 : 1,
+    mealChipProgress.value = withTiming(pendingMealChipSuppressed ? 0 : 1, {
       duration: 220,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [mealChipReveal, pendingMealChipSuppressed]);
+      easing: UIEasing.out(UIEasing.cubic),
+    });
+  }, [mealChipProgress, pendingMealChipSuppressed]);
+  // Opacity plus a height fold, both on the UI thread via Reanimated - the
+  // old JS-driver maxHeight tween could hitch while the list scrolled.
+  const mealChipRevealStyle = useAnimatedStyle(() => ({
+    opacity: mealChipProgress.value,
+    maxHeight: interpolate(mealChipProgress.value, [0, 1], [0, 88]),
+  }));
   const showToast = (
     msg: string,
     feedback?: { id: string; title: string; type: CareEventType },
@@ -1501,10 +1514,66 @@ export default function HomeScreen() {
     ? Math.max(0.72, Math.min(1, viewportHeight / 700))
     : 1;
   const heroStageHeight = Math.round(heroDesignHeight * heroStageScale);
-  // On those same short screens the first-run welcome card plus the full
-  // stage cannot both fit above the tab pill, so the room stays folded
-  // behind the welcome card and grows in as the card folds away.
-  const heroDeferredForWelcome = isShortViewport && welcomeVisible;
+  // While the first-run welcome card is up the fixed room rig stays folded
+  // behind it (the card scrolls over the pinned scene otherwise) and grows
+  // in as the card folds away. Applies at every viewport height now that
+  // the scene band is pinned instead of scrolling in the content flow.
+  const heroDeferredForWelcome = welcomeVisible;
+  // The pinned scene band sits just below the header's resting spot; the
+  // header itself lives in the scroll content and slides over the scene.
+  const [headerBandHeight, setHeaderBandHeight] = useState(64);
+  const heroFixedTop = topPadding + headerBandHeight + 10;
+  // Scroll position feeds the scene treatment on the UI thread: as panels
+  // ride up over the pinned room, a scrim deepens and the room drifts up
+  // slightly (parallax) and quiets down - all without touching the JS
+  // thread, so scrolling stays at frame rate.
+  const sceneScrollY = useSharedValue(0);
+  const onSceneScroll = useAnimatedScrollHandler((event) => {
+    sceneScrollY.value = event.contentOffset.y;
+  });
+  const heroLayerStyle = useAnimatedStyle(() => ({
+    opacity:
+      (1 - welcomeProgress.value) *
+      interpolate(
+        sceneScrollY.value,
+        [0, heroStageHeight * 0.6, heroStageHeight * 1.4],
+        [1, 0.92, 0.45],
+        "clamp",
+      ),
+    transform: [
+      {
+        translateY: interpolate(
+          sceneScrollY.value,
+          [-heroStageHeight, 0, heroStageHeight],
+          [heroStageHeight * 0.12, 0, -heroStageHeight * 0.18],
+          "clamp",
+        ),
+      },
+    ],
+  }));
+  const sceneScrimStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      sceneScrollY.value,
+      [0, heroStageHeight * 0.9],
+      [0, 0.62],
+      "clamp",
+    ),
+  }));
+  // Transparent spacer inside the scroll content that reserves the dog's
+  // traffic band while the welcome card is away; it folds shut in lockstep
+  // with the welcome card so the first-run screen never double-stacks.
+  const heroSpacerStyle = useAnimatedStyle(() => ({
+    height: heroStageHeight * (1 - welcomeProgress.value),
+  }));
+  const welcomeCardStyle = useAnimatedStyle(() => {
+    if (welcomeCardHeight > 0) {
+      return {
+        opacity: welcomeProgress.value,
+        maxHeight: welcomeCardHeight * welcomeProgress.value,
+      };
+    }
+    return { opacity: welcomeProgress.value };
+  });
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
   useEffect(() => {
     if (isWebRoutePreview) return;
@@ -1551,17 +1620,131 @@ export default function HomeScreen() {
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
-      <ScrollView
+      {/* Scroll-linked scrim: deepens as the panels ride up over the pinned
+          scene so the room recedes and the cards stay legible. Gradient
+          colors cannot animate on the UI thread, so this flat wash rides on
+          top of the static gradient instead. */}
+      <Reanimated.View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: colors.background },
+          sceneScrimStyle,
+        ]}
+      />
+      {/* The room stage is pinned here as part of the environment - one
+          LivingPhoenixRoom instance, fixed below the header's resting spot,
+          while the content panels scroll over it. The scroll content keeps a
+          transparent spacer in the room's old slot so the resting layout is
+          unchanged, and box-none layering lets taps in the dog's traffic
+          band fall through the scroll surface onto the rig. */}
+      <Reanimated.View
+        pointerEvents={heroDeferredForWelcome ? "none" : "box-none"}
+        style={[
+          s.heroFixedLayer,
+          {
+            top: heroFixedTop,
+            left: routeHorizontalPadding,
+            right: routeHorizontalPadding,
+          },
+          heroLayerStyle,
+        ]}
+      >
+        <View style={s.heroBackdrop}>
+          <View
+            accessibilityLabel={`${petName} Room`}
+            accessibilityHint={homeFirstScreenLayout.qaLabel}
+            style={[
+              s.heroWrap,
+              { height: heroStageHeight, overflow: "hidden" },
+            ]}
+          >
+           <View
+             style={
+               heroStageScale < 1
+                 ? {
+                     width: heroStageWidth,
+                     height: heroDesignHeight,
+                     transform: [{ scale: heroStageScale }],
+                     transformOrigin: "top center",
+                   }
+                 : { width: "100%", height: heroDesignHeight }
+             }
+           >
+            <LivingPhoenixRoom
+              mood={avatarMotion.avatarMood}
+              motion={avatarMotion}
+              speech={
+                roomSpeechOverride ??
+                (avatarMotion.speech || SPEECH_BY_MOOD[status.mood])
+              }
+              energy={status.energy}
+              presenceLabel={presenceLabel}
+              nextLabel={
+                openWalkSession
+                  ? "Walk active"
+                  : openAloneSession
+                    ? "Home alone"
+                    : avatarMotion.label
+              }
+              reaction={roomReaction}
+              statusReadouts={roomStats}
+              avatarConfig={avatarConfig}
+              petName={petName}
+              awayOnWalk={Boolean(openWalkSession)}
+              awayMinutes={openWalkMinutes}
+              chromeDensity="compact"
+              transparentScene
+              onPress={tapPhoenixRoom}
+              onLongPress={openAvatarStudio}
+              accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
+            />
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
+            onPress={openAvatarStudio}
+            style={({ pressed }) => [
+              s.heroStudioChip,
+              {
+                minHeight: homeFirstScreenLayout.heroStudioButtonMinHeight,
+                backgroundColor: pressed
+                  ? colors.ivory
+                  : "rgba(251,246,231,0.94)",
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Ionicons name="color-wand-outline" size={17} color={colors.forest} />
+          </Pressable>
+          </View>
+        </View>
+      </Reanimated.View>
+      <Reanimated.ScrollView
         style={s.container}
+        pointerEvents="box-none"
         contentContainerStyle={{
           paddingTop: topPadding,
           paddingBottom: bottomPadding,
           paddingHorizontal: routeHorizontalPadding,
+          pointerEvents: "box-none",
         }}
         showsVerticalScrollIndicator={false}
+        onScroll={onSceneScroll}
+        scrollEventThrottle={16}
       >
-        <Animated.View style={{ opacity: fade }}>
-          <View style={[s.header, { backgroundColor: colors.card }]}>
+        <Animated.View pointerEvents="box-none" style={{ opacity: fade }}>
+          <View
+            onLayout={(event) => {
+              const measured = Math.round(event.nativeEvent.layout.height);
+              if (measured > 0) {
+                setHeaderBandHeight((prev) =>
+                  prev === measured ? prev : measured,
+                );
+              }
+            }}
+            style={[s.header, { backgroundColor: colors.card }]}
+          >
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${petName}. ${careStatusLabel}. Open profile`}
@@ -1643,7 +1826,7 @@ export default function HomeScreen() {
           </View>
 
           {welcomeVisible ? (
-            <Animated.View
+            <Reanimated.View
               pointerEvents={welcomeShouldShow ? "auto" : "none"}
               onLayout={(event) => {
                 const measured = Math.round(event.nativeEvent.layout.height);
@@ -1651,18 +1834,7 @@ export default function HomeScreen() {
                   setWelcomeCardHeight((prev) => Math.max(prev, measured));
                 }
               }}
-              style={{
-                opacity: welcomeCollapse,
-                overflow: "hidden",
-                ...(welcomeCardHeight > 0
-                  ? {
-                      maxHeight: welcomeCollapse.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, welcomeCardHeight],
-                      }),
-                    }
-                  : {}),
-              }}
+              style={[{ overflow: "hidden" }, welcomeCardStyle]}
             >
             <View style={[s.welcomeCard, s.softShadow, { backgroundColor: colors.forest }]}>
               <Pressable
@@ -1713,102 +1885,16 @@ export default function HomeScreen() {
                 </Pressable>
               </View>
             </View>
-            </Animated.View>
+            </Reanimated.View>
           ) : null}
 
-          {/* The room is a framed storybook card: day/night art fills the
-              frame and the living twin roams inside it, matching Apollo's
-              storybook mockup Home. On short phones the stage height is
-              clamped (uniform scale) and it stays folded while the first-run
-              welcome card is up, growing in as the card folds away. */}
-          <Animated.View
-            pointerEvents={heroDeferredForWelcome ? "none" : "auto"}
-            style={
-              heroDeferredForWelcome
-                ? {
-                    overflow: "hidden",
-                    opacity: welcomeCollapse.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [1, 0],
-                    }),
-                    maxHeight: welcomeCollapse.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [heroStageHeight, 0],
-                    }),
-                  }
-                : null
-            }
-          >
-          <View style={s.heroBackdrop}>
-            <View
-              accessibilityLabel={`${petName} Room`}
-              accessibilityHint={homeFirstScreenLayout.qaLabel}
-              style={[
-                s.heroWrap,
-                { height: heroStageHeight, overflow: "hidden" },
-              ]}
-            >
-             <View
-               style={
-                 heroStageScale < 1
-                   ? {
-                       width: heroStageWidth,
-                       height: heroDesignHeight,
-                       transform: [{ scale: heroStageScale }],
-                       transformOrigin: "top center",
-                     }
-                   : { width: "100%", height: heroDesignHeight }
-               }
-             >
-              <LivingPhoenixRoom
-                mood={avatarMotion.avatarMood}
-                motion={avatarMotion}
-                speech={
-                  roomSpeechOverride ??
-                  (avatarMotion.speech || SPEECH_BY_MOOD[status.mood])
-                }
-                energy={status.energy}
-                presenceLabel={presenceLabel}
-                nextLabel={
-                  openWalkSession
-                    ? "Walk active"
-                    : openAloneSession
-                      ? "Home alone"
-                      : avatarMotion.label
-                }
-                reaction={roomReaction}
-                statusReadouts={roomStats}
-                avatarConfig={avatarConfig}
-                petName={petName}
-                awayOnWalk={Boolean(openWalkSession)}
-                awayMinutes={openWalkMinutes}
-                chromeDensity="compact"
-                transparentScene
-                onPress={tapPhoenixRoom}
-                onLongPress={openAvatarStudio}
-                accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
-              />
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
-              onPress={openAvatarStudio}
-              style={({ pressed }) => [
-                s.heroStudioChip,
-                {
-                  minHeight: homeFirstScreenLayout.heroStudioButtonMinHeight,
-                  backgroundColor: pressed
-                    ? colors.ivory
-                    : "rgba(251,246,231,0.94)",
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <Ionicons name="color-wand-outline" size={17} color={colors.forest} />
-            </Pressable>
-          </View>
-          </View>
-          </Animated.View>
+          {/* Transparent spacer reserving the pinned room's traffic band in
+              the content flow. The scene itself lives in the fixed
+              environment layer behind this scroll surface; the spacer folds
+              shut while the first-run welcome card is up so the two never
+              double-stack, and it is touch-transparent so taps land on the
+              dog rig behind it. */}
+          <Reanimated.View pointerEvents="none" style={heroSpacerStyle} />
 
           {/* Mock-board Care Sense card: mood, energy, hunger, and alone
               time as chunky pip meters. Every fill derives from real logged
@@ -2112,16 +2198,9 @@ export default function HomeScreen() {
                 }
               />
               {pendingMealOpenLoop ? (
-                <Animated.View
+                <Reanimated.View
                   pointerEvents={pendingMealChipSuppressed ? "none" : "auto"}
-                  style={{
-                    opacity: mealChipReveal,
-                    overflow: "hidden",
-                    maxHeight: mealChipReveal.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, 88],
-                    }),
-                  }}
+                  style={[{ overflow: "hidden" }, mealChipRevealStyle]}
                 >
                 <Pressable
                   accessibilityRole="button"
@@ -2181,7 +2260,7 @@ export default function HomeScreen() {
                     </Text>
                   </View>
                 </Pressable>
-                </Animated.View>
+                </Reanimated.View>
               ) : null}
               {nextPrimary ? (
                 <View style={s.nextPrimaryRow}>
@@ -3174,7 +3253,7 @@ export default function HomeScreen() {
             </Pressable>
           </BoardCard>
         </Animated.View>
-      </ScrollView>
+      </Reanimated.ScrollView>
 
       {toast && (
         <Animated.View
@@ -3327,6 +3406,11 @@ const s = StyleSheet.create({
   heroBackdrop: {
     width: "100%",
     marginBottom: 0,
+  },
+  // The pinned scene band: absolutely positioned behind the scroll surface
+  // so the room reads as the environment while panels ride over it.
+  heroFixedLayer: {
+    position: "absolute",
   },
   fullBleedArt: {
     position: "absolute",

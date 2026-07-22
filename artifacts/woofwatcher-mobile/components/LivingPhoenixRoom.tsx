@@ -13,6 +13,7 @@ import {
 import Animated, {
   Easing,
   FadeIn,
+  FadeInDown,
   FadeOut,
   cancelAnimation,
   interpolate,
@@ -1295,7 +1296,12 @@ export function LivingPhoenixRoom({
       ) : null}
 
       {!isStudio ? (
-        <View
+        // Keyed by the spoken lines: a new line re-mounts the bubble with a
+        // gentle spring entrance instead of hard-swapping the text in place.
+        <Animated.View
+          key={lines.length ? lines.join("|") : "ready"}
+          entering={FadeInDown.springify().damping(15).stiffness(170).mass(0.7)}
+          exiting={FadeOut.duration(130)}
           style={[
             styles.speechBubble,
             compactChrome ? styles.speechBubbleCompact : null,
@@ -1326,7 +1332,7 @@ export function LivingPhoenixRoom({
               },
             ]}
           />
-        </View>
+        </Animated.View>
       ) : null}
 
       {!isStudio && !compactChrome ? (
