@@ -54,7 +54,7 @@ import {
   type RoamFacing,
   type RoamPlan,
 } from "@/lib/careTwinRoam";
-import { pixelImageStyle } from "@/lib/pixelRendering";
+import { pixelArtSamplingStyle } from "@/lib/pixelRendering";
 import type { Mood } from "@/lib/phoenixStatus";
 
 // Constant ink for text on the fixed cream overlay chips/bubbles: the
@@ -495,6 +495,10 @@ export function LivingPhoenixRoom({
     : compactChrome
       ? getCompactSpriteZone(spriteZone)
       : spriteZone;
+  // The pose stack (accessory layers, fallback still) shares the sprite
+  // player's box, so it uses the same scale-aware sampling: smooth when the
+  // 256px art downscales into the zone, pixelated only on genuine upscales.
+  const stagePixelStyle = pixelArtSamplingStyle(activeSpriteZone.width, 256);
   const spriteAsset = useMemo(
     () =>
       avatarRoomRuntime?.spriteAsset ??
@@ -606,6 +610,15 @@ export function LivingPhoenixRoom({
   // park, so the twin stays visible and walks it - the away cue narrates
   // the live session on top.
   const roamActive = Boolean(roamPlan && stageSize);
+  // Room backgrounds are ~1200px-wide paintings with no density variants;
+  // on phone-sized stages they downscale, and smooth sampling keeps the
+  // breathing background from shimmering as it moves. (maxBundledScale 1:
+  // no @2x/@3x variants exist for the room art.)
+  const scenePixelStyle = pixelArtSamplingStyle(
+    (stageSize?.width ?? 420) * 1.04,
+    1200,
+    1,
+  );
   const handleStageLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
     setStageSize((prev) =>
@@ -969,7 +982,7 @@ export function LivingPhoenixRoom({
             resizeMode="cover"
             style={[
               styles.scene,
-              pixelImageStyle,
+              scenePixelStyle,
               animateBakedScene ? sceneMotionStyle : null,
             ]}
           />
@@ -1065,7 +1078,7 @@ export function LivingPhoenixRoom({
                       style={[
                         styles.avatarAccessoryLayer,
                         styles.avatarAccessoryUnderlay,
-                        pixelImageStyle,
+                        stagePixelStyle,
                       ]}
                       testID={`care-twin-avatar-underlay-${layer.id}`}
                     />
@@ -1094,7 +1107,7 @@ export function LivingPhoenixRoom({
                       style={[
                         styles.avatarAccessoryLayer,
                         styles.avatarAccessoryOverlay,
-                        pixelImageStyle,
+                        stagePixelStyle,
                       ]}
                       testID={`care-twin-avatar-overlay-${layer.id}`}
                     />
@@ -1132,7 +1145,7 @@ export function LivingPhoenixRoom({
           <Animated.Image
             source={fallbackAvatarSource}
             resizeMode="contain"
-            style={[styles.fallbackAvatar, pixelImageStyle]}
+            style={[styles.fallbackAvatar, stagePixelStyle]}
           />
         </Animated.View>
       ) : null}
@@ -1505,6 +1518,9 @@ export function LivingPhoenixRoom({
 // believable scale against the room furniture.
 const ROAM_RIG_SIZE = 118;
 const ROAM_BOB_MS = 340;
+// Roam accessory art shares the rig box with the sprite player, so it uses
+// the same scale-aware sampling as the anchored pose stack.
+const ROAM_ACCESSORY_PIXEL_STYLE = pixelArtSamplingStyle(ROAM_RIG_SIZE, 256);
 
 /**
  * Duration for a non-walk position correction (plan re-anchor, dwell pin):
@@ -1804,7 +1820,7 @@ function RoamingTwinRig({
                     style={[
                       styles.avatarAccessoryLayer,
                       styles.avatarAccessoryUnderlay,
-                      pixelImageStyle,
+                      ROAM_ACCESSORY_PIXEL_STYLE,
                     ]}
                   />
                 ) : null,
@@ -1832,7 +1848,7 @@ function RoamingTwinRig({
                     style={[
                       styles.avatarAccessoryLayer,
                       styles.avatarAccessoryOverlay,
-                      pixelImageStyle,
+                      ROAM_ACCESSORY_PIXEL_STYLE,
                     ]}
                   />
                 ) : null,

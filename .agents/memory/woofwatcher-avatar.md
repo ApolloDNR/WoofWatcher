@@ -54,6 +54,26 @@ bundled `assets/phoenix/phoenix-{mood}.png` (5 moods) + WoofGuide header
 pace calls one at a time with waits. Pixel design system lives in mockup-sandbox
 `components/mockups/woofwatcher-pixel/` (PhoenixHome.tsx + pixel.css) before graduating to the app.
 
+## Crisp pixel-art rendering (sprites/care twin)
+
+Sprite art is authored at a low logical size (256px frames, 170px layered template art) but drawn
+into smaller pose boxes (118–248pt). Two rules keep it crisp:
+1. **Density variants, not manifest changes:** ship nearest-neighbor `@2x`/`@3x` PNGs next to each
+   1x file (regenerate with `artifacts/woofwatcher-mobile/scripts/upscale-pixel-sprites.sh`,
+   idempotent). Metro's density-suffix resolution serves the right one per DPR; logical
+   `frameWidth` stays 256 so no manifest/test edits are needed. Any NEW pixel-art asset must go
+   through this script or DPR2-3 phones bilinear-blur it.
+2. **Never unconditional `imageRendering: pixelated` on web:** pixelated on a non-integer
+   DOWNscale drops art rows unevenly and shimmers once the surface animates. Use
+   `pixelArtSamplingStyle(displayPx, sourceLogicalPx, maxBundledScale)` from `lib/pixelRendering.ts`
+   (pixelated only on genuine device-pixel upscales; pass maxBundledScale 1 for art without
+   variants, e.g. 1200px room backgrounds). Static stage ImageBackgrounds keep plain
+   `pixelImageStyle` — they upscale, and `mobileReadiness.test.ts` string-asserts that identifier
+   in those screens.
+
+**Why:** the care twin looked mushy on phones (1x upscaled) and crunchy/shimmery on web
+(pixelated downscale of animating strips); this pipeline fixed both without touching slot sizes.
+
 ## Recreating the boards EXACTLY (the fidelity bar)
 
 When the user says "recreate exactly what these images are," do NOT regenerate/interpret — REUSE the

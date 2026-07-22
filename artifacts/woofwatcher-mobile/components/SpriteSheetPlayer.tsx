@@ -1,5 +1,11 @@
 import React, { useEffect, useMemo } from "react";
-import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import {
+  PixelRatio,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -9,7 +15,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import type { CareTwinSpriteAsset } from "@/lib/careTwinAssets";
-import { pixelImageStyle } from "@/lib/pixelRendering";
+import { pixelArtSamplingStyle } from "@/lib/pixelRendering";
 
 export interface SpriteSheetTrack {
   key: string;
@@ -55,15 +61,19 @@ export function SpriteSheetPlayer({
   const frameMetrics = useMemo(() => {
     if (!asset) return null;
 
-    const scaleX = width / asset.frameWidth;
-    const scaleY = height / asset.frameHeight;
+    // Snap the frame box to the device pixel grid: a fractional frame width
+    // makes every translateX step land between device pixels, which bleeds a
+    // sliver of the neighboring frame into the viewport edge.
+    const frameWidth = PixelRatio.roundToNearestPixel(width);
+    const frameHeight = PixelRatio.roundToNearestPixel(height);
 
     return {
-      sheetWidth: asset.columns * asset.frameWidth * scaleX,
-      sheetHeight: asset.rows * asset.frameHeight * scaleY,
-      frameWidth: width,
-      frameHeight: height,
+      sheetWidth: asset.columns * frameWidth,
+      sheetHeight: asset.rows * frameHeight,
+      frameWidth,
+      frameHeight,
       columns: asset.columns,
+      samplingStyle: pixelArtSamplingStyle(frameWidth, asset.frameWidth),
     };
   }, [asset, height, width]);
 
@@ -88,7 +98,11 @@ export function SpriteSheetPlayer({
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       pointerEvents="none"
-      style={[styles.viewport, { width, height }, style]}
+      style={[
+        styles.viewport,
+        { width: frameMetrics.frameWidth, height: frameMetrics.frameHeight },
+        style,
+      ]}
       testID={testID}
     >
       <Animated.Image
@@ -100,7 +114,7 @@ export function SpriteSheetPlayer({
             width: frameMetrics.sheetWidth,
             height: frameMetrics.sheetHeight,
           },
-          pixelImageStyle,
+          frameMetrics.samplingStyle,
           sheetStyle,
         ]}
       />
