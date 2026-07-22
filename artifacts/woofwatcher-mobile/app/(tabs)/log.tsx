@@ -2637,11 +2637,9 @@ export default function LogScreen() {
                           : active
                             ? colors.primary
                             : colors.border,
-                        shadowColor: launcherPresentation.detailRequired ? colors.amber : active ? colors.primary : colors.navy,
-                        shadowOpacity: active ? 0.13 : 0,
-                        shadowRadius: active ? 10 : 0,
-                        shadowOffset: { width: 0, height: active ? 5 : 0 },
-                        elevation: active ? 2 : 0,
+                        boxShadow: active
+                          ? `0 5px 10px ${launcherPresentation.detailRequired ? colors.amber : colors.primary}21`
+                          : "none",
                       },
                     ]}
                   >
@@ -2992,7 +2990,7 @@ export default function LogScreen() {
                 {
                   backgroundColor: colors.card,
                   borderColor: colors.sage + "33",
-                  shadowColor: colors.sage,
+                  boxShadow: `0 6px 16px ${colors.sage}14`,
                 },
               ]}
             >
@@ -3025,8 +3023,7 @@ export default function LogScreen() {
                     syncOutbox.status === "needs-retry"
                       ? colors.amber + "55"
                       : colors.primary + "33",
-                  shadowColor:
-                    syncOutbox.status === "needs-retry" ? colors.amber : colors.primary,
+                  boxShadow: `0 6px 16px ${syncOutbox.status === "needs-retry" ? colors.amber : colors.primary}14`,
                 },
               ]}
             >
@@ -5229,10 +5226,6 @@ const s = StyleSheet.create({
     borderWidth: 1,
     padding: 14,
     marginBottom: 14,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 2,
   },
   outboxTop: { flexDirection: "row", alignItems: "center", gap: 10 },
   outboxIcon: { width: 38, height: 38, borderRadius: 14, alignItems: "center", justifyContent: "center" },
@@ -5465,11 +5458,7 @@ const s = StyleSheet.create({
     borderRadius: 16,
     padding: 13,
     gap: 11,
-    shadowColor: "#081424",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 2,
+    boxShadow: "0 8px 16px #0814240F",
   },
   aloneActiveTop: {
     flexDirection: "row",
@@ -5558,10 +5547,7 @@ const s = StyleSheet.create({
   composerHero: {
     borderRadius: 8,
     padding: 12,
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    boxShadow: "0 5px 12px #08142414",
   },
   quickLogDetailDock: {
     gap: 10,
@@ -6127,11 +6113,7 @@ const s = StyleSheet.create({
   modalCard: {
     borderRadius: 26,
     padding: 24,
-    shadowColor: "#0F1F33",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 30,
-    elevation: 8,
+    boxShadow: "0 12px 30px #0F1F3333",
   },
   modalIcon: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 14 },
   modalTitle: { fontSize: 19, letterSpacing: -0.2 },

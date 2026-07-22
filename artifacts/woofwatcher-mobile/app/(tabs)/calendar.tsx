@@ -1338,7 +1338,7 @@ export default function CalendarScreen() {
           {/* WoofGuide discovery banner */}
           <Pressable
             onPress={() => { Haptics.selectionAsync(); setDiscoverOpen((v) => !v); }}
-            style={[s.discoverCard, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+            style={[s.discoverCard, { backgroundColor: colors.primary, boxShadow: `0 8px 18px ${colors.primary}2E` }]}
           >
             <View style={s.discoverIcon}>
               <Ionicons name="sparkles" size={20} color="#fff" />
@@ -1351,7 +1351,7 @@ export default function CalendarScreen() {
           </Pressable>
 
           {discoverOpen && (
-            <View style={[s.discoverPanel, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+            <View style={[s.discoverPanel, { backgroundColor: colors.card, boxShadow: `0 6px 14px ${colors.primary}12` }]}>
               <View style={s.discoverInputRow}>
                 <Ionicons name="location-outline" size={18} color={colors.mutedForeground} />
                 <TextInput
@@ -1732,7 +1732,7 @@ export default function CalendarScreen() {
                         <View style={[s.railDot, { backgroundColor: statusColor, borderColor: statusColor }]} />
                         {!last && <View style={[s.railLine, { backgroundColor: colors.border }]} />}
                       </View>
-                      <View style={[s.routineCard, { backgroundColor: colors.card, shadowColor: colors.primary, opacity: done ? 0.72 : 1 }]}>
+                      <View style={[s.routineCard, { backgroundColor: colors.card, boxShadow: `0 5px 12px ${colors.primary}0F`, opacity: done ? 0.72 : 1 }]}>
                         <View style={[s.routineIconWrap, { backgroundColor: statusColor + "16" }]}>
                           {r.normalizedType === "potty" ? (
                             <PixelIcon name="pee" size={20} />
@@ -2068,16 +2068,12 @@ const s = StyleSheet.create({
     gap: 12,
     borderRadius: 20,
     padding: 16,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 4,
   },
   discoverIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
   discoverTitle: { fontSize: 16, color: "#fff" },
   discoverSub: { fontSize: 13, color: "rgba(255,255,255,0.85)", marginTop: 1 },
 
-  discoverPanel: { borderRadius: 20, padding: 14, marginTop: 10, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 2 },
+  discoverPanel: { borderRadius: 20, padding: 14, marginTop: 10 },
   discoverInputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   discoverInput: { flex: 1, fontSize: 15, paddingVertical: 8 },
   discoverGo: { paddingHorizontal: 18, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, alignItems: "center", justifyContent: "center", minWidth: 64 },
@@ -2603,10 +2599,6 @@ const s = StyleSheet.create({
     borderRadius: 18,
     padding: 13,
     marginBottom: 10,
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
   },
   routineIconWrap: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   routineMain: { flex: 1, minWidth: 0 },
@@ -2629,11 +2621,7 @@ const s = StyleSheet.create({
     flexDirection: "column",
     alignItems: "stretch",
     gap: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.18,
-    shadowRadius: 22,
-    elevation: 7,
+    boxShadow: "0 10px 22px #0000002E",
   },
   routineFeedbackCopy: { flex: 1, minWidth: 0 },
   routineFeedbackTitle: { fontSize: 14.5 },
