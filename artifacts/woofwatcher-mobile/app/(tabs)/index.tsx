@@ -2114,7 +2114,7 @@ export default function HomeScreen() {
                       style={s.homeQuickTile}
                     >
                       {hasMedallion(item.icon) ? (
-                        <BoardMedallion name={item.icon} size={54} style={s.softShadow} />
+                        <BoardMedallion name={item.icon} size={54} style={s.softShadow as any} />
                       ) : (
                         <View
                           style={[
@@ -3477,11 +3477,7 @@ const s = StyleSheet.create({
   // Soft premium elevation for the mock-board surfaces, matching the
   // BoardCard shadow language so everything floats gently on the parchment.
   softShadow: {
-    shadowColor: "#2A2118",
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 2,
+    boxShadow: "0 5px 12px #2A211812",
   },
 
   // First-run welcome (fresh household only)
@@ -3755,11 +3751,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    shadowColor: "#081424",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
+    boxShadow: "0 6px 12px #08142414",
   },
   todayCommandIcon: {
     width: 42,

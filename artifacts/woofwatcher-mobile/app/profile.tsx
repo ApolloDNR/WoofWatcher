@@ -356,7 +356,7 @@ export default function ProfileScreen() {
           onPress={openAvatarStudio}
           scaleTo={0.95}
           containerStyle={s.avatarLayout}
-          style={[s.avatarRing, { backgroundColor: colors.card, borderColor: colors.gold, boxShadow: `0 6px 12px 2E` }]}
+          style={[s.avatarRing, { backgroundColor: colors.card, borderColor: colors.gold, boxShadow: `0 6px 12px ${colors.navy}2E` }]}
         >
           <Animated.Image
             source={getAvatarSource(status.mood)}

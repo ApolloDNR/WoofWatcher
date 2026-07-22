@@ -76,7 +76,6 @@ function CenterToday() {
               borderRadius: chrome.centerFabSize / 2,
               backgroundColor: colors.forest,
               borderColor: colors.card,
-              shadowColor: colors.brandNavy,
             },
             bounceStyle,
           ]}
@@ -127,10 +126,7 @@ export default function TabLayout() {
             paddingHorizontal: 7,
             borderWidth: 1,
             borderColor: colors.border,
-            shadowColor: colors.brandNavy,
-            shadowOpacity: 0.16,
-            shadowRadius: 20,
-            shadowOffset: { width: 0, height: 10 },
+            boxShadow: `0 10px 20px ${colors.brandNavy}29`,
           },
           tabBarBackground: () => (
             <View
@@ -249,10 +245,6 @@ const s = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 4,
     boxShadow: "0 10px 24px rgba(8, 20, 36, 0.24)",
-    shadowOpacity: 0.28,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 10,
   },
   fabLabel: {
     marginTop: 2,

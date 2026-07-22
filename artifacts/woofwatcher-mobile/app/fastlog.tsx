@@ -333,7 +333,7 @@ export default function FastLogScreen() {
                 {
                   backgroundColor: colors.card,
                   borderColor: colors.border,
-                  boxShadow: `0 8px 16px 0F`,
+                  boxShadow: `0 8px 16px ${colors.navy}0F`,
                 },
               ]}
             >

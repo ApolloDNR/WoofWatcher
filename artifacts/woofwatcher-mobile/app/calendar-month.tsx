@@ -417,7 +417,7 @@ export default function CalendarMonthScreen() {
         }}
         scaleTo={0.9}
         containerStyle={[s.fabContainer, { bottom: insets.bottom + 20 }]}
-        style={[s.fab, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+        style={[s.fab, { backgroundColor: colors.primary, boxShadow: `0 8px 14px ${colors.primary}47` }]}
       >
         <Ionicons name="add" size={30} color={colors.primaryForeground} />
       </PressScale>
@@ -595,9 +595,6 @@ const s = StyleSheet.create({
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
+
   },
 });
