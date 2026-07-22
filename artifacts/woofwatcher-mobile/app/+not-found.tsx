@@ -48,7 +48,7 @@ export default function NotFoundScreen() {
           },
         ]}
       >
-        <Text style={[styles.homeButtonText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+        <Text style={[styles.homeButtonText, { color: colors.warmForeground, fontFamily: "Inter_700Bold" }]}>
           Back to Home
         </Text>
       </Pressable>

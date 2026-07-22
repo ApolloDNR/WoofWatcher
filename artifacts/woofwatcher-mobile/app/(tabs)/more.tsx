@@ -2707,9 +2707,9 @@ export default function MoreScreen() {
                     <Ionicons
                       name={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
                       size={15}
-                      color={colors.primaryForeground}
+                      color={colors.warmForeground}
                     />
-                    <Text style={[s.betaNextActionButtonText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>
+                    <Text style={[s.betaNextActionButtonText, { color: colors.warmForeground, fontFamily: "Inter_800ExtraBold" }]}>
                       {launchReleasePacket.betaShipStatus === "qa-first" ? "Open QA Cockpit" : "Share Beta Packet"}
                     </Text>
                   </Pressable>

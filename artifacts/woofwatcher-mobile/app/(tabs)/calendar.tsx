@@ -1364,7 +1364,7 @@ export default function CalendarScreen() {
                   onSubmitEditing={discover}
                 />
                 <Pressable onPress={discover} disabled={loadingEvents} style={[s.discoverGo, { backgroundColor: colors.copper }]}>
-                  {loadingEvents ? <ActivityIndicator size="small" color={colors.primaryForeground} /> : <Text style={[s.discoverGoText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Find</Text>}
+                  {loadingEvents ? <ActivityIndicator size="small" color={colors.warmForeground} /> : <Text style={[s.discoverGoText, { color: colors.warmForeground, fontFamily: "Inter_700Bold" }]}>Find</Text>}
                 </Pressable>
               </View>
 
