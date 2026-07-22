@@ -339,7 +339,7 @@ export default function FastLogScreen() {
             >
               {justLogged === tile.key ? (
                 <View style={[s.tileLoggedBadge, { backgroundColor: colors.sage }]}>
-                  <Ionicons name="checkmark" size={13} color="#FFFFFF" />
+                  <Ionicons name="checkmark" size={13} color={colors.primaryForeground} />
                 </View>
               ) : null}
               <PixelIcon name={tile.icon} size={34} />
@@ -395,7 +395,7 @@ export default function FastLogScreen() {
                   {outcomeLabel(entry)}
                 </Text>
                 <View style={[s.recentCheck, { backgroundColor: colors.sage }]}>
-                  <Ionicons name="checkmark" size={13} color="#FFFFFF" />
+                  <Ionicons name="checkmark" size={13} color={colors.primaryForeground} />
                 </View>
               </Pressable>
             ))

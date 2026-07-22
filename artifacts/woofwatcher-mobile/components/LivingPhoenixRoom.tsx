@@ -958,7 +958,10 @@ export function LivingPhoenixRoom({
 
   return (
     <Pressable
-      accessibilityRole="button"
+      // On web this stage renders around the roaming pet's own pressable;
+      // giving both a "button" role would nest <button> elements, which is
+      // invalid HTML and breaks React DOM hydration. Native keeps the role.
+      accessibilityRole={Platform.OS === "web" ? undefined : "button"}
       accessibilityLabel={`Phoenix room. ${avatarRoomRuntime?.templateLabel ?? "Shepherd"} care twin. ${motion.label}. ${plan.tapVerb}. ${speech}`}
       accessibilityHint={accessibilityHint}
       onPress={handlePress}

@@ -375,8 +375,8 @@ function PremiumScreenBody() {
               accessibilityLabel="Open premium launch checklist"
               style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
             >
-              <Ionicons name="clipboard-outline" size={18} color="#FFFFFF" />
-              <Text style={[s.primaryText, { fontFamily: "Inter_700Bold" }]}>Launch checklist</Text>
+              <Ionicons name="clipboard-outline" size={18} color={colors.primaryForeground} />
+              <Text style={[s.primaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Launch checklist</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -461,7 +461,7 @@ function PlanCard({
           </Text>
         </View>
         <View style={[s.pricePill, { backgroundColor: recommended ? colors.primary : colors.background }]}>
-          <Text style={[s.priceText, { color: recommended ? "#FFFFFF" : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+          <Text style={[s.priceText, { color: recommended ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" }]}>
             {plan.monthlyPrice}
           </Text>
         </View>
@@ -704,7 +704,7 @@ const s = StyleSheet.create({
   entitlementDetail: { fontSize: 12, lineHeight: 17, marginTop: 2 },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 22 },
   primaryBtn: { flex: 1, height: 52, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
-  primaryText: { color: "#FFFFFF", fontSize: 14.5 },
+  primaryText: { fontSize: 14.5 },
   secondaryBtn: { minWidth: 112, height: 52, borderRadius: 17, borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 14 },
   secondaryText: { fontSize: 14 },
 });

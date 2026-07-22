@@ -1253,7 +1253,7 @@ export default function CalendarScreen() {
                         },
                       ]}
                     >
-                      {done ? <Ionicons name="checkmark" size={13} color="#FFFFFF" /> : null}
+                      {done ? <Ionicons name="checkmark" size={13} color={colors.primaryForeground} /> : null}
                     </Pressable>
                   </PressScale>
                   </React.Fragment>
@@ -1364,7 +1364,7 @@ export default function CalendarScreen() {
                   onSubmitEditing={discover}
                 />
                 <Pressable onPress={discover} disabled={loadingEvents} style={[s.discoverGo, { backgroundColor: colors.copper }]}>
-                  {loadingEvents ? <ActivityIndicator size="small" color="#fff" /> : <Text style={[s.discoverGoText, { fontFamily: "Inter_700Bold" }]}>Find</Text>}
+                  {loadingEvents ? <ActivityIndicator size="small" color={colors.primaryForeground} /> : <Text style={[s.discoverGoText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Find</Text>}
                 </Pressable>
               </View>
 
@@ -1775,7 +1775,7 @@ export default function CalendarScreen() {
                             accessibilityLabel={done ? `${r.label} already logged` : `Log ${r.label} as done`}
                             style={[s.routineDoneBtn, { backgroundColor: done ? colors.sage + "18" : colors.primary }]}
                           >
-                            <Ionicons name={done ? "checkmark-circle" : "checkmark"} size={16} color={done ? colors.sage : "#fff"} />
+                            <Ionicons name={done ? "checkmark-circle" : "checkmark"} size={16} color={done ? colors.sage : colors.primaryForeground} />
                           </Pressable>
                         </View>
                       </View>
@@ -2081,7 +2081,7 @@ const s = StyleSheet.create({
   discoverInputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   discoverInput: { flex: 1, fontSize: 15, paddingVertical: 8 },
   discoverGo: { paddingHorizontal: 18, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, alignItems: "center", justifyContent: "center", minWidth: 64 },
-  discoverGoText: { color: "#fff", fontSize: 14 },
+  discoverGoText: { fontSize: 14 },
   discoverHint: { fontSize: 12, lineHeight: 17, marginTop: 10, marginBottom: 4 },
 
   sugRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },

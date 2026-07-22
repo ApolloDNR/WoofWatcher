@@ -1634,7 +1634,7 @@ export default function HomeScreen() {
               />
               {watchSignalCount > 0 ? (
                 <View style={[s.badge, { backgroundColor: colors.rose }]}>
-                  <Text style={[s.badgeText, { fontFamily: "Inter_700Bold" }]}>
+                  <Text style={[s.badgeText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
                     {watchSignalCount}
                   </Text>
                 </View>
@@ -2443,12 +2443,12 @@ export default function HomeScreen() {
               ]}
             >
               {openAloneSession ? (
-                <Ionicons name="home-outline" size={18} color="#FFFFFF" />
+                <Ionicons name="home-outline" size={18} color={colors.primaryForeground} />
               ) : openWalkSession ? (
                 <PixelIcon name="walk" size={21} />
               ) : (
                 <Text
-                  style={[s.presenceInitial, { fontFamily: "Inter_700Bold" }]}
+                  style={[s.presenceInitial, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}
                 >
                   {caregiver.charAt(0).toUpperCase()}
                 </Text>
@@ -3286,7 +3286,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 4,
   },
-  badgeText: { color: "#FFFFFF", fontSize: 10 },
+  badgeText: { fontSize: 10 },
   identityWrap: {
     flex: 1,
     minWidth: 0,
@@ -3514,7 +3514,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  presenceInitial: { color: "#FFFFFF", fontSize: 17 },
+  presenceInitial: { fontSize: 17 },
   presenceCopy: { flex: 1, minWidth: 0 },
   todayStoryCard: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,

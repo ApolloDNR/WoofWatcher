@@ -843,7 +843,7 @@ const s = StyleSheet.create({
   boundaryText: { flex: 1, fontSize: 11.5, lineHeight: 16 },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 13 },
   primaryBtn: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
-  primaryBtnText: { color: "#FFFFFF", fontSize: 13.5 },
+  primaryBtnText: { fontSize: 13.5 },
   secondaryBtn: { width: 50, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   questList: { gap: 10 },
   trailList: { gap: 4 },

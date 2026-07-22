@@ -2,3 +2,5 @@
 - [WoofWatcher AI routes](woofwatcher-ai-routes.md) — api-server AI uses Gemini (getGemini), NOT OpenAI; legacy openai-*.js modules 501 silently since OPENAI_API_KEY is unset.
 - [WoofWatcher mobile brand](woofwatcher-brand.md) — navy+copper "Premium Playful" identity; husky logo viewBox is intentionally extended below the potrace crop so the copper heart isn't clipped.
 - [WoofWatcher mobile sync](woofwatcher-sync.md) — config in versioned care-state doc, log as append-only rows; 409 duck-typed; Clerk auth wiring; MOBILE ONLY.
+- [WoofWatcher on-fill contrast](woofwatcher-contrast.md) — never white text/icons on theme fills; use colors.primaryForeground (dark primary is LIGHT green); white only on always-navy surfaces.
+- [WoofWatcher Clerk auth](woofwatcher-clerk.md) — Replit-managed Clerk provisioned; __DEV__ skips sign-in gate in preview on purpose; signed-out FAPI 401s are normal.

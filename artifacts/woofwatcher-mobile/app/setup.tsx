@@ -393,8 +393,8 @@ export default function SetupScreen() {
                       },
                     ]}
                   >
-                    <Ionicons name={item.icon} size={14} color={selected ? "#fff" : colors.primary} />
-                    <Text style={[s.typeText, { color: selected ? "#fff" : colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
+                    <Ionicons name={item.icon} size={14} color={selected ? colors.primaryForeground : colors.primary} />
+                    <Text style={[s.typeText, { color: selected ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
                   </Pressable>
                 );
               })}
@@ -428,7 +428,7 @@ export default function SetupScreen() {
                     ]}
                   >
                     <View style={[s.modeIcon, { backgroundColor: selected ? colors.primary : colors.primary + "16" }]}>
-                      <Ionicons name={item.icon} size={16} color={selected ? "#fff" : colors.primary} />
+                      <Ionicons name={item.icon} size={16} color={selected ? colors.primaryForeground : colors.primary} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[s.modeTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>

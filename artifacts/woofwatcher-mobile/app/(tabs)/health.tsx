@@ -1264,7 +1264,7 @@ export default function HealthScreen() {
                 { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
               ]}
             >
-              <Text style={[s.reviewPacketPrimaryText, { fontFamily: "Inter_700Bold" }]}>
+              <Text style={[s.reviewPacketPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
                 {healthReviewPacket.primaryAction.label}
               </Text>
             </Pressable>
@@ -1598,7 +1598,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  heroActionPrimaryText: { color: "#FFFFFF", fontSize: 13 },
+  heroActionPrimaryText: { fontSize: 13 },
   heroActionSecondary: {
     minWidth: 92,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -1856,7 +1856,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
   },
   reviewPacketPrimaryText: {
-    color: "#FFFFFF",
     fontSize: 13,
     textAlign: "center",
   },

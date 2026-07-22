@@ -1283,7 +1283,7 @@ export default function RecordsScreen() {
           <BoardCard tone="navy" padded={false} style={s.idCard} enter={3}>
             <View style={s.idCardTop}>
               <View style={[s.idBadge, { backgroundColor: colors.copper }]}>
-                <Ionicons name="paw" size={16} color="#FFFFFF" />
+                <Ionicons name="paw" size={16} color={colors.primaryForeground} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.idEyebrow, { color: colors.cream, fontFamily: "Inter_700Bold" }]}>WOOFWATCHER DOG ID</Text>
@@ -1531,8 +1531,8 @@ export default function RecordsScreen() {
                   accessibilityLabel="Log a weight from the Log tab"
                   style={({ pressed }) => [s.emptyAddBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                 >
-                  <Ionicons name="add" size={16} color="#FFFFFF" />
-                  <Text style={[s.emptyAddText, { fontFamily: "Inter_700Bold" }]}>Log weight</Text>
+                  <Ionicons name="add" size={16} color={colors.primaryForeground} />
+                  <Text style={[s.emptyAddText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Log weight</Text>
                 </Pressable>
               </View>
             )}
@@ -2450,7 +2450,7 @@ export default function RecordsScreen() {
                         },
                       ]}
                     >
-                      <Text style={[s.medFilterText, { color: active ? "#FFFFFF" : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      <Text style={[s.medFilterText, { color: active ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                         {option.label}
                       </Text>
                     </Pressable>
@@ -2891,8 +2891,8 @@ export default function RecordsScreen() {
                   onPress={() => openRecordForm("vaccine")}
                   style={({ pressed }) => [s.emptyAddBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                 >
-                  <Ionicons name="add" size={16} color="#FFFFFF" />
-                  <Text style={[s.emptyAddText, { fontFamily: "Inter_700Bold" }]}>Add first record</Text>
+                  <Ionicons name="add" size={16} color={colors.primaryForeground} />
+                  <Text style={[s.emptyAddText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Add first record</Text>
                 </Pressable>
               </View>
             ) : (
@@ -3029,8 +3029,8 @@ export default function RecordsScreen() {
                         },
                       ]}
                     >
-                      <Ionicons name={option.icon} size={14} color={active ? "#FFFFFF" : colors.primary} />
-                      <Text style={[s.recordTypeText, { color: active ? "#FFFFFF" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                      <Ionicons name={option.icon} size={14} color={active ? colors.primaryForeground : colors.primary} />
+                      <Text style={[s.recordTypeText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                         {option.label}
                       </Text>
                     </Pressable>
@@ -3620,7 +3620,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  emptyAddText: { color: "#FFFFFF", fontSize: 13.5 },
+  emptyAddText: { fontSize: 13.5 },
 
   highlightStrip: {
     flexDirection: "row",
@@ -3721,5 +3721,5 @@ const s = StyleSheet.create({
   sheetCancel: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   sheetCancelText: { fontSize: 15 },
   sheetSave: { flex: 2, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  sheetSaveText: { color: "#FFFFFF", fontSize: 15 },
+  sheetSaveText: { fontSize: 15 },
 });

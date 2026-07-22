@@ -2291,8 +2291,8 @@ export default function MoreScreen() {
                     { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 },
                   ]}
                 >
-                  <Ionicons name="construct-outline" size={15} color="#FFFFFF" />
-                  <Text style={[s.providerSetupButtonText, { fontFamily: "Inter_800ExtraBold" }]}>Edit Provider Plan</Text>
+                  <Ionicons name="construct-outline" size={15} color={colors.primaryForeground} />
+                  <Text style={[s.providerSetupButtonText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Edit Provider Plan</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -2303,8 +2303,8 @@ export default function MoreScreen() {
                     { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
                   ]}
                 >
-                  <Ionicons name="share-social-outline" size={15} color="#FFFFFF" />
-                  <Text style={[s.providerSetupButtonText, { fontFamily: "Inter_800ExtraBold" }]}>Share Provider Plan</Text>
+                  <Ionicons name="share-social-outline" size={15} color={colors.primaryForeground} />
+                  <Text style={[s.providerSetupButtonText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Share Provider Plan</Text>
                 </Pressable>
               </View>
             </View>
@@ -2486,8 +2486,8 @@ export default function MoreScreen() {
                       { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
                     ]}
                   >
-                    <Ionicons name="share-social-outline" size={15} color="#FFFFFF" />
-                    <Text style={[s.nativeQaCaptureShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share QA Plan</Text>
+                    <Ionicons name="share-social-outline" size={15} color={colors.primaryForeground} />
+                    <Text style={[s.nativeQaCaptureShareText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Share QA Plan</Text>
                   </Pressable>
                   {nativeQaCaptureNeedsTuneTarget ? (
                     <Pressable
@@ -2707,9 +2707,9 @@ export default function MoreScreen() {
                     <Ionicons
                       name={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
                       size={15}
-                      color="#FFFFFF"
+                      color={colors.primaryForeground}
                     />
-                    <Text style={[s.betaNextActionButtonText, { fontFamily: "Inter_800ExtraBold" }]}>
+                    <Text style={[s.betaNextActionButtonText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>
                       {launchReleasePacket.betaShipStatus === "qa-first" ? "Open QA Cockpit" : "Share Beta Packet"}
                     </Text>
                   </Pressable>
@@ -2761,8 +2761,8 @@ export default function MoreScreen() {
                 { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
               ]}
             >
-              <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
-              <Text style={[s.launchShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share Launch Packet</Text>
+              <Ionicons name="share-social-outline" size={16} color={colors.primaryForeground} />
+              <Text style={[s.launchShareText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Share Launch Packet</Text>
             </Pressable>
             <View style={[s.launchPacket, { backgroundColor: storeSubmissionTone + "10", borderColor: storeSubmissionTone + "33" }]}>
               <View style={[s.launchScore, { backgroundColor: storeSubmissionTone + "18" }]}>
@@ -2791,8 +2791,8 @@ export default function MoreScreen() {
                 { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
               ]}
             >
-              <Ionicons name="storefront-outline" size={16} color="#FFFFFF" />
-              <Text style={[s.launchShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share Store Packet</Text>
+              <Ionicons name="storefront-outline" size={16} color={colors.primaryForeground} />
+              <Text style={[s.launchShareText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Share Store Packet</Text>
             </Pressable>
           </BoardCard>
 
@@ -2812,15 +2812,15 @@ export default function MoreScreen() {
               style={s.premiumCard}
             >
               <View style={s.premiumIcon}>
-                <Ionicons name="diamond-outline" size={19} color="#FFFFFF" />
+                <Ionicons name="diamond-outline" size={19} color={colors.primaryForeground} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.premiumTitle, { fontFamily: DISPLAY_SEMI }]}>WoofWatcher Plus</Text>
-                <Text style={[s.premiumSub, { fontFamily: "Inter_500Medium" }]}>
+                <Text style={[s.premiumTitle, { color: colors.primaryForeground, fontFamily: DISPLAY_SEMI }]}>WoofWatcher Plus</Text>
+                <Text style={[s.premiumSub, { color: colors.primaryForeground, opacity: 0.82, fontFamily: "Inter_500Medium" }]}>
                   Advanced meals, Health Watch, reports, records, and household care sync.
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+              <Ionicons name="chevron-forward" size={20} color={colors.primaryForeground} />
             </LinearGradient>
           </Pressable>
             </>
@@ -3791,7 +3791,7 @@ export default function MoreScreen() {
                       onPress={() => { Haptics.selectionAsync(); setPWeightUnit(u); }}
                       style={[s.unitPill, { backgroundColor: pWeightUnit === u ? colors.primary : colors.background, borderColor: pWeightUnit === u ? colors.primary : colors.border }]}
                     >
-                      <Text style={[s.unitText, { color: pWeightUnit === u ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{u}</Text>
+                      <Text style={[s.unitText, { color: pWeightUnit === u ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{u}</Text>
                     </Pressable>
                   ))}
                 </View>
@@ -4249,7 +4249,7 @@ const s = StyleSheet.create({
     gap: 8,
     marginTop: 13,
   },
-  intelligenceActionText: { color: "#FFFFFF", fontSize: 13.5 },
+  intelligenceActionText: { fontSize: 13.5 },
   launchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   launchTile: {
     flexGrow: 1,
@@ -4369,7 +4369,7 @@ const s = StyleSheet.create({
     gap: 7,
     paddingHorizontal: 9,
   },
-  providerSetupButtonText: { color: "#FFFFFF", fontSize: 11.8 },
+  providerSetupButtonText: { fontSize: 11.8 },
   nativeQaCapturePanel: {
     marginTop: 12,
     borderRadius: 8,
@@ -4422,7 +4422,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
   },
-  nativeQaCaptureShareText: { color: "#FFFFFF", fontSize: 12.5 },
+  nativeQaCaptureShareText: { fontSize: 12.5 },
   nativeQaCaptureFixBrief: {
     flex: 1,
     minWidth: 132,
@@ -4532,7 +4532,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
   },
-  betaNextActionButtonText: { color: "#FFFFFF", fontSize: 12.5 },
+  betaNextActionButtonText: { fontSize: 12.5 },
   betaHandoffShareButton: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
@@ -4553,7 +4553,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
   },
-  launchShareText: { color: "#FFFFFF", fontSize: 13 },
+  launchShareText: { fontSize: 13 },
 
   listCard: {
     borderRadius: 22,
@@ -4597,7 +4597,7 @@ const s = StyleSheet.create({
   passStatus: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
   passStatusText: { fontSize: 10.5, textTransform: "capitalize" },
   passAction: { minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 8, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, marginTop: 13 },
-  passActionText: { color: "#FFFFFF", fontSize: 13.5 },
+  passActionText: { fontSize: 13.5 },
   passKindGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8, marginBottom: 4 },
   passKind: { flexGrow: 1, flexBasis: "47%", minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
   passKindText: { fontSize: 12.5 },
@@ -4700,8 +4700,8 @@ const s = StyleSheet.create({
   statusEnergyDot: { width: 8, height: 8, borderRadius: 4 },
   premiumCard: { flexDirection: "row", alignItems: "center", gap: 13, borderRadius: 22, padding: 16, marginTop: 12 },
   premiumIcon: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.15)" },
-  premiumTitle: { color: "#FFFFFF", fontSize: 17, letterSpacing: 0 },
-  premiumSub: { color: "rgba(255,255,255,0.78)", fontSize: 12.5, lineHeight: 18, marginTop: 2 },
+  premiumTitle: { fontSize: 17, letterSpacing: 0 },
+  premiumSub: { fontSize: 12.5, lineHeight: 18, marginTop: 2 },
 
   notice: { flexDirection: "row", gap: 10, borderRadius: 18, borderWidth: 1, padding: 16, marginTop: 24 },
   noticeText: { flex: 1, fontSize: 13, lineHeight: 19 },

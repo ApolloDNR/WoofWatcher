@@ -373,8 +373,8 @@ export default function PrivacyScreen() {
             accessibilityLabel="Export WoofWatcher care data"
             style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
           >
-            <Ionicons name="download-outline" size={18} color="#FFFFFF" />
-            <Text style={[s.primaryText, { fontFamily: "Inter_700Bold" }]}>Export care data</Text>
+            <Ionicons name="download-outline" size={18} color={colors.primaryForeground} />
+            <Text style={[s.primaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Export care data</Text>
           </Pressable>
           {/* The email-based "Deletion request" only makes sense once a
               provider account exists. In the local-first build there is no
@@ -661,7 +661,7 @@ export default function PrivacyScreen() {
                         },
                       ]}
                     >
-                      <Text style={[s.confirmPrimaryText, { fontFamily: "Inter_800ExtraBold" }]}>
+                      <Text style={[s.confirmPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>
                         {erasing ? "Deleting..." : eraseSteps[eraseStage].confirmLabel}
                       </Text>
                     </Pressable>
@@ -931,7 +931,7 @@ function PolicyToggle({
       ]}
     >
       <View style={[s.policyCheck, { backgroundColor: value ? colors.sage : colors.card, borderColor: value ? colors.sage : colors.border }]}>
-        <Ionicons name={value ? "checkmark" : "ellipse-outline"} size={15} color={value ? "#FFFFFF" : colors.mutedForeground} />
+        <Ionicons name={value ? "checkmark" : "ellipse-outline"} size={15} color={value ? colors.primaryForeground : colors.mutedForeground} />
       </View>
       <Text style={[s.policyLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{label}</Text>
     </Pressable>
@@ -971,7 +971,7 @@ const s = StyleSheet.create({
   emptyQueue: { fontSize: 12.5, lineHeight: 18 },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 14 },
   primaryBtn: { flex: 1.2, height: 52, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
-  primaryText: { color: "#FFFFFF", fontSize: 14 },
+  primaryText: { fontSize: 14 },
   secondaryBtn: { flex: 1, height: 52, borderRadius: 17, borderWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
   secondaryText: { fontSize: 13.5 },
   legalRow: {
@@ -1095,7 +1095,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     marginTop: 0,
   },
-  confirmPrimaryText: { color: "#FFFFFF", fontSize: 13 },
+  confirmPrimaryText: { fontSize: 13 },
   confirmDoneBtn: { flex: 0, marginTop: 18 },
   launchModal: {
     borderTopLeftRadius: 28,
@@ -1128,5 +1128,5 @@ const s = StyleSheet.create({
   modalSecondaryBtn: { flex: 1, minHeight: 50, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   modalSecondaryText: { fontSize: 13 },
   modalPrimaryBtn: { flex: 1.2, minHeight: 50, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  modalPrimaryText: { color: "#FFFFFF", fontSize: 13 },
+  modalPrimaryText: { fontSize: 13 },
 });
