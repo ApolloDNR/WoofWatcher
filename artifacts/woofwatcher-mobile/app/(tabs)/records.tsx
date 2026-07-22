@@ -1164,7 +1164,7 @@ export default function RecordsScreen() {
           </BoardCard>
 
           {/* Care highlights strip */}
-          <View style={[s.highlightStrip, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <View style={[s.highlightStrip, { backgroundColor: colors.card, boxShadow: `0 6px 14px ${colors.primary}12` }]}>
             {[
               { value: streak > 0 ? `${streak}d` : "--", label: "Streak", color: streak >= 7 ? colors.sage : streak > 0 ? colors.primary : colors.mutedForeground },
               { value: String(report.total), label: `${periodLabel} entries`, color: colors.primary },
@@ -2796,7 +2796,7 @@ export default function RecordsScreen() {
                       Haptics.selectionAsync();
                       setPeriod(p.key);
                     }}
-                    style={[s.segPill, active && { backgroundColor: colors.card, shadowColor: colors.primary }]}
+                    style={[s.segPill, active && { backgroundColor: colors.card, boxShadow: `0 2px 4px ${colors.primary}14` }]}
                   >
                     <Text style={[s.segText, { color: active ? colors.foreground : colors.mutedForeground, fontFamily: active ? "Inter_700Bold" : "Inter_500Medium" }]}>
                       {p.label}
@@ -3159,11 +3159,7 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(255,249,239,0.96)",
     paddingHorizontal: 10,
     paddingVertical: 8,
-    shadowColor: "#071523",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    elevation: 4,
+    boxShadow: "0 5px 10px #07152329",
   },
   // Quiet sage caps kicker (mockup parity: no copper/orange kickers).
   recordsCredentialKicker: {
@@ -3236,11 +3232,7 @@ const s = StyleSheet.create({
     borderRadius: 17,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    shadowColor: "#071523",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
-    shadowRadius: 16,
-    elevation: 5,
+    boxShadow: "0 8px 16px #07152324",
   },
   recordsCredentialIdBadge: {
     width: 38,
@@ -3348,10 +3340,7 @@ const s = StyleSheet.create({
   idCard: {
     borderRadius: 22,
     padding: 18,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.18,
-    shadowRadius: 22,
-    elevation: 5,
+    boxShadow: "0 10px 22px #0715232E",
   },
   idCardTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   idBadge: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
@@ -3626,10 +3615,6 @@ const s = StyleSheet.create({
     flexDirection: "row",
     borderRadius: 22,
     marginBottom: 0,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    elevation: 2,
     overflow: "hidden",
   },
   highlightCell: { flex: 1, alignItems: "center", paddingVertical: 18, paddingHorizontal: 6 },
@@ -3658,9 +3643,6 @@ const s = StyleSheet.create({
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
   },
   segText: { fontSize: 13.5 },
   reportGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },

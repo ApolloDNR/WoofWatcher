@@ -1773,7 +1773,7 @@ export default function MoreScreen() {
           )}
 
           {/* Profile header card */}
-          <View style={[s.profileCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+          <View style={[s.profileCard, { backgroundColor: colors.card, boxShadow: `0 10px 24px ${colors.primary}1F` }]}>
             <LinearGradient
               colors={[colors.forest, colors.forestBright]}
               start={{ x: 0, y: 0 }}
@@ -1827,7 +1827,7 @@ export default function MoreScreen() {
           </View>
 
           {/* Today's status strip */}
-          <View style={[s.statusStrip, { backgroundColor: colors.card, shadowColor: colors.primary, marginTop: 12 }]}>
+          <View style={[s.statusStrip, { backgroundColor: colors.card, boxShadow: `0 6px 14px ${colors.primary}12`, marginTop: 12 }]}>
             <View style={[s.statusCell, { borderRightWidth: 1, borderRightColor: colors.border }]}>
               <Text style={[s.statusValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{status.meta.label}</Text>
               <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Mood</Text>
@@ -3286,7 +3286,7 @@ export default function MoreScreen() {
           </BoardCard>
 
           {/* Household actions */}
-          <View style={[s.listCard, { backgroundColor: colors.card, shadowColor: colors.primary, marginTop: 12 }]}>
+          <View style={[s.listCard, { backgroundColor: colors.card, boxShadow: `0 6px 14px ${colors.primary}12`, marginTop: 12 }]}>
             <Pressable
               onPress={() => {
                 Haptics.selectionAsync();
@@ -4068,10 +4068,6 @@ const s = StyleSheet.create({
   profileCard: {
     borderRadius: 26,
     overflow: "hidden",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 5,
   },
   profileBanner: { height: 72, width: "100%" },
   profileAvatarWrap: { alignItems: "center", marginTop: -38 },
@@ -4082,11 +4078,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 4,
-    shadowColor: "#0F1F33",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 3,
+    boxShadow: "0 4px 10px #0F1F331F",
     overflow: "hidden",
   },
   profileAvatarImg: { width: "100%", height: "100%", borderRadius: 20 },
@@ -4558,10 +4550,6 @@ const s = StyleSheet.create({
   listCard: {
     borderRadius: 22,
     paddingHorizontal: 16,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    elevation: 2,
   },
   teamRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 },
   teamAvatar: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
@@ -4651,11 +4639,7 @@ const s = StyleSheet.create({
   modalCard: {
     borderRadius: 26,
     padding: 24,
-    shadowColor: "#0F1F33",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 30,
-    elevation: 8,
+    boxShadow: "0 12px 30px #0F1F3333",
   },
   modalIcon: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 14 },
   modalTitle: { fontSize: 19, letterSpacing: -0.2 },
@@ -4688,10 +4672,6 @@ const s = StyleSheet.create({
     flexDirection: "row",
     borderRadius: 22,
     overflow: "hidden",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    elevation: 2,
   },
   statusCell: { flex: 1, alignItems: "center", paddingVertical: 16, paddingHorizontal: 6 },
   statusValue: { fontSize: 16, letterSpacing: -0.2, textTransform: "capitalize" },
@@ -4716,11 +4696,7 @@ const s = StyleSheet.create({
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#0F1F33",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 2,
+    boxShadow: "0 2px 6px #0F1F331A",
   },
   profileModal: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", paddingTop: 14 },
   modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
