@@ -791,7 +791,7 @@ export default function HealthScreen() {
                 </Text>
               </View>
             </View>
-            <View pointerEvents="none" style={s.healthStageSprite}>
+            <View style={[s.healthStageSprite, { pointerEvents: "none" }]}>
               <View style={s.healthStageSpriteShadow} />
               <SpriteSheetPlayer
                 asset={HEALTH_WATCH_STAGE_SPRITE}

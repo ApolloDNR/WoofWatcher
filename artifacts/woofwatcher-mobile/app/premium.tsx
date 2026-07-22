@@ -175,7 +175,7 @@ function PremiumScreenBody() {
                 </View>
               </View>
 
-              <View pointerEvents="none" style={s.premiumValueSprite}>
+              <View style={[s.premiumValueSprite, { pointerEvents: "none" }]}>
                 <View style={s.premiumValueSpriteShadow} />
                 <SpriteSheetPlayer
                   asset={PREMIUM_VALUE_STAGE_SPRITE}

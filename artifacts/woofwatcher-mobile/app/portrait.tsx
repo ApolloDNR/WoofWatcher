@@ -572,8 +572,7 @@ export default function PortraitScreen() {
               <View style={[s.scanLine, { backgroundColor: "#FFF9EF" }]} />
             </Animated.View>
             <Animated.View
-              pointerEvents="none"
-              style={[s.reticle, { opacity: reticleOpacity }]}
+              style={[s.reticle, { opacity: reticleOpacity }, { pointerEvents: "none" }]}
             >
               <View style={[s.corner, s.cornerTL]} />
               <View style={[s.corner, s.cornerTR]} />
@@ -659,8 +658,8 @@ export default function PortraitScreen() {
                     style={[
                       s.templateMoodAura,
                       { backgroundColor: previewMood.auraColor },
+                      { pointerEvents: "none" },
                     ]}
-                    pointerEvents="none"
                   />
                   {!previewIsSprite &&
                   previewAccessoryLayers.some(
@@ -672,10 +671,9 @@ export default function PortraitScreen() {
                         <Image
                           key={layer.id}
                           source={layer.source}
-                          style={[s.templateAccessoryLayer, pixelImageStyle]}
+                          style={[s.templateAccessoryLayer, pixelImageStyle, { pointerEvents: "none" }] as any}
                           contentFit="contain"
                           transition={150}
-                          pointerEvents="none"
                         />
                       ))
                   ) : !previewIsSprite &&
@@ -689,17 +687,16 @@ export default function PortraitScreen() {
                               (layer) => layer.kind === "bed",
                             )?.tone ?? colors.stone,
                         },
+                        { pointerEvents: "none" },
                       ]}
-                      pointerEvents="none"
                     />
                   ) : null}
                   <LinearGradient
                     colors={["rgba(255,249,239,0.08)", "rgba(8,26,42,0.16)"]}
-                    style={StyleSheet.absoluteFill}
-                    pointerEvents="none"
+                    style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]}
                   />
-                  <View style={s.templatePixelFloor} pointerEvents="none" />
-                  <View style={s.templatePixelLines} pointerEvents="none" />
+                  <View style={[s.templatePixelFloor, { pointerEvents: "none" }]} />
+                  <View style={[s.templatePixelLines, { pointerEvents: "none" }]} />
                   <Animated.View
                     style={[
                       s.templateHeroDogWrap,
@@ -729,8 +726,8 @@ export default function PortraitScreen() {
                               backgroundColor: colors.sage,
                               borderColor: colors.forest,
                             },
+                            { pointerEvents: "none" },
                           ]}
-                          pointerEvents="none"
                         />
                         <SpriteSheetPlayer
                           asset={previewSpriteAsset}
@@ -758,10 +755,10 @@ export default function PortraitScreen() {
                                 style={[
                                   s.templateAccessoryLayer,
                                   pixelImageStyle,
-                                ]}
+                                  { pointerEvents: "none" },
+                                ] as any}
                                 contentFit="contain"
                                 transition={150}
-                                pointerEvents="none"
                               />
                             );
                           }
@@ -773,8 +770,8 @@ export default function PortraitScreen() {
                                   style={[
                                     s.templateBandana,
                                     { backgroundColor: layer.tone },
+                                    { pointerEvents: "none" },
                                   ]}
-                                  pointerEvents="none"
                                 />
                               );
                             case "collar":
@@ -784,8 +781,8 @@ export default function PortraitScreen() {
                                   style={[
                                     s.templateCollar,
                                     { borderColor: layer.tone },
+                                    { pointerEvents: "none" },
                                   ]}
-                                  pointerEvents="none"
                                 />
                               );
                             case "hat":
@@ -795,8 +792,8 @@ export default function PortraitScreen() {
                                   style={[
                                     s.templateHatWrap,
                                     { borderBottomColor: layer.tone },
+                                    { pointerEvents: "none" },
                                   ]}
-                                  pointerEvents="none"
                                 >
                                   <View
                                     style={[
@@ -813,8 +810,8 @@ export default function PortraitScreen() {
                                   style={[
                                     s.templateMask,
                                     { backgroundColor: layer.tone },
+                                    { pointerEvents: "none" },
                                   ]}
-                                  pointerEvents="none"
                                 />
                               );
                             case "vest":
@@ -824,16 +821,15 @@ export default function PortraitScreen() {
                                   style={[
                                     s.templateVest,
                                     { backgroundColor: layer.tone },
+                                    { pointerEvents: "none" },
                                   ]}
-                                  pointerEvents="none"
                                 />
                               );
                             case "sparkles":
                               return (
                                 <View
                                   key={layer.id}
-                                  style={s.templateSparkleCluster}
-                                  pointerEvents="none"
+                                  style={[s.templateSparkleCluster, { pointerEvents: "none" }]}
                                 >
                                   <View
                                     style={[
@@ -908,8 +904,7 @@ export default function PortraitScreen() {
             </View>
             <LinearGradient
               colors={["transparent", "rgba(8,26,42,0.84)"]}
-              style={s.savedScrim}
-              pointerEvents="none"
+              style={[s.savedScrim, { pointerEvents: "none" }]}
             />
             <View style={s.heroCopy}>
               <View
@@ -1871,7 +1866,6 @@ export default function PortraitScreen() {
                         transition={150}
                       />
                       <View
-                        pointerEvents="none"
                         style={[
                           s.moodWash,
                           {
@@ -1885,6 +1879,7 @@ export default function PortraitScreen() {
                                     ? "rgba(109,163,111,0.18)"
                                     : "rgba(216,168,82,0.12)",
                           },
+                          { pointerEvents: "none" },
                         ]}
                       />
                       <View

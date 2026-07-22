@@ -405,7 +405,7 @@ export default function WoofGuideScreen() {
                       </View>
                     </View>
 
-                    <View pointerEvents="none" style={s.guideSprite}>
+                    <View style={[s.guideSprite, { pointerEvents: "none" }]}>
                       <View style={s.guideSpriteShadow} />
                       <SpriteSheetPlayer
                         asset={WOOFGUIDE_STAGE_SPRITE}

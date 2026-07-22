@@ -316,18 +316,16 @@ export default function ProfileScreen() {
                 : ["rgba(26,23,20,0.34)", "rgba(26,23,20,0.06)", "transparent"]
             }
             locations={[0, 0.4, 0.7]}
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
+            style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]}
           />
           <LinearGradient
             colors={["transparent", colors.background]}
             locations={colors.isDark ? [0.55, 1] : [0.74, 1]}
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
+            style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]}
           />
           <View style={[s.heroBar, { paddingTop: heroTopPadding }]}>
             <HeroChip icon="chevron-back" accessibilityLabel="Back" onPress={goBack} />
-            <View style={s.heroTitleWrap} pointerEvents="none">
+            <View style={[s.heroTitleWrap, { pointerEvents: "none" }]}>
               {/* sageSoft is a dark surface token in dark mode (#233C2E) and is
                   illegible on the night hero, so use the bright cream token there;
                   both scrim-safe over the dark top gradient. */}

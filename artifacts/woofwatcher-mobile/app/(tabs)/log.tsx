@@ -2492,7 +2492,7 @@ export default function LogScreen() {
                 </View>
               </View>
 
-              <View pointerEvents="none" style={s.logCommandSprite}>
+              <View style={[s.logCommandSprite, { pointerEvents: "none" }]}>
                 <View style={s.logCommandSpriteShadow} />
                 <SpriteSheetPlayer
                   asset={LOG_COMMAND_STAGE_SPRITE}
@@ -2697,8 +2697,7 @@ export default function LogScreen() {
                 (_, fillerIndex) => (
                   <View
                     key={`launcher-filler-${fillerIndex}`}
-                    pointerEvents="none"
-                    style={s.launcherTileGhost}
+                    style={[s.launcherTileGhost, { pointerEvents: "none" }]}
                   />
                 ),
               )}

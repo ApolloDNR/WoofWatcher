@@ -262,8 +262,7 @@ export function TrailMap({
         <Svg
           width={size.width}
           height={size.height}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]}
         >
           {/* Parchment ground, then soft nature, then the built world. */}
           <Rect x={0} y={0} width={size.width} height={size.height} fill={STORYBOOK.ground} />
@@ -374,8 +373,7 @@ export function TrailMap({
         <Svg
           width={size.width}
           height={size.height}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]}
         >
           <Polyline
             points={projected.polyline}

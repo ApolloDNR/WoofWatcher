@@ -358,7 +358,7 @@ export default function AdventureScreen() {
             <Text style={[s.heroSpeechSub, { fontFamily: "Inter_700Bold" }]}>{availableQuest.title}</Text>
             <View style={s.heroSpeechTail} />
           </View>
-          <View pointerEvents="none" style={s.heroSpriteStage}>
+          <View style={[s.heroSpriteStage, { pointerEvents: "none" }]}>
             <View style={s.heroSpriteShadow} />
             <SpriteSheetPlayer
               asset={ADVENTURE_STAGE_SPRITE}

@@ -1084,7 +1084,7 @@ export default function RecordsScreen() {
                 </PressScale>
               </View>
 
-              <View pointerEvents="none" style={s.recordsCredentialSprite}>
+              <View style={[s.recordsCredentialSprite, { pointerEvents: "none" }]}>
                 <View style={s.recordsCredentialSpriteShadow} />
                 <SpriteSheetPlayer
                   asset={RECORDS_CREDENTIAL_STAGE_SPRITE}

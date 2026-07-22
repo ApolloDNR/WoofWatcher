@@ -112,7 +112,7 @@ function AxisLabels({ buckets, labelStride }: { buckets: TrendBucket[]; labelStr
               : styles.axisLabelCenter;
         return (
           <View key={i} style={styles.axisCell}>
-            <View style={[styles.axisLabelAnchor, anchorStyle]} pointerEvents="none">
+            <View style={[styles.axisLabelAnchor, anchorStyle, { pointerEvents: "none" }]}>
               {label}
             </View>
           </View>
