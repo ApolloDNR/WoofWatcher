@@ -421,10 +421,7 @@ export function BoardCard({
           backgroundColor,
           borderColor,
           borderRadius: colors.pixelUi.radius.card,
-          shadowColor: colors.navy,
-          shadowOpacity: colors.pixelUi.shadow.opacity,
-          shadowRadius: colors.pixelUi.shadow.radius,
-          shadowOffset: { width: 0, height: colors.pixelUi.shadow.y },
+          boxShadow: `0 ${colors.pixelUi.shadow.y}px ${colors.pixelUi.shadow.radius}px ${colors.navy}0F`,
         },
         style,
       ]}

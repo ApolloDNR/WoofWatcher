@@ -242,10 +242,7 @@ const styles = StyleSheet.create({
   mote: {
     position: "absolute",
     bottom: "30%",
-    shadowColor: "#FFFFFF",
-    shadowOpacity: 0.7,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 0 },
+    boxShadow: "0 0 6px rgba(255, 255, 255, 0.7)",
   },
   barkWrap: {
     position: "absolute",
@@ -259,11 +256,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 18,
-    shadowColor: "#0F1F33",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.16,
-    shadowRadius: 12,
-    elevation: 4,
+    boxShadow: "0 6px 12px rgba(15, 31, 51, 0.16)",
   },
   barkBubbleActive: { backgroundColor: "#2E5846" },
   barkTail: {
