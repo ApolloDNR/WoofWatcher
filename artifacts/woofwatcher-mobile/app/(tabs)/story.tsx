@@ -13,15 +13,7 @@ import {
   View,
   type ViewStyle,
 } from "react-native";
-import Animated, {
-  cancelAnimation,
-  Easing,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   deriveAdventureMode,
@@ -184,40 +176,6 @@ type WalkJournalStory = {
   photoUri?: string;
 };
 
-/**
- * Gentle idle pulse for the adventure map's quest-marker card: a 2.5s
- * opacity/scale breathe (1.0 -> 1.01, opacity dips to 0.96) in the
- * LivingPhoenixRoom reanimated style. Only the marker moves - the map art
- * itself stays perfectly still - and the amplitude stays tiny because the
- * app has no reduced-motion setting yet.
- */
-function QuestMarkerPulse({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
-}) {
-  const reduced = useReducedMotion();
-  const pulse = useSharedValue(0);
-
-  useEffect(() => {
-    if (reduced) return; // Reduce Motion: hold the marker steady, no pulsing loop
-    pulse.value = withRepeat(
-      withTiming(1, { duration: 1250, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    );
-    return () => cancelAnimation(pulse);
-  }, [pulse, reduced]);
-
-  const pulseStyle = useAnimatedStyle(() => ({
-    opacity: 1 - pulse.value * 0.04,
-    transform: [{ scale: 1 + pulse.value * 0.01 }],
-  }));
-
-  return <Animated.View style={[style, pulseStyle]}>{children}</Animated.View>;
-}
 
 export default function StoryScreen() {
   const colors = useColors();
@@ -1264,13 +1222,6 @@ const s = StyleSheet.create({
   statPairValue: { fontSize: 16, marginTop: 3 },
   statPairLabel: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0 },
   statPairDetail: { fontSize: 10.5, lineHeight: 14 },
-  mapCard: {
-    borderRadius: 22,
-    borderWidth: 1,
-    overflow: "hidden",
-    marginBottom: 12,
-    aspectRatio: 5 / 4,
-  },
   trailHeroPress: { marginBottom: 12 },
   trailHeroMap: { borderRadius: 22 },
   trailHeroChip: {
@@ -1305,29 +1256,6 @@ const s = StyleSheet.create({
     paddingVertical: 6,
   },
   trailStyleToggleText: { fontSize: 11.5 },
-  mapOverlayCard: {
-    position: "absolute",
-    right: 12,
-    bottom: 12,
-    maxWidth: "78%",
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  mapOverlayCopy: { flexShrink: 1, minWidth: 0 },
-  mapOverlayTitle: { fontSize: 13.5 },
-  mapOverlayMeta: { fontSize: 11, marginTop: 1 },
-  mapOverlayState: { fontSize: 11, marginTop: 3 },
-  mapOverlayThumb: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
   trailList: { gap: 4, marginBottom: 2 },
   trailRow: { flexDirection: "row", alignItems: "center", gap: 11, minHeight: 56, paddingVertical: 6 },
   trailThumb: { width: 48, height: 48, borderRadius: 12, borderWidth: 1 },

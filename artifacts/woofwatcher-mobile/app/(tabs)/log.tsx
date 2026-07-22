@@ -3150,7 +3150,7 @@ export default function LogScreen() {
                     style={[
                       s.outboxButtonText,
                       {
-                        color: syncOutbox.retryable > 0 ? "#FFFFFF" : colors.mutedForeground,
+                        color: syncOutbox.retryable > 0 ? colors.primaryForeground : colors.mutedForeground,
                         fontFamily: "Inter_700Bold",
                       },
                     ]}

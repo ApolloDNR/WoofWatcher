@@ -925,20 +925,6 @@ export default function CalendarScreen() {
             }}
           />
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Open month calendar"
-            accessibilityHint="Shows a month grid of logged care and lets you pick any day."
-            onPress={() => router.push("/calendar-month" as never)}
-            style={({ pressed }) => [s.monthViewLink, { opacity: pressed ? 0.6 : 1 }]}
-          >
-            <Ionicons name="calendar-outline" size={15} color={colors.sage} />
-            <Text style={[s.monthViewText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-              Month view
-            </Text>
-            <Ionicons name="chevron-forward" size={13} color={colors.sage} />
-          </Pressable>
-
           <BoardCard enter={0} style={s.commandDeckCard}>
             <View style={s.commandDeckStage} testID="plans-command-pixel-stage">
               <View style={s.commandDeckTop}>
@@ -2038,9 +2024,9 @@ export default function CalendarScreen() {
                     {t.key === "potty" ? (
                       <PixelIcon name="pee" size={14} />
                     ) : (
-                      <PulseIcon name={t.icon} size={14} color={active ? "#fff" : undefined} />
+                      <PulseIcon name={t.icon} size={14} color={active ? colors.primaryForeground : undefined} />
                     )}
-                    <Text style={[s.typeChipText, { color: active ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
+                    <Text style={[s.typeChipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
                   </Pressable>
                 );
               })}
@@ -2085,7 +2071,7 @@ export default function CalendarScreen() {
                     onPress={() => { Haptics.selectionAsync(); setRTime(t); setRTimeError(null); }}
                     style={[s.ownerQuickChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}
                   >
-                    <Text style={[s.ownerQuickText, { color: active ? "#fff" : colors.foreground, fontFamily: "Inter_700Bold" }]}>{t}</Text>
+                    <Text style={[s.ownerQuickText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" }]}>{t}</Text>
                   </Pressable>
                 );
               })}
@@ -2101,7 +2087,7 @@ export default function CalendarScreen() {
                       onPress={() => { Haptics.selectionAsync(); setROwner(caregiver.name); }}
                       style={[s.ownerQuickChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}
                     >
-                      <Text style={[s.ownerQuickText, { color: active ? "#fff" : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      <Text style={[s.ownerQuickText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" }]}>
                         {caregiver.name}
                       </Text>
                     </Pressable>
@@ -2166,8 +2152,8 @@ export default function CalendarScreen() {
                 const active = evType === t.key;
                 return (
                   <Pressable key={t.key} onPress={() => { Haptics.selectionAsync(); setEvType(t.key); }} style={[s.typeChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}>
-                    <Ionicons name={EVENT_ICON[t.key] ?? "calendar"} size={14} color={active ? "#fff" : colors.mutedForeground} />
-                    <Text style={[s.typeChipText, { color: active ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
+                    <Ionicons name={EVENT_ICON[t.key] ?? "calendar"} size={14} color={active ? colors.primaryForeground : colors.mutedForeground} />
+                    <Text style={[s.typeChipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
                   </Pressable>
                 );
               })}

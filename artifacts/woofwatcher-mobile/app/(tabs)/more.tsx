@@ -3444,7 +3444,7 @@ export default function MoreScreen() {
               contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
               bounces={false}
             >
-              <View style={s.modalHandle} />
+              <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Diet Profile</Text>
 
               {[
@@ -3536,7 +3536,7 @@ export default function MoreScreen() {
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setPetRosterOpen(false)}>
           <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
             <View style={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}>
-              <View style={s.modalHandle} />
+              <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Add future dog</Text>
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 This saves a planned slot for a future dog. Multi-dog logs, routines, and records are coming soon - everything stays on this device for now.
@@ -3577,7 +3577,7 @@ export default function MoreScreen() {
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setAccessPassOpen(false)}>
           <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
             <View style={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}>
-              <View style={s.modalHandle} />
+              <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Create Access Pass</Text>
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 Save helper permissions as a local draft. Remote sharing is coming soon - passes stay on this device for now.
@@ -3644,7 +3644,7 @@ export default function MoreScreen() {
               contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
               bounces={false}
             >
-              <View style={s.modalHandle} />
+              <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Provider Launch Setup</Text>
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 Mark only production providers you have actually configured. This updates Launch Readiness but does not approve App Store or Play Store submission.
@@ -3760,7 +3760,7 @@ export default function MoreScreen() {
               contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
               bounces={false}
             >
-            <View style={s.modalHandle} />
+            <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
             <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Dog Profile</Text>
 
             <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NAME</Text>
@@ -4734,7 +4734,7 @@ const s = StyleSheet.create({
     elevation: 2,
   },
   profileModal: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", paddingTop: 14 },
-  modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
+  modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, marginBottom: 16 },
   sheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
   sheetSubtitle: { fontSize: 12.5, lineHeight: 18, marginBottom: 2 },
   providerStatusGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 2 },

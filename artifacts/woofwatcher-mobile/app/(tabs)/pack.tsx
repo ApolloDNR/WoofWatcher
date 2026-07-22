@@ -993,7 +993,7 @@ export default function PackScreen() {
                 )
               )}
 
-              {travelSupplies.length > 0 ? (
+              {travelSupplies.length > 0 || travelBag.phase !== "packing" ? (
                 <View style={s.travelBagActions}>
                   {travelBag.phase === "packing" ? (
                     <BoardActionButton
