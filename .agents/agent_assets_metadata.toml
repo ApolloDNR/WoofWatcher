@@ -203,3 +203,9 @@ id = "8lNB6wp9dHxr2KYTzIKli"
 uri = "file://artifacts/mockup-sandbox/public/images/phoenix-expressions.png"
 type = "image"
 title = "Phoenix — 6 painted expressions (status-driven) matching Option C"
+
+[[outputs]]
+id = "8iZYq1qDF32gqkA6_0brU"
+uri = "file://.local/tasks/all-tasks-summary.md"
+type = "text"
+title = "WoofWatcher — All Project Tasks"
