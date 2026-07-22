@@ -1341,13 +1341,13 @@ export default function CalendarScreen() {
             style={[s.discoverCard, { backgroundColor: colors.primary, boxShadow: `0 8px 18px ${colors.primary}2E` }]}
           >
             <View style={s.discoverIcon}>
-              <Ionicons name="sparkles" size={20} color="#fff" />
+              <Ionicons name="sparkles" size={20} color={colors.primaryForeground} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[s.discoverTitle, { fontFamily: DISPLAY_SEMI }]}>Discover nearby dog events</Text>
-              <Text style={[s.discoverSub, { fontFamily: "Inter_400Regular" }]}>WoofGuide curates outings for {resolvePetName(profile.name)}</Text>
+              <Text style={[s.discoverTitle, { color: colors.primaryForeground, fontFamily: DISPLAY_SEMI }]}>Discover nearby dog events</Text>
+              <Text style={[s.discoverSub, { color: colors.primaryForeground + "D9", fontFamily: "Inter_400Regular" }]}>WoofGuide curates outings for {resolvePetName(profile.name)}</Text>
             </View>
-            <Ionicons name={discoverOpen ? "chevron-up" : "chevron-down"} size={20} color="#fff" />
+            <Ionicons name={discoverOpen ? "chevron-up" : "chevron-down"} size={20} color={colors.primaryForeground} />
           </Pressable>
 
           {discoverOpen && (
@@ -1393,7 +1393,7 @@ export default function CalendarScreen() {
                           ) : null}
                         </View>
                         <Pressable onPress={() => !added && addSuggestion(sug)} hitSlop={MOBILE_INLINE_HIT_SLOP} style={[s.sugAdd, { backgroundColor: added ? colors.sage + "22" : colors.primary }]}>
-                          <Ionicons name={added ? "checkmark" : "add"} size={18} color={added ? colors.sage : "#fff"} />
+                          <Ionicons name={added ? "checkmark" : "add"} size={18} color={added ? colors.sage : colors.primaryForeground} />
                         </Pressable>
                       </View>
                     );
@@ -1633,7 +1633,7 @@ export default function CalendarScreen() {
                     </Text>
                   )}
                   <Pressable onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }} style={[s.sectionAddBtn, { backgroundColor: colors.primary }]}>
-                    <Ionicons name="add" size={18} color="#fff" />
+                    <Ionicons name="add" size={18} color={colors.primaryForeground} />
                   </Pressable>
                 </View>
               }
@@ -1870,9 +1870,9 @@ export default function CalendarScreen() {
                     {t.key === "potty" ? (
                       <PixelIcon name="pee" size={14} />
                     ) : (
-                      <PulseIcon name={t.icon} size={14} color={active ? "#fff" : undefined} />
+                      <PulseIcon name={t.icon} size={14} color={active ? colors.primaryForeground : undefined} />
                     )}
-                    <Text style={[s.typeChipText, { color: active ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
+                    <Text style={[s.typeChipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
                   </Pressable>
                 );
               })}
@@ -1914,7 +1914,7 @@ export default function CalendarScreen() {
                       onPress={() => { Haptics.selectionAsync(); setROwner(caregiver.name); }}
                       style={[s.ownerQuickChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}
                     >
-                      <Text style={[s.ownerQuickText, { color: active ? "#fff" : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                      <Text style={[s.ownerQuickText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" }]}>
                         {caregiver.name}
                       </Text>
                     </Pressable>
@@ -1933,7 +1933,7 @@ export default function CalendarScreen() {
             />
 
             <Pressable onPress={submitRoutine} disabled={!rLabel.trim()} style={[s.saveBtn, { backgroundColor: rLabel.trim() ? colors.primary : colors.border }]}>
-              <Text style={[s.saveBtnText, { color: rLabel.trim() ? "#fff" : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
+              <Text style={[s.saveBtnText, { color: rLabel.trim() ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
             </Pressable>
             {/* Validation feedback lives next to the submit button so the
                 sheet never looks silently broken when a field above is off. */}
@@ -1979,8 +1979,8 @@ export default function CalendarScreen() {
                 const active = evType === t.key;
                 return (
                   <Pressable key={t.key} onPress={() => { Haptics.selectionAsync(); setEvType(t.key); }} style={[s.typeChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}>
-                    <Ionicons name={EVENT_ICON[t.key] ?? "calendar"} size={14} color={active ? "#fff" : colors.mutedForeground} />
-                    <Text style={[s.typeChipText, { color: active ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
+                    <Ionicons name={EVENT_ICON[t.key] ?? "calendar"} size={14} color={active ? colors.primaryForeground : colors.mutedForeground} />
+                    <Text style={[s.typeChipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
                   </Pressable>
                 );
               })}
@@ -2032,7 +2032,7 @@ export default function CalendarScreen() {
             />
 
             <Pressable onPress={submitEvent} disabled={!evTitle.trim()} style={[s.saveBtn, { backgroundColor: evTitle.trim() ? colors.primary : colors.border }]}>
-              <Text style={[s.saveBtnText, { fontFamily: "Inter_700Bold" }]}>Add to Calendar</Text>
+              <Text style={[s.saveBtnText, { color: evTitle.trim() ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Add to Calendar</Text>
             </Pressable>
             {/* Validation feedback lives next to the submit button so the
                 sheet never looks silently broken when a field above is off. */}

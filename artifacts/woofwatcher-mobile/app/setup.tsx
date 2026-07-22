@@ -536,8 +536,8 @@ export default function SetupScreen() {
                 { backgroundColor: canSave ? colors.primary : colors.border, opacity: pressed ? 0.82 : 1 },
               ]}
             >
-              <Ionicons name="checkmark-circle" size={18} color="#fff" />
-              <Text style={[s.saveText, { fontFamily: "Inter_700Bold" }]}>
+              <Ionicons name="checkmark-circle" size={18} color={canSave ? colors.primaryForeground : colors.mutedForeground} />
+              <Text style={[s.saveText, { color: canSave ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                 {householdReady ? "Save foundation" : "Add invite code"}
               </Text>
             </Pressable>
@@ -620,8 +620,8 @@ export default function SetupScreen() {
                   { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
                 ]}
               >
-                <Ionicons name="paw" size={17} color="#fff" />
-                <Text style={[s.saveText, { fontFamily: "Inter_700Bold" }]}>
+                <Ionicons name="paw" size={17} color={colors.primaryForeground} />
+                <Text style={[s.saveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
                   Meet {successMoment?.dogName ?? "your dog"}
                 </Text>
               </Pressable>

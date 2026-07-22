@@ -350,8 +350,8 @@ export function BoardPill({
         style,
       ]}
     >
-      {icon ? <Ionicons name={icon} size={12} color={active ? "#FFFFFF" : pillTone} /> : null}
-      <Text style={[styles.pillText, { color: active ? "#FFFFFF" : pillTone, fontFamily: "Inter_700Bold" }]}>
+      {icon ? <Ionicons name={icon} size={12} color={active ? colors.primaryForeground : pillTone} /> : null}
+      <Text style={[styles.pillText, { color: active ? colors.primaryForeground : pillTone, fontFamily: "Inter_700Bold" }]}>
         {label}
       </Text>
     </View>
