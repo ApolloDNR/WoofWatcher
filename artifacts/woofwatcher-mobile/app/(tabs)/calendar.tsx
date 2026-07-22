@@ -40,6 +40,7 @@ import { parseLocalDate } from "@/lib/time";
 import { resolvePetName } from "@/lib/petIdentity";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { buildMonthView, dateKeyOf, WEEKDAY_LABELS } from "@/lib/monthCalendar";
 import {
   applyReminderNotificationPreferenceDraft,
   buildReminderNotificationPreferencesForCenter,
@@ -309,7 +310,7 @@ export default function CalendarScreen() {
   });
   const now = Date.now();
   const today = todayISO();
-  const [scheduleTab, setScheduleTab] = useState<"today" | "tomorrow" | "week">("today");
+  const [scheduleTab, setScheduleTab] = useState<"day" | "week" | "month">("day");
 
   // Add-event modal
   const [addOpen, setAddOpen] = useState(false);
@@ -351,6 +352,22 @@ export default function CalendarScreen() {
     () => deriveRoutineBoard({ routines: sortedRoutines, entries, caregivers, now }),
     [sortedRoutines, entries, caregivers, now],
   );
+  // Month segment: the current month's real logs bucketed into local days
+  // (reuses the same pure month math as the full /calendar-month route).
+  const monthView = useMemo(() => {
+    const base = new Date(now);
+    return buildMonthView({
+      year: base.getFullYear(),
+      month: base.getMonth(),
+      todayKey: dateKeyOf(base),
+      entries,
+    });
+  }, [now, entries]);
+  const monthEntryDays = useMemo(
+    () => monthView.weeks.flat().filter((cell) => cell.inMonth && cell.hasEntries).length,
+    [monthView],
+  );
+  const monthEntryLabel = monthEntryDays === 0 ? "No logs yet" : `${monthEntryDays} active`;
   // Fresh installs have no routines yet, so the schedule falls back to a
   // hardcoded sample day. Those rows have no backing routine, so they must
   // render as clearly-labeled, non-interactive preview content.
@@ -384,11 +401,8 @@ export default function CalendarScreen() {
           status: item.status,
         }))
       : fallback;
-    if (scheduleTab === "tomorrow") {
-      return rows.map((row) => ({ ...row, status: "upcoming" as RoutineBoardStatus }));
-    }
     return rows;
-  }, [routineBoard.items, scheduleTab]);
+  }, [routineBoard.items]);
 
   // Monday-start week containing today, for the mockup M T W T F S S dots.
   const weekDays = useMemo(() => {
@@ -1014,11 +1028,13 @@ export default function CalendarScreen() {
               <View style={s.scheduleHeaderCopy}>
                 <Text style={[s.scheduleEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Mission Schedule</Text>
                 <Text style={[s.scheduleHeaderTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {scheduleTab === "today" ? "Today's care plan" : scheduleTab === "tomorrow" ? "Tomorrow preview" : "This week's plan"}
+                  {scheduleTab === "day" ? "Today's care plan" : scheduleTab === "week" ? "This week's plan" : "This month"}
                 </Text>
               </View>
               {scheduleTab === "week" ? (
                 <BoardPill label={`${weeklyGoalDays}/7 days`} tone={colors.sage} />
+              ) : scheduleTab === "month" ? (
+                <BoardPill label={monthEntryLabel} tone={colors.sage} />
               ) : isSampleSchedule ? (
                 <BoardPill label="Sample day" tone={colors.mutedForeground} />
               ) : (
@@ -1030,9 +1046,9 @@ export default function CalendarScreen() {
             </View>
             <BoardSegmentTabs
               segments={[
-                { key: "today" as const, label: "Today" },
-                { key: "tomorrow" as const, label: "Tomorrow" },
+                { key: "day" as const, label: "Day" },
                 { key: "week" as const, label: "Week" },
+                { key: "month" as const, label: "Month" },
               ]}
               active={scheduleTab}
               onChange={(key) => {
@@ -1167,6 +1183,70 @@ export default function CalendarScreen() {
                   </View>
                 )}
               </>
+            ) : scheduleTab === "month" ? (
+              <View>
+                <View style={s.monthWeekdayRow}>
+                  {WEEKDAY_LABELS.map((label, i) => (
+                    <Text
+                      key={`${label}-${i}`}
+                      style={[s.monthWeekdayLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}
+                    >
+                      {label}
+                    </Text>
+                  ))}
+                </View>
+                {monthView.weeks.map((week, wi) => (
+                  <View key={`month-week-${wi}`} style={s.monthWeekRow}>
+                    {week.map((cell, di) => {
+                      if (!cell.inMonth || cell.day === null) {
+                        return <View key={`blank-${wi}-${di}`} style={s.monthDayCell} />;
+                      }
+                      return (
+                        <View key={cell.dateKey ?? `${wi}-${di}`} style={s.monthDayCell}>
+                          <View
+                            style={[
+                              s.monthDayCircle,
+                              cell.isToday && { borderWidth: 1.5, borderColor: colors.primary },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                s.monthDayNumber,
+                                {
+                                  color: cell.isToday ? colors.forest : colors.foreground,
+                                  fontFamily: cell.isToday ? "Inter_700Bold" : "Inter_600SemiBold",
+                                },
+                              ]}
+                            >
+                              {cell.day}
+                            </Text>
+                          </View>
+                          <View
+                            style={[s.monthDayDot, { backgroundColor: cell.hasEntries ? colors.forest : "transparent" }]}
+                          />
+                        </View>
+                      );
+                    })}
+                  </View>
+                ))}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open the full month calendar with day-by-day detail"
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    router.push("/calendar-month" as never);
+                  }}
+                  style={({ pressed }) => [
+                    s.monthOpenBtn,
+                    { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <Ionicons name="calendar-outline" size={15} color={colors.forest} />
+                  <Text style={[s.monthOpenBtnText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
+                    Open full month
+                  </Text>
+                </Pressable>
+              </View>
             ) : (
             <View style={s.scheduleList}>
               {scheduleRows.map((row, index) => {
@@ -1177,7 +1257,7 @@ export default function CalendarScreen() {
                 const showBandHeader =
                   index === 0 || scheduleBandForTime(scheduleRows[index - 1].time) !== band;
                 const showNowLine =
-                  scheduleTab === "today" && !isSampleSchedule && index === firstUpcomingScheduleIndex;
+                  scheduleTab === "day" && !isSampleSchedule && index === firstUpcomingScheduleIndex;
                 const bandHeader = showBandHeader ? (
                   <View style={s.scheduleBand}>
                     <Text style={[s.scheduleBandText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
@@ -1304,7 +1384,7 @@ export default function CalendarScreen() {
             </View>
             )}
 
-            {isSampleSchedule && scheduleTab !== "week" ? (
+            {isSampleSchedule && scheduleTab === "day" ? (
               <Text style={[s.scheduleSampleNote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 This is a sample day to show how your plan will look. Add your first routine to make it real.
               </Text>
@@ -2381,6 +2461,24 @@ const s = StyleSheet.create({
     fontSize: 17,
     marginTop: 2,
   },
+  monthWeekdayRow: { flexDirection: "row", marginBottom: 4 },
+  monthWeekdayLabel: { flex: 1, textAlign: "center", fontSize: 9.5, letterSpacing: 0.4 },
+  monthWeekRow: { flexDirection: "row" },
+  monthDayCell: { flex: 1, alignItems: "center", paddingVertical: 3 },
+  monthDayCircle: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  monthDayNumber: { fontSize: 13.5 },
+  monthDayDot: { width: 5, height: 5, borderRadius: 3, marginTop: 2 },
+  monthOpenBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  monthOpenBtnText: { fontSize: 13 },
   scheduleTabs: {
     flexDirection: "row",
     gap: 6,
