@@ -522,10 +522,7 @@ const s = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 11,
-    shadowColor: "#081424",
-    shadowOpacity: 0.16,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 5 },
+    boxShadow: "0 5px 8px #08142429",
   },
   premiumValueKicker: {
     fontSize: 8,

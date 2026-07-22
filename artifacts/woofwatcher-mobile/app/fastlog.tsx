@@ -333,7 +333,7 @@ export default function FastLogScreen() {
                 {
                   backgroundColor: colors.card,
                   borderColor: colors.border,
-                  shadowColor: colors.navy,
+                  boxShadow: `0 8px 16px 0F`,
                 },
               ]}
             >
@@ -464,10 +464,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 2,
+
   },
   tileLabel: {
     fontSize: 13,

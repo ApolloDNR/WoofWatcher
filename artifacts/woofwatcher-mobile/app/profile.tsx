@@ -356,7 +356,7 @@ export default function ProfileScreen() {
           onPress={openAvatarStudio}
           scaleTo={0.95}
           containerStyle={s.avatarLayout}
-          style={[s.avatarRing, { backgroundColor: colors.card, borderColor: colors.gold, shadowColor: colors.navy }]}
+          style={[s.avatarRing, { backgroundColor: colors.card, borderColor: colors.gold, boxShadow: `0 6px 12px 2E` }]}
         >
           <Animated.Image
             source={getAvatarSource(status.mood)}
@@ -484,10 +484,7 @@ const s = StyleSheet.create({
     borderWidth: 3,
     alignItems: "center",
     justifyContent: "center",
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+
   },
   avatarImg: {
     width: AVATAR_SIZE,

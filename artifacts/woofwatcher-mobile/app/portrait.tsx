@@ -2054,10 +2054,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    shadowColor: "#081424",
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    boxShadow: "0 6px 12px #0814242E",
   },
   sourceProofImage: {
     width: 52,

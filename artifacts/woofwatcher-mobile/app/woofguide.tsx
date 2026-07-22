@@ -930,7 +930,7 @@ const s = StyleSheet.create({
   actionLabel: { fontSize: 14.5 },
   actionDetail: { fontSize: 12.5, lineHeight: 17, marginTop: 2 },
   actionDraftLabel: { fontSize: 11.5, marginTop: 5 },
-  bubble: { maxWidth: "86%", borderRadius: 20, padding: 14, shadowColor: "#2E5846", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+  bubble: { maxWidth: "86%", borderRadius: 20, padding: 14, boxShadow: "0 2px 8px #2E58460D" },
   userBubble: { alignSelf: "flex-end", borderBottomRightRadius: 6 },
   assistantBubble: { alignSelf: "flex-start", borderBottomLeftRadius: 6, borderWidth: 1 },
   bubbleText: { fontSize: 15, lineHeight: 22 },
