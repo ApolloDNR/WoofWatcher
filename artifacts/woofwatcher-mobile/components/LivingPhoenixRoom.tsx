@@ -975,7 +975,7 @@ export function LivingPhoenixRoom({
     >
       {transparentScene ? null : (
         <>
-          <View pointerEvents="none" style={styles.pixelFrame}>
+          <View style={[{ pointerEvents: "none" }, styles.pixelFrame]}>
             <View style={[styles.frameCorner, styles.frameCornerTopLeft]} />
             <View style={[styles.frameCorner, styles.frameCornerTopRight]} />
             <View style={[styles.frameCorner, styles.frameCornerBottomLeft]} />
@@ -993,16 +993,14 @@ export function LivingPhoenixRoom({
           <LinearGradient
             colors={[theme.wash, "rgba(255,249,239,0)", "rgba(8,20,36,0.28)"]}
             locations={[0, 0.58, 1]}
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
+            style={[{ pointerEvents: "none" }, StyleSheet.absoluteFill]}
           />
         </>
       )}
 
       {roamActive ? null : (
         <Animated.View
-          pointerEvents="none"
-          style={[
+          style={[{ pointerEvents: "none" }, 
             styles.dogFocus,
             focusSpot,
             { backgroundColor: theme.glow, borderColor: theme.accent },
@@ -1027,7 +1025,7 @@ export function LivingPhoenixRoom({
       ) : null}
 
       {awayOnWalk ? (
-        <View pointerEvents="none" style={styles.awayCue}>
+        <View style={[{ pointerEvents: "none" }, styles.awayCue]}>
           <View style={styles.awayCueCard}>
             <PixelIcon name="walk" size={18} />
             <View>
@@ -1046,10 +1044,9 @@ export function LivingPhoenixRoom({
 
       {layeredStageReady && !roamActive ? (
         <Animated.View
-          pointerEvents="none"
           entering={FadeIn.duration(180)}
           exiting={FadeOut.duration(140)}
-          style={[
+          style={[{ pointerEvents: "none" },
               styles.spriteRig,
               {
                 left: activeSpriteZone.left,
@@ -1124,10 +1121,9 @@ export function LivingPhoenixRoom({
 
       {useFallbackAvatarLayer && !roamActive ? (
         <Animated.View
-          pointerEvents="none"
           entering={FadeIn.duration(180)}
           exiting={FadeOut.duration(140)}
-          style={[
+          style={[{ pointerEvents: "none" },
               styles.spriteRig,
               {
                 left: activeSpriteZone.left,
@@ -1157,8 +1153,7 @@ export function LivingPhoenixRoom({
       {PIXEL_SPARKS.map((spark, index) => (
         <Animated.View
           key={`spark-${index}`}
-          pointerEvents="none"
-          style={[
+          style={[{ pointerEvents: "none" }, 
             styles.spark,
             {
               left: spark.left,
@@ -1173,7 +1168,7 @@ export function LivingPhoenixRoom({
         />
       ))}
 
-      <View style={styles.topHud} pointerEvents="none">
+      <View style={[{ pointerEvents: "none" }, styles.topHud]}>
         {transparentScene ? null : (
           <View
             style={[
@@ -1357,8 +1352,7 @@ export function LivingPhoenixRoom({
 
       {isWalking ? (
         <Animated.View
-          pointerEvents="none"
-          style={[styles.walkMarks, shimmerStyle]}
+          style={[{ pointerEvents: "none" }, styles.walkMarks, shimmerStyle]}
         >
           <View style={[styles.walkMark, { backgroundColor: theme.accent }]} />
           <View
@@ -1380,8 +1374,7 @@ export function LivingPhoenixRoom({
 
       {plan.showHearts ? (
         <Animated.View
-          pointerEvents="none"
-          style={[styles.heartTrail, shimmerStyle]}
+          style={[{ pointerEvents: "none" }, styles.heartTrail, shimmerStyle]}
         >
           <PixelIcon name="heart" size={18} />
           <PixelIcon name="heart" size={12} />
@@ -1392,8 +1385,7 @@ export function LivingPhoenixRoom({
         <Animated.View
           entering={FadeIn}
           exiting={FadeOut}
-          pointerEvents="none"
-          style={[styles.sleepBubble, shimmerStyle]}
+          style={[{ pointerEvents: "none" }, styles.sleepBubble, shimmerStyle]}
         >
           <Text style={styles.sleepText}>Zz</Text>
         </Animated.View>
@@ -1401,8 +1393,7 @@ export function LivingPhoenixRoom({
 
       {activeReaction ? (
         <Animated.View
-          pointerEvents="none"
-          style={[
+          style={[{ pointerEvents: "none" }, 
             styles.reaction,
             reactionStyle,
             {
@@ -1423,8 +1414,7 @@ export function LivingPhoenixRoom({
 
       {activeReaction ? (
         <Animated.View
-          pointerEvents="none"
-          style={[styles.actionBurst, burstStyle]}
+          style={[{ pointerEvents: "none" }, styles.actionBurst, burstStyle]}
         >
           <View
             style={[styles.actionSpark, { backgroundColor: theme.accent }]}
@@ -1581,7 +1571,7 @@ function PetHeart({ dx, delayMs, size }: { dx: number; delayMs: number; size: nu
 /** Affection-only feedback for petting: pure delight, never a care stat. */
 function PetHeartsBurst() {
   return (
-    <View pointerEvents="none" style={styles.petHearts}>
+    <View style={[{ pointerEvents: "none" }, styles.petHearts]}>
       <PetHeart dx={-26} delayMs={0} size={15} />
       <PetHeart dx={2} delayMs={110} size={21} />
       <PetHeart dx={26} delayMs={220} size={14} />
@@ -1791,15 +1781,13 @@ function RoamingTwinRig({
 
   return (
     <Animated.View
-      pointerEvents="box-none"
       entering={FadeIn.duration(180)}
       exiting={FadeOut.duration(140)}
-      style={[styles.roamRig, rigStyle]}
+      style={[{ pointerEvents: "box-none" }, styles.roamRig, rigStyle]}
       testID="care-twin-roaming-rig"
     >
       <Animated.View
-        pointerEvents="none"
-        style={[
+        style={[{ pointerEvents: "none" }, 
           styles.spriteGroundShadow,
           { backgroundColor: glowColor },
           shadowStyle,

@@ -621,7 +621,7 @@ export function QuickActionTile({
 export function PixelSpeechBubble({ text, style }: { text: string; style?: StyleProp<ViewStyle> }) {
   const colors = useColors();
   return (
-    <View style={[styles.bubbleWrap, style]} pointerEvents="none">
+    <View style={[styles.bubbleWrap, { pointerEvents: "none" }, style]}>
       <View style={[styles.bubble, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[styles.bubbleText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{text}</Text>
       </View>

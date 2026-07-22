@@ -44,6 +44,24 @@ import {
 
 SplashScreen.preventAutoHideAsync();
 
+// React Navigation's BottomTabBar still passes `pointerEvents` as a prop
+// internally, which react-native-web flags with a deprecation warning on
+// every page load. Our own code uses style.pointerEvents everywhere, so
+// this dev/web-only filter silences just that one library-originated
+// message and lets every other warning through untouched.
+if (__DEV__ && Platform.OS === "web") {
+  const originalWarn = console.warn;
+  console.warn = (...args: unknown[]) => {
+    if (
+      typeof args[0] === "string" &&
+      args[0].startsWith("props.pointerEvents is deprecated")
+    ) {
+      return;
+    }
+    originalWarn(...args);
+  };
+}
+
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
 

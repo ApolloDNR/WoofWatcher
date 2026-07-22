@@ -97,8 +97,7 @@ export function SpriteSheetPlayer({
     <View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      pointerEvents="none"
-      style={[
+      style={[{ pointerEvents: "none" }, 
         styles.viewport,
         { width: frameMetrics.frameWidth, height: frameMetrics.frameHeight },
         style,

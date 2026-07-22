@@ -1606,8 +1606,10 @@ export default function HomeScreen() {
       />
       {colors.isDark ? (
         <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(9,17,32,0.16)" }]}
-          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: "rgba(9,17,32,0.16)", pointerEvents: "none" },
+          ]}
         />
       ) : null}
       <LinearGradient
@@ -1617,18 +1619,16 @@ export default function HomeScreen() {
           colors.background + "E0",
         ]}
         locations={[0.42, 0.62, 0.95]}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { pointerEvents: "none" }]}
       />
       {/* Scroll-linked scrim: deepens as the panels ride up over the pinned
           scene so the room recedes and the cards stay legible. Gradient
           colors cannot animate on the UI thread, so this flat wash rides on
           top of the static gradient instead. */}
       <Reanimated.View
-        pointerEvents="none"
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: colors.background },
+          { backgroundColor: colors.background, pointerEvents: "none" },
           sceneScrimStyle,
         ]}
       />
@@ -1639,10 +1639,10 @@ export default function HomeScreen() {
           unchanged, and box-none layering lets taps in the dog's traffic
           band fall through the scroll surface onto the rig. */}
       <Reanimated.View
-        pointerEvents={heroDeferredForWelcome ? "none" : "box-none"}
         style={[
           s.heroFixedLayer,
           {
+            pointerEvents: heroDeferredForWelcome ? "none" : "box-none",
             top: heroFixedTop,
             left: routeHorizontalPadding,
             right: routeHorizontalPadding,
@@ -1721,8 +1721,7 @@ export default function HomeScreen() {
         </View>
       </Reanimated.View>
       <Reanimated.ScrollView
-        style={s.container}
-        pointerEvents="box-none"
+        style={[s.container, { pointerEvents: "box-none" }]}
         contentContainerStyle={{
           paddingTop: topPadding,
           paddingBottom: bottomPadding,
@@ -1733,7 +1732,7 @@ export default function HomeScreen() {
         onScroll={onSceneScroll}
         scrollEventThrottle={16}
       >
-        <Animated.View pointerEvents="box-none" style={{ opacity: fade }}>
+        <Animated.View style={{ opacity: fade, pointerEvents: "box-none" }}>
           <View
             onLayout={(event) => {
               const measured = Math.round(event.nativeEvent.layout.height);
@@ -1827,14 +1826,16 @@ export default function HomeScreen() {
 
           {welcomeVisible ? (
             <Reanimated.View
-              pointerEvents={welcomeShouldShow ? "auto" : "none"}
               onLayout={(event) => {
                 const measured = Math.round(event.nativeEvent.layout.height);
                 if (welcomeShouldShow && measured > 0) {
                   setWelcomeCardHeight((prev) => Math.max(prev, measured));
                 }
               }}
-              style={[{ overflow: "hidden" }, welcomeCardStyle]}
+              style={[
+                { overflow: "hidden", pointerEvents: welcomeShouldShow ? "auto" : "none" },
+                welcomeCardStyle,
+              ]}
             >
             <View style={[s.welcomeCard, s.softShadow, { backgroundColor: colors.forest }]}>
               <Pressable
@@ -1894,7 +1895,7 @@ export default function HomeScreen() {
               shut while the first-run welcome card is up so the two never
               double-stack, and it is touch-transparent so taps land on the
               dog rig behind it. */}
-          <Reanimated.View pointerEvents="none" style={heroSpacerStyle} />
+          <Reanimated.View style={[{ pointerEvents: "none" }, heroSpacerStyle]} />
 
           {/* Mock-board Care Sense card: mood, energy, hunger, and alone
               time as chunky pip meters. Every fill derives from real logged
@@ -2199,8 +2200,13 @@ export default function HomeScreen() {
               />
               {pendingMealOpenLoop ? (
                 <Reanimated.View
-                  pointerEvents={pendingMealChipSuppressed ? "none" : "auto"}
-                  style={[{ overflow: "hidden" }, mealChipRevealStyle]}
+                  style={[
+                    {
+                      overflow: "hidden",
+                      pointerEvents: pendingMealChipSuppressed ? "none" : "auto",
+                    },
+                    mealChipRevealStyle,
+                  ]}
                 >
                 <Pressable
                   accessibilityRole="button"
@@ -3257,10 +3263,10 @@ export default function HomeScreen() {
 
       {toast && (
         <Animated.View
-          pointerEvents={quickFeedback ? "auto" : "none"}
           style={[
             s.toast,
             {
+              pointerEvents: quickFeedback ? "auto" : "none",
               backgroundColor: colors.brandNavy,
               opacity: toastOpacity,
               // The one feedback toast anchors just above the floating tab

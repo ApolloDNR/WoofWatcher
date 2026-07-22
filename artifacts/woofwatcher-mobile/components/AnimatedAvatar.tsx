@@ -97,8 +97,7 @@ function Mote({ index, tint }: MoteProps) {
 
   return (
     <Animated.View
-      pointerEvents="none"
-      style={[
+      style={[{ pointerEvents: "none" }, 
         styles.mote,
         { left: `${startLeft}%`, width: size, height: size, borderRadius: size / 2, backgroundColor: tint },
         style,
@@ -200,7 +199,7 @@ export function AnimatedAvatar({ mood, speech, onTap }: Props) {
   return (
     <Pressable onPress={handleTap} style={styles.root}>
       {/* still dog scene — previous emotion underneath, current fades in on top */}
-      <Animated.View style={[StyleSheet.absoluteFill, tapStyle]} pointerEvents="none">
+      <Animated.View style={[StyleSheet.absoluteFill, { pointerEvents: "none" }, tapStyle]}>
         {crossfading && (
           <Animated.Image source={prevSource} style={styles.scene} resizeMode="contain" />
         )}
@@ -215,10 +214,9 @@ export function AnimatedAvatar({ mood, speech, onTap }: Props) {
       <LinearGradient
         colors={phase}
         locations={[0, 0.5, 1]}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
+        style={[{ pointerEvents: "none" }, StyleSheet.absoluteFill]}
       />
-      <View style={styles.moteLayer} pointerEvents="none">
+      <View style={[{ pointerEvents: "none" }, styles.moteLayer]}>
         {Array.from({ length: MOTE_COUNT }).map((_, i) => (
           <Mote key={`${displayMood}-${i}`} index={i} tint={tint} />
         ))}
@@ -226,7 +224,7 @@ export function AnimatedAvatar({ mood, speech, onTap }: Props) {
 
       {/* speech bubble — persistent mood line, swapped for a fun bark on tap */}
       {(bark || speech) && (
-        <View style={styles.barkWrap} pointerEvents="none">
+        <View style={[{ pointerEvents: "none" }, styles.barkWrap]}>
           <View style={[styles.barkBubble, bark && styles.barkBubbleActive]}>
             <Text style={[styles.barkText, !bark && styles.speechText]}>{bark ?? speech}</Text>
           </View>

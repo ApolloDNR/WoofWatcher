@@ -46,7 +46,7 @@ function CenterToday() {
   });
   const onToday = pathname === "/" || pathname === "/index";
   return (
-    <View pointerEvents="box-none" style={[s.fabWrap, { bottom: chrome.centerFabBottom }]}>
+    <View style={[{ pointerEvents: "box-none" }, s.fabWrap, { bottom: chrome.centerFabBottom }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={onToday ? "Quick log" : "Today"}
@@ -182,7 +182,7 @@ export default function TabLayout() {
           options={{
             title: "Today",
             tabBarButton: () => (
-              <View pointerEvents="none" style={s.centerSlot} />
+              <View style={[{ pointerEvents: "none" }, s.centerSlot]} />
             ),
           }}
         />
