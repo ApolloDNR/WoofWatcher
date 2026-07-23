@@ -2060,6 +2060,19 @@ export default function LogScreen() {
     config?.groups?.find(
       (g) => g.required && !g.options.some((o) => o.id === choices[g.key]),
     ) ?? null;
+  const parsedEatenAmount = parseNonNegativeNumber(eatenAmount);
+  const mealEatenAmountError =
+    selectedType === "meal" && eatenAmount.trim() && parsedEatenAmount == null
+      ? "Enter the eaten amount as a number, such as 0.5."
+      : selectedType === "meal" &&
+          mealOutcomeNeedsEatenAmount(selectedMealCompletion) &&
+          parsedEatenAmount == null
+        ? `Enter how much ${petDisplayName} ate before saving this partial meal.`
+        : null;
+  const composerValidationMessage = missingRequiredGroup
+    ? `Pick "${missingRequiredGroup.label}" above before saving.`
+    : mealEatenAmountError;
+  const composerSaveDisabled = composerValidationMessage != null;
   const selectedTrustLabel =
     selectedType === "symptom"
       ? "Vet-share ready"
@@ -3854,9 +3867,13 @@ export default function LogScreen() {
               </View>
             )}
 
-            {missingRequiredGroup ? (
-              <Text style={[s.requiredChoiceHint, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
-                Pick "{missingRequiredGroup.label}" above to save this {selectedLabel.toLowerCase()} log.
+            {composerValidationMessage ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                role="alert"
+                style={[s.requiredChoiceHint, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}
+              >
+                {composerValidationMessage}
               </Text>
             ) : null}
             <BoardActionButton
@@ -3864,10 +3881,10 @@ export default function LogScreen() {
               icon="checkmark-circle"
               variant="primary"
               onPress={handleLog}
-              disabled={missingRequiredGroup != null}
+              disabled={composerSaveDisabled}
               accessibilityLabel={
-                missingRequiredGroup
-                  ? `Log ${(config?.label ?? "care").toLowerCase()}. Disabled until ${missingRequiredGroup.label.replace(/\?$/, "").toLowerCase()} is chosen.`
+                composerValidationMessage
+                  ? `Log ${(config?.label ?? "care").toLowerCase()}. Disabled. ${composerValidationMessage}`
                   : `Log ${(config?.label ?? "care").toLowerCase()}`
               }
               style={s.logSaveAction}

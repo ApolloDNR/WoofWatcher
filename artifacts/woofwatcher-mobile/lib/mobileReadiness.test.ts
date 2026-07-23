@@ -2649,6 +2649,18 @@ test("keeps mood logging structured for energy, context, and household visibilit
   assert.match(buildEntryBlock, /details\.moodContext = context/);
 });
 
+test("keeps detail-log validation visible before save", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+
+  assert.match(log, /const mealEatenAmountError =/);
+  assert.match(log, /Enter how much \${petDisplayName\} ate before saving this partial meal/);
+  assert.match(log, /const composerSaveDisabled = composerValidationMessage != null/);
+  assert.match(log, /accessibilityLiveRegion="polite"/);
+  assert.match(log, /role="alert"/);
+  assert.match(log, /disabled=\{composerSaveDisabled\}/);
+  assert.match(log, /Disabled\. \${composerValidationMessage\}/);
+});
+
 test("keeps Quick Log search and timeline on shared board card anatomy", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
