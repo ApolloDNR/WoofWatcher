@@ -258,6 +258,23 @@ test("derives a household sync dashboard with retry guidance", () => {
   assert.equal(dashboard.nextStep, "Retry sync so every caregiver sees the latest care.");
 });
 
+test("surfaces household refresh failures without claiming local care was lost", () => {
+  const dashboard = deriveCareSyncDashboard({
+    outbox: deriveCareSyncOutbox([]),
+    isLoaded: true,
+    isSyncing: false,
+    refreshError: "Couldn't reach the shared household. Your care is still saved on this device.",
+    householdMemberCount: 2,
+    totalEntries: 4,
+  });
+
+  assert.equal(dashboard.status, "attention");
+  assert.equal(dashboard.title, "Household refresh failed");
+  assert.equal(dashboard.actionLabel, "Retry refresh");
+  assert.match(dashboard.message, /still saved on this device/);
+  assert.match(dashboard.nextStep, /Retry/);
+});
+
 test("keeps a newer local care document when a stale server refresh arrives", () => {
   const plan = reconcileCareDocFromServer({
     localDoc: {

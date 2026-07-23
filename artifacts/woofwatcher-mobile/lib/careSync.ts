@@ -52,6 +52,7 @@ export interface CareSyncDashboardInput {
   outbox: CareSyncOutbox;
   isLoaded: boolean;
   isSyncing: boolean;
+  refreshError?: string;
   lastUpdatedAt?: string;
   householdMemberCount: number;
   totalEntries: number;
@@ -334,6 +335,7 @@ export function deriveCareSyncDashboard({
   outbox,
   isLoaded,
   isSyncing,
+  refreshError,
   lastUpdatedAt,
   householdMemberCount,
   totalEntries,
@@ -366,6 +368,17 @@ export function deriveCareSyncDashboard({
       message: "Checking saved care before household sync starts.",
       nextStep: "WoofWatcher will show retry options if anything needs attention.",
       actionLabel: "Refresh",
+      metrics,
+    };
+  }
+
+  if (refreshError) {
+    return {
+      status: "attention",
+      title: "Household refresh failed",
+      message: refreshError,
+      nextStep: "Your care stays saved on this device. Retry when the connection is ready.",
+      actionLabel: "Retry refresh",
       metrics,
     };
   }

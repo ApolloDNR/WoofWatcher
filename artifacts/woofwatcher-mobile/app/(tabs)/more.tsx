@@ -363,7 +363,7 @@ export default function MoreScreen() {
   const rawFocusParam = (routeParams as Record<string, string | string[] | undefined>).focus;
   const focusParam = Array.isArray(rawFocusParam) ? rawFocusParam[0] : rawFocusParam;
   const householdFocus = sectionParam === "household";
-  const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
+  const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing, syncRefreshError } = useCare();
   const { dietProfile, profile, entries, routines, caregivers, accessPasses } = state;
   const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
 
@@ -479,6 +479,7 @@ export default function MoreScreen() {
       outbox: syncOutbox,
       isLoaded,
       isSyncing,
+      refreshError: syncRefreshError,
       lastUpdatedAt: latestCareUpdate ?? state.updatedAt,
       householdMemberCount: members.length || (household ? 1 : 0),
       totalEntries: entries.length,
@@ -487,6 +488,7 @@ export default function MoreScreen() {
     syncOutbox,
     isLoaded,
     isSyncing,
+    syncRefreshError,
     latestCareUpdate,
     state.updatedAt,
     members.length,

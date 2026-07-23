@@ -432,6 +432,7 @@ interface CareContextValue {
   syncOutbox: CareSyncOutbox;
   isLoaded: boolean;
   isSyncing: boolean;
+  syncRefreshError?: string;
 }
 
 const CareContext = createContext<CareContextValue | null>(null);
@@ -445,6 +446,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const [serverVersion, setServerVersion] = useState(0);
   const [hydrated, setHydrated] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncRefreshError, setSyncRefreshError] = useState<string | undefined>();
 
   // Refs mirror state so async callbacks read fresh values without re-binding.
   const docRef = useRef(doc);
@@ -629,6 +631,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     const eraseGenerationAtStart = eraseGenerationRef.current;
     syncingRef.current = true;
     setIsSyncing(true);
+    setSyncRefreshError(undefined);
     try {
       const envelope = await getCareState();
       if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
@@ -674,7 +677,11 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         persistEntryUpdate(entry.id, entry);
       });
     } catch {
-      // Offline or transient failure: keep showing the cached state.
+      // Offline or transient failure: keep showing the cached state and make
+      // the household-level failure visible so nobody assumes sharing worked.
+      setSyncRefreshError(
+        "Couldn't reach the shared household. Your care is still saved on this device.",
+      );
     } finally {
       syncingRef.current = false;
       setIsSyncing(false);
@@ -869,6 +876,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       syncOutbox,
       isLoaded: hydrated,
       isSyncing,
+      syncRefreshError,
     }),
     [
       state,
@@ -881,6 +889,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       syncOutbox,
       hydrated,
       isSyncing,
+      syncRefreshError,
     ],
   );
 
