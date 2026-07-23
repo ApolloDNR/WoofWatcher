@@ -57,26 +57,55 @@ function ClerkSignUpScreen() {
 
   const handleSubmit = async () => {
     setFormError(undefined);
-    const { error } = await signUp.password({ emailAddress, password });
-    if (error) {
-      setFormError(error.message ?? "Could not create your account.");
-      return;
+    try {
+      const { error } = await signUp.password({ emailAddress, password });
+      if (error) {
+        setFormError(error.message ?? "Could not create your account.");
+        return;
+      }
+      await signUp.verifications.sendEmailCode();
+    } catch (error) {
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : "We couldn't send the verification code. Check your connection and try again.",
+      );
     }
-    await signUp.verifications.sendEmailCode();
   };
 
   const handleVerify = async () => {
     setFormError(undefined);
-    await signUp.verifications.verifyEmailCode({ code });
-    if (signUp.status === "complete") {
-      await signUp.finalize({
-        navigate: ({ session }) => {
-          if (session?.currentTask) return;
-          router.replace("/(tabs)");
-        },
-      });
-    } else {
-      setFormError("That code didn't work. Try again or request a new one.");
+    try {
+      await signUp.verifications.verifyEmailCode({ code });
+      if (signUp.status === "complete") {
+        await signUp.finalize({
+          navigate: ({ session }) => {
+            if (session?.currentTask) return;
+            router.replace("/(tabs)");
+          },
+        });
+      } else {
+        setFormError("That code didn't work. Try again or request a new one.");
+      }
+    } catch (error) {
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : "We couldn't verify that code. Check it and try again.",
+      );
+    }
+  };
+
+  const handleResend = async () => {
+    setFormError(undefined);
+    try {
+      await signUp.verifications.sendEmailCode();
+    } catch (error) {
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : "We couldn't resend the code. Check your connection and try again.",
+      );
     }
   };
 
@@ -143,7 +172,7 @@ function ClerkSignUpScreen() {
             Didn&apos;t get it?{" "}
           </Text>
           <Text
-            onPress={() => signUp.verifications.sendEmailCode()}
+            onPress={() => void handleResend()}
             style={[
               styles.footerLink,
               { color: colors.primary, fontFamily: "Inter_600SemiBold" },

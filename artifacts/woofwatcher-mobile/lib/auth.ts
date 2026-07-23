@@ -9,6 +9,8 @@ const isPlaceholderPublishableKey =
 
 export const clerkPublishableKey = publishableKey;
 export const clerkProxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
+export const enforceAuthInDevelopment =
+  process.env.EXPO_PUBLIC_ENFORCE_AUTH_IN_DEV === "true";
 export const isClerkConfigured =
   typeof publishableKey === "string" &&
   /^pk_(test|live)_[A-Za-z0-9_-]{20,}$/.test(publishableKey) &&

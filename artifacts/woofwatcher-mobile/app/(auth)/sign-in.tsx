@@ -56,20 +56,28 @@ function ClerkSignInScreen() {
 
   const handleSubmit = async () => {
     setFormError(undefined);
-    const { error } = await signIn.password({ emailAddress, password });
-    if (error) {
-      setFormError(error.message ?? "Could not sign in. Check your details.");
-      return;
-    }
-    if (signIn.status === "complete") {
-      await signIn.finalize({
-        navigate: ({ session }) => {
-          if (session?.currentTask) return;
-          router.replace("/(tabs)");
-        },
-      });
-    } else {
-      setFormError("Additional verification is required to sign in.");
+    try {
+      const { error } = await signIn.password({ emailAddress, password });
+      if (error) {
+        setFormError(error.message ?? "Could not sign in. Check your details.");
+        return;
+      }
+      if (signIn.status === "complete") {
+        await signIn.finalize({
+          navigate: ({ session }) => {
+            if (session?.currentTask) return;
+            router.replace("/(tabs)");
+          },
+        });
+      } else {
+        setFormError("Additional verification is required to sign in.");
+      }
+    } catch (error) {
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : "We couldn't sign you in. Check your connection and try again.",
+      );
     }
   };
 

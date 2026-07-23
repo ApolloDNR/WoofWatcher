@@ -35,9 +35,11 @@ import { WebDialogHost } from "@/components/WebDialogHost";
 import { CareProvider } from "@/context/CareContext";
 import { AvatarProvider } from "@/context/AvatarContext";
 import { useColors } from "@/hooks/useColors";
+import { shouldEnforceAuthGate } from "@/lib/authGate";
 import {
   clerkProxyUrl,
   clerkPublishableKey,
+  enforceAuthInDevelopment,
   isClerkConfigured,
   useWoofAuth,
 } from "@/lib/auth";
@@ -90,7 +92,10 @@ function RootLayoutNav() {
       if (segments[0] === "(auth)") router.replace("/(tabs)");
       return;
     }
-    if (__DEV__) return;
+    if (!shouldEnforceAuthGate({
+      isDevelopment: __DEV__,
+      forceInDevelopment: enforceAuthInDevelopment,
+    })) return;
     const inAuthGroup = segments[0] === "(auth)";
     if (!isSignedIn && !inAuthGroup) {
       router.replace("/(auth)/sign-in");
