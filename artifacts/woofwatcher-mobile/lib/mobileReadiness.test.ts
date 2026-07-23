@@ -2661,6 +2661,18 @@ test("keeps detail-log validation visible before save", () => {
   assert.match(log, /Disabled\. \${composerValidationMessage\}/);
 });
 
+test("exposes care-log household visibility controls as accessible switches", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const visibilityToggleCount = (log.match(/setHouseholdVisible\(\(prev\) => !prev\)/g) ?? []).length;
+  const accessibleSwitchCount = (log.match(/accessibilityLabel="Share this log with the household"/g) ?? []).length;
+
+  assert.equal(accessibleSwitchCount, visibilityToggleCount);
+  assert.match(log, /accessibilityRole="switch"/);
+  assert.match(log, /accessibilityState=\{\{ checked: householdVisible \}\}/);
+  assert.match(log, /Double tap to keep this log private/);
+  assert.match(log, /Double tap to share this log with household caregivers/);
+});
+
 test("keeps Quick Log search and timeline on shared board card anatomy", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 

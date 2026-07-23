@@ -3296,6 +3296,10 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3420,6 +3424,10 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3469,6 +3477,10 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3530,6 +3542,10 @@ export default function LogScreen() {
                   </View>
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3611,6 +3627,10 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3671,6 +3691,10 @@ export default function LogScreen() {
                   </View>
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3751,6 +3775,10 @@ export default function LogScreen() {
                   </View>
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3805,6 +3833,10 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
