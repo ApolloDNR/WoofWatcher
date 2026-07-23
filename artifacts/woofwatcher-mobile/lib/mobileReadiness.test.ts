@@ -582,6 +582,10 @@ test("keeps tabbed mobile routes clear of the floating paw nav", () => {
   assert.match(tabs, /getFloatingTabChromeMetrics/);
   assert.match(tabs, /centerFabBottom/);
   assert.match(tabs, /tabBarHeight/);
+  assert.match(tabs, /accessibilityLabel=\"Today\"/);
+  assert.match(tabs, /router\.navigate\(\"\/\"\)/);
+  assert.match(tabs, /tabBarLabelStyle: \{ fontFamily: \"Inter_700Bold\", fontSize: 12, lineHeight: 15 \}/);
+  assert.doesNotMatch(tabs, /accessibilityLabel=\{onToday \? \"Quick log\"/);
 
   for (const route of tabbedRoutes) {
     const source = readAppFile(join("(tabs)", `${route}.tsx`));
