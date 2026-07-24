@@ -8,9 +8,29 @@
 
 **Tech Stack:** Node 24, pnpm 10.24.0 workspaces, Expo SDK 54, Expo Router 6, React Native 0.81, React 19, TypeScript 5.9, React Query, Clerk Expo, AsyncStorage, Express, Drizzle/Postgres/Supabase, Node test runner, Playwright/Chromium web-export QA.
 
+## Execution ledger — 2026-07-23
+
+The detailed checkboxes below preserve the original RED/GREEN implementation
+recipe. This ledger is the authoritative completion view; do not infer that an
+unchecked historical step means its reviewed commit is absent.
+
+| Tasks | Status | Evidence boundary |
+| --- | --- | --- |
+| 1–7 — cache scope, wipe finality, private authorization, household authority, document/entry concurrency, complete history | Complete in source and independently reviewed | Unit, Express-router, and real Postgres migration/concurrency tests pass. Migrations `0004`, `0005`, `0006`, and `0008` are committed but not proven applied to an approved production provider. |
+| 8–11 — auth failures, refresh errors, privacy controls, warm contrast | Complete in source and independently reviewed | Focused regression tests and workspace typecheck cover fail-closed release auth, visible errors, switch semantics, and reviewed foreground contrast. |
+| 12–14 — truthful evidence, honest empty states, five-destination loop | Complete in source and independently reviewed | Health no longer emits simulated wellness; zero data stays unknown; primary navigation is Today, Plan, Quick Log, Health, More. |
+| 15 — unified logging | Complete in source and independently reviewed | Fast/detailed entry share one taxonomy/controller; Log is History-first; optimistic/stale lifecycle tests pass; duplicate console deleted. |
+| 16 — focused Today | Complete in source and independently reviewed | Today is organized around Now, Next, Quick Log, evidence, and real-care Story progress. |
+| 17 — accessibility and interaction | Complete for source and web preflight | Shared 48-point/reflow/semantics/keyboard contracts pass. QA-only 1.0×/1.4×/2.0× rendered proof passes 15/15 cases with zero geometry errors. RN Web does not enlarge glyphs like native Dynamic Type; VoiceOver/TalkBack and real native Dynamic Type remain device-proof pending. |
+| 18 — whole-branch/release proof | Complete for the locally executable source/web scope and dedicated branch publication | Frozen install, 1,128 tests, full type/build/CI export, 149 assets, 36/36 rendered workflows, 85-screen visual/accessibility review, doctors, documentation, independent reviews, and branch publication are recorded below. Signed native, provider, store, and remote branch-CI evidence remain explicit external gates. |
+
+The published branch is a source/web release candidate. It is not a signed
+native build, a provider deployment, TestFlight approval, or store-submission
+authorization.
+
 ## Global Constraints
 
-- Work only from `c0531bebbde7ca546feda7f34d585f8af249cfe1` or its `codex/woofwatcher-premium-renovation` continuation; never merge `b771a4a6`.
+- Work only from `c0531bebbde7ca546feda7f34d585f8af249cfe1` or its reviewed continuation; never merge `b771a4a6`. The active local continuation is `codex/woofwatcher-renovation-integration`; publish its final head as `codex/woofwatcher-premium-renovation`.
 - Canonical product surface: `artifacts/woofwatcher-mobile`; shared care rules stay in `lib/care-domain`; API rules stay in `artifacts/api-server`.
 - Node 24 and pnpm `10.24.0` are required. The pre-change baseline is exactly 740 focused tests passing, full workspace typecheck passing, and Expo web export passing.
 - No production behavior change without a failing regression test first. Confirm the failure reason, then implement the smallest passing change.
@@ -24,7 +44,8 @@
 - One motion vocabulary only: `components/motion/GameFeel.tsx`; all loops honor Reduce Motion.
 - UI colors come from `constants/colors.ts`; primary/forest surfaces use `primaryForeground`; copper/warm surfaces use the reviewed `warmForeground` token.
 - Do not claim cloud sync, push, payments, live AI, document storage, TestFlight, App Store, or public launch unless the matching provider and native proof exists.
-- Keep existing untracked files outside task scope unless their ownership is resolved: `artifacts/woofwatcher-mobile/components/AnimatedAvatar.tsx`, `docs/release/tools/store-panels.mjs`, and `docs/release/tools/store-shots.mjs`.
+- Preserve unrelated user work. The integration worktree must be clean before
+  final proof and push.
 
 ---
 
@@ -602,12 +623,12 @@ Commit: `fix(health): show evidence instead of simulated wellness`
 - Every high-frequency target is at least 48×48 or has equivalent hit slop.
 - Selectable chips expose role, label, selected/checked state, and a state-specific hint.
 
-- [ ] Add failing tests for 1.0/1.4/2.0 font-scale layout metrics, 48-point controls, chip semantics, and correct primary/secondary back behavior.
-- [ ] Confirm RED.
-- [ ] Implement reflow: grids reduce columns, horizontal status rows stack, chrome grows, and metadata yields before action labels.
-- [ ] Reuse accessible Board primitives rather than bespoke controls.
-- [ ] Run web DOM accessibility probes and screenshots with emulated font scaling; leave VoiceOver/TalkBack closure marked native-proof pending.
-- [ ] Commit: `fix(a11y): make core care usable at accessibility sizes`.
+- [x] Add failing tests for 1.0/1.4/2.0 font-scale layout metrics, 48-point controls, chip semantics, and correct primary/secondary back behavior.
+- [x] Confirm RED.
+- [x] Implement reflow: grids reduce columns, horizontal status rows stack, chrome grows, and metadata yields before action labels.
+- [x] Reuse accessible Board primitives rather than bespoke controls.
+- [x] Run web DOM accessibility probes and screenshots with emulated font scaling; leave VoiceOver/TalkBack closure marked native-proof pending.
+- [x] Commit: `fix(a11y): make core care usable at accessibility sizes`.
 
 ---
 
@@ -620,28 +641,31 @@ Commit: `fix(health): show evidence instead of simulated wellness`
 - Modify: `docs/ULTIMATE_RELEASE_PLAN.md`
 - Add reviewed screenshots only through the existing release tooling.
 
-- [ ] Run a fresh full verification:
+- [x] Run a fresh full verification:
 
 ```bash
 pnpm install --frozen-lockfile
 pnpm run test:focused
 pnpm run typecheck
+pnpm run build:ci
 pnpm --filter @workspace/woofwatcher-mobile run verify:pixellab-assets
 pnpm --filter @workspace/woofwatcher-mobile run smoke:web
 pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime
 pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview
+pnpm --filter @workspace/woofwatcher-mobile exec playwright install chromium
+pnpm --filter @workspace/woofwatcher-mobile run e2e:web
 pnpm run doctor:mobile-beta:json
 pnpm run doctor:native-qa:json
 git diff --check
 ```
 
-- [ ] Serve the rebuilt Expo export and drive every route at 390×844 with zero console/page errors.
-- [ ] Capture and inspect Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy in light and dark mode, zero and populated data, normal and Reduce Motion.
-- [ ] Run the storage-failure, corrupt-cache, offline boot, account-switch, private-log, wipe-during-request, conflict, and 501-row history drills.
-- [ ] If native tooling is available, run iOS/Android safe-area, Dynamic Type, VoiceOver/TalkBack, haptics, keyboard, hardware/swipe Back, attachment/share, and Reduce Motion QA. If unavailable, keep each row blocked with the doctor output; do not claim native completion.
-- [ ] Update handoff/release docs with exact observed evidence and external blockers: Expo/EAS access, Apple Developer/App Store Connect, production Clerk/Supabase/storage/push/AI/payment credentials, approved legal/support URLs, and Apollo submission approval.
-- [ ] Dispatch final whole-branch review, fix every Critical/Important finding, re-run the complete gate, and commit: `docs(release): record premium renovation proof`.
-- [ ] Push `codex/woofwatcher-premium-renovation`; open a PR only if Apollo’s repository workflow permits it. Never merge to `main` or submit to a store without explicit approval.
+- [x] Serve the rebuilt Expo export and drive every route at 390×844 with zero console/page errors.
+- [x] Capture and inspect Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy in light and dark mode, zero and populated data, normal and Reduce Motion.
+- [x] Run the storage-failure, corrupt-cache, offline boot, account-switch, private-log, wipe-during-request, conflict, and 501-row history drills.
+- [x] If native tooling is available, run iOS/Android safe-area, Dynamic Type, VoiceOver/TalkBack, haptics, keyboard, hardware/swipe Back, attachment/share, and Reduce Motion QA. If unavailable, keep each row blocked with the doctor output; do not claim native completion. The final local doctor result is `BLOCKED`, so no native row is marked passed.
+- [x] Update handoff/release docs with exact observed evidence and external blockers: Expo/EAS access, Apple Developer/App Store Connect, production Clerk/Supabase/storage/push/AI/payment credentials, approved legal/support URLs, and Apollo submission approval.
+- [x] Dispatch final whole-branch review, fix every Critical/Important finding, re-run the complete gate, and commit: `docs(release): record premium renovation proof`.
+- [x] Push `codex/woofwatcher-premium-renovation`; no PR was opened because Apollo did not authorize repository review workflow changes. Never merge to `main` or submit to a store without explicit approval.
 
 ## Plan self-review
 

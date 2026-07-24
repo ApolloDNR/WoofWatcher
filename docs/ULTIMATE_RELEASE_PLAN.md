@@ -1,218 +1,172 @@
 # WoofWatcher Ultimate Release Plan
 
-## What The App Is
+## Current release boundary
 
-WoofWatcher is a premium mobile-first dog care operating system for owners, households, caregivers, sitters, trainers, walkers, and vets. It coordinates a dog's daily care through shared routines, quick logging, health watch, records, handoffs, report exports, and WoofGuide AI assistance.
+WoofWatcher is a premium, mobile-first dog-care operating system for owners,
+households, caregivers, sitters, trainers, walkers, and veterinary handoffs.
+The approved sequence is:
 
-It is not a generic pet tracker. The product is designed around a real dog with care quirks, anxiety context, eating patterns, health signals, household handoffs, and records that need to be trusted.
+1. finish and verify the premium renovation locally;
+2. connect approved production providers;
+3. complete native iOS and Android acceptance;
+4. distribute a shared-account TestFlight/internal beta;
+5. prepare public App Store and Play submission only after beta evidence,
+   legal approval, store disclosures, and Apollo's explicit release approval.
 
-## Full Premium Release Definition
+This repository is not evidence that TestFlight or a public store release is
+already approved. Web preview proof cannot replace a signed native build,
+provider proof, legal review, or store review.
 
-Full Premium Release means the app is credible enough for a dog owner to use every day, show publicly, and pay for. The release must satisfy these standards:
+## Premium release definition
 
-- onboarding creates an account, household, dog profile, and baseline routine
-- Today Command clearly answers what the dog needs now
-- Quick Log and Full Log cover the core care categories without dead ends
-- meal, water, walk, potty, play, training, mood, medication, weight, vomit, symptoms, incidents, grooming, alone time, notes, and sticky notes are represented
-- routines and reminders can be assigned to household caregivers
-- records cover vaccines, vet visits, diet, insurance, microchip, documents, and pet credential data
-- handoff/report flows produce useful summaries for sitters, family, trainers, and vets
-- WoofGuide is grounded in dog context and respects the medical boundary
-- offline and sync state is visible and recoverable where architecture supports it
-- empty, loading, error, and failed-sync states are designed and useful
-- tests cover care-domain logic and key mobile behavior
-- deployment docs and production env/security expectations are clear
-- CI verifies install, behavior tests, typecheck, and CI-safe builds
+A premium release must:
 
-## Feature Map And Current Status
+- create or join the correct household without exposing another account's
+  cached care;
+- answer what the dog needs now through Today and Plan;
+- log care quickly through one Quick Log model while retaining a detailed,
+  searchable Log History;
+- organize owner-entered health evidence without diagnosis or invented
+  confidence;
+- preserve private logs as a server authorization boundary;
+- make offline work, conflicts, refresh failures, partial wipes, and deletion
+  limits visible;
+- support records, handoffs, reports, reminders, household responsibility,
+  and recovery without dead ends;
+- reflow for Dynamic Type, preserve 48-point targets, expose control state,
+  honor Reduce Motion, and remain keyboard/screen-reader operable;
+- keep provider-backed sync, storage, AI, push, payments, deletion, and
+  release claims disabled until their structured proof exists;
+- pass behavior, database, type, build, rendered-route, visual, native, and
+  release-control gates for the exact submitted commit.
 
-| Area | Current status | Release gap |
+## Premium renovation status
+
+| Area | Implemented in the renovation branch | Remaining release proof |
 | --- | --- | --- |
-| Account/Auth | Mobile uses Clerk auth screens and provider guardrails. API uses Clerk auth helpers. Privacy & Safety now exposes owner data export, deletion request preparation, and launch safety gates. The focused Auth/Setup proof manifest blocks account/onboarding readiness until structured Clerk production, redirect/deep-link, household membership, Apollo auth launch, and iOS/Android Auth gateway plus Setup local-preview screenshot proof is source-backed. | Confirm end-to-end account onboarding in Expo runtime, real Clerk/OAuth/deep-link provider proof, provider-backed household creation, self-serve deletion, document provider setup, and real native Auth/Setup screenshots. |
-| Household | API has household routes and provisioning logic. Mobile context supports shared state. First-run setup captures a household caregiver baseline. Household Responsibility now derives care-team routine ownership, open/overdue/unassigned counts, visible today log activity, and next household action copy, then surfaces it in Calendar and More. Household Access now derives synced account members, local-only caregivers, routine-only owners, invite readiness, permission labels, and next-step copy, then surfaces it in More. Access Pass now has a shared local-draft model for sitter/trainer/vet/emergency helper permissions, blocked actions, active/upcoming/draft status, and My Care Today assigned-care visibility in More without pretending provider sharing is live. API readiness now covers owner/admin-only household member role updates, canonical helper/vet-viewer roles, empty-patch rejection, self-change/self-revocation blocking, helper revocation, durable invitation lifecycle storage, owner/admin invitation list/create/revoke APIs, invitation acceptance runtime checks, owner/admin Access Pass activation/revocation routes, active-household scoping, helper-role enforcement, durable `household_audit_events` schema, provider-durable audit lifecycle states, Access Pass future-expiry validation, request-time expiry enforcement for helper access, owner/admin audit review/list APIs, owner/admin read-only sharing cleanup review for expired invites/helpers, and generated invitation/update/revoke/access-pass/audit-review/member-expiry/sharing-cleanup clients. | Improve auth-connected household setup UI, provider-backed invite UI/delivery, non-destructive cleanup apply/approval design for expired invitations and helper memberships, provider migration/RLS/retention rules, and caregiver editing. |
-| Dog Profile | Profile exists in care state/screens, shared onboarding readiness detects missing profile setup, mobile editor captures credential fields, and first-run setup can save the core dog profile. Mobile now has a local CareTwin roster backbone with `activePetId`, planned future pet slots, a More-screen CareTwin Roster card, Add future dog flow, and provider-gated copy that prevents fake multi-dog switching before scoped care documents exist. | Add provider-backed multi-dog care documents, scoped dog switcher, profile photo, and richer credential polish. |
-| Today Command | Mobile has a Today Command model, home surface, setup nudge, action routing, sync/health context, and routine-board alignment for partial meals plus overdue assigned routines. PWA Phoenix Home now has generated pixel-room copy, a first-screen household pulse card, and a combined Health/Bile snapshot for food gap, bedtime snack proof, vomiting, energy, and weight. | Add reminder notifications, richer empty states, and interaction polish. |
-| Quick Log | Mobile log surface supports many care event types, inline notes, post-log sticky note capture, Home one-tap routine-aware meal/walk/potty logs with rich meal detail, Home medication quick logs with routine dose/outcome/visibility detail, Home water quick logs with household-visible refill detail, explicit household-visible walk quick logs, household-visible potty quick logs, and detail-first Incident Watch logs for altercations, bites, rough greetings, escape/injury, trigger/exposure, and follow-up. | Improve progressive composer validation, deeper deep-linked composer defaults, and post-save routing. |
-| Full Log | Care entries persist locally and through API sync. Mobile Log has text search plus type filters, entry editing, sticky-note actions, a detail sheet, sync/error visibility, audit history for create/edit/sticky-note/delete actions, a durable offline outbox banner for retryable care changes, shareable entry handoff text, and route-param type preselection for Reminder Center actions. The API list route now preserves valid incremental `since` pulls, clamps `limit`, and rejects malformed `since` values with a typed 400 instead of silently widening to a full household log. Successful deletes create a separate non-health audit note. | Add dedicated log history views and server-backed retention policy for deleted entries. |
-| Meal/Diet | Domain has diet progress logic, mobile meal progress UI, and first-run setup for food, normal portion, and meal schedule. The PWA now has a first-class Diet & Treats route with daily meal target/progress, meals today, treats today, hydration context, avoid list, and direct Log Meal/Log Treat/Edit Diet Profile actions. | Add richer daily target setup, portion presets, feeding streaks, and appetite pattern explanations. |
-| Water | Event taxonomy includes water. Home quick log can record household-visible fresh-water refills. Shared care-domain logic derives daily hydration status, refill-equivalent progress, last log, caregiver participation, Records Hydration UI, Care Pass report language, and weekly Care Trends refill context. | Add configurable water goals, water-specific composer options, hydration trend history, reminder nudges, and vet-safe pattern context for unusual drinking changes. |
-| Walk | Event taxonomy and status count walks. Shared walk activity now derives today's visible walk count, duration, distance when logged, places/routes, dog interaction counts, social outcome notes, caregiver participation, Records Walk Activity UI, and Care Pass report language. Home walk quick logs now explicitly stay household-visible. The full Log composer captures route/place, distance, dog interactions, social outcome notes, and household visibility, Saved Routes derives repeat route templates for Records and Care Pass reports from visible walk logs, and weekly Care Trends compares walk minutes against the prior 7-day window. | Add route maps, dog park template presets, weekly streak visualization, saved route maps, and location integration where feasible. |
-| Potty | Potty status and logs exist. The Log composer captures pee/poop kind, stool condition, stool color, routine/accident/urgent/straining context, sticky notes, and household visibility. Shared Potty Health now derives today's visible pee/poop counts, stool review count, abnormal conditions, stool colors, potty context, latest detail, caregivers, Records Potty Health UI, Care Pass report language, and weekly Care Trends potty-watch signals. | Add longer trend history, richer red-flag checklist copy, accident/urgency follow-up workflows, and longer-range vet report patterns. |
-| Play/Training | Event taxonomy supports play and training. The Log composer now captures structured training skill/cue, win/practice/struggle outcome, duration, next-practice notes, sticky notes, and household visibility. Shared Training Progress derives visible 30-day sessions, minutes, wins, struggles, skills, caregivers, latest context, Records UI, and Care Pass report language. | Add formal training goals, skill plans, behavior trigger taxonomy, trainer-assigned homework, and longer-range progress charts. |
-| Mood/Energy | Avatar and health screens use mood/energy signals. Home now derives tested avatar motion states from health watch, recent care logs, routine status, quiet hours, and low energy. | Add structured mood/energy logging, trend charts, Rive/Lottie/Reanimated state assets, and runtime animation QA. |
-| Medication | Canonical medication event type exists. Shared domain logic now derives medication adherence from routines and household-visible logs, including taken, due, missed, upcoming, dose, owner, logged-by context, adherence percentage, and next medication action. Mobile Records shows a Medication Plan surface. Home quick log and the full Log composer now attach medication routine, dose, taken/skipped outcome, and household visibility; skipped medication logs do not count as taken. Medication follow-ups now derive missed-dose, due-now, and refill due-soon/overdue actions from routines, logs, and medication records; Records shows those follow-ups and Care Pass reports include medication adherence plus refill language. Medication history now shows recent household-visible medication logs with dose, outcome, caregiver, routine id, notes, medicine/dose/caregiver/note search, and taken/skipped/missed/needs-review filters. | Add real notification delivery, calendar recurrence polish, and stricter medication schedule schemas before pharmacy/vet integrations. |
-| Weight | Weight logs update the living profile. Shared Weight Trend logic derives household-visible recent weigh-ins, current weight, goal distance, previous-change, caregiver participation, Records chart inputs, and Care Pass report language. | Add richer goal range setup, long-range trend history, vet-reviewed weight-plan language, and weight-goal reminders. |
-| Vomit/Symptom | Health Watch detects yellow bile, urgent signals, and non-diagnostic pattern cards with evidence and owner next steps. | Add richer symptom composer, frequency views, red-flag checklist, and vet-note export. |
-| Incident Watch | Event taxonomy now includes `incident` plus altercation/bite/fight/reactivity aliases. Shared Incident Watch derives visible 90-day incidents, watch/review status, alert/follow-up counts, dog exposure, injury checks, triggers, exposures, latest context, 7/30/lookback trend windows, rising/improving/steady/clear labels, owner follow-up tasks, trainer goal suggestions, Records UI, and Care Pass report language. Mobile Log captures incident type, care level, outcome, trigger, exposure, injury check, action taken, follow-up, sticky notes, trust metadata, and household visibility. Records follow-up rows route to the Incident composer or trainer Care Pass preview. | Add native QA polish, provider-backed behavior goal persistence, longer-range chart visuals, and trainer-reviewed plan storage while keeping behavior and medical language non-diagnostic. |
-| Grooming | Event taxonomy supports grooming. The Log composer captures grooming type, duration, coat/skin notes, products/groomer context, next due date, sticky notes, and household visibility. Shared Grooming Care derives visible 45-day grooming status, products, caregivers, next due date, Records UI, and Care Pass language. | Add grooming reminders, groomer contacts, recurring schedules, richer coat/skin follow-up workflows, and longer-range grooming reports. |
-| Alone Time | The Log composer captures alone-time duration, return state, trigger/context, calming support, recovery minutes, sticky notes, and household visibility. Shared Alone Time logic derives 30-day household-visible separation/anxiety patterns, status, triggers, supports, caregiver participation, latest context, Records UI, and Care Pass handoff language. | Add formal trigger taxonomy, gradual-alone-time plans, longer-range charts, trainer/vet-reviewed language, and reminder/nudge workflows. |
-| Sticky Notes | Domain tests cover sticky note append/sanitize behavior. Mobile Log can attach multiple sticky notes to existing logs, show them in timeline/detail views, and include them in entry handoff text. | Add richer sticky-note colors, pinning, and report filtering. |
-| Routines/Reminders | Routine board domain logic exists; calendar UI has assignment/completion concepts; first-run setup can create a starter routine with owner assignment. Household Responsibility now turns routine-board status into owner loads, unassigned routine warnings, visible log counts, and a next household action. Reminder Center now combines routine status, medication follow-ups, record reminders, and grooming due dates into one Calendar owner action list with urgent/watch/total counts, notification-readiness copy, and row routing to routine edit, Records, Medication log, or Grooming log. The Push notifications proof manifest blocks reminder delivery until iOS APNs and Android FCM native delivery evidence is platform/provider named and source-backed. | Add provider-backed reminder notifications, recurring rules, recurring setup polish, richer owner load balancing, notification preferences, real APNs/FCM delivery evidence, prompt/legal approval, and store privacy review. |
-| Records | Domain has record vault, pet credential summary, due-status logic, and record reminders for expired, due-soon, and missing-critical records. Mobile Records includes a dog ID card, due/current/reference badges, reminder rows, profile-level microchip, insurance, vet, and emergency-contact fallbacks before uploaded records exist, plus print-ready Dog ID credential HTML/SVG with separate share actions and a local Dog ID PNG generator that preserves native/provider proof blockers. Privacy & Safety makes document storage rules visible before upload is enabled. PWA Records and Timeline are directly routable work surfaces. | Add document upload/storage, richer receipt capture, server reminders for expiring records, native share/reopen proof, provider storage, and credential card PDF export. |
-| Handoff/Reports | Domain supports care pass and handoff summaries. Mobile Records previews sitter, vet, trainer, and caregiver Care Pass sections before sharing, stores shared Care Pass artifacts in report history, and Care Pass exports include audience checklists plus Health Pattern Review, Hydration, Walk Activity, Training Progress, Alone Time, Weight Trend, Grooming Care, Incident Watch trend/follow-up/goal context, Potty Health, and Weekly Care Trends next steps. Care Pass artifacts now include escaped print-ready HTML, stable file names, visible print-ready/restored report history metadata, separate resend/printable-source share actions, a native local HTML file handoff path, and local generated Care Pass PDF bytes for saved report history artifacts. The PWA now exposes scoped Vet, Sitter, Trainer, and Emergency Care Pass export cards backed by `buildScopedCarePass`, plus direct Reports and Care Pass routes. | Add native export/download proof, server-backed report storage, longer-range trend reports, and richer audience templates. |
-| WoofGuide | API routes and mobile WoofGuide screen exist. Mobile now shows deterministic suggested action cards and owner-reviewed drafts for missing meal logs, record reminders, vet notes, and Care Pass review. The PWA now has a first-class WoofGuide route with owner-reviewed action cards that route into Meal Log, Care Pass review, Records review, and a bounded vet-note draft. A server OpenAI key signal stays staged as provider proof pending; the PWA does not call live AI until structured AI provider proof sets `proofReady`. | Add provider-backed source citations, report-draft persistence, permission-aware assistant writes, stronger audit history, and real structured OpenAI/model/source/write-gate/veterinary/fallback proof before enabling live AI. |
-| Monetization | Free, Plus, and Family pricing preview exists. Shared care-domain logic now defines Free/Plus/Family entitlement gates, and the mobile Plus screen shows included and locked features before checkout. The Payments proof manifest and Privacy & Safety payments gate keep checkout blocked until iOS App Store and Android Google Play sandbox receipt/restore evidence is platform/store named and source-backed. | Add provider-backed checkout, entitlement enforcement at API/UI boundaries, grandfathering/trial policy, support/refund terms, and App Store/Google Play subscription approval. |
-| Offline/Sync | Mobile care sync handles local/pending/failed status, retry separation, a durable outbox summary, CareContext exposure, a Log screen recovery banner with retry counts/action, a More Sync Health dashboard for household sync status, care-log audit trails, and conflict-safer care-document refresh that keeps newer local/offline profile, routine, record, and report changes instead of accepting stale server data. The API now exposes a source-backed care-entry `updatedAt` cursor and delete tombstone contract with route-level Express coverage for server cursor reads, ambiguous cursor rejection, tombstone reads, and invalid tombstone cursor rejection. Provider Launch Setup now lists the required structured Supabase project id, migration/backfill, active-household cursor/tombstone RLS, retention/export/deletion, dependency-complete build, and mobile full-refresh sign-off proof files for that contract, backed by the care-entry provider sync proof packet in More and Share Beta Handoff. Generic provider notes do not unlock incremental sync; proof files need file name or URI, MIME, byte size, required row fields, and row-specific booleans or approvals. Mobile still uses a truthful full-refresh plan until provider proof and incremental adoption are verified. PWA Settings now exposes full backup, import, same-household transfer, reset, local-only provider readiness, sync blockers, and privacy/safety truth. | Add deeper multi-device conflict policy, native runtime recovery QA, actual provider-backed retention/RLS proof for the cursor and tombstone schema, mobile incremental refresh adoption, and broader recovery tests. |
-| Design | Warm brand assets and Phoenix art exist. Critical mobile actions now have screen-reader labels on Privacy, Premium, WoofGuide, and More. Home has a tested avatar motion state model and actionable motion row. PWA Phoenix Home now includes richer state copy plus household and Health/Bile cards. PWA Avatar Studio now has a direct prototype route with local reference photo memory and required avatar state inventory. PWA Achievements now has a direct evidence-based milestone route for routine streak, training consistency, happy tummy week, bedtime snack proof, calm alone time, and records completeness. | Need full premium design system, Rive/Lottie/Reanimated motion assets, high-end screen polish, full accessibility pass, visual regression, and Figma alignment. |
-| CI/QA | GitHub Actions verifies install, machine-readable mobile beta doctor status, focused tests, typecheck, API/web builds, mobile Expo web export smoke, exported web-runtime route smoke, and can be manually dispatched if a push hook misses. Focused tests include static mobile readiness smoke for route registration, tabs, router links, launch-blocking safety copy, CI doctor/smoke/runtime wiring, critical action accessibility labels, release-grade app identity, EAS profile readiness, mobile release runbook coverage, Home avatar motion wiring, medication history search/filter wiring, hydration visibility from Home quick log to Records, Walk Activity wiring, Saved Routes wiring, Weekly Care Trends wiring, Training Progress wiring, Alone Time wiring, Weight Trend wiring, Grooming Care wiring, Incident Watch wiring, Potty Health wiring, Reminder Center wiring/action routing, Full Log search wiring, care-entry incremental sync query validation, care-entry route integration coverage, durable sync outbox wiring, household Sync Health wiring, Household Responsibility wiring, Household Access wiring, Care Log Audit Trail wiring, PWA Achievements and Settings route wiring, and conflict-safe care-document refresh wiring. | Add native simulator/device smoke, provider-backed API integration proof, Playwright or simulator screenshot checks, full accessibility traversal, and visual regression where feasible. |
+| Data isolation | Local care is partitioned by account and household. Identity changes clear live refs and query data before the next scope hydrates. Delayed requests cannot repopulate a wiped or replaced lifecycle. | Real multi-account and multi-device testing against approved production Clerk/database projects. |
+| Privacy and deletion | Private care rows and tombstones are author-filtered server-side. Device clearing produces a per-target receipt and cannot report partial deletion as success. | Production migration/RLS/backfill evidence, retention/export rules, and an approved provider account-deletion path. |
+| Household authority | Active-household selection is durable. Invitation acceptance is atomic and caller-scoped. Role, expiry, rename, and access rules are API-tested. | Provider-backed invitation delivery/UI, production migration proof, live role/RLS validation, and native household acceptance. |
+| Sync and history | Care documents merge disjoint edits, care-entry writes use revision/CAS rules, conflicts remain owner-visible, refresh errors surface, and complete pagination covers long histories without partial replacement. | Provider deployment, offline/multi-device soak, retention policy, monitoring, and production recovery drills. |
+| Core navigation | The visible loop is exactly Today, Plan, central Quick Log, Health, and More. Secondary Records, Story, Pack, Adventure, Avatar Studio, Care Pass, Log History, Privacy, and QA remain routable. | Native safe-area, Back gesture/hardware Back, haptics, and final signed-build navigation acceptance. |
+| Logging | Fast Log and detailed logging share one taxonomy/controller; Log opens as History. Meal outcomes, medication, potty, mood/energy, walk, water, grooming, incidents, training, alone time, weight, notes, privacy, audit, search, and recovery paths remain available. | Native keyboard/share/attachment proof, production sync proof, and long-retention search policy. |
+| Today, Plan, and Health | Today is focused on Now, Next, Quick Log, evidence, and real-care Story. Plan owns routines and reminders. Health uses owner-entered seven-day evidence and non-diagnostic guidance instead of a simulated score. | Native populated/empty/error review, notification delivery proof, and veterinary/legal review of release copy. |
+| Accessibility and design | Shared board primitives, reviewed color tokens, 48-point targets, selection semantics, accessible labels/hints, large-text reflow, keyboard-safe sheets, and Reduce Motion contracts cover the core loop. Web preflight passed the 1.0×/1.4×/2.0× reflow and four-edge containment matrix, 15/15. | Native Dynamic Type glyph scaling, VoiceOver/TalkBack, contrast, motion, and physical-device visual acceptance. |
+| Release truth | Local auth fallback is web-only; production auth/provider features fail closed. Store, provider, account deletion, AI, payments, push, storage, and native QA each have explicit proof gates. | Expo/EAS linkage, signed builds, provider credentials, approved policies/support URLs, store accounts/forms/assets, beta acceptance, and Apollo submission approval. |
 
-## Missing Features
+## Current verification contract
 
-1. Provider-backed account provisioning and household invite delivery. First-run setup now captures and confirms create, join-by-invite, or local-preview household intent locally, and API readiness now has durable invitation rows plus list/create/revoke/join lifecycle contracts, but production still needs provider migrations/RLS, email/push delivery, invite UI polish, and account provisioning approval.
-2. Provider-backed multi-dog care documents and dog switcher. Local CareTwin roster staging exists, but separate per-dog logs/routines/records/reports are still gated.
-3. Non-destructive cleanup apply/approval design for expired invitations and Access Pass helper memberships, provider migration/RLS/retention rules for durable household invitation/audit rows, notification delivery, helper audit trails beyond existing audit and cleanup-review APIs, and caregiver editing. Request-time expiry enforcement, durable invite lifecycle checks, and read-only owner/admin cleanup review exist now, but production cleanup, delivery, and policy work are still launch gates.
-4. Deeper multi-device conflict handling, actual provider migration/RLS/retention/export/deletion proof for care-entry update cursors and tombstones, mobile incremental refresh adoption, and native recovery QA for care state edits. Provider Launch Setup now lists the exact proof required through a structured care-entry provider sync proof packet; it is not provider approval.
-5. Records document upload/storage, server reminders for expiring records, native Dog ID PNG/PDF share-reopen proof, and provider storage.
-6. Native export/download proof and server-backed report storage for generated Care Pass PDFs, sitter/trainer/vet reports, and household review.
-7. WoofGuide provider-backed actions with source citations, persisted report drafts, permission checks, and audit history.
-8. Provider-backed reminder notification flow, including medication delivery rules and notification preferences for the existing Reminder Center candidates.
-9. High-end motion, transitions, avatar state animation, and accessibility polish.
-10. Production deployment wiring and release runbook.
+Use Node 24 and pnpm 10.24.0 from the repository root:
 
-## Design And Polish Gaps
+```bash
+pnpm install --frozen-lockfile
+pnpm run test:focused
+pnpm run typecheck
+pnpm run build:ci
+pnpm --filter @workspace/woofwatcher-mobile run verify:pixellab-assets
+pnpm --filter @workspace/woofwatcher-mobile run smoke:web
+pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime
+pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview
+pnpm --filter @workspace/woofwatcher-mobile exec playwright install chromium
+pnpm --filter @workspace/woofwatcher-mobile run e2e:web
+pnpm run doctor:mobile-beta:json
+pnpm run doctor:native-qa:json
+git diff --check
+```
 
-- Current mobile UI is functional but not yet a final premium visual system.
-- Need component inventory for buttons, chips, cards, tabs, status banners, forms, empty states, and report surfaces.
-- Need motion rules for log confirmation, sync recovery, routine completion, report generation, and assistant actions. Avatar state rules now exist as a tested foundation, but the final art/animation pipeline is not complete.
-- Need full accessibility pass for contrast, touch target sizes, dynamic type, keyboard flow, and native screen-reader traversal. Critical mobile action labels are now statically protected.
-- Need visual hierarchy audit across Today, Log, Calendar, Records, More, WoofGuide, and auth screens.
-- Need Figma design system or equivalent component spec before major visual overhaul.
+`smoke:runtime` and `proof:live-preview` must bind their result to the current
+mobile/shared source fingerprint. Preserve the command output with the commit
+and build. The current exact results belong in
+`docs/handoff/HANDOFF_2026-07-18.md`; this plan intentionally does not freeze a
+test count that will drift as regressions are added. Treat
+`doctor:native-qa:json` as evidence capture: `BLOCKED` is expected on a host
+without the required native SDK/device tooling and must remain a native
+handoff blocker.
 
-## Data And Backend Gaps
+## External release blockers
 
-- Confirm database schema supports multiple dogs, household roles, record documents, report artifacts, notification preferences, and per-dog care document scoping. The mobile care document now has local `activePetId` and planned `pets` fields, but provider-backed separation is not implemented.
-- Add storage provider for uploaded records and generated reports.
-- Expand role-aware authorization beyond the new care-entry write policy, household role mutation/revocation API contracts, durable household audit row schema, durable invitation lifecycle storage, Access Pass helper activation/revocation contracts, request-time Access Pass expiry enforcement, owner/admin invitation APIs, owner/admin audit review APIs, and owner/admin sharing cleanup review APIs into provider-backed invite UI/delivery, non-destructive expired-invite/helper cleanup apply/approval, provider migration/RLS/retention rules, and broader account-action audit events.
-- Care-log edit/delete audit trail exists in mobile and care-domain; add broader audit trails for important medical records, documents, account actions, and role changes.
-- API readiness now guards OpenAPI/generated-client coverage for WoofGuide events, Avatar Studio image routes, household provisioning/auth errors, `/care-entries?limit=...`, care-entry create/update/delete validation/not-found/forbidden response shapes, `PUT /care-state` validation/not-found/conflict response shapes, provider-gated WoofGuide action auth/rate-limit/local-fallback contracts, active-household scoping across care-state/care-entry read/write paths, role-aware care-entry write policy for read-only roles, kid/helper pending confirmation, safety-critical review, medication proof metadata, owner/admin household member role updates/revocation, durable invitation lifecycle list/create/revoke/join contracts, durable household audit row readiness, Access Pass activation/revocation contracts, Access Pass future-expiry validation, request-time Access Pass expiry enforcement, owner/admin household audit review/list APIs, and owner/admin read-only sharing cleanup review APIs; continue with cleanup apply/approval design, provider migration/RLS notes, provider-backed invite UI/delivery, and integration tests.
-- Add deeper multi-device conflict policy, provider-backed retention/RLS proof for the care-entry update cursor and delete tombstones, mobile incremental refresh adoption, and broader background retry recovery policy.
+| Blocker | Required evidence before it closes |
+| --- | --- |
+| Expo/EAS | Authorized Expo account, linked EAS project id, delegated credentials, successful signed internal builds, and retained build URLs/logs. |
+| Apple | Active Apple Developer membership, App Store Connect app record, signing ownership, internal tester path, privacy forms, review access, screenshots, and Apollo approval. |
+| Google Play | Verified developer account/app record, Play App Signing/upload key ownership, required testing track, Data safety, screenshots/feature graphic, and Apollo approval. |
+| Clerk/auth | Production keys, redirect/deep-link configuration, reviewer access, account/household onboarding, recovery, logout, and native proof. |
+| Database/sync | Applied migrations `0004`, `0005`, `0006`, and `0008`; RLS/backfill/retention/export/deletion evidence; live API deployment; monitoring and rollback. |
+| Storage/documents | Approved buckets, signed access, household scoping, encryption/retention/deletion, upload/download/reopen proof, and native file-share evidence. |
+| Push | APNs/FCM/Expo configuration, permission copy, quiet hours/preferences, delivery/failure proof on both platforms, and privacy approval. |
+| WoofGuide AI | Approved model/source policy, secret storage, citations, owner-review write gate, veterinary boundary, fallback/incident handling, and disclosure approval. |
+| Payments | Store products, entitlement rules, sandbox purchase/restore, refund/support policy, receipts, family/plus policy, and store approval. |
+| Legal/support | Final legal entity, policy/terms, privacy contact, support owner/SLA, retention/deletion language, household rules, public HTTPS URLs, and counsel/Apollo approval. |
+| Native QA | iOS and Android proof for core routes, largest text, VoiceOver/TalkBack, Reduce Motion, safe areas, keyboard, Back behavior, haptics, files/sharing, offline/recovery, and populated/empty states. |
 
-## Test And QA Gaps
+The current Linux environment has no iOS simulator and no configured Android
+SDK, emulator, `adb`, or Java home. Those native rows must remain blocked; the
+absence of a native host is not a reason to mark them passed.
 
-- Existing focused behavior tests cover care sync, durable sync outbox derivation and Log wiring, household Sync Health dashboard derivation and More wiring, Household Responsibility derivation and Calendar/More wiring, Household Access derivation and More wiring, Access Pass local-draft permissions and My Care Today derivation, Reminder Center derivation, Calendar wiring, row action routing, Log type preselection, Full Log search derivation and mobile wiring, Care Log Audit Trail derivation and mobile wiring, conflict-safe care-document refresh reconciliation, Today Command, Home Quick Log enrichment, walk quick-log visibility, walk activity summaries, saved walk route templates, full Log walk route fields, walk activity and Saved Routes Care Pass language, walk activity Records wiring, Weekly Care Trends derivation, private-log exclusion, Care Pass trend language, mobile Records trend wiring, Training Progress derivation, Log composer training fields, trainer Care Pass training language, mobile Records training wiring, Alone Time derivation, Log composer Alone Time fields, Care Pass Alone Time language, mobile Records Alone Time wiring, Weight Trend derivation, Care Pass Weight Trend language, mobile Records Weight Trend wiring, Grooming Care derivation, Log composer grooming fields, Care Pass Grooming Care language, mobile Records Grooming Care wiring, Incident Watch derivation, incident trend windows, follow-up tasks, trainer goal suggestions, incident composer fields, Incident Watch Care Pass language, mobile Records Incident Watch wiring, potty quick-log visibility, potty composer stool color/context capture, Potty Health summaries, Potty Health Care Pass language, Potty Health Records wiring, medication quick-log defaults, medication composer wiring, medication history search/outcome filters, water quick-log defaults, hydration summary derivation, hydration Care Pass language, hydration Records wiring, avatar motion states, event taxonomy, day status, medication adherence, medication follow-ups, medication history, Care Pass medication report language, care pass audience checklists, print-ready Care Pass HTML artifacts, legacy printable artifact recovery, print-ready Dog ID credential HTML, diet progress, Health Watch pattern cards, health handoff, record reminders, record vault, routine board, sticky notes, WoofGuide owner-reviewed draft payloads, privacy/account safety export gates, static mobile route readiness, critical mobile action accessibility labels, Records printable report and Dog ID actions, and mobile doctor/export/runtime-smoke CI wiring.
-- Focused mobile tests now cover local CareTwin roster derivation, provider-gated future pet slots, More-screen roster wiring, Access Pass/My Care Today mobile wiring, and owner export/deletion inclusion for staged pet roster plus Access Pass draft data.
-- Focused mobile readiness checks also protect the release-grade Expo app identity: slug, URL scheme, iOS bundle id, Android package id, and absence of Replit placeholders.
-- Missing broader API integration tests beyond care-entry list query normalization/readiness coverage.
-- Missing native simulator/device runtime smoke. Static mobile route smoke, CI Expo web export smoke, and exported web-runtime route smoke exist, but they do not replace native runtime rendering.
-- Missing auth onboarding smoke.
-- Missing visual regression or screenshot review for core screens.
-- Missing generated report snapshot tests.
-- Missing document upload/security tests.
-- Missing full accessibility checks beyond static critical-action labels.
+## Execution sequence
 
-## Security, Privacy, And Compliance Gaps
+### Phase 1 — lock the renovation branch
 
-- Do not commit secrets or env files.
-- Production API must set `ALLOWED_ORIGINS`.
-- Health and vet guidance must remain non-diagnostic.
-- Add privacy copy for pet records, health notes, household sharing, and AI usage.
-- Data export and manual deletion request preparation exist in mobile and now include staged pet roster data plus Access Pass drafts. Provider-backed self-serve deletion, retention rules, and audit policy still need approval before public launch.
-- Add role-based access control and broader audit log for shared households, records, documents, and account actions.
-- Add document storage rules for receipts, insurance, vaccine records, and medical documents.
+- Complete every local verification command.
+- Inspect light/dark, zero/populated, motion, and accessibility-size captures.
+- Resolve every Critical or Important independent-review finding.
+- Push the dedicated renovation branch; do not merge `main`.
 
-## Deployment And Production Gaps
+### Phase 2 — production foundations
 
-- CI is active and green on `main`.
-- Need production env matrix for API, mobile, web/dashboard, and storage.
-- Need deployment target decisions for API and web.
-- Mobile release path is documented in `docs/release/MOBILE_RELEASE_RUNBOOK.md`, with Expo/EAS profiles committed for iOS and Android. App icons, splash, privacy manifests, store metadata, account credentials, and store submission approval remain release blockers.
-- Need release runbook for migrations, smoke tests, rollback, and support triage.
-- Need monitoring/logging policy for API errors, assistant usage, sync failures, and app crashes.
+- Approve the legal/data/provider inventory.
+- Link EAS and configure Clerk, API, database, and required storage.
+- Apply migrations through a reviewed, reversible production procedure.
+- Validate RLS, private-log visibility, household switching, 501-row history,
+  conflicts, offline recovery, export, and deletion using non-production test
+  accounts first.
 
-## Monetization Gaps
+### Phase 3 — signed native acceptance
 
-Monetization is not live because checkout is intentionally disabled. The current premium model and entitlement policy are:
+- Produce iOS and Android internal builds from the same commit.
+- Run `docs/release/CARE_TWIN_NATIVE_QA_MATRIX.md` on both platforms.
+- Attach route-named screenshots and session notes.
+- Fix and rebuild until there are no open Critical or Important findings.
 
-- Free: dog profile, basic logs, starter routines, and local care history.
-- Plus: advanced meal/diet tracking, Health Watch, records vault, Care Pass reports, WoofGuide reviewed drafts, and stored report history.
-- Family: household roles, shared routine board, caregiver handoffs, and family calendar.
-- Later add-ons: multiple dogs, generated PDFs, document storage, trainer/vet packs, priority AI actions, and partnerships.
+### Phase 4 — shared-account beta
 
-No payment implementation should start until product scope, privacy terms, support/refund obligations, provider-backed deletion, and App Store/Google Play subscription requirements are clearer. The current entitlement policy exists so checkout work can later enforce the same Free, Plus, and Family boundaries instead of inventing them in payment code. Receipt readiness now requires real iOS App Store and Android Google Play sandbox JSON evidence with product id, transaction id, byte size, purchase/renewal/cancel/refund/expired coverage, and restore proof before checkout can move out of blocked review.
+- Publish approved policies/support URLs before collecting external beta data.
+- Invite a controlled household beta group.
+- Monitor auth, sync, conflicts, crashes, support, deletion, and privacy
+  incidents.
+- Keep AI, push, payments, cloud documents, or public sharing disabled unless
+  each feature's proof gate is complete.
 
-## Autonomous Next-Task Queue
+### Phase 5 — public stores
 
-1. Add release-control docs and keep them current.
-2. Connect the local household setup intent to real provider-backed household creation, invite acceptance, membership sync, and role enforcement.
-3. Add records document storage, richer receipt capture, server reminders for expiring records, and credential export.
-4. Add binary PDF artifacts, native export/download, and server-backed report storage.
-5. Add deeper multi-device conflict policy, provider-backed delete retention/RLS proof, mobile incremental refresh adoption, and native offline recovery QA.
-6. Continue API integration tests for care state and entries, building from the new care-entry list query normalization/readiness coverage.
-7. Add native simulator/device smoke or screenshot verification once local dependencies/browser support are available.
-8. Add provider-backed self-serve account deletion, document storage rules, and retention/audit policy after Apollo approves providers/legal scope.
-9. Add provider-backed notification delivery, reminder preferences, and runtime permission handling for existing Reminder Center candidates.
-10. Add provider-backed WoofGuide source citations, permission-aware writes, and persisted report drafts.
-11. Add provider-backed Adventure media, maps/location retention, sharing controls, and community safety rules after Apollo approves providers and privacy scope.
-12. Build visual system pass in Figma or code, then implement screen-by-screen.
+- Freeze the exact signed release candidate.
+- Recalculate Apple privacy labels, Play Data safety, reviewer instructions,
+  screenshots, and listing copy from that binary.
+- Complete purchase/restore and account-deletion requirements where enabled.
+- Submit only after Apollo explicitly approves submission. Use phased release
+  and a documented rollback/support path.
 
-## Decisions Made Without Apollo
+## Product truths that must not regress
 
-- Mobile remains the canonical app surface.
-- Web app remains a prototype/dashboard surface until intentionally redesigned.
-- Shared care logic belongs in `lib/care-domain`.
-- `care_entries` is the append-style log record; `care_state` holds shared configuration.
-- CI should run focused behavior tests plus typecheck/build on every push to `main`.
-- Vite builds should not require `PORT` or `BASE_PATH` in CI; they default to local-safe values when absent.
-- Expo app typecheck excludes Node test files because root focused tests run them separately.
-- Pet credential fields can live on the dog profile as practical fallbacks before formal record documents are uploaded, and the Records Dog ID can produce print-ready HTML plus a local native HTML credential file before image/PDF export exists.
-- Log details remain inside the Log workflow as a bottom sheet instead of a separate route until search/history needs justify a route.
-- Care log audit trails live in `lib/care-domain`; edits and sticky notes append audit events to the entry, while successful deletes create a separate non-health note entry so deleted logs do not continue satisfying routines or health summaries.
-- Care Pass reports preview before sharing; print-ready HTML now exists on stored artifacts and Records exposes resend/print-source actions, including a local HTML file share path for native saved artifacts, while binary PDF generation and server-backed report storage remain separate production work.
-- The focused Records local-file handoff route can show a source-backed proof manifest for Care Pass local HTML, Dog ID local HTML, Dog ID SVG, native share-sheet behavior, Android content URI or saved-file proof, fallback copy, and generated PDF/PNG/provider boundary evidence, and branch CI proved the stricter six-slot guard in run `28693966672` on commit `97fa65a`, but native Records file proof remains blocked until six platform-and-file-specific native proofs are attached for iOS/Android Care Pass HTML, Dog ID HTML, and Dog ID SVG, plus Android `content://` or `file://` URI evidence and Apollo approval.
-- The focused Report Binary Export Proof route can show a source-backed manifest for Care Pass PDF, Dog ID PNG, provider storage, and native artifact proof. The focused route now derives provider-storage state from saved Provider Launch Setup storage evidence instead of hardcoding storage unavailable, but generated artifact readiness remains blocked until real local bytes, file name, file size, MIME, native share/reopen, renderer approval, structured provider storage proof, and four platform-specific artifact proofs are attached: iOS Care Pass PDF, Android Care Pass PDF, iOS Dog ID PNG, and Android Dog ID PNG, plus Apollo approval.
-- The shared attachment storage queue cannot become upload-ready from `storageProviderConfigured` alone. Medication proof photos, record documents, Adventure memories, Care Pass reports, and QA screenshots now stay local-only until structured attachment storage proof covers bucket names, signed upload/download, household scope, retention/export/deletion, QA evidence storage, approval owner, and approval booleans.
-- More's Launch Readiness attachment queue now consumes the saved Provider Launch Setup storage proof path instead of forcing the queue to local-only. `deriveAttachmentManifest` receives `launchProviderSetupPlan.providerInput.storageProviderConfigured` plus saved `storageProviderEvidence`, so valid structured storage proof can reach the Records Storage launch tile while raw setup booleans still cannot prove provider upload, native share/reopen, store review, public launch, or Apollo sign-off.
-- Store Screenshot QA now consumes those same saved launch proof paths when building the Store Submission screenshot checklist. `/care-twin-qa` derives Provider Launch Setup, Support Runbook, and attachment manifest state before constructing `storeLaunchReadinessPlan`, so the store-prep packet can reflect valid provider/support/storage proof while `nativeQa` remains `null` and store/native/public launch approval remains blocked.
-- Saved Care Pass report artifacts cannot become upload-ready from `storageProviderConfigured` alone. Printable HTML reports stay saved locally until structured provider storage proof covers bucket names, signed upload/download, household scope, retention/export/deletion, QA evidence storage, approval owner, and approval booleans.
-- PWA cloud sync cannot become `ready_to_connect` from `backendConfigured`, a backend URL, and household id alone. It stays `provider_proof_pending` until structured provider proof covers Supabase project id, migration/backfill, active-household RLS, retention/export/deletion, dependency-complete build proof, mobile full-refresh sign-off, and Apollo approval.
-- PWA hosted nudges cannot become `ready_to_schedule` from `backendConfigured`, a backend URL, household id, and push provider alone. They stay `provider_proof_pending` and generate no jobs until structured proof covers backend jobs, caregiver consent, provider delivery, caregiver privacy, quiet-hours and daily-budget enforcement, missed-delivery fallback, native delivery, and Apollo approval.
-- The aggregate Launch Readiness dashboard cannot become store-ready from provider-approved booleans alone. Auth, care-entry sync, storage, AI, payments, account deletion, push delivery, store accounts, privacy/legal, and support/refund gates each need matching structured proof flags before release packets or store-submission packets can claim readiness.
-- Provider Launch Setup rows cannot become ready from provider-approved booleans alone. Auth, database sync, storage, AI, payments, push, store accounts, and account deletion rows now require configured setup, provider-approved status, and their matching structured proof-ready flag before they can display ready state, forward true provider input into Launch Readiness, or preserve a persisted `provider-approved` status from More's save path.
-- Route Visual Consistency proof now requires route-named native evidence for each Home, Log, Plans, Health, Records, and More iOS/Android row; generic platform screenshot counts do not unlock route visual readiness, and human native visual review remains required.
-- Record due-status belongs in `lib/care-domain` so Records UI, reminders, reports, and WoofGuide can classify expired, due-soon, current, and reference records consistently.
-- WoofGuide suggested actions are deterministic view-model cards with owner-reviewed draft handlers first; provider-backed generation, permission-aware writes, and durable report drafts stay gated until privacy/account safety and AI policy are ready.
-- First-run care foundation setup belongs on a dedicated mobile route so profile, diet, starter routine, and caregiver basics can be saved together instead of scattered across separate screens.
-- Care Pass report history stores shared report snapshots in the care document with print-ready HTML payloads, print metadata, legacy printable recovery, and local native HTML file export planning; generated binary PDFs and server-backed artifact storage remain separate production work.
-- Privacy & Safety can export owner care data and prepare deletion requests now; actual destructive account deletion and storage-backed document deletion remain provider-gated.
-- Account deletion review cannot be opened by generic approval notes. The proof manifest requires structured deletion-route/auth, export-before-delete, data/object deletion receipt, audit/support receipt, recovery/cancellation, and legal/store/Apollo proof files before destructive deletion can be treated as reviewable.
-- Privacy & Safety uses that same Account deletion proof manifest for its account deletion gate, so `accountDeletionEnabled` alone cannot mark destructive deletion ready for public launch.
-- Public launch review cannot be opened by generic support/legal approval notes. The Support legal readiness proof manifest requires structured support inbox, privacy policy and terms, refund/subscription, veterinary/emergency boundary, deletion escalation, incident response owner, and Apollo launch approval/no-launch-boundary proof files before public launch can be treated as reviewable.
-- The Support runbook uses the same Support legal readiness proof manifest for its launch verdict, so support/legal approval booleans and policy links alone cannot mark public launch ready. Privacy & Safety also gates support status display, save, and owner export on that launch-ready verdict before preserving `provider-approved`; exported provider launch status is likewise clamped through Provider Launch Setup row proof.
-- The local CareTwin roster may stage future dogs, but switching away from the primary live dog stays locked until provider-backed multi-dog care documents can separate care logs, routines, records, reports, avatar state, privacy export, and household permissions.
-- Medication adherence is derived from routines plus household-visible medication logs before adding notification delivery, pharmacy, or vet integration workflows.
-- Medication logs preserve taken versus skipped outcome before notification delivery is added.
-- Medication follow-ups derive missed-dose, due-now, and refill actions in shared care-domain logic before device push notifications or pharmacy/vet integrations are added.
-- Reminder Center derives routine, medication, record, and grooming reminder candidates in shared care-domain logic before device push notifications, runtime permissions, provider-backed reminder preferences, or automatic writes are added. Calendar also consumes the Push notifications proof manifest before treating provider-approved push setup as provider-backed notification delivery, so configured/provider-approved push still stays local/in-app until structured Expo/APNs/FCM and native delivery proof is attached. Implementation commit `c36e36e` is pushed; fresh branch CI for that commit still needs a rerun because manual workflow dispatch was blocked in this Codex thread.
-- Full Log search lives in shared care-domain logic before adding routed long-history views, server-backed retention, or provider search indexes.
-- Medication history derives and filters recent household-visible medication evidence before adding clinical medication schedule schemas.
-- Daily hydration derives household-visible water evidence before adding configurable goals, trend history, reminder delivery, or medical hydration interpretation.
-- Walk Activity derives household-visible activity evidence before adding saved route maps, richer dog park templates, location integrations, or weekly activity trend products.
-- Potty Health derives household-visible pee/poop, stool condition, stool color, and potty context evidence before adding trend history, accident/urgency follow-up workflows, longer-range vet reports, or medical interpretation.
-- Weekly Care Trends derives safe 7-day household context from visible logs before adding predictive AI, clinical interpretation, or longer-range charting.
-- Training Progress derives visible practice context from owner-entered logs before adding formal training plans, behavior diagnosis, or trainer-assigned homework workflows.
-- Alone Time derives visible departure/return context from owner-entered logs before adding formal separation-training plans, trainer/vet-reviewed language, or anxiety interpretation.
-- Weight Trend derives visible owner-entered weigh-ins before adding vet-reviewed weight plans, long-range charts, or weight-goal reminder automation.
-- Grooming Care derives visible owner-entered grooming logs before adding groomer contacts, recurring grooming reminders, coat/skin follow-up workflows, or clinical grooming interpretation.
-- Durable sync outbox is derived from local, pending, and failed care entries, and mobile care-entry refresh remains full-refresh until server update cursors and delete tombstones exist, before adding incremental sync, native offline runtime QA, or deeper conflict policy.
-- Household Sync Health belongs in More as a household trust surface that summarizes whether shared care is current, syncing, loading, or needs retry; the Log outbox remains the tactical recovery surface for individual failed care changes.
-- Care document refresh preserves newer local/offline profile, routine, record, and report changes before accepting server data, then pushes the newer document back with the server's current version.
-- Household Responsibility derives from routine-board truth before richer role permissions, so Calendar and More show one shared view of owner loads, overdue work, unassigned routines, visible log activity, and the next household action.
-- Household Access derives synced members, local-only caregivers, routine-only owners, and practical permission labels before provider-backed role enforcement, so More can show who can actually sync care versus who still needs an invite.
-- Access Pass may stage local permission drafts for helpers, and the API now supports owner/admin activation and revocation of existing household helper roles with provider-durable audit row readiness, durable invitation lifecycle rows, owner/admin invite list/create/revoke APIs, future-expiry validation, request-time expiry enforcement, owner/admin audit review/list APIs, and owner/admin read-only cleanup review for expired invites/helper passes. Non-destructive cleanup apply/approval, provider-backed invite UI/delivery, provider migration/RLS/retention rules, and production provider sync remain provider-gated until account/database rules are approved.
-- Adventure Mode may turn household-visible walks, training, play, and alone-time care into private quests, XP, and local memory drafts. Cloud media storage, map/location data, public sharing, and community adventures remain provider-gated until storage, maps, privacy, and safety rules are approved.
-- Expo/EAS is the mobile release path for v1. iOS and Android profiles live in `artifacts/woofwatcher-mobile/eas.json`; store submission remains blocked until Apollo provides Expo, Apple Developer, Google Play, privacy/legal, and launch approval.
-- Store account readiness remains blocked until `/care-twin-qa?qaSurface=store-accounts-proof` has structured platform/store-named proof files for iOS App Store Connect developer access, Android Google Play package record, bundle/signing ownership, reviewer access, metadata/privacy labels, Apollo release approval, and the no-submit boundary; generic Apple/Google approval notes do not count as App Review or Play review readiness.
-- Privacy & Safety uses the same Payments provider proof manifest for its payments gate, so `paymentsEnabled` alone cannot mark checkout ready for public launch.
-- Live WoofGuide AI readiness remains blocked until `/care-twin-qa?qaSurface=woofguide-ai-provider-proof` has structured proof files for OpenAI secret storage, approved model policy, source/citation rules, owner-review write gate, veterinary safety boundary, and fallback/incident handling; generic AI approval strings do not count as live AI readiness.
-- Privacy & Safety uses the same WoofGuide AI proof manifest for its AI disclosure gate, so `aiProviderConfigured` alone cannot mark AI ready for public launch.
-- Privacy & Safety uses the same Account deletion proof manifest for its account deletion gate, so `accountDeletionEnabled` alone cannot mark destructive deletion ready for public launch.
-- First-run setup may stage household create, join-by-invite, or local-preview intent and show truthful post-save confirmation copy before provider-backed household creation is live. Durable invitation rows and join acceptance checks now exist at the API layer, but the mobile setup UI still needs provider-backed delivery/sync wiring before this is a finished production invite experience.
+- Real owner-entered evidence only; unknown states stay unknown.
+- Health is evidence organization, not diagnosis or emergency certainty.
+- Private means server-enforced and excluded from every shared artifact.
+- Persistence, refresh, conflict, and deletion failures remain visible.
+- One visible care loop and one Quick Log model.
+- No hidden provider, native, subscription, or launch claims.
+- No production secrets or personal test data in source control.
 
-## Blockers Requiring Apollo
+## Decisions still requiring Apollo
 
-- Confirm whether the latest ChatGPT share link contains new canonical product direction. The link was provided, but Codex could not read it through the standard web fetch path.
-- Confirm preferred launch target: Expo preview only, TestFlight, public app store, or web dashboard first.
-- Provide or confirm production accounts for Clerk, database, storage, AI provider, deployment, and mobile release tooling.
-- Confirm privacy/legal requirements for storing dog medical records, vet notes, receipts, and AI-assisted health summaries.
-- Confirm monetization model, store billing path, sandbox receipt evidence, restore-purchase proof, refund/support policy, and Apollo checkout sign-off before payment or subscription work.
-- Confirm whether Adventure Mode should use provider-backed photo storage, map/location services, share links, or community discovery before paid launch.
+- Production legal entity, privacy/support contacts, jurisdiction, retention,
+  deletion, incident, subscription, and refund policies.
+- Apple and Google account ownership and delegated build/submission access.
+- Final production providers for auth, database, storage, AI, push, payments,
+  deployment, analytics/crash reporting, and support.
+- Whether Adventure Mode will use photos, maps/location, share links, or
+  community discovery in the paid release; each expands privacy and safety
+  scope.
+- Final Free/Plus/Family packaging and which gated provider features belong in
+  the first public version.
+- Explicit approval for TestFlight distribution, public store submission, and
+  release timing.

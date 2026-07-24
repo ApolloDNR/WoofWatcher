@@ -18,9 +18,9 @@ Open `/care-twin-qa` in a development or internal Expo build. The route renders
 all 12 matrix scenarios using the production `LivingPhoenixRoom` component, the
 registered dogless room layers, and the registered Phoenix sprite strips.
 
-The route is linked from More as `Care Twin QA` only in development builds, so
-it is available for Apollo/device testers without becoming normal user-facing
-product clutter.
+The route is linked from More as `Care Twin QA` in development and internal
+owner-operations builds, so it is available for Apollo/device testers without
+becoming normal production user-facing product clutter.
 
 The route also includes session-level `Pass`, `Needs tune`, note fields, and a
 native share action that produces a plain-text QA summary. Use that summary as
@@ -64,10 +64,12 @@ the report but must not be used as native release proof. Do not mark the device
 pass complete until both the iOS and Android counts satisfy the required slots.
 For Route Visual Consistency, counts are not enough: save or rename each
 attachment with the route label and platform before attaching it, such as
-`Home-iOS`, `Home-Android`, `Log-iOS`, `Log-Android`, `Plans-iOS`,
-`Plans-Android`, `Health-iOS`, `Health-Android`, `Records-iOS`,
-`Records-Android`, `More-iOS`, and `More-Android`. The Route Visual proof
-manifest stays blocked until each required row has route-named native evidence.
+`Today-iOS`, `Today-Android`, `Log-History-iOS`, `Log-History-Android`,
+`Plan-iOS`, `Plan-Android`, `Quick-Log-iOS`, `Quick-Log-Android`,
+`Health-iOS`, `Health-Android`, `Records-iOS`, `Records-Android`, `More-iOS`,
+`More-Android`, `Privacy-iOS`, and `Privacy-Android`. The Route Visual proof
+manifest stays blocked until each required row has route-named native
+evidence.
 
 As of 2026-06-21, `/care-twin-qa` also includes Store Screenshot QA generated
 from the Store Submission packet. Use those cards to capture App Store and Play
@@ -170,8 +172,9 @@ For every scenario below:
 
 ## Current Limitation
 
-The 2026-07-23 renovation environment can run static tests, TypeScript,
-PixelLab asset verification, Expo web export, and Chromium route proof. The
+The 2026-07-23 renovation environment can run focused behavior and database
+tests, full TypeScript checks, PixelLab asset verification, a fresh Expo web
+export, fingerprint-bound Chromium route proof, and web screenshot sweeps. The
 native tooling doctor still reports `BLOCKED`: Android `adb` and `emulator`
 are unavailable, `ANDROID_HOME`/`ANDROID_SDK_ROOT` and `JAVA_HOME` are unset,
 and this Linux host cannot run an iOS simulator. The app ships an in-app QA
@@ -179,6 +182,14 @@ route for device review and local screenshot attachment, but this environment
 cannot produce authoritative native proof. Run
 `pnpm run doctor:native-qa:json` in the capture environment and keep every
 native row pending until the named evidence exists.
+
+The next native session must cover the current primary loop—Today, Plan,
+Quick Log, Health, and More—plus Log History and Records. On both platforms,
+capture normal and largest supported text, VoiceOver/TalkBack reading order,
+48-point targets and control states, keyboard reachability in every sheet,
+safe areas, hardware/swipe Back, Reduce Motion, haptics, file reopen/share,
+and zero/populated/error/offline states. Web 1.0×/1.4×/2.0× probes are useful
+preflight evidence but do not close these native rows.
 
 The in-app pass/needs-tune controls are an evidence-capture aid only. They do
 not replace the screenshots and human review listed above, and local screenshot
@@ -217,9 +228,10 @@ it shares the message text and drops `url`. Therefore:
 - **Android:** the file is written to the device (findable in Files, re-openable
   from its saved URI) and the share sheet carries the summary text — but the file
   is not attached to that particular share.
-- Share copy reads **"saved to your device"**, not "attached", so it is true on
-  both platforms (the local file write always succeeds; only the iOS share adds
-  an attachment on top).
+- Share copy reads **"saved to your device"**, not "attached", so it is true
+  after a successful local write on both platforms; failed writes must remain
+  visible and must not be reported as saved. Only the iOS share adds an
+  attachment on top.
 - **Remedy for true Android file attachment (post-launch):** add `expo-sharing`
   and route native file shares through
   `Sharing.shareAsync(fileUri, { mimeType, dialogTitle })`, which attaches on
