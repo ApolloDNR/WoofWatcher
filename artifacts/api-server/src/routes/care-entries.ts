@@ -1,5 +1,10 @@
-import { and, desc, eq, gte, sql } from "drizzle-orm";
-import { db, careEntriesTable, careEntryTombstonesTable } from "@workspace/db";
+import { and, desc, eq, gte, lt, or, sql } from "drizzle-orm";
+import {
+  db,
+  careEntriesTable,
+  careEntryTombstonesTable,
+  householdsTable,
+} from "@workspace/db";
 import { requireAuth, getUserId } from "../lib/auth.ts";
 import {
   getActiveHouseholdId,
@@ -12,7 +17,8 @@ const router = createCareEntriesRouter({
   db,
   careEntriesTable,
   careEntryTombstonesTable,
-  queryOps: { and, desc, eq, gte, sql },
+  householdsTable,
+  queryOps: { and, desc, eq, gte, lt, or, sql },
   requireAuth,
   getUserId,
   getActiveHouseholdId,

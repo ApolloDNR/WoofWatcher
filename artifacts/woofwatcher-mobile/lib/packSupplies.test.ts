@@ -6,6 +6,8 @@ import {
   cycleStatus,
   DEFAULT_SUPPLIES,
   isDefaultUntouched,
+  isTravelBagReady,
+  inspectSuppliesStorage,
   parseSupplies,
   removeItem,
   renameItem,
@@ -18,7 +20,7 @@ function frozenDefaults(): readonly SupplyItem[] {
   return Object.freeze(DEFAULT_SUPPLIES.map((item) => Object.freeze({ ...item }))) as readonly SupplyItem[];
 }
 
-test("defaults are the mockup checklist with untouched user-set state", () => {
+test("defaults are the mockup checklist with unconfirmed user-set state", () => {
   const essentials = DEFAULT_SUPPLIES.filter((item) => item.group === "essentials");
   const travel = DEFAULT_SUPPLIES.filter((item) => item.group === "travel");
 
@@ -32,10 +34,9 @@ test("defaults are the mockup checklist with untouched user-set state", () => {
     ["Harness", "Leash", "Portable Bowl"],
   );
 
-  // Honest defaults: essentials assume a stocked shelf, travel gear starts
-  // unpacked, and nothing carries a timestamp the owner never created.
-  for (const item of essentials) assert.equal(item.status, "plenty");
-  for (const item of travel) assert.equal(item.status, "unpacked");
+  // Honest defaults: the app has not inspected the shelf or travel bag, and
+  // nothing carries a status or timestamp the owner never created.
+  for (const item of DEFAULT_SUPPLIES) assert.equal(item.status, "unconfirmed");
   for (const item of DEFAULT_SUPPLIES) assert.equal(item.updatedAt, null);
 
   // Stable readable ids, unique across the whole list.
@@ -44,28 +45,63 @@ test("defaults are the mockup checklist with untouched user-set state", () => {
   assert.equal(new Set(DEFAULT_SUPPLIES.map((item) => item.id)).size, DEFAULT_SUPPLIES.length);
 });
 
-test("essentials cycle plenty -> low -> out -> plenty", () => {
+test("essentials cycle unconfirmed -> plenty -> low -> out -> plenty", () => {
   const food = DEFAULT_SUPPLIES.find((item) => item.id === "essentials-food")!;
-  assert.equal(food.status, "plenty");
-  const low = cycleStatus(food);
+  assert.equal(food.status, "unconfirmed");
+  const plenty = cycleStatus(food);
+  assert.equal(plenty, "plenty");
+  const low = cycleStatus({ ...food, status: plenty });
   assert.equal(low, "low");
   const out = cycleStatus({ ...food, status: low });
   assert.equal(out, "out");
   assert.equal(cycleStatus({ ...food, status: out }), "plenty");
 });
 
-test("travel cycles unpacked -> packed -> unpacked", () => {
+test("travel cycles unconfirmed -> packed -> unpacked -> packed", () => {
   const leash = DEFAULT_SUPPLIES.find((item) => item.id === "travel-leash")!;
-  assert.equal(leash.status, "unpacked");
+  assert.equal(leash.status, "unconfirmed");
   const packed = cycleStatus(leash);
   assert.equal(packed, "packed");
   assert.equal(cycleStatus({ ...leash, status: packed }), "unpacked");
+  assert.equal(
+    cycleStatus({ ...leash, status: "unpacked" }),
+    "packed",
+  );
+});
+
+test("travel bag is ready only when every travel item is explicitly packed", () => {
+  const travel = DEFAULT_SUPPLIES.filter((item) => item.group === "travel");
+  assert.equal(isTravelBagReady(travel), false);
+  assert.equal(
+    isTravelBagReady(
+      travel.map((item, index) =>
+        index === 0 ? { ...item, status: "packed" } : item,
+      ),
+    ),
+    false,
+    "one packed item must not override unconfirmed travel items",
+  );
+  assert.equal(
+    isTravelBagReady(
+      travel.map((item, index) => ({
+        ...item,
+        status: index === 0 ? "unpacked" : "packed",
+      })),
+    ),
+    false,
+    "an explicitly unpacked item keeps the bag in packing mode",
+  );
+  assert.equal(
+    isTravelBagReady(travel.map((item) => ({ ...item, status: "packed" }))),
+    true,
+  );
+  assert.equal(isTravelBagReady([]), false);
 });
 
 test("a status foreign to the group resets to the calm baseline instead of crashing", () => {
   // Can only happen to a hand-corrupted object; parseSupplies rejects it.
-  assert.equal(cycleStatus({ group: "essentials", status: "packed" }), "plenty");
-  assert.equal(cycleStatus({ group: "travel", status: "low" }), "unpacked");
+  assert.equal(cycleStatus({ group: "essentials", status: "packed" }), "unconfirmed");
+  assert.equal(cycleStatus({ group: "travel", status: "low" }), "unconfirmed");
 });
 
 test("addItem appends a trimmed item with calm defaults and never mutates input", () => {
@@ -78,12 +114,12 @@ test("addItem appends a trimmed item with calm defaults and never mutates input"
     id: "travel-water-bottle",
     name: "Water Bottle",
     group: "travel",
-    status: "unpacked",
+    status: "unconfirmed",
     updatedAt: null,
   });
-  // New essentials start at plenty, also untouched.
+  // New essentials also stay unconfirmed until the owner checks them.
   const withBalm = addItem(items, "Paw Balm", "essentials")!;
-  assert.equal(withBalm[withBalm.length - 1].status, "plenty");
+  assert.equal(withBalm[withBalm.length - 1].status, "unconfirmed");
   assert.equal(withBalm[withBalm.length - 1].updatedAt, null);
   // Input list untouched (frozen would also have thrown on mutation).
   assert.deepEqual(items, frozenDefaults());
@@ -124,7 +160,7 @@ test("renameItem trims, keeps status history, and rejects bad names", () => {
   assert.ok(renamed);
   const toy = renamed.find((item) => item.id === "essentials-toys")!;
   assert.equal(toy.name, "Chew Toys");
-  assert.equal(toy.status, "plenty");
+  assert.equal(toy.status, "unconfirmed");
   // updatedAt stamps status answers only; a spelling fix is not one.
   assert.equal(toy.updatedAt, null);
   // Unknown id, empty name, or a name owned by a sibling all reject.
@@ -165,6 +201,41 @@ test("serialize/parse round-trips user-set statuses and timestamps exactly", () 
   assert.deepEqual(parseSupplies(serializeSupplies([])), []);
 });
 
+test("migrates unstamped version-one defaults to unconfirmed without losing real answers", () => {
+  const legacy = JSON.stringify({
+    version: 1,
+    items: [
+      {
+        id: "essentials-food",
+        name: "Food",
+        group: "essentials",
+        status: "plenty",
+        updatedAt: null,
+      },
+      {
+        id: "travel-leash",
+        name: "Leash",
+        group: "travel",
+        status: "unpacked",
+        updatedAt: null,
+      },
+      {
+        id: "essentials-treats",
+        name: "Treats",
+        group: "essentials",
+        status: "low",
+        updatedAt: "2026-07-12T09:00:00.000Z",
+      },
+    ],
+  });
+
+  const migrated = parseSupplies(legacy);
+  assert.equal(migrated[0].status, "unconfirmed");
+  assert.equal(migrated[1].status, "unconfirmed");
+  assert.equal(migrated[2].status, "low");
+  assert.equal(migrated[2].updatedAt, "2026-07-12T09:00:00.000Z");
+});
+
 test("parseSupplies falls back to defaults on malformed input and never throws", () => {
   const fallbackCases: (string | null | undefined)[] = [
     null,
@@ -176,7 +247,7 @@ test("parseSupplies falls back to defaults on malformed input and never throws",
     '"a string"',
     "[]", // bare array: not the versioned payload shape
     "{}",
-    JSON.stringify({ version: 2, items: [] }), // unknown version
+    JSON.stringify({ version: 3, items: [] }), // unknown version
     JSON.stringify({ version: 1, items: "nope" }),
     JSON.stringify({ version: 1, items: [{ id: "x" }] }), // missing fields
     JSON.stringify({
@@ -214,8 +285,28 @@ test("parseSupplies falls back to defaults on malformed input and never throws",
   // without poisoning DEFAULT_SUPPLIES for the next parse.
   const first = parseSupplies(null);
   first[0].status = "out";
-  assert.equal(parseSupplies(null)[0].status, "plenty");
-  assert.equal(DEFAULT_SUPPLIES[0].status, "plenty");
+  assert.equal(parseSupplies(null)[0].status, "unconfirmed");
+  assert.equal(DEFAULT_SUPPLIES[0].status, "unconfirmed");
+});
+
+test("storage inspection distinguishes a new checklist from unreadable owner data", () => {
+  const missing = inspectSuppliesStorage(null);
+  assert.equal(missing.status, "missing");
+  assert.deepEqual(missing.items, [...DEFAULT_SUPPLIES]);
+
+  const corrupt = inspectSuppliesStorage("{ definitely not valid JSON");
+  assert.equal(corrupt.status, "invalid");
+  assert.equal(corrupt.items, null);
+
+  const unsupported = inspectSuppliesStorage(
+    JSON.stringify({ version: 999, items: [] }),
+  );
+  assert.equal(unsupported.status, "invalid");
+  assert.equal(unsupported.items, null);
+
+  const valid = inspectSuppliesStorage(serializeSupplies([]));
+  assert.equal(valid.status, "valid");
+  assert.deepEqual(valid.items, []);
 });
 
 test("isDefaultUntouched flags the starter list and nothing else", () => {

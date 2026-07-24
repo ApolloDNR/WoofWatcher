@@ -2,7 +2,7 @@ import { useSignIn, useSSO } from "@clerk/expo";
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import { Link, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Platform, Text, View, StyleSheet } from "react-native";
 
 import {
@@ -16,6 +16,11 @@ import {
 } from "@/components/auth-ui";
 import { useColors } from "@/hooks/useColors";
 import { isClerkConfigured } from "@/lib/auth";
+import {
+  executeAuthAction,
+  ownerSafeProviderError,
+  signInCredentialError,
+} from "@/lib/authAction";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -24,7 +29,7 @@ export default function SignInScreen() {
   // gateway renders instead of mounting the account form in preview builds.
   if (!isClerkConfigured) {
     return (
-      <LocalPreviewGateway subtitle="Accounts are not connected in this preview build. Review Phoenix's care space in local-only mode and sign in once production auth is configured." />
+      <LocalPreviewGateway subtitle="Accounts are not connected in this preview build. Review your dog's care space in local-only mode and sign in once production auth is configured." />
     );
   }
   return <ClerkSignInScreen />;
@@ -32,48 +37,75 @@ export default function SignInScreen() {
 
 function ClerkSignInScreen() {
   const colors = useColors();
-  const { signIn, errors, fetchStatus } = useSignIn();
+  const { signIn, fetchStatus } = useSignIn();
   const { startSSOFlow } = useSSO();
   const router = useRouter();
 
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | undefined>();
+  const [submitLoading, setSubmitLoading] = useState(false);
   const [ssoLoading, setSsoLoading] = useState(false);
+  const authActionRef = useRef<"submit" | "google" | null>(null);
+
+  const beginAuthAction = useCallback(
+    (action: "submit" | "google"): boolean => {
+      if (authActionRef.current) return false;
+      authActionRef.current = action;
+      return true;
+    },
+    [],
+  );
+
+  const endAuthAction = useCallback((action: "submit" | "google") => {
+    if (authActionRef.current === action) authActionRef.current = null;
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== "android") return;
-    void WebBrowser.warmUpAsync();
-    return () => {
-      void WebBrowser.coolDownAsync();
-    };
+    void WebBrowser.warmUpAsync().catch(() => undefined);
+    return () => void WebBrowser.coolDownAsync().catch(() => undefined);
   }, []);
 
-  const fieldErrors = (errors?.fields ?? {}) as unknown as Record<
-    string,
-    { message?: string } | undefined
-  >;
-
   const handleSubmit = async () => {
-    setFormError(undefined);
-    const { error } = await signIn.password({ emailAddress, password });
-    if (error) {
-      setFormError(error.message ?? "Could not sign in. Check your details.");
-      return;
-    }
-    if (signIn.status === "complete") {
-      await signIn.finalize({
-        navigate: ({ session }) => {
-          if (session?.currentTask) return;
-          router.replace("/(tabs)");
-        },
-      });
-    } else {
-      setFormError("Additional verification is required to sign in.");
-    }
+    if (!beginAuthAction("submit")) return;
+    await executeAuthAction({
+      setLoading: setSubmitLoading,
+      setError: setFormError,
+      thrownMessage:
+        "We couldn't reach account sign-in. Check your connection and try again.",
+      onFinally: () => endAuthAction("submit"),
+      action: async () => {
+        const passwordResult = await signIn.password({
+          emailAddress,
+          password,
+        });
+        if (passwordResult.error) {
+          return signInCredentialError(passwordResult.error);
+        }
+        if (signIn.status !== "complete") {
+          return "This account requires a sign-in step this app version does not support. Use Google sign-in or contact support.";
+        }
+
+        const finalizeResult = await signIn.finalize({
+          navigate: ({ session }) => {
+            if (session?.currentTask) return;
+            router.replace("/(tabs)");
+          },
+        });
+        if (finalizeResult.error) {
+          return ownerSafeProviderError(
+            finalizeResult.error,
+            "Your details were accepted, but sign-in could not finish. Try again.",
+          );
+        }
+        return undefined;
+      },
+    });
   };
 
   const handleGoogle = useCallback(async () => {
+    if (!beginAuthAction("google")) return;
     setFormError(undefined);
     setSsoLoading(true);
     try {
@@ -92,19 +124,23 @@ function ClerkSignInScreen() {
       }
     } catch (err) {
       setFormError(
-        err instanceof Error ? err.message : "Google sign-in was cancelled.",
+        err instanceof Error && err.name === "AbortError"
+          ? "Google sign-in was cancelled."
+          : "Google sign-in could not finish. Check your connection and try again.",
       );
     } finally {
+      endAuthAction("google");
       setSsoLoading(false);
     }
-  }, [router, startSSOFlow]);
+  }, [beginAuthAction, endAuthAction, router, startSSOFlow]);
 
-  const busy = fetchStatus === "fetching";
+  const busy =
+    fetchStatus === "fetching" || submitLoading || ssoLoading;
 
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Return to your household care space, review Phoenix's open loops, and keep the account layer ready for shared sync."
+      subtitle="Return to your household care space, review your dog's open loops, and keep the account layer ready for shared sync."
     >
       <FormError message={formError} />
       <Field
@@ -115,7 +151,6 @@ function ClerkSignInScreen() {
         placeholder="you@example.com"
         value={emailAddress}
         onChangeText={setEmailAddress}
-        error={fieldErrors.identifier?.message}
       />
       <Field
         label="Password"
@@ -123,16 +158,19 @@ function ClerkSignInScreen() {
         placeholder="Your password"
         value={password}
         onChangeText={setPassword}
-        error={fieldErrors.password?.message}
       />
       <PrimaryButton
         label="Sign in"
         onPress={handleSubmit}
-        loading={busy}
-        disabled={!emailAddress || !password}
+        loading={submitLoading}
+        disabled={!emailAddress || !password || busy}
       />
       <Divider />
-      <GoogleButton onPress={handleGoogle} loading={ssoLoading} />
+      <GoogleButton
+        onPress={handleGoogle}
+        loading={ssoLoading}
+        disabled={submitLoading || fetchStatus === "fetching"}
+      />
       <View style={styles.footer}>
         <Text
           style={[

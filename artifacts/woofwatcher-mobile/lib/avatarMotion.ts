@@ -4,6 +4,10 @@ import {
   normalizeCareEventType,
   type CareEventDetails,
 } from "../../../lib/care-domain/src/index.ts";
+import {
+  deriveCareEvidenceSnapshot,
+  isHouseholdVisibleCareEntry,
+} from "./careEvidence.ts";
 import type { Mood } from "./phoenixStatus.ts";
 
 export type AvatarMotionState =
@@ -70,6 +74,7 @@ export interface AvatarMotionInput {
   entries: readonly AvatarMotionEntry[];
   routines: readonly AvatarMotionRoutine[];
   caregivers?: readonly AvatarMotionCaregiver[];
+  petName?: string;
   now?: number;
   energy?: number | null;
   /**
@@ -125,6 +130,7 @@ function latestRecentEntry(
 ): AvatarMotionEntry | null {
   return [...entries]
     .filter((entry) => {
+      if (!isHouseholdVisibleCareEntry(entry)) return false;
       const minutes = minutesBetween(entry.occurredAt, now);
       return minutes >= 0 && minutes <= RECENT_ACTION_WINDOW_MINUTES;
     })
@@ -266,6 +272,7 @@ function openRoutineMotion(
   }
 
   if ((type === "walk" || type === "play" || type === "training") && open.minutesFromNow <= WALK_SOON_WINDOW_MINUTES) {
+    const petName = input.petName?.trim() || "Your dog";
     return {
       state: "excited",
       avatarMood: "excited",
@@ -273,7 +280,7 @@ function openRoutineMotion(
       intensity: "high",
       label: "Ready soon",
       speech: "Walk soon?",
-      line: `${open.label} is coming up. Phoenix is watching the routine board.`,
+      line: `${open.label} is coming up. ${petName} is watching the routine board.`,
       route: "/calendar",
     };
   }
@@ -296,8 +303,10 @@ function openRoutineMotion(
 
 export function deriveAvatarMotion(input: AvatarMotionInput): AvatarMotionModel {
   const now = input.now ?? Date.now();
+  const visibleEntries = input.entries.filter(isHouseholdVisibleCareEntry);
+  const evidence = deriveCareEvidenceSnapshot(visibleEntries, now);
   const health = deriveHealthWatch({
-    entries: input.entries,
+    entries: visibleEntries,
     routines: input.routines,
     now,
   });
@@ -319,7 +328,7 @@ export function deriveAvatarMotion(input: AvatarMotionInput): AvatarMotionModel 
     };
   }
 
-  const recent = latestRecentEntry(input.entries, now);
+  const recent = latestRecentEntry(visibleEntries, now);
   const recentIsFresh =
     recent !== null &&
     (input.reactionsSince === undefined ||
@@ -342,7 +351,10 @@ export function deriveAvatarMotion(input: AvatarMotionInput): AvatarMotionModel 
     };
   }
 
-  const routineMotion = openRoutineMotion(input, now);
+  const routineMotion = openRoutineMotion(
+    { ...input, entries: visibleEntries },
+    now,
+  );
   if (routineMotion) return routineMotion;
 
   if (typeof input.energy === "number" && input.energy <= 45) {
@@ -358,14 +370,89 @@ export function deriveAvatarMotion(input: AvatarMotionInput): AvatarMotionModel 
     };
   }
 
+  const moodLane = evidence.lanes.find((lane) => lane.id === "mood");
+  const energyLane = evidence.lanes.find((lane) => lane.id === "energy");
+  if (moodLane?.status === "watch") {
+    return {
+      state: "sad",
+      avatarMood: moodLane.value === "unwell" ? "unwell" : "anxious",
+      cue: "head-tilt",
+      intensity: "soft",
+      label: moodLane.detail,
+      speech: "A recent mood check-in is worth reviewing.",
+      line: "This reflects an owner observation from the last 7 days.",
+      route: "/log",
+    };
+  }
+
+  if (energyLane?.value === "low") {
+    return {
+      state: "tired",
+      avatarMood: "calm",
+      cue: "low-energy",
+      intensity: "soft",
+      label: energyLane.detail,
+      speech: "Low energy was logged.",
+      line: "This reflects an owner observation from the last 7 days.",
+      route: "/log",
+    };
+  }
+
+  if (moodLane?.status === "observed") {
+    const excited = moodLane.value === "excited";
+    const happy = moodLane.value === "happy";
+    return {
+      state: excited ? "excited" : "happy",
+      avatarMood: excited ? "excited" : happy ? "happy" : "calm",
+      cue: excited ? "paw-bounce" : happy ? "tail-wag" : "slow-blink",
+      intensity: excited ? "medium" : "soft",
+      label: moodLane.detail,
+      speech: `Latest mood check-in: ${moodLane.detail}.`,
+      line: "This reflects an owner observation from the last 7 days.",
+      route: "/log",
+    };
+  }
+
+  if (energyLane?.status === "observed") {
+    const high = energyLane.value === "high";
+    return {
+      state: high ? "excited" : "happy",
+      avatarMood: "calm",
+      cue: high ? "paw-bounce" : "slow-blink",
+      intensity: high ? "medium" : "resting",
+      label: energyLane.detail,
+      speech: `Latest energy check-in: ${energyLane.detail}.`,
+      line: "This reflects an owner observation from the last 7 days.",
+      route: "/log",
+    };
+  }
+
+  if (
+    moodLane?.status === "not-logged" &&
+    energyLane?.status === "not-logged"
+  ) {
+    return {
+      // `happy` keeps the existing idle sprite contract, while the slow
+      // breath cue and every owner-facing string remain neutral.
+      state: "happy",
+      avatarMood: "calm",
+      cue: "slow-breath",
+      intensity: "resting",
+      label: "Not logged",
+      speech: "Add a mood and energy check-in.",
+      line: "No shared mood or energy observation is logged in the last 7 days.",
+      route: "/log",
+    };
+  }
+
   return {
     state: "happy",
-    avatarMood: "happy",
-    cue: "tail-wag",
-    intensity: "soft",
-    label: "Steady",
-    speech: "All steady.",
-    line: "Care is steady. Keep routines and logs moving together.",
+    avatarMood: "calm",
+    cue: "slow-breath",
+    intensity: "resting",
+    label: "Not logged",
+    speech: "Add a mood and energy check-in.",
+    line: "No shared mood or energy observation is logged in the last 7 days.",
     route: "/log",
   };
 }

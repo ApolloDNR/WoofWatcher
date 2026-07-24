@@ -1,6 +1,7 @@
 export * from "./generated/api.ts";
 export type {
   ApiError,
+  ActiveHouseholdSelection,
   AvatarEmotionImage,
   AvatarEmotionsInput,
   AvatarEmotionsResponse,
@@ -9,7 +10,11 @@ export type {
   AvatarStylizeInput,
   AvatarStylizeResponse,
   CareEntry,
+  CareEntryDeleteAbsent,
   CareEntryDetails,
+  CareEntryHistoryConflict,
+  CareEntryHistoryEnvelope,
+  CareEntryHouseholdScopeConflict,
   CareEntryInput,
   CareEntryInputDetails,
   CareEntryTombstone,
@@ -24,11 +29,16 @@ export type {
   CareStateEnvelopeDoc,
   CareStateInput,
   CareStateInputDoc,
+  CreateCareEntryParams,
+  GetCareStateParams,
   HealthStatus,
   Household,
-  HouseholdAuditAction,
+  HouseholdMembership,
+  HouseholdMembershipHousehold,
+  HouseholdMembershipList,
+  HouseholdAuditEventAction as HouseholdAuditAction,
   HouseholdAuditEventListResponse,
-  HouseholdAuditLifecycleState,
+  HouseholdAuditEventLifecycleState as HouseholdAuditLifecycleState,
   HouseholdInvitationCreateInput,
   HouseholdInvitationListResponse,
   HouseholdInvitationRevokeInput,
@@ -36,6 +46,7 @@ export type {
   HouseholdUpdate,
   JoinHouseholdInput,
   ListCareEntriesParams,
+  ListCareEntryHistoryParams,
   ListCareEntryTombstonesParams,
   ListHouseholdAuditEventsParams,
   ListHouseholdInvitationsParams,
@@ -43,6 +54,7 @@ export type {
   Me,
   Member,
   MeUpdate,
+  PutCareStateParams,
   User,
   WoofguideEvent,
   WoofguideEventsInput,
@@ -58,3 +70,8 @@ export type {
   HouseholdSharingCleanupKind as HouseholdSharingCleanupKindType,
   HouseholdSharingCleanupRecommendedAction as HouseholdSharingCleanupRecommendedActionType,
 } from "./generated/types/index.ts";
+
+export type DeleteCareEntryParamsType =
+  import("./generated/types/deleteCareEntryParams.ts").DeleteCareEntryParams;
+export type UpdateCareEntryParamsType =
+  import("./generated/types/updateCareEntryParams.ts").UpdateCareEntryParams;

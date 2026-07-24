@@ -93,8 +93,8 @@ test("prompts a walk check when no visible walk is logged", () => {
   assert.equal(activity.status, "needs-walk");
   assert.equal(activity.summary, "No walks logged today");
   assert.match(activity.nextStep, /Log the walk/i);
-  // Without a petName the copy keeps the app-wide Phoenix default.
-  assert.match(activity.nextStep, /Phoenix gets outside/);
+  // Without a petName the copy stays neutral rather than inventing Phoenix.
+  assert.match(activity.nextStep, /Your dog gets outside/);
 });
 
 test("walk nextStep uses the renamed dog's name, never Phoenix", () => {
@@ -103,10 +103,11 @@ test("walk nextStep uses the renamed dog's name, never Phoenix", () => {
   assert.equal(activity.nextStep, "Log the walk when Biscuit gets outside so the household can see activity and recovery context.");
   assert.doesNotMatch(activity.nextStep, /Phoenix/);
 
-  // The stored "My Dog" placeholder resolves back to the Phoenix default,
+  // The stored "My Dog" placeholder resolves to the neutral production name,
   // matching resolvePetName everywhere else in the app.
   const placeholder = deriveWalkActivity({ now: NOW, entries: [], petName: "My Dog" });
-  assert.match(placeholder.nextStep, /Phoenix gets outside/);
+  assert.match(placeholder.nextStep, /Your dog gets outside/);
+  assert.doesNotMatch(placeholder.nextStep, /Phoenix/);
 });
 
 test("derives saved walk route templates from visible route logs", () => {

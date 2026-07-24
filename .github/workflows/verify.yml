@@ -37,5 +37,12 @@ jobs:
       - name: Run focused behavior tests
         run: pnpm run test:focused
 
+      - name: Install Playwright Chromium
+        working-directory: artifacts/woofwatcher-mobile
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Typecheck and CI-safe builds
         run: pnpm run build:ci
+
+      - name: Run fail-closed web workflow E2E
+        run: pnpm --filter @workspace/woofwatcher-mobile run e2e:web

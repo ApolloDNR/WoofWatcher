@@ -1,5 +1,9 @@
 import type { CareState, Entry, Routine } from "@/context/CareContext";
 import { deriveCareDayStatus, normalizeCareEventType } from "@workspace/care-domain";
+import {
+  deriveCareEvidenceSnapshot,
+  type CareEvidenceSnapshot,
+} from "./careEvidence.ts";
 
 export type Mood = "happy" | "excited" | "calm" | "anxious" | "unwell";
 
@@ -13,28 +17,34 @@ export const MOOD_META: Record<Mood, MoodMeta> = {
   happy: {
     label: "Happy",
     emoji: "🥰",
-    speech: "Best day ever! Thanks for taking such good care of me. 💚",
+    speech: "Happy was logged in the latest mood check-in.",
   },
   excited: {
-    label: "Impatient",
+    label: "Excited",
     emoji: "😤",
-    speech: "It's walk o'clock! My paws are ready and so is my tail. 🐾",
+    speech: "Excited was logged in the latest mood check-in.",
   },
   calm: {
-    label: "Content",
+    label: "Calm",
     emoji: "😌",
-    speech: "Feeling cozy and settled. Life is pretty good. ☁️",
+    speech: "Calm was logged in the latest mood check-in.",
   },
   anxious: {
-    label: "Unsure",
+    label: "Anxious",
     emoji: "🥺",
-    speech: "Feeling a little uneasy today — stay close to me? 🫶",
+    speech: "Anxious was logged. Add context if the pattern continues.",
   },
   unwell: {
-    label: "Off day",
+    label: "Unwell",
     emoji: "🤒",
-    speech: "My tummy's a bit funny. Let's take it easy today. 🤍",
+    speech: "Unwell was logged. Keep observations available for review.",
   },
+};
+
+const NOT_LOGGED_MOOD_META: MoodMeta = {
+  label: "Not logged",
+  emoji: "🐾",
+  speech: "Add a mood check-in when you have an observation.",
 };
 
 export interface CountStat {
@@ -46,6 +56,10 @@ export interface PhoenixStatus {
   mood: Mood;
   meta: MoodMeta;
   energy: number;
+  energyLabel: string;
+  moodObserved: boolean;
+  energyObserved: boolean;
+  evidence: CareEvidenceSnapshot;
   counts: {
     meals: CountStat;
     walks: CountStat;
@@ -68,10 +82,6 @@ function isToday(iso: string, now: number): boolean {
   );
 }
 
-function hoursAgo(iso: string, now: number): number {
-  return (now - new Date(iso).getTime()) / (1000 * 60 * 60);
-}
-
 function routineDateMs(r: Routine, now: number): number {
   const [time, period] = r.time.split(" ");
   const [hStr, mStr] = time.split(":");
@@ -87,6 +97,10 @@ function entryDetailValue(entry: Entry, key: string): unknown {
   const details = entry.details;
   if (!details || typeof details !== "object" || Array.isArray(details)) return undefined;
   return (details as Record<string, unknown>)[key];
+}
+
+function isHouseholdVisible(entry: Entry): boolean {
+  return entryDetailValue(entry, "householdVisible") !== false;
 }
 
 function isPendingMeal(entry: Entry): boolean {
@@ -114,7 +128,7 @@ function dayKeyOf(d: Date): string {
  */
 export function computeCareStreak(state: CareState, now: number = Date.now()): number {
   const days = new Set<string>();
-  for (const e of state.entries) {
+  for (const e of state.entries.filter(isHouseholdVisible)) {
     days.add(dayKeyOf(new Date(e.occurredAt)));
   }
   const cursor = new Date(now);
@@ -142,13 +156,10 @@ export function derivePhoenixStatus(
   state: CareState,
   now: number = Date.now(),
 ): PhoenixStatus {
-  const todays = state.entries.filter((e) => isToday(e.occurredAt, now));
-  const dayStatus = deriveCareDayStatus(state.entries, state.routines, now);
-
-  const countType = (types: string[]) =>
-    todays.filter((e) =>
-      types.includes(normalizeCareEventType(e.type, e.details)),
-    ).length;
+  const visibleEntries = state.entries.filter(isHouseholdVisible);
+  const todays = visibleEntries.filter((e) => isToday(e.occurredAt, now));
+  const dayStatus = deriveCareDayStatus(visibleEntries, state.routines, now);
+  const evidence = deriveCareEvidenceSnapshot(visibleEntries, now);
 
   const mealTarget = dayStatus.counts.meals.target;
   const completedMeals = todays.filter(
@@ -165,24 +176,7 @@ export function derivePhoenixStatus(
   const training = dayStatus.counts.training;
   const walkMinutes = dayStatus.counts.walkMinutes;
 
-  const recentVomit = dayStatus.healthAlert;
   const healthAlert = dayStatus.healthAlert;
-
-  const normalizedType = (entry: Entry) =>
-    normalizeCareEventType(entry.type, entry.details);
-
-  const recentAnxious = state.entries.some(
-    (e) =>
-      hoursAgo(e.occurredAt, now) < 4 &&
-      (normalizedType(e) === "alone" ||
-        (e.mood ?? "").toLowerCase().includes("anx") ||
-        (e.mood ?? "").toLowerCase().includes("nerv")),
-  );
-  const recentActive = state.entries.some(
-    (e) =>
-      hoursAgo(e.occurredAt, now) < 3 &&
-      ["walk", "play", "training"].includes(normalizedType(e)),
-  );
 
   // Next upcoming routine today — earliest by clock time, independent of array order
   const nextRoutine =
@@ -194,33 +188,34 @@ export function derivePhoenixStatus(
     ? Math.max(0, Math.round((routineDateMs(nextRoutine, now) - now) / 60000))
     : null;
 
-  const walkSoon =
-    normalizeCareEventType(nextRoutine?.type) === "walk" &&
-    minutesUntilNext !== null &&
-    minutesUntilNext <= 60;
-  const noWalkYet = walks.done === 0 && new Date(now).getHours() >= 8;
+  const moodLane = evidence.lanes.find((lane) => lane.id === "mood");
+  const energyLane = evidence.lanes.find((lane) => lane.id === "energy");
+  const observedMood = (
+    ["happy", "excited", "calm", "anxious", "unwell"] as const
+  ).find((candidate) => candidate === moodLane?.value);
+  const observedEnergy = (
+    ["low", "steady", "high"] as const
+  ).find((candidate) => candidate === energyLane?.value);
+  const moodObserved = observedMood !== undefined;
+  const energyObserved = observedEnergy !== undefined;
 
-  let mood: Mood;
-  if (recentVomit) mood = "unwell";
-  else if (recentAnxious) mood = "anxious";
-  else if (walkSoon || noWalkYet) mood = "excited";
-  else if (recentActive) mood = "happy";
-  else mood = "calm";
-
-  // Energy: deterministic from the day's activity
-  let energy = 64;
-  energy += walks.done * 6;
-  energy += training * 4;
-  energy += countType(["play"]) * 5;
-  if (mood === "excited") energy += 6;
-  if (mood === "unwell") energy -= 22;
-  if (mood === "anxious") energy -= 8;
-  energy = Math.max(35, Math.min(96, energy));
+  // These fallbacks only keep legacy avatar/image call sites type-safe. They
+  // are never presented as observations: meta/energyLabel and the shared
+  // evidence gates render "Not logged" until an owner records the lane.
+  const mood: Mood = observedMood ?? "calm";
+  const energy = observedEnergy === "low" ? 40 : observedEnergy === "high" ? 80 : 60;
+  const energyLabel = observedEnergy
+    ? `${observedEnergy.charAt(0).toUpperCase()}${observedEnergy.slice(1)}`
+    : "Not logged";
 
   return {
     mood,
-    meta: MOOD_META[mood],
+    meta: moodObserved ? MOOD_META[mood] : NOT_LOGGED_MOOD_META,
     energy,
+    energyLabel,
+    moodObserved,
+    energyObserved,
+    evidence,
     counts: { meals, walks, potty, training, walkMinutes, healthAlert },
     nextRoutine,
     minutesUntilNext,

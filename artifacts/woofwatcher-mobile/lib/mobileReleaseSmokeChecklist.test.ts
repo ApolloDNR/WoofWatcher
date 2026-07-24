@@ -42,26 +42,26 @@ const ownerLoopSurface: MobileReleaseQaSurface = {
   goal: "Verify the real owner journey before beta sharing.",
   devicePrompt: "Run the owner route loop and attach proof.",
   setupSteps: ["Use Phoenix demo care data.", "Confirm the app opens on Today (Phoenix's room)."],
-  verificationSteps: ["Open Today.", "Open Log.", "Open More Launch Readiness."],
+  verificationSteps: ["Open Today.", "Open the elevated Quick Log action.", "Open More Launch Readiness."],
   acceptanceCriteria: ["No route dead-ends.", "Primary controls are phone-sized."],
   failureEscalation: "Mark Needs tune if any route clips, dead-ends, or feels below App Store quality.",
   requiredEvidence: [
-    "iOS screenshot of Quick Log or Log.",
+    "iOS screenshot of Quick Log.",
     "Android screenshot of More Launch Readiness.",
-    "Note confirming Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
+    "Note confirming Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy had no dead ends.",
   ],
   launchRisk: "This is the beta's real owner path.",
   routeChecklist: [
     {
       label: "Today",
       route: "/",
-      expected: "Confirm Phoenix status, next care, and bottom navigation are clear.",
+      expected: "Confirm Phoenix status, next care, and primary navigation are clear.",
       proof: "Visual pass.",
     },
     {
-      label: "Log",
-      route: "/log",
-      expected: "Quick-log one safe care event or open the detail sheet.",
+      label: "Quick Log",
+      route: "/fastlog",
+      expected: "Quick-log one safe care event from the elevated center action.",
       proof: "iOS screenshot.",
     },
     {
@@ -221,15 +221,18 @@ test("builds a source-backed release smoke checklist without clearing blocked la
   assert.match(text, /public launch stays blocked/);
   assert.match(text, /Focused route visual consistency target/);
   assert.match(text, /\/care-twin-qa\?qaSurface=route-visual-consistency/);
-  assert.match(text, /Log, Plan, Today, Pack, Story, Health, Records, and More on iOS and Android/);
+  assert.match(text, /Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy on iOS and Android/);
   assert.match(text, /route-named iOS screenshots/);
-  assert.match(text, /Log-iOS/);
-  assert.match(text, /Pack-iOS/);
-  assert.match(text, /Story-Android/);
-  assert.match(text, /More-Android/);
+  assert.match(text, /Quick-Log-iOS/);
+  assert.match(text, /Log-History-iOS/);
+  assert.match(text, /Privacy-Android/);
+  assert.match(text, /More-iOS/);
   assert.match(text, /Web preview screenshots do not replace native proof/);
   assert.match(text, /Native and store proof:/);
-  assert.match(text, /iOS Quick Log\/Log proof/);
+  assert.match(text, /iOS Quick Log proof/);
+  assert.match(text, /Quick Log \(`\/fastlog`\) evidence/);
+  assert.match(text, /Log History \(`\/log`\) cannot substitute/);
+  assert.doesNotMatch(text, /Quick Log\/Log|Quick Log or Log/);
   assert.match(text, /Android Launch Readiness proof/);
   assert.match(text, /Store Screenshot QA/);
   assert.match(text, /Truth boundaries:/);

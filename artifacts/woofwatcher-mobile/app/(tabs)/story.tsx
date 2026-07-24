@@ -471,6 +471,8 @@ export default function StoryScreen() {
           title="Story"
           subtitle={`${petName}'s real care, told as a living story.`}
           icon="book-outline"
+          back
+          onBack={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)" as never))}
           actionIcon="map-outline"
           actionLabel="Open Adventure Mode"
           onAction={openAdventure}

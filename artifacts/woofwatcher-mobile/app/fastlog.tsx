@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import {
   Animated,
   Easing,
@@ -10,27 +9,27 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { normalizeCareEventType, type CareEventType } from "@workspace/care-domain";
+import { useReducedMotion } from "react-native-reanimated";
+import { normalizeCareEventType } from "@workspace/care-domain";
 
 import { BoardCard } from "@/components/board/BoardPrimitives";
-import { PressScale } from "@/components/motion/GameFeel";
+import { QuickLogGrid } from "@/components/logging/QuickLogGrid";
+import { useQuickLogController } from "@/components/logging/useQuickLogController";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
-import { useCare, type Entry } from "@/context/CareContext";
-import { announce } from "@/lib/announce";
-import { careXpForEntry } from "@/lib/careCareer";
+import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
+import { useWebQaFontScale } from "@/hooks/useWebQaFontScale";
 import {
-  buildQuickLogEntry,
-  findRecentQuickLogDuplicate,
-  getQuickLogPolicy,
-  QUICK_LOG_DEDUPE_WINDOW_MS,
-} from "@/lib/quickLogEntry";
+  createWebQaLayoutMarker,
+  getAccessibleLayoutMetrics,
+  MIN_MOBILE_TOUCH_TARGET,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 import { MEAL_OUTCOME_UPDATE_OPTIONS } from "@/lib/mealOutcomeUpdate";
-import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 
 /**
  * Fast-log sheet from Apollo's FINAL mock boards: a light parchment moment
@@ -39,24 +38,6 @@ import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSessi
  * pill into the full Log. Warm parchment, ink text, no dark HUD chrome -
  * exactly like the board art.
  */
-
-interface FastLogTile {
-  key: string;
-  icon: PixelIconName;
-  label: string;
-  type: CareEventType;
-  title: string;
-  forceDetail?: boolean;
-}
-
-const FAST_LOG_TILES: FastLogTile[] = [
-  { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
-  { key: "potty", icon: "pee", label: "Potty", type: "potty", title: "Potty" },
-  { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
-  { key: "meds", icon: "medication", label: "Meds", type: "medication", title: "Medication" },
-  { key: "water", icon: "bile", label: "Water", type: "water", title: "Fresh water" },
-  { key: "note", icon: "note", label: "Note", type: "note", title: "Care note", forceDetail: true },
-];
 
 function tileIconFor(type: string): PixelIconName {
   const t = normalizeCareEventType(type);
@@ -124,12 +105,15 @@ export default function FastLogScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { state, addEntry } = useCare();
-  const [justLogged, setJustLogged] = useState<string | null>(null);
-  const loggedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const caregiver = state.caregivers[0]?.name ?? "you";
-  const openWalkSession = useMemo(() => findOpenWalkSession(state.entries), [state.entries]);
+  const { fontScale: runtimeFontScale } = useWindowDimensions();
+  const { fontScale, qaFontScale } = useWebQaFontScale(runtimeFontScale);
+  const reducedMotion = useReducedMotion();
+  const fastLogLayout = getAccessibleLayoutMetrics({
+    platform: Platform.OS,
+    fontScale,
+  });
+  const { state } = useCare();
+  const quickLog = useQuickLogController();
 
   const recent = useMemo(
     () =>
@@ -145,18 +129,21 @@ export default function FastLogScreen() {
   // its real modal transition and skips the double animation.
   const animatesInternally = Platform.OS === "web";
   const sheetProgress = useRef(
-    new Animated.Value(animatesInternally ? 0 : 1),
+    new Animated.Value(animatesInternally && !reducedMotion ? 0 : 1),
   ).current;
   const dismissing = useRef(false);
   useEffect(() => {
-    if (!animatesInternally) return;
+    if (!animatesInternally || reducedMotion) {
+      sheetProgress.setValue(1);
+      return;
+    }
     Animated.timing(sheetProgress, {
       toValue: 1,
       duration: 220,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
-  }, [animatesInternally, sheetProgress]);
+  }, [animatesInternally, reducedMotion, sheetProgress]);
 
   const navigateBack = () => {
     if (router.canGoBack()) {
@@ -167,7 +154,7 @@ export default function FastLogScreen() {
   };
 
   const close = () => {
-    if (!animatesInternally) {
+    if (!animatesInternally || reducedMotion) {
       navigateBack();
       return;
     }
@@ -181,83 +168,10 @@ export default function FastLogScreen() {
     }).start(() => navigateBack());
   };
 
-  const flashLogged = (key: string, message: string) => {
-    if (Platform.OS !== "web") {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    }
-    // The badge and haptic are invisible to screen readers; say what saved.
-    announce(message);
-    setJustLogged(key);
-    if (loggedTimer.current) clearTimeout(loggedTimer.current);
-    loggedTimer.current = setTimeout(() => setJustLogged(null), 1600);
-  };
-
-  const openDetail = (tile: FastLogTile) => {
-    router.replace(`/log?type=${tile.type}&detail=1&intent=${Date.now()}` as never);
-  };
-
-  // Double-tap safety: the ref catches a second press in the same tick
-  // (before React state can update) and the shared window check dedupes
-  // slower bounces against the saved timeline. One entry per intent; a
-  // deliberate second log after the 1.5s window still saves.
-  const recentQuickSave = useRef<{ type: string; at: number } | null>(null);
-  const isDuplicateQuickTap = (type: string): boolean => {
-    const prev = recentQuickSave.current;
-    return Boolean(
-      prev &&
-        prev.type === type &&
-        Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
-    );
-  };
-
-  const logTile = (tile: FastLogTile) => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
-    if (tile.forceDetail) {
-      openDetail(tile);
-      return;
-    }
-    const policy = getQuickLogPolicy(tile.type);
-    if (policy.tapBehavior === "detail-required") {
-      openDetail(tile);
-      return;
-    }
-    if (tile.type === "walk") {
-      if (openWalkSession) {
-        router.replace(
-          (openWalkSession.id
-            ? `/log?entry=${encodeURIComponent(openWalkSession.id)}`
-            : `/log?type=walk&detail=1&intent=${Date.now()}`) as never,
-        );
-        return;
-      }
-      if (isDuplicateQuickTap("walk")) return;
-      recentQuickSave.current = { type: "walk", at: Date.now() };
-      addEntry(buildWalkSessionStartEntry({ caregiver, now: Date.now() }) as Omit<Entry, "id">);
-      flashLogged(tile.key, "Walk started");
-      return;
-    }
-    const now = Date.now();
-    if (
-      isDuplicateQuickTap(policy.type) ||
-      findRecentQuickLogDuplicate(state.entries, tile.type, now)
-    ) {
-      return;
-    }
-    recentQuickSave.current = { type: policy.type, at: now };
-    const role = state.caregivers.find((person) => person.name === caregiver)?.role;
-    const entry = buildQuickLogEntry(
-      { type: tile.type, title: tile.title },
-      state,
-      { caregiver, caregiverRole: role, now },
-    );
-    addEntry(entry);
-    flashLogged(tile.key, `${tile.title} logged`);
-  };
-
   return (
     <Animated.View
+      testID="qa-layout-fast-log"
+      nativeID={createWebQaLayoutMarker(qaFontScale, fastLogLayout)}
       style={[
         s.root,
         {
@@ -315,43 +229,11 @@ export default function FastLogScreen() {
           What would you like{"\n"}to log?
         </Text>
 
-        <View style={s.tileGrid}>
-          {FAST_LOG_TILES.map((tile) => (
-            <PressScale
-              key={tile.key}
-              accessibilityRole="button"
-              accessibilityLabel={`Log ${tile.label}`}
-              accessibilityHint={
-                tile.forceDetail || getQuickLogPolicy(tile.type).tapBehavior === "detail-required"
-                  ? "Opens details before saving."
-                  : "Saves a quick log. Long press opens details."
-              }
-              onPress={() => logTile(tile)}
-              onLongPress={() => openDetail(tile)}
-              scaleTo={0.94}
-              haptic="none"
-              containerStyle={s.tileLayout}
-              style={[
-                s.tile,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  shadowColor: colors.navy,
-                },
-              ]}
-            >
-              {justLogged === tile.key ? (
-                <View style={[s.tileLoggedBadge, { backgroundColor: colors.sage }]}>
-                  <Ionicons name="checkmark" size={13} color="#FFFFFF" />
-                </View>
-              ) : null}
-              <PixelIcon name={tile.icon} size={34} />
-              <Text style={[s.tileLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                {tile.label}
-              </Text>
-            </PressScale>
-          ))}
-        </View>
+        <QuickLogGrid
+          controller={quickLog}
+          variant="expanded"
+          showFeedback
+        />
 
         <BoardCard style={s.recentSection}>
           <Text style={[s.recentTitle, { color: colors.foreground, fontFamily: "Fredoka_600SemiBold" }]}>
@@ -368,7 +250,9 @@ export default function FastLogScreen() {
                 }
                 style={({ pressed }) => [
                   s.recentRow,
+                  fastLogLayout.stackStatusRows && s.recentRowReflow,
                   {
+                    minHeight: fastLogLayout.controlMinHeight,
                     backgroundColor: pressed ? colors.secondary : colors.background,
                     borderColor: colors.border,
                   },
@@ -379,24 +263,37 @@ export default function FastLogScreen() {
                 </View>
                 <View style={s.recentCopy}>
                   <Text
-                    numberOfLines={1}
+                    numberOfLines={fastLogLayout.stackStatusRows ? undefined : 1}
                     style={[s.recentName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
                   >
                     {entry.title.split(" - ")[0]}
                   </Text>
                   <Text
-                    numberOfLines={1}
+                    numberOfLines={fastLogLayout.stackStatusRows ? undefined : 1}
                     style={[s.recentMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
                   >
                     {shortTime(entry.occurredAt, Date.now())} · {entry.caregiver}
                   </Text>
+                  {fastLogLayout.stackStatusRows ? (
+                    <Text
+                      style={[
+                        s.recentOutcome,
+                        s.recentOutcomeReflow,
+                        { color: colors.amber, fontFamily: "Inter_600SemiBold" },
+                      ]}
+                    >
+                      {outcomeLabel(entry)}
+                    </Text>
+                  ) : null}
                 </View>
-                <Text
-                  numberOfLines={1}
-                  style={[s.recentOutcome, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}
-                >
-                  {outcomeLabel(entry)}
-                </Text>
+                {!fastLogLayout.stackStatusRows ? (
+                  <Text
+                    numberOfLines={1}
+                    style={[s.recentOutcome, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}
+                  >
+                    {outcomeLabel(entry)}
+                  </Text>
+                ) : null}
                 <View style={[s.recentCheck, { backgroundColor: colors.sage }]}>
                   <Ionicons name="checkmark" size={13} color="#FFFFFF" />
                 </View>
@@ -505,6 +402,10 @@ const s = StyleSheet.create({
     paddingVertical: 9,
     marginBottom: 8,
   },
+  recentRowReflow: {
+    alignItems: "flex-start",
+    paddingVertical: 11,
+  },
   recentIcon: {
     width: 32,
     height: 32,
@@ -526,6 +427,10 @@ const s = StyleSheet.create({
   recentOutcome: {
     fontSize: 11,
     maxWidth: 74,
+  },
+  recentOutcomeReflow: {
+    marginTop: 4,
+    maxWidth: "100%",
   },
   recentCheck: {
     width: 22,

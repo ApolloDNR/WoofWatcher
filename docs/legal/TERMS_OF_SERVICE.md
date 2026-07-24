@@ -1,12 +1,17 @@
 # WoofWatcher terms of service
 
+> **Draft status — shared-account release terms under review; do not publish.**
+> Account, household, care-sync, walk-location, map-service, deletion,
+> subscription, support, and provider terms require owner and legal approval
+> before any production capability is enabled for external users.
+
 Effective: July 9, 2026
 
 These terms are an agreement between you and Pegasus Dreamscapes ("we," "us"), the publisher of the WoofWatcher app for iOS and Android. By downloading or using WoofWatcher, you agree to these terms. If you do not agree, do not use the app.
 
 ## 1. What WoofWatcher is
 
-WoofWatcher is a dog-care companion app. You log your dog's real daily care — meals, walks, potty breaks, medications, and observations — and the app turns that record into routines, summaries, shareable care documents, and a pixel companion whose progress reflects the care you actually logged. In this version, all of your data is stored locally on your device; the app does not require an account and does not transmit your data to us (see the WoofWatcher privacy policy).
+WoofWatcher is a dog-care companion app. You log your dog's real daily care — meals, walks, potty breaks, medications, and observations — and the app turns that record into routines, summaries, shareable care documents, and a pixel companion whose progress reflects the care you actually logged. Care is cached locally. Provider-synced household features require sign-in when enabled, and recorded walk routes follow the location, map-service, and household-sync boundaries in the WoofWatcher privacy policy.
 
 ## 2. WoofWatcher is not veterinary advice
 
@@ -29,14 +34,15 @@ We grant you a personal, non-exclusive, non-transferable, revocable license to i
 ## 5. Your content and your data
 
 - You own the content you create in WoofWatcher — your logs, notes, photos, records, and exports.
-- Because this version of the app stores everything locally on your device, we never receive, host, or moderate your content, and we claim no license over it.
+- Local preview stores your content on your device. If you sign in to a provider-synced household, care entries may also be stored by the configured provider and visible to authorized household members under the approved provider terms.
 - You are responsible for what you enter and for anything you choose to share out of the app (for example, a Care Pass or export sent to a sitter or vet). Once you share content through your device's share sheet, its handling is governed by whatever service you sent it to.
 
-## 6. Local-first storage, backups, and data loss
+## 6. Local-first and provider-synced storage
 
-All WoofWatcher data lives on your device. That is a deliberate privacy choice, and it comes with a trade-off you accept by using the app:
+WoofWatcher keeps a local care cache. A provider-synced household may also have a provider copy of care entries, including recorded walk routes:
 
-- If your device is lost, damaged, reset, or the app is deleted, your WoofWatcher data may be permanently lost. There is no cloud copy in this version.
+- Local-preview data may be permanently lost if your device is lost, damaged, reset, or the app is deleted.
+- Clearing or deleting the app does not delete care already synced to a provider. Provider retention, export, and deletion terms must be approved before public launch and are not invented by these draft terms.
 - We strongly recommend using the in-app export feature regularly and/or your device's own backup system to protect data you care about.
 - To the maximum extent permitted by law, we are not liable for loss of data stored on your device.
 
@@ -52,9 +58,9 @@ You agree not to:
 
 This version of WoofWatcher does not charge fees, does not offer in-app purchases or subscriptions, and does not display ads. If paid features are introduced in a future version, they will be clearly disclosed, offered through the platform's purchase system, and covered by updated terms before you are charged anything.
 
-## 9. Features not in this version
+## 9. Provider and location boundaries
 
-This version of the app does not include cloud sync, online accounts, push notifications, live AI assistance, payments, or cloud document storage. Where the app mentions such capabilities, they are shown as gated or "setup needed" and are not active. Do not rely on any capability the app has not actually made available to you.
+Only rely on a provider-backed capability when the submitted build makes it available and the matching privacy/support terms are approved. Walk-route recording requests precise foreground location only after you start it, uses the points to draw that walk and calculate distance, and does not enable background location. Opening the map requests OpenStreetMap data for the recorded area.
 
 ## 10. Intellectual property
 
@@ -76,7 +82,7 @@ Some jurisdictions do not allow certain limitations of liability, so some of the
 
 ## 13. Termination
 
-You may stop using the app at any time; deleting the app removes your license and your locally stored data. We may terminate or suspend the license granted here if you materially breach these terms. Sections that by their nature should survive (including sections 2, 5, 6, 10, 11, 12, and 14) survive termination.
+You may stop using the app at any time; deleting the app removes your license and data stored by the app on that device, but it does not delete care already synced to a provider. We may terminate or suspend the license granted here if you materially breach these terms. Sections that by their nature should survive (including sections 2, 5, 6, 10, 11, 12, and 14) survive termination.
 
 ## 14. Governing law and disputes
 
@@ -88,7 +94,7 @@ Your use of the app is also subject to the applicable app store's terms. If you 
 
 ## 16. Changes to these terms
 
-We may update these terms from time to time. We will update the effective date above and publish the current version at the same public URL where these terms are hosted. If a change is material (for example, introducing paid features or online accounts), we will provide notice in the app before the change applies to you. Continued use after the effective date of updated terms constitutes acceptance.
+We may update these terms from time to time. We will update the effective date above and publish the current version at the same public URL where these terms are hosted. If a change is material (for example, changing provider, location, storage, sharing, or paid-feature behavior), we will provide notice in the app before the change applies to you. Continued use after the effective date of updated terms constitutes acceptance.
 
 ## 17. Contact
 

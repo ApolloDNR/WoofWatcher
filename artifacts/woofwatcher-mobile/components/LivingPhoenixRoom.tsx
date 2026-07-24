@@ -56,6 +56,7 @@ import {
   type RoamPlan,
 } from "@/lib/careTwinRoam";
 import { pixelImageStyle } from "@/lib/pixelRendering";
+import { resolvePetName } from "@/lib/petIdentity";
 import type { Mood } from "@/lib/phoenixStatus";
 
 // Constant ink for text on the fixed cream overlay chips/bubbles: the
@@ -349,6 +350,7 @@ export function LivingPhoenixRoom({
   transparentScene = false,
 }: Props) {
   const colors = useColors();
+  const resolvedPetName = resolvePetName(petName);
   const theme = MOOD_THEME[mood];
   const scenePlan = useMemo(() => deriveCareTwinScene(motion), [motion]);
 
@@ -957,7 +959,7 @@ export function LivingPhoenixRoom({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Phoenix room. ${avatarRoomRuntime?.templateLabel ?? "Shepherd"} care twin. ${motion.label}. ${plan.tapVerb}. ${speech}`}
+      accessibilityLabel={`${resolvedPetName}'s room. ${avatarRoomRuntime?.templateLabel ?? "Shepherd"} care twin. ${motion.label}. ${plan.tapVerb}. ${speech}`}
       accessibilityHint={accessibilityHint}
       onPress={handlePress}
       onLongPress={onLongPress}
@@ -1026,7 +1028,7 @@ export function LivingPhoenixRoom({
             <PixelIcon name="walk" size={18} />
             <View>
               <Text style={styles.awayCueTitle}>
-                {petName ?? "Phoenix"} is out exploring
+                {resolvedPetName} is out exploring
               </Text>
               <Text style={styles.awayCueDetail}>
                 {typeof awayMinutes === "number" && awayMinutes >= 0

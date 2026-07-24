@@ -13,9 +13,10 @@
  *
  * Captured points are throttled (>=15 m moved OR >=20 s elapsed), simplified
  * with Douglas-Peucker to <=200 points, and stored inside the walk entry's
- * `details.route` (plus `details.routeDistanceM`). Local-first: the route
- * lives in the care log like every other care detail and is never sent to
- * any mapping or analytics service.
+ * `details.route` (plus `details.routeDistanceM`). The route lives in the
+ * care log like every other care detail, so provider-synced household entries
+ * can carry it. Rendering a map separately requests OpenStreetMap data for
+ * the recorded area; the app does not enable background location.
  */
 
 export interface WalkRoutePoint {

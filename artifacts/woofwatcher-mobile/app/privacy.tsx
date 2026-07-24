@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Modal,
   Platform,
@@ -34,6 +34,8 @@ import {
   type AccountSafetyStatus,
 } from "@/lib/privacySafety";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
+import { useWoofAuth } from "@/lib/auth";
+import { resolveCareDeviceWipeAttempt } from "@/lib/careDeviceWipe";
 import { resolvePetName } from "@/lib/petIdentity";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import { shareTextPayload } from "@/lib/shareText";
@@ -85,7 +87,10 @@ export default function PrivacyScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, updateCareDoc, eraseAllLocalData } = useCare();
-  const { clearAvatarSet, resetAvatarConfig } = useAvatar();
+  const { resetAvatarMemoryAfterDeviceWipe } = useAvatar();
+  const { isSignedIn, signOut, userId } = useWoofAuth();
+  const authIdentityRef = useRef(userId ?? null);
+  authIdentityRef.current = userId ?? null;
   // Launch-ops cards (support runbook, launch gates) are owner tooling and
   // stay out of store production builds.
   const ownerOps = isOwnerOpsBuild();
@@ -238,34 +243,52 @@ export default function PrivacyScreen() {
 
   // Themed two-step delete-all confirmation: the native confirm()/alert()
   // fallback read as browser chrome on web, so the flow now runs in the
-  // app's own board-style sheet on every platform. Semantics are unchanged:
-  // two explicit confirmations, then a completion notice after the wipe.
+  // app's own board-style sheet on every platform: two explicit
+  // confirmations, then an honest success or partial-failure verdict.
   const [eraseStage, setEraseStage] = useState<
-    "confirm" | "confirm-final" | "done" | null
+    "confirm" | "confirm-final" | "done" | "failed" | null
   >(null);
   const [erasing, setErasing] = useState(false);
+  const [eraseFailureDetail, setEraseFailureDetail] = useState("");
+  const [erasedAccountCare, setErasedAccountCare] = useState(false);
 
   const eraseSteps = {
     confirm: {
-      title: "Delete all data on this device?",
-      message: `This permanently removes every log, routine, record, memory, report, and avatar for ${resolvePetName(state.profile.name)} from this device. WoofWatcher keeps no copy anywhere else. Export first if you want a backup.`,
+      title: isSignedIn
+        ? "Clear care from this device?"
+        : "Delete all data on this device?",
+      message: isSignedIn
+        ? `This removes every local log, routine, record, memory, report, and avatar for ${resolvePetName(state.profile.name)} from this device, then signs you out. Care already synced to your household provider remains there and can return when you sign in again.`
+        : `This permanently removes every log, routine, record, memory, report, and avatar for ${resolvePetName(state.profile.name)} from this local preview. Export first if you want a backup.`,
       confirmLabel: "Delete everything",
       cancelLabel: "Cancel",
     },
     "confirm-final": {
-      title: "This cannot be undone",
-      message: "Delete all WoofWatcher data from this device now?",
+      title: isSignedIn
+        ? "Clear this device and sign out?"
+        : "This cannot be undone",
+      message: isSignedIn
+        ? "Clear WoofWatcher data from this device and sign out now? Provider-synced care is not deleted."
+        : "Delete all WoofWatcher data from this local preview now?",
       confirmLabel: "Yes, delete it all",
       cancelLabel: "Keep my data",
     },
     done: {
-      title: "All data deleted",
-      message: "WoofWatcher has been reset to a fresh household on this device.",
+      title: "Device cleared",
+      message: erasedAccountCare
+        ? "You were signed out. Care already synced to your household provider remains there and can return when you sign in again."
+        : "WoofWatcher has been reset to a fresh local preview on this device.",
+    },
+    failed: {
+      title: "Device clear needs attention",
+      message: `WoofWatcher did not mark this device clear complete. Try again before logging new care.${eraseFailureDetail ? ` Failed targets: ${eraseFailureDetail}.` : ""}`,
     },
   } as const;
 
   const confirmEraseAllLocalData = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setEraseFailureDetail("");
+    setErasedAccountCare(false);
     setEraseStage("confirm");
   };
 
@@ -274,27 +297,58 @@ export default function PrivacyScreen() {
     setEraseStage(null);
   };
 
+  const runEraseAllLocalData = async () => {
+    if (erasing) return;
+    const requiresSignOut = Boolean(isSignedIn);
+    const initiatingUserId = requiresSignOut ? (userId ?? null) : null;
+    setErasing(true);
+    setEraseFailureDetail("");
+    // eraseAllLocalData owns the lifecycle barrier and removes every
+    // woofwatcher-prefixed key, including the scoped avatar keys. Reset the
+    // hydrated avatar only after that receipt is complete; calling avatar
+    // persistence concurrently would race the sweep or be paused by it.
+    const careResult = await Promise.resolve(eraseAllLocalData()).then(
+      (value) => ({ status: "fulfilled", value }) as const,
+      (reason) => ({ status: "rejected", reason }) as const,
+    );
+    const receipt =
+      careResult.status === "fulfilled" ? careResult.value : null;
+    const failedTargets = receipt
+      ? receipt.steps
+          .filter((step) => step.status === "failed")
+          .map((step) => step.target)
+      : ["care-data"];
+    if (receipt?.complete) resetAvatarMemoryAfterDeviceWipe();
+    const verdict = await resolveCareDeviceWipeAttempt({
+      receipt,
+      additionalFailures: [],
+      requiresSignOut,
+      initiatingUserId,
+      getCurrentUserId: () => authIdentityRef.current,
+      signOut,
+    });
+    setErasing(false);
+    if (verdict.complete) {
+      setErasedAccountCare(verdict.clearedAccountCare);
+      setEraseStage("done");
+      return;
+    }
+    setEraseFailureDetail(
+      verdict.failures.length
+        ? verdict.failures.join(", ")
+        : failedTargets.join(", "),
+    );
+    setEraseStage("failed");
+  };
+
   const advanceEraseFlow = () => {
     if (eraseStage === "confirm") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setEraseStage("confirm-final");
       return;
     }
-    if (eraseStage === "confirm-final") {
-      if (erasing) return;
-      setErasing(true);
-      // The avatar contexts hold hydrated in-memory state, so the wipe
-      // must reset them too or the custom twin would survive on screen
-      // (and a later Studio save would re-persist deleted data).
-      // Never leave the owner stuck on "erasing" with no verdict: even if an
-      // avatar reset rejects, the care-data wipe already ran, so land on
-      // "done" rather than hanging silently.
-      void Promise.all([eraseAllLocalData(), clearAvatarSet(), resetAvatarConfig()])
-        .catch(() => {})
-        .then(() => {
-          setErasing(false);
-          setEraseStage("done");
-        });
+    if (eraseStage === "confirm-final" || eraseStage === "failed") {
+      void runEraseAllLocalData();
       return;
     }
     setEraseStage(null);
@@ -331,9 +385,30 @@ export default function PrivacyScreen() {
           <Text style={[s.heroSub, { fontFamily: "Inter_500Medium" }]}>
             {ownerOps
               ? "Export care data, prepare deletion requests, and review the rules that keep AI, documents, and payments gated."
-              : "Your household's care data lives on this device. Export it, read the policy, or delete everything at any time."}
+              : isSignedIn
+                ? "Your household's care is cached on this device and may also be synced with your provider. Export it, read the policy, or clear this device."
+                : "Your care data lives in this local preview. Export it, read the policy, or delete it at any time."}
           </Text>
         </LinearGradient>
+
+        <BoardCard enter={0} style={s.privacyBoard}>
+          <BoardSectionHeader
+            title="Walk location & route maps"
+            accessory={<BoardPill label="Foreground only" tone={colors.sage} />}
+          />
+          <Text style={[s.locationDisclosure, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+            WoofWatcher asks for precise foreground location only when you start recording a walk route. It uses those points to
+            draw that walk's map and calculate its distance. Background location is not enabled.
+          </Text>
+          <Text style={[s.locationDisclosure, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            The points and distance are saved with the walk in this device's care log. If you are signed in to a
+            provider-synced household, the route may sync with that care entry and be visible to members of that household.
+          </Text>
+          <Text style={[s.locationDisclosure, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            Opening a route map requests OpenStreetMap raster tiles or neighborhood geometry for the recorded area. Those map
+            services receive that area request under their own policies.
+          </Text>
+        </BoardCard>
 
         <BoardCard enter={0} style={s.privacyBoard}>
           <BoardSectionHeader
@@ -402,8 +477,9 @@ export default function PrivacyScreen() {
             accessory={<BoardPill label="On this device" tone={colors.sage} />}
           />
           <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-            Every care log lives only on this device. Read the full privacy
-            policy and terms, or erase everything in one step.
+            {isSignedIn
+              ? "Clearing this device removes its local care and signs you out. Care already synced to your household provider remains there."
+              : "Every care log in this preview lives only on this device. Read the full privacy policy and terms, or erase everything in one step."}
           </Text>
           <Pressable
             onPress={openLegalDocuments}
@@ -428,7 +504,11 @@ export default function PrivacyScreen() {
           <Pressable
             onPress={confirmEraseAllLocalData}
             accessibilityRole="button"
-            accessibilityLabel="Delete all WoofWatcher data on this device"
+            accessibilityLabel={
+              isSignedIn
+                ? "Clear care from this device"
+                : "Delete all WoofWatcher data on this device"
+            }
             style={({ pressed }) => [
               s.legalRow,
               { borderColor: colors.rose + "55", backgroundColor: pressed ? colors.rose + "14" : colors.background },
@@ -437,10 +517,14 @@ export default function PrivacyScreen() {
             <Ionicons name="trash-bin-outline" size={18} color={colors.rose} />
             <View style={{ flex: 1 }}>
               <Text style={[s.legalRowTitle, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>
-                Delete all data on this device
+                {isSignedIn
+                  ? "Clear care from this device"
+                  : "Delete all data on this device"}
               </Text>
               <Text style={[s.legalRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Permanent. Resets WoofWatcher to a fresh household.
+                {isSignedIn
+                  ? "Clears this device and signs you out. Provider care remains."
+                  : "Permanent. Resets this local preview."}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
@@ -565,7 +649,11 @@ export default function PrivacyScreen() {
       >
         <Pressable
           style={s.modalBackdrop}
-          onPress={eraseStage === "done" ? advanceEraseFlow : cancelEraseFlow}
+          onPress={
+            eraseStage === "done" || eraseStage === "failed"
+              ? advanceEraseFlow
+              : cancelEraseFlow
+          }
           accessibilityRole="button"
           accessibilityLabel="Dismiss delete confirmation"
         >
@@ -611,10 +699,14 @@ export default function PrivacyScreen() {
                 >
                   {eraseSteps[eraseStage].message}
                 </Text>
-                {eraseStage === "done" ? (
+                {eraseStage === "done" || eraseStage === "failed" ? (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Close data deletion notice"
+                    accessibilityLabel={
+                      eraseStage === "done"
+                        ? "Close data deletion notice"
+                        : "Retry device clear"
+                    }
                     onPress={advanceEraseFlow}
                     style={({ pressed }) => [
                       s.confirmPrimaryBtn,
@@ -623,7 +715,7 @@ export default function PrivacyScreen() {
                     ]}
                   >
                     <Text style={[s.confirmPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>
-                      Done
+                      {eraseStage === "done" ? "Done" : "Retry"}
                     </Text>
                   </Pressable>
                 ) : (
@@ -956,6 +1048,7 @@ const s = StyleSheet.create({
   heroTitle: { color: "#FFFFFF", fontSize: 33, letterSpacing: 0 },
   heroSub: { color: "rgba(255,255,255,0.84)", fontSize: 15, lineHeight: 22, marginTop: 10 },
   privacyBoard: { marginTop: 14 },
+  locationDisclosure: { fontSize: 13, lineHeight: 19, marginTop: 8 },
   statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   statTile: { flexBasis: "45%", flexGrow: 1, borderRadius: 16, borderWidth: 1, padding: 15 },
   statValue: { fontSize: 24 },

@@ -1,7 +1,19 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 
 import { useColors } from "@/hooks/useColors";
+import { useWebQaFontScale } from "@/hooks/useWebQaFontScale";
+import {
+  getAccessibleLayoutMetrics,
+  MIN_MOBILE_TOUCH_TARGET,
+} from "@/lib/mobileLayout";
 import {
   registerWebDialogPresenter,
   type WebDialogRequest,
@@ -16,6 +28,12 @@ import {
  */
 export function WebDialogHost() {
   const colors = useColors();
+  const { fontScale: runtimeFontScale } = useWindowDimensions();
+  const { fontScale } = useWebQaFontScale(runtimeFontScale);
+  const layout = getAccessibleLayoutMetrics({
+    platform: Platform.OS,
+    fontScale,
+  });
   const [queue, setQueue] = useState<WebDialogRequest[]>([]);
 
   useEffect(() => {
@@ -59,6 +77,7 @@ export function WebDialogHost() {
     >
       <View
         accessibilityRole="alert"
+        accessibilityLabel={`${current.title}. ${current.message}`}
         style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}
       >
         <Text style={[s.title, { color: colors.foreground, fontFamily: "Fredoka_600SemiBold" }]}>
@@ -67,7 +86,12 @@ export function WebDialogHost() {
         <Text style={[s.message, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
           {current.message}
         </Text>
-        <View style={s.buttonRow}>
+        <View
+          style={[
+            s.buttonRow,
+            layout.stackStatusRows && s.buttonRowStacked,
+          ]}
+        >
           {current.cancelLabel != null ? (
             <Pressable
               accessibilityRole="button"
@@ -140,8 +164,12 @@ const s = StyleSheet.create({
     gap: 8,
     marginTop: 8,
   },
+  buttonRowStacked: {
+    alignItems: "stretch",
+    flexDirection: "column-reverse",
+  },
   button: {
-    minHeight: 44,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     minWidth: 84,
     paddingHorizontal: 16,
     paddingVertical: 10,

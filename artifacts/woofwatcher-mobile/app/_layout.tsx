@@ -23,9 +23,10 @@ import { LinkPreviewContextProvider } from "expo-router/build/link/preview/LinkP
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { Platform, StyleSheet, useColorScheme, useWindowDimensions, View } from "react-native";
+import { Platform, StyleSheet, Text, useColorScheme, useWindowDimensions, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import { useReducedMotion } from "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
@@ -39,6 +40,7 @@ import {
   clerkProxyUrl,
   clerkPublishableKey,
   isClerkConfigured,
+  isLocalRouteSmoke,
   useWoofAuth,
 } from "@/lib/auth";
 
@@ -48,13 +50,17 @@ const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) setBaseUrl(`https://${domain}`);
 
 const queryClient = new QueryClient();
+const authConfigurationRequired =
+  !isLocalRouteSmoke &&
+  (!__DEV__ ||
+    process.env.EXPO_PUBLIC_ENFORCE_AUTH_IN_DEV === "true");
 
 function AuthBridge() {
-  const { getToken } = useWoofAuth();
+  const { getToken, userId } = useWoofAuth();
   useEffect(() => {
     setAuthTokenGetter(() => getToken());
     return () => setAuthTokenGetter(null);
-  }, [getToken]);
+  }, [getToken, userId]);
   return null;
 }
 
@@ -63,16 +69,18 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   const colors = useColors();
+  const reducedMotion = useReducedMotion();
 
-  // Development convenience: skip the sign-in gate so the app can be reviewed
-  // in the web preview / simulator without logging in on every reload. Real
-  // production builds (where __DEV__ is false) always enforce authentication.
+  // Local previews may skip the sign-in gate, while the development EAS
+  // profile opts into the real staged-auth path. Production always enforces it.
   useEffect(() => {
-    if (!isClerkConfigured) {
-      if (segments[0] === "(auth)") router.replace("/(tabs)");
+    if (!isClerkConfigured) return;
+    if (
+      __DEV__ &&
+      process.env.EXPO_PUBLIC_ENFORCE_AUTH_IN_DEV !== "true"
+    ) {
       return;
     }
-    if (__DEV__) return;
     const inAuthGroup = segments[0] === "(auth)";
     if (!isSignedIn && !inAuthGroup) {
       router.replace("/(auth)/sign-in");
@@ -157,7 +165,7 @@ function RootLayoutNav() {
           // transition matching instead of a platform-default cut. The web
           // build ignores it, so the fastlog screen runs its own mount
           // fade/rise there.
-          animation: "slide_from_bottom",
+          animation: reducedMotion ? "none" : "slide_from_bottom",
           // Themed, not hardcoded cream: a hardcoded light background flashed
           // behind the slide-up for a beat in dark mode.
           contentStyle: { backgroundColor: colors.background },
@@ -336,6 +344,29 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) return null;
 
+  if (
+    authConfigurationRequired &&
+    (!isClerkConfigured || !clerkPublishableKey)
+  ) {
+    return (
+      <SafeAreaProvider>
+        <View
+          accessibilityRole="alert"
+          style={styles.authConfigurationBlocker}
+        >
+          <Text style={styles.authConfigurationTitle}>
+            Account service unavailable
+          </Text>
+          <Text style={styles.authConfigurationCopy}>
+            WoofWatcher cannot open a release build without its account
+            configuration. No care data has been loaded. Please try an updated
+            build or contact support.
+          </Text>
+        </View>
+      </SafeAreaProvider>
+    );
+  }
+
   const app = (
     <LinkPreviewContextProvider>
       <SafeAreaProvider>
@@ -375,6 +406,28 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
+  authConfigurationBlocker: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    paddingHorizontal: 28,
+    backgroundColor: "#F7F1E1",
+  },
+  authConfigurationTitle: {
+    color: "#081424",
+    fontFamily: "Fredoka_700Bold",
+    fontSize: 24,
+    textAlign: "center",
+  },
+  authConfigurationCopy: {
+    maxWidth: 420,
+    color: "#344238",
+    fontFamily: "Inter_500Medium",
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: "center",
+  },
   webFullBleed: {
     flex: 1,
     minWidth: 0,

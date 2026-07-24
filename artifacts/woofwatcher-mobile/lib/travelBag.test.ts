@@ -6,6 +6,7 @@ import {
   activateTravelBag,
   completeTravelBag,
   defaultTravelBag,
+  inspectTravelBagStorage,
   parseTravelBag,
   redoTravelBag,
   renameTravelBag,
@@ -112,6 +113,21 @@ test("parse rejects an unknown phase or bad timestamp back to default", () => {
     parseTravelBag(JSON.stringify({ version: 1, phase: "active", activatedAt: "not-a-date" })).phase,
     "packing",
   );
+});
+
+test("storage inspection distinguishes a missing bag from unreadable owner data", () => {
+  const missing = inspectTravelBagStorage(null);
+  assert.equal(missing.status, "missing");
+  assert.deepEqual(missing.session, defaultTravelBag());
+
+  const corrupt = inspectTravelBagStorage("{not json");
+  assert.equal(corrupt.status, "invalid");
+  assert.equal(corrupt.session, null);
+
+  const validSession = renameTravelBag(defaultTravelBag(), "Vet visit");
+  const valid = inspectTravelBagStorage(serializeTravelBag(validSession));
+  assert.equal(valid.status, "valid");
+  assert.deepEqual(valid.session, validSession);
 });
 
 test("an existing user with no stored bag defaults to packing, never auto-active", () => {

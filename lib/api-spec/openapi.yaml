@@ -297,6 +297,68 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /me/households:
+    get:
+      operationId: listMyHouseholds
+      tags: [household]
+      summary: List the current user's household memberships
+      description: >-
+        Returns only memberships belonging to the authenticated caller,
+        identifies the durable active household, and marks expired Access Pass
+        memberships ineligible for active selection.
+      responses:
+        "200":
+          description: Caller-scoped household memberships
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdMembershipList"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /me/active-household:
+    put:
+      operationId: selectActiveHousehold
+      tags: [household]
+      summary: Select the current user's active household
+      description: >-
+        Persists a household selection only when the authenticated caller has a
+        current eligible membership. Expired Access Pass memberships cannot be
+        selected. Returns the refreshed active household context.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActiveHouseholdSelection"
+      responses:
+        "200":
+          description: Refreshed active household context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "400":
+          description: Invalid household selection payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Caller is not an eligible member of the selected household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /household:
     patch:
       operationId: updateHousehold
@@ -323,6 +385,12 @@ paths:
                 $ref: "#/components/schemas/ApiError"
         "401":
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Only owners can rename the active household
           content:
             application/json:
               schema:
@@ -472,8 +540,12 @@ paths:
       tags: [household]
       summary: Join an existing household by invite code
       description: >-
-        Accepts a household invite code, creates or reuses the caregiver
-        membership, and returns a HouseholdAuditEvent for invitation acceptance.
+        Atomically claims one approved and unexpired durable invitation, creates
+        or reuses the caregiver membership, makes that household active, and
+        records one HouseholdAuditEvent. Permanent household codes are not join
+        authority. Possession of the invitation code is the acceptance
+        authority; invitedEmail is a delivery label and is not recipient
+        binding.
       requestBody:
         required: true
         content:
@@ -495,6 +567,12 @@ paths:
                 $ref: "#/components/schemas/ApiError"
         "401":
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: Invitation is not currently approved and unexpired
           content:
             application/json:
               schema:
@@ -815,6 +893,14 @@ paths:
       operationId: getCareState
       tags: [care-state]
       summary: Get the household's synced care document
+      parameters:
+        - name: householdId
+          in: query
+          required: true
+          description: Canonical household scope captured before care-state sync begins.
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
       responses:
         "200":
           description: Care state document
@@ -834,10 +920,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "412":
+          description: Active household no longer matches the captured request scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareEntryHouseholdScopeConflict"
     put:
       operationId: putCareState
       tags: [care-state]
       summary: Replace the household's synced care document
+      parameters:
+        - name: householdId
+          in: query
+          required: true
+          description: Canonical household scope captured before care-state sync begins.
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
       requestBody:
         required: true
         content:
@@ -875,6 +975,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CareStateEnvelope"
+        "412":
+          description: Active household no longer matches the captured request scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareEntryHouseholdScopeConflict"
   /care-entries:
     get:
       operationId: listCareEntries
@@ -926,6 +1032,14 @@ paths:
       operationId: createCareEntry
       tags: [care-entries]
       summary: Append a care log entry
+      parameters:
+        - name: householdId
+          in: query
+          required: true
+          description: Canonical household scope captured before care-log creation begins.
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
       requestBody:
         required: true
         content:
@@ -957,6 +1071,86 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "412":
+          description: Active household no longer matches the captured request scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareEntryHouseholdScopeConflict"
+  /care-entries/history:
+    get:
+      operationId: listCareEntryHistory
+      tags: [care-entries]
+      summary: Page through one coherent complete household care history
+      parameters:
+        - name: householdId
+          in: query
+          required: true
+          description: Canonical household scope captured before the history request begins.
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        - name: beforeOccurredAt
+          in: query
+          required: false
+          description: Exact millisecond-precision occurredAt value from the final entry of the prior page.
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$'
+        - name: beforeId
+          in: query
+          required: false
+          description: Canonical entry id from the final entry of the prior page.
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        - name: expectedGeneration
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 9007199254740991
+            multipleOf: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 500
+      responses:
+        "200":
+          description: One coherent care-history page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareEntryHistoryEnvelope"
+        "400":
+          description: Invalid or incomplete history cursor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Care history changed; restart from page one
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareEntryHistoryConflict"
+        "412":
+          description: Active household no longer matches the captured request scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareEntryHouseholdScopeConflict"
   /care-entries/tombstones:
     get:
       operationId: listCareEntryTombstones
@@ -1009,6 +1203,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: householdId
+          in: query
+          required: true
+          description: Canonical household scope captured before the update began.
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
       requestBody:
         required: true
         content:
@@ -1046,6 +1247,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "412":
+          description: Active household no longer matches the captured request scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareEntryHouseholdScopeConflict"
+        "409":
+          description: Care entry changed during the update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareEntry"
     delete:
       operationId: deleteCareEntry
       tags: [care-entries]
@@ -1056,6 +1269,13 @@ paths:
           required: true
           schema:
             type: string
+        - name: householdId
+          in: query
+          required: true
+          description: Canonical household scope captured before the delete began.
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
       responses:
         "204":
           description: Deleted
@@ -1082,7 +1302,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiError"
+                $ref: "#/components/schemas/CareEntryDeleteAbsent"
+        "412":
+          description: Active household no longer matches the captured request scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareEntryHouseholdScopeConflict"
 components:
   schemas:
     HealthStatus:
@@ -1285,6 +1511,59 @@ components:
         - id
         - name
         - inviteCode
+    HouseholdMembership:
+      type: object
+      properties:
+        household:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+          required:
+            - id
+            - name
+        role:
+          type: string
+        accessPassExpiresAt:
+          type: ["string", "null"]
+        accessPassExpired:
+          type: boolean
+        eligible:
+          type: boolean
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - household
+        - role
+        - accessPassExpired
+        - eligible
+        - isActive
+        - createdAt
+    HouseholdMembershipList:
+      type: object
+      properties:
+        activeHouseholdId:
+          type: string
+        memberships:
+          type: array
+          items:
+            $ref: "#/components/schemas/HouseholdMembership"
+      required:
+        - activeHouseholdId
+        - memberships
+    ActiveHouseholdSelection:
+      type: object
+      properties:
+        householdId:
+          type: string
+          minLength: 1
+      required:
+        - householdId
     Member:
       type: object
       properties:
@@ -1769,6 +2048,9 @@ components:
     CareStateEnvelope:
       type: object
       properties:
+        householdId:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
         version:
           type: integer
         updatedAt:
@@ -1780,6 +2062,7 @@ components:
           type: object
           additionalProperties: true
       required:
+        - householdId
         - version
         - updatedAt
         - doc
@@ -1799,6 +2082,9 @@ components:
       properties:
         id:
           type: string
+        householdId:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
         petId:
           type: ["string", "null"]
         type:
@@ -1819,6 +2105,11 @@ components:
         details:
           type: ["object", "null"]
           additionalProperties: true
+        revision:
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+          multipleOf: 1
         createdAt:
           type: string
           format: date-time
@@ -1827,10 +2118,70 @@ components:
           format: date-time
       required:
         - id
+        - householdId
         - type
         - occurredAt
+        - revision
         - createdAt
         - updatedAt
+    CareEntryHistoryEnvelope:
+      type: object
+      properties:
+        householdId:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        historyGeneration:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          multipleOf: 1
+        entries:
+          type: array
+          maxItems: 500
+          items:
+            $ref: "#/components/schemas/CareEntry"
+      required:
+        - householdId
+        - historyGeneration
+        - entries
+    CareEntryHistoryConflict:
+      type: object
+      properties:
+        error:
+          type: string
+        currentGeneration:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          multipleOf: 1
+      required:
+        - error
+        - currentGeneration
+    CareEntryHouseholdScopeConflict:
+      type: object
+      properties:
+        error:
+          type: string
+        currentHouseholdId:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+      required:
+        - error
+        - currentHouseholdId
+    CareEntryDeleteAbsent:
+      type: object
+      properties:
+        error:
+          type: string
+        householdId:
+          type: string
+          pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        scopeBound:
+          type: boolean
+      required:
+        - error
+        - householdId
+        - scopeBound
     CareEntryTombstone:
       type: object
       properties:
@@ -1885,6 +2236,11 @@ components:
     CareEntryUpdate:
       type: object
       properties:
+        expectedRevision:
+          type: integer
+          minimum: 1
+          maximum: 2147483646
+          multipleOf: 1
         type:
           type: string
           minLength: 1
@@ -1900,3 +2256,5 @@ components:
         details:
           type: ["object", "null"]
           additionalProperties: true
+      required:
+        - expectedRevision

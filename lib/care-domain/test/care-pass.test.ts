@@ -115,19 +115,19 @@ test("resolves the stored pet-name placeholder so the pass matches the app", () 
     profile: { ...baseInput().profile, name: "My Dog" },
   });
 
-  // "My Dog" is the stored profile default, not a name; every app surface
-  // shows "Phoenix" until the owner personalizes it, and the flagship share
-  // artifact has to agree.
-  assert.equal(pass.title, "Phoenix Sitter Care Pass");
-  assert.match(pass.summary, /^Phoenix care handoff/);
+  // "My Dog" is the stored profile default, not a name. Shared artifacts use
+  // an honest neutral identity until the owner personalizes it.
+  assert.equal(pass.title, "Your dog Sitter Care Pass");
+  assert.match(pass.summary, /^Your dog care handoff/);
   assert.doesNotMatch(pass.message, /My Dog/);
+  assert.doesNotMatch(pass.message, /Phoenix/);
 
   const empty = buildCarePass({
     ...baseInput(),
     audience: "sitter",
     profile: { ...baseInput().profile, name: "" },
   });
-  assert.equal(empty.title, "Phoenix Sitter Care Pass");
+  assert.equal(empty.title, "Your dog Sitter Care Pass");
 });
 
 test("a renamed dog's care pass never reads Phoenix in derived copy", () => {

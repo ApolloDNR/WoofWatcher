@@ -5,20 +5,27 @@ const {
   createPreviewServer,
   requestRoute,
 } = require("./smoke-runtime-preview.js");
+const {
+  createSmokeSourceFingerprint,
+  validateSmokeSourceProvenance,
+} = require("./smoke-source-provenance.js");
 
 const projectRoot = path.resolve(__dirname, "..");
 const exportRoot = path.resolve(projectRoot, ".expo-smoke");
 const exportIndexPath = path.join(exportRoot, "index.html");
+const provenancePath = path.join(exportRoot, "smoke-source-provenance.json");
 
 const LIVE_PREVIEW_HANDOFF_ROUTES = [
   "/",
   "/sign-in",
   "/setup",
+  "/fastlog",
   "/log",
   "/calendar",
   "/health",
   "/records",
   "/more",
+  "/privacy",
   "/care-twin-qa?qaSurface=auth-setup-onboarding-proof",
   "/care-twin-qa?qaSurface=records-local-file-handoff",
   "/care-twin-qa?qaSurface=report-binary-export-proof",
@@ -52,14 +59,25 @@ function routeDetail(result) {
 
 function buildLivePreviewHandoffProof(input) {
   const routeResults = input.routeResults || [];
+  const sourceProvenance = input.sourceProvenance || {
+    status: "BLOCKED",
+    algorithm: "sha256",
+    sourceFingerprint: "",
+    detail: "Source provenance was not supplied.",
+  };
   const routeChecks = routeResults.map((result) => ({
     route: result.route,
     status: routeStatus(result),
     detail: routeDetail(result),
   }));
-  const result = routeChecks.length > 0 && routeChecks.every((check) => check.status === "PASS")
+  const result = sourceProvenance.status === "PASS" &&
+    routeChecks.length > 0 &&
+    routeChecks.every((check) => check.status === "PASS")
     ? "PASS"
     : "BLOCKED";
+  const sourceBoundary = sourceProvenance.status === "PASS"
+    ? "The Expo smoke export's SHA-256 fingerprint matches the current mobile/shared export inputs at proof time; this does not prove a clean Git commit or CI run. Keep the commit SHA, smoke:web output, and CI logs attached."
+    : `Source provenance is blocked: ${sourceProvenance.detail}`;
 
   return {
     title: "WoofWatcher Live Preview Handoff Proof",
@@ -68,12 +86,13 @@ function buildLivePreviewHandoffProof(input) {
     baseUrl: normalizeBaseUrl(input.baseUrl),
     commit: input.commit || "unknown",
     exportIndexMtimeIso: input.exportIndexMtimeIso || "missing .expo-smoke/index.html",
+    sourceProvenance,
     routes: routeResults.map((route) => route.route),
     routeChecks,
     truthBoundaries: [
       "Live preview proof is web preview only and does not replace native iOS/Android proof.",
       "Live preview proof does not approve provider-backed storage, sync, AI, payments, push, store approval, public launch, or Apollo sign-off.",
-      ".expo-smoke metadata does not prove the export was produced from the current commit; keep branch CI and export logs attached.",
+      sourceBoundary,
     ],
     nextActions: [
       "Attach this JSON, the preview URL, and the preview:smoke terminal output to Share Beta Handoff without claiming native QA.",
@@ -91,6 +110,10 @@ function formatLivePreviewHandoffProofText(proof) {
     `URL: ${proof.baseUrl}`,
     `Commit: ${proof.commit}`,
     `Export index mtime: ${proof.exportIndexMtimeIso}`,
+    `Source provenance: ${proof.sourceProvenance.status} (${proof.sourceProvenance.detail})`,
+    ...(proof.sourceProvenance.sourceFingerprint
+      ? [`Source fingerprint (${proof.sourceProvenance.algorithm}): ${proof.sourceProvenance.sourceFingerprint}`]
+      : []),
     "Routes:",
     ...proof.routeChecks.map((check) => `- ${check.route}: ${check.status} (${check.detail})`),
     "Truth boundaries:",
@@ -108,9 +131,44 @@ function getCurrentCommit() {
   return result.status === 0 ? result.stdout.trim() : "unknown";
 }
 
-function exportIndexMtimeIso() {
-  if (!fs.existsSync(exportIndexPath)) return "";
-  return fs.statSync(exportIndexPath).mtime.toISOString();
+function exportIndexMtimeIso(indexPath = exportIndexPath) {
+  if (!fs.existsSync(indexPath)) return "";
+  return fs.statSync(indexPath).mtime.toISOString();
+}
+
+function validateLivePreviewExportProvenance(options = {}) {
+  const sourceProjectRoot = options.projectRoot || projectRoot;
+  const sourceExportRoot = options.exportRoot || exportRoot;
+  const sourceProvenancePath =
+    options.provenancePath ||
+    (sourceExportRoot === exportRoot
+      ? provenancePath
+      : path.join(sourceExportRoot, "smoke-source-provenance.json"));
+  const sourceFingerprint = createSmokeSourceFingerprint(sourceProjectRoot);
+
+  if (!fs.existsSync(sourceProvenancePath)) {
+    validateSmokeSourceProvenance(null, sourceFingerprint);
+  }
+
+  let savedProvenance;
+  try {
+    savedProvenance = JSON.parse(fs.readFileSync(sourceProvenancePath, "utf8"));
+  } catch (error) {
+    throw new Error(
+      `Invalid Expo smoke source provenance. Run pnpm --filter @workspace/woofwatcher-mobile run smoke:web before proof:live-preview. ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
+  validateSmokeSourceProvenance(savedProvenance, sourceFingerprint);
+
+  return {
+    status: "PASS",
+    algorithm: "sha256",
+    sourceFingerprint,
+    detail:
+      "Current mobile/shared export inputs match the saved SHA-256 smoke export fingerprint.",
+  };
 }
 
 function listen(server, port) {
@@ -135,7 +193,10 @@ function close(server) {
 async function collectLivePreviewHandoffProof(options = {}) {
   const generatedAtIso = options.generatedAtIso || new Date().toISOString();
   const commit = options.commit || getCurrentCommit();
-  const exportMtime = exportIndexMtimeIso();
+  const sourceProjectRoot = options.projectRoot || projectRoot;
+  const sourceExportRoot = options.exportRoot || exportRoot;
+  const sourceExportIndexPath = path.join(sourceExportRoot, "index.html");
+  const exportMtime = exportIndexMtimeIso(sourceExportIndexPath);
 
   if (!exportMtime) {
     return {
@@ -145,6 +206,13 @@ async function collectLivePreviewHandoffProof(options = {}) {
         exportIndexMtimeIso: "",
         generatedAtIso,
         routeResults: [],
+        sourceProvenance: {
+          status: "BLOCKED",
+          algorithm: "sha256",
+          sourceFingerprint: "",
+          detail:
+            "Missing .expo-smoke/index.html. Run smoke:web before live preview proof.",
+        },
       }),
       routeChecks: [
         {
@@ -157,7 +225,40 @@ async function collectLivePreviewHandoffProof(options = {}) {
     };
   }
 
-  const server = createPreviewServer();
+  let sourceProvenance;
+  try {
+    sourceProvenance = validateLivePreviewExportProvenance({
+      projectRoot: sourceProjectRoot,
+      exportRoot: sourceExportRoot,
+    });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    return {
+      ...buildLivePreviewHandoffProof({
+        baseUrl: "http://127.0.0.1:0/",
+        commit,
+        exportIndexMtimeIso: exportMtime,
+        generatedAtIso,
+        routeResults: [],
+        sourceProvenance: {
+          status: "BLOCKED",
+          algorithm: "sha256",
+          sourceFingerprint: "",
+          detail,
+        },
+      }),
+      routeChecks: [
+        {
+          route: "smoke-source-provenance.json",
+          status: "BLOCKED",
+          detail,
+        },
+      ],
+      routes: [],
+    };
+  }
+
+  const server = createPreviewServer(sourceExportRoot);
   const address = await listen(server, options.port || 0);
   const port = address.port;
   const baseUrl = `http://127.0.0.1:${port}/`;
@@ -183,6 +284,7 @@ async function collectLivePreviewHandoffProof(options = {}) {
     exportIndexMtimeIso: exportMtime,
     generatedAtIso,
     routeResults,
+    sourceProvenance,
   });
 }
 
@@ -216,4 +318,5 @@ module.exports = {
   buildLivePreviewHandoffProof,
   collectLivePreviewHandoffProof,
   formatLivePreviewHandoffProofText,
+  validateLivePreviewExportProvenance,
 };

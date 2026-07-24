@@ -2,9 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  Platform,
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
   type LayoutChangeEvent,
   type StyleProp,
@@ -22,8 +24,13 @@ import Reanimated, {
 import { enterUp, MeterPip, PressScale, SPRING } from "@/components/motion/GameFeel";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useColors } from "@/hooks/useColors";
+import { useWebQaFontScale } from "@/hooks/useWebQaFontScale";
 import { hapticSelect } from "@/lib/haptics";
-import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
+import {
+  getAccessibleLayoutMetrics,
+  MIN_MOBILE_TOUCH_TARGET,
+  MOBILE_INLINE_HIT_SLOP,
+} from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -233,6 +240,12 @@ export function BoardSegmentTabs<T extends string>({
 }) {
   const colors = useColors();
   const reduced = useReducedMotion();
+  const { fontScale: runtimeFontScale } = useWindowDimensions();
+  const { fontScale } = useWebQaFontScale(runtimeFontScale);
+  const layout = getAccessibleLayoutMetrics({
+    platform: Platform.OS,
+    fontScale,
+  });
   // The active fill is a single pill that glides between chips on the shared
   // spring instead of teleporting. Chips are measured on layout; until the
   // active chip has a rect the pill stays hidden and the chip paints its own
@@ -245,7 +258,7 @@ export function BoardSegmentTabs<T extends string>({
 
   const activeRect = rects[active];
   useEffect(() => {
-    if (!activeRect) return;
+    if (layout.stackStatusRows || !activeRect) return;
     pillHeight.value = activeRect.height;
     if (reduced || !pillPlaced.current) {
       pillX.value = activeRect.x;
@@ -255,7 +268,14 @@ export function BoardSegmentTabs<T extends string>({
     }
     pillX.value = withSpring(activeRect.x, SPRING.default);
     pillWidth.value = withSpring(activeRect.width, SPRING.default);
-  }, [activeRect, pillHeight, pillWidth, pillX, reduced]);
+  }, [
+    activeRect,
+    layout.stackStatusRows,
+    pillHeight,
+    pillWidth,
+    pillX,
+    reduced,
+  ]);
 
   const pillStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: pillX.value }],
@@ -265,19 +285,37 @@ export function BoardSegmentTabs<T extends string>({
   }));
 
   return (
-    <View style={[styles.segmentRow, style]}>
-      <Reanimated.View
-        pointerEvents="none"
-        style={[styles.segmentPill, { backgroundColor: colors.primary }, pillStyle]}
-      />
+    <View
+      style={[
+        styles.segmentRow,
+        layout.stackStatusRows && styles.segmentRowReflow,
+        style,
+      ]}
+    >
+      {!layout.stackStatusRows ? (
+        <Reanimated.View
+          pointerEvents="none"
+          style={[
+            styles.segmentPill,
+            { backgroundColor: colors.primary },
+            pillStyle,
+          ]}
+        />
+      ) : null}
       {segments.map((segment) => {
         const isActive = segment.key === active;
         const measured = Boolean(rects[segment.key]);
         return (
           <Pressable
             key={segment.key}
-            accessibilityRole="button"
+            accessibilityRole="tab"
             accessibilityLabel={segment.label}
+            accessibilityHint={
+              isActive
+                ? `${segment.label} is selected.`
+                : `Selects ${segment.label}.`
+            }
+            accessibilityState={{ selected: isActive }}
             aria-selected={isActive}
             onLayout={(event: LayoutChangeEvent) => {
               const { x, width, height } = event.nativeEvent.layout;
@@ -295,16 +333,18 @@ export function BoardSegmentTabs<T extends string>({
             }}
             style={({ pressed }) => [
               styles.segmentChip,
+              layout.stackStatusRows && styles.segmentChipReflow,
               {
+                minHeight: layout.controlMinHeight,
                 backgroundColor: isActive
-                  ? measured
+                  ? measured && !layout.stackStatusRows
                     ? "transparent"
                     : colors.primary
                   : pressed
                     ? colors.secondary
                     : colors.card,
                 borderColor: isActive
-                  ? measured
+                  ? measured && !layout.stackStatusRows
                     ? "transparent"
                     : colors.primary
                   : colors.border,
@@ -312,7 +352,7 @@ export function BoardSegmentTabs<T extends string>({
             ]}
           >
             <Text
-              numberOfLines={1}
+              numberOfLines={layout.actionLabelNumberOfLines}
               style={[
                 styles.segmentChipText,
                 {
@@ -351,6 +391,12 @@ export function BoardActionButton({
   compact?: boolean;
 }) {
   const colors = useColors();
+  const { fontScale: runtimeFontScale } = useWindowDimensions();
+  const { fontScale } = useWebQaFontScale(runtimeFontScale);
+  const layout = getAccessibleLayoutMetrics({
+    platform: Platform.OS,
+    fontScale,
+  });
   const background =
     variant === "primary"
       ? colors.primary
@@ -366,11 +412,12 @@ export function BoardActionButton({
       onPress={onPress}
       disabled={disabled}
       scaleTo={0.96}
-      containerStyle={style}
+      containerStyle={[style, { minHeight: layout.controlMinHeight }]}
       style={[
         styles.actionButton,
         compact && styles.actionButtonCompact,
         {
+          minHeight: layout.controlMinHeight,
           backgroundColor: background,
           borderColor: variant === "outline" ? colors.border : background,
           opacity: disabled ? 0.5 : 1,
@@ -379,7 +426,7 @@ export function BoardActionButton({
     >
       {icon ? <Ionicons name={icon} size={compact ? 14 : 16} color={foreground} /> : null}
       <Text
-        numberOfLines={1}
+        numberOfLines={layout.actionLabelNumberOfLines}
         style={[
           styles.actionButtonText,
           compact && styles.actionButtonTextCompact,
@@ -519,11 +566,24 @@ export function BoardSectionHeader({
   textStyle?: StyleProp<TextStyle>;
 }) {
   const colors = useColors();
+  const { fontScale: runtimeFontScale } = useWindowDimensions();
+  const { fontScale } = useWebQaFontScale(runtimeFontScale);
+  const layout = getAccessibleLayoutMetrics({
+    platform: Platform.OS,
+    fontScale,
+  });
   return (
-    <View style={[styles.sectionHeader, { borderBottomColor: colors.border }, style]}>
+    <View
+      style={[
+        styles.sectionHeader,
+        layout.stackStatusRows && styles.sectionHeaderReflow,
+        { borderBottomColor: colors.border },
+        style,
+      ]}
+    >
       <Text
         accessibilityRole="header"
-        numberOfLines={1}
+        numberOfLines={layout.stackStatusRows ? 2 : 1}
         style={[styles.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }, textStyle]}
       >
         {title}
@@ -532,8 +592,15 @@ export function BoardSectionHeader({
         accessory
       ) : action ? (
         <Text
-          numberOfLines={1}
-          style={[styles.sectionAction, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+          numberOfLines={layout.stackStatusRows ? 2 : 1}
+          style={[
+            styles.sectionAction,
+            layout.stackStatusRows && styles.sectionActionReflow,
+            {
+              color: colors.mutedForeground,
+              fontFamily: "Inter_600SemiBold",
+            },
+          ]}
         >
           {action}
         </Text>
@@ -718,25 +785,52 @@ export function CareRow({
   accessibilityLabel?: string;
 }) {
   const colors = useColors();
+  const { fontScale: runtimeFontScale } = useWindowDimensions();
+  const { fontScale } = useWebQaFontScale(runtimeFontScale);
+  const layout = getAccessibleLayoutMetrics({
+    platform: Platform.OS,
+    fontScale,
+  });
   const content = (
     <>
       <PixelIcon name={icon} size={24} />
       <View style={styles.rowText}>
-        <Text numberOfLines={1} style={[styles.rowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+        <Text
+          numberOfLines={layout.stackStatusRows ? undefined : 1}
+          style={[styles.rowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+        >
           {title}
         </Text>
         {detail ? (
-          <Text numberOfLines={1} style={[styles.rowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+          <Text
+            numberOfLines={layout.stackStatusRows ? undefined : 1}
+            style={[styles.rowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+          >
             {detail}
           </Text>
         ) : null}
+        {meta && layout.stackStatusRows ? (
+          <Text
+            style={[
+              styles.rowMeta,
+              styles.rowMetaReflow,
+              { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+            ]}
+          >
+            {meta}
+          </Text>
+        ) : null}
       </View>
-      {meta ? (
+      {meta && !layout.stackStatusRows ? (
         <Text style={[styles.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
           {meta}
         </Text>
       ) : null}
-      {onPress ? <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} /> : null}
+      {onPress ? (
+        <View style={layout.stackStatusRows ? styles.rowChevronReflow : undefined}>
+          <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+        </View>
+      ) : null}
     </>
   );
 
@@ -752,14 +846,24 @@ export function CareRow({
           hapticSelect();
           onPress();
         }}
-        style={({ pressed }) => [styles.careRow, { opacity: pressed ? 0.72 : 1 }]}
+        style={({ pressed }) => [
+          styles.careRow,
+          {
+            minHeight: layout.controlMinHeight,
+            opacity: pressed ? 0.72 : 1,
+          },
+        ]}
       >
         {content}
       </Pressable>
     );
   }
 
-  return <View style={styles.careRow}>{content}</View>;
+  return (
+    <View style={[styles.careRow, { minHeight: layout.controlMinHeight }]}>
+      {content}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -859,6 +963,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     position: "relative",
   },
+  segmentRowReflow: {
+    flexWrap: "wrap",
+  },
   segmentPill: {
     position: "absolute",
     left: 0,
@@ -867,18 +974,22 @@ const styles = StyleSheet.create({
   },
   segmentChip: {
     flexShrink: 1,
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: 14,
     alignItems: "center",
     justifyContent: "center",
   },
+  segmentChipReflow: {
+    flexGrow: 1,
+    flexBasis: "48%",
+  },
   segmentChipText: {
     fontSize: 12.5,
   },
   actionButton: {
-    minHeight: 44,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 16,
@@ -888,7 +999,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   actionButtonCompact: {
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 10,
     paddingHorizontal: 12,
   },
@@ -963,6 +1074,11 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
     borderBottomWidth: 0,
   },
+  sectionHeaderReflow: {
+    alignItems: "stretch",
+    flexDirection: "column",
+    gap: 6,
+  },
   sectionTitle: {
     flexShrink: 1,
     minWidth: 0,
@@ -972,6 +1088,9 @@ const styles = StyleSheet.create({
   sectionAction: {
     flexShrink: 0,
     fontSize: 11,
+  },
+  sectionActionReflow: {
+    alignSelf: "flex-start",
   },
   meterRow: {
     flexDirection: "row",
@@ -1071,5 +1190,15 @@ const styles = StyleSheet.create({
   },
   rowMeta: {
     fontSize: 10.5,
+  },
+  rowMetaReflow: {
+    marginTop: 5,
+    maxWidth: "100%",
+  },
+  rowChevronReflow: {
+    minWidth: 24,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    alignItems: "flex-end",
+    justifyContent: "flex-start",
   },
 });

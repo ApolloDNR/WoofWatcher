@@ -170,7 +170,15 @@ For every scenario below:
 
 ## Current Limitation
 
-This Windows worktree can run static tests, TypeScript, PixelLab asset verification, and Expo web export. It now also ships an in-app QA route for device review and local screenshot attachment, but it still cannot produce authoritative native simulator proof without iOS/Android runtime access.
+The 2026-07-23 renovation environment can run static tests, TypeScript,
+PixelLab asset verification, Expo web export, and Chromium route proof. The
+native tooling doctor still reports `BLOCKED`: Android `adb` and `emulator`
+are unavailable, `ANDROID_HOME`/`ANDROID_SDK_ROOT` and `JAVA_HOME` are unset,
+and this Linux host cannot run an iOS simulator. The app ships an in-app QA
+route for device review and local screenshot attachment, but this environment
+cannot produce authoritative native proof. Run
+`pnpm run doctor:native-qa:json` in the capture environment and keep every
+native row pending until the named evidence exists.
 
 The in-app pass/needs-tune controls are an evidence-capture aid only. They do
 not replace the screenshots and human review listed above, and local screenshot

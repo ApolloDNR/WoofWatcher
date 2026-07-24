@@ -48,26 +48,26 @@ const ownerLoopSurface: MobileReleaseQaSurface = {
   goal: "Verify the real owner journey before beta sharing.",
   devicePrompt: "Run the owner route loop and attach proof.",
   setupSteps: ["Use Phoenix demo care data.", "Confirm the app opens on Today (Phoenix's room)."],
-  verificationSteps: ["Open Today.", "Open Log.", "Open More Launch Readiness."],
+  verificationSteps: ["Open Today.", "Open the elevated Quick Log action.", "Open More Launch Readiness."],
   acceptanceCriteria: ["No route dead-ends.", "Primary controls are phone-sized."],
   failureEscalation: "Mark Needs tune if any route clips, dead-ends, or feels below App Store quality.",
   requiredEvidence: [
-    "iOS screenshot of Quick Log or Log.",
+    "iOS screenshot of Quick Log.",
     "Android screenshot of More Launch Readiness.",
-    "Note confirming Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
+    "Note confirming Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy had no dead ends.",
   ],
   launchRisk: "This is the beta's real owner path.",
   routeChecklist: [
     {
       label: "Today",
       route: "/",
-      expected: "Confirm Phoenix status, next care, and bottom navigation are clear.",
+      expected: "Confirm Phoenix status, next care, and primary navigation are clear.",
       proof: "Visual pass.",
     },
     {
-      label: "Log",
-      route: "/log",
-      expected: "Quick-log one safe care event or open the detail sheet.",
+      label: "Quick Log",
+      route: "/fastlog",
+      expected: "Quick-log one safe care event from the elevated center action.",
       proof: "iOS screenshot.",
     },
     {
@@ -137,7 +137,10 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Missing proof: Attach 1 iOS screenshot for Owner Preview Core Loop\. Attach 1 Android screenshot/);
   assert.match(text, /Run order:/);
   assert.match(text, /1\. Today \(\/\): Confirm Phoenix status/);
-  assert.match(text, /2\. Log \(\/log\): Quick-log one safe care event/);
+  assert.match(
+    text,
+    /2\. Quick Log \(\/fastlog\): Quick-log one safe care event from the elevated center action/,
+  );
   assert.match(text, /Dependency proof commands:/);
   assert.match(text, /corepack prepare pnpm@10\.24\.0 --activate/);
   assert.match(text, /pnpm run doctor:mobile-beta/);
@@ -169,19 +172,42 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /CI proof does not approve native screenshots, provider setup, store approval, or Apollo sign-off/);
   assert.match(text, /Recorded live preview proof:/);
   assert.match(text, /WoofWatcher Live Preview Handoff Proof/);
-  assert.match(text, /Result: PASS/);
+  assert.match(text, /Historical recorded result: PASS/);
+  assert.match(
+    text,
+    /Freshness: HISTORICAL only; regenerate proof:live-preview from the current source before handoff/,
+  );
+  assert.match(
+    text,
+    /Historical July 3 shell proof predates standalone source-provenance validation/,
+  );
+  assert.match(
+    text,
+    /Do not attach this historical proof as current\. Regenerate smoke:web, smoke:runtime, and proof:live-preview/,
+  );
+  assert.match(
+    text,
+    /Attach proof only after regenerating proof:live-preview from the current checkout/,
+  );
   assert.match(text, /Routes: 19\/19 web-preview shell checks passed/);
   assert.match(text, /\/care-twin-qa\?qaSurface=support-legal-readiness-proof PASS/);
   assert.match(text, /\/care-twin-qa\?qaSurface=route-visual-consistency PASS/);
   assert.match(text, /Recorded verifier URL: http:\/\/127\.0\.0\.1:\d+\//);
   assert.match(text, /Preview handoff URL: http:\/\/127\.0\.0\.1:4194\/ after preview:smoke is running/);
-  assert.match(text, /Attach proof: JSON route proof plus preview:smoke URL\/output/);
+  assert.doesNotMatch(
+    text,
+    /Attach proof: JSON route proof plus preview:smoke URL\/output before claiming preview handoff/,
+  );
   assert.match(text, /Live preview proof does not replace native iOS\/Android proof/);
   assert.match(text, /Dependency proof only counts when both doctor commands report no blockers/);
   assert.match(text, /Dependency proof requires a real PATH pnpm at 10\.24\.0; do not use a bundled pnpm 11\.x candidate/);
   assert.match(text, /Required beta proof after export:/);
   assert.match(text, /Open \/care-twin-qa on iOS and Android before sharing beta proof/);
-  assert.match(text, /Attach iOS Quick Log\/Log proof and Android Launch Readiness proof/);
+  assert.match(
+    text,
+    /Attach iOS Quick Log proof from \/fastlog and Android Launch Readiness proof/,
+  );
+  assert.match(text, /Log History at \/log cannot substitute/);
   assert.match(text, /Confirm Care Pass Report History storage status says Saved on this device, or Ready to upload only after structured provider storage proof is attached/);
   assert.match(text, /Confirm Report History Binary proof manifest shows local Care Pass PDF and Dog ID PNG rows while native\/provider proof remains blocked/);
   assert.match(text, /Confirm Records Dog ID shares a local HTML credential file and SVG image source, while generated PNG\/PDF readiness still needs native\/provider proof/);
@@ -221,9 +247,9 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Attach structured support\/legal proof files before public launch/);
   assert.match(text, /Apollo launch approval\/no-launch-boundary proof with MIME, byte size, and row-specific approvals/);
   assert.match(text, /Open focused route visual target: \/care-twin-qa\?qaSurface=route-visual-consistency/);
-  assert.match(text, /Capture Log, Plan, Today, Pack, Story, Health, Records, and More on iOS and Android before claiming route visual proof/);
+  assert.match(text, /Capture Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy on iOS and Android before claiming route visual proof/);
   assert.match(text, /Name or save each Route Visual screenshot with the route label/);
-  assert.match(text, /Log-iOS.*Pack-iOS.*Story-Android.*More-Android/);
+  assert.match(text, /Today-iOS.*Quick-Log-iOS.*Log-History-iOS.*Records-iOS.*Privacy-iOS/);
   assert.match(text, /Save the Mission note and clear Pass pending proof in both \/care-twin-qa and More/);
   assert.match(text, /Native QA Needs tune fix brief:/);
   assert.match(text, /If any route is marked Needs tune, use More's Share Fix Brief before claiming beta proof/);
@@ -356,7 +382,7 @@ test("includes saved QA proof manifest when More shares the beta handoff", () =>
       "owner-preview-core-loop": "pass",
     },
     surfaceNotes: {
-      "owner-preview-core-loop": "Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass opened.",
+      "owner-preview-core-loop": "Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy opened.",
     },
     surfaceEvidenceById: {
       "owner-preview-core-loop": [

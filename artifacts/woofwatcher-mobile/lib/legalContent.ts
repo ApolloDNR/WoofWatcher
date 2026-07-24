@@ -6,17 +6,25 @@
 
 export const PRIVACY_POLICY_MARKDOWN = `# WoofWatcher privacy policy
 
+> **Draft status — shared-account release disclosure under review; do not publish.**
+> The implementation includes staged account, household, provider-backed care
+> sync, precise foreground walk routes, and OpenStreetMap area requests. Owner
+> and legal approval of production providers, purposes, data categories,
+> retention/deletion behavior, user rights, and store-form answers is still
+> required before any external beta or public release.
+
 Effective: July 9, 2026
 
 WoofWatcher is published by Pegasus Dreamscapes ("we," "us"). This policy explains what information the WoofWatcher app for iOS and Android handles, where it lives, and the choices you have. It is written to match how the app actually works at version 1.0.
 
 ## The short version
 
-- WoofWatcher stores everything on your device. There are no WoofWatcher servers in this version of the app, and nothing you enter is transmitted to us.
-- No account is required. You can use every feature without signing in, and there is no sign-in in this version.
-- We do not collect, sell, share, or monetize your data. There are no ads, no analytics SDKs, and no trackers in the app.
+- WoofWatcher is local-first: care is cached on your device. If you sign in to a provider-synced household, care entries may also be stored by that provider and visible to members of your household.
+- Local preview works without an account. Provider-synced household features require sign-in when they are enabled.
+- We do not sell or monetize your precise location, use it for ads, or enable background location tracking.
+- WoofWatcher asks for precise foreground location only when you start recording a walk route. The points draw that walk's map and calculate distance.
 - You are in control. You can export your data at any time and delete it from your device at any time.
-- Nothing leaves your device unless you choose to share it (for example, exporting a care summary through your device's share sheet).
+- Opening a recorded route map requests map tiles or neighborhood geometry from OpenStreetMap services for that recorded area. Their own policies apply.
 
 ## 1. Who we are
 
@@ -25,16 +33,16 @@ WoofWatcher is a dog-care app that lets you log your dog's real daily care — m
 Pegasus Dreamscapes
 Support: reach us through the app's App Store or Google Play listing
 
-## 2. What we collect: nothing
+## 2. Information the app handles
 
-We do not collect any personal information from you through the app. In this version:
+Depending on how you use WoofWatcher and which providers are enabled in the release, the app may handle:
 
-- The app does not connect to any WoofWatcher server, because none exist.
-- The app does not require or offer account creation or sign-in.
-- The app contains no advertising, no analytics or measurement SDKs, no crash-reporting services, and no third-party trackers.
-- We never receive your name, email address, location, contacts, photos, care logs, or any other data you enter into the app.
+- The profile, dog-care, household, health-observation, record, and preference information you choose to enter.
+- Account and household identifiers if you choose provider-backed sign-in and household sync.
+- Precise foreground location points only after you start recording a walk route.
+- Recorded-area requests sent to OpenStreetMap services when a route map loads.
 
-Because we do not collect data, we also do not sell it, share it, or use it for advertising, profiling, or any other purpose. There is nothing for us to sell or share.
+WoofWatcher does not use this information for advertising or cross-app tracking. Final provider identities, retention terms, export rules, and deletion rules must be approved and published before a provider-backed public release; this draft does not invent those guarantees.
 
 ## 3. Data stored on your device
 
@@ -42,18 +50,19 @@ Everything you enter in WoofWatcher is stored locally on your device, in the app
 
 - Your dog's profile (name, breed, weight, care focus, and optional details you choose to add, such as a microchip number, insurance details, or vet and emergency contact information).
 - Care logs and routines (meals, walks, potty breaks, medications, and other care events, with timestamps).
-- Health observations you record (for example, appetite or stomach notes). These are your own observations, not medical data collected by us — see section 9.
+- Health observations you record (for example, appetite or stomach notes). These are your own observations, not medical data collected by us — see section 10.
 - Records, report artifacts, Care Pass drafts, and adventure memories you create.
+- Recorded walk route points and calculated route distance when you choose route recording.
 - Photos you choose to attach (see section 5). Photos stay on your device.
 - App settings and preferences.
 
-This data never leaves your device unless you explicitly share or export it (see section 6). If you use your device's or operating system's own backup features (such as an encrypted device backup), your app data may be included in that backup under your platform provider's terms — that backup relationship is between you and Apple or Google, not with us.
+In local preview, this care data stays in the app's local storage unless you explicitly share or export it (see section 7). If you sign in to a provider-synced household, care entries — including a recorded walk route stored in an entry — may sync to that provider and be visible to members of the household. If you use your device's or operating system's own backup features, app data may also be included under your platform provider's terms.
 
-## 4. No account required; a note about optional sign-in
+## 4. Local preview and optional provider sign-in
 
-You do not need an account to use WoofWatcher, and this version of the app does not offer sign-in. The app's codebase contains groundwork for an optional sign-in feature, but it is not enabled in production builds and no sign-in data is created, transmitted, or processed.
+You do not need an account for local preview. When provider-backed household sync is enabled, signing in connects care entries to the configured account and household so authorized household members can coordinate care.
 
-If we ever introduce optional accounts, cloud sync, or any feature that sends data off your device, we will update this policy first, explain exactly what would be collected and why, and make any such feature opt-in. Your local-only use of the app will not silently change.
+The final public policy must name the configured providers and their approved retention, export, and deletion terms before that release ships. Local preview does not itself prove or approve provider behavior.
 
 ## 5. Camera and photo library access
 
@@ -65,45 +74,56 @@ WoofWatcher can use your device's camera and photo library, but only when you ch
 
 You can revoke camera or photo permissions at any time in your device settings; the app will keep working without them.
 
-## 6. Sharing and exporting: always your choice
+## 6. Walk route location and map services
+
+WoofWatcher requests precise foreground location only when you start recording a walk route. It uses the captured points to draw that walk's route and calculate its distance. Route recording is optional, and the walk can still be logged if permission is denied. Background location is not enabled.
+
+The route points and distance are saved with the walk in the care log on your device. If you are signed in to a provider-synced household, that care entry may sync to the configured provider and be visible to members of that household. This policy does not promise a provider retention period until the final provider policy is approved.
+
+When you open a recorded route map, the app requests OpenStreetMap raster tiles or neighborhood geometry for the recorded area. That map-area request goes to OpenStreetMap tile or Overpass services under their own terms and privacy policies. WoofWatcher does not use the route for advertising or cross-app tracking.
+
+You can deny or revoke location access in device settings. WoofWatcher does not enable background location permission.
+
+## 7. Sharing and exporting: always your choice
 
 Some features let you send data off your device, and every one of them is initiated by you:
 
 - Export care data. The Privacy & Safety screen can produce a plain-text export bundle of your care data and hand it to your device's share sheet. Where it goes from there (email, notes, a file, another app) is entirely your choice, and the receiving app's own policies apply.
 - Care Pass and reports. You can generate shareable care summaries (for example, for a sitter or vet) and share them the same way.
 
-We are not a party to these shares and never receive a copy.
+The receiving app's policies apply to share-sheet exports. Provider-synced household care and map-area requests follow the separate boundaries described in sections 4 and 6.
 
-## 7. Your controls: export and deletion
+## 8. Your controls: export and deletion
 
 - Export: you can export your care data at any time from Privacy & Safety in the app.
-- Deletion: your data lives only on your device, so you control deletion directly. The Privacy & Safety screen provides data deletion tools, and deleting the app from your device removes all WoofWatcher data stored by the app. Because we hold no copy, there is nothing for us to delete on a server.
+- Device deletion: the Privacy & Safety screen can clear local WoofWatcher data, and deleting the app removes data stored by the app on that device.
+- Provider deletion: clearing a device does not delete care already synced to a provider. Provider-backed public release remains blocked until the account-deletion route, provider/object deletion receipts, retention terms, and support escalation are approved.
 
-## 8. Children
+## 9. Children
 
-WoofWatcher is a general-audience app about dog care and is not directed at children. Because the app collects no data from anyone, it does not collect personal information from children either. If you are a parent or guardian with questions, contact us at the support address below.
+WoofWatcher is a general-audience app about dog care and is not directed at children. Children should not create provider accounts or submit precise location through walk-route recording. If you are a parent or guardian with questions, contact us at the support address below.
 
-## 9. Health-related notes are your observations, not medical data we process
+## 10. Health-related notes are your observations, not medical advice
 
-The app lets you record observations about your dog (for example, meals eaten, stomach notes, or symptoms you noticed). These entries are notes you write for yourself, stored on your device. WoofWatcher does not diagnose, does not provide veterinary advice, and does not transmit these notes to us or anyone else. See the WoofWatcher terms of service for the full veterinary disclaimer.
+The app lets you record observations about your dog (for example, meals eaten, stomach notes, or symptoms you noticed). WoofWatcher does not diagnose and does not provide veterinary advice. These entries are stored locally and may follow the provider-synced household boundary described above. See the WoofWatcher terms of service for the full veterinary disclaimer.
 
-## 10. Security
+## 11. Security
 
-Your WoofWatcher data is protected by your device's own security. We recommend using a device passcode or biometric lock and keeping your operating system up to date. Because the data never leaves your device through the app, the main thing protecting it is the same thing protecting everything else on your phone: your device security.
+Local WoofWatcher data is protected by your device's own security. We recommend using a device passcode or biometric lock and keeping your operating system up to date. A provider-backed release must separately document and approve its transport, access-control, retention, and deletion safeguards before launch.
 
-## 11. Your privacy rights (GDPR, CCPA/CPRA, and similar laws)
+## 12. Your privacy rights (GDPR, CCPA/CPRA, and similar laws)
 
-Laws such as the EU General Data Protection Regulation and the California Consumer Privacy Act give people rights over personal data that companies collect and process. In this version of WoofWatcher, we do not collect or process your personal data at all, so there is no data held by us to access, correct, delete, or port — you already hold the only copy, on your device, with in-app export and deletion controls.
+Laws such as the EU General Data Protection Regulation and the California Consumer Privacy Act give people rights over personal data that companies collect and process. You can export and clear local data in the app. For provider-backed data, use the approved account-deletion and support process published for the final release; those routes and terms must be completed before public launch.
 
 If you believe we hold any information about you (for example, from a support email you sent us), you can contact us and we will honor applicable access and deletion rights.
 
 We do not sell personal information and do not share it for cross-context behavioral advertising, as those terms are defined under California law.
 
-## 12. Changes to this policy
+## 13. Changes to this policy
 
-If we change this policy, we will update the effective date above and publish the new version at the same public URL where this policy is hosted. If a future version of the app introduces any feature that collects or transmits data (such as optional accounts or cloud sync), we will update this policy before that feature ships, and the feature will be opt-in.
+If we change this policy, we will update the effective date above and publish the new version at the same public URL where this policy is hosted. Provider identities, retention terms, and store privacy-form answers must be added and approved before a provider-backed build is publicly released.
 
-## 13. Contact
+## 14. Contact
 
 Questions or requests about privacy:
 
@@ -113,13 +133,18 @@ Publisher: Pegasus Dreamscapes
 
 export const TERMS_OF_SERVICE_MARKDOWN = `# WoofWatcher terms of service
 
+> **Draft status — shared-account release terms under review; do not publish.**
+> Account, household, care-sync, walk-location, map-service, deletion,
+> subscription, support, and provider terms require owner and legal approval
+> before any production capability is enabled for external users.
+
 Effective: July 9, 2026
 
 These terms are an agreement between you and Pegasus Dreamscapes ("we," "us"), the publisher of the WoofWatcher app for iOS and Android. By downloading or using WoofWatcher, you agree to these terms. If you do not agree, do not use the app.
 
 ## 1. What WoofWatcher is
 
-WoofWatcher is a dog-care companion app. You log your dog's real daily care — meals, walks, potty breaks, medications, and observations — and the app turns that record into routines, summaries, shareable care documents, and a pixel companion whose progress reflects the care you actually logged. In this version, all of your data is stored locally on your device; the app does not require an account and does not transmit your data to us (see the WoofWatcher privacy policy).
+WoofWatcher is a dog-care companion app. You log your dog's real daily care — meals, walks, potty breaks, medications, and observations — and the app turns that record into routines, summaries, shareable care documents, and a pixel companion whose progress reflects the care you actually logged. Care is cached locally. Provider-synced household features require sign-in when enabled, and recorded walk routes follow the location, map-service, and household-sync boundaries in the WoofWatcher privacy policy.
 
 ## 2. WoofWatcher is not veterinary advice
 
@@ -142,14 +167,15 @@ We grant you a personal, non-exclusive, non-transferable, revocable license to i
 ## 5. Your content and your data
 
 - You own the content you create in WoofWatcher — your logs, notes, photos, records, and exports.
-- Because this version of the app stores everything locally on your device, we never receive, host, or moderate your content, and we claim no license over it.
+- Local preview stores your content on your device. If you sign in to a provider-synced household, care entries may also be stored by the configured provider and visible to authorized household members under the approved provider terms.
 - You are responsible for what you enter and for anything you choose to share out of the app (for example, a Care Pass or export sent to a sitter or vet). Once you share content through your device's share sheet, its handling is governed by whatever service you sent it to.
 
-## 6. Local-first storage, backups, and data loss
+## 6. Local-first and provider-synced storage
 
-All WoofWatcher data lives on your device. That is a deliberate privacy choice, and it comes with a trade-off you accept by using the app:
+WoofWatcher keeps a local care cache. A provider-synced household may also have a provider copy of care entries, including recorded walk routes:
 
-- If your device is lost, damaged, reset, or the app is deleted, your WoofWatcher data may be permanently lost. There is no cloud copy in this version.
+- Local-preview data may be permanently lost if your device is lost, damaged, reset, or the app is deleted.
+- Clearing or deleting the app does not delete care already synced to a provider. Provider retention, export, and deletion terms must be approved before public launch and are not invented by these draft terms.
 - We strongly recommend using the in-app export feature regularly and/or your device's own backup system to protect data you care about.
 - To the maximum extent permitted by law, we are not liable for loss of data stored on your device.
 
@@ -165,9 +191,9 @@ You agree not to:
 
 This version of WoofWatcher does not charge fees, does not offer in-app purchases or subscriptions, and does not display ads. If paid features are introduced in a future version, they will be clearly disclosed, offered through the platform's purchase system, and covered by updated terms before you are charged anything.
 
-## 9. Features not in this version
+## 9. Provider and location boundaries
 
-This version of the app does not include cloud sync, online accounts, push notifications, live AI assistance, payments, or cloud document storage. Where the app mentions such capabilities, they are shown as gated or "setup needed" and are not active. Do not rely on any capability the app has not actually made available to you.
+Only rely on a provider-backed capability when the submitted build makes it available and the matching privacy/support terms are approved. Walk-route recording requests precise foreground location only after you start it, uses the points to draw that walk and calculate distance, and does not enable background location. Opening the map requests OpenStreetMap data for the recorded area.
 
 ## 10. Intellectual property
 
@@ -189,7 +215,7 @@ Some jurisdictions do not allow certain limitations of liability, so some of the
 
 ## 13. Termination
 
-You may stop using the app at any time; deleting the app removes your license and your locally stored data. We may terminate or suspend the license granted here if you materially breach these terms. Sections that by their nature should survive (including sections 2, 5, 6, 10, 11, 12, and 14) survive termination.
+You may stop using the app at any time; deleting the app removes your license and data stored by the app on that device, but it does not delete care already synced to a provider. We may terminate or suspend the license granted here if you materially breach these terms. Sections that by their nature should survive (including sections 2, 5, 6, 10, 11, 12, and 14) survive termination.
 
 ## 14. Governing law and disputes
 
@@ -201,7 +227,7 @@ Your use of the app is also subject to the applicable app store's terms. If you 
 
 ## 16. Changes to these terms
 
-We may update these terms from time to time. We will update the effective date above and publish the current version at the same public URL where these terms are hosted. If a change is material (for example, introducing paid features or online accounts), we will provide notice in the app before the change applies to you. Continued use after the effective date of updated terms constitutes acceptance.
+We may update these terms from time to time. We will update the effective date above and publish the current version at the same public URL where these terms are hosted. If a change is material (for example, changing provider, location, storage, sharing, or paid-feature behavior), we will provide notice in the app before the change applies to you. Continued use after the effective date of updated terms constitutes acceptance.
 
 ## 17. Contact
 

@@ -22,7 +22,7 @@ export interface WalkActivityInput {
   /**
    * Display name used in owner-facing copy (nextStep). Resolved through
    * resolvePetName so renamed dogs never see "Phoenix" in Care Pass or
-   * app surfaces; omitted/placeholder names keep the Phoenix default.
+   * app surfaces; omitted/placeholder names keep the neutral production name.
    */
   petName?: string | null;
 }

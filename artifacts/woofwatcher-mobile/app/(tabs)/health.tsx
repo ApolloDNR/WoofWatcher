@@ -1,7 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ImageBackground, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ImageBackground,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   deriveCareReminderCenter,
@@ -26,18 +35,29 @@ import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { useWebQaFontScale } from "@/hooks/useWebQaFontScale";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import {
+  deriveCareEvidenceSnapshot,
+  isHouseholdVisibleCareEntry,
+  selectEvidenceBackedHealthPatterns,
+  type EvidenceLaneId,
+} from "@/lib/careEvidence";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import {
   buildHealthReviewPacketShareText,
   deriveHealthReviewPacket,
   type HealthReviewPacketAction,
 } from "@/lib/healthReviewPacket";
+import { deriveHealthHeroAttention } from "@/lib/healthHeroAttention";
 import {
+  createWebQaLayoutMarker,
+  getAccessibleLayoutMetrics,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
+  type AccessibleLayoutMetrics,
 } from "@/lib/mobileLayout";
 import { resolvePetName } from "@/lib/petIdentity";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
@@ -48,6 +68,24 @@ const DISPLAY_SEMI = "Fredoka_600SemiBold";
 const HEALTH_WATCH_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.healthWatch.source;
 const HEALTH_WATCH_STAGE_SPRITE = getCareTwinSpriteAsset("health-watch");
 const HEALTH_WATCH_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["health-watch"];
+
+const EVIDENCE_ICON: Record<EvidenceLaneId, PixelIconName> = {
+  mood: "heart",
+  energy: "energy",
+  appetite: "meal",
+  hydration: "bile",
+  stool: "poo",
+  activity: "walk",
+};
+
+const EVIDENCE_ROUTE_TYPE: Record<EvidenceLaneId, string> = {
+  mood: "mood",
+  energy: "mood",
+  appetite: "meal",
+  hydration: "water",
+  stool: "potty",
+  activity: "walk",
+};
 
 type HealthTab = "health" | "bile";
 
@@ -125,28 +163,6 @@ function sameCalendarDay(iso: string, date: Date): boolean {
   );
 }
 
-function clampScore(value: number): number {
-  return Math.max(52, Math.min(98, Math.round(value)));
-}
-
-function healthScore(input: {
-  status: "good" | "watch" | "alert";
-  vomit7: number;
-  appetiteWatch7: number;
-  stoolWatch7: number;
-  anxiety7: number;
-  redFlags: number;
-}): number {
-  const base = input.status === "good" ? 94 : input.status === "watch" ? 84 : 72;
-  const penalty =
-    input.vomit7 * 5 +
-    input.appetiteWatch7 * 4 +
-    input.stoolWatch7 * 5 +
-    input.anxiety7 * 3 +
-    input.redFlags * 10;
-  return clampScore(base - penalty);
-}
-
 function statusActionLabel(type: string): string {
   if (type === "walk") return "Log activity";
   if (type === "meal") return "Log appetite";
@@ -184,8 +200,10 @@ function HealthSummaryRow({
   icon,
   label,
   value,
+  valueTone,
   detail,
   accessory,
+  layout,
   onPress,
   accessibilityLabel,
   accessibilityHint,
@@ -193,8 +211,10 @@ function HealthSummaryRow({
   icon: PixelIconName;
   label: string;
   value: string;
+  valueTone?: string;
   detail?: string;
   accessory?: ReactNode;
+  layout: AccessibleLayoutMetrics;
   onPress: () => void;
   accessibilityLabel: string;
   accessibilityHint?: string;
@@ -202,34 +222,63 @@ function HealthSummaryRow({
   const colors = useColors();
   return (
     <PressScale
+      testID="health-summary-row"
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
       onPress={onPress}
       scaleTo={0.97}
-      style={[s.summaryRow, { backgroundColor: colors.background, borderColor: colors.border }]}
+      style={[
+        s.summaryRow,
+        layout.stackStatusRows && s.summaryRowReflow,
+        {
+          backgroundColor: colors.background,
+          borderColor: colors.border,
+          minHeight: layout.controlMinHeight,
+        },
+      ]}
     >
       <View style={[s.summaryRowIcon, { backgroundColor: colors.sageSoft }]}>
         <PixelIcon name={icon} size={22} />
       </View>
-      <View style={s.summaryRowText}>
-        <Text numberOfLines={1} style={[s.summaryRowLabel, { color: colors.ink, fontFamily: "Inter_700Bold" }]}>
-          {label}
-        </Text>
-        {detail ? (
-          // 2 lines: the empty-state instructions ("Add a vet visit record to
-          // the vault") are squeezed by the right-aligned value and clipped
-          // the destination word off on one line. Short details stay 1 line.
-          <Text numberOfLines={2} style={[s.summaryRowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-            {detail}
+      <View style={[s.summaryRowContent, layout.stackStatusRows && s.summaryRowContentReflow]}>
+        <View style={s.summaryRowText}>
+          <Text
+            numberOfLines={layout.stackStatusRows ? undefined : 1}
+            style={[s.summaryRowLabel, { color: colors.ink, fontFamily: "Inter_700Bold" }]}
+          >
+            {label}
           </Text>
-        ) : null}
+          {detail ? (
+            <Text
+              numberOfLines={layout.stackStatusRows ? undefined : 2}
+              style={[
+                s.summaryRowDetail,
+                { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+              ]}
+            >
+              {detail}
+            </Text>
+          ) : null}
+        </View>
+        <View style={[s.summaryRowMeta, layout.stackStatusRows && s.summaryRowMetaReflow]}>
+          {accessory}
+          <Text
+            testID="health-summary-value"
+            numberOfLines={layout.stackStatusRows ? undefined : 1}
+            style={[
+              s.summaryRowValue,
+              layout.stackStatusRows && s.summaryRowValueReflow,
+              { color: valueTone ?? colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+            ]}
+          >
+            {value}
+          </Text>
+        </View>
       </View>
-      {accessory}
-      <Text numberOfLines={1} style={[s.summaryRowValue, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-        {value}
-      </Text>
-      <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+      <View style={layout.stackStatusRows ? s.summaryRowChevronReflow : undefined}>
+        <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
+      </View>
     </PressScale>
   );
 }
@@ -239,8 +288,18 @@ export default function HealthScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ tab?: string | string[] }>();
   const insets = useSafeAreaInsets();
+  const { fontScale: runtimeFontScale } = useWindowDimensions();
+  const { fontScale, qaFontScale } = useWebQaFontScale(runtimeFontScale);
+  const accessibleLayout = getAccessibleLayoutMetrics({
+    platform: Platform.OS,
+    fontScale,
+  });
   const { state } = useCare();
   const now = Date.now();
+  const householdEntries = useMemo(
+    () => state.entries.filter(isHouseholdVisibleCareEntry),
+    [state.entries],
+  );
   const scrollRef = useRef<ScrollView>(null);
   const tabParam = Array.isArray(params.tab) ? params.tab[0] : params.tab;
   const requestedTab: HealthTab = tabParam === "bile" ? "bile" : "health";
@@ -251,6 +310,7 @@ export default function HealthScreen() {
   const bottomPadding = getTabbedRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+    fontScale,
   });
   const isWebRoutePreview = (Platform.OS as string) === "web";
   const routeHorizontalPadding = 16;
@@ -260,20 +320,28 @@ export default function HealthScreen() {
     // on the renamed dog instead of a hardcoded "Phoenix".
     () =>
       deriveHealthWatch({
-        entries: state.entries,
+        entries: householdEntries,
         routines: state.routines,
         now,
         petName: state.profile.name,
       }),
-    [state.entries, state.routines, state.profile.name, now],
+    [householdEntries, state.routines, state.profile.name, now],
+  );
+  const careEvidence = useMemo(
+    () => deriveCareEvidenceSnapshot(householdEntries, now),
+    [householdEntries, now],
+  );
+  const healthPatterns = useMemo(
+    () => selectEvidenceBackedHealthPatterns(healthWatch.patterns),
+    [healthWatch.patterns],
   );
 
   const bileEntries = useMemo(
     () =>
-      state.entries
+      householdEntries
         .filter((entry) => daysBetween(entry.occurredAt, now) <= 7 && isYellowBile(entry))
         .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()),
-    [state.entries, now],
+    [householdEntries, now],
   );
 
   // Mockup-board Overview data: every value below is derived from persisted
@@ -283,20 +351,20 @@ export default function HealthScreen() {
     () =>
       deriveCareReminderCenter({
         routines: state.routines,
-        entries: state.entries,
+        entries: householdEntries,
         records: state.records,
         caregivers: state.caregivers,
         now,
         limit: 3,
       }),
-    [state.routines, state.entries, state.records, state.caregivers, now],
+    [state.routines, householdEntries, state.records, state.caregivers, now],
   );
   const nextReminder = careReminderCenter.items[0] ?? null;
 
   const weightTrend = useMemo(
     () =>
       deriveWeightTrend({
-        entries: state.entries,
+        entries: householdEntries,
         profile: state.profile,
         goals: state.goals,
         now,
@@ -304,7 +372,7 @@ export default function HealthScreen() {
         limit: 8,
         petName: state.profile.name,
       }),
-    [state.entries, state.profile, state.goals, now],
+    [householdEntries, state.profile, state.goals, now],
   );
   const weightOnFile = weightTrend.currentWeight > 0;
   const weightValue = weightOnFile ? `${weightTrend.currentWeight} ${weightTrend.unit}` : "Not on file";
@@ -321,8 +389,8 @@ export default function HealthScreen() {
   const sparkRange = Math.max(0.1, sparkMax - sparkMin);
 
   const medicationAdherence = useMemo(
-    () => deriveMedicationAdherence({ entries: state.entries, routines: state.routines, now }),
-    [state.entries, state.routines, now],
+    () => deriveMedicationAdherence({ entries: householdEntries, routines: state.routines, now }),
+    [householdEntries, state.routines, now],
   );
 
   const recordVault = useMemo(() => summarizeRecordVault(state.records), [state.records]);
@@ -356,7 +424,7 @@ export default function HealthScreen() {
   const sensitivitiesOnFile = (state.dietProfile.sensitivities ?? "").trim();
 
   const mealGaps = useMemo(() => {
-    const meals = state.entries
+    const meals = householdEntries
       .filter((entry) => normalizeCareEventType(entry.type, entry.details) === "meal")
       .sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime());
     let longest = 0;
@@ -364,7 +432,7 @@ export default function HealthScreen() {
       longest = Math.max(longest, hoursBetween(meals[i - 1].occurredAt, meals[i].occurredAt));
     }
     return longest;
-  }, [state.entries]);
+  }, [householdEntries]);
 
   const bileTrend = useMemo(() => {
     const formatter = new Intl.DateTimeFormat("en-US", { weekday: "short" });
@@ -387,19 +455,17 @@ export default function HealthScreen() {
       date.setHours(0, 0, 0, 0);
       date.setDate(date.getDate() - (6 - index));
 
-      const dayEntries = state.entries.filter((entry) => sameCalendarDay(entry.occurredAt, date));
-      const careLogs = dayEntries.filter((entry) =>
-        ["meal", "walk", "potty", "water", "medication", "training"].includes(
-          normalizeCareEventType(entry.type, entry.details),
-        ),
+      const dayEntries = householdEntries.filter((entry) => sameCalendarDay(entry.occurredAt, date));
+      const dayEnd = new Date(date);
+      dayEnd.setHours(23, 59, 59, 999);
+      const dayEvidence = deriveCareEvidenceSnapshot(dayEntries, dayEnd.getTime());
+      const watchSignals = dayEvidence.lanes.filter(
+        (lane) => lane.status === "watch",
       ).length;
-      const watchSignals = dayEntries.filter((entry) =>
-        ["vomit", "symptom", "incident"].includes(normalizeCareEventType(entry.type, entry.details)),
-      ).length;
-      // Days with zero logs stay neutral: no data should never render as a
-      // full green "all good" bar.
-      const hasData = dayEntries.length > 0;
-      const value = hasData ? Math.max(0.18, Math.min(1, 0.34 + careLogs * 0.1 - watchSignals * 0.18)) : 0;
+      const hasData = dayEvidence.observedCount > 0;
+      const value = hasData
+        ? dayEvidence.observedCount / dayEvidence.totalCount
+        : 0;
 
       return {
         label: formatter.format(date).slice(0, 1),
@@ -409,70 +475,46 @@ export default function HealthScreen() {
           ? colors.muted
           : watchSignals
             ? (watchSignals > 1 ? colors.rose : colors.amber)
-            : colors.sage,
+            : colors.primary,
       };
     });
-  }, [colors.amber, colors.muted, colors.rose, colors.sage, now, state.entries]);
+  }, [colors.amber, colors.muted, colors.primary, colors.rose, householdEntries, now]);
 
-  const bileStatus =
+  const bileStatus: "No logs" | "Watch" | "Review" =
     healthWatch.status === "alert"
       ? "Review"
       : bileEntries.length || healthWatch.counts.vomit7
         ? "Watch"
-        : "Low Risk";
+        : "No logs";
   const bileTone =
-    bileStatus === "Review" ? colors.rose : bileStatus === "Watch" ? colors.amber : colors.sage;
-  // A fresh profile has no scoring evidence: deriving "94 - Stable right now -
-  // You're on a roll" from zero logs fabricates a result (same dishonesty
-  // class as Care IQ's zero-state). With no entries inside the 30-day scoring
-  // window the score reads "--" and the copy makes the first-log promise
-  // instead of claiming stability that was never observed.
-  const hasHealthSignalData = state.entries.some((entry) => {
-    const age = daysBetween(entry.occurredAt, now);
-    return age >= 0 && age <= 30;
-  });
-  const score = healthScore({
-    status: healthWatch.status,
-    vomit7: healthWatch.counts.vomit7,
-    appetiteWatch7: healthWatch.counts.appetiteWatch7,
-    stoolWatch7: healthWatch.counts.stoolWatch7,
-    anxiety7: healthWatch.counts.anxiety7,
-    redFlags: healthWatch.redFlags.length,
-  });
-  const scoreDisplay = hasHealthSignalData ? String(score) : "--";
-  const scoreTone = !hasHealthSignalData
-    ? colors.mutedForeground
-    : score >= 88
-      ? colors.sage
-      : score >= 76
+    bileStatus === "Review"
+      ? colors.rose
+      : bileStatus === "Watch"
         ? colors.amber
-        : colors.rose;
-  const heroTitle = !hasHealthSignalData
-    ? "No health logs yet"
-    : healthWatch.status === "good"
-      ? "Stable right now"
-      : healthWatch.status === "alert"
-        ? "Review needed"
-        : "Worth watching";
-  const heroCopy = !hasHealthSignalData
-    ? "No score yet - meals, potty, energy, and notes build the picture from your first log."
-    : healthWatch.status === "good"
-      ? "No active Health Watch signals are showing in the current window."
-      : healthWatch.summary;
-  const statusMedallionLabel = !hasHealthSignalData
-    ? "READY"
-    : score >= 88
-      ? "GOOD"
-      : score >= 76
-        ? "WATCH"
-        : "REVIEW";
-  const statusSupportCopy = !hasHealthSignalData
-    ? "Health Watch starts with your first log."
-    : healthWatch.status === "good"
-      ? "You're on a roll. Keep the daily rhythm steady and share patterns when they matter."
-      : healthWatch.status === "alert"
-        ? "Consider sharing these observations with your vet, especially if patterns repeat."
-        : "Pattern noticed. Keep logging food, stool, vomiting, energy, and timing.";
+        : colors.mutedForeground;
+  const evidenceWatchCount = careEvidence.lanes.filter(
+    (lane) => lane.status === "watch",
+  ).length;
+  const heroAttention = deriveHealthHeroAttention({
+    careEvidenceObservedCount: careEvidence.observedCount,
+    careEvidenceTotalCount: careEvidence.totalCount,
+    evidenceWatchCount,
+    healthStatus: healthWatch.status,
+    healthSummary: healthWatch.summary,
+    bileStatus,
+  });
+  const evidenceTone =
+    heroAttention.kind === "health-attention"
+      ? healthWatch.status === "alert" || bileStatus === "Review"
+        ? colors.rose
+        : colors.amber
+      : careEvidence.observedCount > 0
+        ? colors.sage
+        : colors.mutedForeground;
+  const heroTitle = heroAttention.title;
+  const heroCopy = heroAttention.copy;
+  const statusMedallionLabel = heroAttention.statusLabel;
+  const statusSupportCopy = heroAttention.supportCopy;
   const reviewCopy =
     healthWatch.status === "good"
       ? "Keep logging meals, stool, vomiting, energy, and medication so future changes are easy to review."
@@ -480,14 +522,14 @@ export default function HealthScreen() {
 
   const isBileTab = activeTab === "bile";
   const heroBubbleTitle = isBileTab
-    ? bileStatus === "Low Risk"
-      ? "Bile looks calm."
+    ? bileStatus === "No logs"
+      ? "No bile observations logged."
       : "Watching bile gently."
-    : !hasHealthSignalData
-      ? "Ready when you are."
-      : healthWatch.status === "good"
-        ? "Feeling steady."
-        : "Let's take it easy.";
+    : heroAttention.kind === "not-logged"
+      ? "Ready for a check-in."
+      : heroAttention.kind === "health-attention"
+        ? "A health observation is ready to review."
+        : "Owner observations, clearly labeled.";
   const heroBubbleCopy = isBileTab
     ? "Bile Watch records patterns calmly."
     : "Health Watch records patterns calmly.";
@@ -498,7 +540,7 @@ export default function HealthScreen() {
       ? "Bile worth review"
       : bileStatus === "Watch"
         ? "Bile worth watching"
-        : "Bile looks low risk"
+        : "No bile logs in 7 days"
     : heroTitle;
   const heroPanelCopy = isBileTab
     ? "Yellow bile events are tracked as calm owner notes, not diagnoses."
@@ -512,72 +554,30 @@ export default function HealthScreen() {
     tone: string;
     routeType: string;
     actionLabel: string;
-  }[] = [
-    {
-      label: "Activity",
-      status: "Good",
-      detail: "Active daily",
-      icon: "walk",
-      tone: colors.sage,
-      routeType: "walk",
-      actionLabel: statusActionLabel("walk"),
-    },
-    {
-      label: "Appetite",
-      status: healthWatch.counts.appetiteWatch7 ? "Watch" : "Good",
-      detail: healthWatch.counts.appetiteWatch7 ? `${healthWatch.counts.appetiteWatch7} reduced meals` : "Eating well",
-      icon: "meal",
-      tone: healthWatch.counts.appetiteWatch7 ? colors.amber : colors.sage,
-      routeType: "meal",
-      actionLabel: statusActionLabel("meal"),
-    },
-    {
-      label: "Stool",
-      status: healthWatch.counts.stoolWatch7 ? "Watch" : "Normal",
-      detail: healthWatch.counts.stoolWatch7 ? `${healthWatch.counts.stoolWatch7} review logs` : "Solid and healthy",
-      icon: "poo",
-      tone: healthWatch.counts.stoolWatch7 ? colors.amber : colors.sage,
-      routeType: "potty",
-      actionLabel: statusActionLabel("potty"),
-    },
-    {
-      label: "Hydration",
-      status: "Good",
-      detail: "Well hydrated",
-      icon: "bile",
-      tone: colors.blueSignal,
-      routeType: "water",
-      actionLabel: statusActionLabel("water"),
-    },
-    {
-      label: "Energy",
-      status: healthWatch.status === "good" ? "Good" : "Watch",
-      detail: healthWatch.status === "good" ? "High and playful" : "Worth watching",
-      icon: "energy",
-      tone: healthWatch.status === "good" ? colors.sage : colors.amber,
-      routeType: "mood",
-      actionLabel: statusActionLabel("mood"),
-    },
-    {
-      label: "Vomiting",
-      status: healthWatch.counts.vomit7 ? "Watch" : "None",
-      detail: healthWatch.counts.vomit7 ? `${healthWatch.counts.vomit7} in 7 days` : "No logs",
-      icon: "vomit",
-      tone: healthWatch.counts.vomit7 ? colors.amber : colors.sage,
-      routeType: "symptom",
-      actionLabel: statusActionLabel("symptom"),
-    },
-  ];
-  // Zero-data honesty for the signal rows: "Active daily" / "Eating well"
-  // are observations, and nothing has been observed before the first log.
-  const displayHealthRows = hasHealthSignalData
-    ? healthRows
-    : healthRows.map((row) => ({
-        ...row,
-        status: "No logs",
-        detail: "Starts with your first log",
-        tone: colors.mutedForeground,
-      }));
+  }[] = careEvidence.lanes.map((lane) => {
+    const routeType = EVIDENCE_ROUTE_TYPE[lane.id];
+    return {
+      label: lane.label,
+      status:
+        lane.status === "not-logged"
+          ? "Not logged"
+          : lane.status === "watch"
+            ? "Watch"
+            : "Observed",
+      detail: lane.observedAt
+        ? `${lane.detail} · ${formatDateTime(lane.observedAt)}`
+        : lane.prompt,
+      icon: EVIDENCE_ICON[lane.id],
+      tone:
+        lane.status === "watch"
+          ? colors.amber
+          : lane.status === "observed"
+            ? colors.sage
+            : colors.mutedForeground,
+      routeType,
+      actionLabel: statusActionLabel(routeType),
+    };
+  });
   const healthReviewPacket = deriveHealthReviewPacket({
     dogName: resolvePetName(state.profile.name),
     healthStatus: healthWatch.status,
@@ -589,6 +589,7 @@ export default function HealthScreen() {
       anxiety7: healthWatch.counts.anxiety7,
     },
     redFlagCount: healthWatch.redFlags.length,
+    careEvidenceObservedCount: careEvidence.observedCount,
     bileStatus,
     lastYellowBileLabel: formatDateTime(bileEntries[0]?.occurredAt),
     longestFoodGapLabel: mealGaps ? `${mealGaps.toFixed(1)} hours` : "Needs more meal logs",
@@ -622,7 +623,11 @@ export default function HealthScreen() {
   }
 
   return (
-    <View style={[s.root, { backgroundColor: colors.background }]}>
+    <View
+      testID="qa-layout-health"
+      nativeID={createWebQaLayoutMarker(qaFontScale, accessibleLayout)}
+      style={[s.root, { backgroundColor: colors.background }]}
+    >
       <ScrollView
         ref={scrollRef}
         style={s.container}
@@ -641,8 +646,6 @@ export default function HealthScreen() {
           kicker="Health"
           title="Health Watch"
           subtitle="Owner notes. No diagnosis."
-          back
-          onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
           actionIcon="folder-open-outline"
           actionLabel="Open Records from Health Watch"
           onAction={() => router.push("/records")}
@@ -659,8 +662,14 @@ export default function HealthScreen() {
             return (
               <Pressable
                 key={tab.key}
-                accessibilityRole="button"
-                accessibilityLabel={`Open ${tab.label}`}
+                accessibilityRole="tab"
+                accessibilityLabel={tab.label}
+                accessibilityHint={
+                  active
+                    ? `${tab.label} is selected.`
+                    : `Selects ${tab.label}.`
+                }
+                accessibilityState={{ selected: active }}
                 aria-selected={active}
                 onPress={() => setActiveTab(tab.key)}
                 style={[
@@ -823,10 +832,12 @@ export default function HealthScreen() {
               }
             />
             <View style={s.healthHeroStatusRow}>
-              <View style={[s.healthScoreToken, { backgroundColor: scoreTone + "14", borderColor: scoreTone + "66" }]}>
-                <Text style={[s.healthScoreValue, { color: scoreTone, fontFamily: DISPLAY }]}>{scoreDisplay}</Text>
-                <Text style={[s.healthScoreLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                  Health score
+              <View style={[s.evidenceToken, { backgroundColor: evidenceTone + "14", borderColor: evidenceTone + "66" }]}>
+                <Text style={[s.evidenceValue, { color: evidenceTone, fontFamily: DISPLAY }]}>
+                  {careEvidence.observedCount}/{careEvidence.totalCount}
+                </Text>
+                <Text style={[s.evidenceLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                  lanes observed
                 </Text>
               </View>
 
@@ -836,9 +847,10 @@ export default function HealthScreen() {
                 <Text style={[s.heroCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                   {heroPanelCopy}
                 </Text>
-                <View style={[s.statusScoreTrack, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                  <View style={[s.statusScoreFill, { width: `${hasHealthSignalData ? score : 0}%`, backgroundColor: scoreTone }]} />
-                </View>
+                <Text style={[s.healthRhythmMeta, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                  Care evidence · {careEvidence.observedCount} of {careEvidence.totalCount} observed in{" "}
+                  {careEvidence.windowDays} days
+                </Text>
                 <Text style={[s.statusSupportCopy, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                   {statusSupportCopy}
                 </Text>
@@ -878,7 +890,7 @@ export default function HealthScreen() {
                 </View>
 
                 <View style={s.healthSignalList}>
-                  {displayHealthRows.slice(0, 4).map((row) => (
+                  {healthRows.map((row) => (
                     <PressScale
                       key={row.label}
                       accessibilityRole="button"
@@ -887,29 +899,70 @@ export default function HealthScreen() {
                       scaleTo={0.97}
                       style={[
                         s.healthSignalRow,
+                        accessibleLayout.stackStatusRows && s.healthSignalRowReflow,
                         {
                           backgroundColor: colors.background,
                           borderColor: colors.border,
+                          minHeight: accessibleLayout.controlMinHeight,
                         },
                       ]}
                     >
-                      <View style={[s.statusIcon, { backgroundColor: row.tone + "16" }]}>
-                        <PixelIcon name={row.icon} size={24} />
-                      </View>
-                      <View style={s.healthSignalCopy}>
-                        <View style={s.healthSignalTitleLine}>
-                          <Text style={[s.healthSignalTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                            {row.label}
-                          </Text>
-                          <Text style={[s.healthSignalStatus, { color: row.tone, fontFamily: DISPLAY_SEMI }]}>{row.status}</Text>
+                      <View
+                        style={[
+                          s.healthSignalLead,
+                          accessibleLayout.stackStatusRows && s.healthSignalLeadReflow,
+                        ]}
+                      >
+                        <View style={[s.statusIcon, { backgroundColor: row.tone + "16" }]}>
+                          <PixelIcon name={row.icon} size={24} />
                         </View>
-                        <Text style={[s.healthSignalDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                          {row.detail}
-                        </Text>
+                        <View style={s.healthSignalCopy}>
+                          <View
+                            style={[
+                              s.healthSignalTitleLine,
+                              accessibleLayout.stackStatusRows && s.healthSignalTitleLineReflow,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                s.healthSignalTitle,
+                                { color: colors.foreground, fontFamily: "Inter_800ExtraBold" },
+                              ]}
+                            >
+                              {row.label}
+                            </Text>
+                            <Text
+                              style={[
+                                s.healthSignalStatus,
+                                accessibleLayout.stackStatusRows && s.healthSignalStatusReflow,
+                                { color: row.tone, fontFamily: DISPLAY_SEMI },
+                              ]}
+                            >
+                              {row.status}
+                            </Text>
+                          </View>
+                          <Text
+                            style={[
+                              s.healthSignalDetail,
+                              { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                            ]}
+                          >
+                            {row.detail}
+                          </Text>
+                        </View>
                       </View>
-                      <View style={[s.healthSignalActionPill, { backgroundColor: row.tone + "10", borderColor: row.tone + "44" }]}>
+                      <View
+                        style={[
+                          s.healthSignalActionPill,
+                          accessibleLayout.stackStatusRows && s.healthSignalActionPillReflow,
+                          {
+                            backgroundColor: row.tone + "10",
+                            borderColor: row.tone + "44",
+                          },
+                        ]}
+                      >
                         <Text style={[s.healthSignalAction, { color: row.tone, fontFamily: "Inter_800ExtraBold" }]}>
-                          Log
+                          {accessibleLayout.stackStatusRows ? row.actionLabel : "Log"}
                         </Text>
                         <Text style={[s.healthSignalActionArrow, { color: row.tone, fontFamily: "Inter_800ExtraBold" }]}>
                           {">"}
@@ -1032,6 +1085,7 @@ export default function HealthScreen() {
                   label="Weight"
                   value={weightValue}
                   detail={weightDetail}
+                  layout={accessibleLayout}
                   accessory={
                     weightTrend.items.length >= 2 ? (
                       <View style={s.summarySpark} accessibilityLabel={`Weight trend across ${weightTrend.totalWeighIns} logged weigh-ins`}>
@@ -1058,6 +1112,7 @@ export default function HealthScreen() {
                   label="Last vet visit"
                   value={lastVetVisit ? lastVetVisit.value : "None on file"}
                   detail={lastVetVisit ? lastVetVisit.detail : "Add a vet visit record to the vault"}
+                  layout={accessibleLayout}
                   onPress={() => router.push("/records")}
                   accessibilityLabel={`Last vet visit. ${lastVetVisit ? `${lastVetVisit.detail}, ${lastVetVisit.value}` : "None on file"}. Opens Records.`}
                 />
@@ -1065,6 +1120,7 @@ export default function HealthScreen() {
                   icon="medication"
                   label="Vaccinations"
                   value={vaccineCount > 0 ? `${vaccineCount} filed` : "None filed"}
+                  layout={accessibleLayout}
                   detail={
                     expiredVaccineCount > 0
                       ? `${expiredVaccineCount} expired - worth review`
@@ -1080,6 +1136,7 @@ export default function HealthScreen() {
                   label="Sensitivities"
                   value={sensitivitiesOnFile || "Not on file"}
                   detail={sensitivitiesOnFile ? "Owner notes, not a diagnosis" : "Add in the diet profile"}
+                  layout={accessibleLayout}
                   onPress={() => router.push("/more")}
                   accessibilityLabel={`Sensitivities. ${sensitivitiesOnFile || "Not on file"}. Opens the diet profile in More.`}
                 />
@@ -1145,30 +1202,18 @@ export default function HealthScreen() {
                             ? "Due now"
                             : "Upcoming";
                     return (
-                      <PressScale
+                      <HealthSummaryRow
                         key={item.id}
-                        accessibilityRole="button"
+                        icon="medication"
+                        label={item.label}
+                        detail={`${item.dose} - ${item.time}`}
+                        value={medStatusLabel}
+                        valueTone={medTone}
+                        layout={accessibleLayout}
                         accessibilityLabel={`${item.label}. ${item.dose}, ${item.time}. ${medStatusLabel}. Opens the medication plan in Records.`}
+                        accessibilityHint="Opens medication details in Records."
                         onPress={() => router.push("/records")}
-                        scaleTo={0.97}
-                        style={[s.summaryRow, { backgroundColor: colors.background, borderColor: colors.border }]}
-                      >
-                        <View style={[s.summaryRowIcon, { backgroundColor: colors.sageSoft }]}>
-                          <PixelIcon name="medication" size={22} />
-                        </View>
-                        <View style={s.summaryRowText}>
-                          <Text numberOfLines={1} style={[s.summaryRowLabel, { color: colors.ink, fontFamily: "Inter_700Bold" }]}>
-                            {item.label}
-                          </Text>
-                          <Text numberOfLines={1} style={[s.summaryRowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                            {item.dose} - {item.time}
-                          </Text>
-                        </View>
-                        <Text style={[s.summaryRowStatus, { color: medTone, fontFamily: "Inter_700Bold" }]}>
-                          {medStatusLabel}
-                        </Text>
-                        <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
-                      </PressScale>
+                      />
                     );
                   })}
                   {medicationAdherence.next ? (
@@ -1186,7 +1231,7 @@ export default function HealthScreen() {
           <View style={s.reviewPacketTop}>
             <View style={s.reviewPacketTitleStack}>
               <BoardSectionHeader title="Review packet" style={s.boardSectionTop} />
-              <Text style={[s.reviewPacketStatus, { color: scoreTone, fontFamily: DISPLAY_SEMI }]}>
+              <Text style={[s.reviewPacketStatus, { color: evidenceTone, fontFamily: DISPLAY_SEMI }]}>
                 {healthReviewPacket.statusLabel}
               </Text>
             </View>
@@ -1198,7 +1243,9 @@ export default function HealthScreen() {
                   ? colors.rose
                   : healthReviewPacket.languagePill === "Pattern noticed"
                     ? colors.amber
-                    : colors.sage
+                    : healthReviewPacket.languagePill === "Insufficient evidence"
+                      ? colors.mutedForeground
+                      : colors.sage
               }
             />
           </View>
@@ -1295,7 +1342,7 @@ export default function HealthScreen() {
           <BoardSectionHeader
             title="Pattern Board"
             accessory={
-              healthWatch.patterns.length ? (
+              healthPatterns.length ? (
                 <HealthHeaderAction
                   label="Owner notes"
                   accessibilityLabel="Open health owner notes"
@@ -1306,13 +1353,17 @@ export default function HealthScreen() {
           />
           <View style={[s.reviewPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <Text style={[s.reviewTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-              {healthWatch.status === "good" ? "Care rhythm looks steady" : "Next best review step"}
+              {careEvidence.observedCount === 0
+                ? "No pattern evidence yet"
+                : healthWatch.status === "good"
+                  ? "No watch pattern in recent logs"
+                  : "Next best review step"}
             </Text>
             <Text style={[s.reviewCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {reviewCopy}
             </Text>
           </View>
-          {healthWatch.patterns.slice(0, 4).map((pattern) => (
+          {healthPatterns.slice(0, 4).map((pattern) => (
             <View key={pattern.kind} style={[s.patternRow, { borderTopColor: colors.border }]}>
               <View style={s.patternTitleRow}>
                 <Text style={[s.patternTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
@@ -1477,7 +1528,7 @@ const s = StyleSheet.create({
     gap: 11,
     alignItems: "flex-start",
   },
-  healthScoreToken: {
+  evidenceToken: {
     width: 78,
     minHeight: 84,
     borderRadius: 12,
@@ -1486,11 +1537,11 @@ const s = StyleSheet.create({
     justifyContent: "center",
     padding: 8,
   },
-  healthScoreValue: {
+  evidenceValue: {
     fontSize: 30,
     lineHeight: 33,
   },
-  healthScoreLabel: {
+  evidenceLabel: {
     fontSize: 9,
     lineHeight: 12,
     letterSpacing: 1.1,
@@ -1500,17 +1551,6 @@ const s = StyleSheet.create({
   healthHeroCopyStack: {
     flex: 1,
     minWidth: 0,
-  },
-  statusScoreTrack: {
-    height: 9,
-    borderRadius: 999,
-    borderWidth: 1,
-    overflow: "hidden",
-    marginTop: 9,
-  },
-  statusScoreFill: {
-    height: "100%",
-    borderRadius: 999,
   },
   statusSupportCopy: {
     fontSize: 12,
@@ -1633,12 +1673,28 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 9,
   },
+  summaryRowReflow: {
+    alignItems: "flex-start",
+    paddingVertical: 10,
+  },
   summaryRowIcon: {
     width: 34,
     height: 34,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+  },
+  summaryRowContent: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+  summaryRowContentReflow: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 5,
   },
   summaryRowText: {
     flex: 1,
@@ -1653,11 +1709,34 @@ const s = StyleSheet.create({
     lineHeight: 14,
     marginTop: 1,
   },
+  summaryRowMeta: {
+    maxWidth: "42%",
+    flexShrink: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 7,
+  },
+  summaryRowMetaReflow: {
+    width: "100%",
+    maxWidth: "100%",
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+    flexWrap: "wrap",
+  },
   summaryRowValue: {
-    maxWidth: "38%",
+    maxWidth: "100%",
+    flexShrink: 1,
     fontSize: 12,
     lineHeight: 16,
     textAlign: "right",
+  },
+  summaryRowValueReflow: {
+    maxWidth: "100%",
+    textAlign: "left",
+  },
+  summaryRowChevronReflow: {
+    paddingTop: 10,
   },
   summaryRowStatus: {
     fontSize: 11,
@@ -1945,6 +2024,23 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  healthSignalRowReflow: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  healthSignalLead: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  healthSignalLeadReflow: {
+    width: "100%",
+    alignItems: "flex-start",
+  },
   statusIcon: {
     width: 30,
     height: 30,
@@ -1963,6 +2059,12 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     gap: 8,
   },
+  healthSignalTitleLineReflow: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+    gap: 2,
+  },
   healthSignalTitle: {
     flex: 1,
     minWidth: 0,
@@ -1974,6 +2076,10 @@ const s = StyleSheet.create({
     fontSize: 12,
     lineHeight: 15,
     textAlign: "right",
+  },
+  healthSignalStatusReflow: {
+    maxWidth: "100%",
+    textAlign: "left",
   },
   healthSignalDetail: {
     fontSize: 11,
@@ -1990,6 +2096,11 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 4,
+  },
+  healthSignalActionPillReflow: {
+    width: "100%",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    alignSelf: "stretch",
   },
   healthSignalAction: {
     flex: 1,

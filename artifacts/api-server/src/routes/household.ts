@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { Router, type IRouter } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, or } from "drizzle-orm";
 import {
   db,
   householdsTable,
@@ -11,6 +11,8 @@ import {
 } from "@workspace/db";
 import {
   GetMeResponse,
+  ListMyHouseholdsResponse,
+  SelectActiveHouseholdBody,
   JoinHouseholdResponse,
   UpdateMeBody,
   UpdateHouseholdBody,
@@ -20,15 +22,16 @@ import {
   UpdateHouseholdMemberResponse,
   RevokeHouseholdMemberParams,
   RevokeHouseholdMemberResponse,
-  AccessPassActivationBody,
-  AccessPassRevocationBody,
-  HouseholdAccessPassMutationResponse,
+  ActivateHouseholdAccessPassBody,
+  RevokeHouseholdAccessPassBody,
+  ActivateHouseholdAccessPassResponse,
+  RevokeHouseholdAccessPassResponse,
   ListHouseholdAuditEventsQueryParams,
   ListHouseholdAuditEventsResponse,
   ListHouseholdInvitationsQueryParams,
   ListHouseholdInvitationsResponse,
   CreateHouseholdInvitationBody,
-  HouseholdInvitationMutationResponse,
+  RevokeHouseholdInvitationResponse,
   RevokeHouseholdInvitationParams,
   RevokeHouseholdInvitationBody,
   ListHouseholdSharingCleanupQueryParams,
@@ -41,7 +44,9 @@ import {
   getHouseholdMemberAuthz,
 } from "../lib/household";
 import {
+  assertActiveHouseholdSelectionAllowed,
   assertHouseholdMemberMutationAllowed,
+  assertHouseholdOwnerActionAllowed,
   normalizeHouseholdMemberRole,
 } from "../lib/household-authorization";
 import {
@@ -50,15 +55,16 @@ import {
   buildHouseholdAuditEvent,
   buildHouseholdAuditEventFromRecord,
   buildHouseholdAuditInsert,
+  deriveAccessPassRuntimeStatus,
   normalizeHouseholdAuditListQuery,
   normalizeAccessPassRole,
   isAccessPassHelperRole,
 } from "../lib/household-access-pass";
 import {
   HOUSEHOLD_INVITATION_BOUNDARY,
-  assertHouseholdInvitationAcceptAllowed,
+  HouseholdInvitationClaimError,
+  acceptHouseholdInvitationAtomically,
   buildHouseholdInvitationView,
-  deriveHouseholdInvitationRuntimeStatus,
   normalizeHouseholdInvitationExpiry,
   normalizeHouseholdInvitationLifecycleState,
   normalizeHouseholdInvitationListQuery,
@@ -104,6 +110,103 @@ router.get("/me", requireAuth, async (req, res): Promise<void> => {
   res.json(GetMeResponse.parse(await buildMe(userId, householdId)));
 });
 
+router.get("/me/households", requireAuth, async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  const { householdId: activeHouseholdId } =
+    await ensureUserAndHousehold(userId);
+  const memberships = await db
+    .select({
+      householdId: householdMembersTable.householdId,
+      householdName: householdsTable.name,
+      role: householdMembersTable.role,
+      accessPassExpiresAt: householdMembersTable.accessPassExpiresAt,
+      createdAt: householdMembersTable.createdAt,
+    })
+    .from(householdMembersTable)
+    .innerJoin(
+      householdsTable,
+      eq(householdsTable.id, householdMembersTable.householdId),
+    )
+    .where(eq(householdMembersTable.userId, userId))
+    .orderBy(
+      householdMembersTable.createdAt,
+      householdMembersTable.householdId,
+    );
+
+  res.json(
+    ListMyHouseholdsResponse.parse({
+      activeHouseholdId,
+      memberships: memberships.map((membership) => {
+        const runtime = deriveAccessPassRuntimeStatus({
+          role: membership.role,
+          accessPassExpiresAt: membership.accessPassExpiresAt,
+        });
+        return {
+          household: {
+            id: membership.householdId,
+            name: membership.householdName,
+          },
+          role: runtime.role,
+          accessPassExpiresAt: runtime.accessPassExpiresAt,
+          accessPassExpired: runtime.accessPassExpired,
+          eligible: !runtime.accessPassExpired,
+          isActive: membership.householdId === activeHouseholdId,
+          createdAt: membership.createdAt.toISOString(),
+        };
+      }),
+    }),
+  );
+});
+
+router.put("/me/active-household", requireAuth, async (req, res): Promise<void> => {
+  const userId = getUserId(req);
+  const parsed = SelectActiveHouseholdBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  await ensureUserAndHousehold(userId);
+  const [membership] = await db
+    .select({
+      role: householdMembersTable.role,
+      accessPassExpiresAt: householdMembersTable.accessPassExpiresAt,
+    })
+    .from(householdMembersTable)
+    .where(
+      and(
+        eq(householdMembersTable.userId, userId),
+        eq(
+          householdMembersTable.householdId,
+          parsed.data.householdId,
+        ),
+      ),
+    )
+    .limit(1);
+  const runtime = membership
+    ? deriveAccessPassRuntimeStatus({
+        role: membership.role,
+        accessPassExpiresAt: membership.accessPassExpiresAt,
+      })
+    : null;
+  const selectionPolicy = assertActiveHouseholdSelectionAllowed({
+    hasMembership: Boolean(membership),
+    accessPassExpired: Boolean(runtime?.accessPassExpired),
+  });
+  if (!selectionPolicy.allowed) {
+    res.status(403).json({
+      error: selectionPolicy.reason,
+    });
+    return;
+  }
+
+  await db
+    .update(usersTable)
+    .set({ activeHouseholdId: parsed.data.householdId })
+    .where(eq(usersTable.id, userId));
+  const { householdId } = await ensureUserAndHousehold(userId);
+  res.json(GetMeResponse.parse(await buildMe(userId, householdId)));
+});
+
 router.patch("/me", requireAuth, async (req, res): Promise<void> => {
   const userId = getUserId(req);
   const parsed = UpdateMeBody.safeParse(req.body);
@@ -133,6 +236,16 @@ router.patch("/household", requireAuth, async (req, res): Promise<void> => {
     return;
   }
   const { householdId } = await ensureUserAndHousehold(userId);
+  const actor = await getHouseholdMemberAuthz(householdId, userId);
+  const authority = assertHouseholdOwnerActionAllowed(actor?.role, "rename");
+  if (!authority.allowed) {
+    res.status(403).json({
+      error:
+        authority.reason ??
+        "Only an owner/admin can rename the active household.",
+    });
+    return;
+  }
   await db
     .update(householdsTable)
     .set({ name: parsed.data.name })
@@ -195,9 +308,14 @@ router.post("/household/invitations", requireAuth, async (req, res): Promise<voi
 
   const { householdId } = await ensureUserAndHousehold(userId);
   const actor = await getHouseholdMemberAuthz(householdId, userId);
-  if (actor?.role !== "owner") {
+  const authority = assertHouseholdOwnerActionAllowed(
+    actor?.role,
+    "create invitation",
+  );
+  if (!authority.allowed) {
     res.status(403).json({
       error:
+        authority.reason ??
         "Only an owner/admin can create household invitations for caregiver access.",
     });
     return;
@@ -265,7 +383,7 @@ router.post("/household/invitations", requireAuth, async (req, res): Promise<voi
   await db.insert(householdAuditEventsTable).values(buildHouseholdAuditInsert(auditEvent));
 
   res.status(201).json(
-    HouseholdInvitationMutationResponse.parse({
+    RevokeHouseholdInvitationResponse.parse({
       invitation: buildHouseholdInvitationView(invitation),
       auditEvent,
     }),
@@ -340,7 +458,7 @@ router.post("/household/invitations/:id/revoke", requireAuth, async (req, res): 
   await db.insert(householdAuditEventsTable).values(buildHouseholdAuditInsert(auditEvent));
 
   res.json(
-    HouseholdInvitationMutationResponse.parse({
+    RevokeHouseholdInvitationResponse.parse({
       invitation: buildHouseholdInvitationView(invitation),
       auditEvent,
     }),
@@ -354,116 +472,113 @@ router.post("/household/join", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  // Ensure the user is provisioned first.
-  await ensureUserAndHousehold(userId);
+  const { user } = await ensureUserAndHousehold(userId);
+  const now = new Date();
+  try {
+    const result = await acceptHouseholdInvitationAtomically(
+      {
+        code: parsed.data.inviteCode,
+        userId,
+        displayName: user.displayName,
+        now,
+      },
+      {
+        transaction: (callback) =>
+          db.transaction(async (tx) =>
+            callback({
+              async claimApprovedInvitation({ code, userId: claimantId }) {
+                const [claimed] = await tx
+                  .update(householdInvitationsTable)
+                  .set({
+                    lifecycleState: "accepted",
+                    acceptedByUserId: claimantId,
+                    invitedUserId: claimantId,
+                    acceptedAt: now,
+                    updatedAt: now,
+                  })
+                  .where(
+                    and(
+                      eq(householdInvitationsTable.inviteCode, code),
+                      eq(
+                        householdInvitationsTable.lifecycleState,
+                        "approved",
+                      ),
+                      or(
+                        isNull(householdInvitationsTable.expiresAt),
+                        gt(householdInvitationsTable.expiresAt, now),
+                      ),
+                    ),
+                  )
+                  .returning();
+                return claimed ?? null;
+              },
+              async classifyInvitation(code) {
+                const [invitation] = await tx
+                  .select()
+                  .from(householdInvitationsTable)
+                  .where(eq(householdInvitationsTable.inviteCode, code))
+                  .limit(1);
+                return invitation ?? null;
+              },
+              async createMembership({
+                householdId,
+                userId: memberUserId,
+                role,
+                displayName,
+              }) {
+                await tx
+                  .insert(householdMembersTable)
+                  .values({
+                    householdId,
+                    userId: memberUserId,
+                    role: normalizeHouseholdMemberRole(role),
+                    displayName,
+                  })
+                  .onConflictDoNothing();
+              },
+              async setActiveHousehold(memberUserId, householdId) {
+                await tx
+                  .update(usersTable)
+                  .set({ activeHouseholdId: householdId })
+                  .where(eq(usersTable.id, memberUserId));
+              },
+              async createAcceptanceAudit({
+                householdId,
+                userId: memberUserId,
+                role,
+              }) {
+                const auditEvent = buildHouseholdAuditEvent({
+                  action: "invitation-accepted",
+                  actorUserId: memberUserId,
+                  householdId,
+                  targetUserId: memberUserId,
+                  nextRole: normalizeHouseholdMemberRole(role),
+                  reason:
+                    "Approved invitation code accepted and caregiver membership activated.",
+                });
+                await tx
+                  .insert(householdAuditEventsTable)
+                  .values(buildHouseholdAuditInsert(auditEvent));
+                return auditEvent;
+              },
+            }),
+          ),
+      },
+    );
 
-  const code = parsed.data.inviteCode.trim().toUpperCase();
-  const [invitation] = await db
-    .select()
-    .from(householdInvitationsTable)
-    .where(eq(householdInvitationsTable.inviteCode, code))
-    .limit(1);
-  let household;
-  let acceptedInvitation = null;
-  let nextMemberRole = normalizeHouseholdMemberRole("adult");
-
-  if (invitation) {
-    const runtime = deriveHouseholdInvitationRuntimeStatus({
-      lifecycleState: invitation.lifecycleState,
-      expiresAt: invitation.expiresAt,
-    });
-    const policy = assertHouseholdInvitationAcceptAllowed(runtime);
-    if (!policy.allowed) {
-      if (
-        policy.lifecycleState === "expired" &&
-        invitation.lifecycleState !== "expired"
-      ) {
-        await db
-          .update(householdInvitationsTable)
-          .set({ lifecycleState: "expired", updatedAt: new Date() })
-          .where(eq(householdInvitationsTable.id, invitation.id));
-      }
-      res.status(403).json({
-        error: policy.reason ?? "Invitation is not approved for acceptance.",
-      });
+    res.json(
+      JoinHouseholdResponse.parse({
+        ...(await buildMe(userId, result.invitation.householdId)),
+        auditEvent: result.auditEvent,
+      }),
+    );
+  } catch (error) {
+    if (error instanceof HouseholdInvitationClaimError) {
+      res.status(error.status).json({ error: error.message });
       return;
     }
-
-    const [invitedHousehold] = await db
-      .select()
-      .from(householdsTable)
-      .where(eq(householdsTable.id, invitation.householdId))
-      .limit(1);
-    household = invitedHousehold;
-    acceptedInvitation = invitation;
-    nextMemberRole = normalizeHouseholdMemberRole(invitation.role);
-  } else {
-    const [legacyHousehold] = await db
-      .select()
-      .from(householdsTable)
-      .where(eq(householdsTable.inviteCode, code))
-      .limit(1);
-    household = legacyHousehold;
+    throw error;
   }
-
-  if (!household) {
-    res.status(404).json({ error: "Invite code not found" });
-    return;
-  }
-
-  const memberships = await db
-    .select({ householdId: householdMembersTable.householdId })
-    .from(householdMembersTable)
-    .where(eq(householdMembersTable.userId, userId));
-  const inThisHousehold = memberships.some(
-    (m) => m.householdId === household.id,
-  );
-
-  if (!inThisHousehold) {
-    const [user] = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.id, userId));
-    await db.insert(householdMembersTable).values({
-      householdId: household.id,
-      userId,
-      role: nextMemberRole,
-      displayName: user?.displayName ?? null,
-    });
-  }
-
-  const auditEvent = buildHouseholdAuditEvent({
-    action: "invitation-accepted",
-    actorUserId: userId,
-    householdId: household.id,
-    targetUserId: userId,
-    targetRole: inThisHousehold ? "existing-member" : null,
-    nextRole: nextMemberRole,
-    reason: inThisHousehold
-      ? "Existing household member opened an invite code."
-      : "Invite code accepted and caregiver membership created.",
-  });
-  await db.insert(householdAuditEventsTable).values(buildHouseholdAuditInsert(auditEvent));
-
-  if (acceptedInvitation) {
-    await db
-      .update(householdInvitationsTable)
-      .set({
-        lifecycleState: "accepted",
-        acceptedByUserId: userId,
-        acceptedAt: new Date(auditEvent.createdAt),
-        invitedUserId: userId,
-        updatedAt: new Date(auditEvent.createdAt),
-      })
-      .where(eq(householdInvitationsTable.id, acceptedInvitation.id));
-  }
-
-  res.json(
-    JoinHouseholdResponse.parse({
-      ...(await buildMe(userId, household.id)),
-      auditEvent,
-    }),
-  );
 });
 
 router.get("/household/sharing-cleanup", requireAuth, async (req, res): Promise<void> => {
@@ -743,7 +858,7 @@ router.delete(
 
 router.post("/household/access-passes/activate", requireAuth, async (req, res): Promise<void> => {
   const userId = getUserId(req);
-  const parsed = AccessPassActivationBody.safeParse(req.body);
+  const parsed = ActivateHouseholdAccessPassBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
@@ -817,7 +932,7 @@ router.post("/household/access-passes/activate", requireAuth, async (req, res): 
   await db.insert(householdAuditEventsTable).values(buildHouseholdAuditInsert(auditEvent));
 
   res.json(
-    HouseholdAccessPassMutationResponse.parse({
+    ActivateHouseholdAccessPassResponse.parse({
       ...(await buildMe(userId, householdId)),
       accessPass: {
         memberId: target.id,
@@ -834,7 +949,7 @@ router.post("/household/access-passes/activate", requireAuth, async (req, res): 
 
 router.post("/household/access-passes/revoke", requireAuth, async (req, res): Promise<void> => {
   const userId = getUserId(req);
-  const parsed = AccessPassRevocationBody.safeParse(req.body);
+  const parsed = RevokeHouseholdAccessPassBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
@@ -890,7 +1005,7 @@ router.post("/household/access-passes/revoke", requireAuth, async (req, res): Pr
     );
 
   res.json(
-    HouseholdAccessPassMutationResponse.parse({
+    RevokeHouseholdAccessPassResponse.parse({
       ...(await buildMe(userId, householdId)),
       accessPass: {
         memberId: target.id,

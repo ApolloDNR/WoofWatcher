@@ -162,6 +162,23 @@ test("surfaces sync and local foundation gaps before provider approval", () => {
   assert.equal(syncTile?.value, "Needs review");
 });
 
+test("names the current primary shell and release-proof secondary routes", () => {
+  const plan = deriveLaunchReadiness({
+    ...fullyApprovedInput,
+    local: {
+      ...fullyApprovedInput.local,
+      careWorkflowsReady: false,
+    },
+  });
+
+  assert.equal(plan.nextGate.kind, "local-foundation");
+  assert.match(
+    plan.nextGate.detail,
+    /Today, Plan, Quick Log, Health, and More/,
+  );
+  assert.match(plan.nextGate.detail, /Log History, Records, and Privacy/);
+});
+
 test("keeps records storage blocked when provider setup lacks structured storage proof", () => {
   const plan = deriveLaunchReadiness({
     ...fullyApprovedInput,

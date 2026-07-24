@@ -136,7 +136,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "On small iOS and Android phones, confirm the compact mission deck stays readable above the floating paw nav, has no text overflow, and routes pending meal, walk/alone, Adventure, Health, and Care Pass rows correctly.",
     setupSteps: [
       "Use a local preview household with Phoenix sample care data.",
-      "Create a meal served with outcome pending from Quick Log or Log before capture.",
+      "Create a meal served with outcome pending from Quick Log before capture.",
       "Start a walk or Alone Time session before route-testing the active-care mission row.",
       "Leave Adventure, Health, and Care Pass local preview data visible; do not mark provider-gated work as live.",
     ],
@@ -167,45 +167,42 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     title: "Owner Preview Core Loop",
     route: "/",
     priority: "launch-critical",
-    goal: "Prove a real owner can move through the main beta loop without dead ends: Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass.",
+    goal: "Prove a real owner can move through the primary beta shell without dead ends: Today, Plan, Quick Log, Health, and More, with Log History, Records, Privacy, Pack, Story, Adventure, Avatar Studio, and Care Pass reachable as secondary routes.",
     devicePrompt:
-      "Run the bottom-nav owner preview on iOS and Android: log one safe care event, inspect tomorrow's plan, open Pack and Story, review Health Watch from Today's header bell or Pack, open Launch Readiness from More, open Adventure Mode, and confirm records/Care Pass/Avatar Studio remain reachable.",
+      "Run the primary-shell owner preview on iOS and Android: open Today, Plan, the elevated Quick Log action, Health, and More; then verify Launch Readiness, Log History, Records, Privacy, Pack, Story, Adventure Mode, Care Pass, and Avatar Studio from their visible secondary links.",
     setupSteps: [
       "Use local preview data with no private real household details visible.",
-      "Start on Today (Phoenix's room) with the floating paw navigation visible.",
+      "Start on Today (Phoenix's room) with the five primary destinations visible.",
       "Keep provider, payment, storage, AI, and store gates in their truthful blocked or staged state.",
     ],
     verificationSteps: [
-      "Open Log, Plan, Today, Pack, and Story in order from the bottom navigation.",
-      "In Log, quick-log one safe care event or open the detail sheet, then undo or leave a QA note if you do not want to persist it.",
+      "Open Today, Plan, Quick Log, Health, and More in order from the primary shell.",
+      "In Quick Log, log one safe care event, then return and confirm the elevated center action has not changed destination.",
       "In Plan, confirm upcoming care rows are readable and the add/edit flow is reachable without covering the paw nav.",
-      "In Pack, confirm pets, people, household access, and the Care Pass hub expose clear next actions, then confirm Health, More, and Records open from their Pack links.",
-      "In Story, confirm care career, adventure trail, memories, walk story, and badges are reachable without dead ends.",
-      "Open Health from Today's header bell or the Pack links, then confirm Health Watch and Bile Watch, plus the Review packet, Vet-share checklist, and Draft vet questions action stay non-diagnostic and readable on the phone.",
+      "In Health, confirm Health Watch and Bile Watch, plus the Review packet, Vet-share checklist, and Draft vet questions action stay non-diagnostic and readable on the phone.",
       "Open Adventure Mode from More or Today and confirm private care quests, proof rows, and the memory shelf are reachable without implying public maps or cloud sharing.",
-      "Open More from Today's header menu or the Pack links, then open Launch Readiness, Records, Avatar Studio, and Care Pass/Reports paths and confirm no route is a dead end.",
+      "From More, open Launch Readiness, Log History, Records, Privacy, Avatar Studio, and Care Pass/Reports paths; then confirm Pack and Story remain reachable as secondary routes, with Story's care career, adventure trail, memories, walk story, and badges available without a dead end.",
       "In Records, confirm Care Pass Report History storage status says Saved on this device, or Ready to upload only after structured provider storage proof is attached; never provider-backed upload unless the provider gate is actually closed.",
     ],
     acceptanceCriteria: [
-      "The bottom-nav loop never hides the active action, gets stuck behind a modal, or routes to a blank screen.",
-      "Log, Plan, Today, Pack, Story, Health, More, Adventure Mode, Records, Avatar Studio, and Care Pass each expose a clear next action.",
+      "The primary shell never hides the active action, gets stuck behind a modal, or routes to a blank screen.",
+      "Today, Plan, Quick Log, Health, More, Log History, Records, Privacy, Pack, Story, Adventure Mode, Avatar Studio, and Care Pass each expose a clear next action.",
       "Launch Readiness keeps internal beta, provider setup, store approval, payments, AI, and storage boundaries truthful.",
       "Care Pass Report History shows Saved on this device, or Ready to upload only after structured provider storage proof is attached, without implying cloud-backed storage before upload rules exist.",
     ],
     failureEscalation:
       "Mark Needs tune if any core route is confusing, clipped by the paw nav, blocked by keyboard/modal overlap, missing a next action, Adventure Mode becomes a dead end, or claims provider/store/payment/AI/storage readiness that is not actually configured.",
     requiredEvidence: [
-      "iOS screenshot of Quick Log or Log after opening the owner preview loop.",
+      "iOS screenshot of Quick Log after opening the owner preview loop.",
       "Android screenshot of Launch Readiness from More after completing the owner preview loop.",
-      "Note confirming Log, Plan, Today, Pack, Story, Health, More, Adventure Mode, Records, Avatar Studio, and Care Pass were reachable without dead ends.",
+      "Note confirming Today, Plan, Quick Log, Health, More, Log History, Records, Privacy, Pack, Story, Adventure Mode, Avatar Studio, and Care Pass were reachable without dead ends.",
       "QA note confirming Care Pass Report History storage status stayed truthful.",
     ],
     routeChecklist: [
       {
-        label: "Log",
-        route: "/log",
-        expected: "Quick-log one safe care event or open the detail sheet without keyboard or modal blocking.",
-        proof: "iOS Quick Log or Log screenshot.",
+        label: "Today",
+        route: "/",
+        expected: "Confirm Phoenix status, next care, quick actions, long-press-to-Studio, and the Today primary tab are readable.",
       },
       {
         label: "Plan",
@@ -213,40 +210,51 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         expected: "Inspect upcoming care rows and confirm add/edit plan controls stay reachable.",
       },
       {
-        label: "Today",
-        route: "/",
-        expected: "Confirm Phoenix status, next care, quick actions, long-press-to-Studio, and the elevated Today paw button are readable.",
-      },
-      {
-        label: "Pack",
-        route: "/pack",
-        expected: "Confirm pets, people, household access, and the Care Pass hub expose clear next actions, with Health, More, and Records reachable from Pack links.",
-      },
-      {
-        label: "Story",
-        route: "/story",
-        expected: "Confirm care career, adventure trail, memories, walk story, and badges are reachable without dead ends.",
+        label: "Quick Log",
+        route: "/fastlog",
+        expected: "Use the elevated center action to quick-log one safe care event without keyboard or modal blocking, then return to the prior route.",
+        proof: "iOS Quick Log screenshot.",
       },
       {
         label: "Health",
         route: "/health",
-        expected: "Open Health from Today's header bell or the Pack links, then review Health Watch and Bile Watch copy for readable, non-diagnostic language.",
+        expected: "Review Health Watch and Bile Watch copy for readable, non-diagnostic language.",
       },
       {
         label: "More",
         route: "/more",
-        expected: "Open More from Today's header menu or the Pack links, then open Launch Readiness and confirm beta/public launch boundaries stay truthful.",
+        expected: "Open Launch Readiness and confirm beta/public launch boundaries stay truthful.",
         proof: "Android Launch Readiness screenshot.",
+      },
+      {
+        label: "Log History",
+        route: "/log",
+        expected: "Confirm the history-first timeline, search, and detail handoff stay reachable without repeating the Quick Log stage.",
+      },
+      {
+        label: "Records",
+        route: "/records",
+        expected: "Confirm records, Dog ID, trend sections, and report history expose clear next actions.",
+      },
+      {
+        label: "Privacy",
+        route: "/privacy",
+        expected: "Confirm Privacy & Safety keeps local-device, provider, deletion, and support boundaries truthful.",
+      },
+      {
+        label: "Pack",
+        route: "/pack",
+        expected: "Confirm pets, people, household access, and the Care Pass hub expose clear next actions as a secondary route.",
+      },
+      {
+        label: "Story",
+        route: "/story",
+        expected: "Confirm care career, adventure trail, memories, walk story, and badges remain reachable as a secondary route.",
       },
       {
         label: "Adventure",
         route: "/adventure",
         expected: "Confirm private care quests, proof rows, XP, and memory shelf are reachable without claiming public maps or cloud sharing.",
-      },
-      {
-        label: "Records",
-        route: "/records",
-        expected: "Open Records from the Pack, Story, or More links and confirm records, dog ID, trend sections, and report history expose clear next actions.",
       },
       {
         label: "Avatar Studio",
@@ -256,7 +264,7 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       {
         label: "Care Pass",
         route: "/records",
-        expected: "Confirm sitter/vet/trainer handoff previews are reachable from Pack, Records, or More and Report History storage status stays truthful.",
+        expected: "Confirm sitter/vet/trainer handoff previews are reachable from Records or More and Report History storage status stays truthful.",
         proof: "Care Pass Report History storage status note or screenshot.",
       },
     ],
@@ -912,58 +920,58 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
     priority: "launch-critical",
     goal: "Prove the main mobile routes feel like one planned premium neo-retro app instead of separate prototypes.",
     devicePrompt:
-      "Run Log, Plan, Today, Pack, Story, Health, Records, and More on a small iOS and Android phone. Check the same screen recipe on each route: pixel stage, command board, primary action, safe bottom nav, and no overlapping text.",
+      "Run the primary destinations—Today, Plan, Quick Log, Health, and More—plus the release-proof secondary routes Log History, Records, and Privacy on a small iOS and Android phone.",
     setupSteps: [
       "Use the current Option B visual direction: navy shell, cream HUD panels, copper accents, pixel Phoenix, and short operational labels.",
       "Start with local preview data only and keep provider, payment, AI, storage, and native proof gates truthful.",
-      "Open each route from the bottom navigation or its visible link (Health from Today's header bell or Pack, More from Today's header menu or Pack, Records from Pack, Story, or More), not through a hidden debug path.",
-      "Name or save each screenshot with the route label and platform before attaching it so the proof manifest can match Log-iOS through More-Android evidence.",
+      "Open Today, Plan, Quick Log, Health, and More from the primary shell. Open Log History, Records, and Privacy from visible in-app links, never a hidden debug path.",
+      "Name or save each screenshot with the route label and platform before attaching it so the proof manifest can match Today-iOS through Privacy-Android evidence.",
     ],
     verificationSteps: [
-      "Open Today and confirm Phoenix Room, Care Status, Today Command, and Today's Missions read as one first-screen command center.",
-      "Open Log and confirm Quick Log Flow, action tiles, and the detail dock do not fight for the same visual priority.",
+      "Open Today and confirm the living room, Care Status, Today Command, and Today's Missions read as one first-screen command center.",
       "Open Plan and confirm Today's Missions leads before the detailed schedule.",
-      "Open Pack and confirm pets, people, household access, and the Care Pass hub read as one planned board.",
-      "Open Story and confirm care career, adventure trail, memories, walk story, and badges read as one planned board.",
-      "Open Health from Today's header bell or Pack and confirm Health Watch keeps calm non-diagnostic copy with no duplicate metric rails or clipped rows.",
-      "Open Records from Pack, Story, or More and confirm Vault Command gives owners clean exits before the dense evidence sections.",
-      "Open More from Today's header menu or Pack and confirm Command Directory gives a simple map before launch, household, roster, and provider panels.",
-      "On each route, check header spacing, card spacing, bottom-nav clearance, text wrapping, and one obvious next action.",
+      "Open Quick Log and confirm the Fast Log composer, action tiles, and detail dock do not fight for the same visual priority.",
+      "Open Health and confirm Health Watch keeps calm non-diagnostic copy with no duplicate metric rails or clipped rows.",
+      "Open More and confirm Command Directory gives a simple map before launch, household, roster, and provider panels.",
+      "Open Log History and confirm the history-first timeline and search stay distinct from Quick Log.",
+      "Open Records and confirm Vault Command gives owners clean exits before the dense evidence sections.",
+      "Open Privacy and confirm Privacy & Safety keeps deletion, support, and provider boundaries readable and truthful.",
+      "On each route, check header spacing, card spacing, safe-navigation clearance, text wrapping, and one obvious next action.",
     ],
     acceptanceCriteria: [
       "Every core route starts with one clear pixel or command stage and one practical command board.",
-      "Log, Plan, Today, Pack, Story, Health, Records, and More use the same board anatomy, compact section headers, and route-to-route spacing rhythm.",
-      "No first-screen text, card, sprite, tab, or bottom navigation element overlaps on a compact phone.",
+      "Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy use the same board anatomy, compact section headers, and route-to-route spacing rhythm.",
+      "No first-screen text, card, sprite, tab, or safe-navigation element overlaps on a compact phone.",
       "Each route exposes a real next action that opens a care workflow, QA workflow, record, report, or route with no dead end.",
     ],
     failureEscalation:
       "Mark Needs tune for the first route with crowded hierarchy, clipped copy, duplicate avatar behavior, hidden primary action, bottom-nav overlap, or a visual style that drifts away from the Option B pixel app boards.",
     requiredEvidence: [
-      "iOS screenshot of Log route top.",
-      "Android screenshot of Log route top.",
-      "iOS screenshot of Plan route top.",
-      "Android screenshot of Plan route top.",
       "iOS screenshot of Today route top.",
       "Android screenshot of Today route top.",
-      "iOS screenshot of Pack route top.",
-      "Android screenshot of Pack route top.",
-      "iOS screenshot of Story route top.",
-      "Android screenshot of Story route top.",
+      "iOS screenshot of Plan route top.",
+      "Android screenshot of Plan route top.",
+      "iOS screenshot of Quick Log route top.",
+      "Android screenshot of Quick Log route top.",
       "iOS screenshot of Health route top.",
       "Android screenshot of Health route top.",
-      "iOS screenshot of Records route top.",
-      "Android screenshot of Records route top.",
       "iOS screenshot of More route top.",
       "Android screenshot of More route top.",
-      "Route-named file names or URIs for every attachment, such as Log-iOS, Log-Android, Plan-iOS, Plan-Android, Today-iOS, Today-Android, Pack-iOS, Pack-Android, Story-iOS, Story-Android, Health-iOS, Health-Android, Records-iOS, Records-Android, More-iOS, and More-Android.",
+      "iOS screenshot of Log History route top.",
+      "Android screenshot of Log History route top.",
+      "iOS screenshot of Records route top.",
+      "Android screenshot of Records route top.",
+      "iOS screenshot of Privacy route top.",
+      "Android screenshot of Privacy route top.",
+      "Route-named file names or URIs for every attachment, such as Today-iOS, Today-Android, Plan-iOS, Plan-Android, Quick-Log-iOS, Quick-Log-Android, Health-iOS, Health-Android, More-iOS, More-Android, Log-History-iOS, Log-History-Android, Records-iOS, Records-Android, Privacy-iOS, and Privacy-Android.",
       "Note listing the first route with overlap, confusing hierarchy, or mockup drift, or confirming no route-to-route design break was found.",
     ],
     routeChecklist: [
       {
-        label: "Log",
-        route: "/log",
+        label: "Today",
+        route: "/",
         expected:
-          "Quick Log Flow leads with tap and long-press actions, then the detail dock supports richer logs without taking over the route.",
+          "Phoenix Room, Care Status, quick actions, and Next Up read as one planned first screen.",
         requiredNativePlatforms: ["ios", "android"],
       },
       {
@@ -974,24 +982,10 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         requiredNativePlatforms: ["ios", "android"],
       },
       {
-        label: "Today",
-        route: "/",
+        label: "Quick Log",
+        route: "/fastlog",
         expected:
-          "Phoenix Room, Care Status, Today Command, Today's Missions, and Quick Log read as one planned first screen.",
-        requiredNativePlatforms: ["ios", "android"],
-      },
-      {
-        label: "Pack",
-        route: "/pack",
-        expected:
-          "Pack keeps pets, people, household access, and the Care Pass hub on one planned board with clear links to Health, More, and Records.",
-        requiredNativePlatforms: ["ios", "android"],
-      },
-      {
-        label: "Story",
-        route: "/story",
-        expected:
-          "Story keeps care career, adventure trail, memories, walk story, and badges on one planned board without dead ends.",
+          "The elevated center action opens a focused quick-log sheet with action tiles, recent entries, and a clear return path.",
         requiredNativePlatforms: ["ios", "android"],
       },
       {
@@ -1002,6 +996,20 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         requiredNativePlatforms: ["ios", "android"],
       },
       {
+        label: "More",
+        route: "/more",
+        expected:
+          "Command Directory maps the app before launch QA, household, provider setup, roster, tools, and diet panels.",
+        requiredNativePlatforms: ["ios", "android"],
+      },
+      {
+        label: "Log History",
+        route: "/log",
+        expected:
+          "History-first search, timeline, and care-detail handoff stay distinct from the elevated Quick Log action.",
+        requiredNativePlatforms: ["ios", "android"],
+      },
+      {
         label: "Records",
         route: "/records",
         expected:
@@ -1009,10 +1017,10 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
         requiredNativePlatforms: ["ios", "android"],
       },
       {
-        label: "More",
-        route: "/more",
+        label: "Privacy",
+        route: "/privacy",
         expected:
-          "Command Directory maps the app before launch QA, household, provider setup, roster, tools, and diet panels.",
+          "Privacy & Safety keeps local-device, deletion, support, and provider boundaries readable without claiming unavailable approval.",
         requiredNativePlatforms: ["ios", "android"],
       },
     ],
@@ -1249,7 +1257,8 @@ function slugForQaId(value: string): string {
 function routeForStoreScreenshot(screen: string): string {
   const normalized = screen.toLowerCase();
   if (normalized.includes("phoenix") || normalized.includes("home")) return "/";
-  if (normalized.includes("quick log") || normalized.includes("log")) return "/log";
+  if (normalized.includes("quick log")) return "/fastlog";
+  if (normalized.includes("log")) return "/log";
   if (normalized.includes("plans") || normalized.includes("schedule")) return "/calendar";
   if (normalized.includes("health")) return "/health";
   if (normalized.includes("care pass")) return "/records";

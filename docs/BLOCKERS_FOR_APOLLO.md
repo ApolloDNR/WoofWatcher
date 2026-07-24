@@ -9,7 +9,7 @@
 - Confirm whether Adventure Mode should remain a private local memory feature for launch or include provider-backed photo storage, map/location retention, share links, or community discovery. The local quest/memory foundation exists now; cloud media, maps, public sharing, and community safety are not approved or live.
 - Confirm whether Figma is the canonical visual design source.
 - Confirm final high-end animation asset pipeline: code-only Reanimated first, Rive/Lottie assets, Figma-to-code design source, or hired illustrator/motion designer support.
-- Confirm if/when saved walk routes should move from owner-entered route/place templates to GPS route recording, map previews, and location retention policy.
+- Recorded walk-route location and map previews now exist. Before public release, approve the precise-foreground permission copy, provider-synced household boundary, OpenStreetMap area-request disclosure, final Apple/Play privacy-form answers, and the configured provider's retention/export/deletion terms.
 
 ## Accounts And Secrets
 

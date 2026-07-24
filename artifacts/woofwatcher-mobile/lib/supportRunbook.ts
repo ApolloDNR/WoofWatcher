@@ -142,7 +142,7 @@ export const SUPPORT_LEGAL_READINESS_PROOF_ITEMS: readonly SupportLegalReadiness
   {
     label: "Privacy policy and terms links",
     requiredEvidence:
-      "privacy/terms proof file with final https privacy policy and terms links, data retention/export/deletion language, AI/storage/payments disclosures, store-listing URL ownership, MIME, and byte size.",
+      "privacy/terms proof file with final https privacy policy and terms links, data retention/export/deletion language, location and map-service disclosures, AI/storage/payments disclosures, store-listing URL ownership, MIME, and byte size.",
   },
   {
     label: "Refund/subscription policy",

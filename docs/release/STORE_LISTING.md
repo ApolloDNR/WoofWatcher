@@ -1,10 +1,27 @@
 # WoofWatcher store listing (v1)
 
-Canonical listing copy and store-form answers for the v1 submission of the Expo mobile app (`artifacts/woofwatcher-mobile`, bundle id `com.pegasusdreamscapes.woofwatcher`). Every claim below is held to the v1 truth: local-first, no account, no cloud features.
+> **Submission status — blocked for the shared-account build.** This file is
+> the working future shared-account listing draft. It replaces the earlier “no
+> account,” “no server,” and “Data Not Collected” answers, but it is not
+> approved store metadata. Do not paste it into App Store Connect or Play
+> Console until the launch mode is fixed, production data flows are verified,
+> and owner/legal review approves the final answers. The current renovation
+> targets a shared TestFlight beta first.
+
+Canonical listing copy and store-form review notes for the Expo mobile app
+(`artifacts/woofwatcher-mobile`, bundle id
+`com.pegasusdreamscapes.woofwatcher`). Every claim below must match the
+submitted build's local-first care log, optional provider-synced household,
+and foreground walk-route recording.
 
 ## Honesty rule (read before editing any copy)
 
-The v1 listing must NOT claim: cloud sync, backups, accounts/sign-in, push notifications or reminders that fire as notifications, AI features, payments/subscriptions, document cloud storage, or veterinary diagnosis. All of these are provider-gated and off in v1 (see `docs/BLOCKERS_FOR_APOLLO.md`). If copy drifts toward any of these, cut it.
+The listing must not claim that a provider-backed feature is live unless that
+exact release configuration and its privacy/support evidence are approved. It
+must also not claim that location is never requested or that all data always
+stays on-device: starting route recording requests precise foreground
+location, provider sync can carry the resulting route with the household care
+entry, and opening the map requests OpenStreetMap data for the recorded area.
 
 ## App name
 
@@ -50,7 +67,7 @@ Real care. Pixel heart.
 
 WHAT YOU CAN DO
 
-- Fast care logging: meals (served through outcome), walks, potty breaks, meds, and notes — built for one-handed, ten-second entries.
+- Fast care logging: meals (served through outcome), walks, potty breaks, meds, and notes — built for one-handed, ten-second entries. When you start route recording for a walk, WoofWatcher can use foreground location to draw its map and calculate distance.
 - Routines that hold the day together: see what's next, keep the household on the same page, and never wonder whether the dog was fed.
 - Health Watch: jot down appetite and tummy observations over time so patterns are easy to show your vet. WoofWatcher records your observations — it never diagnoses and is not veterinary advice.
 - Records and Care Pass: keep your dog's important details in one place and share a clean, owner-maintained care summary with a sitter, walker, or vet whenever you choose.
@@ -59,12 +76,13 @@ WHAT YOU CAN DO
 
 PRIVATE BY DESIGN
 
-- No account needed. Open the app and start caring.
-- Everything stays on your device. WoofWatcher has no servers, no ads, no trackers, and no analytics. Your dog's data is yours.
+- Local-first care works without an account. Provider-synced household features require sign-in when they are enabled in the submitted build.
+- Care is cached on your device. Care entries, including recorded walk routes, may also sync with your configured provider and be visible to your household when provider sync is enabled.
+- WoofWatcher has no ads and does not use precise location for cross-app tracking. Background location is not enabled.
 - Export anytime. Send a full text export of your care data wherever you like, straight from the share sheet.
-- Photos are optional and stay on your device.
+- Photos are optional. Their final local/provider storage boundary must match the approved release configuration.
 
-One honest note: because your data lives only on your device, use the in-app export (or your device backup) to protect it — there is no cloud copy.
+One honest note: local preview data has no provider copy. If you sign in to a provider-synced household, follow that provider's approved retention, export, and deletion terms; those terms must be finalized before external release.
 
 WoofWatcher is a care journal and companion, not a medical device. If your dog seems unwell, contact a veterinarian.
 
@@ -85,38 +103,39 @@ dog care,pet care,dog log,puppy,dog routine,pet journal,dog health diary,potty t
 - Apple age rating: 4+ (no objectionable content).
 - Google Play (IARC questionnaire): Everyone.
 - Violence: none. Sexual content: none. Profanity: none. Drugs/alcohol/tobacco: none. Gambling: none (no simulated gambling; progression is earned by care logging only, no chance mechanics).
-- User-generated content shared with others: No. Users write private notes on their own device; sharing happens only through the OS share sheet at the user's initiative, and the app hosts no content.
+- User-generated content shared with others: provider-synced household care entries may be visible to members of that household. OS share-sheet exports are also user initiated.
 - Ads: none.
 - In-app purchases: none in v1.
-- Location sharing: none (the app does not request location permission in v1).
-- Unrestricted internet access: the app does not browse the web or load remote content in v1.
+- Location: optional precise foreground location is requested only after the owner starts walk-route recording. It is used to draw that walk's map and calculate distance. Background location is not enabled.
+- Network access: provider-synced care uses the configured care provider. Opening a recorded route map requests OpenStreetMap raster tiles or neighborhood geometry for the recorded area.
 
 ## Apple privacy nutrition label
 
-Answer: **Data Not Collected** (all categories).
+Status: **owner and legal approval required before submission. Do not use the previous blanket “Data Not Collected” answer.**
 
-Justification to keep on file for App Review: WoofWatcher v1 has no server component, no account system, no analytics/ads/crash SDKs, and makes no network transmission of user data. All care data is stored locally on the device (AsyncStorage). Photos, when attached, remain on-device. Data leaves the device only when the user explicitly invokes the OS share sheet, which is user-initiated sharing, not developer collection. Therefore no data types are "collected" as Apple defines the term (transmitted off device to the developer or third parties).
+The current implementation handles **Precise Location** for **App Functionality**. Route points are stored with the walk care entry and can be linked to the signed-in user and household when provider sync is enabled. Opening a route map also requests OpenStreetMap data for the recorded area. The Expo privacy manifest declares precise location as linked, not used for tracking, and used for app functionality.
 
-- Data used to track you: none.
-- Data linked to you: none.
-- Data not linked to you: none.
+- Data used to track you: no location tracking or cross-app advertising use is implemented.
+- Precise Location: declare App Functionality; linked to the user when the release enables provider-synced household care.
+- Before submission, re-audit the final provider configuration and approve every other applicable App Store data category. This document does not invent retention terms or approve the final privacy form.
 
 ## Google Play Data safety form
 
-- Does your app collect or share any of the required user data types? **No.**
-- Data collected: none. Data shared: none.
-- Is data encrypted in transit? Not applicable — no user data is transmitted (the form allows this only when nothing is collected; answer the collection question "No" and this question does not apply).
-- Can users request data deletion? Data never leaves the device, so there is nothing held by the developer to delete. In-app: the Privacy & Safety screen provides export and deletion tools, and uninstalling the app removes all app data. If the form requires a deletion path anyway, state: "All data is stored locally on the user's device only; users can delete it in-app via Privacy & Safety or by uninstalling the app."
+- Status: **owner and legal approval required before submission. Do not answer “No data collected or shared.”**
+- Location: disclose precise foreground location for the walk-route app functionality. It is optional at the OS permission layer and background location is not enabled.
+- Storage and sharing boundary: the route is saved locally with the walk; in a provider-synced household it may be sent to the configured provider and visible to household members. OpenStreetMap services receive the recorded-area request needed to render the map.
+- Re-audit the final provider build for all other Play data types, encryption-in-transit answers, retention, and deletion. Use the approved provider policy and receipts; do not infer those answers from the local cache.
 - Committed to the Play Families policy: not enrolled (general-audience app, rated Everyone).
-- Independent security review: not applicable for v1.
+- Independent security review: not claimed in this draft.
 
 ## App Review notes (paste into App Store Connect "Notes" and Play "App access")
 
-- The app requires NO login. It opens directly to the home screen with sample/local data; reviewers can use every feature immediately. There are no demo credentials because there are no accounts.
-- All data is stored locally on the device. The app makes no network calls with user data; there is no server component in this release.
+- The app can open in a local preview without login. If provider-synced household care is enabled in the submitted build, provide App Review with valid reviewer access and matching account/deletion instructions.
+- Care is cached locally. Signed-in household care may sync with the configured provider and be visible to household members.
 - Camera and photo library permissions are OPTIONAL and requested only when the reviewer chooses to attach a photo (avatar, care log, or record). The app is fully functional if permission is denied. Permission strings are declared in the app's Info.plist.
+- Precise foreground location is OPTIONAL and requested only when the reviewer starts recording a walk route. It draws that walk's map and calculates its distance. The app does not enable background location. The saved route follows the same local/provider household boundary as its care entry, and opening the map requests OpenStreetMap data for the recorded area.
 - Health features (Health Watch / Bile Watch) record owner observations only. The app displays non-diagnostic language throughout and directs users to a veterinarian; it makes no diagnosis or treatment claims.
-- Some screens reference future provider-backed capabilities (sync, notifications, AI); in this build they are visibly gated as "setup needed" and non-functional by design, not broken. No purchase is offered anywhere.
+- Any provider-backed capability that remains unconfigured in the submitted build is visibly gated as setup needed. Do not paste this note until the final build's enabled providers and reviewer access are confirmed.
 - To see the core flow: open Today (home), log a meal or potty break from the Log tab, then view Plan, Pack, and Story.
 
 ## Screenshot plan

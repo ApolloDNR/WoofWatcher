@@ -8,6 +8,11 @@
 import type { CareEntryUpdateDetails } from './careEntryUpdateDetails';
 
 export interface CareEntryUpdate {
+  /**
+     * @minimum 1
+     * @maximum 2147483646
+     */
+  expectedRevision: number;
   /** @minLength 1 */
   type?: string;
   occurredAt?: Date;

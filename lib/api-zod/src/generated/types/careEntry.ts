@@ -9,6 +9,8 @@ import type { CareEntryDetails } from './careEntryDetails';
 
 export interface CareEntry {
   id: string;
+  /** @pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ */
+  householdId: string;
   /** @nullable */
   petId?: string | null;
   type: string;
@@ -25,6 +27,11 @@ export interface CareEntry {
   note?: string | null;
   /** @nullable */
   details?: CareEntryDetails;
+  /**
+     * @minimum 1
+     * @maximum 2147483647
+     */
+  revision: number;
   createdAt: Date;
   updatedAt: Date;
 }

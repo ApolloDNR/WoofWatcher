@@ -5,7 +5,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
-  ImageBackground,
   InteractionManager,
   KeyboardAvoidingView,
   Modal,
@@ -19,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReducedMotion } from "react-native-reanimated";
 import { useGetMe } from "@workspace/api-client-react";
 import {
   appendCareAuditEvent,
@@ -40,10 +40,13 @@ import { announce } from "@/lib/announce";
 import { isClerkConfigured } from "@/lib/auth";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { resolvePetName } from "@/lib/petIdentity";
+import { describeCareEntryConflictVersion } from "@/lib/careSync";
 import { useColors } from "@/hooks/useColors";
+import { useWebQaFontScale } from "@/hooks/useWebQaFontScale";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
-import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { PixelIcon } from "@/components/PixelIcon";
 import {
+  getAccessibleLayoutMetrics,
   getCenteredModalBackdropPadding,
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
@@ -54,7 +57,6 @@ import {
 } from "@/lib/mobileLayout";
 import {
   buildAloneTimeReturnPatch,
-  buildAloneTimeStartEntry,
   findOpenAloneTimeSession,
   getAloneTimeReturnOptions,
   type AloneTimeReturnOutcome,
@@ -85,76 +87,18 @@ import {
   MEAL_OUTCOME_UPDATE_OPTIONS,
   type MealOutcomeUpdate,
 } from "@/lib/mealOutcomeUpdate";
-import {
-  buildQuickLogEntry,
-  describeQuickLogDetailSheet,
-  describeQuickLogLauncherAction,
-  findRecentQuickLogDuplicate,
-  getQuickLogPolicy,
-  QUICK_LOG_DEDUPE_WINDOW_MS,
-} from "@/lib/quickLogEntry";
+import { resolveQuickLogEntry } from "@/lib/quickLogRuntime";
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
-import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
+import { buildWalkSessionFinishPatch, findOpenWalkSession } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
 import { TrailMap } from "@/components/TrailMap";
 import { useWalkRouteCaptureStatus } from "@/components/WalkRouteRecorder";
-import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
-import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
-import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
-import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
 import { BoardActionButton, BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader, BoardSegmentTabs } from "@/components/board/BoardPrimitives";
-import { PressScale } from "@/components/motion/GameFeel";
-import { homeImmersiveRoomIsNight } from "./index";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
-// Wide banner composed for the ~4:1 console stage; the square day-room
-// painting stretched into a squashed wall band here.
-const LOG_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
-const LOG_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("ear-perk");
-const LOG_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["ear-perk"];
-
-// Warm the console stage art when the bundle loads, not when the Log tab
-// first mounts: on web the metro asset resolves to `{ uri }`, and holding a
-// decoded HTMLImageElement here means the hero paints with the tab's first
-// frame instead of popping in a few frames after the switch. Native bundles
-// the PNGs locally, so only web needs the warm-up (kept referenced so the
-// decoded bitmap is not garbage collected).
-const WARMED_LOG_STAGE_ART: unknown[] = [];
-if (Platform.OS === "web") {
-  const WebImage = (
-    globalThis as {
-      Image?: new () => { src: string; decode?: () => Promise<void> };
-    }
-  ).Image;
-  for (const assetModule of [
-    LOG_COMMAND_STAGE_ROOM,
-    LOG_COMMAND_STAGE_SPRITE?.source,
-  ]) {
-    const uri =
-      assetModule && typeof assetModule === "object"
-        ? (assetModule as { uri?: string }).uri
-        : null;
-    if (!uri || !WebImage) continue;
-    const image = new WebImage();
-    image.src = uri;
-    image.decode?.().catch(() => {});
-    WARMED_LOG_STAGE_ART.push(image);
-  }
-}
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
-
-const QUICK_LOG_DOCTRINE: Array<{
-  label: string;
-  detail: string;
-  icon: IoniconName;
-  tone: "quick" | "detail" | "edit";
-}> = [
-  { label: "Tap", detail: "quick log", icon: "flash-outline", tone: "quick" },
-  { label: "Hold", detail: "details", icon: "finger-print-outline", tone: "detail" },
-  { label: "Edit later", detail: "Timeline", icon: "create-outline", tone: "edit" },
-];
 
 const DETAIL_WORKFLOW_RAIL: Array<{
   label: string;
@@ -497,51 +441,7 @@ const TYPE_BY_ID: Record<string, LogType> = LOG_TYPES.reduce(
   {} as Record<string, LogType>,
 );
 
-type LauncherTab = "favorites" | "all" | "health";
-
-interface LauncherAction {
-  label: string;
-  type: CareEventType;
-  icon: PixelIconName;
-  tab: LauncherTab | "household";
-  preset?: Record<string, string>;
-}
-
-const LAUNCHER_TABS: { key: LauncherTab; label: string }[] = [
-  { key: "favorites", label: "Favorites" },
-  { key: "all", label: "All" },
-  { key: "health", label: "Health" },
-];
-
-const LAUNCHER_ACTIONS: LauncherAction[] = [
-  { label: "Meal", type: "meal", icon: "meal", tab: "favorites" },
-  { label: "Walk", type: "walk", icon: "walk", tab: "favorites" },
-  { label: "Potty", type: "potty", icon: "pee", tab: "favorites" },
-  { label: "Training", type: "training", icon: "training", tab: "favorites" },
-  { label: "Treat", type: "treat", icon: "treat", tab: "favorites" },
-  { label: "Play", type: "play", icon: "play", tab: "favorites" },
-  { label: "Water", type: "water", icon: "bile", tab: "favorites" },
-  { label: "Vomit", type: "symptom", icon: "vomit", tab: "health", preset: { what: "vomit", severity: "watch" } },
-  // Distinct bolt icon (Anxious owns the raincloud) and no preset: incident
-  // facts are never pre-claimed for the caregiver.
-  { label: "Incident", type: "incident", icon: "energy", tab: "health" },
-  { label: "Medication", type: "medication", icon: "medication", tab: "health" },
-  { label: "Alone Time", type: "alone", icon: "clock", tab: "household" },
-  { label: "Anxious", type: "mood", icon: "anxious", tab: "health", preset: { mood: "anxious" } },
-  { label: "Note", type: "note", icon: "note", tab: "household" },
-  { label: "Weight", type: "weight", icon: "health", tab: "health" },
-  { label: "Grooming", type: "grooming", icon: "happy", tab: "all" },
-];
-
 const ALONE_RETURN_OPTIONS = getAloneTimeReturnOptions();
-
-const MOOD_LAUNCHER: { key: string; label: string; icon: PixelIconName; mood: string }[] = [
-  { key: "great", label: "Great", icon: "mood_great", mood: "happy" },
-  { key: "good", label: "Good", icon: "mood_good", mood: "calm" },
-  { key: "okay", label: "Okay", icon: "mood_okay", mood: "calm" },
-  { key: "meh", label: "Meh", icon: "mood_meh", mood: "anxious" },
-  { key: "rough", label: "Rough", icon: "mood_rough", mood: "unwell" },
-];
 
 const TRUST_ACTION_LABELS: Record<CareLogReviewAction, string> = {
   confirm: "Confirm",
@@ -560,15 +460,6 @@ const ENTRY_ATTENTION_CHIP_COPY: Record<string, string> = {
   corrected: "Corrected",
   estimated: "Estimated",
 };
-
-function launcherActionKey(action: Pick<LauncherAction, "label" | "type">): string {
-  return `${action.type}:${action.label}`;
-}
-
-function findLauncherActionForType(type: CareEventType | null): LauncherAction | null {
-  if (!type) return null;
-  return LAUNCHER_ACTIONS.find((action) => action.type === type) ?? null;
-}
 
 // Icon resolution covers the composer types plus legacy entry types.
 const TYPE_ICON: Record<string, PulseIconName> = {
@@ -650,6 +541,7 @@ function syncLabel(status: Entry["syncStatus"]): string | null {
   if (status === "pending") return "Pending sync";
   if (status === "local") return SYNC_PROVIDER_CONFIGURED ? "Saved offline" : "Saved on this device";
   if (status === "failed") return "Sync failed";
+  if (status === "conflict") return "Review conflict";
   return null;
 }
 
@@ -899,10 +791,12 @@ function formatCareAmount(value: number | null, unit: string): string {
   return `${text} ${unitText}`;
 }
 
+const NON_NEGATIVE_DECIMAL = /^(?:\d+(?:\.\d*)?|\.\d+)$/u;
+
 function parseNonNegativeNumber(value: string): number | null {
   const trimmed = value.trim();
-  if (!trimmed) return null;
-  const parsed = Number.parseFloat(trimmed);
+  if (!trimmed || !NON_NEGATIVE_DECIMAL.test(trimmed)) return null;
+  const parsed = Number(trimmed);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
@@ -991,8 +885,22 @@ function isPendingMealEntry(entry: Entry): boolean {
 export default function LogScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { fontScale: runtimeFontScale } = useWindowDimensions();
+  const { fontScale } = useWebQaFontScale(runtimeFontScale);
+  const reducedMotion = useReducedMotion();
   const router = useRouter();
-  const { state, addEntry, deleteEntry, updateEntry, updateCareDoc, refresh, syncOutbox, isSyncing } = useCare();
+  const {
+    state,
+    addEntry,
+    deleteEntry,
+    updateEntry,
+    resolveEntryConflict,
+    updateCareDoc,
+    refresh,
+    syncOutbox,
+    isSyncing,
+    resolvingEntryConflictIds,
+  } = useCare();
   const me = useGetMe();
   const routeParams = useLocalSearchParams<{
     type?: string | string[];
@@ -1000,6 +908,7 @@ export default function LogScreen() {
     intent?: string | string[];
     entry?: string | string[];
     walk?: string | string[];
+    alone?: string | string[];
   }>();
   const routeSelectedType = useMemo(() => {
     const rawType = Array.isArray(routeParams.type) ? routeParams.type[0] : routeParams.type;
@@ -1016,11 +925,14 @@ export default function LogScreen() {
       : null;
   const routeEntryParam = Array.isArray(routeParams.entry) ? routeParams.entry[0] : routeParams.entry;
   const routeWalkParam = Array.isArray(routeParams.walk) ? routeParams.walk[0] : routeParams.walk;
+  const routeAloneParam = Array.isArray(routeParams.alone) ? routeParams.alone[0] : routeParams.alone;
   const lastRouteSelectedType = useRef<string | null>(null);
   const lastRouteDetailIntentKey = useRef<string | null>(null);
   const lastRouteEntryParam = useRef<string | null>(null);
   const lastRouteWalkParam = useRef<string | null>(null);
+  const lastRouteAloneParam = useRef<string | null>(null);
   const walkCardYRef = useRef(0);
+  const aloneCardYRef = useRef(0);
 
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
@@ -1030,6 +942,7 @@ export default function LogScreen() {
   const bottomPadding = getTabbedRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+    fontScale,
   });
   const modalSheetBottomPadding = getModalSheetBottomPadding({
     platform: Platform.OS,
@@ -1050,11 +963,14 @@ export default function LogScreen() {
     const id = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(id);
   }, []);
-  // Under 360pt the console chrome truncates ("Tap saves. Hold o...",
-  // "SAVED On d..."), so narrow screens get shorter honest strings and
-  // drop the decorative under-5-sec pill.
-  const { width: viewportWidth } = useWindowDimensions();
-  const narrowViewport = viewportWidth > 0 && viewportWidth < 360;
+  const logLayout = useMemo(
+    () =>
+      getAccessibleLayoutMetrics({
+        platform: Platform.OS,
+        fontScale,
+      }),
+    [fontScale],
+  );
 
   const caregiver =
     me.data?.user?.displayName?.trim() || state.caregivers[0]?.name || "You";
@@ -1099,10 +1015,6 @@ export default function LogScreen() {
   const [noteText, setNoteText] = useState("");
   const [searchText, setSearchText] = useState("");
   const [filter, setFilter] = useState<string | null>(null);
-  const [launcherTab, setLauncherTab] = useState<LauncherTab>("favorites");
-  const [selectedLauncherKey, setSelectedLauncherKey] = useState<string | null>(() => launcherActionKey(LAUNCHER_ACTIONS[0]!));
-  const [launcherDetailAction, setLauncherDetailAction] = useState<LauncherAction | null>(null);
-  const pendingChoicePreset = useRef<Record<string, string> | null>(null);
 
   const config = TYPE_BY_ID[selectedType];
   const medicationAdherence = useMemo(
@@ -1121,18 +1033,11 @@ export default function LogScreen() {
     if (!routeSelectedType) return;
     if (routeSelectedType !== lastRouteSelectedType.current) {
       setSelectedType(routeSelectedType);
-      setSelectedLauncherKey(null);
       lastRouteSelectedType.current = routeSelectedType;
     }
     if (!routeWantsDetailSheet || !routeDetailIntentKey || routeDetailIntentKey === lastRouteDetailIntentKey.current) {
       return;
     }
-    const routeDetailAction = findLauncherActionForType(routeSelectedType);
-    if (!routeDetailAction) return;
-    pendingChoicePreset.current = routeDetailAction.preset ?? null;
-    setLauncherTab(routeDetailAction.tab === "health" ? "health" : routeDetailAction.tab === "all" ? "all" : "favorites");
-    setSelectedLauncherKey(launcherActionKey(routeDetailAction));
-    setSelectedType(routeDetailAction.type);
     // Detail intents land straight in the pre-focused composer - no
     // interstitial between "add details" and the real form. The composer
     // lives in the Log view, so make sure we're on it.
@@ -1148,8 +1053,7 @@ export default function LogScreen() {
       if (g.noDefault) return;
       init[g.key] = g.options[0].id;
     });
-    setChoices({ ...init, ...(pendingChoicePreset.current ?? {}) });
-    pendingChoicePreset.current = null;
+    setChoices(init);
     setStepIndex(config?.stepper ? Math.min(2, config.stepper.values.length - 1) : 0);
     setNumeric(selectedType === "weight" ? String(state.profile.weight.current ?? "") : "");
     setExpectedPortion(selectedType === "meal" ? state.dietProfile.normalPortion : "");
@@ -1202,24 +1106,39 @@ export default function LogScreen() {
   // Measured scroll target for the full composer card so "Add Details" and
   // the Quick Log fallback always land on the composer instead of a guess.
   const composerSectionY = useRef<number | null>(null);
-  const [lastQuickLog, setLastQuickLog] = useState<{ id: string; title: string } | null>(null);
-  // Screen readers can't see the feedback card and its Undo vanishes on a
-  // timer - every quick log announces, whichever of the five paths set it.
-  useEffect(() => {
-    if (lastQuickLog) announce(`${lastQuickLog.title} logged. Undo available.`);
-  }, [lastQuickLog]);
-
   // Entry editor
   const [detailEntryId, setDetailEntryId] = useState<string | null>(null);
   const [editEntry, setEditEntry] = useState<Entry | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editNote, setEditNote] = useState("");
+  const firstConflictedEntry = syncOutbox.items.find(
+    (item) => item.status === "conflict",
+  );
 
   useEffect(() => {
-    if (!routeEntryParam || routeEntryParam === lastRouteEntryParam.current) return;
-    if (!state.entries.some((entry) => entry.id === routeEntryParam)) return;
-    setDetailEntryId(routeEntryParam);
-    lastRouteEntryParam.current = routeEntryParam;
+    if (!routeEntryParam) {
+      lastRouteEntryParam.current = null;
+      return;
+    }
+    // CareContext replaces optimistic ids with server ids and preserves the
+    // original id as details.clientKey. Keep the routed editor bound to the
+    // current row across that asynchronous swap.
+    const routedEntry = resolveQuickLogEntry(state.entries, {
+      id: routeEntryParam,
+    });
+    if (!routedEntry) return;
+    if (lastRouteEntryParam.current !== routeEntryParam) {
+      lastRouteEntryParam.current = routeEntryParam;
+      setDetailEntryId(routedEntry.id);
+      return;
+    }
+    setDetailEntryId((current) => {
+      // A refresh may replace the optimistic id while the sheet is open, but
+      // it must not reopen a sheet the owner explicitly dismissed.
+      if (!current) return current;
+      const currentEntry = resolveQuickLogEntry(state.entries, { id: current });
+      return currentEntry?.id === routedEntry.id ? routedEntry.id : current;
+    });
   }, [routeEntryParam, state.entries]);
 
 
@@ -1252,9 +1171,41 @@ export default function LogScreen() {
   );
 
   const detailEntry = useMemo(
-    () => state.entries.find((entry) => entry.id === detailEntryId) ?? null,
+    () =>
+      detailEntryId
+        ? resolveQuickLogEntry(state.entries, { id: detailEntryId })
+        : null,
     [state.entries, detailEntryId],
   );
+  const detailConflictVersions = useMemo(() => {
+    if (!detailEntry?.conflictServerSnapshot) return null;
+    return {
+      local: describeCareEntryConflictVersion(detailEntry),
+      household: describeCareEntryConflictVersion(
+        detailEntry.conflictServerSnapshot,
+      ),
+    };
+  }, [detailEntry]);
+  const conflictResolutionPending = detailEntry
+    ? resolvingEntryConflictIds.includes(detailEntry.id)
+    : false;
+  const notifyConflictEditBlocked = useCallback((entry?: unknown) => {
+    const syncStatus =
+      entry && typeof entry === "object"
+        ? (entry as { syncStatus?: unknown }).syncStatus
+        : undefined;
+    if (syncStatus === "conflict") {
+      notifyDialog(
+        "Resolve conflict first",
+        "Resolve this conflict before editing this care log.",
+      );
+      return;
+    }
+    notifyDialog(
+      "Care log changed",
+      "Refresh the household care log, then try this edit again.",
+    );
+  }, []);
   const detailRows = useMemo(
     () => (detailEntry ? buildEntryDetailRows(detailEntry) : []),
     [detailEntry],
@@ -1309,30 +1260,34 @@ export default function LogScreen() {
 
   // Mount animation
   const isWebRoutePreview = (Platform.OS as string) === "web";
-  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
-  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
+  const fade = useRef(
+    new Animated.Value(isWebRoutePreview || reducedMotion ? 1 : 0),
+  ).current;
+  const slide = useRef(
+    new Animated.Value(isWebRoutePreview || reducedMotion ? 0 : 16),
+  ).current;
   useEffect(() => {
-    if (isWebRoutePreview) return;
+    if (isWebRoutePreview || reducedMotion) {
+      fade.setValue(1);
+      slide.setValue(0);
+      return;
+    }
     Animated.parallel([
       Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
       Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
     ]).start();
-  }, [fade, isWebRoutePreview, slide]);
+  }, [fade, isWebRoutePreview, reducedMotion, slide]);
 
-  // Two-phase mount: the console stage and quick-log launcher (the whole
-  // first screenful) render on the tab-press frame; the composer, search,
-  // and timeline - all below the fold - mount right after the transition
-  // settles. Rendering everything at once blocked the switch-to-Log frame
-  // for ~80-100ms.
+  // Two-phase mount keeps the detailed composer, search, and timeline from
+  // blocking the route transition.
   const [belowFoldReady, setBelowFoldReady] = useState(false);
-  // Two clear places instead of one long scroll: "Log" is the quick-log menu
-  // + composer wizard; "History" is the day snapshot + search + timeline,
-  // reachable in one tap at the top instead of below the whole logging stack.
-  const [view, setLogView] = useState<"log" | "history">("log");
+  // Log History is the stable landing surface. Quick Log owns fast capture;
+  // Add Log keeps the full detail composer for edits, audits, and context.
+  const [view, setLogView] = useState<"log" | "history">("history");
   const logViewSegments = useMemo(
     () => [
-      { key: "log" as const, label: "Log" },
       { key: "history" as const, label: "History" },
+      { key: "log" as const, label: "Add Log" },
     ],
     [],
   );
@@ -1619,12 +1574,16 @@ export default function LogScreen() {
       }),
     };
     const title = parts.length ? `${config.baseTitle} - ${parts.join(", ")}` : config.baseTitle;
+    const auditLogVisibility =
+      details.householdVisible === false
+        ? "private care log"
+        : "shared care log";
     details = appendCareAuditEvent(details, {
       id: auditId(),
       action: "created",
       caregiver,
       occurredAt,
-      summary: `${caregiver} created "${title}" in the shared care log.`,
+      summary: `${caregiver} created "${title}" in the ${auditLogVisibility}.`,
     });
 
     return {
@@ -1751,11 +1710,27 @@ export default function LogScreen() {
         summary: `${caregiver} added a sticky note to "${entry?.title ?? "this log"}".`,
         changes: ["stickyNotes"],
       });
-      updateEntry(promptId, { note: entry?.note ?? text, details });
+      if (
+        !updateEntry(promptId, {
+          note: entry?.note ?? text,
+          details,
+        })
+      ) {
+        notifyConflictEditBlocked(entry);
+        return;
+      }
     }
     setPromptId(null);
     setPromptNote("");
-  }, [promptId, promptNote, promptMode, state.entries, caregiver, updateEntry]);
+  }, [
+    promptId,
+    promptNote,
+    promptMode,
+    state.entries,
+    caregiver,
+    notifyConflictEditBlocked,
+    updateEntry,
+  ]);
 
   const handleDelete = useCallback(
     (id: string, title: string, onDeleted?: () => void) => {
@@ -1798,6 +1773,72 @@ export default function LogScreen() {
     [addEntry, caregiver, deleteEntry, state.caregivers.length, state.entries],
   );
 
+  const confirmKeepLocalConflict = useCallback(
+    (entry: Entry) => {
+      confirmThroughSteps(
+        [
+          {
+            title: "Replace household version?",
+            message:
+              "This will replace the latest shared household version with your saved version.",
+            confirmLabel: "Keep my saved version",
+            destructive: true,
+          },
+        ],
+        async () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          const result = await resolveEntryConflict(
+            entry.id,
+            "keep-local",
+          );
+          if (
+            result === "refresh-failed" ||
+            result === "unavailable"
+          ) {
+            notifyDialog(
+              "Conflict still needs review",
+              "WoofWatcher kept both versions for review.",
+            );
+          }
+        },
+      );
+    },
+    [resolveEntryConflict],
+  );
+
+  const confirmUseHouseholdConflict = useCallback(
+    (entry: Entry) => {
+      confirmThroughSteps(
+        [
+          {
+            title: "Discard your saved edit?",
+            message:
+              "WoofWatcher will refresh the household first. If refresh succeeds, this will discard your saved edit and use the newly loaded household version.",
+            confirmLabel: "Use household version",
+            destructive: true,
+          },
+        ],
+        async () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          const result = await resolveEntryConflict(
+            entry.id,
+            "use-household",
+          );
+          if (
+            result === "refresh-failed" ||
+            result === "unavailable"
+          ) {
+            notifyDialog(
+              "Couldn't refresh versions",
+              "WoofWatcher kept both versions for review.",
+            );
+          }
+        },
+      );
+    },
+    [resolveEntryConflict],
+  );
+
   const openEditEntry = useCallback((e: Entry) => {
     setEditEntry(e);
     setEditTitle(e.title);
@@ -1832,14 +1873,26 @@ export default function LogScreen() {
         summary: `${caregiver} updated ${changes.join(" and ")} on "${editEntry.title}".`,
         changes,
       });
-      updateEntry(editEntry.id, {
-        ...(title !== editEntry.title ? { title } : {}),
-        ...((note ?? "") !== (editEntry.note ?? "") ? { note } : {}),
-        details,
-      });
+      if (
+        !updateEntry(editEntry.id, {
+          ...(title !== editEntry.title ? { title } : {}),
+          ...((note ?? "") !== (editEntry.note ?? "") ? { note } : {}),
+          details,
+        })
+      ) {
+        notifyConflictEditBlocked(editEntry);
+        return;
+      }
     }
     setEditEntry(null);
-  }, [caregiver, editEntry, editTitle, editNote, updateEntry]);
+  }, [
+    caregiver,
+    editEntry,
+    editTitle,
+    editNote,
+    notifyConflictEditBlocked,
+    updateEntry,
+  ]);
 
   const openEntryDetail = useCallback((e: Entry) => {
     setDetailEntryId(e.id);
@@ -1855,9 +1908,11 @@ export default function LogScreen() {
       });
 
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateEntry(entry.id, patch);
+      if (!updateEntry(entry.id, patch)) {
+        notifyConflictEditBlocked(entry);
+      }
     },
-    [caregiver, updateEntry],
+    [caregiver, notifyConflictEditBlocked, updateEntry],
   );
 
   const updatePottyDetailFromDetail = useCallback(
@@ -1877,9 +1932,11 @@ export default function LogScreen() {
       });
 
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateEntry(entry.id, patch);
+      if (!updateEntry(entry.id, patch)) {
+        notifyConflictEditBlocked(entry);
+      }
     },
-    [caregiver, pottyDetailDraft, updateEntry],
+    [caregiver, notifyConflictEditBlocked, pottyDetailDraft, updateEntry],
   );
   const openAloneSession = useMemo(
     () => findOpenAloneTimeSession(state.entries),
@@ -1924,12 +1981,37 @@ export default function LogScreen() {
     return () => clearTimeout(timer);
   }, [routeWalkParam, openWalkSession]);
 
+  // The secondary Alone Time action reopens the real return lifecycle, not a
+  // generic duration composer or a read-only record sheet.
+  useEffect(() => {
+    if (routeAloneParam !== "active") {
+      lastRouteAloneParam.current = null;
+      return;
+    }
+    if (!openAloneSession) {
+      lastRouteAloneParam.current = null;
+      return;
+    }
+    if (routeAloneParam === lastRouteAloneParam.current) return;
+    lastRouteAloneParam.current = routeAloneParam;
+    setDetailEntryId(null);
+    setLogView("log");
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, aloneCardYRef.current - 84),
+        animated: true,
+      });
+      announce("Alone Time return check-in is ready.");
+    }, 380);
+    return () => clearTimeout(timer);
+  }, [routeAloneParam, openAloneSession]);
+
   // Honest route-recorder state: only ever says "recording" while location
   // fixes are actually landing; otherwise it explains what would enable it.
   const walkRouteCapture = useWalkRouteCaptureStatus();
   const walkRouteStatusText =
     walkRouteCapture.status === "recording"
-      ? "Recording the route for this walk's map · stays in your care log"
+      ? "Recording this walk's route · saved with the log and may sync with your household"
       : walkRouteCapture.status === "starting"
         ? "Getting location for the route map…"
         : "Route recording available when location is permitted";
@@ -1956,13 +2038,26 @@ export default function LogScreen() {
       }
 
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateEntry(detailEntry.id, patch);
+      if (!updateEntry(detailEntry.id, patch)) {
+        notifyConflictEditBlocked(detailEntry);
+      }
     },
-    [caregiver, currentCaregiverRole, detailEntry, now, updateEntry],
+    [
+      caregiver,
+      currentCaregiverRole,
+      detailEntry,
+      notifyConflictEditBlocked,
+      now,
+      updateEntry,
+    ],
   );
 
   const handleAttachProof = useCallback(async () => {
     if (!detailEntry) return;
+    if (detailEntry.syncStatus === "conflict") {
+      notifyConflictEditBlocked(detailEntry);
+      return;
+    }
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
@@ -1990,11 +2085,19 @@ export default function LogScreen() {
       }
 
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateEntry(detailEntry.id, patch);
+      if (!updateEntry(detailEntry.id, patch)) {
+        notifyConflictEditBlocked(detailEntry);
+      }
     } catch {
       notifyDialog("Photo unavailable", "Attach proof later. Medication logs stay pending until an owner confirms them.");
     }
-  }, [caregiver, detailEntry, now, updateEntry]);
+  }, [
+    caregiver,
+    detailEntry,
+    notifyConflictEditBlocked,
+    now,
+    updateEntry,
+  ]);
 
   const logSearch = useMemo(
     () => deriveCareLogSearch({ entries: state.entries, query: searchText, type: filter }),
@@ -2039,51 +2142,6 @@ export default function LogScreen() {
       .map(([type, count]) => ({ type, count, icon: TYPE_ICON[type] ?? ("paw" as PulseIconName) }));
     return { total: todayEntries.length, top };
   }, [state.entries]);
-  const todaySignalCards = useMemo(
-    () => [
-      // Care IQ and Today already live in the console HUD above (single source
-      // of truth). This support rail carries only the signals the HUD does not
-      // show - portion progress and where the data is saved - so nothing is
-      // repeated down the page.
-      {
-        label: "Food",
-        value: dietProgress.targetAmount == null ? "Set" : `${dietProgress.percent}%`,
-        detail: dietProgress.targetAmount == null ? "portion" : "of daily target",
-        icon: "restaurant-outline" as const,
-        tone: colors.sage,
-      },
-      SYNC_PROVIDER_CONFIGURED
-        ? {
-            label: "Sync",
-            value: syncOutbox.total > 0 ? `${syncOutbox.total}` : "Ready",
-            detail: syncOutbox.total > 0 ? "queued safely" : "protected",
-            icon: syncOutbox.total > 0 ? ("cloud-offline-outline" as const) : ("cloud-done-outline" as const),
-            tone: syncOutbox.status === "needs-retry" ? colors.amber : colors.primary,
-          }
-        : {
-            label: "Saved",
-            value: "On device",
-            detail: "nothing waiting",
-            icon: "shield-checkmark-outline" as const,
-            tone: colors.sage,
-          },
-    ],
-    [
-      colors.amber,
-      colors.copper,
-      colors.primary,
-      colors.sage,
-      careIntelligence.score,
-      careIntelligence.status,
-      careIntelligence.visibleLogCount,
-      dietProgress.percent,
-      dietProgress.targetAmount,
-      syncOutbox.status,
-      syncOutbox.total,
-      todaySnapshot.total,
-    ],
-  );
-
   const numericUnit = config?.numeric?.unit === "diet" ? dietProgress.unit : state.profile.weight.unit;
   const selectedMealCompletion = choices.mealCompletion ?? "served";
   const selectedIcon = config?.icon ?? ("paw" as PulseIconName);
@@ -2099,6 +2157,19 @@ export default function LogScreen() {
     config?.groups?.find(
       (g) => g.required && !g.options.some((o) => o.id === choices[g.key]),
     ) ?? null;
+  const parsedEatenAmount = parseNonNegativeNumber(eatenAmount);
+  const mealEatenAmountError =
+    selectedType === "meal" && eatenAmount.trim() && parsedEatenAmount == null
+      ? "Enter the eaten amount as a number, such as 0.5."
+      : selectedType === "meal" &&
+          mealOutcomeNeedsEatenAmount(selectedMealCompletion) &&
+          parsedEatenAmount == null
+        ? `Enter how much ${petDisplayName} ate before saving this partial meal.`
+        : null;
+  const composerValidationMessage = missingRequiredGroup
+    ? `Pick "${missingRequiredGroup.label}" above before saving.`
+    : mealEatenAmountError;
+  const composerSaveDisabled = composerValidationMessage != null;
   const selectedTrustLabel =
     selectedType === "symptom"
       ? "Vet-share ready"
@@ -2147,170 +2218,12 @@ export default function LogScreen() {
           dietProgress.unit,
         )} remaining`;
 
-  const launcherActions = useMemo(() => {
-    if (launcherTab === "favorites") return LAUNCHER_ACTIONS.slice(0, 12);
-    if (launcherTab === "health") {
-      return LAUNCHER_ACTIONS.filter((action) => action.tab === "health");
-    }
-    return LAUNCHER_ACTIONS;
-  }, [launcherTab]);
-  const launcherDetailPresentation = useMemo(
-    () =>
-      launcherDetailAction
-        ? describeQuickLogDetailSheet(launcherDetailAction.type, launcherDetailAction.label)
-        : null,
-    [launcherDetailAction],
-  );
-  const selectedLauncherAction = useMemo(
-    () =>
-      launcherActions.find(
-        (action) => selectedLauncherKey === launcherActionKey(action),
-      ) ?? null,
-    [launcherActions, selectedLauncherKey],
-  );
-  const selectedLauncherPresentation = useMemo(
-    () =>
-      selectedLauncherAction
-        ? describeQuickLogLauncherAction(selectedLauncherAction.type, selectedLauncherAction.label)
-        : null,
-    [selectedLauncherAction],
-  );
-  const selectedLauncherRequiresDetail = selectedLauncherPresentation?.detailRequired ?? false;
-  const logCommandOpenLoops =
-    state.entries.filter(isPendingMealEntry).length +
-    (openAloneSession ? 1 : 0) +
-    (openWalkSession ? 1 : 0);
-  // Time-aware console stage: same clock rule as Home's immersive room (dark
-  // theme or lamplit hours). There is no night banner art, so a navy tint
-  // over the day painting keeps the hero honest at 23:00 and in dark mode.
-  const logCommandStageIsNight =
-    colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours());
-  const logCommandSpeech = selectedLauncherAction
-    ? selectedLauncherRequiresDetail
-      ? `${selectedLauncherAction.label} opens the details form before it saves.`
-      : `Tap ${selectedLauncherAction.label}. Hold for proof, notes, and corrections.`
-    : "Tap fast. Hold for proof, notes, or later updates.";
-  const logCommandHud = [
-    {
-      label: "Today",
-      value: String(todaySnapshot.total),
-      tone: colors.copper,
-    },
-    {
-      label: "Care IQ",
-      // Zero-log day: "--" like Home instead of "0%" - the console HUD and
-      // the Home quest meta must tell the same first-log story.
-      value: careIntelligence.visibleLogCount === 0 ? "--" : `${careIntelligence.score}%`,
-      tone:
-        careIntelligence.status === "needs-attention"
-          ? colors.amber
-          : careIntelligence.status === "excellent"
-            ? colors.sage
-            : colors.primary,
-    },
-    {
-      label: "Open",
-      value: String(logCommandOpenLoops),
-      tone: logCommandOpenLoops > 0 ? colors.amber : colors.sage,
-    },
-    {
-      label: "Saved",
-      value: SYNC_PROVIDER_CONFIGURED
-        ? syncOutbox.total > 0
-          ? `${syncOutbox.total}`
-          : "Ready"
-        : narrowViewport
-          ? "Local"
-          : "On device",
-      tone: !SYNC_PROVIDER_CONFIGURED
-        ? colors.sage
-        : syncOutbox.status === "needs-retry"
-          ? colors.amber
-          : colors.primary,
-    },
-  ];
-
-  const selectLauncherAction = (action: LauncherAction) => {
-    Haptics.selectionAsync();
-    pendingChoicePreset.current = action.preset ?? null;
-    setSelectedLauncherKey(launcherActionKey(action));
-    setSelectedType(action.type);
-    if (selectedType === action.type && action.preset) {
-      setChoices((prev) => ({ ...prev, ...action.preset }));
-    }
-  };
-
   const scrollToComposer = useCallback(() => {
     scrollRef.current?.scrollTo({
       y: Math.max((composerSectionY.current ?? 620) - 12, 0),
       animated: true,
     });
   }, []);
-
-  const focusFullComposerForLauncherAction = (action: LauncherAction) => {
-    selectLauncherAction(action);
-    setTimeout(() => {
-      scrollToComposer();
-    }, 80);
-  };
-
-  // The policy explainer is an on-demand guide behind the "?" affordance now;
-  // tap and hold both land straight on real log surfaces.
-  const openLauncherDetailSheet = (action: LauncherAction) => {
-    Haptics.selectionAsync();
-    setLauncherDetailAction(action);
-  };
-
-  const openQuickLogGuide = () => {
-    const action =
-      selectedLauncherAction ??
-      findLauncherActionForType(TYPE_BY_ID[selectedType] ? (selectedType as CareEventType) : null) ??
-      LAUNCHER_ACTIONS[0]!;
-    openLauncherDetailSheet(action);
-  };
-
-  // Double-tap safety shared by every quick save on this screen: the ref
-  // catches a second press in the same tick (React state cannot update in
-  // between), the shared window check dedupes slower bounces against the
-  // saved timeline. A deliberate second log after 1.5s still saves.
-  const recentQuickSave = useRef<{ type: string; at: number } | null>(null);
-  const isDuplicateQuickTap = useCallback((type: string): boolean => {
-    const prev = recentQuickSave.current;
-    return Boolean(
-      prev &&
-        prev.type === type &&
-        Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
-    );
-  }, []);
-  const markQuickSave = useCallback((type: string) => {
-    recentQuickSave.current = { type, at: Date.now() };
-  }, []);
-
-  const handleLeavingHome = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (openAloneSession) {
-      setSelectedType("alone");
-      setSelectedLauncherKey("alone:Alone Time");
-      scrollRef.current?.scrollTo({ y: 360, animated: true });
-      return;
-    }
-    // A rapid second tap lands before the open session exists in state.
-    if (isDuplicateQuickTap("alone")) return;
-    markQuickSave("alone");
-    const entry = buildAloneTimeStartEntry({ caregiver, now });
-    const id = addEntry(entry);
-    setLastQuickLog({ id, title: `${petDisplayName} is home alone` });
-    setSelectedType("alone");
-    setSelectedLauncherKey("alone:Alone Time");
-  }, [
-    addEntry,
-    caregiver,
-    isDuplicateQuickTap,
-    markQuickSave,
-    now,
-    openAloneSession,
-    petDisplayName,
-  ]);
 
   const handleReturnHome = useCallback(
     (outcome: AloneTimeReturnOutcome) => {
@@ -2328,31 +2241,23 @@ export default function LogScreen() {
         ...(recovery != null ? { recoveryMinutes: recovery } : {}),
         ...(returnNote.trim() ? { note: returnNote.trim() } : {}),
       });
-      updateEntry(openAloneSession.id, patch);
-      setLastQuickLog({ id: openAloneSession.id, title: patch.title });
+      if (!updateEntry(openAloneSession.id, patch)) {
+        notifyConflictEditBlocked(openAloneSession);
+        return;
+      }
       setReturnRecoveryMinutes("");
       setReturnNote("");
     },
-    [caregiver, now, openAloneSession, returnNote, returnRecoveryMinutes, updateEntry],
+    [
+      caregiver,
+      notifyConflictEditBlocked,
+      now,
+      openAloneSession,
+      returnNote,
+      returnRecoveryMinutes,
+      updateEntry,
+    ],
   );
-
-  const handleStartWalk = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (openWalkSession) {
-      setSelectedType("walk");
-      setSelectedLauncherKey("walk:Walk");
-      scrollRef.current?.scrollTo({ y: 360, animated: true });
-      return;
-    }
-    // A rapid second tap lands before the open session exists in state.
-    if (isDuplicateQuickTap("walk")) return;
-    markQuickSave("walk");
-    const entry = buildWalkSessionStartEntry({ caregiver, now });
-    const id = addEntry(entry as Omit<Entry, "id">);
-    setLastQuickLog({ id, title: "Walk started" });
-    setSelectedType("walk");
-    setSelectedLauncherKey("walk:Walk");
-  }, [addEntry, caregiver, isDuplicateQuickTap, markQuickSave, now, openWalkSession]);
 
   const handleFinishWalk = useCallback(() => {
     if (!openWalkSession?.id) return;
@@ -2380,8 +2285,15 @@ export default function LogScreen() {
       ...(walkFinishNote.trim() ? { note: walkFinishNote.trim() } : {}),
     });
 
-    updateEntry(openWalkSession.id, patch as Partial<Omit<Entry, "id">>);
-    setLastQuickLog({ id: openWalkSession.id, title: patch.title ?? "Walk completed" });
+    if (
+      !updateEntry(
+        openWalkSession.id,
+        patch as Partial<Omit<Entry, "id">>,
+      )
+    ) {
+      notifyConflictEditBlocked(openWalkSession);
+      return;
+    }
     setWalkFinishRouteName("");
     setWalkFinishDistanceMiles("");
     setWalkFinishDogInteractions("");
@@ -2389,6 +2301,7 @@ export default function LogScreen() {
     setWalkFinishNote("");
   }, [
     caregiver,
+    notifyConflictEditBlocked,
     now,
     openWalkSession,
     updateEntry,
@@ -2398,68 +2311,6 @@ export default function LogScreen() {
     walkFinishRouteName,
     walkFinishSocialOutcome,
   ]);
-
-  const handleQuickLauncherAction = (action: LauncherAction) => {
-    if (action.type === "alone") {
-      handleLeavingHome();
-      return;
-    }
-    if (action.type === "walk") {
-      handleStartWalk();
-      return;
-    }
-    const policy = getQuickLogPolicy(action.type);
-    if (policy.tapBehavior === "detail-required") {
-      // Details-first actions go straight to the pre-focused composer.
-      focusFullComposerForLauncherAction(action);
-      return;
-    }
-
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Dedupe: the first tap already saved this intent and its feedback card
-    // is still up; a bounce inside the shared window must not double-log.
-    // Wall-clock time here - the screen's 30s `now` tick would otherwise
-    // block a deliberate second log inside the same tick.
-    if (
-      isDuplicateQuickTap(policy.type) ||
-      findRecentQuickLogDuplicate(state.entries, action.type, Date.now())
-    ) {
-      return;
-    }
-    markQuickSave(policy.type);
-    const role = state.caregivers.find((person) => person.name === caregiver)?.role;
-    const entry = buildQuickLogEntry(
-      {
-        type: action.type,
-        title: action.label,
-        mood: action.preset?.mood,
-        severity: action.preset?.severity,
-      },
-      state,
-      { caregiver, caregiverRole: role, now },
-    );
-    const id = addEntry(entry);
-    setLastQuickLog({ id, title: entry.title });
-    setSelectedLauncherKey(launcherActionKey(action));
-    setSelectedType(action.type);
-  };
-
-  const undoLastQuickLog = () => {
-    if (!lastQuickLog) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void deleteEntry(lastQuickLog.id);
-    setLastQuickLog(null);
-  };
-
-  const selectMoodLauncher = (mood: (typeof MOOD_LAUNCHER)[number]) => {
-    Haptics.selectionAsync();
-    pendingChoicePreset.current = { mood: mood.mood, moodTone: mood.key };
-    setSelectedLauncherKey(null);
-    setSelectedType("mood");
-    if (selectedType === "mood") {
-      setChoices((prev) => ({ ...prev, mood: mood.mood, moodTone: mood.key }));
-    }
-  };
 
   const H_PAD = 16;
 
@@ -2474,9 +2325,9 @@ export default function LogScreen() {
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           <BoardRouteHeader
-            title="Log"
+            title="Log History"
             back
-            onBack={() => router.push("/")}
+            onBack={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)" as never))}
             actionIcon="notifications-outline"
             actionLabel="Open Health Watch"
             onAction={() => {
@@ -2494,339 +2345,49 @@ export default function LogScreen() {
 
           {view === "log" ? (
             <>
-          <BoardCard padded={false} style={s.logCommandStageCard}>
-            <ImageBackground
-              source={LOG_COMMAND_STAGE_ROOM}
-              resizeMode="cover"
-              // Android fades images in over 300ms by default, which reads
-              // as the hero art popping in after the tab switch.
-              fadeDuration={0}
-              imageStyle={[stageImageFill, s.logCommandStageImage, pixelImageStyle]}
-              style={s.logCommandStage}
-              testID="quick-log-command-pixel-stage"
-            >
-              <View
-                style={[
-                  s.logCommandStageShade,
-                  logCommandStageIsNight ? { backgroundColor: "rgba(9,17,32,0.35)" } : null,
-                ]}
-              />
-              <View style={s.logCommandStageTop}>
-                <View style={s.logCommandBubble}>
-                  {/* The bubble is a fixed ivory painted-stage overlay, so its
-                      ink is fixed too - theme foreground goes near-white in
-                      dark mode and vanished against the bubble. Matches
-                      LivingPhoenixRoom's OVERLAY_INK treatment. */}
-                  <Text style={[s.logCommandKicker, { color: "#4F7B57", fontFamily: "Inter_700Bold" }]}>
-                    Quick Care Console
-                  </Text>
-                  <Text
-                    numberOfLines={2}
-                    style={[s.logCommandSpeech, { color: "#26221C", fontFamily: DISPLAY_SEMI }]}
-                  >
-                    {logCommandSpeech}
-                  </Text>
-                  <View style={s.logCommandBubbleTail} />
-                </View>
-                {/* Ivory stays cream in BOTH themes, so the chip ink is fixed
-                    to the light-board forest/amber - the dark-palette tokens
-                    lighten and washed out against the cream chip. */}
-                <View style={[s.logCommandChip, { backgroundColor: colors.ivory + "F2", borderColor: "#08142433" }]}>
-                  <PixelIcon name={selectedLauncherAction?.icon ?? "heart"} size={17} />
-                  <Text
-                    style={[
-                      s.logCommandChipText,
-                      {
-                        color: selectedLauncherRequiresDetail ? "#8A5A0C" : "#33582F",
-                        fontFamily: "Inter_700Bold",
-                      },
-                    ]}
-                  >
-                    {selectedLauncherRequiresDetail ? "Details" : "Ready"}
-                  </Text>
-                </View>
-              </View>
-
-              <View pointerEvents="none" style={s.logCommandSprite}>
-                <View style={s.logCommandSpriteShadow} />
-                <SpriteSheetPlayer
-                  asset={LOG_COMMAND_STAGE_SPRITE}
-                  track={LOG_COMMAND_STAGE_TRACK}
-                  width={68}
-                  height={68}
-                  testID="quick-log-command-pixel-sprite"
-                />
-              </View>
-
-            </ImageBackground>
-            <View style={[s.logCommandDock, { backgroundColor: colors.ivory + "F3", borderColor: colors.border }]}>
-              <View style={s.logCommandHud}>
-                {logCommandHud.map((metric) => (
-                  <View
-                    key={metric.label}
-                    style={[s.logCommandHudCell, { backgroundColor: colors.cream, borderColor: colors.border }]}
-                  >
-                    {/* Cream cells stay cream in dark mode; the dark-palette
-                        sage lightens and drops below AA there, so the label
-                        ink is fixed to the light-board sage. */}
-                    <Text style={[s.logCommandHudLabel, { color: "#4D8A56", fontFamily: "Inter_700Bold" }]}>
-                      {metric.label}
-                    </Text>
-                    <Text
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      style={[s.logCommandHudValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
-                    >
-                      {metric.value}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-            <View style={s.logCommandActionRow}>
-              <BoardActionButton
-                label={selectedLauncherRequiresDetail ? "Add details" : "Quick Log"}
-                icon={selectedLauncherRequiresDetail ? "reader-outline" : "flash-outline"}
-                variant="primary"
-                accessibilityLabel={
-                  selectedLauncherAction
-                    ? `${selectedLauncherRequiresDetail ? "Open details for" : "Quick log"} ${selectedLauncherAction.label}`
-                    : "Open full Quick Log composer"
-                }
-                onPress={() => {
-                  if (selectedLauncherAction) {
-                    handleQuickLauncherAction(selectedLauncherAction);
-                    return;
+          <BoardCard style={s.detailedLogCard}>
+            <View style={s.detailedLogIntro}>
+              <View style={s.detailedLogDock}>
+                <BoardSectionHeader
+                  title="Add a detailed log"
+                  accessory={
+                    <BoardPill
+                      label="History first"
+                      icon="time-outline"
+                      tone={colors.sage}
+                    />
                   }
-                  Haptics.selectionAsync();
-                  scrollToComposer();
-                }}
-              />
-            </View>
-          </BoardCard>
-
-          <BoardCard style={s.launcherCard}>
-            <View style={s.quickLogActionConsole}>
-              <View style={s.quickLogActionConsoleHeader}>
-                <View style={s.quickLogActionTitleBlock}>
-                  <Text style={[s.quickLogActionKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                    QUICK LOG FLOW
-                  </Text>
-                  <Text numberOfLines={1} style={[s.quickLogActionSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {narrowViewport ? "Tap saves. Hold: details." : "Tap saves. Hold opens details."}
-                  </Text>
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`How ${selectedLauncherAction?.label ?? selectedLabel} quick logging works`}
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  onPress={openQuickLogGuide}
-                  style={({ pressed }) => [
-                    s.quickLogGuideButton,
+                />
+                <Text
+                  style={[
+                    s.composerHint,
                     {
-                      backgroundColor: pressed ? colors.secondary : colors.background,
-                      borderColor: colors.border,
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
                     },
                   ]}
                 >
-                  <Ionicons name="help-circle-outline" size={17} color={colors.sage} />
-                </Pressable>
-              </View>
-
-            <View style={s.launcherTabs}>
-              {LAUNCHER_TABS.map((tab) => {
-                const active = launcherTab === tab.key;
-                return (
-                  <Pressable
-                    key={tab.key}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Show ${tab.label} quick log actions`}
-                    aria-selected={active}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setLauncherTab(tab.key);
-                    }}
-                    style={[
-                      s.launcherTab,
-                      {
-                        backgroundColor: active ? colors.primary : colors.card,
-                        borderColor: active ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        s.launcherTabText,
-                        {
-                          color: active ? colors.primaryForeground : colors.foreground,
-                          fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold",
-                        },
-                      ]}
-                    >
-                      {tab.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <View style={s.launcherGrid}>
-              {launcherActions.map((action) => {
-                const active = selectedLauncherKey === launcherActionKey(action);
-                const launcherPresentation = describeQuickLogLauncherAction(action.type, action.label);
-                return (
-                  <PressScale
-                    key={`${action.label}-${action.type}`}
-                    accessibilityRole="button"
-                    accessibilityLabel={launcherPresentation.accessibilityLabel}
-                    accessibilityHint={launcherPresentation.feedbackHint}
-                    aria-selected={active}
-                    onPress={() => handleQuickLauncherAction(action)}
-                    onLongPress={() => focusFullComposerForLauncherAction(action)}
-                    scaleTo={0.94}
-                    haptic="none"
-                    containerStyle={s.launcherTileLayout}
-                    style={[
-                      s.launcherTile,
-                      {
-                        backgroundColor: active ? colors.ivory : colors.background,
-                        borderColor: launcherPresentation.detailRequired
-                          ? colors.amber + "66"
-                          : active
-                            ? colors.primary
-                            : colors.border,
-                        shadowColor: launcherPresentation.detailRequired ? colors.amber : active ? colors.primary : colors.navy,
-                        shadowOpacity: active ? 0.13 : 0,
-                        shadowRadius: active ? 10 : 0,
-                        shadowOffset: { width: 0, height: active ? 5 : 0 },
-                        elevation: active ? 2 : 0,
-                      },
-                    ]}
-                  >
-                    <View
-                      style={[
-                        s.launcherIconHalo,
-                        {
-                          backgroundColor: active ? colors.sageSoft : colors.card,
-                          borderColor: active ? colors.primary + "55" : colors.border,
-                        },
-                      ]}
-                    >
-                      <PixelIcon name={action.icon} size={30} />
-                    </View>
-                    {active ? (
-                      <View style={[s.launcherSelectedMark, { backgroundColor: colors.primary }]}>
-                        <Ionicons name="checkmark" size={12} color={colors.primaryForeground} />
-                      </View>
-                    ) : null}
-                    <Text
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      style={[s.launcherTileText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
-                    >
-                      {action.label}
-                    </Text>
-                    {/* Only detail-required tiles carry a pill: a quiet
-                        differentiator instead of twelve identical labels. */}
-                    {launcherPresentation.detailRequired ? (
-                      <View style={[s.launcherTileMode, { backgroundColor: colors.amberSoft }]}>
-                        <Text
-                          numberOfLines={1}
-                          adjustsFontSizeToFit
-                          style={[
-                            s.launcherTileModeText,
-                            {
-                              color: colors.amber,
-                              fontFamily: "Inter_700Bold",
-                            },
-                          ]}
-                        >
-                          {launcherPresentation.modeLabel}
-                        </Text>
-                      </View>
-                    ) : null}
-                  </PressScale>
-                );
-              })}
-              {/* Invisible fillers square off the last space-between row so a
-                  partial tab (like Health's 5 tiles) never leaves a mid-row hole. */}
-              {Array.from(
-                { length: (3 - (launcherActions.length % 3)) % 3 },
-                (_, fillerIndex) => (
-                  <View
-                    key={`launcher-filler-${fillerIndex}`}
-                    pointerEvents="none"
-                    style={s.launcherTileGhost}
+                  Fast capture now lives in one Quick Log. Use the detailed
+                  composer for health context, notes, corrections, and care
+                  records that need review.
+                </Text>
+                <View style={s.detailedLogActionRow}>
+                  <BoardActionButton
+                    label="Open Quick Log"
+                    icon="flash-outline"
+                    variant="primary"
+                    accessibilityLabel="Open the shared Quick Log"
+                    onPress={() => router.push("/fastlog" as never)}
                   />
-                ),
-              )}
-            </View>
-
-            <View style={s.launcherDoctrineRail}>
-              {QUICK_LOG_DOCTRINE.map((item) => {
-                const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.blueSignal;
-                return (
-                  <View
-                    key={item.label}
-                    style={[
-                      s.launcherDoctrineCard,
-                      {
-                        backgroundColor: toneColor + "0F",
-                        borderColor: toneColor + "33",
-                      },
-                    ]}
-                  >
-                    <Ionicons name={item.icon} size={14} color={toneColor} />
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text numberOfLines={1} style={[s.launcherDoctrineLabel, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
-                        {item.label}
-                      </Text>
-                      <Text numberOfLines={1} style={[s.launcherDoctrineDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                        {item.detail}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-
-            {lastQuickLog ? (
-              <View style={[s.quickFeedback, { backgroundColor: colors.sage + "12", borderColor: colors.sage + "44" }]}>
-                <View style={s.quickFeedbackCopy}>
-                  <Text style={[s.quickFeedbackTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                    {lastQuickLog.title} logged
-                  </Text>
-                  <Text style={[s.quickFeedbackSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {describeQuickLogLauncherAction(state.entries.find((item) => item.id === lastQuickLog.id)?.type, lastQuickLog.title).feedbackHint}
-                  </Text>
-                </View>
-                <View style={s.quickFeedbackActions}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Undo ${lastQuickLog.title} quick log`}
-                    onPress={undoLastQuickLog}
-                    style={[s.quickFeedbackButton, { backgroundColor: colors.background, borderColor: colors.border }]}
-                  >
-                    <Text style={[s.quickFeedbackButtonText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                      Undo
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Add details to ${lastQuickLog.title}`}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setDetailEntryId(lastQuickLog.id);
-                    }}
-                    style={[s.quickFeedbackButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                  >
-                    <Text style={[s.quickFeedbackButtonText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
-                      Add details
-                    </Text>
-                  </Pressable>
+                  <BoardActionButton
+                    label="Continue with details"
+                    icon="reader-outline"
+                    variant="soft"
+                    accessibilityLabel="Continue to the detailed care log composer"
+                    onPress={scrollToComposer}
+                  />
                 </View>
               </View>
-            ) : null}
 
             {openWalkSession ? (
               <View
@@ -2919,7 +2480,12 @@ export default function LogScreen() {
             ) : null}
 
             {openAloneSession ? (
-              <View style={[s.aloneActivePanel, { backgroundColor: colors.card, borderColor: colors.amber + "55" }]}>
+              <View
+                onLayout={(event) => {
+                  aloneCardYRef.current = event.nativeEvent.layout.y;
+                }}
+                style={[s.aloneActivePanel, { backgroundColor: colors.card, borderColor: colors.amber + "55" }]}
+              >
                 <View style={s.aloneActiveTop}>
                   <View style={[s.aloneActiveIcon, { backgroundColor: colors.amberSoft, borderColor: colors.amber + "44" }]}>
                     <PixelIcon name="clock" size={34} />
@@ -2979,73 +2545,8 @@ export default function LogScreen() {
                 </View>
               </View>
             ) : null}
-
-            <View style={[s.moodPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <Text style={[s.moodQuestion, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                How is {petDisplayName} feeling?
-              </Text>
-              <View style={s.moodRow}>
-                {MOOD_LAUNCHER.map((mood) => {
-                  const active = selectedType === "mood" && choices.moodTone === mood.key;
-                  return (
-                    <Pressable
-                      key={mood.label}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${petDisplayName} feels ${mood.label}`}
-                      aria-selected={active}
-                      onPress={() => selectMoodLauncher(mood)}
-                      style={({ pressed }) => [
-                        s.moodOption,
-                        {
-                          backgroundColor: active ? colors.sageSoft : "transparent",
-                          borderColor: active ? colors.primary + "66" : "transparent",
-                          opacity: pressed ? 0.72 : 1,
-                        },
-                      ]}
-                    >
-                      <PixelIcon name={mood.icon} size={30} />
-                      <Text style={[s.moodOptionText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                        {mood.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-
-            <BoardActionButton
-              label="Add details (optional)"
-              accessibilityLabel={`Add details to the selected ${selectedLabel} log in the full composer`}
-              variant="soft"
-              onPress={() => {
-                Haptics.selectionAsync();
-                scrollToComposer();
-              }}
-            />
             </View>
           </BoardCard>
-
-          <View style={s.quickLogSupportRail}>
-            {todaySignalCards.map((card) => (
-              <View
-                key={card.label}
-                style={[s.signalCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              >
-                <View style={[s.signalIcon, { backgroundColor: card.tone + "18" }]}>
-                  <Ionicons name={card.icon} size={16} color={card.tone} />
-                </View>
-                <Text style={[s.signalLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                  {card.label}
-                </Text>
-                <Text style={[s.signalValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {card.value}
-                </Text>
-                <Text style={[s.signalDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {card.detail}
-                </Text>
-              </View>
-            ))}
-          </View>
 
           {!SYNC_PROVIDER_CONFIGURED && state.entries.length > 0 ? (
             // Local-first build: device storage is the success state, so the
@@ -3123,7 +2624,11 @@ export default function LogScreen() {
                     SYNC STATUS
                   </Text>
                   <Text style={[s.outboxTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    {syncOutbox.status === "needs-retry" ? "Saved on this device" : "Syncing safely"}
+                    {syncOutbox.conflicted > 0
+                      ? "Review conflict"
+                      : syncOutbox.status === "needs-retry"
+                        ? "Saved on this device"
+                        : "Syncing safely"}
                   </Text>
                   <Text style={[s.outboxMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                     {syncOutbox.message} {petDisplayName}'s local record is safe on this device.
@@ -3131,18 +2636,36 @@ export default function LogScreen() {
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Retry sync outbox"
+                  accessibilityLabel={
+                    firstConflictedEntry
+                      ? "Review care conflict"
+                      : "Retry sync outbox"
+                  }
                   onPress={() => {
                     Haptics.selectionAsync();
+                    if (firstConflictedEntry) {
+                      setDetailEntryId(firstConflictedEntry.id);
+                      return;
+                    }
                     refresh();
                   }}
-                  disabled={isSyncing || syncOutbox.retryable === 0}
+                  disabled={
+                    isSyncing ||
+                    (!firstConflictedEntry && syncOutbox.retryable === 0)
+                  }
                   style={({ pressed }) => [
                     s.outboxButton,
                     {
                       backgroundColor:
-                        syncOutbox.retryable > 0 ? colors.primary : colors.background,
-                      opacity: pressed || isSyncing || syncOutbox.retryable === 0 ? 0.66 : 1,
+                        firstConflictedEntry || syncOutbox.retryable > 0
+                          ? colors.primary
+                          : colors.background,
+                      opacity:
+                        pressed ||
+                        isSyncing ||
+                        (!firstConflictedEntry && syncOutbox.retryable === 0)
+                          ? 0.66
+                          : 1,
                     },
                   ]}
                 >
@@ -3150,12 +2673,19 @@ export default function LogScreen() {
                     style={[
                       s.outboxButtonText,
                       {
-                        color: syncOutbox.retryable > 0 ? colors.primaryForeground : colors.mutedForeground,
+                        color:
+                          firstConflictedEntry || syncOutbox.retryable > 0
+                            ? colors.primaryForeground
+                            : colors.mutedForeground,
                         fontFamily: "Inter_700Bold",
                       },
                     ]}
                   >
-                    {isSyncing ? "Syncing" : "Retry"}
+                    {isSyncing
+                      ? "Syncing"
+                      : firstConflictedEntry
+                        ? "Review"
+                        : "Retry"}
                   </Text>
                 </Pressable>
               </View>
@@ -3173,6 +2703,11 @@ export default function LogScreen() {
                 <View style={[s.outboxMetric, { backgroundColor: colors.background }]}>
                   <Text style={[s.outboxMetricText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                     {syncOutbox.pending} syncing
+                  </Text>
+                </View>
+                <View style={[s.outboxMetric, { backgroundColor: colors.background }]}>
+                  <Text style={[s.outboxMetricText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    {syncOutbox.conflicted} conflicts
                   </Text>
                 </View>
               </View>
@@ -3194,7 +2729,7 @@ export default function LogScreen() {
           {belowFoldReady && view === "log" ? (
             <>
           <BoardCard style={s.composerHero}>
-            <View style={s.quickLogDetailDock}>
+            <View style={s.detailedLogDock}>
             <View style={[s.composerHeroBanner, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <View style={[s.composerHeroIcon, { backgroundColor: selectedTone + "22", borderColor: selectedTone + "66" }]}>
                 <CareTypeIcon type={selectedType} icon={selectedIcon} size={30} />
@@ -3247,29 +2782,31 @@ export default function LogScreen() {
               accessory={<BoardPill label="Fast tap" icon="flash-outline" tone={colors.sage} />}
               style={s.composerSectionHeader}
             />
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={s.typeRow}
-              style={{ marginHorizontal: -4 }}
-            >
+            <View style={s.typeGrid}>
               {LOG_TYPES.map((q) => {
                 const active = selectedType === q.type;
                 const tint = careTypeTone(q.type, q.icon);
                 return (
                   <Pressable
                     key={q.type}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Log ${q.label}`}
-                    aria-selected={active}
+                    accessibilityRole="radio"
+                    accessibilityLabel={q.label}
+                    accessibilityHint={
+                      active
+                        ? `${q.label} is selected.`
+                        : `Selects ${q.label} for this detailed log.`
+                    }
+                    accessibilityState={{ checked: active }}
+                    aria-checked={active}
                     onPress={() => {
                       Haptics.selectionAsync();
-                      setSelectedLauncherKey(null);
                       setSelectedType(q.type);
                     }}
                     style={[
                       s.typeChip,
                       {
+                        width: logLayout.quickActionWidth,
+                        minHeight: logLayout.controlMinHeight,
                         backgroundColor: active ? colors.primary : colors.card,
                         borderColor: active ? colors.primary : colors.border,
                       },
@@ -3279,6 +2816,7 @@ export default function LogScreen() {
                       <CareTypeIcon type={q.type} icon={q.icon} size={15} color={active ? colors.primaryForeground : undefined} />
                     </View>
                     <Text
+                      numberOfLines={logLayout.actionLabelNumberOfLines}
                       style={[
                         s.typeChipLabel,
                         { color: active ? colors.primaryForeground : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_500Medium" },
@@ -3289,7 +2827,7 @@ export default function LogScreen() {
                   </Pressable>
                 );
               })}
-            </ScrollView>
+            </View>
 
             {/* Contextual controls */}
             {config?.groups?.map((g) => (
@@ -3306,12 +2844,27 @@ export default function LogScreen() {
                     return (
                       <Pressable
                         key={o.id}
+                        accessibilityRole="radio"
+                        accessibilityLabel={o.label}
+                        accessibilityHint={
+                          active
+                            ? `${o.label} is selected.`
+                            : `Selects ${o.label} for ${g.label.toLowerCase()}.`
+                        }
+                        accessibilityState={{ checked: active }}
+                        aria-checked={active}
                         onPress={() => {
                           Haptics.selectionAsync();
                           setChoices((prev) => ({ ...prev, [g.key]: o.id }));
                         }}
                         style={[
                           s.segPill,
+                          g.key === "mood" && logLayout.fontScale >= 2
+                            ? {
+                                width: logLayout.quickActionWidth,
+                                minHeight: logLayout.controlMinHeight,
+                              }
+                            : null,
                           {
                             backgroundColor: active ? colors.primary : colors.card,
                             borderColor: active ? colors.primary : colors.border,
@@ -3319,6 +2872,7 @@ export default function LogScreen() {
                         ]}
                       >
                         <Text
+                          numberOfLines={2}
                           style={[
                             s.segText,
                             { color: active ? colors.primaryForeground : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_500Medium" },
@@ -3357,7 +2911,10 @@ export default function LogScreen() {
                 </View>
                 <Pressable
                   accessibilityRole="switch"
+                  role="switch"
                   accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
@@ -3484,7 +3041,10 @@ export default function LogScreen() {
                 </View>
                 <Pressable
                   accessibilityRole="switch"
+                  role="switch"
                   accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
@@ -3536,7 +3096,10 @@ export default function LogScreen() {
                 </View>
                 <Pressable
                   accessibilityRole="switch"
+                  role="switch"
                   accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
@@ -3600,7 +3163,10 @@ export default function LogScreen() {
                 </View>
                 <Pressable
                   accessibilityRole="switch"
+                  role="switch"
                   accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
@@ -3684,7 +3250,10 @@ export default function LogScreen() {
                 </View>
                 <Pressable
                   accessibilityRole="switch"
+                  role="switch"
                   accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
@@ -3747,7 +3316,10 @@ export default function LogScreen() {
                 </View>
                 <Pressable
                   accessibilityRole="switch"
+                  role="switch"
                   accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
@@ -3830,7 +3402,10 @@ export default function LogScreen() {
                 </View>
                 <Pressable
                   accessibilityRole="switch"
+                  role="switch"
                   accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
@@ -3887,7 +3462,10 @@ export default function LogScreen() {
                 </View>
                 <Pressable
                   accessibilityRole="switch"
+                  role="switch"
                   accessibilityLabel="Share this log with the household"
+                  accessibilityHint={householdVisible ? "Double tap to keep this log private" : "Double tap to share this log with household caregivers"}
+                  accessibilityState={{ checked: householdVisible }}
                   aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
@@ -3951,9 +3529,14 @@ export default function LogScreen() {
               </View>
             )}
 
-            {missingRequiredGroup ? (
-              <Text style={[s.requiredChoiceHint, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
-                Pick "{missingRequiredGroup.label}" above to save this {selectedLabel.toLowerCase()} log.
+            {composerValidationMessage ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                accessibilityRole="alert"
+                role="alert"
+                style={[s.requiredChoiceHint, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}
+              >
+                {composerValidationMessage}
               </Text>
             ) : null}
             <BoardActionButton
@@ -3961,10 +3544,10 @@ export default function LogScreen() {
               icon="checkmark-circle"
               variant="primary"
               onPress={handleLog}
-              disabled={missingRequiredGroup != null}
+              disabled={composerSaveDisabled}
               accessibilityLabel={
-                missingRequiredGroup
-                  ? `Log ${(config?.label ?? "care").toLowerCase()}. Disabled until ${missingRequiredGroup.label.replace(/\?$/, "").toLowerCase()} is chosen.`
+                composerValidationMessage
+                  ? `Log ${(config?.label ?? "care").toLowerCase()}. Disabled. ${composerValidationMessage}`
                   : `Log ${(config?.label ?? "care").toLowerCase()}`
               }
               style={s.logSaveAction}
@@ -4046,9 +3629,15 @@ export default function LogScreen() {
                 style={s.filterScroll}
               >
               <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Show all log types"
-                aria-selected={filter === null}
+                accessibilityRole="checkbox"
+                accessibilityLabel="All log types"
+                accessibilityHint={
+                  filter === null
+                    ? "All log types are shown."
+                    : "Shows every log type."
+                }
+                accessibilityState={{ checked: filter === null }}
+                aria-checked={filter === null}
                 onPress={() => {
                   Haptics.selectionAsync();
                   setFilter(null);
@@ -4062,9 +3651,15 @@ export default function LogScreen() {
                   return (
                     <Pressable
                       key={q.type}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Filter by ${q.label}`}
-                      aria-selected={active}
+                      accessibilityRole="checkbox"
+                      accessibilityLabel={q.label}
+                      accessibilityHint={
+                        active
+                          ? `Stops filtering by ${q.label}.`
+                          : `Filters history to ${q.label}.`
+                      }
+                      accessibilityState={{ checked: active }}
+                      aria-checked={active}
                       onPress={() => {
                         Haptics.selectionAsync();
                         setFilter(active ? null : q.type);
@@ -4206,8 +3801,10 @@ export default function LogScreen() {
                               );
                             })}
                           </View>
-                          {e.syncStatus === "failed" && e.syncError ? (
-                            <Text style={[s.entrySyncError, { color: colors.rose, fontFamily: "Inter_500Medium" }]}>
+                          {(e.syncStatus === "failed" ||
+                            e.syncStatus === "conflict") &&
+                          e.syncError ? (
+                            <Text style={[s.entrySyncError, { color: e.syncStatus === "conflict" ? colors.amber : colors.rose, fontFamily: "Inter_500Medium" }]}>
                               {e.syncError}
                             </Text>
                           ) : null}
@@ -4249,158 +3846,13 @@ export default function LogScreen() {
         </Animated.View>
       </ScrollView>
 
-      {/* Launcher detail sheet */}
-      <Modal
-        visible={launcherDetailAction !== null}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setLauncherDetailAction(null)}
-      >
-        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setLauncherDetailAction(null)}>
-          <Pressable
-            accessible={false}
-            accessibilityViewIsModal
-            style={[s.launcherDetailSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={s.editHandle} />
-            {launcherDetailAction && launcherDetailPresentation ? (
-              <>
-                <View style={s.launcherDetailTop}>
-                  <View style={[s.launcherDetailIcon, { backgroundColor: colors.secondary, borderWidth: 1, borderColor: colors.border }]}>
-                    <PixelIcon name={launcherDetailAction.icon} size={34} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[s.launcherDetailKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                      QUICK LOG FLOW
-                    </Text>
-                    <Text style={[s.launcherDetailTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                      {launcherDetailPresentation.title}
-                    </Text>
-                    <Text style={[s.launcherDetailSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {launcherDetailPresentation.subtitle}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={[s.launcherDetailSummary, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Ionicons name="flash-outline" size={16} color={colors.sage} />
-                  <Text style={[s.launcherDetailSummaryText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                    {launcherDetailPresentation.quickSummary}
-                  </Text>
-                </View>
-
-                <View style={s.launcherDetailModeRail}>
-                  {launcherDetailPresentation.interactionRail.map((item) => {
-                    const toneColor = item.tone === "quick" ? colors.sage : item.tone === "detail" ? colors.copper : colors.blueSignal;
-                    return (
-                      <View
-                        key={item.label}
-                        style={[
-                          s.launcherDetailModeCard,
-                          {
-                            backgroundColor: toneColor + "0F",
-                            borderColor: toneColor + "33",
-                          },
-                        ]}
-                      >
-                        <Text numberOfLines={1} style={[s.launcherDetailModeLabel, { color: toneColor, fontFamily: "Inter_800ExtraBold" }]}>
-                          {item.label}
-                        </Text>
-                        <Text numberOfLines={1} style={[s.launcherDetailModeDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                          {item.detail}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-
-                <View style={s.launcherDetailChecklist}>
-                  {launcherDetailPresentation.detailChecklist.map((item) => (
-                    <View key={item} style={s.launcherDetailChecklistRow}>
-                      <View style={[s.launcherDetailBullet, { backgroundColor: colors.sage }]} />
-                      <Text style={[s.launcherDetailChecklistText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {item}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-
-                <View style={[s.launcherDetailEditLater, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Ionicons name="create-outline" size={16} color={colors.sage} />
-                  <Text style={[s.launcherDetailEditLaterText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                    {launcherDetailPresentation.editLaterCopy}
-                  </Text>
-                </View>
-
-                {launcherDetailPresentation.safetyBoundary ? (
-                  <View style={[s.launcherDetailBoundary, { backgroundColor: colors.amberSoft, borderColor: colors.amber + "44" }]}>
-                    <Ionicons name="shield-checkmark-outline" size={16} color={colors.amber} />
-                    <Text style={[s.launcherDetailBoundaryText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                      {launcherDetailPresentation.safetyBoundary}
-                    </Text>
-                  </View>
-                ) : null}
-
-                <View style={s.launcherDetailActions}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${launcherDetailPresentation.primaryActionLabel}: ${launcherDetailAction.label}`}
-                    onPress={() => {
-                      const action = launcherDetailAction;
-                      setLauncherDetailAction(null);
-                      if (!action) return;
-                      if (launcherDetailPresentation.canQuickLog) {
-                        handleQuickLauncherAction(action);
-                      } else {
-                        focusFullComposerForLauncherAction(action);
-                      }
-                    }}
-                    style={({ pressed }) => [
-                      s.launcherDetailPrimary,
-                      {
-                        backgroundColor: pressed ? colors.primary + "DD" : colors.primary,
-                        borderColor: colors.primary,
-                      },
-                    ]}
-                  >
-                    <Text style={[s.launcherDetailPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>
-                      {launcherDetailPresentation.primaryActionLabel}
-                    </Text>
-                    <Ionicons name="arrow-forward" size={17} color={colors.primaryForeground} />
-                  </Pressable>
-
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${launcherDetailPresentation.secondaryActionLabel}: ${launcherDetailAction.label}`}
-                    onPress={() => {
-                      const action = launcherDetailAction;
-                      setLauncherDetailAction(null);
-                      if (action && launcherDetailPresentation.secondaryActionLabel === "Open full details") {
-                        focusFullComposerForLauncherAction(action);
-                      }
-                    }}
-                    style={({ pressed }) => [
-                      s.launcherDetailSecondary,
-                      {
-                        backgroundColor: pressed ? colors.secondary : colors.background,
-                        borderColor: colors.border,
-                      },
-                    ]}
-                  >
-                    <Text style={[s.launcherDetailSecondaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                      {launcherDetailPresentation.secondaryActionLabel}
-                    </Text>
-                  </Pressable>
-                </View>
-              </>
-            ) : null}
-          </Pressable>
-        </Pressable>
-      </Modal>
-
       {/* Entry detail modal */}
-      <Modal visible={detailEntry !== null} transparent animationType="slide" onRequestClose={() => setDetailEntryId(null)}>
+      <Modal
+        visible={detailEntry !== null}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setDetailEntryId(null)}
+      >
         <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDetailEntryId(null)}>
           <Pressable accessible={false} accessibilityViewIsModal style={[s.detailSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.editHandle} />
@@ -4451,10 +3903,313 @@ export default function LogScreen() {
                   })}
                 </View>
 
-                {detailEntry.syncStatus === "failed" && detailEntry.syncError ? (
-                  <View style={[s.detailNotice, { backgroundColor: colors.rose + "12", borderColor: colors.rose + "44" }]}>
-                    <Ionicons name="warning-outline" size={16} color={colors.rose} />
-                    <Text style={[s.detailNoticeText, { color: colors.rose, fontFamily: "Inter_500Medium" }]}>{detailEntry.syncError}</Text>
+                {(detailEntry.syncStatus === "failed" ||
+                  detailEntry.syncStatus === "conflict") &&
+                detailEntry.syncError ? (
+                  <View style={[s.detailNotice, { backgroundColor: (detailEntry.syncStatus === "conflict" ? colors.amber : colors.rose) + "12", borderColor: (detailEntry.syncStatus === "conflict" ? colors.amber : colors.rose) + "44" }]}>
+                    <Ionicons name="warning-outline" size={16} color={detailEntry.syncStatus === "conflict" ? colors.amber : colors.rose} />
+                    <Text style={[s.detailNoticeText, { color: detailEntry.syncStatus === "conflict" ? colors.amber : colors.rose, fontFamily: "Inter_500Medium" }]}>{detailEntry.syncError}</Text>
+                  </View>
+                ) : null}
+
+                {detailEntry.syncStatus === "conflict" &&
+                detailEntry.conflictServerSnapshot &&
+                detailConflictVersions ? (
+                  <View
+                    style={[
+                      s.conflictResolutionPanel,
+                      {
+                        backgroundColor: colors.amber + "0D",
+                        borderColor: colors.amber + "38",
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.conflictResolutionTitle,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      Choose the household record
+                    </Text>
+                    <Text
+                      style={[
+                        s.conflictResolutionCopy,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      Keep my saved version overwrites the current household
+                      record. Use household version refreshes first, then
+                      accepts the newly loaded shared record without sending
+                      a PATCH. Resolve this conflict before making other edits.
+                    </Text>
+                    <View style={s.conflictVersionStack}>
+                      <View
+                        accessible
+                        accessibilityLabel={`My saved version. ${detailConflictVersions.local.type}: ${detailConflictVersions.local.title}. ${detailConflictVersions.local.note}. ${detailConflictVersions.local.mood}.`}
+                        style={[
+                          s.conflictVersionCard,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: colors.primary + "40",
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.conflictVersionEyebrow,
+                            {
+                              color: colors.primary,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          My saved version
+                        </Text>
+                        <Text
+                          numberOfLines={1}
+                          style={[
+                            s.conflictVersionTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {detailConflictVersions.local.title}
+                        </Text>
+                        <Text
+                          style={[
+                            s.conflictVersionMeta,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
+                          {detailConflictVersions.local.type} ·{" "}
+                          {detailConflictVersions.local.mood}
+                        </Text>
+                        <Text
+                          numberOfLines={2}
+                          style={[
+                            s.conflictVersionNote,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
+                          {detailConflictVersions.local.note}
+                        </Text>
+                      </View>
+                      <View
+                        accessible
+                        accessibilityLabel={`Household version. ${detailConflictVersions.household.type}: ${detailConflictVersions.household.title}. ${detailConflictVersions.household.note}. ${detailConflictVersions.household.mood}.`}
+                        style={[
+                          s.conflictVersionCard,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: colors.amber + "40",
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.conflictVersionEyebrow,
+                            {
+                              color: colors.amber,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Household version from last refresh
+                        </Text>
+                        <Text
+                          numberOfLines={1}
+                          style={[
+                            s.conflictVersionTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {detailConflictVersions.household.title}
+                        </Text>
+                        <Text
+                          style={[
+                            s.conflictVersionMeta,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
+                          {detailConflictVersions.household.type} ·{" "}
+                          {detailConflictVersions.household.mood}
+                        </Text>
+                        <Text
+                          numberOfLines={2}
+                          style={[
+                            s.conflictVersionNote,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
+                          {detailConflictVersions.household.note}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={s.conflictResolutionActions}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Keep my saved version"
+                        disabled={
+                          isSyncing || conflictResolutionPending
+                        }
+                        onPress={() => confirmKeepLocalConflict(detailEntry)}
+                        style={({ pressed }) => [
+                          s.conflictResolutionButton,
+                          {
+                            backgroundColor: colors.primary,
+                            opacity:
+                              isSyncing || conflictResolutionPending
+                                ? 0.5
+                                : pressed
+                                  ? 0.82
+                                  : 1,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.conflictResolutionButtonText,
+                            {
+                              color: colors.primaryForeground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Keep my saved version
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Use household version"
+                        disabled={
+                          isSyncing || conflictResolutionPending
+                        }
+                        onPress={() =>
+                          confirmUseHouseholdConflict(detailEntry)
+                        }
+                        style={({ pressed }) => [
+                          s.conflictResolutionButton,
+                          {
+                            backgroundColor: colors.card,
+                            borderColor: colors.border,
+                            borderWidth: 1,
+                            opacity:
+                              isSyncing || conflictResolutionPending
+                                ? 0.5
+                                : pressed
+                                  ? 0.72
+                                  : 1,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.conflictResolutionButtonText,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Use household version
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : null}
+
+                {detailEntry.syncStatus === "conflict" &&
+                !detailConflictVersions ? (
+                  <View
+                    style={[
+                      s.conflictResolutionPanel,
+                      {
+                        backgroundColor: colors.amber + "0D",
+                        borderColor: colors.amber + "38",
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.conflictResolutionTitle,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      Household version unavailable
+                    </Text>
+                    <Text
+                      style={[
+                        s.conflictResolutionCopy,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      Refresh to load a valid household version before
+                      choosing. Your saved conflict remains protected and
+                      will not retry automatically.
+                    </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Refresh conflict versions"
+                      disabled={isSyncing}
+                      onPress={() => {
+                        void refresh();
+                      }}
+                      style={({ pressed }) => [
+                        s.conflictResolutionButton,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: colors.border,
+                          borderWidth: 1,
+                          opacity: isSyncing
+                            ? 0.5
+                            : pressed
+                              ? 0.72
+                              : 1,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.conflictResolutionButtonText,
+                          {
+                            color: colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {isSyncing ? "Refreshing…" : "Refresh versions"}
+                      </Text>
+                    </Pressable>
                   </View>
                 ) : null}
 
@@ -4605,9 +4360,15 @@ export default function LogScreen() {
                         return (
                           <Pressable
                             key={outcome.id}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Update meal outcome: ${outcome.label}`}
-                            aria-selected={active}
+                            accessibilityRole="radio"
+                            accessibilityLabel={outcome.label}
+                            accessibilityHint={
+                              active
+                                ? `${outcome.label} is selected.`
+                                : `Updates the meal outcome to ${outcome.label}.`
+                            }
+                            accessibilityState={{ checked: active }}
+                            aria-checked={active}
                             onPress={() => updateMealOutcomeFromDetail(detailEntry, outcome.id)}
                             style={({ pressed }) => [
                               s.mealOutcomeButton,
@@ -5069,7 +4830,12 @@ export default function LogScreen() {
       </Modal>
 
       {/* Entry editor modal */}
-      <Modal visible={editEntry !== null} transparent animationType="slide" onRequestClose={() => setEditEntry(null)}>
+      <Modal
+        visible={editEntry !== null}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setEditEntry(null)}
+      >
         <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setEditEntry(null)}>
           <Pressable accessible={false} accessibilityViewIsModal style={[s.editSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.editHandle} />
@@ -5102,7 +4868,12 @@ export default function LogScreen() {
       </Modal>
 
       {/* Post-log quick-note prompt */}
-      <Modal visible={promptId !== null} transparent animationType="fade" onRequestClose={() => setPromptId(null)}>
+      <Modal
+        visible={promptId !== null}
+        transparent
+        animationType={reducedMotion ? "none" : "fade"}
+        onRequestClose={() => setPromptId(null)}
+      >
         <Pressable accessible={false} style={[s.modalBackdrop, centeredModalPadding]} onPress={saveQuickNote}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalCenter}>
             <Pressable accessible={false} accessibilityViewIsModal style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
@@ -5158,178 +4929,13 @@ const s = StyleSheet.create({
 
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 18 },
   headerIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  syncBtn: { width: 40, height: 40, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  syncBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 2 },
 
-  logCommandStageCard: {
-    alignSelf: "stretch",
-    width: "100%",
-    maxWidth: "100%",
-    marginTop: 3,
-    marginBottom: 8,
-    overflow: "hidden",
-  },
-  logCommandStage: {
-    width: "100%",
-    minHeight: 82,
-    overflow: "hidden",
-    padding: 7,
-    justifyContent: "flex-start",
-  },
-  logCommandStageImage: {
-    borderRadius: 8,
-  },
-  logCommandStageShade: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(8,20,36,0.08)",
-  },
-  logCommandStageTop: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 6,
-  },
-  logCommandBubble: {
-    maxWidth: "68%",
-    minHeight: 38,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: "#081424",
-    backgroundColor: "rgba(255,249,239,0.94)",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  logCommandKicker: {
-    fontSize: 9,
-    lineHeight: 11,
-    letterSpacing: 1.1,
-    textTransform: "uppercase",
-  },
-  logCommandSpeech: {
-    fontSize: 10.2,
-    lineHeight: 12,
-    marginTop: 1,
-  },
-  logCommandBubbleTail: {
-    position: "absolute",
-    left: 26,
-    bottom: -10,
-    width: 16,
-    height: 16,
-    borderRightWidth: 2,
-    borderBottomWidth: 2,
-    borderColor: "#081424",
-    backgroundColor: "rgba(255,249,239,0.94)",
-    transform: [{ rotate: "45deg" }],
-  },
-  logCommandChip: {
-    maxWidth: 90,
-    flexShrink: 1,
-    minHeight: 28,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 7,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  logCommandChipText: {
-    fontSize: 10,
-    lineHeight: 13,
-  },
-  logCommandSprite: {
-    // Out of the Ready/Details chip's column: the ear-perk frames draw a
-    // heart emote above the dog's head, and at right:12 both heart and ear
-    // collided with the chrome chip in the banner's top-right corner.
-    position: "absolute",
-    right: 96,
-    bottom: -2,
-    width: 68,
-    height: 68,
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  logCommandSpriteShadow: {
-    position: "absolute",
-    bottom: 3,
-    width: 58,
-    height: 11,
-    borderRadius: 999,
-    backgroundColor: "rgba(8,20,36,0.34)",
-  },
-  logCommandDock: {
-    borderTopWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    gap: 6,
-    flexDirection: "row",
-    alignItems: "stretch",
-  },
-  logCommandHud: {
-    flex: 1,
-    flexDirection: "row",
-    gap: 6,
-  },
-  logCommandHudCell: {
-    flex: 1,
-    minWidth: 0,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 7,
-  },
-  logCommandHudLabel: {
-    fontSize: 9,
-    lineHeight: 11,
-    letterSpacing: 1.1,
-    textTransform: "uppercase",
-  },
-  logCommandHudValue: {
-    fontSize: 13.5,
-    lineHeight: 17,
-    marginTop: 2,
-  },
-  logCommandActionRow: {
+  detailedLogActionRow: {
     paddingHorizontal: 8,
     paddingBottom: 8,
-  },
-
-  quickLogSupportRail: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 12,
-  },
-  signalCard: {
-    flexGrow: 1,
-    flexBasis: "47.5%",
-    minHeight: 82,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    justifyContent: "space-between",
-  },
-  signalIcon: {
-    width: 26,
-    height: 26,
-    borderRadius: 7,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-  },
-  signalLabel: {
-    fontSize: 9,
-    letterSpacing: 1.1,
-    textTransform: "uppercase",
-  },
-  signalValue: {
-    fontSize: 18,
-    lineHeight: 21,
-  },
-  signalDetail: {
-    fontSize: 10,
-    lineHeight: 13,
   },
 
   outboxCard: {
@@ -5359,153 +4965,12 @@ const s = StyleSheet.create({
   outboxMetric: { borderRadius: 11, paddingHorizontal: 10, paddingVertical: 6 },
   outboxMetricText: { fontSize: 11.5 },
 
-  launcherCard: {
+  detailedLogCard: {
     marginBottom: 12,
     padding: 10,
   },
-  quickLogActionConsole: {
+  detailedLogIntro: {
     gap: 8,
-  },
-  quickLogActionConsoleHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  quickLogActionTitleBlock: {
-    flex: 1,
-    minWidth: 0,
-  },
-  quickLogActionKicker: {
-    fontSize: 9,
-    lineHeight: 12,
-    textTransform: "uppercase",
-    letterSpacing: 1.1,
-  },
-  quickLogActionTitle: {
-    fontSize: 18,
-    lineHeight: 22,
-    marginTop: 2,
-  },
-  quickLogActionSub: {
-    fontSize: 11.5,
-    lineHeight: 14,
-    marginTop: 1,
-  },
-  quickLogGuideButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 999,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  launcherTabs: {
-    flexDirection: "row",
-    gap: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(8, 20, 36, 0.08)",
-    padding: 2,
-  },
-  launcherTab: {
-    flex: 1,
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderWidth: 1,
-    borderRadius: 999,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  launcherTabText: { fontSize: 12 },
-  launcherDoctrineRail: {
-    flexDirection: "row",
-    gap: 6,
-    marginTop: 2,
-  },
-  launcherDoctrineCard: {
-    flex: 1,
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 7,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  launcherDoctrineLabel: {
-    fontSize: 10.5,
-    textTransform: "uppercase",
-    letterSpacing: 0.35,
-  },
-  launcherDoctrineDetail: {
-    fontSize: 10,
-    marginTop: 1,
-  },
-  launcherGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    rowGap: 10,
-  },
-  launcherTileLayout: {
-    width: "31.5%",
-  },
-  launcherTile: {
-    width: "100%",
-    minHeight: 76,
-    borderWidth: 1,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    paddingHorizontal: 6,
-    paddingVertical: 8,
-    position: "relative",
-  },
-  // Zero-height filler that squares off the last space-between grid row.
-  launcherTileGhost: {
-    width: "31.5%",
-    height: 0,
-  },
-  launcherIconHalo: {
-    width: 38,
-    height: 38,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  launcherSelectedMark: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    width: 18,
-    height: 18,
-    borderRadius: 7,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  launcherTileText: {
-    fontSize: 11,
-    textAlign: "center",
-  },
-  launcherTileMode: {
-    minHeight: 18,
-    maxWidth: "100%",
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  launcherTileModeText: {
-    fontSize: 10,
-    letterSpacing: 0.2,
-  },
-  moodPanel: {
-    borderWidth: 1,
-    borderRadius: 9,
-    padding: 9,
   },
   moodDetailPanel: {
     borderWidth: 1,
@@ -5513,60 +4978,6 @@ const s = StyleSheet.create({
     padding: 10,
     gap: 10,
     marginBottom: 10,
-  },
-  moodQuestion: {
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  moodRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 5,
-  },
-  moodOption: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 3,
-    minHeight: 62,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 6,
-  },
-  moodOptionText: {
-    fontSize: 10,
-  },
-  quickFeedback: {
-    borderWidth: 1,
-    borderRadius: 9,
-    padding: 11,
-    gap: 10,
-  },
-  quickFeedbackCopy: {
-    gap: 2,
-  },
-  quickFeedbackTitle: {
-    fontSize: 13.5,
-  },
-  quickFeedbackSub: {
-    fontSize: 11.5,
-    lineHeight: 16,
-  },
-  quickFeedbackActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  quickFeedbackButton: {
-    flex: 1,
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
-  },
-  quickFeedbackButtonText: {
-    fontSize: 12.5,
   },
   aloneActivePanel: {
     borderWidth: 1,
@@ -5641,7 +5052,7 @@ const s = StyleSheet.create({
     gap: 8,
   },
   returnInput: {
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 9,
     paddingHorizontal: 10,
@@ -5675,7 +5086,7 @@ const s = StyleSheet.create({
     shadowRadius: 12,
     elevation: 3,
   },
-  quickLogDetailDock: {
+  detailedLogDock: {
     gap: 10,
     marginBottom: 12,
   },
@@ -5738,25 +5149,32 @@ const s = StyleSheet.create({
   },
   composerSectionHeader: { marginBottom: 8 },
   loggerTitle: { fontSize: 16, marginBottom: 12 },
-  typeRow: { gap: 8, paddingHorizontal: 4, paddingBottom: 4 },
+  typeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 8,
+    paddingBottom: 4,
+  },
   typeChip: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 7,
-    paddingLeft: 6,
-    paddingRight: 13,
+    paddingHorizontal: 8,
     paddingVertical: 6,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 999,
     borderWidth: 1,
   },
   typeChipIcon: { width: 26, height: 26, borderRadius: 999, alignItems: "center", justifyContent: "center" },
-  typeChipLabel: { fontSize: 13.5 },
+  typeChipLabel: { flexShrink: 1, fontSize: 13.5, lineHeight: 18, textAlign: "center" },
 
   fieldBlock: { marginTop: 16 },
   fieldLabel: { fontSize: 12, letterSpacing: 0, marginBottom: 8 },
   segRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   segPill: {
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 14,
@@ -5814,7 +5232,7 @@ const s = StyleSheet.create({
     paddingVertical: 10,
   },
   searchInput: { flex: 1, fontSize: 14.5, minHeight: 28, paddingVertical: 0 },
-  searchClear: { width: 28, height: 28, borderRadius: 999, alignItems: "center", justifyContent: "center" },
+  searchClear: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 999, alignItems: "center", justifyContent: "center" },
   searchSummary: { fontSize: 12.5, lineHeight: 18, marginTop: 8, marginLeft: 2 },
 
   filterScroll: { marginTop: 8 },
@@ -5827,6 +5245,7 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
   },
   filterText: { fontSize: 13 },
 
@@ -5895,70 +5314,6 @@ const s = StyleSheet.create({
   stickyNote: { borderLeftWidth: 3, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8 },
   stickyNoteText: { fontSize: 12.5, lineHeight: 17 },
   stickyNoteMeta: { fontSize: 11, marginTop: 4 },
-  launcherDetailSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, gap: 14 },
-  launcherDetailTop: { flexDirection: "row", alignItems: "center", gap: 13 },
-  launcherDetailIcon: { width: 58, height: 58, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  launcherDetailKicker: { fontSize: 9, letterSpacing: 1.1 },
-  launcherDetailTitle: { fontSize: 23, marginTop: 2 },
-  launcherDetailSubtitle: { fontSize: 13, lineHeight: 18, marginTop: 3 },
-  launcherDetailSummary: { borderWidth: 1, borderRadius: 17, padding: 13, flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  launcherDetailSummaryText: { flex: 1, fontSize: 13.5, lineHeight: 19 },
-  launcherDetailModeRail: {
-    flexDirection: "row",
-    gap: 7,
-  },
-  launcherDetailModeCard: {
-    flex: 1,
-    minHeight: 54,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    justifyContent: "center",
-  },
-  launcherDetailModeLabel: {
-    fontSize: 10,
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-  launcherDetailModeDetail: {
-    fontSize: 10.5,
-    marginTop: 3,
-  },
-  launcherDetailChecklist: { gap: 9 },
-  launcherDetailChecklistRow: { flexDirection: "row", gap: 9, alignItems: "flex-start" },
-  launcherDetailBullet: { width: 7, height: 7, borderRadius: 2, marginTop: 6 },
-  launcherDetailChecklistText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
-  launcherDetailEditLater: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 11,
-    flexDirection: "row",
-    gap: 9,
-    alignItems: "flex-start",
-  },
-  launcherDetailEditLaterText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
-  launcherDetailBoundary: { borderWidth: 1, borderRadius: 16, padding: 12, flexDirection: "row", gap: 9, alignItems: "flex-start" },
-  launcherDetailBoundaryText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
-  launcherDetailActions: { gap: 10, marginTop: 2 },
-  launcherDetailPrimary: {
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderWidth: 1,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 8,
-  },
-  launcherDetailPrimaryText: { fontSize: 14.5 },
-  launcherDetailSecondary: {
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderWidth: 1,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  launcherDetailSecondaryText: { fontSize: 14 },
   detailSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", padding: 22 },
   detailHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
   detailIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
@@ -5993,6 +5348,40 @@ const s = StyleSheet.create({
   },
   detailNotice: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 15, padding: 11, marginBottom: 12 },
   detailNoticeText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
+  conflictResolutionPanel: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+    gap: 8,
+  },
+  conflictResolutionTitle: { fontSize: 14, lineHeight: 19 },
+  conflictResolutionCopy: { fontSize: 12.5, lineHeight: 18 },
+  conflictVersionStack: { gap: 7 },
+  conflictVersionCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+  },
+  conflictVersionEyebrow: {
+    fontSize: 10.5,
+    lineHeight: 14,
+    textTransform: "uppercase",
+    letterSpacing: 0.35,
+  },
+  conflictVersionTitle: { fontSize: 13.5, lineHeight: 18, marginTop: 2 },
+  conflictVersionMeta: { fontSize: 11.5, lineHeight: 16, marginTop: 1 },
+  conflictVersionNote: { fontSize: 12, lineHeight: 17, marginTop: 4 },
+  conflictResolutionActions: { gap: 8 },
+  conflictResolutionButton: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  conflictResolutionButtonText: { fontSize: 13, textAlign: "center" },
   trustReviewPanel: {
     borderWidth: 1,
     borderRadius: 16,

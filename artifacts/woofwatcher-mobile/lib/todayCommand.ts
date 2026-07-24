@@ -67,7 +67,7 @@ export interface TodayCommandEntry {
   severity?: string | null;
   note?: string | null;
   details?: Record<string, unknown> | null;
-  syncStatus?: "local" | "pending" | "synced" | "failed";
+  syncStatus?: "local" | "pending" | "synced" | "failed" | "conflict";
   syncError?: string;
 }
 
@@ -110,6 +110,7 @@ export interface TodayCommandHandoff {
 export interface TodayCommandSync {
   pending: number;
   failed: number;
+  conflicted: number;
   local: number;
   label: string;
 }
@@ -358,6 +359,7 @@ export function deriveTodayCommand(
   const sync = {
     pending: entries.filter((entry) => entry.syncStatus === "pending").length,
     failed: entries.filter((entry) => entry.syncStatus === "failed").length,
+    conflicted: entries.filter((entry) => entry.syncStatus === "conflict").length,
     local: entries.filter(
       (entry) =>
         entry.syncStatus === "local" ||
@@ -366,13 +368,15 @@ export function deriveTodayCommand(
     label: "Synced",
   };
   sync.label =
-    sync.failed > 0
-      ? `${sync.failed} sync failed`
-      : sync.local > 0
-        ? `${sync.local} saved offline`
-        : sync.pending > 0
-          ? `${sync.pending} syncing`
-          : "Synced";
+    sync.conflicted > 0
+      ? `${sync.conflicted} care ${sync.conflicted === 1 ? "conflict" : "conflicts"}`
+      : sync.failed > 0
+        ? `${sync.failed} sync failed`
+        : sync.local > 0
+          ? `${sync.local} saved offline`
+          : sync.pending > 0
+            ? `${sync.pending} syncing`
+            : "Synced";
 
   const healthSignalEntries = todays.filter(isHealthSignalEntry);
   const vomitEntries = healthSignalEntries.filter(
@@ -402,6 +406,23 @@ export function deriveTodayCommand(
     caregiver: lastEntry?.caregiver ?? null,
     route: lastEntry ? entryRoute(lastEntry.id) : "/more",
   };
+
+  const conflictedEntry = sortedEntries.find((entry) => entry.syncStatus === "conflict");
+  if (conflictedEntry) {
+    return {
+      primaryAction: {
+        kind: "sync",
+        label: "Review care conflict",
+        detail: "Your local edit is preserved. Review it before saving over the household version.",
+        route: entryRoute(conflictedEntry.id),
+        urgency: "watch",
+        icon: "bolt",
+      },
+      health,
+      handoff,
+      sync,
+    };
+  }
 
   if (sync.failed > 0 || sync.local > 0) {
     return {

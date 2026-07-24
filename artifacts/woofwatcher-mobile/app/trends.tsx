@@ -35,6 +35,7 @@ import {
   getStandaloneRouteBottomPadding,
   MIN_MOBILE_TOUCH_TARGET,
 } from "@/lib/mobileLayout";
+import { resolvePetName } from "@/lib/petIdentity";
 import {
   bucketAverages,
   bucketCounts,
@@ -353,8 +354,7 @@ export default function TrendsScreen() {
     bottomInset: insets.bottom,
   });
 
-  const petName =
-    state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
+  const petName = resolvePetName(state.profile.name);
 
   // Stable `now` per window + entries so buckets/animations don't churn each render.
   const now = useMemo(() => Date.now(), [windowKey, state.entries]);

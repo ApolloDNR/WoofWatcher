@@ -13,6 +13,7 @@ const lightTheme = {
 
   primary: "#33582F",
   primaryForeground: "#F9F4E4",
+  warmForeground: "#050A12",
 
   secondary: "#E6EDDA",
   secondaryForeground: "#2A2519",
@@ -78,6 +79,7 @@ const darkTheme = {
 
   primary: "#5E9A6C",
   primaryForeground: "#081424",
+  warmForeground: "#081424",
 
   secondary: "#12301F",
   secondaryForeground: "#F3ECDA",

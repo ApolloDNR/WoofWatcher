@@ -202,7 +202,7 @@ test("builds a deterministic handoff proof manifest for saved device QA", () => 
         "store-home": "pass",
       },
       surfaceNotes: {
-        "owner-preview-core-loop": "Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass reached.",
+        "owner-preview-core-loop": "Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy were verified.",
       },
       surfaceEvidenceById: {
         "owner-preview-core-loop": [

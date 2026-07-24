@@ -1059,7 +1059,7 @@ export default function RecordsScreen() {
             title="Records"
             subtitle={`${resolvePetName(state.profile.name)}'s file cabinet - trends, incidents & reports`}
             back
-            onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+            onBack={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)" as never))}
           />
 
           <BoardCard padded={false} style={s.recordsCredentialStageCard} enter={0}>

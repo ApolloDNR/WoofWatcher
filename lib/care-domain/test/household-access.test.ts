@@ -5,7 +5,8 @@ import { deriveHouseholdAccessPlan } from "../src/index.ts";
 
 test("derives household access from synced members, local caregivers, and routine owners", () => {
   const plan = deriveHouseholdAccessPlan({
-    household: { name: "Phoenix House", inviteCode: "PHX123" },
+    household: { name: "Phoenix House" },
+    canManageInvitations: true,
     members: [
       { displayName: "Apollo", email: "apollo@example.com", role: "owner" },
       { displayName: "Emma", email: "emma@example.com", role: "member" },
@@ -23,7 +24,6 @@ test("derives household access from synced members, local caregivers, and routin
 
   assert.equal(plan.status, "needs-invites");
   assert.equal(plan.householdName, "Phoenix House");
-  assert.equal(plan.inviteCode, "PHX123");
   assert.equal(plan.syncedMembers, 2);
   assert.equal(plan.localOnlyCaregivers, 2);
   assert.equal(plan.routineOnlyOwners, 1);
@@ -68,7 +68,8 @@ test("prompts household setup before invites exist", () => {
 
 test("reports ready access when household members and care team are synced", () => {
   const plan = deriveHouseholdAccessPlan({
-    household: { name: "Phoenix House", inviteCode: "PHX123" },
+    household: { name: "Phoenix House" },
+    canManageInvitations: true,
     members: [
       { displayName: "Apollo", email: "apollo@example.com", role: "owner" },
       { displayName: "Emma", email: "emma@example.com", role: "member" },
@@ -84,4 +85,22 @@ test("reports ready access when household members and care team are synced", () 
   assert.equal(plan.localOnlyCaregivers, 0);
   assert.equal(plan.routineOnlyOwners, 0);
   assert.match(plan.nextStep, /Keep roles current/);
+});
+
+test("durable invitation sharing follows owner authority instead of a permanent household code", () => {
+  const owner = deriveHouseholdAccessPlan({
+    household: { name: "Phoenix House" },
+    canManageInvitations: true,
+    members: [{ displayName: "Apollo", role: "owner" }],
+  });
+  const helper = deriveHouseholdAccessPlan({
+    household: { name: "Phoenix House", inviteCode: "LEGACY-CODE" },
+    canManageInvitations: false,
+    members: [{ displayName: "Jordan", role: "helper" }],
+  });
+
+  assert.equal(owner.canShareInvite, true);
+  assert.equal(owner.inviteCode, undefined);
+  assert.equal(helper.canShareInvite, false);
+  assert.equal(helper.inviteCode, undefined);
 });

@@ -8,6 +8,8 @@
 import type { CareStateEnvelopeDoc } from './careStateEnvelopeDoc';
 
 export interface CareStateEnvelope {
+  /** @pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ */
+  householdId: string;
   version: number;
   updatedAt: Date;
   /** @nullable */

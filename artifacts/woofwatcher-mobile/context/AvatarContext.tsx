@@ -6,23 +6,41 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Platform, type ImageSourcePropType } from "react-native";
+
+import { useCare } from "@/context/CareContext";
+import {
+  AVATAR_MOODS,
+  assertAvatarWriteAllowed,
+  commitAvatarMemoryIfCurrent,
+  createAvatarWriteCoordinator,
+  filterAvatarSetByUriExistence,
+  getAvatarStorageKey,
+  inspectAvatarStorage,
+  inspectLegacyAvatarConfig,
+  inspectLegacyAvatarPair,
+  inspectLegacyAvatarSet,
+  LEGACY_AVATAR_STORAGE_KEYS,
+  resolveAvatarLegacyDecision,
+  serializeAvatarState,
+  type AvatarSet,
+  type AvatarStoredState,
+  type AvatarWriteCoordinator,
+} from "@/lib/avatarStorageScope";
 import {
   createDefaultAvatarConfig,
   normalizeAvatarConfig,
   type PetAvatarConfig,
 } from "@/lib/avatarStudio";
+import { resolvePetName } from "@/lib/petIdentity";
 import type { Mood } from "@/lib/phoenixStatus";
 
-const AVATAR_KEY = "woofwatcher.avatarSet.v1";
-const AVATAR_CONFIG_KEY = "woofwatcher.petAvatarConfig.v1";
+export const MOODS: Mood[] = [...AVATAR_MOODS];
+export type { AvatarSet } from "@/lib/avatarStorageScope";
 
-export const MOODS: Mood[] = ["happy", "excited", "calm", "anxious", "unwell"];
-
-// Default mood portraits use the storybook German Shepherd so every avatar
-// surface matches the mock-board room environment out of the box.
 const DEFAULT_SOURCES: Record<Mood, ImageSourcePropType> = {
   happy: require("@/assets/avatar/phoenix/storybook/storybook-still-sit.png"),
   excited: require("@/assets/avatar/phoenix/storybook/storybook-still-sit.png"),
@@ -31,48 +49,18 @@ const DEFAULT_SOURCES: Record<Mood, ImageSourcePropType> = {
   unwell: require("@/assets/avatar/phoenix/storybook/storybook-still-sleep.png"),
 };
 
-export type AvatarSet = Partial<Record<Mood, string>>;
-
 async function uriExists(uri: string): Promise<boolean> {
   try {
-    const info = await FileSystem.getInfoAsync(uri);
-    return info.exists;
+    return (await FileSystem.getInfoAsync(uri)).exists;
   } catch {
-    // A transient filesystem error is not proof the file is gone. Treat it
-    // as present so a flaky check can never permanently prune a custom
-    // avatar reference - a genuinely missing file is confirmed (exists:
-    // false resolves, not throws) on a later launch.
+    // A transient filesystem error is not proof that a custom image vanished.
     return true;
   }
 }
 
-async function verifyAvatarSet(
-  set: AvatarSet,
-): Promise<{ set: AvatarSet; changed: boolean }> {
-  // Bundled defaults are always available on web; only file URIs need checking.
-  if (Platform.OS === "web") {
-    return { set, changed: false };
-  }
-
-  const entries = MOODS.map((mood) => [mood, set[mood]] as const).filter(
-    ([, uri]) => typeof uri === "string" && uri.length > 0,
-  );
-
-  const checks = await Promise.all(
-    entries.map(async ([mood, uri]) => [mood, await uriExists(uri!)] as const),
-  );
-
-  const next: AvatarSet = {};
-  let changed = false;
-  for (const [mood, exists] of checks) {
-    if (exists) {
-      next[mood] = set[mood];
-    } else {
-      changed = true;
-    }
-  }
-
-  return { set: next, changed };
+async function verifyAvatarSet(set: AvatarSet): Promise<AvatarSet | null> {
+  if (Platform.OS === "web") return Object.keys(set).length ? set : null;
+  return filterAvatarSetByUriExistence(set, uriExists);
 }
 
 interface AvatarContextValue {
@@ -81,83 +69,262 @@ interface AvatarContextValue {
   hasCustomAvatar: boolean;
   hasConfiguredAvatar: boolean;
   isLoaded: boolean;
+  storageError: string | null;
+  legacyAvatarAvailable: boolean;
   getAvatarSource: (mood: Mood) => ImageSourcePropType;
   saveAvatarSet: (set: AvatarSet) => Promise<void>;
   clearAvatarSet: () => Promise<void>;
   saveAvatarConfig: (config: PetAvatarConfig) => Promise<void>;
   resetAvatarConfig: (petName?: string) => Promise<void>;
+  importLegacyAvatar: () => Promise<void>;
+  keepScopedAvatar: () => Promise<void>;
+  retryAvatarStorage: () => void;
+  resetAvatarMemoryAfterDeviceWipe: () => void;
 }
 
 const AvatarContext = createContext<AvatarContextValue | null>(null);
 
 export function AvatarProvider({ children }: { children: React.ReactNode }) {
+  const {
+    state,
+    storageScope,
+    isLoaded: careScopeLoaded,
+    runDeviceOperation,
+  } = useCare();
+  const petName = resolvePetName(state.profile.name);
+  const renderedStorageKey = storageScope
+    ? getAvatarStorageKey(storageScope)
+    : null;
+  const renderedStorageKeyRef = useRef<string | null>(renderedStorageKey);
+  renderedStorageKeyRef.current = renderedStorageKey;
+
+  const initialState = useMemo<AvatarStoredState>(
+    () => ({
+      avatarSet: null,
+      avatarConfig: createDefaultAvatarConfig(petName),
+    }),
+    [petName],
+  );
   const [avatarSet, setAvatarSet] = useState<AvatarSet | null>(null);
-  const [avatarConfig, setAvatarConfig] = useState<PetAvatarConfig>(() =>
-    createDefaultAvatarConfig("Phoenix"),
+  const [avatarConfig, setAvatarConfig] = useState<PetAvatarConfig>(
+    initialState.avatarConfig,
   );
   const [isLoaded, setIsLoaded] = useState(false);
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const [legacyAvatarCandidate, setLegacyAvatarCandidate] =
+    useState<AvatarStoredState | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
+  const confirmedStateRef = useRef<AvatarStoredState>(initialState);
+  const storageKeyRef = useRef<string | null>(null);
+  const coordinatorRef = useRef<AvatarWriteCoordinator | null>(null);
+  const lifecycleGenerationRef = useRef(0);
+
+  const applyMemoryState = useCallback((next: AvatarStoredState) => {
+    confirmedStateRef.current = next;
+    setAvatarSet(next.avatarSet);
+    setAvatarConfig(next.avatarConfig);
+  }, []);
 
   useEffect(() => {
+    const generation = lifecycleGenerationRef.current + 1;
+    lifecycleGenerationRef.current = generation;
     let cancelled = false;
-
-    const load = async () => {
-      let parsed: AvatarSet | null = null;
-      let parsedConfig: PetAvatarConfig | null = null;
-      try {
-        const raw = await AsyncStorage.getItem(AVATAR_KEY);
-        if (raw) {
-          const data = JSON.parse(raw);
-          if (data && typeof data === "object") {
-            parsed = data as AvatarSet;
-          }
-        }
-      } catch {
-        // ignore corrupt cache
-        parsed = null;
-      }
-
-      try {
-        const rawConfig = await AsyncStorage.getItem(AVATAR_CONFIG_KEY);
-        if (rawConfig) {
-          parsedConfig = normalizeAvatarConfig(JSON.parse(rawConfig), "Phoenix");
-        }
-      } catch {
-        parsedConfig = null;
-      }
-
-      if (parsed) {
-        const verified = await verifyAvatarSet(parsed);
-        if (verified) {
-          parsed = verified.set;
-          if (verified.changed) {
-            try {
-              if (Object.keys(verified.set).length > 0) {
-                await AsyncStorage.setItem(
-                  AVATAR_KEY,
-                  JSON.stringify(verified.set),
-                );
-              } else {
-                await AsyncStorage.removeItem(AVATAR_KEY);
-              }
-            } catch {
-              // ignore persistence errors; in-memory state is already corrected
-            }
-          }
-        }
-      }
-
-      if (cancelled) return;
-      setAvatarSet(parsed && Object.keys(parsed).length > 0 ? parsed : null);
-      setAvatarConfig(parsedConfig ?? createDefaultAvatarConfig("Phoenix"));
-      setIsLoaded(true);
+    const fresh: AvatarStoredState = {
+      avatarSet: null,
+      avatarConfig: createDefaultAvatarConfig(petName),
     };
+    setIsLoaded(false);
+    setStorageError(null);
+    setLegacyAvatarCandidate(null);
+    applyMemoryState(fresh);
+    storageKeyRef.current = null;
+    coordinatorRef.current = null;
 
-    load();
+    if (!careScopeLoaded || !storageScope || !renderedStorageKey) {
+      return () => {
+        cancelled = true;
+        if (lifecycleGenerationRef.current === generation) {
+          lifecycleGenerationRef.current += 1;
+        }
+      };
+    }
+
+    const storageKey = renderedStorageKey;
+    storageKeyRef.current = storageKey;
+    const isCurrent = () =>
+      !cancelled &&
+      lifecycleGenerationRef.current === generation &&
+      storageKeyRef.current === storageKey &&
+      renderedStorageKeyRef.current === storageKey;
+
+    void (async () => {
+      const scoped = inspectAvatarStorage(
+        await AsyncStorage.getItem(storageKey),
+        petName,
+      );
+      if (!isCurrent()) return;
+      if (scoped.status === "invalid") {
+        setStorageError(
+          "Your saved care-twin data could not be read. WoofWatcher kept it untouched; retry before changing the avatar.",
+        );
+        return;
+      }
+
+      let next =
+        scoped.status === "valid" ? scoped.state : fresh;
+      if (scoped.status === "missing") {
+        const legacyRows = new Map(
+          await AsyncStorage.multiGet([
+            LEGACY_AVATAR_STORAGE_KEYS.avatarSet,
+            LEGACY_AVATAR_STORAGE_KEYS.avatarConfig,
+          ]),
+        );
+        if (!isCurrent()) return;
+        const legacySet = inspectLegacyAvatarSet(
+          legacyRows.get(LEGACY_AVATAR_STORAGE_KEYS.avatarSet) ?? null,
+        );
+        const legacyConfig = inspectLegacyAvatarConfig(
+          legacyRows.get(LEGACY_AVATAR_STORAGE_KEYS.avatarConfig) ?? null,
+          petName,
+        );
+        const legacyPair = inspectLegacyAvatarPair(legacySet, legacyConfig);
+        if (storageScope.kind === "local") {
+          if (legacyPair.status === "invalid") {
+            setStorageError(
+              "Older local care-twin data was incomplete or unreadable. It was kept untouched; retry before changing the avatar.",
+            );
+            return;
+          }
+          if (legacyPair.status === "valid") next = legacyPair.state;
+        } else if (legacyPair.status === "valid") {
+          let candidate = legacyPair.state;
+          if (candidate.avatarSet) {
+            candidate = {
+              ...candidate,
+              avatarSet: await verifyAvatarSet(candidate.avatarSet),
+            };
+            if (!isCurrent()) return;
+          }
+          setLegacyAvatarCandidate(candidate);
+        } else if (legacyPair.status === "invalid") {
+          setStorageError(
+            "Older device care-twin data was incomplete or unreadable and remains separate. This household is using a new care twin.",
+          );
+        }
+      }
+
+      if (next.avatarSet) {
+        next = {
+          ...next,
+          avatarSet: await verifyAvatarSet(next.avatarSet),
+        };
+        if (!isCurrent()) return;
+      }
+      coordinatorRef.current = createAvatarWriteCoordinator(next);
+      applyMemoryState(next);
+      setIsLoaded(true);
+    })().catch(() => {
+      if (isCurrent()) {
+        setStorageError(
+          "WoofWatcher could not load this household's care twin from device storage. Saved avatar data was not replaced.",
+        );
+      }
+    });
 
     return () => {
       cancelled = true;
+      if (lifecycleGenerationRef.current === generation) {
+        lifecycleGenerationRef.current += 1;
+      }
     };
-  }, []);
+  }, [
+    applyMemoryState,
+    careScopeLoaded,
+    petName,
+    reloadToken,
+    renderedStorageKey,
+    storageScope,
+  ]);
+
+  const requireCurrentStorage = useCallback(
+    (allowLegacyDecision = false) => {
+      const storageKey = storageKeyRef.current;
+      const coordinator = coordinatorRef.current;
+      const generation = lifecycleGenerationRef.current;
+      if (
+        !isLoaded ||
+        !careScopeLoaded ||
+        !renderedStorageKey ||
+        !storageKey ||
+        !coordinator ||
+        storageKey !== renderedStorageKey ||
+        renderedStorageKeyRef.current !== storageKey
+      ) {
+        throw new Error("Avatar storage is not ready for this household.");
+      }
+      assertAvatarWriteAllowed(legacyAvatarCandidate, allowLegacyDecision);
+      return { storageKey, coordinator, generation };
+    },
+    [
+      careScopeLoaded,
+      isLoaded,
+      legacyAvatarCandidate,
+      renderedStorageKey,
+    ],
+  );
+
+  const persistUpdate = useCallback(
+    async (
+      update: (current: AvatarStoredState) => AvatarStoredState,
+      errorMessage: string,
+      allowLegacyDecision = false,
+    ) => {
+      const { storageKey, coordinator, generation } =
+        requireCurrentStorage(allowLegacyDecision);
+      setStorageError(null);
+      try {
+        const saved = await coordinator.enqueue(update, async (next) => {
+          if (
+            lifecycleGenerationRef.current !== generation ||
+            storageKeyRef.current !== storageKey ||
+            renderedStorageKeyRef.current !== storageKey
+          ) {
+            throw new Error("stale-avatar-lifecycle");
+          }
+          await runDeviceOperation(() =>
+            AsyncStorage.setItem(storageKey, serializeAvatarState(next)),
+          );
+          if (
+            lifecycleGenerationRef.current !== generation ||
+            storageKeyRef.current !== storageKey ||
+            renderedStorageKeyRef.current !== storageKey
+          ) {
+            throw new Error("stale-avatar-lifecycle");
+          }
+        });
+        const committed = commitAvatarMemoryIfCurrent(
+          saved,
+          () =>
+            lifecycleGenerationRef.current === generation &&
+            storageKeyRef.current === storageKey &&
+            renderedStorageKeyRef.current === storageKey,
+          applyMemoryState,
+        );
+        if (!committed) throw new Error("stale-avatar-lifecycle");
+        return saved;
+      } catch (error) {
+        if (
+          lifecycleGenerationRef.current === generation &&
+          storageKeyRef.current === storageKey &&
+          renderedStorageKeyRef.current === storageKey
+        ) {
+          setStorageError(errorMessage);
+        }
+        throw error;
+      }
+    },
+    [applyMemoryState, requireCurrentStorage, runDeviceOperation],
+  );
 
   const getAvatarSource = useCallback(
     (mood: Mood): ImageSourcePropType => {
@@ -168,37 +335,108 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
     [avatarSet],
   );
 
-  const saveAvatarSet = useCallback(async (set: AvatarSet) => {
-    const clean: AvatarSet = {};
-    for (const m of MOODS) {
-      if (set[m]) clean[m] = set[m];
-    }
-    setAvatarSet(clean);
-    await AsyncStorage.setItem(AVATAR_KEY, JSON.stringify(clean));
-  }, []);
+  const saveAvatarSet = useCallback(
+    async (set: AvatarSet) => {
+      const clean: AvatarSet = {};
+      for (const mood of MOODS) {
+        if (set[mood]) clean[mood] = set[mood];
+      }
+      await persistUpdate(
+        (current) => ({
+          ...current,
+          avatarSet: Object.keys(clean).length ? clean : null,
+        }),
+        "That care-twin image change was not saved. The previous avatar is still active.",
+      );
+    },
+    [persistUpdate],
+  );
 
   const clearAvatarSet = useCallback(async () => {
-    setAvatarSet(null);
-    await AsyncStorage.removeItem(AVATAR_KEY);
-  }, []);
-
-  const saveAvatarConfig = useCallback(async (config: PetAvatarConfig) => {
-    const clean = normalizeAvatarConfig(
-      {
-        ...config,
-        updatedAt: new Date().toISOString(),
-      },
-      config.petName || "Phoenix",
+    await persistUpdate(
+      (current) => ({ ...current, avatarSet: null }),
+      "The custom care-twin images were not cleared from this device.",
     );
-    setAvatarConfig(clean);
-    await AsyncStorage.setItem(AVATAR_CONFIG_KEY, JSON.stringify(clean));
+  }, [persistUpdate]);
+
+  const saveAvatarConfig = useCallback(
+    async (config: PetAvatarConfig) => {
+      const clean = {
+        ...normalizeAvatarConfig(
+          { ...config, updatedAt: new Date().toISOString() },
+          petName,
+        ),
+        petName,
+      };
+      await persistUpdate(
+        (current) => ({ ...current, avatarConfig: clean }),
+        "That care-twin configuration was not saved. The previous design is still active.",
+      );
+    },
+    [persistUpdate, petName],
+  );
+
+  const resetAvatarConfig = useCallback(
+    async (requestedPetName = petName) => {
+      const clean = createDefaultAvatarConfig(
+        resolvePetName(requestedPetName),
+      );
+      await persistUpdate(
+        (current) => ({ ...current, avatarConfig: clean }),
+        "The care-twin reset was not saved. The previous design is still active.",
+      );
+    },
+    [persistUpdate, petName],
+  );
+
+  const resolveLegacyAvatar = useCallback(
+    async (decision: "import" | "keep-current") => {
+      const candidate = legacyAvatarCandidate;
+      if (!candidate) return;
+      const decisionStorageKey = renderedStorageKeyRef.current;
+      await persistUpdate(
+        (current) =>
+          resolveAvatarLegacyDecision(current, candidate, decision),
+        "Your older care-twin choice was not saved. Both copies remain untouched.",
+        true,
+      );
+      if (
+        !decisionStorageKey ||
+        renderedStorageKeyRef.current !== decisionStorageKey ||
+        storageKeyRef.current !== decisionStorageKey
+      ) {
+        throw new Error("Avatar storage scope changed during the decision.");
+      }
+      setLegacyAvatarCandidate(null);
+    },
+    [legacyAvatarCandidate, persistUpdate],
+  );
+
+  const importLegacyAvatar = useCallback(
+    () => resolveLegacyAvatar("import"),
+    [resolveLegacyAvatar],
+  );
+  const keepScopedAvatar = useCallback(
+    () => resolveLegacyAvatar("keep-current"),
+    [resolveLegacyAvatar],
+  );
+  const retryAvatarStorage = useCallback(() => {
+    setReloadToken((current) => current + 1);
   }, []);
 
-  const resetAvatarConfig = useCallback(async (petName = "Phoenix") => {
-    const clean = createDefaultAvatarConfig(petName);
-    setAvatarConfig(clean);
-    await AsyncStorage.setItem(AVATAR_CONFIG_KEY, JSON.stringify(clean));
-  }, []);
+  const resetAvatarMemoryAfterDeviceWipe = useCallback(() => {
+    const fresh: AvatarStoredState = {
+      avatarSet: null,
+      avatarConfig: createDefaultAvatarConfig(petName),
+    };
+    storageKeyRef.current = null;
+    coordinatorRef.current = null;
+    applyMemoryState(fresh);
+    setLegacyAvatarCandidate(null);
+    setStorageError(null);
+    setIsLoaded(false);
+    setReloadToken((current) => current + 1);
+  }, [applyMemoryState, petName]);
 
   const hasCustomAvatar = !!avatarSet && Object.keys(avatarSet).length > 0;
   const hasConfiguredAvatar =
@@ -209,18 +447,24 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
     avatarConfig.coatPrimary !== "#1B1714" ||
     avatarConfig.coatSecondary !== "#C99052";
 
-  const value = useMemo(
+  const value = useMemo<AvatarContextValue>(
     () => ({
       avatarSet,
       avatarConfig,
       hasCustomAvatar,
       hasConfiguredAvatar,
       isLoaded,
+      storageError,
+      legacyAvatarAvailable: legacyAvatarCandidate != null,
       getAvatarSource,
       saveAvatarSet,
       clearAvatarSet,
       saveAvatarConfig,
       resetAvatarConfig,
+      importLegacyAvatar,
+      keepScopedAvatar,
+      retryAvatarStorage,
+      resetAvatarMemoryAfterDeviceWipe,
     }),
     [
       avatarSet,
@@ -228,19 +472,29 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
       hasCustomAvatar,
       hasConfiguredAvatar,
       isLoaded,
+      storageError,
+      legacyAvatarCandidate,
       getAvatarSource,
       saveAvatarSet,
       clearAvatarSet,
       saveAvatarConfig,
       resetAvatarConfig,
+      importLegacyAvatar,
+      keepScopedAvatar,
+      retryAvatarStorage,
+      resetAvatarMemoryAfterDeviceWipe,
     ],
   );
 
-  return <AvatarContext.Provider value={value}>{children}</AvatarContext.Provider>;
+  return (
+    <AvatarContext.Provider value={value}>{children}</AvatarContext.Provider>
+  );
 }
 
 export function useAvatar() {
-  const ctx = useContext(AvatarContext);
-  if (!ctx) throw new Error("useAvatar must be used within AvatarProvider");
-  return ctx;
+  const context = useContext(AvatarContext);
+  if (!context) {
+    throw new Error("useAvatar must be used within AvatarProvider");
+  }
+  return context;
 }

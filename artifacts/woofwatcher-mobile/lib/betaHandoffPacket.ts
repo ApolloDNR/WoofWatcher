@@ -37,6 +37,12 @@ export interface MobileLivePreviewHandoffProof {
   baseUrl: string;
   commit: string;
   exportIndexMtimeIso: string;
+  sourceProvenance?: {
+    status: "PASS" | "BLOCKED" | "HISTORICAL";
+    algorithm: "sha256";
+    sourceFingerprint: string;
+    detail: string;
+  };
   routeChecks: readonly {
     route: string;
     status: "PASS" | "BLOCKED";
@@ -73,6 +79,13 @@ export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof 
   baseUrl: "http://127.0.0.1:60160/",
   commit: "0f60c22",
   exportIndexMtimeIso: "2026-07-03T12:38:39.906Z",
+  sourceProvenance: {
+    status: "HISTORICAL",
+    algorithm: "sha256",
+    sourceFingerprint: "",
+    detail:
+      "Historical July 3 shell proof predates standalone source-provenance validation and cannot establish current source.",
+  },
   routeChecks: [
     { route: "/", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
     { route: "/sign-in", status: "PASS", detail: "200 text/html; charset=utf-8; Expo web entry present" },
@@ -141,10 +154,10 @@ export const RECORDED_LIVE_PREVIEW_HANDOFF_PROOF: MobileLivePreviewHandoffProof 
   truthBoundaries: [
     "Live preview proof is web preview only and does not replace native iOS/Android proof.",
     "Live preview proof does not approve provider-backed storage, sync, AI, payments, push, store approval, public launch, or Apollo sign-off.",
-    ".expo-smoke metadata does not prove the export was produced from the current commit; keep branch CI and export logs attached.",
+    "Historical July 3 shell proof predates standalone source-provenance validation and cannot establish current source; regenerate proof:live-preview before handoff.",
   ],
   nextActions: [
-    "Attach this JSON, the preview URL, and the preview:smoke terminal output to Share Beta Handoff without claiming native QA.",
+    "Do not attach this historical proof as current. Regenerate smoke:web, smoke:runtime, and proof:live-preview from the current checkout, then attach the new JSON without claiming native QA.",
     "Run WoofWatcher Verify after each new commit before treating dependency proof as current.",
     "Run native iOS/Android proof targets separately for Records local files, care-entry provider sync, push notifications, route visual consistency, and generated PDF/PNG artifacts.",
   ],
@@ -211,15 +224,24 @@ function formatLivePreviewProof(proof: MobileLivePreviewHandoffProof | null | un
 
   const passCount = proof.routeChecks.filter((check) => check.status === "PASS").length;
   const totalCount = proof.routeChecks.length;
+  const provenanceStatus = proof.sourceProvenance?.status ?? "HISTORICAL";
+  const historical = provenanceStatus === "HISTORICAL";
 
   return [
     `- Recorded live preview proof: ${proof.title} generated ${proof.generatedAtIso} on commit ${proof.commit}.`,
-    `- Result: ${proof.result}. Routes: ${passCount}/${totalCount} web-preview shell checks passed.`,
+    `- ${historical ? "Historical recorded result" : "Result"}: ${proof.result}. Routes: ${passCount}/${totalCount} web-preview shell checks passed.`,
+    `- Freshness: ${
+      historical
+        ? "HISTORICAL only; regenerate proof:live-preview from the current source before handoff."
+        : `${provenanceStatus}; ${proof.sourceProvenance?.detail ?? "No source-provenance detail recorded."}`
+    }`,
     `- Recorded verifier URL: ${proof.baseUrl}`,
     "- Preview handoff URL: http://127.0.0.1:4194/ after preview:smoke is running.",
     `- Export index mtime: ${proof.exportIndexMtimeIso}`,
     `- Route checks: ${proof.routeChecks.map((check) => `${check.route} ${check.status}`).join("; ")}.`,
-    "- Attach proof: JSON route proof plus preview:smoke URL/output before claiming preview handoff.",
+    historical
+      ? "- Attach proof only after regenerating proof:live-preview from the current checkout."
+      : "- Attach proof: JSON route proof plus preview:smoke URL/output before claiming preview handoff.",
     "- Rerun proof:live-preview after any new commit or export before treating preview proof as current.",
     "- Live preview proof does not replace native iOS/Android proof.",
     ...proof.truthBoundaries.map((boundary) => `- ${boundary}`),
@@ -341,7 +363,7 @@ export function buildBetaHandoffPacketShareText(
     "",
     "Required beta proof after export:",
     "- Open /care-twin-qa on iOS and Android before sharing beta proof.",
-    "- Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
+    "- Attach iOS Quick Log proof from /fastlog and Android Launch Readiness proof; Log History at /log cannot substitute for the Quick Log route.",
     "- Confirm Care Pass Report History storage status says Saved on this device, or Ready to upload only after structured provider storage proof is attached.",
     "- Confirm Report History Binary proof manifest shows local Care Pass PDF and Dog ID PNG rows while native/provider proof remains blocked.",
     "- Confirm Records Dog ID shares a local HTML credential file and SVG image source, while generated PNG/PDF readiness still needs native/provider proof.",
@@ -366,8 +388,8 @@ export function buildBetaHandoffPacketShareText(
     "- Open focused support legal readiness target: /care-twin-qa?qaSurface=support-legal-readiness-proof.",
     "- Attach structured support/legal proof files before public launch: support inbox proof with monitored inbox and store support URL; privacy/terms proof with retention/export/deletion and AI/storage/payments disclosures; refund/subscription proof; veterinary/emergency boundary proof; deletion escalation proof; incident response owner proof; and Apollo launch approval/no-launch-boundary proof with MIME, byte size, and row-specific approvals.",
     "- Open focused route visual target: /care-twin-qa?qaSurface=route-visual-consistency.",
-    "- Capture Log, Plan, Today, Pack, Story, Health, Records, and More on iOS and Android before claiming route visual proof.",
-    "- Name or save each Route Visual screenshot with the route label and platform before attaching it, for example Log-iOS, Log-Android, Plan-iOS, Plan-Android, Today-iOS, Today-Android, Pack-iOS, Pack-Android, Story-iOS, Story-Android, Health-iOS, Health-Android, Records-iOS, Records-Android, More-iOS, and More-Android.",
+    "- Capture Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy on iOS and Android before claiming route visual proof.",
+    "- Name or save each Route Visual screenshot with the route label and platform before attaching it, for example Today-iOS, Plan-iOS, Quick-Log-iOS, Health-iOS, More-iOS, Log-History-iOS, Records-iOS, and Privacy-iOS.",
     "- Save the Mission note and clear Pass pending proof in both /care-twin-qa and More.",
     "",
     "Native QA Needs tune fix brief:",

@@ -5,9 +5,8 @@
  * Honesty rule: every status here is USER-SET. WoofWatcher cannot see the
  * pantry, so the mockup's predicted countdowns ("2 days left") are replaced
  * by the owner's own word (Plenty / Low / Out, Packed / Unpacked) plus the
- * timestamp of when they last set it. `updatedAt` stays null until the user
- * actually touches an item, so the UI can tell honest defaults from real
- * answers.
+ * timestamp of when they last set it. Untouched items are `unconfirmed` and
+ * `updatedAt` stays null until the user actually answers.
  */
 
 export type SupplyGroup = "essentials" | "travel";
@@ -16,31 +15,33 @@ export type SupplyGroup = "essentials" | "travel";
 export type EssentialsSupplyStatus = "plenty" | "low" | "out";
 /** Checklist state for the Travel bag list. */
 export type TravelSupplyStatus = "packed" | "unpacked";
-export type SupplyStatus = EssentialsSupplyStatus | TravelSupplyStatus;
+export type SupplyStatus =
+  | "unconfirmed"
+  | EssentialsSupplyStatus
+  | TravelSupplyStatus;
 
 export interface SupplyItem {
   id: string;
   name: string;
   group: SupplyGroup;
-  /** User-set only - defaults start at the group's calm baseline. */
+  /** User-set only - defaults stay unconfirmed until the owner's first tap. */
   status: SupplyStatus;
   /** ISO timestamp of the last user-set status, or null for untouched defaults. */
   updatedAt: string | null;
 }
 
 /**
- * Fixed tap cycles, one per group. The first entry is also the calm default
- * a brand-new item starts at: essentials assume the shelf is stocked until
- * the owner says otherwise, travel gear starts unpacked because a checkmark
- * nobody earned would be a lie.
+ * Fixed confirmed-state tap cycles, one per group. `unconfirmed` is handled
+ * separately so it is only an initial state: the first tap confirms Plenty
+ * for essentials or Packed for checklist-style travel gear.
  */
 const STATUS_CYCLE: Record<SupplyGroup, readonly SupplyStatus[]> = {
   essentials: ["plenty", "low", "out"],
-  travel: ["unpacked", "packed"],
+  travel: ["packed", "unpacked"],
 };
 
-function defaultStatusFor(group: SupplyGroup): SupplyStatus {
-  return STATUS_CYCLE[group][0];
+function defaultStatusFor(_group: SupplyGroup): SupplyStatus {
+  return "unconfirmed";
 }
 
 /** Stable, readable id: "essentials-poop-bags", "travel-portable-bowl". */
@@ -89,15 +90,30 @@ export const DEFAULT_SUPPLIES: readonly SupplyItem[] = [
 ];
 
 /**
- * Next status when the owner taps a row: plenty -> low -> out -> plenty for
- * essentials, unpacked -> packed -> unpacked for travel gear. A status that
- * somehow does not belong to the item's group resets to the group's calm
- * baseline instead of crashing.
+ * Next status when the owner taps a row: unconfirmed -> plenty -> low -> out
+ * -> plenty for essentials, and unconfirmed -> packed -> unpacked -> packed
+ * for travel gear. A status that somehow does not belong to the item's group
+ * resets to unconfirmed instead of inventing an answer.
  */
 export function cycleStatus(item: Pick<SupplyItem, "group" | "status">): SupplyStatus {
   const cycle = STATUS_CYCLE[item.group];
+  if (item.status === "unconfirmed") return cycle[0];
   const index = cycle.indexOf(item.status);
+  if (index === -1) return defaultStatusFor(item.group);
   return cycle[(index + 1) % cycle.length];
+}
+
+/**
+ * A travel bag is ready only when it has at least one travel item and every
+ * travel item is explicitly packed. A partial checklist or any unconfirmed
+ * row must never unlock "out the door" copy.
+ */
+export function isTravelBagReady(items: readonly SupplyItem[]): boolean {
+  const travelItems = items.filter((item) => item.group === "travel");
+  return (
+    travelItems.length > 0 &&
+    travelItems.every((item) => item.status === "packed")
+  );
 }
 
 /** Case-insensitive name collision inside one group (rename excludes itself). */
@@ -117,7 +133,7 @@ function hasDuplicateName(
 }
 
 /**
- * Appends a new user item to its group with the calm default status and
+ * Appends a new user item to its group with an unconfirmed status and
  * `updatedAt: null` (adding a row is not a stock answer yet). Returns null
  * when the trimmed name is empty or already taken in that group, so the UI
  * can explain instead of silently dropping the input.
@@ -166,7 +182,8 @@ export function removeItem(items: readonly SupplyItem[], id: string): SupplyItem
   return items.filter((item) => item.id !== id);
 }
 
-const STORAGE_VERSION = 1;
+const LEGACY_STORAGE_VERSION = 1;
+const STORAGE_VERSION = 2;
 
 /** JSON payload for AsyncStorage; `parseSupplies` round-trips it exactly. */
 export function serializeSupplies(items: readonly SupplyItem[]): string {
@@ -186,7 +203,10 @@ function freshDefaults(): SupplyItem[] {
   return DEFAULT_SUPPLIES.map((item) => ({ ...item }));
 }
 
-function parseItem(raw: unknown): SupplyItem | null {
+function parseItem(
+  raw: unknown,
+  migrateUnstampedLegacyStatus: boolean,
+): SupplyItem | null {
   if (raw == null || typeof raw !== "object" || Array.isArray(raw)) return null;
   const value = raw as { [key: string]: unknown };
   const id = typeof value.id === "string" ? value.id.trim() : "";
@@ -195,53 +215,96 @@ function parseItem(raw: unknown): SupplyItem | null {
   if (!id || !name) return null;
   if (group !== "essentials" && group !== "travel") return null;
   const status = value.status;
-  if (typeof status !== "string" || !STATUS_CYCLE[group].includes(status as SupplyStatus)) {
+  if (
+    typeof status !== "string" ||
+    (status !== "unconfirmed" &&
+      !STATUS_CYCLE[group].includes(status as SupplyStatus))
+  ) {
     return null;
   }
   const updatedAt = value.updatedAt;
   if (updatedAt !== null && (typeof updatedAt !== "string" || !Number.isFinite(Date.parse(updatedAt)))) {
     return null;
   }
-  return { id, name, group, status: status as SupplyStatus, updatedAt: updatedAt as string | null };
+  return {
+    id,
+    name,
+    group,
+    status:
+      migrateUnstampedLegacyStatus && updatedAt === null
+        ? "unconfirmed"
+        : (status as SupplyStatus),
+    updatedAt: updatedAt as string | null,
+  };
 }
 
-/**
- * Strict parse of a stored payload. Anything malformed - unparseable JSON,
- * wrong version, missing fields, a status that does not belong to the item's
- * group, a bad timestamp, duplicate ids, or duplicate names within a group -
- * silently falls back to a fresh copy of DEFAULT_SUPPLIES. It never throws,
- * so a corrupted key can never crash the Pack tab. A well-formed empty list
- * is a legitimate user state and parses to [].
- */
-export function parseSupplies(raw: string | null | undefined): SupplyItem[] {
-  if (typeof raw !== "string" || !raw.trim()) return freshDefaults();
+function parseStoredSupplies(raw: string): SupplyItem[] | null {
+  if (!raw.trim()) return null;
   let payload: unknown;
   try {
     payload = JSON.parse(raw);
   } catch {
-    return freshDefaults();
+    return null;
   }
   if (payload == null || typeof payload !== "object" || Array.isArray(payload)) {
-    return freshDefaults();
+    return null;
   }
   const { version, items } = payload as { version?: unknown; items?: unknown };
-  if (version !== STORAGE_VERSION || !Array.isArray(items)) return freshDefaults();
+  if (
+    (version !== LEGACY_STORAGE_VERSION && version !== STORAGE_VERSION) ||
+    !Array.isArray(items)
+  ) {
+    return null;
+  }
+  const migrateUnstampedLegacyStatus = version === LEGACY_STORAGE_VERSION;
 
   const parsed: SupplyItem[] = [];
   for (const entry of items) {
-    const item = parseItem(entry);
-    if (!item) return freshDefaults();
+    const item = parseItem(entry, migrateUnstampedLegacyStatus);
+    if (!item) return null;
     parsed.push(item);
   }
   // Enforce the same invariants addItem/renameItem maintain, so every list
   // the app holds obeys one contract regardless of where it came from.
   const seenIds = new Set<string>();
   for (const item of parsed) {
-    if (seenIds.has(item.id)) return freshDefaults();
+    if (seenIds.has(item.id)) return null;
     seenIds.add(item.id);
-    if (hasDuplicateName(parsed, item.group, item.name, item.id)) return freshDefaults();
+    if (hasDuplicateName(parsed, item.group, item.name, item.id)) return null;
   }
   return parsed;
+}
+
+export type SuppliesStorageInspection =
+  | { status: "missing"; items: SupplyItem[] }
+  | { status: "valid"; items: SupplyItem[] }
+  | { status: "invalid"; items: null };
+
+/**
+ * Distinguishes a genuinely new checklist from an unreadable existing key.
+ * The Pack screen must not replace corrupt or unsupported owner data with
+ * defaults and then overwrite it on the next tap.
+ */
+export function inspectSuppliesStorage(
+  raw: string | null | undefined,
+): SuppliesStorageInspection {
+  if (raw == null) {
+    return { status: "missing", items: freshDefaults() };
+  }
+  const parsed = parseStoredSupplies(raw);
+  return parsed
+    ? { status: "valid", items: parsed }
+    : { status: "invalid", items: null };
+}
+
+/**
+ * Backwards-compatible model parser for non-storage callers. It never throws
+ * and still returns fresh defaults for absent or malformed input. Storage
+ * boundaries should use inspectSuppliesStorage so corruption remains visible.
+ */
+export function parseSupplies(raw: string | null | undefined): SupplyItem[] {
+  const inspected = inspectSuppliesStorage(raw);
+  return inspected.items ?? freshDefaults();
 }
 
 /**

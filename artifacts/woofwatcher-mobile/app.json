@@ -27,7 +27,16 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "privacyManifests": {
-        "NSPrivacyCollectedDataTypes": [],
+        "NSPrivacyCollectedDataTypes": [
+          {
+            "NSPrivacyCollectedDataType": "NSPrivacyCollectedDataTypePreciseLocation",
+            "NSPrivacyCollectedDataTypeLinked": true,
+            "NSPrivacyCollectedDataTypeTracking": false,
+            "NSPrivacyCollectedDataTypePurposes": [
+              "NSPrivacyCollectedDataTypePurposeAppFunctionality"
+            ]
+          }
+        ],
         "NSPrivacyTracking": false,
         "NSPrivacyAccessedAPITypes": [
           {
@@ -84,8 +93,9 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "WoofWatcher uses your location only while you record a walk, to draw the route on the walk map. Routes stay in your care log on this device.",
-          "isAndroidBackgroundLocationEnabled": false
+          "locationWhenInUsePermission": "WoofWatcher requests precise foreground location only when you start recording a walk route. It uses the points to draw the map and calculate that walk's distance. The route is saved with the care log and may sync with your household when provider sync is enabled. Background location is not enabled.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false
         }
       ],
       "expo-web-browser"

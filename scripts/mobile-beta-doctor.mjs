@@ -73,6 +73,16 @@ function includesAll(source, values) {
   return values.every((value) => source.includes(value));
 }
 
+function includesInOrder(source, values) {
+  let offset = 0;
+  for (const value of values) {
+    const index = source.indexOf(value, offset);
+    if (index === -1) return false;
+    offset = index + value.length;
+  }
+  return true;
+}
+
 const doctorName = "WoofWatcher mobile beta doctor";
 const doctorPurpose = "confirm the two-day beta export path before device QA.";
 const proofCommands = [
@@ -110,7 +120,7 @@ const nextActions = [
   "Attach JSON doctor output, branch CI proof, smoke:web and smoke:runtime output, and the preview:smoke URL to the handoff without claiming native QA.",
   "Run pnpm run doctor:native-qa:json before attempting native iOS or Android proof; beta export proof still does not replace native QA.",
   "Open /care-twin-qa on a real device or simulator.",
-  "Attach iOS Quick Log/Log proof and Android Launch Readiness proof.",
+  "Attach iOS Quick Log proof from /fastlog and Android Launch Readiness proof; Log History at /log cannot substitute.",
   "Verify Records/Care Pass Report History shows Printable HTML local file, file size, and generated PDF/native proof still blocked.",
   "Verify Records Dog ID shares a local HTML credential file and SVG image source, while generated PNG/PDF readiness still needs native/provider proof.",
   "Open /care-twin-qa?qaSurface=auth-setup-onboarding-proof and capture Auth gateway plus Setup local-preview proof while provider-backed auth and household creation stay blocked until structured Clerk, redirect/deep-link, household membership, and Apollo auth launch proof files are attached.",
@@ -123,7 +133,7 @@ const nextActions = [
   "Open /care-twin-qa?qaSurface=store-accounts-proof and capture Apple Developer team id, App Store Connect app record, Google Play package record, platform/store-named iOS App Store Connect developer account proof, Android Google Play package proof, shared bundle/signing proof, reviewer access, metadata/privacy, Apollo release approval, no-submit boundary, and store submission proof before claiming App Review or Play review readiness.",
   "Open /care-twin-qa?qaSurface=account-deletion-proof and capture structured self-serve deletion route/auth, export-before-delete, data/object deletion receipt, audit/support receipt, recovery/cancellation, and legal/store approval proof files before enabling destructive account deletion.",
   "Open /care-twin-qa?qaSurface=support-legal-readiness-proof and capture structured support/legal proof files for support inbox, privacy policy and terms, refund/subscription policy, veterinary boundary and emergency language, deletion escalation, incident response owner, and Apollo approval/no-launch boundary before public launch.",
-  "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Log, Plan, Today, Pack, Story, Health, Records, and More on iOS and Android with route-named evidence before claiming route visual proof.",
+  "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy on iOS and Android with route-named evidence before claiming route visual proof.",
   "Save the required Mission note before marking Owner Preview Core Loop as Pass.",
   "Check GitHub Actions after billing/runner access is restored; zero-step failures are not app proof.",
 ];
@@ -140,8 +150,19 @@ check(
   nodeMajor >= 24 ? `node ${process.versions.node}` : `node ${process.versions.node}; install Node 24 before mobile beta export`,
 );
 
-const pnpm = runFirstAvailable(process.platform === "win32" ? ["pnpm.cmd", "pnpm"] : ["pnpm"], ["--version"]);
-const corepack = runFirstAvailable(process.platform === "win32" ? ["corepack.cmd", "corepack"] : ["corepack"], ["--version"]);
+const corepackCommands = process.platform === "win32"
+  ? ["corepack.cmd", "corepack"]
+  : ["corepack"];
+const barePnpmCommands = process.platform === "win32"
+  ? ["pnpm.cmd", "pnpm"]
+  : ["pnpm"];
+const corepack = runFirstAvailable(corepackCommands, ["--version"]);
+const corepackPnpm = corepack.status === 0
+  ? runFirstAvailable(corepackCommands, ["pnpm", "--version"])
+  : { status: 1, stdout: "", stderr: "" };
+const barePnpm = runFirstAvailable(barePnpmCommands, ["--version"]);
+const pnpm = corepackPnpm.status === 0 ? corepackPnpm : barePnpm;
+const pnpmProbe = corepackPnpm.status === 0 ? "corepack pnpm" : "PATH pnpm";
 const bundledPnpmPath = join(
   resolve(dirname(process.execPath), "..", ".."),
   "bin",
@@ -169,7 +190,7 @@ check(
   "pnpm available",
   pnpm.status === 0,
   pnpm.status === 0
-    ? pnpm.stdout.trim()
+    ? `${pnpmProbe} ${pnpm.stdout.trim()}`
     : "install pnpm 10.24.0 directly, or run Corepack bootstrap: corepack prepare pnpm@10.24.0 --activate",
 );
 if (pnpm.status === 0) {
@@ -275,6 +296,7 @@ const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
 const setupRoutePath = join(mobileRoot, "app", "setup.tsx");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
 const careContextPath = join(mobileRoot, "context", "CareContext.tsx");
+const careDocNormalizationPath = join(mobileRoot, "lib", "careDocNormalization.ts");
 const premiumRoutePath = join(mobileRoot, "app", "premium.tsx");
 const privacyRoutePath = join(mobileRoot, "app", "privacy.tsx");
 const recordsRoutePath = join(mobileRoot, "app", "(tabs)", "records.tsx");
@@ -311,6 +333,9 @@ const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(car
 const setupRouteSource = existsSync(setupRoutePath) ? readFileSync(setupRoutePath, "utf8") : "";
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
 const careContextSource = existsSync(careContextPath) ? readFileSync(careContextPath, "utf8") : "";
+const careDocNormalizationSource = existsSync(careDocNormalizationPath)
+  ? readFileSync(careDocNormalizationPath, "utf8")
+  : "";
 const premiumRouteSource = existsSync(premiumRoutePath) ? readFileSync(premiumRoutePath, "utf8") : "";
 const privacyRouteSource = existsSync(privacyRoutePath) ? readFileSync(privacyRoutePath, "utf8") : "";
 const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRoutePath, "utf8") : "";
@@ -876,8 +901,8 @@ const careTwinQaRouteProofFlowIsSourceBacked = includesAll(careTwinQaRouteSource
   ])
   && includesAll(mobileReleaseQaSource, [
     "Owner Preview Core Loop",
-    "iOS Quick Log or Log screenshot.",
-    "Android Launch Readiness screenshot.",
+    "iOS screenshot of Quick Log",
+    "Android screenshot of Launch Readiness from More",
     'route: "/care-twin-qa"',
   ]);
 check(
@@ -1073,10 +1098,15 @@ const careDocLaunchProofPersistenceGuardIsSourceBacked = includesAll(careContext
   "pushNotificationsProofReady: boolean",
   "storeAccountsProofReady: boolean",
   "accountDeletionProofReady: boolean",
-  "normalizeSupportLegalReadinessEvidence",
-  "supportLegalReadinessEvidence: normalizeSupportLegalReadinessEvidence(launchSupportProfile.supportLegalReadinessEvidence)",
-  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
 ])
+  && includesAll(careDocNormalizationSource, [
+    "normalizeCareDoc",
+    "preserveUnknownFields",
+    "supportLegalReadinessEvidence: supportEvidence(",
+    "supportSource.supportLegalReadinessEvidence",
+    "launchProviderProfile: preserveUnknownFields(",
+    "normalizeLaunchProviderProfile(providerSource)",
+  ])
   && includesAll(moreRouteSource, [
     "deriveLaunchProviderSetup(state.launchProviderProfile)",
     "supportRunbookProofReady",
@@ -1086,8 +1116,8 @@ check(
   "care document launch proof persistence guard is source-backed",
   careDocLaunchProofPersistenceGuardIsSourceBacked,
   careDocLaunchProofPersistenceGuardIsSourceBacked
-    ? "CareContext preserves structured support/legal and provider proof fields before More feeds the gated launch-readiness model"
-    : "preserve structured launch proof fields in CareContext so valid saved/imported proof can reach Launch Readiness without raw boolean bypasses",
+    ? "CareContext types and shared care-document normalization preserve structured support/legal and provider proof fields before More feeds the gated launch-readiness model"
+    : "preserve structured launch proof fields in CareContext and careDocNormalization.ts so valid saved/imported proof can reach Launch Readiness without raw boolean bypasses",
 );
 
 const providerLaunchSetupProofGuardIsSourceBacked = includesAll(launchProviderSetupSource, [
@@ -2162,33 +2192,79 @@ check(
     : "keep Privacy export from serializing provider-approved launch statuses unless support/provider proof models are ready",
 );
 
-const routeVisualProofTargetIsSourceBacked = includesAll(mobileReleaseQaSource, [
-  "route-visual-consistency",
-  "Route Visual Consistency",
-  "Today",
-  "Log",
-  "Plan",
-  "Pack",
-  "Story",
-  "Health",
-  "Records",
-  "More",
-    "iOS screenshot of Today route top.",
-    "Android screenshot of Today route top.",
+const routeVisualSourceStart = mobileReleaseQaSource.indexOf(
+  'id: "route-visual-consistency"',
+);
+const routeVisualSourceEnd = mobileReleaseQaSource.indexOf(
+  "\n  {",
+  routeVisualSourceStart + 1,
+);
+const routeVisualSource = routeVisualSourceStart >= 0
+  ? mobileReleaseQaSource.slice(
+      routeVisualSourceStart,
+      routeVisualSourceEnd >= 0 ? routeVisualSourceEnd : undefined,
+    )
+  : "";
+const exactRouteVisualLabelsAndRoutes = [
+  'label: "Today",',
+  'route: "/",',
+  'label: "Plan",',
+  'route: "/calendar",',
+  'label: "Quick Log",',
+  'route: "/fastlog",',
+  'label: "Health",',
+  'route: "/health",',
+  'label: "More",',
+  'route: "/more",',
+  'label: "Log History",',
+  'route: "/log",',
+  'label: "Records",',
+  'route: "/records",',
+  'label: "Privacy",',
+  'route: "/privacy",',
+];
+const exactRouteVisualEvidence = [
+  "iOS screenshot of Today route top.",
+  "Android screenshot of Today route top.",
+  "iOS screenshot of Plan route top.",
+  "Android screenshot of Plan route top.",
+  "iOS screenshot of Quick Log route top.",
+  "Android screenshot of Quick Log route top.",
+  "iOS screenshot of Health route top.",
+  "Android screenshot of Health route top.",
+  "iOS screenshot of More route top.",
+  "Android screenshot of More route top.",
+  "iOS screenshot of Log History route top.",
+  "Android screenshot of Log History route top.",
+  "iOS screenshot of Records route top.",
+  "Android screenshot of Records route top.",
+  "iOS screenshot of Privacy route top.",
+  "Android screenshot of Privacy route top.",
+  "Today-iOS",
+  "Privacy-Android",
+];
+const routeVisualProofTargetIsSourceBacked = includesInOrder(
+  routeVisualSource,
+  exactRouteVisualLabelsAndRoutes,
+)
+  && includesAll(routeVisualSource, exactRouteVisualEvidence)
+  && !routeVisualSource.includes('label: "Pack"')
+  && !routeVisualSource.includes('label: "Story"')
+  && includesAll(routeVisualSource, [
     "Route-named file names or URIs for every attachment",
     'requiredNativePlatforms: ["ios", "android"]',
-])
+  ])
   && includesAll(betaHandoffPacketSource, [
     "Open focused route visual target: /care-twin-qa?qaSurface=route-visual-consistency.",
-    "Capture Log, Plan, Today, Pack, Story, Health, Records, and More on iOS and Android before claiming route visual proof.",
+    "Capture Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy on iOS and Android before claiming route visual proof.",
     "Name or save each Route Visual screenshot with the route label and platform before attaching it",
     "Today-iOS",
-    "More-Android",
+    "Privacy-iOS",
   ])
   && includesAll(mobileReleaseSmokeChecklistSource, [
     "Focused route visual consistency target",
     "/care-twin-qa?qaSurface=route-visual-consistency",
-    "Log, Plan, Today, Pack, Story, Health, Records, and More",
+    "Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy on iOS and Android",
     "route-named iOS screenshots",
     "route-named Android screenshots",
     "Web preview screenshots do not replace native proof",

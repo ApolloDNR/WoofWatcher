@@ -22,11 +22,14 @@ export interface AuthSetupNativeProofEvidence {
 export type AuthProviderStructuredProofKind =
   | "clerk-production"
   | "redirect-deep-links"
+  | "oauth-completion"
+  | "session-token-policy"
   | "household-membership"
   | "launch-approval";
 
 export interface AuthProviderStructuredProofEvidence {
   kind: AuthProviderStructuredProofKind;
+  platform?: AuthSetupNativeProofPlatform | null;
   fileName?: string | null;
   uri?: string | null;
   mimeType?: string | null;
@@ -44,6 +47,23 @@ export interface AuthProviderStructuredProofEvidence {
   nativeProofReference?: string | null;
   localPlaceholderKeysExcluded?: boolean | null;
   secretStorageApproved?: boolean | null;
+  strictUserEnumerationProtectionEnabled?: boolean | null;
+  secondFactorSignInDisabled?: boolean | null;
+  clientTrustSignInDisabled?: boolean | null;
+  newPasswordSignInDisabled?: boolean | null;
+  nativeSignUpRequiredFields?: readonly string[] | null;
+  emailCodeSignUpVerificationEnabled?: boolean | null;
+  unsupportedSessionTasksDisabled?: boolean | null;
+  oauthStrategy?: string | null;
+  oauthSessionCompleted?: boolean | null;
+  noLocalPreviewFallback?: boolean | null;
+  noBlankScreen?: boolean | null;
+  sessionLifetimePolicy?: string | null;
+  tokenRefreshPolicy?: string | null;
+  signOutPolicy?: string | null;
+  revokedSessionPolicy?: string | null;
+  secureStoragePolicy?: string | null;
+  sessionPolicyApproved?: boolean | null;
   expoSchemeApproved?: boolean | null;
   iosBundleApproved?: boolean | null;
   androidBundleApproved?: boolean | null;
@@ -82,7 +102,7 @@ export const AUTH_PROVIDER_PROOF_ITEMS: readonly AuthProviderProofItem[] = [
   {
     label: "Clerk production app",
     requiredEvidence:
-      "structured Clerk production proof file with Clerk production app id, publishable key environment, secret storage location, local-placeholder exclusion, MIME, byte size, and approval booleans.",
+      "structured Clerk production proof file with Clerk production app id, publishable key environment, secret storage location, strict user-enumeration protection, unsupported native sign-in continuations disabled, unsupported session tasks disabled, exact supported native sign-up requirements, email-code sign-up verification enabled, local-placeholder exclusion, MIME, byte size, and approval booleans.",
   },
   {
     label: "Redirect and deep-link URLs",
@@ -107,7 +127,7 @@ export const AUTH_PROVIDER_PROOF_ITEMS: readonly AuthProviderProofItem[] = [
 ];
 
 export const AUTH_PROVIDER_PROOF_SUMMARY =
-  "Production auth provider proof packet: Clerk production app id, redirect/deep-link URL list, OAuth sign-in test, session policy, and household membership policy before provider-backed account sync or household creation can be claimed.";
+  "Production auth provider proof packet: Clerk production app id, strict user-enumeration protection, unsupported native sign-in continuations disabled, unsupported session tasks disabled, exact supported native sign-up requirements, email-code sign-up verification, redirect/deep-link URL list, iOS and Android OAuth sign-in tests proving completion, session policy, and household membership policy before provider-backed account sync or household creation can be claimed.";
 
 interface AuthSetupNativeProofRequirement {
   platform: AuthSetupNativeProofPlatform;
@@ -199,6 +219,13 @@ function hasProofMime(evidence: AuthProviderStructuredProofEvidence): boolean {
   );
 }
 
+function hasProviderMediaMime(
+  evidence: AuthProviderStructuredProofEvidence,
+): boolean {
+  const mime = normalizeEvidenceText(evidence.mimeType);
+  return mime.startsWith("image ") || mime.startsWith("video ");
+}
+
 function hasText(value: unknown): boolean {
   return String(value ?? "").trim().length > 0;
 }
@@ -222,13 +249,28 @@ function matchesBaseProviderProof(
 }
 
 function matchesClerkProductionProof(evidence: AuthProviderStructuredProofEvidence): boolean {
+  const nativeSignUpRequiredFields = [
+    ...(evidence.nativeSignUpRequiredFields ?? []),
+  ].sort();
+  const hasSupportedNativeSignUpRequirements =
+    nativeSignUpRequiredFields.length === 2 &&
+    nativeSignUpRequiredFields[0] === "email_address" &&
+    nativeSignUpRequiredFields[1] === "password";
+
   return (
     matchesBaseProviderProof(evidence, "clerk-production", [["clerk"], ["production", "auth"]]) &&
     hasText(evidence.productionAppId) &&
     hasText(evidence.publishableKeyEnvironment) &&
     hasText(evidence.secretStorageLocation) &&
     evidence.localPlaceholderKeysExcluded === true &&
-    evidence.secretStorageApproved === true
+    evidence.secretStorageApproved === true &&
+    evidence.strictUserEnumerationProtectionEnabled === true &&
+    evidence.secondFactorSignInDisabled === true &&
+    evidence.clientTrustSignInDisabled === true &&
+    evidence.newPasswordSignInDisabled === true &&
+    hasSupportedNativeSignUpRequirements &&
+    evidence.emailCodeSignUpVerificationEnabled === true &&
+    evidence.unsupportedSessionTasksDisabled === true
   );
 }
 
@@ -256,6 +298,43 @@ function matchesHouseholdMembershipProof(evidence: AuthProviderStructuredProofEv
   );
 }
 
+function matchesOAuthCompletionProof(
+  evidence: AuthProviderStructuredProofEvidence,
+  platform: AuthSetupNativeProofPlatform,
+): boolean {
+  const nameText = providerProofNameText(evidence);
+  return (
+    evidence.kind === "oauth-completion" &&
+    evidence.platform === platform &&
+    hasAnyToken(nameText, [platform]) &&
+    hasAllTokenGroups(nameText, [["oauth", "google"], ["completion", "complete"]]) &&
+    hasProviderMediaMime(evidence) &&
+    hasPositiveProofByteSize(evidence) &&
+    normalizeEvidenceText(evidence.oauthStrategy) === "oauth google" &&
+    evidence.oauthSessionCompleted === true &&
+    evidence.noLocalPreviewFallback === true &&
+    evidence.noBlankScreen === true
+  );
+}
+
+function matchesSessionTokenPolicyProof(
+  evidence: AuthProviderStructuredProofEvidence,
+): boolean {
+  return (
+    matchesBaseProviderProof(
+      evidence,
+      "session-token-policy",
+      [["session"], ["token", "policy"]],
+    ) &&
+    hasText(evidence.sessionLifetimePolicy) &&
+    hasText(evidence.tokenRefreshPolicy) &&
+    hasText(evidence.signOutPolicy) &&
+    hasText(evidence.revokedSessionPolicy) &&
+    hasText(evidence.secureStoragePolicy) &&
+    evidence.sessionPolicyApproved === true
+  );
+}
+
 function matchesLaunchApprovalProof(evidence: AuthProviderStructuredProofEvidence): boolean {
   return (
     matchesBaseProviderProof(evidence, "launch-approval", [["auth", "apollo"], ["launch", "approval", "no launch"]]) &&
@@ -274,6 +353,37 @@ function summarizeProviderProof(
   return {
     ready: Boolean(proof),
     label: proof ? String(proof.fileName ?? proof.uri ?? "Structured auth provider proof") : "",
+  };
+}
+
+function summarizeOAuthCompletionProof(
+  evidence: readonly AuthProviderStructuredProofEvidence[],
+): {
+  ready: boolean;
+  readyCount: number;
+  totalCount: number;
+  missingLabels: string[];
+} {
+  const requirements: ReadonlyArray<{
+    platform: AuthSetupNativeProofPlatform;
+    label: string;
+  }> = [
+    { platform: "ios", label: "iOS OAuth completion proof" },
+    { platform: "android", label: "Android OAuth completion proof" },
+  ];
+  const missingLabels = requirements
+    .filter(
+      ({ platform }) =>
+        !evidence.some((item) =>
+          matchesOAuthCompletionProof(item, platform),
+        ),
+    )
+    .map(({ label }) => label);
+  return {
+    ready: missingLabels.length === 0,
+    readyCount: requirements.length - missingLabels.length,
+    totalCount: requirements.length,
+    missingLabels,
   };
 }
 
@@ -338,12 +448,19 @@ export function buildAuthSetupProofManifest(
   const setupNativeProof = summarizeNativeProof(nativeEvidence, "setup-local-preview");
   const clerkProductionProof = summarizeProviderProof(providerEvidence, matchesClerkProductionProof);
   const redirectDeepLinkProof = summarizeProviderProof(providerEvidence, matchesRedirectDeepLinkProof);
+  const oauthCompletionProof = summarizeOAuthCompletionProof(providerEvidence);
+  const sessionTokenPolicyProof = summarizeProviderProof(
+    providerEvidence,
+    matchesSessionTokenPolicyProof,
+  );
   const householdMembershipProof = summarizeProviderProof(providerEvidence, matchesHouseholdMembershipProof);
   const launchApprovalProof = summarizeProviderProof(providerEvidence, matchesLaunchApprovalProof);
   const launchReady =
     launchApprovalProof.ready &&
     clerkProductionProof.ready &&
     redirectDeepLinkProof.ready &&
+    oauthCompletionProof.ready &&
+    sessionTokenPolicyProof.ready &&
     authNativeProof.ready &&
     setupNativeProof.ready &&
     householdMembershipProof.ready;
@@ -354,8 +471,8 @@ export function buildAuthSetupProofManifest(
       "Clerk proof ready",
       clerkProductionApproved ? "Clerk pending structured proof" : "Clerk pending",
       clerkProductionProof.ready
-        ? `${clerkProductionProof.label} proves Clerk production app id, publishable key environment, secret storage, and local-placeholder exclusion.`
-        : "Clerk production app id, publishable key environment, secret storage, local-placeholder exclusion, MIME, byte size, and approval booleans must be attached in a structured proof file.",
+        ? `${clerkProductionProof.label} proves Clerk production app id, publishable key environment, secret storage, strict user-enumeration protection, unsupported native sign-in continuations disabled, unsupported session tasks disabled, exact supported native sign-up requirements, email-code sign-up verification enabled, and local-placeholder exclusion.`
+        : "Clerk production app id, publishable key environment, secret storage, strict user-enumeration protection, unsupported native sign-in continuations disabled (second factor, client trust, and new-password states), unsupported session tasks disabled, supported native sign-up requirements limited to email_address and password, email-code sign-up verification enabled, local-placeholder exclusion, MIME, byte size, and approval booleans must be attached in a structured proof file.",
     ),
     manifestRow(
       "Redirect and deep links",
@@ -365,6 +482,24 @@ export function buildAuthSetupProofManifest(
       redirectDeepLinkProof.ready
         ? `${redirectDeepLinkProof.label} proves Expo scheme, iOS/Android bundle identifiers, production web URL, OAuth return paths, and post-auth routing.`
         : "Expo scheme, iOS and Android bundle identifiers, production web URL, OAuth return paths, post-auth routing, MIME, byte size, and approval booleans must be attached in a structured proof file.",
+    ),
+    manifestRow(
+      "OAuth completion proof",
+      oauthCompletionProof.ready,
+      `${oauthCompletionProof.totalCount}/${oauthCompletionProof.totalCount} OAuth completion proofs ready`,
+      `${oauthCompletionProof.readyCount}/${oauthCompletionProof.totalCount} OAuth completion proofs ready`,
+      oauthCompletionProof.ready
+        ? "iOS and Android OAuth completion proof confirms oauth_google created a provider session with no local-preview fallback or blank screen."
+        : `iOS and Android OAuth completion evidence is missing or incomplete: ${oauthCompletionProof.missingLabels.join(", ")}. Each platform needs an image or video with positive byte size proving oauth_google completed a provider session with no local-preview fallback or blank screen.`,
+    ),
+    manifestRow(
+      "Session and token policy",
+      sessionTokenPolicyProof.ready,
+      "Session policy ready",
+      "Session policy blocked",
+      sessionTokenPolicyProof.ready
+        ? `${sessionTokenPolicyProof.label} proves the approved session lifetime, token refresh, sign-out behavior, revoked-session handling, and secure storage policy.`
+        : "Session lifetime, token refresh, sign-out behavior, revoked-session handling, and secure storage policy must be present in an approved structured proof file with MIME and positive byte size.",
     ),
     manifestRow(
       "Native auth screenshots",
@@ -401,8 +536,8 @@ export function buildAuthSetupProofManifest(
       launchReady
         ? `${launchApprovalProof.label} proves Apollo auth launch approval and the no-launch boundary after provider and native proof.`
         : launchGateApproved
-          ? "Auth and Setup launch proof is staged, but structured Apollo launch approval/no-launch-boundary proof is still required with provider and native evidence."
-          : "Auth and Setup launch proof stays blocked until Clerk, redirects, platform-specific native screenshots, household creation policy, structured Apollo launch approval, and no-launch-boundary proof are attached.",
+          ? "Auth and Setup launch proof is staged, but structured Apollo launch approval/no-launch-boundary proof is still required with provider, OAuth, session, and native evidence."
+          : "Auth and Setup launch proof stays blocked until Clerk, redirects, iOS/Android OAuth completion, session/token policy, platform-specific native screenshots, household creation policy, structured Apollo launch approval, and no-launch-boundary proof are attached.",
     ),
   ];
   const blockers = rows

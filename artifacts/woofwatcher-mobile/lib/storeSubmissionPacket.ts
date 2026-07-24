@@ -125,6 +125,8 @@ function buildPrivacyDisclosures(): string[] {
     "Care logs, routines, notes, household roles, and dog profile details may be stored to coordinate real pet care.",
     "Dog health observations, appetite, stool, vomiting, medication, weight, and vet-record notes may be stored for owner review and care-pass preparation.",
     "Photos, proof images, record documents, Adventure memories, and QA screenshots require explicit storage, export, and deletion rules before provider upload.",
+    "Precise foreground location is requested only when an owner starts recording a walk route, to draw its map and calculate distance; background location is not enabled.",
+    "Recorded routes are stored with the care log, may sync to a provider-synced household, and may be visible to that household; opening a route map requests OpenStreetMap tiles or neighborhood geometry for the recorded area.",
     "AI assistant, notifications, payments, and cross-device sync must disclose provider use only after those services are configured.",
   ];
 }

@@ -176,7 +176,7 @@ test("future-dated and unparseable logs never mint XP", () => {
   assert.equal(model.todayXp, 15);
 });
 
-test("Home wires the care career level strip, XP toasts, and level-up celebration", () => {
+test("Today keeps earned XP in Story while More owns detailed care career progress", () => {
   const home = readFileSync(
     join(
       dirname(fileURLToPath(import.meta.url)),
@@ -187,13 +187,46 @@ test("Home wires the care career level strip, XP toasts, and level-up celebratio
     ),
     "utf8",
   );
+  const more = readFileSync(
+    join(
+      dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "app",
+      "(tabs)",
+      "more.tsx",
+    ),
+    "utf8",
+  );
+  const homeStory = readFileSync(
+    join(
+      dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "components",
+      "home",
+      "HomeStorySummary.tsx",
+    ),
+    "utf8",
+  );
+  const quickLogController = readFileSync(
+    join(
+      dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "components",
+      "logging",
+      "useQuickLogController.ts",
+    ),
+    "utf8",
+  );
   assert.match(home, /deriveCareCareer\(state\.entries, now\)/);
-  assert.match(home, /careXpForEntry\(entry\)/);
+  assert.match(home, /useQuickLogController/);
+  assert.match(quickLogController, /careXpForEntry\(entry\)/);
   assert.match(home, /care XP/);
   assert.match(home, /Level up!/);
   assert.match(home, /spriteAction: "celebrate-hop"/);
-  assert.match(home, /Care level \$\{careCareer\.level\}/);
-  assert.match(home, /every point from real care logs/);
+  assert.match(home, /todayXp=\{careCareer\.todayXp\}/);
+  assert.match(homeStory, /\+\{todayXp\} XP/);
+  assert.match(more, /Lv \$\{moreCareCareer\.level\} \$\{moreCareCareer\.title\}/);
+  assert.match(more, /XP toward Lv \{moreCareCareer\.level \+ 1\}/);
 });
 
 test("care streak counts consecutive logged days from real evidence", () => {

@@ -312,6 +312,33 @@ test("recent failed sync creates a sync action", () => {
   assert.equal(command.sync.failed, 1);
 });
 
+test("revision conflict becomes a distinct owner-review action instead of synced or retrying", () => {
+  const command = deriveTodayCommand(
+    state({
+      entries: [
+        {
+          id: "server-conflict",
+          type: "meal",
+          title: "Breakfast",
+          caregiver: "Emma",
+          occurredAt: "2026-06-06T07:35:00-07:00",
+          syncStatus: "conflict",
+          syncError: "Household care changed before this edit synced. Review your saved version.",
+        },
+      ],
+    }),
+    MORNING,
+  );
+
+  assert.equal(command.primaryAction.kind, "sync");
+  assert.equal(command.primaryAction.route, "/log?entry=server-conflict");
+  assert.equal(command.primaryAction.urgency, "watch");
+  assert.match(command.primaryAction.label, /review care conflict/i);
+  assert.equal(command.sync.conflicted, 1);
+  assert.match(command.sync.label, /conflict/i);
+  assert.doesNotMatch(command.sync.label, /synced|syncing/i);
+});
+
 test("handoff review opens the exact latest care log when the day is caught up", () => {
   const command = deriveTodayCommand(
     state({

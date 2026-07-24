@@ -1,12 +1,20 @@
-import { Tabs, usePathname, useRouter } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useRef } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBounce } from "@/components/motion/GameFeel";
 import { useColors } from "@/hooks/useColors";
+import { useWebQaFontScale } from "@/hooks/useWebQaFontScale";
 import { getFloatingTabChromeMetrics } from "@/lib/mobileLayout";
 
 export const unstable_settings = {
@@ -45,41 +53,32 @@ function TabIcon({
   );
 }
 
-/* Today is the elevated center tab: the paw button drops the owner into
-   Phoenix's living room. Pressing it again while already home opens the
-   fast-log sheet, so the paw is also the quickest way to log care. */
-function CenterToday() {
+/* Quick Log is the one elevated center action everywhere. Its destination,
+   label, and meaning never change with the active tab. */
+function CenterQuickLog() {
   const colors = useColors();
   const router = useRouter();
-  const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { fontScale: runtimeFontScale } = useWindowDimensions();
+  const { fontScale } = useWebQaFontScale(runtimeFontScale);
   const { style: bounceStyle, bounce } = useBounce();
   const chrome = getFloatingTabChromeMetrics({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+    fontScale,
   });
-  const onToday = pathname === "/" || pathname === "/index";
   return (
     <View pointerEvents="box-none" style={[s.fabWrap, { bottom: chrome.centerFabBottom }]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={onToday ? "Quick log" : "Today"}
-        aria-selected={onToday}
-        accessibilityHint={
-          onToday
-            ? "Opens the fast log sheet"
-            : "Open Phoenix's room and today's care"
-        }
+        accessibilityLabel="Quick Log"
+        accessibilityHint="Opens the fast care logger"
         onPress={() => {
           if (Platform.OS !== "web") {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           }
           bounce();
-          if (onToday) {
-            router.push("/fastlog" as never);
-            return;
-          }
-          router.push("/");
+          router.push("/fastlog" as never);
         }}
       >
         <Animated.View
@@ -99,11 +98,16 @@ function CenterToday() {
           <Ionicons name="paw" size={26} color={colors.primaryForeground} />
         </Animated.View>
       </Pressable>
-      {/* Visual caption only - the paw button already carries the accessible
-          label, so this Text would read as a stray duplicate "Today".
-          aria-hidden is the one alias RN maps on native AND web. */}
-      <Text aria-hidden style={[s.fabLabel, { color: colors.forest }]}>
-        Today
+      {/* The button owns the accessible name; this is its visual caption. */}
+      <Text
+        aria-hidden
+        numberOfLines={2}
+        style={[
+          s.fabLabel,
+          { color: colors.forest, minWidth: chrome.centerFabSize + 16 },
+        ]}
+      >
+        Quick Log
       </Text>
     </View>
   );
@@ -112,9 +116,12 @@ function CenterToday() {
 export default function TabLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { fontScale: runtimeFontScale } = useWindowDimensions();
+  const { fontScale } = useWebQaFontScale(runtimeFontScale);
   const chrome = getFloatingTabChromeMetrics({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+    fontScale,
   });
 
   return (
@@ -129,8 +136,8 @@ export default function TabLayout() {
           // The standard nav tabs used the default expo-router buttons, which
           // fire no haptic - the app's most frequent interaction had the least
           // feedback. A selection tick on every tab press matches the toggle /
-          // segment feel used elsewhere. (The center paw keeps its own Medium
-          // impact via CenterToday.)
+          // segment feel used elsewhere. (Quick Log keeps its own Medium
+          // impact via CenterQuickLog.)
           tabPress: () => {
             if (Platform.OS !== "web") {
               Haptics.selectionAsync();
@@ -141,7 +148,11 @@ export default function TabLayout() {
           headerShown: false,
           tabBarActiveTintColor: colors.forest,
           tabBarInactiveTintColor: colors.mutedForeground,
-          tabBarLabelStyle: { fontFamily: "Inter_700Bold", fontSize: 10, lineHeight: 12 },
+          tabBarLabelStyle: {
+            fontFamily: "Inter_700Bold",
+            fontSize: 10,
+            lineHeight: fontScale >= 1.4 ? 14 : 12,
+          },
           tabBarItemStyle: {
             paddingTop: 2,
             paddingBottom: 3,
@@ -184,15 +195,16 @@ export default function TabLayout() {
         }}
       >
         <Tabs.Screen
-          name="log"
+          name="index"
           options={{
-            title: "Log",
+            title: "Today",
+            tabBarAccessibilityLabel: "Today",
             tabBarIcon: ({ color, focused }) => (
               <TabIcon
                 focused={focused}
                 color={color}
-                ion="compass-outline"
-                ionFilled="compass"
+                ion="home-outline"
+                ionFilled="home"
               />
             ),
           }}
@@ -201,6 +213,7 @@ export default function TabLayout() {
           name="calendar"
           options={{
             title: "Plan",
+            tabBarAccessibilityLabel: "Plan",
             tabBarIcon: ({ color, focused }) => (
               <TabIcon
                 focused={focused}
@@ -212,51 +225,58 @@ export default function TabLayout() {
             ),
           }}
         />
-        {/* Today keeps its route registered but renders an empty slot in the
-            bar; the elevated CenterToday paw above it owns the tap target. */}
+        {/* Log History stays registered, while the elevated Quick Log action
+            owns the visible center slot and always opens /fastlog. */}
         <Tabs.Screen
-          name="index"
+          name="log"
           options={{
-            title: "Today",
+            title: "Quick Log",
             tabBarButton: () => (
               <View pointerEvents="none" style={s.centerSlot} />
             ),
           }}
         />
         <Tabs.Screen
-          name="pack"
+          name="health"
           options={{
-            title: "Pack",
-            tabBarIcon: ({ color, focused }) => (
-              <TabIcon focused={focused} color={color} ion="paw-outline" ionFilled="paw" />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="story"
-          options={{
-            title: "Story",
+            title: "Health",
+            tabBarAccessibilityLabel: "Health",
             tabBarIcon: ({ color, focused }) => (
               <TabIcon
                 focused={focused}
                 color={color}
-                ion="book-outline"
-                ionFilled="book"
+                ion="heart-outline"
+                ionFilled="heart"
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="more"
+          options={{
+            title: "More",
+            tabBarAccessibilityLabel: "More",
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon
+                focused={focused}
+                color={color}
+                ion="grid-outline"
+                ionFilled="grid"
                 size={21}
               />
             ),
           }}
         />
-        {/* Health, More, and Records stay registered for deep links and the
-            Pack/Story/Today entry points; they are no longer primary tabs. */}
+        {/* Richer Pack, Story, and Records surfaces stay registered for
+            secondary links and deep links without competing with daily care. */}
         <Tabs.Screen
-          name="health"
+          name="pack"
           options={{
             href: null,
           }}
         />
         <Tabs.Screen
-          name="more"
+          name="story"
           options={{
             href: null,
           }}
@@ -268,7 +288,7 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
-      <CenterToday />
+      <CenterQuickLog />
     </View>
   );
 }
@@ -296,6 +316,8 @@ const s = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 10,
     lineHeight: 12,
+    minWidth: 64,
+    textAlign: "center",
   },
   centerSlot: {
     flex: 1,

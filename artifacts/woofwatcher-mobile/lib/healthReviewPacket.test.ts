@@ -17,17 +17,18 @@ const baseInput: HealthReviewPacketInput = {
     anxiety7: 0,
   },
   redFlagCount: 0,
-  bileStatus: "Low Risk",
+  careEvidenceObservedCount: 4,
+  bileStatus: "No logs",
   lastYellowBileLabel: "None logged",
   longestFoodGapLabel: "Needs more meal logs",
   bedtimeSnackLabel: "1 small bedtime snack",
 };
 
-test("builds a steady non-diagnostic Health Review Packet", () => {
+test("builds an observation-only non-diagnostic Health Review Packet", () => {
   const packet = deriveHealthReviewPacket(baseInput);
 
   assert.equal(packet.title, "Review packet");
-  assert.equal(packet.statusLabel, "Steady");
+  assert.equal(packet.statusLabel, "Observations logged");
   assert.equal(packet.languagePill, "Not veterinary advice");
   assert.match(packet.summary, /Phoenix/);
   assert.match(packet.summary, /owner observations/i);
@@ -43,6 +44,32 @@ test("builds a steady non-diagnostic Health Review Packet", () => {
     route: "/woofguide",
     params: { prompt: "health-review" },
   });
+});
+
+test("keeps a zero-evidence review packet explicitly insufficient", () => {
+  const packet = deriveHealthReviewPacket({
+    ...baseInput,
+    careEvidenceObservedCount: 0,
+    bedtimeSnackLabel: "Not set",
+  });
+  const shareText = buildHealthReviewPacketShareText(packet, {
+    dogName: "Phoenix",
+    generatedAtIso: "2026-07-23T18:00:00.000Z",
+  });
+  const combined = [
+    packet.statusLabel,
+    packet.languagePill,
+    packet.summary,
+    packet.boundary,
+    ...packet.prompts,
+    shareText,
+  ].join(" ");
+
+  assert.equal(packet.statusLabel, "Not enough evidence");
+  assert.equal(packet.languagePill, "Insufficient evidence");
+  assert.match(packet.summary, /no recent shared care evidence/i);
+  assert.doesNotMatch(combined, /\bLow Risk\b|\bSteady\b/i);
+  assert.doesNotMatch(combined, /built from owner observations/i);
 });
 
 test("raises watch language when bile, food gap, or health signals need review", () => {

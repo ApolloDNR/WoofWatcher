@@ -1,10 +1,15 @@
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
+const {
+  createSmokeSourceFingerprint,
+  createSmokeSourceProvenance,
+} = require("./smoke-source-provenance");
 
 const projectRoot = path.resolve(__dirname, "..");
 const outputDirName = ".expo-smoke";
 const outputDir = path.join(projectRoot, outputDirName);
+const provenancePath = path.join(outputDir, "smoke-source-provenance.json");
 
 function removeOutput() {
   fs.rmSync(outputDir, { recursive: true, force: true });
@@ -25,13 +30,17 @@ function fail(message) {
 }
 
 removeOutput();
+const sourceFingerprintBeforeExport =
+  createSmokeSourceFingerprint(projectRoot);
 
 const env = {
   ...process.env,
   CI: "1",
   EXPO_NO_TELEMETRY: "1",
-  EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY:
-    process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || "pk_test_woofwatcher_smoke",
+  EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_local_smoke_placeholder",
+  EXPO_PUBLIC_LOCAL_ROUTE_SMOKE: "woofwatcher-local-route-smoke-v1",
+  EXPO_PUBLIC_BUILD_PROFILE: "local-route-smoke",
+  EXPO_PUBLIC_WEB_QA_FONT_SCALE_PROOF: "1",
 };
 
 const result = spawnSync(
@@ -48,6 +57,22 @@ const result = spawnSync(
 if (result.status !== 0) {
   fail(`Expo web export smoke failed with exit code ${result.status ?? "unknown"}`);
 }
+
+const sourceFingerprintAfterExport =
+  createSmokeSourceFingerprint(projectRoot);
+if (sourceFingerprintAfterExport !== sourceFingerprintBeforeExport) {
+  fail(
+    "Mobile source changed while Expo smoke:web was exporting. Run smoke:web again from a stable source tree.",
+  );
+}
+fs.writeFileSync(
+  provenancePath,
+  `${JSON.stringify(
+    createSmokeSourceProvenance(sourceFingerprintAfterExport),
+    null,
+    2,
+  )}\n`,
+);
 
 // Make the web app installable. The manifest + icon ship from public/, but the
 // single-output (SPA) index.html Expo generates has no <link> to them and no

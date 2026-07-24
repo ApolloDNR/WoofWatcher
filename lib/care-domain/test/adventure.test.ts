@@ -75,6 +75,25 @@ test("keeps Adventure Mode private and calm when no outings are logged", () => {
   assert.equal(adventure.privacyBoundary, "Adventure memories are private to the household unless an owner shares them.");
 });
 
+test("keeps unconfigured Adventure identity neutral", () => {
+  const adventure = deriveAdventureMode({
+    now: NOW,
+    petName: "My Dog",
+    entries: [],
+    memories: [],
+  });
+  const memory = buildAdventureMemoryDraft({
+    petName: "",
+    title: "First outing",
+    nowIso: "2026-06-11T18:00:00.000Z",
+  });
+
+  assert.equal(adventure.petName, "Your dog");
+  assert.match(adventure.summary, /^Your dog's adventure log/);
+  assert.doesNotMatch(adventure.summary, /Phoenix/);
+  assert.equal(memory.petName, "Your dog");
+});
+
 test("credits a completed under-threshold walk as near-miss progress and unlocks the memory quest", () => {
   const adventure = deriveAdventureMode({
     now: NOW,

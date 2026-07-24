@@ -99,7 +99,7 @@ function buildRouteRehearsalSection(capturePlan: MobileLaunchQaCapturePlan): Mob
       {
         label: "Owner route loop",
         detail:
-          "Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass must open without dead ends.",
+          "Today, Plan, Quick Log, Health, and More must open without dead ends. Log History, Records, and Privacy must remain reachable as release-proof secondary routes; Pack, Story, Adventure, Avatar Studio, and Care Pass must remain reachable from visible links.",
         proof: capturePlan.ownerPreviewProofStatus.missingEvidence.length
           ? capturePlan.ownerPreviewProofStatus.missingEvidence.join(" ")
           : "Owner Preview Core Loop proof is complete.",
@@ -317,9 +317,9 @@ export function buildMobileReleaseSmokeChecklist(
           {
             label: "Focused route visual consistency target",
             detail:
-              "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Log, Plan, Today, Pack, Story, Health, Records, and More on iOS and Android with route-named file names or URIs.",
+              "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy on iOS and Android with route-named file names or URIs.",
             proof:
-              "Attach 8 route-named iOS screenshots and 8 route-named Android screenshots plus the QA note; examples include Log-iOS, Log-Android, Plan-iOS, Plan-Android, Today-iOS, Today-Android, Pack-iOS, Pack-Android, Story-iOS, Story-Android, Health-iOS, Health-Android, Records-iOS, Records-Android, More-iOS, and More-Android. Web preview screenshots do not replace native proof.",
+              "Attach 8 route-named iOS screenshots and 8 route-named Android screenshots plus the QA note; examples include Today-iOS, Today-Android, Plan-iOS, Plan-Android, Quick-Log-iOS, Quick-Log-Android, Health-iOS, Health-Android, More-iOS, More-Android, Log-History-iOS, Log-History-Android, Records-iOS, Records-Android, Privacy-iOS, and Privacy-Android. Web preview screenshots do not replace native proof.",
             status: "required",
           },
         ],
@@ -329,8 +329,8 @@ export function buildMobileReleaseSmokeChecklist(
         title: "Native and store proof",
         items: [
           {
-            label: "iOS Quick Log/Log proof",
-            detail: "Open /care-twin-qa on iOS and attach the required Quick Log or Log evidence.",
+            label: "iOS Quick Log proof",
+            detail: "Open /fastlog and /care-twin-qa on iOS, then attach the required Quick Log (`/fastlog`) evidence. Log History (`/log`) cannot substitute.",
             proof: "Mission note plus iOS screenshot evidence.",
             status: "required",
           },

@@ -10,6 +10,7 @@ import {
   type User,
 } from "@workspace/db";
 import { deriveAccessPassRuntimeStatus } from "./household-access-pass";
+import { resolveActiveHouseholdSelection } from "./household-invitations";
 
 const INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -76,23 +77,51 @@ async function ensureCareState(householdId: string, userId: string): Promise<voi
 /**
  * Ensures the user exists and belongs to at least one household, creating a
  * default household + membership + care state on first sign-in. Returns the
- * user's active (earliest) household id.
+ * user's persisted active eligible household id.
  */
 export async function ensureUserAndHousehold(
   userId: string,
 ): Promise<{ user: User; householdId: string }> {
   const user = await ensureUser(userId);
 
-  const [membership] = await db
+  const memberships = await db
     .select()
     .from(householdMembersTable)
     .where(eq(householdMembersTable.userId, userId))
-    .orderBy(householdMembersTable.createdAt)
-    .limit(1);
+    .orderBy(
+      householdMembersTable.createdAt,
+      householdMembersTable.householdId,
+    );
 
-  if (membership) {
-    await ensureCareState(membership.householdId, userId);
-    return { user, householdId: membership.householdId };
+  const resolvedHouseholdId = await resolveActiveHouseholdSelection(
+    {
+      activeHouseholdId: user.activeHouseholdId,
+      memberships: memberships.map((membership) => {
+        const runtime = deriveAccessPassRuntimeStatus({
+          role: membership.role,
+          accessPassExpiresAt: membership.accessPassExpiresAt,
+        });
+        return {
+          householdId: membership.householdId,
+          accessPassExpired: runtime.accessPassExpired,
+          createdAt: membership.createdAt,
+        };
+      }),
+    },
+    async (householdId) => {
+      await db
+        .update(usersTable)
+        .set({ activeHouseholdId: householdId })
+        .where(eq(usersTable.id, userId));
+    },
+  );
+
+  if (resolvedHouseholdId) {
+    await ensureCareState(resolvedHouseholdId, userId);
+    return {
+      user: { ...user, activeHouseholdId: resolvedHouseholdId },
+      householdId: resolvedHouseholdId,
+    };
   }
 
   const inviteCode = await uniqueInviteCode();
@@ -107,8 +136,15 @@ export async function ensureUserAndHousehold(
     role: "owner",
     displayName: user.displayName,
   });
+  await db
+    .update(usersTable)
+    .set({ activeHouseholdId: household.id })
+    .where(eq(usersTable.id, userId));
   await ensureCareState(household.id, userId);
-  return { user, householdId: household.id };
+  return {
+    user: { ...user, activeHouseholdId: household.id },
+    householdId: household.id,
+  };
 }
 
 export async function getActiveHouseholdId(userId: string): Promise<string> {

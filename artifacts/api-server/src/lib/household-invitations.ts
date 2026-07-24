@@ -1,3 +1,5 @@
+import { normalizeHouseholdMemberRole } from "./household-authorization.ts";
+
 export type HouseholdInvitationLifecycleState =
   | "pending-approval"
   | "approved"
@@ -23,6 +25,68 @@ export interface HouseholdInvitationAcceptPolicy {
   allowed: boolean;
   lifecycleState: HouseholdInvitationLifecycleState;
   reason?: string;
+}
+
+export interface ActiveHouseholdMembershipLike {
+  householdId: string;
+  accessPassExpired?: boolean;
+  createdAt: Date | string;
+}
+
+export interface AtomicHouseholdInvitationClaim {
+  id: string;
+  householdId: string;
+  inviteCode: string;
+  role: string;
+  lifecycleState: string;
+  expiresAt?: Date | string | null;
+  invitedEmail?: string | null;
+  acceptedByUserId?: string | null;
+}
+
+export interface AtomicHouseholdInvitationTransaction<TAuditEvent> {
+  claimApprovedInvitation(input: {
+    code: string;
+    userId: string;
+    now: Date;
+  }): Promise<AtomicHouseholdInvitationClaim | null>;
+  classifyInvitation(
+    code: string,
+  ): Promise<AtomicHouseholdInvitationClaim | null>;
+  createMembership(input: {
+    householdId: string;
+    userId: string;
+    role: string;
+    displayName: string | null;
+  }): Promise<void>;
+  setActiveHousehold(userId: string, householdId: string): Promise<void>;
+  createAcceptanceAudit(input: {
+    householdId: string;
+    userId: string;
+    role: string;
+    now: Date;
+  }): Promise<TAuditEvent>;
+}
+
+export interface AtomicHouseholdInvitationStore<TAuditEvent> {
+  transaction<T>(
+    callback: (
+      tx: AtomicHouseholdInvitationTransaction<TAuditEvent>,
+    ) => Promise<T>,
+  ): Promise<T>;
+}
+
+export class HouseholdInvitationClaimError extends Error {
+  readonly status: 403 | 404;
+
+  constructor(
+    message: string,
+    status: 403 | 404,
+  ) {
+    super(message);
+    this.name = "HouseholdInvitationClaimError";
+    this.status = status;
+  }
 }
 
 export interface HouseholdInvitationRecordLike {
@@ -115,6 +179,109 @@ function toIsoString(value: Date | string | null | undefined): string | null {
   return date ? date.toISOString() : null;
 }
 
+function isEligibleActiveMembership(
+  membership: ActiveHouseholdMembershipLike,
+): boolean {
+  return !membership.accessPassExpired;
+}
+
+/**
+ * Resolves the user's selected household only while its membership is still
+ * eligible. Stale selections and expired Access Passes fall back to the
+ * earliest membership (createdAt, then household id) and persist that choice.
+ */
+export async function resolveActiveHouseholdSelection(
+  input: {
+    activeHouseholdId?: string | null;
+    memberships: readonly ActiveHouseholdMembershipLike[];
+    now?: Date;
+  },
+  persist: (householdId: string) => Promise<void>,
+): Promise<string | null> {
+  const eligible = input.memberships
+    .filter(isEligibleActiveMembership)
+    .sort((left, right) => {
+      const created =
+        new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
+      return created || left.householdId.localeCompare(right.householdId);
+    });
+  const selected =
+    eligible.find(
+      (membership) =>
+        membership.householdId === input.activeHouseholdId,
+    ) ?? eligible[0];
+  if (!selected) return null;
+  if (input.activeHouseholdId !== selected.householdId) {
+    await persist(selected.householdId);
+  }
+  return selected.householdId;
+}
+
+/**
+ * Coordinates the invitation claim and every resulting access mutation in one
+ * transaction. The transaction adapter must make claimApprovedInvitation its
+ * first authority decision with an approved + unexpired conditional UPDATE.
+ *
+ * Recipient binding decision: possession of the approved, unexpired code is
+ * the authority. invitedEmail remains a delivery label and is not compared.
+ */
+export async function acceptHouseholdInvitationAtomically<TAuditEvent>(
+  input: {
+    code: string;
+    userId: string;
+    displayName: string | null;
+    now?: Date;
+  },
+  store: AtomicHouseholdInvitationStore<TAuditEvent>,
+): Promise<{
+  invitation: AtomicHouseholdInvitationClaim;
+  auditEvent: TAuditEvent;
+}> {
+  const code = clean(input.code).toUpperCase();
+  const now = input.now ?? new Date();
+
+  return store.transaction(async (tx) => {
+    const claimed = await tx.claimApprovedInvitation({
+      code,
+      userId: input.userId,
+      now,
+    });
+    if (!claimed) {
+      const existing = await tx.classifyInvitation(code);
+      if (!existing) {
+        throw new HouseholdInvitationClaimError("Invite code not found", 404);
+      }
+      const runtime = deriveHouseholdInvitationRuntimeStatus({
+        lifecycleState: existing.lifecycleState,
+        expiresAt: existing.expiresAt ?? null,
+        now,
+      });
+      const policy = assertHouseholdInvitationAcceptAllowed(runtime);
+      throw new HouseholdInvitationClaimError(
+        policy.reason ?? "Invitation is not approved for acceptance.",
+        403,
+      );
+    }
+
+    const normalizedRole = normalizeHouseholdMemberRole(claimed.role);
+    const role = normalizedRole === "owner" ? "adult" : normalizedRole;
+    await tx.createMembership({
+      householdId: claimed.householdId,
+      userId: input.userId,
+      role,
+      displayName: input.displayName,
+    });
+    await tx.setActiveHousehold(input.userId, claimed.householdId);
+    const auditEvent = await tx.createAcceptanceAudit({
+      householdId: claimed.householdId,
+      userId: input.userId,
+      role,
+      now,
+    });
+    return { invitation: claimed, auditEvent };
+  });
+}
+
 export function isHouseholdInvitationLifecycleState(
   value: string,
 ): value is HouseholdInvitationLifecycleState {
@@ -148,11 +315,11 @@ export function normalizeHouseholdInvitationListQuery(
 }
 
 export function normalizeHouseholdInvitationExpiry(
-  value: string | null | undefined,
+  value: Date | string | null | undefined,
 ): string | null {
+  if (value instanceof Date) return toIsoString(value);
   const cleaned = nullableClean(value);
-  if (!cleaned) return null;
-  return toIsoString(cleaned);
+  return cleaned ? toIsoString(cleaned) : null;
 }
 
 export function deriveHouseholdInvitationRuntimeStatus(input: {

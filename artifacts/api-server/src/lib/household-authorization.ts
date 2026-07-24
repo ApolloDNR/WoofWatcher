@@ -14,6 +14,16 @@ export interface HouseholdMemberMutationPolicy {
   nextRole?: string;
 }
 
+export interface HouseholdOwnerActionPolicy {
+  allowed: boolean;
+  reason?: string;
+}
+
+export interface ActiveHouseholdSelectionPolicy {
+  allowed: boolean;
+  reason?: string;
+}
+
 const ROLE_ALIASES: Record<string, string> = {
   admin: "owner",
   "adult admin": "owner",
@@ -60,6 +70,38 @@ function isOwnerAdminRole(role: string): boolean {
 
 function isProtectedOwnerRole(role: string): boolean {
   return role === "owner";
+}
+
+export function assertHouseholdOwnerActionAllowed(
+  actorRole: string | null | undefined,
+  action: string,
+): HouseholdOwnerActionPolicy {
+  if (isOwnerAdminRole(normalizeHouseholdMemberRole(actorRole))) {
+    return { allowed: true };
+  }
+  return {
+    allowed: false,
+    reason: `Only an owner/admin can ${clean(action)}.`,
+  };
+}
+
+export function assertActiveHouseholdSelectionAllowed(input: {
+  hasMembership: boolean;
+  accessPassExpired: boolean;
+}): ActiveHouseholdSelectionPolicy {
+  if (!input.hasMembership) {
+    return {
+      allowed: false,
+      reason: "You can only select a household where you are a current member.",
+    };
+  }
+  if (input.accessPassExpired) {
+    return {
+      allowed: false,
+      reason: "An expired Access Pass cannot be selected as the active household.",
+    };
+  }
+  return { allowed: true };
 }
 
 export function assertHouseholdMemberMutationAllowed(

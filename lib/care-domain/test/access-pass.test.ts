@@ -76,6 +76,31 @@ test("builds a local Access Pass draft without pretending cloud sharing is live"
   assert.match(draft.notes, /Local draft/);
 });
 
+test("keeps every unconfigured Access Pass identity neutral", () => {
+  const draft = buildAccessPassDraft({
+    holderName: "Aunt Lina",
+    petName: "",
+    nowIso: "2026-06-11T09:15:00.000Z",
+  });
+  const plan = deriveAccessPassPlan({
+    now: NOW,
+    petName: "My Dog",
+    passes: [],
+  });
+  const today = deriveMyCareToday({
+    now: NOW,
+    personName: "Apollo",
+    petName: "",
+    routines: [],
+    entries: [],
+  });
+
+  assert.equal(draft.petName, "Your dog");
+  assert.equal(plan.summary.includes("cares for Your dog"), true);
+  assert.doesNotMatch(plan.summary, /Phoenix/);
+  assert.equal(today.petName, "Your dog");
+});
+
 test("derives My Care Today from assigned routines and visible logs", () => {
   const today = deriveMyCareToday({
     now: NOW,

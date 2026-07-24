@@ -6,15 +6,36 @@
  *
  * Usage: serve the export (pnpm run preview:smoke), then:
  *   BASE_URL=http://127.0.0.1:4194 node scripts/e2e-web-workflows.mjs
- * Requires: npm i playwright; a Chromium binary on PLAYWRIGHT_CHROMIUM
- * (defaults to /opt/pw-browsers/chromium).
+ * Requires the workspace-pinned Playwright and its matching Chromium binary.
  */
 import { chromium } from "playwright";
 
-const BASE = "http://127.0.0.1:4194";
+const BASE = (process.env.BASE_URL ?? "http://127.0.0.1:4194").replace(
+  /\/$/,
+  "",
+);
 const results = [];
 const errorsByStep = {};
 let currentStep = "boot";
+const ROUTE_EXPECTATIONS = {
+  "/health": ["Owner notes. No diagnosis."],
+  "/records": ["Vault Command"],
+  "/more": ["Command Directory"],
+  "/adventure": ["Adventure Mode"],
+  "/woofguide": ["WOOFGUIDE CONSOLE"],
+  "/portrait": ["Choose a pixel twin, then customize."],
+};
+const PRIMARY_NAVIGATION_LABELS = ["Today", "Plan", "Quick Log", "Health", "More"];
+const PRIMARY_NAVIGATION_ROUTES = ["/", "/calendar", "/fastlog", "/health", "/more"];
+const PRIMARY_NAVIGATION_MARKERS = [
+  "WELCOME TO WOOFWATCHER",
+  "MISSION SCHEDULE",
+  "What would you like",
+  "Owner notes. No diagnosis.",
+  "Command Directory",
+];
+const ERROR_BOUNDARY_PATTERN =
+  /error boundary|something went wrong|unexpected error|view error details/i;
 
 function pass(name, detail = "") {
   results.push({ name, ok: true, detail });
@@ -26,17 +47,27 @@ function fail(name, detail = "") {
 }
 
 const browser = await chromium.launch({
-  executablePath: process.env.PLAYWRIGHT_CHROMIUM ?? "/opt/pw-browsers/chromium",
+  ...(process.env.PLAYWRIGHT_CHROMIUM
+    ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM }
+    : {}),
   args: ["--no-sandbox"],
 });
+let exitCode = 1;
+try {
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 page.on("console", (msg) => {
   if (msg.type() === "error") {
-    (errorsByStep[currentStep] ??= []).push(msg.text().slice(0, 200));
+    (errorsByStep[currentStep] ??= []).push({
+      kind: "console",
+      message: msg.text().slice(0, 200),
+    });
   }
 });
 page.on("pageerror", (err) => {
-  (errorsByStep[currentStep] ??= []).push("pageerror: " + String(err).slice(0, 200));
+  (errorsByStep[currentStep] ??= []).push({
+    kind: "page",
+    message: String(err).slice(0, 200),
+  });
 });
 // Accept every browser confirm/alert (used by the delete-all flow on web).
 const dialogs = [];
@@ -48,6 +79,10 @@ page.on("dialog", (d) => {
 async function go(route, settle = 3500) {
   await page.goto(BASE + route, { waitUntil: "networkidle", timeout: 45000 });
   await page.waitForTimeout(settle);
+  const text = await bodyText();
+  if (ERROR_BOUNDARY_PATTERN.test(text)) {
+    throw new Error(`Error-boundary-like content rendered at ${route}`);
+  }
 }
 async function bodyText() {
   return page.evaluate(() => document.body.innerText);
@@ -59,26 +94,192 @@ async function clickLabel(label, exact = false) {
   await loc.click({ timeout: 8000 });
 }
 
+async function assertRouteMarker(route, expected) {
+  const text = await bodyText();
+  const marker = expected.find((candidate) => text.includes(candidate));
+  marker
+    ? pass(`route ${route} renders route-specific marker`, marker)
+    : fail(
+        `route ${route} renders route-specific marker`,
+        `missing: ${expected.join(" or ")}`,
+      );
+}
+
+async function assertPrimaryDestination(label, route, marker) {
+  const text = await bodyText();
+  const pathnameMatches = new URL(page.url()).pathname === route;
+  const markerMatches = text.includes(marker);
+  const healthy = text.trim().length > 0 && !ERROR_BOUNDARY_PATTERN.test(text);
+  pathnameMatches && markerMatches && healthy
+    ? pass(`primary navigation ${label} reaches ${route}`, marker)
+    : fail(
+        `primary navigation ${label} reaches ${route}`,
+        JSON.stringify({
+          actualPath: new URL(page.url()).pathname,
+          marker,
+          body: text.replace(/\s+/g, " ").slice(0, 180),
+        }),
+      );
+}
+
+// Keep this browser-only: inspect the exported app's durable web storage
+// instead of importing application state. Copy and navigation can succeed
+// while a failed mutation leaves the underlying care row unchanged.
+async function persistedCareEntrySnapshot() {
+  return page.evaluate(() => {
+    const candidates = [];
+    const visit = (value) => {
+      if (!value || typeof value !== "object") return;
+      if (
+        Array.isArray(value.entries) &&
+        value.entries.every(
+          (entry) => entry && typeof entry.id === "string",
+        )
+      ) {
+        candidates.push(value.entries.map((entry) => entry.id).sort());
+      }
+      for (const nested of Object.values(value)) visit(nested);
+    };
+
+    for (let index = 0; index < window.localStorage.length; index += 1) {
+      const key = window.localStorage.key(index);
+      if (!key) continue;
+      try {
+        visit(JSON.parse(window.localStorage.getItem(key) ?? ""));
+      } catch {
+        // Ignore unrelated, non-JSON browser storage.
+      }
+    }
+
+    return candidates.sort(
+      (left, right) => right.length - left.length,
+    )[0] ?? null;
+  });
+}
+
+function sameEntrySnapshot(before, after) {
+  return (
+    Array.isArray(before) &&
+    Array.isArray(after) &&
+    before.length === after.length &&
+    before.every((entryId, index) => entryId === after[index])
+  );
+}
+
+function hasExactlyOneNewEntry(before, after) {
+  if (
+    !Array.isArray(before) ||
+    !Array.isArray(after) ||
+    after.length !== before.length + 1
+  ) {
+    return false;
+  }
+  const beforeIds = new Set(before);
+  return after.filter((entryId) => !beforeIds.has(entryId)).length === 1;
+}
+
 // ---------- 1. Fresh boot: Today renders the consumer home ----------
 currentStep = "boot-today";
 await go("/");
 {
-  const text = await bodyText();
-  const hasNav = ["Log", "Plan", "Today", "Pack", "Story"].every((t) => text.includes(t));
-  hasNav ? pass("today renders with full nav") : fail("today renders with full nav", text.slice(0, 200));
+  const primaryNavigation = PRIMARY_NAVIGATION_LABELS.map((label, index) => ({
+    label,
+    route: PRIMARY_NAVIGATION_ROUTES[index],
+    marker: PRIMARY_NAVIGATION_MARKERS[index],
+  }));
+  const hasNav = (
+    await Promise.all(
+      primaryNavigation.map(async ({ label }) => {
+        const control = page.getByLabel(label, { exact: true });
+        return (
+          (await control.count()) > 0 && (await control.first().isVisible())
+        );
+      }),
+    )
+  ).every(Boolean);
+  hasNav
+    ? pass("today renders real labeled primary navigation controls")
+    : fail(
+        "today renders real labeled primary navigation controls",
+        "one or more exact labels were missing",
+      );
+  for (const { label, route: expectedPath, marker } of primaryNavigation) {
+    await go("/");
+    await page.getByLabel(label, { exact: true }).first().click({
+      timeout: 8_000,
+    });
+    await page.waitForTimeout(500);
+    await assertPrimaryDestination(label, expectedPath, marker);
+  }
 }
 
-// ---------- 2. Quick log a meal from Today ----------
+// ---------- 2. Quick log a meal from the elevated Quick Log action ----------
 currentStep = "quick-log-meal";
 try {
+  await go("/fastlog");
+  const mealBefore = await persistedCareEntrySnapshot();
   await clickLabel("Log Meal");
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(450);
+  const mealAfterFirstSave = await persistedCareEntrySnapshot();
+  hasExactlyOneNewEntry(mealBefore, mealAfterFirstSave)
+    ? pass("meal quick log persists exactly one new care row")
+    : fail(
+        "meal quick log persists exactly one new care row",
+        JSON.stringify({ mealBefore, mealAfterFirstSave }),
+      );
+
   const text = await bodyText();
-  text.includes("Meal logged") || text.includes("care XP")
-    ? pass("meal quick log fires toast", "")
-    : fail("meal quick log fires toast", "no toast text found");
+  /Meal served.*outcome stays open/i.test(text)
+    ? pass("meal quick log confirms the current meal outcome boundary")
+    : fail(
+        "meal quick log confirms the current meal outcome boundary",
+        "no current meal confirmation found",
+      );
+
+  await clickLabel("Log Meal");
+  await page.waitForTimeout(300);
+  const mealAfterDuplicate = await persistedCareEntrySnapshot();
+  sameEntrySnapshot(mealAfterFirstSave, mealAfterDuplicate)
+    ? pass("rapid meal duplicate creates no additional persisted care row")
+    : fail(
+        "rapid meal duplicate creates no additional persisted care row",
+        JSON.stringify({ mealAfterFirstSave, mealAfterDuplicate }),
+      );
+
+  const undo = page.locator('[aria-label="Undo Meal"]').first();
+  (await undo.count()) === 1
+    ? pass("meal quick log exposes Undo")
+    : fail("meal quick log exposes Undo", "undo control not found");
+  await undo.click({ timeout: 8000 });
+  await page.waitForTimeout(500);
+  const mealAfterUndo = await persistedCareEntrySnapshot();
+  (await page.locator('[aria-label="Undo Meal"]').count()) === 0
+    ? pass("meal quick log Undo clears the pending save")
+    : fail(
+        "meal quick log Undo clears the pending save",
+        "undo control remained after undo",
+      );
+  sameEntrySnapshot(mealBefore, mealAfterUndo)
+    ? pass("meal quick log Undo removes the persisted meal before recreation")
+    : fail(
+        "meal quick log Undo removes the persisted meal before recreation",
+        JSON.stringify({ mealBefore, mealAfterUndo }),
+      );
+
+  await clickLabel("Log Meal");
+  await page.waitForTimeout(500);
+  const mealAfterRecreate = await persistedCareEntrySnapshot();
+  hasExactlyOneNewEntry(mealBefore, mealAfterRecreate)
+    ? pass("meal recreation persists one new row after Undo")
+    : fail(
+        "meal recreation persists one new row after Undo",
+        JSON.stringify({ mealBefore, mealAfterRecreate }),
+      );
 } catch (e) {
-  fail("meal quick log fires toast", String(e).slice(0, 120));
+  fail(
+    "meal quick log confirms the current meal outcome boundary",
+    String(e).slice(0, 120),
+  );
 }
 
 // ---------- 3. The log timeline shows the meal + pending outcome ----------
@@ -94,21 +295,66 @@ await go("/log");
     : fail("meal served shows outcome-pending state", "no pending marker");
 }
 
-// ---------- 4. Start a walk from Today; presence flips ----------
+// ---------- 4. Start a walk from Quick Log, then reuse its active session ----------
 currentStep = "walk-session";
-await go("/");
+await go("/fastlog");
 try {
+  const walkBefore = await persistedCareEntrySnapshot();
   await clickLabel("Log Walk");
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(500);
+  const walkAfterStart = await persistedCareEntrySnapshot();
+  hasExactlyOneNewEntry(walkBefore, walkAfterStart)
+    ? pass("walk session persists exactly one active care row")
+    : fail(
+        "walk session persists exactly one active care row",
+        JSON.stringify({ walkBefore, walkAfterStart }),
+      );
   const text = await bodyText();
   /walk started/i.test(text) || /on a walk/i.test(text)
     ? pass("walk session starts and presence updates")
     : fail("walk session starts and presence updates", "no walk confirmation");
+
+  await clickLabel("Log Walk");
+  await page.waitForTimeout(500);
+  const walkAfterReuse = await persistedCareEntrySnapshot();
+  /\/log\?entry=/.test(page.url())
+    ? pass("active walk reuses the existing active-walk flow")
+    : fail("active walk reuses the existing active-walk flow", page.url());
+  sameEntrySnapshot(walkAfterStart, walkAfterReuse)
+    ? pass("active walk reuse creates no additional persisted care row")
+    : fail(
+        "active walk reuse creates no additional persisted care row",
+        JSON.stringify({ walkAfterStart, walkAfterReuse }),
+      );
 } catch (e) {
   fail("walk session starts and presence updates", String(e).slice(0, 120));
 }
 
-// ---------- 5. XP is real: Story Badges segment shows earned XP ----------
+// ---------- 5. Medication always opens details before a save ----------
+currentStep = "medication-details";
+await go("/fastlog");
+try {
+  const medicationBefore = await persistedCareEntrySnapshot();
+  await clickLabel("Add Meds details");
+  await page.waitForTimeout(500);
+  const medicationAfterDetailRoute = await persistedCareEntrySnapshot();
+  /\/log\?type=medication&detail=1&intent=/.test(page.url())
+    ? pass("medication opens details before saving")
+    : fail("medication opens details before saving", page.url());
+  sameEntrySnapshot(medicationBefore, medicationAfterDetailRoute)
+    ? pass("medication detail-first route creates no care row before save")
+    : fail(
+        "medication detail-first route creates no care row before save",
+        JSON.stringify({
+          medicationBefore,
+          medicationAfterDetailRoute,
+        }),
+      );
+} catch (e) {
+  fail("medication opens details before saving", String(e).slice(0, 120));
+}
+
+// ---------- 6. XP is real: Story Badges segment shows earned XP ----------
 currentStep = "story-xp";
 await go("/story");
 {
@@ -125,7 +371,7 @@ await go("/story");
     : fail("story reflects earned care evidence", `walks:${walkEvidence} xp:${xpVisible}`);
 }
 
-// ---------- 6. Pack shows the person and real counts ----------
+// ---------- 7. Pack shows the person and real counts ----------
 currentStep = "pack";
 await go("/pack");
 {
@@ -134,16 +380,14 @@ await go("/pack");
   segs ? pass("pack renders all four segments") : fail("pack renders all four segments");
 }
 
-// ---------- 7. Plan renders schedule with status pills ----------
+// ---------- 8. Plan renders schedule with status pills ----------
 currentStep = "plan";
 await go("/calendar");
 {
-  const text = await bodyText();
-  const hasSegments = text.includes("Today") && text.includes("Tomorrow");
-  hasSegments ? pass("plan renders schedule segments") : fail("plan renders schedule segments");
+  await assertRouteMarker("/calendar", ["MISSION SCHEDULE"]);
 }
 
-// ---------- 8. Setup flow persists the dog's name ----------
+// ---------- 9. Setup flow persists the dog's name ----------
 currentStep = "setup-name";
 await go("/setup");
 try {
@@ -175,7 +419,7 @@ try {
   fail("setup accepts a dog name", String(e).slice(0, 140));
 }
 
-// ---------- 9. Privacy: export responds, legal opens, delete-all wipes ----------
+// ---------- 10. Privacy: export responds, legal opens, delete-all wipes ----------
 currentStep = "privacy-legal";
 await go("/privacy");
 try {
@@ -192,16 +436,31 @@ try {
 currentStep = "privacy-delete-all";
 await go("/privacy");
 {
-  const before = await bodyText();
-  const beforeHasLogs = !/LOGS\s*\n?\s*0/.test(before.replace(/\n/g, " "));
+  const beforeDeleteSnapshot = await persistedCareEntrySnapshot();
+  Array.isArray(beforeDeleteSnapshot) && beforeDeleteSnapshot.length > 0
+    ? pass("persisted rows exist before delete-all")
+    : fail(
+        "persisted rows exist before delete-all",
+        JSON.stringify(beforeDeleteSnapshot),
+      );
   try {
     await clickLabel("Delete all WoofWatcher data on this device");
+    await page.waitForTimeout(250);
+    await clickLabel("Delete everything", true);
+    await page.waitForTimeout(250);
+    await clickLabel("Yes, delete it all", true);
     await page.waitForTimeout(2500);
-    const after = await bodyText();
-    const logsZero = /0\s*\n?LOGS|LOGS[\s\S]{0,12}0/.test(after) || after.includes("0\nLOGS");
-    dialogs.length >= 2
-      ? pass("delete-all shows double confirmation", dialogs.join(" | "))
-      : fail("delete-all shows double confirmation", `dialogs: ${dialogs.length}`);
+    const afterDeleteSnapshot = await persistedCareEntrySnapshot();
+    Array.isArray(afterDeleteSnapshot) && afterDeleteSnapshot.length === 0
+      ? pass("delete-all clears every persisted care row")
+      : fail(
+          "delete-all clears every persisted care row",
+          JSON.stringify(afterDeleteSnapshot),
+        );
+    pass(
+      "delete-all shows double confirmation",
+      "Delete everything | Yes, delete it all",
+    );
     await go("/");
     const home = await bodyText();
     !home.includes("Biscuit")
@@ -212,24 +471,38 @@ await go("/privacy");
   }
 }
 
-// ---------- 10. Remaining consumer routes render without crash ----------
-for (const route of ["/health", "/records", "/more", "/adventure", "/woofguide", "/portrait"]) {
+// ---------- 11. Remaining consumer routes render their own markers ----------
+for (const [route, expected] of Object.entries(ROUTE_EXPECTATIONS)) {
   currentStep = "route" + route;
   await go(route, 2500);
-  const text = await bodyText();
-  text.trim().length > 40
-    ? pass(`route ${route} renders content`)
-    : fail(`route ${route} renders content`, "near-empty body");
+  await assertRouteMarker(route, expected);
 }
 
 // ---------- Summary ----------
 console.log("\n===== SUMMARY =====");
+for (const [step, errors] of Object.entries(errorsByStep)) {
+  for (const error of errors) {
+    const name =
+      error.kind === "page"
+        ? `page error [${step}]`
+        : `console error [${step}]`;
+    fail(name, error.message);
+  }
+}
 const failed = results.filter((r) => !r.ok);
 console.log(`passed: ${results.length - failed.length}/${results.length}`);
 for (const f of failed) console.log("FAILED:", f.name, "-", f.detail);
 console.log("\n===== CONSOLE ERRORS BY STEP =====");
 for (const [step, errs] of Object.entries(errorsByStep)) {
-  console.log(step + ":", [...new Set(errs)].slice(0, 3).join(" ; "));
+  console.log(
+    step + ":",
+    [...new Set(errs.map((error) => `${error.kind}: ${error.message}`))]
+      .slice(0, 3)
+      .join(" ; "),
+  );
 }
-await browser.close();
-process.exit(failed.length ? 1 : 0);
+exitCode = failed.length ? 1 : 0;
+} finally {
+  await browser.close();
+}
+process.exit(exitCode);

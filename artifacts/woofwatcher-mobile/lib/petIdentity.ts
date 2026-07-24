@@ -1,14 +1,13 @@
 /**
  * One canonical rule for the pet's display name so every surface agrees.
  *
- * The stored default profile name is "My Dog" (a placeholder), but Home,
- * Pack, Story, and More all present the dog as "Phoenix" until the owner
- * personalizes it. Care Pass, the care-twin roster, and any other surface
- * must resolve the name the same way, or the same dog reads as "Phoenix"
- * on one tab and "My Dog" on the next.
+ * The stored default profile name is "My Dog" (a placeholder). Production
+ * surfaces present that as "Your dog" until the owner saves a real name.
+ * Preview/demo callers may explicitly pass "Phoenix" as their fallback, but
+ * an unconfigured account must never look like a configured Phoenix profile.
  */
 export const DEFAULT_PET_PLACEHOLDER = "My Dog";
-export const DEFAULT_PET_DISPLAY_NAME = "Phoenix";
+export const DEFAULT_PET_DISPLAY_NAME = "Your dog";
 
 export function resolvePetName(
   name: string | null | undefined,

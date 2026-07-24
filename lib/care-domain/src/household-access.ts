@@ -3,7 +3,6 @@ export type HouseholdAccessSource = "account" | "care-doc" | "routine-owner";
 
 export interface HouseholdAccessHousehold {
   name?: string | null;
-  inviteCode?: string | null;
 }
 
 export interface HouseholdAccessMember {
@@ -25,6 +24,7 @@ export interface HouseholdAccessRoutine {
 
 export interface HouseholdAccessInput {
   household?: HouseholdAccessHousehold | null;
+  canManageInvitations?: boolean;
   members?: readonly HouseholdAccessMember[] | null;
   caregivers?: readonly HouseholdAccessCaregiver[] | null;
   routines?: readonly HouseholdAccessRoutine[] | null;
@@ -46,7 +46,6 @@ export interface HouseholdAccessPerson {
 export interface HouseholdAccessPlan {
   status: HouseholdAccessStatus;
   householdName: string;
-  inviteCode: string;
   canShareInvite: boolean;
   syncedMembers: number;
   localOnlyCaregivers: number;
@@ -122,7 +121,7 @@ function nextStepFor(plan: {
   canShareInvite: boolean;
 }): string {
   if (plan.status === "needs-household") {
-    return "Create or join a household before sharing invite codes or assigning synced roles.";
+    return "Create or join a household before creating expiring invitations or assigning synced roles.";
   }
   if (plan.status === "needs-invites") {
     const names = plan.pendingNames.slice(0, 2).join(" and ");
@@ -139,8 +138,9 @@ function nextStepFor(plan: {
 
 export function deriveHouseholdAccessPlan(input: HouseholdAccessInput): HouseholdAccessPlan {
   const householdName = clean(input.household?.name) || "Your household";
-  const inviteCode = clean(input.household?.inviteCode);
-  const canShareInvite = Boolean(inviteCode);
+  const canShareInvite = Boolean(
+    input.household && input.canManageInvitations,
+  );
   const people = new Map<string, HouseholdAccessPerson>();
 
   const upsert = (name: string, role: string, source: HouseholdAccessSource, email = ""): HouseholdAccessPerson => {
@@ -216,7 +216,6 @@ export function deriveHouseholdAccessPlan(input: HouseholdAccessInput): Househol
   return {
     status,
     householdName,
-    inviteCode,
     canShareInvite,
     syncedMembers,
     localOnlyCaregivers,

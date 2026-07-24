@@ -94,9 +94,9 @@ export interface AvatarEmotionsInput {
   mimeType?: string;
 }
 
-export type AvatarEmotionsResponseImages = { [key: string]: AvatarEmotionImage };
+export type AvatarEmotionsResponseImages = {[key: string]: AvatarEmotionImage};
 
-export type AvatarEmotionsResponseErrors = { [key: string]: string };
+export type AvatarEmotionsResponseErrors = {[key: string]: string};
 
 export interface AvatarEmotionsResponse {
   images: AvatarEmotionsResponseImages;
@@ -117,6 +117,32 @@ export interface Household {
   inviteCode: string;
 }
 
+export type HouseholdMembershipHousehold = {
+  id: string;
+  name: string;
+};
+
+export interface HouseholdMembership {
+  household: HouseholdMembershipHousehold;
+  role: string;
+  /** @nullable */
+  accessPassExpiresAt?: string | null;
+  accessPassExpired: boolean;
+  eligible: boolean;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface HouseholdMembershipList {
+  activeHouseholdId: string;
+  memberships: HouseholdMembership[];
+}
+
+export interface ActiveHouseholdSelection {
+  /** @minLength 1 */
+  householdId: string;
+}
+
 export interface Member {
   id: string;
   userId: string;
@@ -126,8 +152,12 @@ export interface Member {
   /** @nullable */
   email?: string | null;
   isSelf: boolean;
-  /** @nullable */
+  /**
+     * Active Access Pass expiry for temporary helpers, if one is set.
+     * @nullable
+     */
   accessPassExpiresAt?: string | null;
+  /** True when a temporary helper's Access Pass has lapsed and writes should be blocked until renewed. */
   accessPassExpired?: boolean;
 }
 
@@ -137,14 +167,44 @@ export interface Me {
   members: Member[];
 }
 
-export type HouseholdAuditAction = "invitation-created" | "invitation-accepted" | "invitation-revoked" | "member-role-updated" | "member-revoked" | "access-pass-activated" | "access-pass-revoked";
+export type HouseholdAuditEventAction = typeof HouseholdAuditEventAction[keyof typeof HouseholdAuditEventAction];
 
-export type HouseholdAuditLifecycleState = "invite-created" | "invite-accepted" | "invite-revoked" | "member-updated" | "member-revoked" | "access-pass-active" | "access-pass-revoked" | "access-pass-expired";
+
+export const HouseholdAuditEventAction = {
+  'invitation-created': 'invitation-created',
+  'invitation-accepted': 'invitation-accepted',
+  'invitation-revoked': 'invitation-revoked',
+  'member-role-updated': 'member-role-updated',
+  'member-revoked': 'member-revoked',
+  'access-pass-activated': 'access-pass-activated',
+  'access-pass-revoked': 'access-pass-revoked',
+} as const;
+
+export type HouseholdAuditEventLifecycleState = typeof HouseholdAuditEventLifecycleState[keyof typeof HouseholdAuditEventLifecycleState];
+
+
+export const HouseholdAuditEventLifecycleState = {
+  'invite-created': 'invite-created',
+  'invite-accepted': 'invite-accepted',
+  'invite-revoked': 'invite-revoked',
+  'member-updated': 'member-updated',
+  'member-revoked': 'member-revoked',
+  'access-pass-active': 'access-pass-active',
+  'access-pass-revoked': 'access-pass-revoked',
+  'access-pass-expired': 'access-pass-expired',
+} as const;
+
+export type HouseholdAuditEventStorage = typeof HouseholdAuditEventStorage[keyof typeof HouseholdAuditEventStorage];
+
+
+export const HouseholdAuditEventStorage = {
+  'provider-durable': 'provider-durable',
+} as const;
 
 export interface HouseholdAuditEvent {
   id: string;
-  action: HouseholdAuditAction;
-  lifecycleState: HouseholdAuditLifecycleState;
+  action: HouseholdAuditEventAction;
+  lifecycleState: HouseholdAuditEventLifecycleState;
   actorUserId: string;
   householdId: string;
   /** @nullable */
@@ -162,27 +222,48 @@ export interface HouseholdAuditEvent {
   /** @nullable */
   expiresAt?: string | null;
   createdAt: string;
-  storage: "provider-durable";
+  storage: HouseholdAuditEventStorage;
   boundary: string;
 }
 
-export interface HouseholdJoinResponse extends Me {
+export type HouseholdJoinResponse = Me & {
   auditEvent: HouseholdAuditEvent;
-}
+};
 
-export interface HouseholdMemberMutationResponse extends Me {
+export type HouseholdMemberMutationResponse = Me & {
   auditEvent: HouseholdAuditEvent;
-}
+};
 
-export interface ListHouseholdAuditEventsParams {
-  limit?: number;
-  action?: HouseholdAuditAction;
-  lifecycleState?: HouseholdAuditLifecycleState;
-}
+export type HouseholdAuditEventListFiltersAction = typeof HouseholdAuditEventListFiltersAction[keyof typeof HouseholdAuditEventListFiltersAction];
+
+
+export const HouseholdAuditEventListFiltersAction = {
+  'invitation-created': 'invitation-created',
+  'invitation-accepted': 'invitation-accepted',
+  'invitation-revoked': 'invitation-revoked',
+  'member-role-updated': 'member-role-updated',
+  'member-revoked': 'member-revoked',
+  'access-pass-activated': 'access-pass-activated',
+  'access-pass-revoked': 'access-pass-revoked',
+} as const;
+
+export type HouseholdAuditEventListFiltersLifecycleState = typeof HouseholdAuditEventListFiltersLifecycleState[keyof typeof HouseholdAuditEventListFiltersLifecycleState];
+
+
+export const HouseholdAuditEventListFiltersLifecycleState = {
+  'invite-created': 'invite-created',
+  'invite-accepted': 'invite-accepted',
+  'invite-revoked': 'invite-revoked',
+  'member-updated': 'member-updated',
+  'member-revoked': 'member-revoked',
+  'access-pass-active': 'access-pass-active',
+  'access-pass-revoked': 'access-pass-revoked',
+  'access-pass-expired': 'access-pass-expired',
+} as const;
 
 export interface HouseholdAuditEventListFilters {
-  action?: HouseholdAuditAction;
-  lifecycleState?: HouseholdAuditLifecycleState;
+  action?: HouseholdAuditEventListFiltersAction;
+  lifecycleState?: HouseholdAuditEventListFiltersLifecycleState;
 }
 
 export interface HouseholdAuditEventListResponse {
@@ -192,7 +273,24 @@ export interface HouseholdAuditEventListResponse {
   boundary: string;
 }
 
-export type HouseholdInvitationLifecycleState = "pending-approval" | "approved" | "accepted" | "revoked" | "expired" | "rejected";
+export type HouseholdInvitationLifecycleState = typeof HouseholdInvitationLifecycleState[keyof typeof HouseholdInvitationLifecycleState];
+
+
+export const HouseholdInvitationLifecycleState = {
+  'pending-approval': 'pending-approval',
+  approved: 'approved',
+  accepted: 'accepted',
+  revoked: 'revoked',
+  expired: 'expired',
+  rejected: 'rejected',
+} as const;
+
+export type HouseholdInvitationStorage = typeof HouseholdInvitationStorage[keyof typeof HouseholdInvitationStorage];
+
+
+export const HouseholdInvitationStorage = {
+  'provider-durable': 'provider-durable',
+} as const;
 
 export interface HouseholdInvitation {
   id: string;
@@ -228,13 +326,8 @@ export interface HouseholdInvitation {
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
-  storage: "provider-durable";
+  storage: HouseholdInvitationStorage;
   boundary: string;
-}
-
-export interface ListHouseholdInvitationsParams {
-  limit?: number;
-  lifecycleState?: HouseholdInvitationLifecycleState;
 }
 
 export interface HouseholdInvitationListFilters {
@@ -269,14 +362,28 @@ export interface HouseholdInvitationMutationResponse {
   auditEvent: HouseholdAuditEvent;
 }
 
-export type HouseholdSharingCleanupKind = "expired-invitation" | "expired-access-pass";
+export type HouseholdSharingCleanupKind = typeof HouseholdSharingCleanupKind[keyof typeof HouseholdSharingCleanupKind];
 
-export type HouseholdSharingCleanupRecommendedAction = "mark-invitation-expired" | "review-helper-access";
 
-export interface ListHouseholdSharingCleanupParams {
-  limit?: number;
-  kind?: HouseholdSharingCleanupKind;
-}
+export const HouseholdSharingCleanupKind = {
+  'expired-invitation': 'expired-invitation',
+  'expired-access-pass': 'expired-access-pass',
+} as const;
+
+export type HouseholdSharingCleanupRecommendedAction = typeof HouseholdSharingCleanupRecommendedAction[keyof typeof HouseholdSharingCleanupRecommendedAction];
+
+
+export const HouseholdSharingCleanupRecommendedAction = {
+  'mark-invitation-expired': 'mark-invitation-expired',
+  'review-helper-access': 'review-helper-access',
+} as const;
+
+export type HouseholdSharingCleanupCandidateStorage = typeof HouseholdSharingCleanupCandidateStorage[keyof typeof HouseholdSharingCleanupCandidateStorage];
+
+
+export const HouseholdSharingCleanupCandidateStorage = {
+  'review-only': 'review-only',
+} as const;
 
 export interface HouseholdSharingCleanupCandidate {
   id: string;
@@ -297,7 +404,7 @@ export interface HouseholdSharingCleanupCandidate {
   expiresAt: string;
   staleSince: string;
   recommendedAction: HouseholdSharingCleanupRecommendedAction;
-  storage: "review-only";
+  storage: HouseholdSharingCleanupCandidateStorage;
   boundary: string;
 }
 
@@ -330,23 +437,56 @@ export interface JoinHouseholdInput {
   inviteCode: string;
 }
 
-export type HouseholdMemberRole = "owner" | "adult" | "teen" | "kid" | "sitter" | "trainer" | "walker" | "vet viewer";
+/**
+ * Owner-reviewed household role such as adult, kid, sitter, trainer, walker, or vet viewer.
+ */
+export type HouseholdMemberUpdateRole = typeof HouseholdMemberUpdateRole[keyof typeof HouseholdMemberUpdateRole];
+
+
+export const HouseholdMemberUpdateRole = {
+  owner: 'owner',
+  adult: 'adult',
+  teen: 'teen',
+  kid: 'kid',
+  sitter: 'sitter',
+  trainer: 'trainer',
+  walker: 'walker',
+  vet_viewer: 'vet viewer',
+} as const;
 
 export interface HouseholdMemberUpdate {
-  role?: HouseholdMemberRole;
-  /** @nullable */
+  /** Owner-reviewed household role such as adult, kid, sitter, trainer, walker, or vet viewer. */
+  role?: HouseholdMemberUpdateRole;
+  /**
+     * @minLength 1
+     * @nullable
+     */
   displayName?: string | null;
 }
 
-export type AccessPassRole = "sitter" | "trainer" | "walker" | "vet viewer";
+export type AccessPassActivationInputRole = typeof AccessPassActivationInputRole[keyof typeof AccessPassActivationInputRole];
+
+
+export const AccessPassActivationInputRole = {
+  sitter: 'sitter',
+  trainer: 'trainer',
+  walker: 'walker',
+  vet_viewer: 'vet viewer',
+} as const;
 
 export interface AccessPassActivationInput {
   /** @minLength 1 */
   memberId: string;
-  role: AccessPassRole;
-  /** @nullable */
+  role: AccessPassActivationInputRole;
+  /**
+     * @minLength 1
+     * @nullable
+     */
   displayName?: string | null;
-  /** @nullable */
+  /**
+     * Optional owner-reviewed expiry metadata for future enforcement.
+     * @nullable
+     */
   expiresAt?: string | null;
   /** @nullable */
   note?: string | null;
@@ -359,25 +499,45 @@ export interface AccessPassRevocationInput {
   reason?: string | null;
 }
 
+export type HouseholdAccessPassRole = typeof HouseholdAccessPassRole[keyof typeof HouseholdAccessPassRole];
+
+
+export const HouseholdAccessPassRole = {
+  sitter: 'sitter',
+  trainer: 'trainer',
+  walker: 'walker',
+  vet_viewer: 'vet viewer',
+} as const;
+
+export type HouseholdAccessPassStatus = typeof HouseholdAccessPassStatus[keyof typeof HouseholdAccessPassStatus];
+
+
+export const HouseholdAccessPassStatus = {
+  active: 'active',
+  revoked: 'revoked',
+} as const;
+
 export interface HouseholdAccessPass {
   memberId: string;
   userId: string;
-  role: AccessPassRole;
-  status: "active" | "revoked";
+  role: HouseholdAccessPassRole;
+  status: HouseholdAccessPassStatus;
   /** @nullable */
   expiresAt?: string | null;
   /** @nullable */
   note?: string | null;
 }
 
-export interface HouseholdAccessPassMutationResponse extends Me {
+export type HouseholdAccessPassMutationResponse = Me & {
   accessPass: HouseholdAccessPass;
   auditEvent: HouseholdAuditEvent;
-}
+};
 
 export type CareStateEnvelopeDoc = { [key: string]: unknown };
 
 export interface CareStateEnvelope {
+  /** @pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ */
+  householdId: string;
   version: number;
   updatedAt: string;
   /** @nullable */
@@ -399,6 +559,8 @@ export type CareEntryDetails = { [key: string]: unknown } | null;
 
 export interface CareEntry {
   id: string;
+  /** @pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ */
+  householdId: string;
   /** @nullable */
   petId?: string | null;
   type: string;
@@ -415,8 +577,47 @@ export interface CareEntry {
   note?: string | null;
   /** @nullable */
   details?: CareEntryDetails;
+  /**
+     * @minimum 1
+     * @maximum 2147483647
+     */
+  revision: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CareEntryHistoryEnvelope {
+  /** @pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ */
+  householdId: string;
+  /**
+     * @minimum 0
+     * @maximum 9007199254740991
+     */
+  historyGeneration: number;
+  /** @maxItems 500 */
+  entries: CareEntry[];
+}
+
+export interface CareEntryHistoryConflict {
+  error: string;
+  /**
+     * @minimum 0
+     * @maximum 9007199254740991
+     */
+  currentGeneration: number;
+}
+
+export interface CareEntryHouseholdScopeConflict {
+  error: string;
+  /** @pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ */
+  currentHouseholdId: string;
+}
+
+export interface CareEntryDeleteAbsent {
+  error: string;
+  /** @pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ */
+  householdId: string;
+  scopeBound: boolean;
 }
 
 export interface CareEntryTombstone {
@@ -451,6 +652,11 @@ export interface CareEntryInput {
 export type CareEntryUpdateDetails = { [key: string]: unknown } | null;
 
 export interface CareEntryUpdate {
+  /**
+     * @minimum 1
+     * @maximum 2147483646
+     */
+  expectedRevision: number;
   /** @minLength 1 */
   type?: string;
   occurredAt?: string;
@@ -464,14 +670,145 @@ export interface CareEntryUpdate {
   details?: CareEntryUpdateDetails;
 }
 
+export type ListHouseholdInvitationsParams = {
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+lifecycleState?: HouseholdInvitationLifecycleState;
+};
+
+export type ListHouseholdSharingCleanupParams = {
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+kind?: HouseholdSharingCleanupKind;
+};
+
+export type ListHouseholdAuditEventsParams = {
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+action?: ListHouseholdAuditEventsAction;
+lifecycleState?: ListHouseholdAuditEventsLifecycleState;
+};
+
+export type ListHouseholdAuditEventsAction = typeof ListHouseholdAuditEventsAction[keyof typeof ListHouseholdAuditEventsAction];
+
+
+export const ListHouseholdAuditEventsAction = {
+  'invitation-created': 'invitation-created',
+  'invitation-accepted': 'invitation-accepted',
+  'invitation-revoked': 'invitation-revoked',
+  'member-role-updated': 'member-role-updated',
+  'member-revoked': 'member-revoked',
+  'access-pass-activated': 'access-pass-activated',
+  'access-pass-revoked': 'access-pass-revoked',
+} as const;
+
+export type ListHouseholdAuditEventsLifecycleState = typeof ListHouseholdAuditEventsLifecycleState[keyof typeof ListHouseholdAuditEventsLifecycleState];
+
+
+export const ListHouseholdAuditEventsLifecycleState = {
+  'invite-created': 'invite-created',
+  'invite-accepted': 'invite-accepted',
+  'invite-revoked': 'invite-revoked',
+  'member-updated': 'member-updated',
+  'member-revoked': 'member-revoked',
+  'access-pass-active': 'access-pass-active',
+  'access-pass-revoked': 'access-pass-revoked',
+  'access-pass-expired': 'access-pass-expired',
+} as const;
+
+export type GetCareStateParams = {
+/**
+ * Canonical household scope captured before care-state sync begins.
+ * @pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+ */
+householdId: string;
+};
+
+export type PutCareStateParams = {
+/**
+ * Canonical household scope captured before care-state sync begins.
+ * @pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+ */
+householdId: string;
+};
+
 export type ListCareEntriesParams = {
 since?: string;
 updatedSince?: string;
+/**
+ * @minimum 1
+ * @maximum 500
+ */
 limit?: number;
 };
 
-export interface ListCareEntryTombstonesParams {
-  updatedSince?: string;
-  limit?: number;
-}
+export type CreateCareEntryParams = {
+/**
+ * Canonical household scope captured before care-log creation begins.
+ * @pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+ */
+householdId: string;
+};
+
+export type ListCareEntryHistoryParams = {
+/**
+ * Canonical household scope captured before the history request begins.
+ * @pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+ */
+householdId: string;
+/**
+ * Exact millisecond-precision occurredAt value from the final entry of the prior page.
+ * @pattern ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$
+ */
+beforeOccurredAt?: string;
+/**
+ * Canonical entry id from the final entry of the prior page.
+ * @pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+ */
+beforeId?: string;
+/**
+ * @minimum 0
+ * @maximum 9007199254740991
+ */
+expectedGeneration?: number;
+/**
+ * @minimum 1
+ * @maximum 500
+ */
+limit?: number;
+};
+
+export type ListCareEntryTombstonesParams = {
+updatedSince?: string;
+/**
+ * @minimum 1
+ * @maximum 500
+ */
+limit?: number;
+};
+
+export type UpdateCareEntryParams = {
+/**
+ * Canonical household scope captured before the update began.
+ * @pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+ */
+householdId: string;
+};
+
+export type DeleteCareEntryParams = {
+/**
+ * Canonical household scope captured before the delete began.
+ * @pattern ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+ */
+householdId: string;
+};
 

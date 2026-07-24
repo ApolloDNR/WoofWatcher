@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import {
   buildAccountDeletionRequest,
@@ -362,4 +364,29 @@ test("uses saved structured storage proof in deletion request attachment summary
 
   assert.match(request.body, /2 local files ready for provider upload/);
   assert.doesNotMatch(request.body, /2 local files stay on this device/);
+});
+
+test("keeps the device-wipe action and receipt verdict truthful", () => {
+  const privacy = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "app", "privacy.tsx"),
+    "utf8",
+  );
+
+  assert.match(
+    privacy,
+    /isSignedIn\s*\?\s*"Clear care from this device"/,
+  );
+  assert.match(privacy, /Provider-synced care is not deleted/);
+  assert.match(privacy, /title:\s*"Device cleared"/);
+  assert.match(
+    privacy,
+    /receipt\.steps\s*\.filter\(\(step\) => step\.status === "failed"\)/,
+  );
+  assert.match(privacy, /resolveCareDeviceWipeAttempt/);
+  assert.match(privacy, /authIdentityRef\.current/);
+  assert.match(privacy, /initiatingUserId/);
+  assert.match(privacy, /getCurrentUserId/);
+  assert.match(privacy, /failedTargets\.join\(", "\)/);
+  assert.match(privacy, /"Retry"/);
+  assert.match(privacy, /\{ownerOps \? \(\s*<Pressable[\s\S]*shareDeletionRequest/);
 });

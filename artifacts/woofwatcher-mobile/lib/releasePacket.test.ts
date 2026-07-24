@@ -151,6 +151,13 @@ test("separates internal beta readiness from public provider and store gates", (
   assert.match(packet.betaSummary, /Expo\/PWA beta/i);
   assert.ok(packet.blockers.some((blocker) => /Production auth/i.test(blocker)));
   assert.ok(packet.betaNextActions.some((item) => /Share the Expo\/PWA beta/i.test(item)));
+  assert.ok(
+    packet.betaNextActions.some(
+      (item) =>
+        /Today, Plan, Quick Log, Health, and More/.test(item) &&
+        /Log History, Records, and Privacy/.test(item),
+    ),
+  );
 });
 
 test("blocks internal beta when local release foundations are not verified", () => {

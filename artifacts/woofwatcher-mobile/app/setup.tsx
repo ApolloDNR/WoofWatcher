@@ -180,26 +180,35 @@ export default function SetupScreen() {
     ? `Complete ${formatSectionList(remainingSections)} to save.`
     : "";
 
-  const saveSetup = () => {
+  const saveSetup = async () => {
     if (!canSave) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       notifyDialog("Almost there", saveBlockedMessage);
       return;
     }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    updateCareDoc((doc) => applySetupWizardDraft(doc, draft));
     if (twinPlan.willSwapTemplate) {
       // Persist through AvatarContext.saveAvatarConfig - the same state path
       // Avatar Studio's Save uses - with the template-picker patch, so the
       // room twin follows the typed breed without duplicating studio logic.
-      void saveAvatarConfig(
-        applyBreedTemplateToAvatarConfig(
-          avatarConfig,
-          twinPlan.resultTemplateId,
-          preview.profile.name,
-        ),
-      ).catch(() => {});
+      try {
+        await saveAvatarConfig(
+          applyBreedTemplateToAvatarConfig(
+            avatarConfig,
+            twinPlan.resultTemplateId,
+            preview.profile.name,
+          ),
+        );
+      } catch {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        notifyDialog(
+          "Care twin not saved",
+          "Setup has not been marked complete. Review any older device care twin or retry after device storage is available.",
+        );
+        return;
+      }
     }
+    updateCareDoc((doc) => applySetupWizardDraft(doc, draft));
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     // In-app success sheet (Alert is a no-op on react-native-web); the
     // hand-off to Today or Plan happens from the sheet's own buttons.
     setSuccessMoment({

@@ -19,7 +19,8 @@ export interface HealthReviewPacketInput {
     anxiety7: number;
   };
   redFlagCount: number;
-  bileStatus: "Low Risk" | "Watch" | "Review";
+  careEvidenceObservedCount: number;
+  bileStatus: "No logs" | "Watch" | "Review";
   lastYellowBileLabel: string;
   longestFoodGapLabel: string;
   bedtimeSnackLabel: string;
@@ -27,8 +28,16 @@ export interface HealthReviewPacketInput {
 
 export interface HealthReviewPacket {
   title: string;
-  statusLabel: "Steady" | "Worth watching" | "Consider sharing with your vet";
-  languagePill: "Not veterinary advice" | "Pattern noticed" | "Review";
+  statusLabel:
+    | "Not enough evidence"
+    | "Observations logged"
+    | "Worth watching"
+    | "Consider sharing with your vet";
+  languagePill:
+    | "Insufficient evidence"
+    | "Not veterinary advice"
+    | "Pattern noticed"
+    | "Review";
   summary: string;
   prompts: string[];
   vetShareChecklist: string[];
@@ -47,10 +56,20 @@ function hasFoodGapLabel(value: string): boolean {
   return !!normalized && !normalized.includes("needs more") && !normalized.includes("learning");
 }
 
-function statusLabelFor(status: CareHealthStatus): HealthReviewPacket["statusLabel"] {
-  if (status === "alert") return "Consider sharing with your vet";
-  if (status === "watch") return "Worth watching";
-  return "Steady";
+function hasReviewEvidence(input: HealthReviewPacketInput): boolean {
+  return (
+    input.careEvidenceObservedCount > 0 ||
+    input.redFlagCount > 0 ||
+    input.bileStatus !== "No logs" ||
+    Object.values(input.healthCounts).some((count) => count > 0)
+  );
+}
+
+function statusLabelFor(input: HealthReviewPacketInput): HealthReviewPacket["statusLabel"] {
+  if (input.healthStatus === "alert") return "Consider sharing with your vet";
+  if (input.healthStatus === "watch") return "Worth watching";
+  if (!hasReviewEvidence(input)) return "Not enough evidence";
+  return "Observations logged";
 }
 
 function languagePillFor(input: HealthReviewPacketInput): HealthReviewPacket["languagePill"] {
@@ -58,12 +77,17 @@ function languagePillFor(input: HealthReviewPacketInput): HealthReviewPacket["la
     return "Review";
   }
   if (input.healthStatus === "watch" || input.bileStatus === "Watch") return "Pattern noticed";
+  if (!hasReviewEvidence(input)) return "Insufficient evidence";
   return "Not veterinary advice";
 }
 
 function buildSummary(input: HealthReviewPacketInput, languagePill: HealthReviewPacket["languagePill"]): string {
-  if (input.healthStatus === "good" && input.bileStatus === "Low Risk") {
-    return `${input.dogName}'s Health Review Packet is built from owner observations: meals, stool, vomiting, energy, hydration, and medication context.`;
+  if (!hasReviewEvidence(input)) {
+    return "No recent shared care evidence is available yet. Add matching care observations before using this packet as household or vet context.";
+  }
+  if (input.healthStatus === "good") {
+    const count = input.careEvidenceObservedCount;
+    return `${input.dogName}'s Health Review Packet organizes owner observations across ${count} recent shared care ${count === 1 ? "area" : "areas"}. Missing areas remain unobserved, and this packet does not grade wellness.`;
   }
 
   const foodGap = hasFoodGapLabel(input.longestFoodGapLabel)
@@ -73,8 +97,16 @@ function buildSummary(input: HealthReviewPacketInput, languagePill: HealthReview
 }
 
 function buildPrompts(input: HealthReviewPacketInput): string[] {
+  if (!hasReviewEvidence(input)) {
+    return [
+      "Log a matching care observation before using this packet for review.",
+      "Mood, energy, appetite, hydration, stool, and activity remain unobserved until the household records them.",
+      "Add a factual symptom note if a specific health concern appears.",
+    ];
+  }
+
   const prompts =
-    input.healthStatus === "good" && input.bileStatus === "Low Risk"
+    input.healthStatus === "good"
       ? [
           "Keep logging meals, stool, vomiting, energy, and medication.",
           "Use bedtime snack notes to keep Bile Watch context readable.",
@@ -83,7 +115,7 @@ function buildPrompts(input: HealthReviewPacketInput): string[] {
       : [
           "Capture timing, food gap, appetite after, energy after, stool detail, and hydration.",
           "Add a photo only when it helps the household or vet understand the observation.",
-          "Keep notes factual: what happened, when, what Phoenix ate, and how she acted after.",
+          `Keep notes factual: what happened, when, what ${input.dogName} ate, and how they acted after.`,
         ];
 
   if (input.healthStatus === "alert" || input.redFlagCount > 0) {
@@ -114,14 +146,16 @@ function buildChecklist(input: HealthReviewPacketInput): string[] {
 
 export function deriveHealthReviewPacket(input: HealthReviewPacketInput): HealthReviewPacket {
   const languagePill = languagePillFor(input);
-  const vetShareLanguage =
-    input.healthStatus === "good"
+  const evidenceAvailable = hasReviewEvidence(input);
+  const vetShareLanguage = !evidenceAvailable
+    ? "This packet is incomplete because no matching recent shared care evidence is logged."
+    : input.healthStatus === "good"
       ? "Save this as calm household context."
       : "Consider sharing with your vet if the pattern repeats, worsens, or appears with other concerning signs.";
 
   return {
     title: "Review packet",
-    statusLabel: statusLabelFor(input.healthStatus),
+    statusLabel: statusLabelFor(input),
     languagePill,
     summary: buildSummary(input, languagePill),
     prompts: buildPrompts(input),

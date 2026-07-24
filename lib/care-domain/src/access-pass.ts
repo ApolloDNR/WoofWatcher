@@ -1,3 +1,4 @@
+import { resolvePetName } from "./pet-identity.ts";
 import { type RoutineBoardEntry, type RoutineBoardItem, type RoutineBoardRoutine, deriveRoutineBoard } from "./routine-board.ts";
 
 export type AccessPassKind = "sitter" | "trainer" | "vet" | "emergency" | "temporary-helper";
@@ -193,7 +194,7 @@ export function buildAccessPassDraft(input: AccessPassDraftInput): AccessPass {
     startsAt,
     endsAt,
     status: "draft",
-    petName: clean(input.petName) || "Phoenix",
+    petName: resolvePetName(input.petName),
     permissions: permissionsFor(kind),
     blockedPermissions: blockedPermissionsFor(kind),
     responsibilities: [],
@@ -205,7 +206,7 @@ export function buildAccessPassDraft(input: AccessPassDraftInput): AccessPass {
 
 export function deriveAccessPassPlan(input: AccessPassInput): AccessPassPlan {
   const now = input.now ?? Date.now();
-  const petName = clean(input.petName) || "Phoenix";
+  const petName = resolvePetName(input.petName);
   const passes = (input.passes ?? [])
     .map((pass): AccessPassView => {
       const kind = pass.kind ?? "sitter";
@@ -215,7 +216,7 @@ export function deriveAccessPassPlan(input: AccessPassInput): AccessPassPlan {
         role: clean(pass.role) || kindLabel(kind),
         kind,
         holderName: clean(pass.holderName) || "Temporary helper",
-        petName: clean(pass.petName) || petName,
+        petName: resolvePetName(pass.petName, petName),
         status,
         permissions: [...(pass.permissions?.length ? pass.permissions : permissionsFor(kind))],
         blockedPermissions: [...(pass.blockedPermissions?.length ? pass.blockedPermissions : blockedPermissionsFor(kind))],
@@ -295,7 +296,7 @@ function nextOpen(items: readonly RoutineBoardItem[]): RoutineBoardItem | null {
 export function deriveMyCareToday(input: MyCareTodayInput): MyCareToday {
   const now = input.now ?? Date.now();
   const personName = clean(input.personName) || "You";
-  const petName = clean(input.petName) || "Phoenix";
+  const petName = resolvePetName(input.petName);
   const board = deriveRoutineBoard({
     routines: input.routines,
     entries: input.entries,

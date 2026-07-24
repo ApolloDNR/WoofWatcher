@@ -15,7 +15,11 @@ export interface Member {
   /** @nullable */
   email?: string | null;
   isSelf: boolean;
-  /** @nullable */
+  /**
+     * Active Access Pass expiry for temporary helpers, if one is set.
+     * @nullable
+     */
   accessPassExpiresAt?: string | null;
+  /** True when a temporary helper's Access Pass has lapsed and writes should be blocked until renewed. */
   accessPassExpired?: boolean;
 }

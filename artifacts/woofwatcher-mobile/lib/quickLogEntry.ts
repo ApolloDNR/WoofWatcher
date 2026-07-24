@@ -314,9 +314,11 @@ export function describeQuickLogLauncherAction(
 export function describeQuickLogDetailSheet(
   type: string | null | undefined,
   label: string,
+  petName?: string,
 ): QuickLogDetailSheetPresentation {
   const policy = getQuickLogPolicy(type);
   const safeLabel = clean(label) || policy.type;
+  const dogReference = clean(petName) || "your dog";
   const title = `${safeLabel} details`;
   const canQuickLog = policy.tapBehavior === "quick-log";
   const interactionRail: QuickLogInteractionRailItem[] = [
@@ -342,7 +344,7 @@ export function describeQuickLogDetailSheet(
     return {
       ...base,
       subtitle: "Fast bowl drop now, accurate outcome later.",
-      quickSummary: "Quick tap serves the usual meal and keeps the meal outcome pending until someone confirms what Phoenix ate.",
+      quickSummary: `Quick tap serves the usual meal and keeps the meal outcome pending until someone confirms what ${dogReference} ate.`,
       detailChecklist: [
         "Meal uses a served -> outcome lifecycle so a bowl on the floor is not treated as eaten.",
         "Track portion offered, expected portion, and food notes before saving.",

@@ -8,6 +8,7 @@ import {
   Animated,
   Image,
   ImageBackground,
+  KeyboardAvoidingView,
   type LayoutChangeEvent,
   Modal,
   Platform,
@@ -16,17 +17,27 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReducedMotion } from "react-native-reanimated";
 import { isClerkConfigured, useWoofAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  useCreateHouseholdInvitation,
   useGetMe,
+  useListHouseholdInvitations,
+  useListMyHouseholds,
+  useSelectActiveHousehold,
   useUpdateHousehold,
   useJoinHousehold,
   useUpdateMe,
   getGetMeQueryKey,
+  getListHouseholdInvitationsQueryKey,
+  type HouseholdInvitation,
+  type HouseholdInvitationMutationResponse,
+  type HouseholdMembership,
 } from "@workspace/api-client-react";
 import {
   buildAccessPassDraft,
@@ -39,12 +50,22 @@ import {
   type AccessPassKind,
 } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
+import { useWebQaFontScale } from "@/hooks/useWebQaFontScale";
 import { useCare } from "@/context/CareContext";
 import { useAvatar } from "@/context/AvatarContext";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
-import { deriveCareSyncDashboard, type CareSyncDashboard } from "@/lib/careSync";
+import {
+  deriveCareDocConflictReviewAccess,
+  deriveCareSyncDashboard,
+  formatCareDocConflictReview,
+  type CareSyncDashboard,
+} from "@/lib/careSync";
+import {
+  DEFAULT_PET_PLACEHOLDER,
+  resolvePetName,
+} from "@/lib/petIdentity";
 import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
@@ -88,6 +109,8 @@ import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from 
 import { deriveSupportRunbookPlan } from "@/lib/supportRunbook";
 import { shareTextPayload } from "@/lib/shareText";
 import {
+  createWebQaLayoutMarker,
+  getAccessibleLayoutMetrics,
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
@@ -115,9 +138,11 @@ const MORE_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
 const MORE_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
 
 type HouseholdMemberSummary = {
+  userId?: string;
   displayName?: string | null;
   email?: string | null;
   role?: string | null;
+  isSelf?: boolean;
 };
 
 interface MoreDirectoryItem {
@@ -349,6 +374,16 @@ function providerRowQaTarget(key: LaunchProviderSetupKey): ProviderRowQaTarget |
 export default function MoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
+  const {
+    fontScale: accessibleFontScale,
+    qaFontScale,
+  } = useWebQaFontScale(fontScale);
+  const reducedMotion = useReducedMotion();
+  const moreAccessibleLayout = getAccessibleLayoutMetrics({
+    platform: Platform.OS,
+    fontScale: accessibleFontScale,
+  });
   const router = useRouter();
   // Owner launch tooling renders in development/internal builds only; store
   // production builds keep More to household care surfaces.
@@ -363,7 +398,19 @@ export default function MoreScreen() {
   const rawFocusParam = (routeParams as Record<string, string | string[] | undefined>).focus;
   const focusParam = Array.isArray(rawFocusParam) ? rawFocusParam[0] : rawFocusParam;
   const householdFocus = sectionParam === "household";
-  const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
+  const {
+    state,
+    refresh,
+    rehydrateHouseholdScope,
+    updateCareDoc,
+    syncOutbox,
+    isLoaded,
+    isSyncing,
+    syncRefreshError,
+    careDocConflicts,
+    documentSyncError,
+    prepareCareDocConflictDismissal,
+  } = useCare();
   const { dietProfile, profile, entries, routines, caregivers, accessPasses } = state;
   const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
 
@@ -376,8 +423,41 @@ export default function MoreScreen() {
 
   const household = me.data?.household;
   const members: HouseholdMemberSummary[] = me.data?.members ?? [];
+  const myMember = members.find((member) => member.isSelf);
+  const isHouseholdOwner = myMember?.role === "owner";
+  const conflictReviewAccess = deriveCareDocConflictReviewAccess({
+    activeAuthenticatedScope:
+      isClerkConfigured && !!isSignedIn && isLoaded,
+    viewerRole: myMember?.role,
+    conflicts: careDocConflicts,
+  });
+  const ownerReviewConflicts = conflictReviewAccess.ownerReviewConflicts;
+  const householdMemberships = useListMyHouseholds();
+  const householdMembershipOptions = Array.isArray(
+    householdMemberships.data?.memberships,
+  )
+    ? householdMemberships.data.memberships
+    : [];
+  const householdInvitations = useListHouseholdInvitations(
+    { limit: 10 },
+    {
+      query: {
+        enabled: isHouseholdOwner,
+        queryKey: getListHouseholdInvitationsQueryKey({ limit: 10 }),
+      },
+    },
+  );
+  const createHouseholdInvitation = useCreateHouseholdInvitation();
+  const selectActiveHousehold = useSelectActiveHousehold();
+  const approvedInvitations =
+    householdInvitations.data?.invitations.filter(
+      (invitation: HouseholdInvitation) =>
+        invitation.runtimeLifecycleState === "approved" &&
+        !invitation.expired,
+    ) ?? [];
+  const latestApprovedInvitation = approvedInvitations[0] ?? null;
   const myName = me.data?.user?.displayName?.trim() || "";
-  const currentHuman = myName || caregivers[0]?.name || "Apollo";
+  const currentHuman = myName || caregivers[0]?.name || "You";
 
   const now = Date.now();
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
@@ -403,10 +483,7 @@ export default function MoreScreen() {
       }),
     [entries, routines, caregivers, now],
   );
-  const petName =
-    profile.name && profile.name !== "My Dog"
-      ? profile.name
-      : "Phoenix";
+  const petName = resolvePetName(profile.name);
   const careTwinRoster = useMemo(
     () => deriveCareTwinRoster(state),
     [state.activePetId, state.profile, state.pets],
@@ -482,6 +559,9 @@ export default function MoreScreen() {
       lastUpdatedAt: latestCareUpdate ?? state.updatedAt,
       householdMemberCount: members.length || (household ? 1 : 0),
       totalEntries: entries.length,
+      documentConflictCount: conflictReviewAccess.conflictCount,
+      documentSyncError,
+      refreshError: syncRefreshError,
     });
   }, [
     syncOutbox,
@@ -493,6 +573,9 @@ export default function MoreScreen() {
     household,
     entries.length,
     caregivers.length,
+    conflictReviewAccess.conflictCount,
+    documentSyncError,
+    syncRefreshError,
   ]);
   const launchProviderSetupPlan = useMemo(
     () => deriveLaunchProviderSetup(state.launchProviderProfile),
@@ -575,12 +658,13 @@ export default function MoreScreen() {
   const householdAccess = useMemo(
     () =>
       deriveHouseholdAccessPlan({
-        household: household ? { name: household.name, inviteCode: household.inviteCode } : null,
+        household: household ? { name: household.name } : null,
+        canManageInvitations: isHouseholdOwner,
         members,
         caregivers,
         routines,
       }),
-    [household, members, caregivers, routines],
+    [household, isHouseholdOwner, members, caregivers, routines],
   );
   const accessPassPlan = useMemo(
     () =>
@@ -633,6 +717,7 @@ export default function MoreScreen() {
   const bottomPadding = getTabbedRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+    fontScale: accessibleFontScale,
   });
 
   /**
@@ -785,12 +870,65 @@ export default function MoreScreen() {
   const refreshMe = () => queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
 
   const shareInvite = () => {
-    if (!household) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void shareTextPayload({
-      message: `Join our ${household.name} on WoofWatcher to help care for ${petName}. Invite code: ${household.inviteCode}`,
-      title: "WoofWatcher invite",
-    });
+    if (!household || !isHouseholdOwner) return;
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    createHouseholdInvitation.mutate(
+      {
+        data: {
+          role: "adult",
+          lifecycleState: "approved",
+          expiresAt,
+          note: `Expiring invitation for ${household.name}`,
+        },
+      },
+      {
+        onSuccess: ({ invitation }: HouseholdInvitationMutationResponse) => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          void shareTextPayload({
+            message: `Join our ${household.name} on WoofWatcher to help care for ${petName}. This one-time invite expires ${new Date(invitation.expiresAt ?? expiresAt).toLocaleString()}: ${invitation.inviteCode}`,
+            title: "WoofWatcher invite",
+          });
+          void householdInvitations.refetch();
+        },
+        onError: () =>
+          notifyDialog(
+            "Couldn't create invitation",
+            "No access was shared. Please try again.",
+          ),
+      },
+    );
+  };
+
+  const switchHousehold = (householdId: string) => {
+    if (
+      householdId === householdMemberships.data?.activeHouseholdId ||
+      selectActiveHousehold.isPending
+    ) {
+      return;
+    }
+    selectActiveHousehold.mutate(
+      { data: { householdId } },
+      {
+        onSuccess: async () => {
+          const rehydrated = await rehydrateHouseholdScope();
+          if (!rehydrated) {
+            notifyDialog(
+              "Household changed",
+              "The new pack is active, but its local cache could not be loaded yet. Reopen More to retry.",
+            );
+            return;
+          }
+          Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Success,
+          );
+        },
+        onError: () =>
+          notifyDialog(
+            "Couldn't switch household",
+            "You can only switch to a current, eligible pack membership.",
+          ),
+      },
+    );
   };
 
   const openFuturePetSheet = () => {
@@ -872,12 +1010,11 @@ export default function MoreScreen() {
     joinHousehold.mutate(
       { data: { inviteCode: code } },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           setJoinOpen(false);
           setJoinCode("");
-          refreshMe();
-          refresh();
+          await rehydrateHouseholdScope();
         },
         onError: () => notifyDialog("Couldn't join", "That invite code didn't match a household."),
       },
@@ -917,7 +1054,7 @@ export default function MoreScreen() {
   };
 
   const openProfileEdit = () => {
-    setPName(profile.name === "My Dog" ? "" : profile.name);
+    setPName(profile.name === DEFAULT_PET_PLACEHOLDER ? "" : profile.name);
     setPBreed(profile.breed);
     setPWeight(profile.weight.current > 0 ? String(profile.weight.current) : "");
     setPWeightUnit((profile.weight.unit as "lb" | "kg") || "lb");
@@ -931,7 +1068,7 @@ export default function MoreScreen() {
   };
 
   const saveProfile = () => {
-    const name = pName.trim() || "Phoenix";
+    const name = pName.trim() || DEFAULT_PET_PLACEHOLDER;
     const w = parseFloat(pWeight);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     updateCareDoc((doc) => ({
@@ -1014,15 +1151,23 @@ export default function MoreScreen() {
 
   // Mount animation
   const isWebRoutePreview = (Platform.OS as string) === "web";
-  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
-  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
+  const fade = useRef(
+    new Animated.Value(isWebRoutePreview || reducedMotion ? 1 : 0),
+  ).current;
+  const slide = useRef(
+    new Animated.Value(isWebRoutePreview || reducedMotion ? 0 : 16),
+  ).current;
   useEffect(() => {
-    if (isWebRoutePreview) return;
+    if (isWebRoutePreview || reducedMotion) {
+      fade.setValue(1);
+      slide.setValue(0);
+      return;
+    }
     Animated.parallel([
       Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
       Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
     ]).start();
-  }, [fade, isWebRoutePreview, slide]);
+  }, [fade, isWebRoutePreview, reducedMotion, slide]);
 
   const generateCarePass = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -1266,6 +1411,12 @@ export default function MoreScreen() {
       : launchReleasePacket.betaShipStatus === "qa-first"
         ? colors.amber
         : colors.rose;
+  // Light-mode amber is deliberately deep enough to carry light text. Every
+  // other release state uses the reviewed warm foreground in both schemes.
+  const betaShipForeground =
+    launchReleasePacket.betaShipStatus === "qa-first" && !colors.isDark
+      ? colors.ivory
+      : colors.warmForeground;
   const providerSetupTone =
     launchProviderSetupPlan.status === "provider-approved"
       ? colors.sage
@@ -1544,7 +1695,14 @@ export default function MoreScreen() {
   const H_PAD = 16;
 
   return (
-    <View style={[s.root, { backgroundColor: colors.background }]}>
+    <View
+      testID="qa-layout-more"
+      nativeID={createWebQaLayoutMarker(
+        qaFontScale,
+        moreAccessibleLayout,
+      )}
+      style={[s.root, { backgroundColor: colors.background }]}
+    >
       <ScrollView
         ref={scrollRef}
         style={s.container}
@@ -1556,8 +1714,6 @@ export default function MoreScreen() {
             kicker="WOOFWATCHER"
             title="More"
             subtitle={`${petName}'s care tools, records, household, and settings.`}
-            back
-            onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
             plain
             style={s.moreRouteHeader}
           />
@@ -1567,7 +1723,13 @@ export default function MoreScreen() {
              QA counts, sync, and roster stats as light chips; the night-room
              pixel scene lives on as a small rounded living thumbnail. */
           <BoardCard style={s.moreCommandStageCard}>
-            <View style={s.moreCommandHeadRow}>
+            <View
+              style={[
+                s.moreCommandHeadRow,
+                moreAccessibleLayout.stackStatusRows &&
+                  s.moreCommandHeadRowReflow,
+              ]}
+            >
               <ImageBackground
                 source={MORE_COMMAND_STAGE_ROOM}
                 resizeMode="cover"
@@ -1588,7 +1750,9 @@ export default function MoreScreen() {
                   Launch Command Hub
                 </Text>
                 <Text
-                  numberOfLines={3}
+                  numberOfLines={
+                    moreAccessibleLayout.stackStatusRows ? undefined : 3
+                  }
                   style={[s.moreCommandSpeech, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
                 >
                   {moreCommandSpeech}
@@ -1597,22 +1761,47 @@ export default function MoreScreen() {
               <BoardPill
                 label={moreCommandStatusLabel}
                 tone={readinessBadgeTone}
-                style={{ alignSelf: "center" }}
+                style={{
+                  alignSelf: moreAccessibleLayout.stackStatusRows
+                    ? "flex-start"
+                    : "center",
+                }}
               />
             </View>
 
-            <View style={s.moreCommandStats}>
+            <View
+              style={[
+                s.moreCommandStats,
+                moreAccessibleLayout.stackStatusRows &&
+                  s.moreCommandStatsReflow,
+              ]}
+            >
               {moreCommandHud.map((metric) => (
                 <View
                   key={metric.label}
-                  style={[s.moreCommandStat, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  style={[
+                    s.moreCommandStat,
+                    moreAccessibleLayout.stackStatusRows && {
+                      flex: 0,
+                      width:
+                        moreAccessibleLayout.fontScale >= 2
+                          ? "100%"
+                          : moreAccessibleLayout.quickActionWidth,
+                      minHeight: moreAccessibleLayout.controlMinHeight,
+                    },
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
                 >
                   <Text style={[s.moreCommandStatLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                     {metric.label}
                   </Text>
                   <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
+                    numberOfLines={
+                      moreAccessibleLayout.actionLabelNumberOfLines
+                    }
                     style={[s.moreCommandStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
                   >
                     {metric.value}
@@ -1624,7 +1813,6 @@ export default function MoreScreen() {
             <View style={[s.moreCommandGates, { backgroundColor: colors.amberSoft }]}>
               <Ionicons name="flag-outline" size={14} color={colors.amber} />
               <Text
-                numberOfLines={1}
                 style={[s.moreCommandGatesText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}
               >
                 Open gates - {moreCommandOpenGates} launch / {moreCommandProviderOpen} provider
@@ -1718,11 +1906,14 @@ export default function MoreScreen() {
               {moreDirectoryItems.map((item, index) => (
                 <Pressable
                   key={item.id}
+                  testID="more-directory-row"
                   accessibilityRole="button"
                   accessibilityLabel={`${item.eyebrow}: ${item.label}. ${item.detail}`}
                   onPress={item.onPress}
                   style={({ pressed }) => [
                     s.moreDirectoryRow,
+                    moreAccessibleLayout.stackStatusRows &&
+                      s.moreDirectoryRowReflow,
                     index < moreDirectoryItems.length - 1 && {
                       borderBottomWidth: 1,
                       borderBottomColor: colors.border,
@@ -1743,17 +1934,41 @@ export default function MoreScreen() {
                         action chip squeezes this column, and the longest title
                         ("Owner Preview Core Loop") overran ~7px on one line.
                         Short titles still render on a single line. */}
-                    <Text numberOfLines={2} style={[s.moreDirectoryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    <Text
+                      numberOfLines={
+                        moreAccessibleLayout.stackStatusRows ? undefined : 2
+                      }
+                      style={[s.moreDirectoryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+                    >
                       {item.label}
                     </Text>
-                    <Text numberOfLines={2} style={[s.moreDirectoryDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    <Text
+                      numberOfLines={
+                        moreAccessibleLayout.stackStatusRows ? undefined : 2
+                      }
+                      style={[s.moreDirectoryDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
+                    >
                       {item.detail}
                     </Text>
                   </View>
-                  <View style={[s.moreDirectoryAction, { borderColor: item.tone + "35", backgroundColor: item.tone + "10" }]}>
+                  <View
+                    testID="more-directory-action"
+                    style={[
+                      s.moreDirectoryAction,
+                      moreAccessibleLayout.stackStatusRows && [
+                        s.moreDirectoryActionReflow,
+                        {
+                          minHeight:
+                            moreAccessibleLayout.controlMinHeight,
+                        },
+                      ],
+                      { borderColor: item.tone + "35", backgroundColor: item.tone + "10" },
+                    ]}
+                  >
                     <Text
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
+                      numberOfLines={
+                        moreAccessibleLayout.actionLabelNumberOfLines
+                      }
                       style={[s.moreDirectoryActionText, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}
                     >
                       {item.actionLabel}
@@ -2712,9 +2927,9 @@ export default function MoreScreen() {
                     <Ionicons
                       name={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
                       size={15}
-                      color="#FFFFFF"
+                      color={betaShipForeground}
                     />
-                    <Text style={[s.betaNextActionButtonText, { fontFamily: "Inter_800ExtraBold" }]}>
+                    <Text style={[s.betaNextActionButtonText, { color: betaShipForeground, fontFamily: "Inter_800ExtraBold" }]}>
                       {launchReleasePacket.betaShipStatus === "qa-first" ? "QA Cockpit" : "Share Beta Packet"}
                     </Text>
                   </Pressable>
@@ -2837,19 +3052,97 @@ export default function MoreScreen() {
             <BoardSectionHeader
               title="Care Team"
               accessory={
-                <Pressable
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setRenameValue(household?.name ?? "");
-                    setRenameOpen(true);
-                  }}
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  disabled={!household}
-                >
-                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Rename</Text>
-                </Pressable>
+                isHouseholdOwner ? (
+                  <Pressable
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setRenameValue(household?.name ?? "");
+                      setRenameOpen(true);
+                    }}
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    disabled={!household}
+                  >
+                    <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Rename</Text>
+                  </Pressable>
+                ) : null
               }
             />
+            {householdMembershipOptions.length > 1 && (
+              <View style={[s.householdSwitcher, { borderColor: colors.border }]}>
+                <Text style={[s.codeLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  ACTIVE PACK
+                </Text>
+                <View style={s.householdSwitcherChoices}>
+                  {householdMembershipOptions.map((membership: HouseholdMembership) => (
+                    <Pressable
+                      key={membership.household.id}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`Active pack: ${membership.household.name}`}
+                      accessibilityState={{
+                        checked: membership.isActive,
+                        disabled:
+                          !membership.eligible ||
+                          selectActiveHousehold.isPending,
+                      }}
+                      aria-checked={membership.isActive}
+                      accessibilityHint={
+                        membership.isActive
+                          ? `${membership.household.name} is the active pack.`
+                          : !membership.eligible
+                            ? `${membership.household.name} cannot be selected because this membership is not eligible.`
+                            : selectActiveHousehold.isPending
+                              ? "Wait for the current pack change to finish."
+                              : `Switches active care to ${membership.household.name}.`
+                      }
+                      disabled={!membership.eligible || selectActiveHousehold.isPending}
+                      onPress={() => switchHousehold(membership.household.id)}
+                      style={({ pressed }) => [
+                        s.householdSwitcherChoice,
+                        {
+                          backgroundColor: membership.isActive
+                            ? colors.primary
+                            : colors.background,
+                          borderColor: membership.isActive
+                            ? colors.primary
+                            : colors.border,
+                          opacity:
+                            !membership.eligible || pressed ? 0.62 : 1,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.householdSwitcherText,
+                          {
+                            color: membership.isActive
+                              ? colors.primaryForeground
+                              : colors.foreground,
+                            fontFamily: "Inter_700Bold",
+                          },
+                        ]}
+                      >
+                        {membership.household.name}
+                      </Text>
+                      {membership.accessPassExpired && (
+                        <Text
+                          style={[
+                            s.householdSwitcherMeta,
+                            {
+                              color: membership.isActive
+                                ? colors.primaryForeground
+                                : colors.rose,
+                              fontFamily: "Inter_600SemiBold",
+                            },
+                          ]}
+                        >
+                          Pass expired
+                        </Text>
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
             <View style={s.inviteTop}>
               <View style={[s.inviteIcon, { backgroundColor: colors.sage + "1A" }]}>
                 <Ionicons name="people" size={20} color={colors.sage} />
@@ -2865,21 +3158,32 @@ export default function MoreScreen() {
             </View>
             <View style={[s.codeBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <View>
-                <Text style={[s.codeLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>INVITE CODE</Text>
+                <Text style={[s.codeLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>EXPIRING INVITATION</Text>
                 <Text style={[s.codeValue, { color: colors.foreground, fontFamily: DISPLAY }]}>
-                  {householdAccess.inviteCode || "—"}
+                  {isHouseholdOwner
+                    ? latestApprovedInvitation?.inviteCode ?? "Create a fresh code"
+                    : "Owner managed"}
                 </Text>
+                {isHouseholdOwner && latestApprovedInvitation?.expiresAt && (
+                  <Text style={[s.inviteExpiry, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    Expires {new Date(latestApprovedInvitation.expiresAt).toLocaleString()}
+                  </Text>
+                )}
               </View>
-              <Pressable
-                onPress={shareInvite}
-                disabled={!householdAccess.canShareInvite}
-                accessibilityRole="button"
-                accessibilityLabel="Share household invite"
-                style={({ pressed }) => [s.shareBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
-              >
-                <Ionicons name="share-outline" size={16} color={colors.primaryForeground} />
-                <Text style={[s.shareBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Invite</Text>
-              </Pressable>
+              {isHouseholdOwner && (
+                <Pressable
+                  onPress={shareInvite}
+                  disabled={createHouseholdInvitation.isPending}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share household invite"
+                  style={({ pressed }) => [s.shareBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                >
+                  <Ionicons name="share-outline" size={16} color={colors.primaryForeground} />
+                  <Text style={[s.shareBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                    {createHouseholdInvitation.isPending ? "Creating…" : "New invite"}
+                  </Text>
+                </Pressable>
+              )}
             </View>
 
             <View style={[s.boardDivider, { borderTopColor: colors.border }]} />
@@ -2932,15 +3236,17 @@ export default function MoreScreen() {
             <BoardSectionHeader
               title="Household Access"
               accessory={
-                <Pressable
-                  onPress={shareInvite}
-                  disabled={!householdAccess.canShareInvite}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share household invite"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                >
-                  <Text style={[s.sectionLink, { color: accessTone, fontFamily: "Inter_600SemiBold", opacity: householdAccess.canShareInvite ? 1 : 0.55 }]}>Invite</Text>
-                </Pressable>
+                isHouseholdOwner ? (
+                  <Pressable
+                    onPress={shareInvite}
+                    disabled={createHouseholdInvitation.isPending}
+                    accessibilityRole="button"
+                    accessibilityLabel="Share household invite"
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  >
+                    <Text style={[s.sectionLink, { color: accessTone, fontFamily: "Inter_600SemiBold" }]}>Invite</Text>
+                  </Pressable>
+                ) : null
               }
             />
             <View style={s.responsibilityTop}>
@@ -3230,6 +3536,28 @@ export default function MoreScreen() {
                       );
                       return;
                     }
+                    if (documentSyncError) {
+                      refresh();
+                      return;
+                    }
+                    if (conflictReviewAccess.conflictCount > 0) {
+                      if (conflictReviewAccess.requiresOwnerReview) {
+                        notifyDialog(
+                          "Owner review required",
+                          "Household care conflicts remain. A verified household owner must review the protected alternatives.",
+                        );
+                        return;
+                      }
+                      notifyDialog(
+                        "Care conflicts to review",
+                        "Review each local and server alternative below, then dismiss only the row you resolved.",
+                      );
+                      return;
+                    }
+                    if (syncOutbox.conflicted > 0) {
+                      router.push("/log" as never);
+                      return;
+                    }
                     refresh();
                   }}
                   disabled={isSyncing}
@@ -3271,6 +3599,104 @@ export default function MoreScreen() {
             <Text style={[s.syncNextStep, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {syncDashboard.nextStep}
             </Text>
+            {conflictReviewAccess.requiresOwnerReview ? (
+              <View
+                style={[
+                  s.syncConflictOwnerNotice,
+                  { borderColor: colors.amber + "66", backgroundColor: colors.amber + "10" },
+                ]}
+              >
+                <Ionicons name="lock-closed-outline" size={16} color={colors.amber} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.syncConflictPath, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Owner review required
+                  </Text>
+                  <Text style={[s.syncMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    Household conflicts remain. Protected local and server alternatives are visible only to a verified household owner.
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+            {ownerReviewConflicts.length > 0 ? (
+              <View style={[s.responsibilityRoster, { borderTopColor: colors.border }]}>
+                {ownerReviewConflicts.map((conflict, index) => {
+                  const review = formatCareDocConflictReview(conflict);
+                  return (
+                    <View
+                      key={`${review.path}-${index}`}
+                      style={[
+                        s.syncConflictRow,
+                        { borderColor: colors.border, backgroundColor: colors.background },
+                      ]}
+                    >
+                      <Text
+                        numberOfLines={2}
+                        style={[s.syncConflictPath, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+                      >
+                        {review.path}
+                      </Text>
+                      <View style={s.syncConflictAlternatives}>
+                        <View style={s.syncConflictAlternative}>
+                          <Text style={[s.syncConflictLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                            LOCAL · CURRENT
+                          </Text>
+                          <Text
+                            numberOfLines={3}
+                            style={[s.syncMessage, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                          >
+                            {review.localAlternative}
+                          </Text>
+                        </View>
+                        <View style={s.syncConflictAlternative}>
+                          <Text style={[s.syncConflictLabel, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                            SERVER · ALTERNATIVE
+                          </Text>
+                          <Text
+                            numberOfLines={3}
+                            style={[s.syncMessage, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                          >
+                            {review.serverAlternative}
+                          </Text>
+                        </View>
+                      </View>
+                      <Pressable
+                        onPress={() => {
+                          const dismissReviewedConflict =
+                            prepareCareDocConflictDismissal(conflict);
+                          confirmThroughSteps(
+                            [
+                              {
+                                title: "Keep local version?",
+                                message:
+                                  "This dismisses only this reviewed conflict. The current local value stays unchanged.",
+                                confirmLabel: "Keep local and dismiss",
+                              },
+                            ],
+                            dismissReviewedConflict,
+                          );
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Keep local value and dismiss reviewed conflict ${index + 1}`}
+                        hitSlop={MOBILE_INLINE_HIT_SLOP}
+                        style={({ pressed }) => [
+                          s.providerSetupRowAction,
+                          {
+                            borderColor: colors.amber + "66",
+                            backgroundColor: colors.amber + "10",
+                            opacity: pressed ? 0.72 : 1,
+                          },
+                        ]}
+                      >
+                        <Ionicons name="checkmark-done-outline" size={14} color={colors.amber} />
+                        <Text style={[s.providerSetupRowActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          Keep local and dismiss
+                        </Text>
+                      </Pressable>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : null}
             {ownerOps ? (
               <Pressable
                 onPress={openCareEntryProviderSyncProofMission}
@@ -3298,6 +3724,8 @@ export default function MoreScreen() {
                 setNameValue(myName);
                 setNameOpen(true);
               }}
+              accessibilityRole="button"
+              accessibilityLabel="Edit your display name"
               style={({ pressed }) => [s.linkRow, { borderBottomWidth: 1, borderBottomColor: colors.border, opacity: pressed ? 0.6 : 1 }]}
             >
               <View style={[s.linkIconWrap, { backgroundColor: colors.copper + "16" }]}>
@@ -3305,7 +3733,12 @@ export default function MoreScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.linkLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Your display name</Text>
-                <Text numberOfLines={1} style={[s.linkSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                <Text
+                  numberOfLines={
+                    moreAccessibleLayout.stackStatusRows ? undefined : 1
+                  }
+                  style={[s.linkSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                >
                   {myName || "Set how you appear on logs"}
                 </Text>
               </View>
@@ -3317,6 +3750,8 @@ export default function MoreScreen() {
                 setJoinCode("");
                 setJoinOpen(true);
               }}
+              accessibilityRole="button"
+              accessibilityLabel="Join another household"
               style={({ pressed }) => [s.linkRow, { opacity: pressed ? 0.6 : 1 }]}
             >
               <View style={[s.linkIconWrap, { backgroundColor: colors.sage + "16" }]}>
@@ -3324,7 +3759,12 @@ export default function MoreScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.linkLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Join another household</Text>
-                <Text numberOfLines={1} style={[s.linkSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                <Text
+                  numberOfLines={
+                    moreAccessibleLayout.stackStatusRows ? undefined : 1
+                  }
+                  style={[s.linkSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                >
                   Enter an invite code from a family member
                 </Text>
               </View>
@@ -3349,7 +3789,14 @@ export default function MoreScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.linkLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{l.label}</Text>
-                  <Text numberOfLines={1} style={[s.linkSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{l.sub}</Text>
+                  <Text
+                    numberOfLines={
+                      moreAccessibleLayout.stackStatusRows ? undefined : 1
+                    }
+                    style={[s.linkSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
+                  >
+                    {l.sub}
+                  </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
               </Pressable>
@@ -3436,14 +3883,26 @@ export default function MoreScreen() {
       </ScrollView>
 
       {/* Diet profile edit modal */}
-      <Modal visible={dietEditOpen} transparent animationType="slide" onRequestClose={() => setDietEditOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDietEditOpen(false)}>
-          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
-              bounces={false}
-            >
+      <Modal
+        visible={dietEditOpen}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setDietEditOpen(false)}
+      >
+        <KeyboardAvoidingView
+          style={s.modalKeyboardAvoider}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDietEditOpen(false)}>
+            <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+              <ScrollView
+                testID="diet-editor-scroll"
+                automaticallyAdjustKeyboardInsets
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
+                bounces={false}
+              >
               <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Diet Profile</Text>
 
@@ -3474,18 +3933,22 @@ export default function MoreScreen() {
 
               <Pressable
                 onPress={saveDiet}
+                accessibilityRole="button"
+                accessibilityLabel="Save diet profile"
                 style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
                 <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save diet profile</Text>
               </Pressable>
-            </ScrollView>
+              </ScrollView>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Join household modal */}
       <PromptModal
         visible={joinOpen}
+        reducedMotion={reducedMotion}
         colors={colors}
         icon="enter-outline"
         title="Join a household"
@@ -3503,6 +3966,7 @@ export default function MoreScreen() {
       {/* Rename household modal */}
       <PromptModal
         visible={renameOpen}
+        reducedMotion={reducedMotion}
         colors={colors}
         icon="home-outline"
         title="Rename household"
@@ -3519,6 +3983,7 @@ export default function MoreScreen() {
       {/* Display name modal */}
       <PromptModal
         visible={nameOpen}
+        reducedMotion={reducedMotion}
         colors={colors}
         icon="person-circle-outline"
         title="Your display name"
@@ -3532,10 +3997,29 @@ export default function MoreScreen() {
         onConfirm={submitName}
       />
 
-      <Modal visible={petRosterOpen} transparent animationType="slide" onRequestClose={() => setPetRosterOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setPetRosterOpen(false)}>
-          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
-            <View style={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}>
+      <Modal
+        visible={petRosterOpen}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setPetRosterOpen(false)}
+      >
+        <KeyboardAvoidingView
+          style={s.modalKeyboardAvoider}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setPetRosterOpen(false)}>
+            <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+              <ScrollView
+                testID="pet-roster-editor-scroll"
+                automaticallyAdjustKeyboardInsets
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                  paddingBottom: modalSheetBottomPadding,
+                  paddingHorizontal: 22,
+                }}
+                bounces={false}
+              >
               <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Add future dog</Text>
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -3563,20 +4047,40 @@ export default function MoreScreen() {
               <Pressable
                 onPress={saveFuturePet}
                 accessibilityRole="button"
-                accessibilityLabel="Save future dog to CareTwin roster"
+                accessibilityLabel="Save future dog draft"
                 style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
                 <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save planned slot</Text>
               </Pressable>
-            </View>
+              </ScrollView>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
-      <Modal visible={accessPassOpen} transparent animationType="slide" onRequestClose={() => setAccessPassOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setAccessPassOpen(false)}>
-          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
-            <View style={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}>
+      <Modal
+        visible={accessPassOpen}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setAccessPassOpen(false)}
+      >
+        <KeyboardAvoidingView
+          style={s.modalKeyboardAvoider}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setAccessPassOpen(false)}>
+            <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+              <ScrollView
+                testID="access-pass-editor-scroll"
+                automaticallyAdjustKeyboardInsets
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                  paddingBottom: modalSheetBottomPadding,
+                  paddingHorizontal: 22,
+                }}
+                bounces={false}
+              >
               <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Create Access Pass</Text>
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -3605,8 +4109,15 @@ export default function MoreScreen() {
                     <Pressable
                       key={kind.key}
                       onPress={() => setAccessPassKind(kind.key)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Set Access Pass role to ${kind.label}`}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`Access Pass role: ${kind.label}`}
+                      accessibilityState={{ checked: selected }}
+                      aria-checked={selected}
+                      accessibilityHint={
+                        selected
+                          ? `${kind.label} is selected.`
+                          : `Selects ${kind.label} permissions for this Access Pass.`
+                      }
                       style={[
                         s.passKind,
                         {
@@ -3631,19 +4142,32 @@ export default function MoreScreen() {
               >
                 <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save Local Draft</Text>
               </Pressable>
-            </View>
+              </ScrollView>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
-      <Modal visible={providerSetupOpen} transparent animationType="slide" onRequestClose={() => setProviderSetupOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProviderSetupOpen(false)}>
-          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
-              bounces={false}
-            >
+      <Modal
+        visible={providerSetupOpen}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setProviderSetupOpen(false)}
+      >
+        <KeyboardAvoidingView
+          style={s.modalKeyboardAvoider}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProviderSetupOpen(false)}>
+            <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+              <ScrollView
+                testID="provider-setup-editor-scroll"
+                automaticallyAdjustKeyboardInsets
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
+                bounces={false}
+              >
               <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Provider Launch Setup</Text>
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -3665,8 +4189,15 @@ export default function MoreScreen() {
                         Haptics.selectionAsync();
                         setProviderDraft((prev) => ({ ...prev, providerStatus: statusOption.key }));
                       }}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Set provider setup status to ${statusOption.label}`}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`Provider setup status: ${statusOption.label}`}
+                      accessibilityState={{ checked: selected }}
+                      aria-checked={selected}
+                      accessibilityHint={
+                        selected
+                          ? `${statusOption.label} is selected.`
+                          : `Sets the provider review status to ${statusOption.label}.`
+                      }
                       style={[
                         s.providerStatusPill,
                         {
@@ -3743,23 +4274,36 @@ export default function MoreScreen() {
               >
                 <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save provider setup</Text>
               </Pressable>
-            </ScrollView>
+              </ScrollView>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Dog profile edit modal */}
-      <Modal visible={profileOpen} transparent animationType="slide" onRequestClose={() => setProfileOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProfileOpen(false)}>
-          <Pressable
-            style={[s.profileModal, { backgroundColor: colors.card }]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
-              bounces={false}
+      <Modal
+        visible={profileOpen}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setProfileOpen(false)}
+      >
+        <KeyboardAvoidingView
+          style={s.modalKeyboardAvoider}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProfileOpen(false)}>
+            <Pressable
+              style={[s.profileModal, { backgroundColor: colors.card }]}
+              onPress={(e) => e.stopPropagation()}
             >
+              <ScrollView
+                testID="profile-editor-scroll"
+                automaticallyAdjustKeyboardInsets
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
+                bounces={false}
+              >
             <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
             <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Dog Profile</Text>
 
@@ -3781,8 +4325,18 @@ export default function MoreScreen() {
               style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
 
-            <View style={s.profWeightRow}>
-              <View style={{ flex: 1 }}>
+            <View
+              style={[
+                s.profWeightRow,
+                moreAccessibleLayout.stackFormFields &&
+                  s.profWeightRowReflow,
+              ]}
+            >
+              <View
+                style={{
+                  flex: moreAccessibleLayout.stackFormFields ? undefined : 1,
+                }}
+              >
                 <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>WEIGHT</Text>
                 <TextInput
                   value={pWeight}
@@ -3800,6 +4354,15 @@ export default function MoreScreen() {
                     <Pressable
                       key={u}
                       onPress={() => { Haptics.selectionAsync(); setPWeightUnit(u); }}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`Weight unit: ${u}`}
+                      accessibilityState={{ checked: pWeightUnit === u }}
+                      aria-checked={pWeightUnit === u}
+                      accessibilityHint={
+                        pWeightUnit === u
+                          ? `${u} is selected.`
+                          : `Sets the profile weight unit to ${u}.`
+                      }
                       style={[s.unitPill, { backgroundColor: pWeightUnit === u ? colors.primary : colors.background, borderColor: pWeightUnit === u ? colors.primary : colors.border }]}
                     >
                       <Text style={[s.unitText, { color: pWeightUnit === u ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{u}</Text>
@@ -3848,8 +4411,18 @@ export default function MoreScreen() {
               style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
 
-            <View style={s.profWeightRow}>
-              <View style={{ flex: 1 }}>
+            <View
+              style={[
+                s.profWeightRow,
+                moreAccessibleLayout.stackFormFields &&
+                  s.profWeightRowReflow,
+              ]}
+            >
+              <View
+                style={{
+                  flex: moreAccessibleLayout.stackFormFields ? undefined : 1,
+                }}
+              >
                 <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>INSURANCE</Text>
                 <TextInput
                   value={pInsuranceProvider}
@@ -3859,7 +4432,11 @@ export default function MoreScreen() {
                   style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
                 />
               </View>
-              <View style={{ flex: 1 }}>
+              <View
+                style={{
+                  flex: moreAccessibleLayout.stackFormFields ? undefined : 1,
+                }}
+              >
                 <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>POLICY</Text>
                 <TextInput
                   value={pInsurancePolicy}
@@ -3874,13 +4451,16 @@ export default function MoreScreen() {
 
             <Pressable
               onPress={saveProfile}
+              accessibilityRole="button"
+              accessibilityLabel="Save dog profile"
               style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
             >
               <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save profile</Text>
             </Pressable>
-            </ScrollView>
+              </ScrollView>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -3888,6 +4468,7 @@ export default function MoreScreen() {
 
 function PromptModal({
   visible,
+  reducedMotion,
   colors,
   icon,
   title,
@@ -3902,6 +4483,7 @@ function PromptModal({
   onConfirm,
 }: {
   visible: boolean;
+  reducedMotion: boolean;
   colors: ReturnType<typeof useColors>;
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
@@ -3916,9 +4498,18 @@ function PromptModal({
   onConfirm: () => void;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <Pressable style={s.modalBackdrop} onPress={onCancel}>
-        <Pressable style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType={reducedMotion ? "none" : "fade"}
+      onRequestClose={onCancel}
+    >
+      <KeyboardAvoidingView
+        style={s.modalKeyboardAvoider}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <Pressable style={s.modalBackdrop} onPress={onCancel}>
+          <Pressable style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
           <View style={[s.modalIcon, { backgroundColor: colors.primary + "1A" }]}>
             <Ionicons name={icon} size={22} color={colors.primary} />
           </View>
@@ -3947,8 +4538,9 @@ function PromptModal({
               <Text style={[s.modalConfirmText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{loading ? "…" : confirmLabel}</Text>
             </Pressable>
           </View>
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -3977,6 +4569,10 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 11,
     marginBottom: 12,
+  },
+  moreCommandHeadRowReflow: {
+    flexDirection: "column",
+    alignItems: "stretch",
   },
   moreCommandThumb: {
     width: 56,
@@ -4009,6 +4605,10 @@ const s = StyleSheet.create({
     flexDirection: "row",
     gap: 7,
     marginBottom: 10,
+  },
+  moreCommandStatsReflow: {
+    flexWrap: "wrap",
+    alignItems: "stretch",
   },
   moreCommandStat: {
     flex: 1,
@@ -4149,6 +4749,11 @@ const s = StyleSheet.create({
     gap: 11,
     paddingVertical: 9,
   },
+  moreDirectoryRowReflow: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    paddingVertical: 12,
+  },
   moreDirectoryIcon: {
     width: 42,
     height: 42,
@@ -4186,6 +4791,11 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 3,
+  },
+  moreDirectoryActionReflow: {
+    alignSelf: "stretch",
+    width: "100%",
+    paddingHorizontal: 12,
   },
   moreDirectoryActionText: {
     fontSize: 11,
@@ -4543,7 +5153,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
   },
-  betaNextActionButtonText: { color: "#FFFFFF", fontSize: 12.5 },
+  betaNextActionButtonText: { fontSize: 12.5 },
   betaHandoffShareButton: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
@@ -4627,11 +5237,39 @@ const s = StyleSheet.create({
   syncMetricValue: { fontSize: 14, textAlign: "center" },
   syncMetricLabel: { fontSize: 10.5, textAlign: "center", marginTop: 3 },
   syncNextStep: { fontSize: 12.5, lineHeight: 18, marginTop: 12 },
+  syncConflictOwnerNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 14,
+  },
+  syncConflictRow: { borderWidth: 1, borderRadius: 14, padding: 12, gap: 10 },
+  syncConflictPath: { fontSize: 12.5, lineHeight: 17 },
+  syncConflictAlternatives: { gap: 9 },
+  syncConflictAlternative: { minWidth: 0 },
+  syncConflictLabel: { fontSize: 9, lineHeight: 12, letterSpacing: 1.1 },
 
   inviteTop: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
   inviteIcon: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   inviteHousehold: { fontSize: 16 },
   inviteSub: { fontSize: 13, marginTop: 2 },
+  inviteExpiry: { fontSize: 11.5, marginTop: 3 },
+  householdSwitcher: { borderWidth: 1, borderRadius: 16, padding: 12, marginBottom: 14 },
+  householdSwitcherChoices: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
+  householdSwitcherChoice: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    minWidth: 112,
+    borderRadius: 13,
+    borderWidth: 1,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  householdSwitcherText: { fontSize: 13 },
+  householdSwitcherMeta: { fontSize: 10.5, marginTop: 2 },
   codeBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -4658,6 +5296,7 @@ const s = StyleSheet.create({
   },
   signOutText: { fontSize: 15 },
 
+  modalKeyboardAvoider: { flex: 1 },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(15,31,36,0.45)", justifyContent: "center", paddingHorizontal: 28 },
   modalCard: {
     borderRadius: 26,
@@ -4762,6 +5401,7 @@ const s = StyleSheet.create({
   profFieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 16 },
   profField: { borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   profWeightRow: { flexDirection: "row", alignItems: "flex-end", gap: 12 },
+  profWeightRowReflow: { flexDirection: "column", alignItems: "stretch" },
   unitRow: { flexDirection: "row", gap: 8, paddingBottom: 1 },
   unitPill: { minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 16, paddingVertical: 11, borderRadius: 13, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   unitText: { fontSize: 14 },

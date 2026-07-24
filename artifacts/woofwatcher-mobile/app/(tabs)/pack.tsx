@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
   type ImageSourcePropType,
@@ -60,11 +60,12 @@ import {
 import {
   addItem,
   cycleStatus,
+  DEFAULT_SUPPLIES,
+  inspectSuppliesStorage,
   isDefaultUntouched,
-  parseSupplies,
+  isTravelBagReady,
   removeItem,
   renameItem,
-  serializeSupplies,
   type SupplyGroup,
   type SupplyItem,
   type SupplyStatus,
@@ -73,14 +74,21 @@ import {
   activateTravelBag,
   completeTravelBag,
   defaultTravelBag,
-  parseTravelBag,
+  inspectTravelBagStorage,
   redoTravelBag,
   renameTravelBag,
   reopenTravelBag,
   resetTravelItems,
-  serializeTravelBag,
   type TravelBagSession,
 } from "@/lib/travelBag";
+import {
+  createPackWriteCoordinator,
+  getPackStorageKey,
+  inspectPackStateStorage,
+  serializePackState,
+  type PackStoredState,
+  type PackWriteCoordinator,
+} from "@/lib/packStorage";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { resolvePetName } from "@/lib/petIdentity";
 import { relativeTime } from "@/lib/time";
@@ -94,6 +102,7 @@ type HouseholdMemberSummary = {
   displayName?: string | null;
   email?: string | null;
   role?: string | null;
+  isSelf?: boolean;
 };
 
 type PackSegment = "supplies" | "pets" | "people" | "access" | "carepass";
@@ -109,8 +118,8 @@ const PACK_SEGMENTS: readonly { key: PackSegment; label: string }[] = [
 // Device-local supplies checklist (the mockup Pack page's Essentials and
 // Travel Bag boards). Keeps the "woofwatcher" key prefix so the privacy
 // erase-all-data flow removes it with every other WoofWatcher key.
-const PACK_SUPPLIES_KEY = "woofwatcher.packSupplies.v1";
-const TRAVEL_BAG_KEY = "woofwatcher.travelBag.v1";
+const LEGACY_PACK_SUPPLIES_KEY = "woofwatcher.packSupplies.v1";
+const LEGACY_TRAVEL_BAG_KEY = "woofwatcher.travelBag.v1";
 
 /** Mockup icon language for the starter items; custom items stay neutral. */
 const SUPPLY_ICONS: Record<string, PixelIconName> = {
@@ -142,6 +151,7 @@ const SUPPLY_GROUP_TITLES: Record<SupplyGroup, string> = {
 function SupplyStatusPill({ status }: { status: SupplyStatus }) {
   const colors = useColors();
   const look: Record<SupplyStatus, { label: string; bg: string; fg: string; icon?: IoniconName }> = {
+    unconfirmed: { label: "Unconfirmed", bg: colors.muted, fg: colors.mutedForeground },
     plenty: { label: "Plenty", bg: colors.sageSoft, fg: colors.forest },
     low: { label: "Low", bg: colors.amberSoft, fg: colors.amber },
     out: { label: "Out", bg: colors.rose + "1C", fg: colors.rose },
@@ -439,7 +449,19 @@ export default function PackScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { state } = useCare();
+  const {
+    state,
+    storageScope,
+    isLoaded: careScopeLoaded,
+    runDeviceOperation,
+  } = useCare();
+  const renderedPackStorageKey = storageScope
+    ? getPackStorageKey(storageScope)
+    : null;
+  const renderedPackStorageKeyRef = useRef<string | null>(
+    renderedPackStorageKey,
+  );
+  renderedPackStorageKeyRef.current = renderedPackStorageKey;
   const { avatarConfig, getAvatarSource } = useAvatar();
   const me = useGetMe();
   const now = Date.now();
@@ -449,35 +471,190 @@ export default function PackScreen() {
   // defaults never flash in over a user's saved answers (same pattern as
   // HOME_WELCOME_DISMISSED_KEY on Home).
   const [supplies, setSupplies] = useState<SupplyItem[] | null>(null);
+  const suppliesRef = useRef<SupplyItem[] | null>(null);
+  const [supplyStorageError, setSupplyStorageError] = useState<string | null>(
+    null,
+  );
+  const [supplyReloadToken, setSupplyReloadToken] = useState(0);
+  const supplyWriteInFlightRef = useRef(false);
+  const packStorageKeyRef = useRef<string | null>(null);
+  const packLifecycleGenerationRef = useRef(0);
+  const packWriteCoordinatorRef = useRef<PackWriteCoordinator | null>(null);
+  const [legacyPackCandidate, setLegacyPackCandidate] =
+    useState<PackStoredState | null>(null);
+  const [legacyPackReviewError, setLegacyPackReviewError] = useState<
+    string | null
+  >(null);
   const [editingSupplyId, setEditingSupplyId] = useState<string | null>(null);
   const [editSupplyName, setEditSupplyName] = useState("");
   const [addSupplyOpen, setAddSupplyOpen] = useState(false);
   const [addSupplyName, setAddSupplyName] = useState("");
   const [addSupplyGroup, setAddSupplyGroup] = useState<SupplyGroup>("essentials");
   const [travelBag, setTravelBag] = useState<TravelBagSession>(defaultTravelBag);
+  const travelBagRef = useRef<TravelBagSession | null>(null);
+  const [travelBagStorageReady, setTravelBagStorageReady] = useState(false);
+  const [travelBagStorageError, setTravelBagStorageError] = useState<
+    string | null
+  >(null);
+  const [travelBagReloadToken, setTravelBagReloadToken] = useState(0);
+  const travelBagWriteInFlightRef = useRef(false);
   const [editingBagLabel, setEditingBagLabel] = useState(false);
   const [bagLabelDraft, setBagLabelDraft] = useState("");
+  const isPackStorageCurrent = (storageKey: string, generation: number) =>
+    packLifecycleGenerationRef.current === generation &&
+    packStorageKeyRef.current === storageKey &&
+    renderedPackStorageKeyRef.current === storageKey;
 
   useEffect(() => {
+    const generation = packLifecycleGenerationRef.current + 1;
+    packLifecycleGenerationRef.current = generation;
     let cancelled = false;
-    AsyncStorage.getItem(PACK_SUPPLIES_KEY)
-      .then((raw) => {
-        if (!cancelled) setSupplies(parseSupplies(raw));
-      })
-      .catch(() => {
-        if (!cancelled) setSupplies(parseSupplies(null));
+    setSupplyStorageError(null);
+    setTravelBagStorageError(null);
+    setSupplies(null);
+    setTravelBag(defaultTravelBag());
+    setTravelBagStorageReady(false);
+    suppliesRef.current = null;
+    travelBagRef.current = null;
+    packStorageKeyRef.current = null;
+    packWriteCoordinatorRef.current = null;
+    setLegacyPackCandidate(null);
+    setLegacyPackReviewError(null);
+
+    if (!careScopeLoaded || !storageScope) {
+      return () => {
+        cancelled = true;
+        if (packLifecycleGenerationRef.current === generation) {
+          packLifecycleGenerationRef.current += 1;
+        }
+      };
+    }
+
+    const PACK_STATE_KEY = getPackStorageKey(storageScope);
+    packStorageKeyRef.current = PACK_STATE_KEY;
+    const isCurrentLifecycle = () =>
+      !cancelled &&
+      packLifecycleGenerationRef.current === generation &&
+      packStorageKeyRef.current === PACK_STATE_KEY &&
+      renderedPackStorageKeyRef.current === PACK_STATE_KEY;
+    const applyLoadedState = (next: PackStoredState) => {
+      if (!isCurrentLifecycle()) return;
+      suppliesRef.current = next.supplies;
+      travelBagRef.current = next.travelBag;
+      packWriteCoordinatorRef.current = createPackWriteCoordinator(next);
+      setSupplies(next.supplies);
+      setTravelBag(next.travelBag);
+      setTravelBagStorageReady(true);
+    };
+
+    void (async () => {
+      const envelopeRaw = await AsyncStorage.getItem(PACK_STATE_KEY);
+      if (!isCurrentLifecycle()) return;
+      const envelope = inspectPackStateStorage(envelopeRaw);
+      if (envelope.status === "invalid") {
+        setSupplyStorageError(
+          "Your saved Pack data could not be read. WoofWatcher kept the checklist and trip state untouched.",
+        );
+        setTravelBagStorageError(
+          "Your saved Pack data could not be read. Retry before changing this travel bag.",
+        );
+        return;
+      }
+
+      if (envelope.status === "valid") {
+        applyLoadedState(envelope.state);
+        return;
+      }
+
+      // Older builds stored these globally and independently. Local mode can
+      // adopt them directly. An authenticated account must never inherit those
+      // ambiguous bytes automatically; it gets an explicit review/import
+      // choice and the original keys remain untouched.
+      const legacyValues = await AsyncStorage.multiGet([
+        LEGACY_PACK_SUPPLIES_KEY,
+        LEGACY_TRAVEL_BAG_KEY,
+      ]);
+      if (!isCurrentLifecycle()) return;
+      const legacyByKey = new Map(legacyValues);
+      const supplies = inspectSuppliesStorage(
+        legacyByKey.get(LEGACY_PACK_SUPPLIES_KEY) ?? null,
+      );
+      const travelBag = inspectTravelBagStorage(
+        legacyByKey.get(LEGACY_TRAVEL_BAG_KEY) ?? null,
+      );
+
+      if (storageScope.kind === "account") {
+        const freshState: PackStoredState = {
+          supplies: DEFAULT_SUPPLIES.map((item) => ({ ...item })),
+          travelBag: defaultTravelBag(),
+        };
+        applyLoadedState(freshState);
+        if (supplies.status === "valid" && travelBag.status === "valid") {
+          setLegacyPackCandidate({
+            supplies: supplies.items,
+            travelBag: travelBag.session,
+          });
+        } else if (
+          supplies.status !== "missing" ||
+          travelBag.status !== "missing"
+        ) {
+          setLegacyPackReviewError(
+            "Older device Pack data was found, but it is incomplete or unreadable. This account is using a separate checklist; the older data remains untouched.",
+          );
+        }
+        return;
+      }
+
+      if (supplies.status === "invalid" || travelBag.status === "invalid") {
+        if (supplies.status === "invalid") {
+          setSupplyStorageError(
+            "Your saved supplies could not be read. WoofWatcher kept that data untouched.",
+          );
+        }
+        if (travelBag.status === "invalid") {
+          setTravelBagStorageError(
+            "Your saved travel bag could not be read. WoofWatcher kept that trip data untouched.",
+          );
+        }
+        if (supplies.status !== "invalid") {
+          setSupplyStorageError(
+            "Pack is waiting for the saved travel bag to be recovered.",
+          );
+        }
+        if (travelBag.status !== "invalid") {
+          setTravelBagStorageError(
+            "Pack is waiting for the saved supplies checklist to be recovered.",
+          );
+        }
+        return;
+      }
+
+      applyLoadedState({
+        supplies: supplies.items,
+        travelBag: travelBag.session,
       });
-    AsyncStorage.getItem(TRAVEL_BAG_KEY)
-      .then((raw) => {
-        if (!cancelled) setTravelBag(parseTravelBag(raw));
-      })
-      .catch(() => {
-        if (!cancelled) setTravelBag(defaultTravelBag());
-      });
+    })().catch(() => {
+      if (isCurrentLifecycle()) {
+        setSupplyStorageError(
+          "WoofWatcher could not load Pack data from this device. Your saved checklist was not replaced.",
+        );
+        setTravelBagStorageError(
+          "WoofWatcher could not load Pack data from this device. Your saved trip was not replaced.",
+        );
+      }
+    });
     return () => {
       cancelled = true;
+      if (packLifecycleGenerationRef.current === generation) {
+        packLifecycleGenerationRef.current += 1;
+      }
     };
-  }, []);
+  }, [
+    careScopeLoaded,
+    storageScope,
+    supplyReloadToken,
+    travelBagReloadToken,
+  ]);
 
   const household = me.data?.household;
   const members: HouseholdMemberSummary[] = me.data?.members ?? [];
@@ -501,7 +678,10 @@ export default function PackScreen() {
   const householdAccess = useMemo(
     () =>
       deriveHouseholdAccessPlan({
-        household: household ? { name: household.name, inviteCode: household.inviteCode } : null,
+        household: household ? { name: household.name } : null,
+        canManageInvitations: members.some(
+          (member) => member.isSelf && member.role === "owner",
+        ),
         members,
         caregivers: state.caregivers,
         routines: state.routines,
@@ -608,50 +788,305 @@ export default function PackScreen() {
   const restockCount = essentialSupplies.filter(
     (item) => item.status === "low" || item.status === "out",
   ).length;
+  const unconfirmedSupplyCount = (supplies ?? []).filter(
+    (item) => item.status === "unconfirmed",
+  ).length;
+  const essentialUnconfirmedCount = essentialSupplies.filter(
+    (item) => item.status === "unconfirmed",
+  ).length;
+  const travelUnconfirmedCount = travelSupplies.filter(
+    (item) => item.status === "unconfirmed",
+  ).length;
   const packedCount = travelSupplies.filter((item) => item.status === "packed").length;
   const suppliesUntouched = supplies ? isDefaultUntouched(supplies) : false;
 
   // Phase-driven travel-bag chrome (packing -> active -> complete). Every
   // signal is real: the packed count is the checklist truth, "Active since"
   // and "Trip wrapped" read from the owner's own Activate/Complete taps.
-  const travelAllPacked = travelSupplies.length > 0 && packedCount === travelSupplies.length;
+  const travelAllPacked = isTravelBagReady(travelSupplies);
   const travelPill: { label: string; tone: string; icon?: "checkmark" } =
-    travelBag.phase === "active"
+    travelBag.phase === "active" && travelAllPacked
       ? { label: "Active", tone: colors.sage, icon: "checkmark" }
       : travelBag.phase === "complete"
         ? { label: "Trip done", tone: colors.mutedForeground }
         : travelSupplies.length === 0
           ? { label: "Empty", tone: colors.mutedForeground }
-          : {
-              label: `${packedCount}/${travelSupplies.length} packed`,
-              tone: travelAllPacked ? colors.sage : colors.mutedForeground,
-              ...(travelAllPacked ? { icon: "checkmark" as const } : {}),
-            };
+          : travelUnconfirmedCount > 0
+            ? {
+                label: `${travelUnconfirmedCount} to confirm`,
+                tone: colors.mutedForeground,
+              }
+            : travelBag.phase === "active"
+              ? {
+                  label: "Needs review",
+                  tone: colors.amber,
+                }
+              : {
+                  label: `${packedCount}/${travelSupplies.length} packed`,
+                  tone: travelAllPacked ? colors.sage : colors.mutedForeground,
+                  ...(travelAllPacked ? { icon: "checkmark" as const } : {}),
+                };
   const travelCaption =
-    travelBag.phase === "active"
+    travelBag.phase === "active" && travelAllPacked
       ? travelBag.activatedAt
         ? `Packed and out the door - active since ${relativeTime(travelBag.activatedAt, now)}.`
         : "Packed and out the door."
+      : travelBag.phase === "active"
+        ? travelUnconfirmedCount > 0
+          ? `Trip is active, but ${travelUnconfirmedCount} item ${travelUnconfirmedCount === 1 ? "status needs" : "statuses need"} confirmation.`
+          : `Trip is active with ${packedCount}/${travelSupplies.length} items packed. Review the missing gear.`
       : travelBag.phase === "complete"
         ? travelBag.completedAt
           ? `Trip wrapped ${relativeTime(travelBag.completedAt, now)} - redo to pack the next one.`
           : "Trip wrapped - redo to pack the next one."
+        : travelUnconfirmedCount > 0
+          ? "Confirm each item as you pack. Nothing is checked until you tap it."
         : packedCount === 0
           ? "Check your gear off, then activate the bag."
           : "Gear checked. Activate the bag when you're ready to go.";
 
-  /** Save on every change, fire-and-forget like the Home welcome flag. */
-  const commitSupplies = (next: SupplyItem[]) => {
-    setSupplies(next);
-    AsyncStorage.setItem(PACK_SUPPLIES_KEY, serializeSupplies(next)).catch(() => {});
+  const persistLegacyPackDecision = async (
+    decision: "import" | "keep-current",
+  ): Promise<boolean> => {
+    const coordinator = packWriteCoordinatorRef.current;
+    const storageKey = packStorageKeyRef.current;
+    const generation = packLifecycleGenerationRef.current;
+    const candidate = legacyPackCandidate;
+    if (
+      !coordinator ||
+      !storageKey ||
+      !candidate ||
+      !isPackStorageCurrent(storageKey, generation) ||
+      supplyWriteInFlightRef.current ||
+      travelBagWriteInFlightRef.current
+    ) {
+      return false;
+    }
+
+    supplyWriteInFlightRef.current = true;
+    travelBagWriteInFlightRef.current = true;
+    setSupplyStorageError(null);
+    setTravelBagStorageError(null);
+    try {
+      const saved = await coordinator.enqueue(
+        (current) => (decision === "import" ? candidate : current),
+        async (next) => {
+          if (!isPackStorageCurrent(storageKey, generation)) {
+            throw new Error("stale-pack-lifecycle");
+          }
+          await runDeviceOperation(() =>
+            AsyncStorage.setItem(storageKey, serializePackState(next)),
+          );
+          if (!isPackStorageCurrent(storageKey, generation)) {
+            throw new Error("stale-pack-lifecycle");
+          }
+        },
+      );
+      if (!isPackStorageCurrent(storageKey, generation)) {
+        return false;
+      }
+      suppliesRef.current = saved.supplies;
+      travelBagRef.current = saved.travelBag;
+      setSupplies(saved.supplies);
+      setTravelBag(saved.travelBag);
+      setLegacyPackCandidate(null);
+      setLegacyPackReviewError(null);
+      return true;
+    } catch {
+      if (!isPackStorageCurrent(storageKey, generation)) {
+        return false;
+      }
+      setSupplyStorageError(
+        "Your older Pack choice was not saved. No Pack data was replaced.",
+      );
+      setTravelBagStorageError(
+        "Your older Pack choice was not saved. Retry after device storage is available.",
+      );
+      notifyDialog(
+        "Pack choice not saved",
+        "WoofWatcher left both the account Pack and older device data untouched. Try again when device storage is available.",
+      );
+      return false;
+    } finally {
+      supplyWriteInFlightRef.current = false;
+      travelBagWriteInFlightRef.current = false;
+    }
   };
 
-  const commitTravelBag = (next: TravelBagSession) => {
-    setTravelBag(next);
-    AsyncStorage.setItem(TRAVEL_BAG_KEY, serializeTravelBag(next)).catch(() => {});
+  const importLegacyPack = () => {
+    const candidate = legacyPackCandidate;
+    if (!candidate) return;
+    confirmThroughSteps(
+      [
+        {
+          title: "Review older Pack data",
+          message: `This device has an older ${candidate.supplies.length}-item checklist and a travel bag named “${candidate.travelBag.label}”. It was saved before Pack data was tied to an account.`,
+          confirmLabel: "Continue",
+        },
+        {
+          title: "Import into this household?",
+          message:
+            "Only continue if this older checklist belongs to the current household. The original device copy will remain untouched.",
+          confirmLabel: "Import Pack",
+        },
+      ],
+      () => {
+        void persistLegacyPackDecision("import");
+      },
+    );
+  };
+
+  const keepCurrentPack = () => {
+    confirmThroughSteps(
+      [
+        {
+          title: "Keep this account's new Pack?",
+          message:
+            "WoofWatcher will keep the current account checklist separate. The older device copy will remain untouched.",
+          confirmLabel: "Keep new Pack",
+        },
+      ],
+      () => {
+        void persistLegacyPackDecision("keep-current");
+      },
+    );
+  };
+
+  /** Commit device storage before presenting the checklist change as saved. */
+  const commitSupplies = async (next: SupplyItem[]): Promise<boolean> => {
+    if (legacyPackCandidate) {
+      notifyDialog(
+        "Choose your Pack first",
+        "Review the older device Pack data, then import it or keep this account's new Pack before changing the checklist.",
+      );
+      return false;
+    }
+    const coordinator = packWriteCoordinatorRef.current;
+    const storageKey = packStorageKeyRef.current;
+    const generation = packLifecycleGenerationRef.current;
+    if (
+      !coordinator ||
+      !storageKey ||
+      !isPackStorageCurrent(storageKey, generation) ||
+      !travelBagStorageReady ||
+      supplyWriteInFlightRef.current
+    ) {
+      return false;
+    }
+    supplyWriteInFlightRef.current = true;
+    setSupplyStorageError(null);
+    try {
+      const saved = await coordinator.enqueue(
+        (current) => ({ ...current, supplies: next }),
+        async (candidate) => {
+          if (!isPackStorageCurrent(storageKey, generation)) {
+            throw new Error("stale-pack-lifecycle");
+          }
+          await runDeviceOperation(() =>
+            AsyncStorage.setItem(storageKey, serializePackState(candidate)),
+          );
+          if (!isPackStorageCurrent(storageKey, generation)) {
+            throw new Error("stale-pack-lifecycle");
+          }
+        },
+      );
+      if (!isPackStorageCurrent(storageKey, generation)) {
+        return false;
+      }
+      suppliesRef.current = saved.supplies;
+      travelBagRef.current = saved.travelBag;
+      setSupplies(saved.supplies);
+      setTravelBag(saved.travelBag);
+      return true;
+    } catch {
+      if (!isPackStorageCurrent(storageKey, generation)) {
+        return false;
+      }
+      setSupplyStorageError(
+        "That supplies change was not saved. Your previous list is still intact.",
+      );
+      notifyDialog(
+        "Supplies not saved",
+        "WoofWatcher kept your previous checklist. Try the change again after device storage is available.",
+      );
+      return false;
+    } finally {
+      supplyWriteInFlightRef.current = false;
+    }
+  };
+
+  const commitTravelBag = async (
+    next: TravelBagSession,
+  ): Promise<boolean> => {
+    if (legacyPackCandidate) {
+      notifyDialog(
+        "Choose your Pack first",
+        "Review the older device Pack data, then import it or keep this account's new Pack before changing the travel bag.",
+      );
+      return false;
+    }
+    const coordinator = packWriteCoordinatorRef.current;
+    const storageKey = packStorageKeyRef.current;
+    const generation = packLifecycleGenerationRef.current;
+    if (
+      !coordinator ||
+      !storageKey ||
+      !isPackStorageCurrent(storageKey, generation) ||
+      !travelBagStorageReady ||
+      travelBagWriteInFlightRef.current
+    ) {
+      return false;
+    }
+    travelBagWriteInFlightRef.current = true;
+    setTravelBagStorageError(null);
+    try {
+      const saved = await coordinator.enqueue(
+        (current) => ({ ...current, travelBag: next }),
+        async (candidate) => {
+          if (!isPackStorageCurrent(storageKey, generation)) {
+            throw new Error("stale-pack-lifecycle");
+          }
+          await runDeviceOperation(() =>
+            AsyncStorage.setItem(storageKey, serializePackState(candidate)),
+          );
+          if (!isPackStorageCurrent(storageKey, generation)) {
+            throw new Error("stale-pack-lifecycle");
+          }
+        },
+      );
+      if (!isPackStorageCurrent(storageKey, generation)) {
+        return false;
+      }
+      suppliesRef.current = saved.supplies;
+      travelBagRef.current = saved.travelBag;
+      setSupplies(saved.supplies);
+      setTravelBag(saved.travelBag);
+      return true;
+    } catch {
+      if (!isPackStorageCurrent(storageKey, generation)) {
+        return false;
+      }
+      setTravelBagStorageError(
+        "That travel-bag change was not saved. Your previous trip state is still shown.",
+      );
+      notifyDialog(
+        "Travel bag not saved",
+        "WoofWatcher kept your previous trip state. Try again after device storage is available.",
+      );
+      return false;
+    } finally {
+      travelBagWriteInFlightRef.current = false;
+    }
   };
 
   const activateBag = () => {
+    if (!travelAllPacked) {
+      notifyDialog(
+        "Finish the checklist",
+        "Confirm and pack every travel item before you activate the bag.",
+      );
+      return;
+    }
     const next = activateTravelBag(travelBag, packedCount, new Date().toISOString());
     if (!next) {
       notifyDialog(
@@ -660,18 +1095,31 @@ export default function PackScreen() {
       );
       return;
     }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    commitTravelBag(next);
+    void commitTravelBag(next).then((saved) => {
+      if (saved) {
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => {});
+      }
+    });
   };
 
   const completeBag = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    commitTravelBag(completeTravelBag(travelBag, new Date().toISOString()));
+    void commitTravelBag(
+      completeTravelBag(travelBag, new Date().toISOString()),
+    ).then((saved) => {
+      if (saved) {
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => {});
+      }
+    });
   };
 
   const reopenBag = () => {
-    Haptics.selectionAsync().catch(() => {});
-    commitTravelBag(reopenTravelBag(travelBag));
+    void commitTravelBag(reopenTravelBag(travelBag)).then((saved) => {
+      if (saved) Haptics.selectionAsync().catch(() => {});
+    });
   };
 
   const redoBag = () => {
@@ -684,9 +1132,84 @@ export default function PackScreen() {
         },
       ],
       () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-        if (supplies) commitSupplies(resetTravelItems(supplies));
-        commitTravelBag(redoTravelBag(travelBag));
+        if (legacyPackCandidate) {
+          notifyDialog(
+            "Choose your Pack first",
+            "Import the older device Pack or keep this account's new Pack before resetting the travel bag.",
+          );
+          return;
+        }
+        const coordinator = packWriteCoordinatorRef.current;
+        const storageKey = packStorageKeyRef.current;
+        const generation = packLifecycleGenerationRef.current;
+        if (
+          !coordinator ||
+          !storageKey ||
+          !isPackStorageCurrent(storageKey, generation)
+        ) {
+          return;
+        }
+        if (
+          supplyWriteInFlightRef.current ||
+          travelBagWriteInFlightRef.current
+        ) {
+          return;
+        }
+        supplyWriteInFlightRef.current = true;
+        travelBagWriteInFlightRef.current = true;
+        void coordinator.enqueue(
+          (current) => ({
+            supplies: resetTravelItems(current.supplies),
+            travelBag: redoTravelBag(current.travelBag),
+          }),
+          async (candidate) => {
+            if (!isPackStorageCurrent(storageKey, generation)) {
+              throw new Error("stale-pack-lifecycle");
+            }
+            await runDeviceOperation(() =>
+              AsyncStorage.setItem(
+                storageKey,
+                serializePackState(candidate),
+              ),
+            );
+            if (!isPackStorageCurrent(storageKey, generation)) {
+              throw new Error("stale-pack-lifecycle");
+            }
+          },
+        )
+          .then((saved) => {
+            if (!isPackStorageCurrent(storageKey, generation)) {
+              return;
+            }
+            suppliesRef.current = saved.supplies;
+            travelBagRef.current = saved.travelBag;
+            setSupplies(saved.supplies);
+            setTravelBag(saved.travelBag);
+            setSupplyStorageError(null);
+            setTravelBagStorageError(null);
+            Haptics.impactAsync(
+              Haptics.ImpactFeedbackStyle.Medium,
+            ).catch(() => {});
+          })
+          .catch(() => {
+            if (!isPackStorageCurrent(storageKey, generation)) {
+              return;
+            }
+            setSupplyStorageError(
+              "The travel-bag reset was not saved. Review the checklist before trying again.",
+            );
+            setTravelBagStorageError(
+              "The travel-bag reset was not saved. Your previous trip state is still shown.",
+            );
+            notifyDialog(
+              "Travel bag not reset",
+              "WoofWatcher kept the current screen unchanged because device storage did not confirm the reset.",
+            );
+          })
+          .finally(() => {
+            supplyWriteInFlightRef.current = false;
+            travelBagWriteInFlightRef.current = false;
+          });
       },
     );
   };
@@ -697,16 +1220,17 @@ export default function PackScreen() {
     setEditingBagLabel(true);
   };
 
-  const saveBagLabel = () => {
-    commitTravelBag(renameTravelBag(travelBag, bagLabelDraft));
-    setEditingBagLabel(false);
-    setBagLabelDraft("");
+  const saveBagLabel = async () => {
+    if (await commitTravelBag(renameTravelBag(travelBag, bagLabelDraft))) {
+      setEditingBagLabel(false);
+      setBagLabelDraft("");
+    }
   };
 
   const cycleSupply = (item: SupplyItem) => {
     if (!supplies) return;
     const stampedAt = new Date().toISOString();
-    commitSupplies(
+    void commitSupplies(
       supplies.map((entry) =>
         entry.id === item.id
           ? { ...entry, status: cycleStatus(entry), updatedAt: stampedAt }
@@ -727,7 +1251,7 @@ export default function PackScreen() {
     setEditSupplyName("");
   };
 
-  const saveSupplyRename = () => {
+  const saveSupplyRename = async () => {
     if (!supplies || !editingSupplyId) return;
     const trimmed = editSupplyName.trim();
     if (!trimmed) {
@@ -742,8 +1266,7 @@ export default function PackScreen() {
       );
       return;
     }
-    commitSupplies(next);
-    closeSupplyEditor();
+    if (await commitSupplies(next)) closeSupplyEditor();
   };
 
   const removeSupply = (item: SupplyItem) => {
@@ -757,15 +1280,13 @@ export default function PackScreen() {
         },
       ],
       () => {
-        // Functional update: the themed dialog resolves later, so never
-        // trust the list captured at press time.
-        setSupplies((current) => {
-          if (!current) return current;
-          const next = removeItem(current, item.id);
-          AsyncStorage.setItem(PACK_SUPPLIES_KEY, serializeSupplies(next)).catch(() => {});
-          return next;
+        // The themed dialog resolves later, so read the current ref instead
+        // of the list captured when the owner first opened it.
+        const current = suppliesRef.current;
+        if (!current) return;
+        void commitSupplies(removeItem(current, item.id)).then((saved) => {
+          if (saved) closeSupplyEditor();
         });
-        closeSupplyEditor();
       },
     );
   };
@@ -780,7 +1301,7 @@ export default function PackScreen() {
     setAddSupplyName("");
   };
 
-  const saveSupplyAdd = () => {
+  const saveSupplyAdd = async () => {
     if (!supplies) return;
     const trimmed = addSupplyName.trim();
     if (!trimmed) {
@@ -795,9 +1316,10 @@ export default function PackScreen() {
       );
       return;
     }
-    commitSupplies(next);
-    setAddSupplyName("");
-    setAddSupplyOpen(false);
+    if (await commitSupplies(next)) {
+      setAddSupplyName("");
+      setAddSupplyOpen(false);
+    }
   };
 
   return (
@@ -821,6 +1343,8 @@ export default function PackScreen() {
           title="Pack"
           subtitle="Supplies, pets & people who share the care."
           icon="people-outline"
+          back
+          onBack={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)" as never))}
           actionIcon="key-outline"
           actionLabel="Manage household from Pack"
           onAction={() => openMoreSection("household")}
@@ -847,6 +1371,100 @@ export default function PackScreen() {
         {/* Supplies - the mockup Pack page's Essentials / Travel Bag boards.
             Every status is the owner's own answer; untouched defaults say so
             instead of pretending someone already checked the shelf. */}
+        {segment === "supplies" && legacyPackCandidate ? (
+          <BoardCard style={s.sectionCard} enter={0}>
+            <BoardSectionHeader title="Older device Pack data found" />
+            <Text
+              style={[
+                s.emptyCopy,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
+              This checklist was saved before Pack data was tied to an account.
+              Review it before deciding whether it belongs to this household.
+            </Text>
+            <View style={s.supplyEditActions}>
+              <BoardActionButton
+                label="Review & import"
+                icon="download-outline"
+                variant="primary"
+                compact
+                onPress={importLegacyPack}
+                accessibilityLabel="Review and import older device Pack data"
+              />
+              <BoardActionButton
+                label="Keep new Pack"
+                icon="shield-checkmark-outline"
+                variant="soft"
+                compact
+                onPress={keepCurrentPack}
+                accessibilityLabel="Keep this account's new Pack separate"
+              />
+            </View>
+          </BoardCard>
+        ) : null}
+        {segment === "supplies" && legacyPackReviewError ? (
+          <BoardCard style={s.sectionCard} enter={0}>
+            <BoardSectionHeader title="Older Pack data kept separate" />
+            <Text
+              accessibilityRole="alert"
+              style={[
+                s.emptyCopy,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
+              {legacyPackReviewError}
+            </Text>
+          </BoardCard>
+        ) : null}
+        {segment === "supplies" && supplyStorageError ? (
+          <BoardCard style={s.sectionCard} enter={0}>
+            <BoardSectionHeader title="Supplies need attention" />
+            <Text
+              accessibilityRole="alert"
+              style={[
+                s.emptyCopy,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
+              {supplyStorageError}
+            </Text>
+            {!supplies ? (
+              <BoardActionButton
+                label="Retry loading supplies"
+                icon="refresh-outline"
+                variant="soft"
+                onPress={() => setSupplyReloadToken((token) => token + 1)}
+                accessibilityLabel="Retry loading supplies from this device"
+              />
+            ) : null}
+          </BoardCard>
+        ) : null}
+        {segment === "supplies" && !supplies && !supplyStorageError ? (
+          <BoardCard style={s.sectionCard} enter={0}>
+            <BoardSectionHeader title="Opening supplies" />
+            <Text
+              style={[
+                s.emptyCopy,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
+              Loading the checklist saved on this device…
+            </Text>
+          </BoardCard>
+        ) : null}
         {segment === "supplies" && supplies ? (
           <>
             <BoardCard style={s.sectionCard} enter={0}>
@@ -857,14 +1475,14 @@ export default function PackScreen() {
                     label={
                       essentialSupplies.length === 0
                         ? "Empty"
-                        : suppliesUntouched
-                          ? "Starter list"
+                        : essentialUnconfirmedCount > 0
+                          ? `${essentialUnconfirmedCount} to confirm`
                           : restockCount > 0
                             ? `${restockCount} to restock`
                             : "All plenty"
                     }
                     tone={
-                      essentialSupplies.length === 0 || suppliesUntouched
+                      essentialSupplies.length === 0 || essentialUnconfirmedCount > 0
                         ? colors.mutedForeground
                         : restockCount > 0
                           ? colors.amber
@@ -875,8 +1493,9 @@ export default function PackScreen() {
               />
               {suppliesUntouched ? (
                 <Text style={[s.suppliesHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Starter checklist - the statuses are yours to set. Tap a row to
-                  update it, long-press to rename or remove.
+                  Starter checklist - {unconfirmedSupplyCount} statuses still
+                  need your confirmation. Tap a row to set one, or long-press
+                  to rename or remove it.
                 </Text>
               ) : null}
               {essentialSupplies.length === 0 ? (
@@ -909,6 +1528,35 @@ export default function PackScreen() {
               )}
             </BoardCard>
 
+            {!travelBagStorageReady ? (
+              <BoardCard style={s.sectionCard} enter={1}>
+                <BoardSectionHeader title="Travel bag needs attention" />
+                <Text
+                  accessibilityRole={travelBagStorageError ? "alert" : undefined}
+                  style={[
+                    s.emptyCopy,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
+                  {travelBagStorageError ??
+                    "Loading the travel bag saved on this device…"}
+                </Text>
+                {travelBagStorageError ? (
+                  <BoardActionButton
+                    label="Retry loading travel bag"
+                    icon="refresh-outline"
+                    variant="soft"
+                    onPress={() =>
+                      setTravelBagReloadToken((token) => token + 1)
+                    }
+                    accessibilityLabel="Retry loading the travel bag from this device"
+                  />
+                ) : null}
+              </BoardCard>
+            ) : (
             <BoardCard style={s.sectionCard} enter={1}>
               <BoardSectionHeader
                 title={travelBag.label}
@@ -1001,7 +1649,7 @@ export default function PackScreen() {
                       icon="bag-check-outline"
                       variant="primary"
                       onPress={activateBag}
-                      disabled={packedCount === 0}
+                      disabled={!travelAllPacked}
                       accessibilityLabel="Activate the travel bag for this trip"
                     />
                   ) : travelBag.phase === "active" ? (
@@ -1033,6 +1681,7 @@ export default function PackScreen() {
                 </View>
               ) : null}
             </BoardCard>
+            )}
 
             {addSupplyOpen ? (
               /* Inline add flow: confirmDialog has no prompt-style utility,
@@ -1551,21 +2200,6 @@ export default function PackScreen() {
             <Text style={[s.accessNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
               {householdAccess.nextStep}
             </Text>
-
-            {householdAccess.inviteCode ? (
-              <View
-                accessibilityLabel={`Household invite code ${householdAccess.inviteCode}. Share it from the household console in More.`}
-                style={[s.inviteCodeRow, { backgroundColor: colors.background, borderColor: colors.border }]}
-              >
-                <Ionicons name="key-outline" size={15} color={colors.mutedForeground} />
-                <Text style={[s.inviteCodeLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                  INVITE CODE
-                </Text>
-                <Text style={[s.inviteCodeValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {householdAccess.inviteCode}
-                </Text>
-              </View>
-            ) : null}
 
             {/* Temporary helper passes: the same real counts the More console
                 derives, surfaced here so Access reads as a full picture. */}
@@ -2152,25 +2786,6 @@ const s = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     marginTop: 8,
-  },
-  inviteCodeRow: {
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginTop: 10,
-  },
-  inviteCodeLabel: {
-    flex: 1,
-    fontSize: 10,
-    letterSpacing: 0.4,
-  },
-  inviteCodeValue: {
-    fontSize: 15,
   },
   passRow: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,

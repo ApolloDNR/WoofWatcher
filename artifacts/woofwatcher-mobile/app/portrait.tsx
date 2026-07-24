@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useReducedMotion } from "react-native-reanimated";
 
 import {
+  BoardActionButton,
   BoardCard,
   BoardPill,
   BoardRouteHeader,
@@ -31,6 +32,7 @@ import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import {
   deriveAvatarPreviewAccessories,
@@ -184,8 +186,13 @@ export default function PortraitScreen() {
     avatarConfig,
     hasCustomAvatar,
     hasConfiguredAvatar,
+    storageError,
+    legacyAvatarAvailable,
     saveAvatarConfig,
     resetAvatarConfig,
+    importLegacyAvatar,
+    keepScopedAvatar,
+    retryAvatarStorage,
   } = useAvatar();
 
   const petName = resolvePetName(state.profile.name);
@@ -384,10 +391,18 @@ export default function PortraitScreen() {
         entries: state.entries,
         routines: state.routines,
         caregivers: state.caregivers,
+        petName,
         now,
         energy: status.energy,
       }),
-    [state.entries, state.routines, state.caregivers, now, status.energy],
+    [
+      state.entries,
+      state.routines,
+      state.caregivers,
+      petName,
+      now,
+      status.energy,
+    ],
   );
   const caregiver = state.caregivers[0]?.name ?? "you";
   const scanTranslate = scanAnim.interpolate({
@@ -506,11 +521,26 @@ export default function PortraitScreen() {
   };
 
   const saveDraft = async () => {
-    await saveAvatarConfig({
-      ...draft,
-      petName,
-      updatedAt: new Date().toISOString(),
-    });
+    if (legacyAvatarAvailable) {
+      notifyDialog(
+        "Review the older care twin first",
+        "Import it or keep this account's new care twin before saving Avatar Studio changes.",
+      );
+      return;
+    }
+    try {
+      await saveAvatarConfig({
+        ...draft,
+        petName,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch {
+      notifyDialog(
+        "Care twin not saved",
+        "WoofWatcher kept the previous design. Retry after device storage is available.",
+      );
+      return;
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
       () => {},
     );
@@ -520,10 +550,77 @@ export default function PortraitScreen() {
   };
 
   const resetDraft = async () => {
+    if (legacyAvatarAvailable) {
+      notifyDialog(
+        "Review the older care twin first",
+        "Import it or keep this account's new care twin before resetting the design.",
+      );
+      return;
+    }
     const clean = createDefaultAvatarConfig(petName);
-    setDraft(clean);
-    await resetAvatarConfig(petName);
+    try {
+      await resetAvatarConfig(petName);
+      setDraft(clean);
+    } catch {
+      notifyDialog(
+        "Care twin not reset",
+        "WoofWatcher kept the previous design. Retry after device storage is available.",
+      );
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  };
+
+  const reviewOlderAvatar = () => {
+    confirmThroughSteps(
+      [
+        {
+          title: "Review older care twin",
+          message:
+            "This device has avatar data saved before care twins were tied to an account. It may belong to another account that used this device.",
+          confirmLabel: "Continue",
+        },
+        {
+          title: "Import into this household?",
+          message:
+            "Only import if the older care twin belongs to the current household. The original device copy remains untouched.",
+          confirmLabel: "Import care twin",
+        },
+      ],
+      () => {
+        void importLegacyAvatar()
+          .then(() => setSavedToast("Older care twin imported"))
+          .catch(() =>
+            notifyDialog(
+              "Care twin not imported",
+              "WoofWatcher kept both avatar copies untouched. Retry after device storage is available.",
+            ),
+          );
+      },
+    );
+  };
+
+  const keepNewAvatar = () => {
+    confirmThroughSteps(
+      [
+        {
+          title: "Keep this account's new care twin?",
+          message:
+            "The current household will keep a separate care twin. The older device copy remains untouched.",
+          confirmLabel: "Keep new care twin",
+        },
+      ],
+      () => {
+        void keepScopedAvatar()
+          .then(() => setSavedToast("New care twin kept separate"))
+          .catch(() =>
+            notifyDialog(
+              "Choice not saved",
+              "WoofWatcher kept both avatar copies untouched. Retry after device storage is available.",
+            ),
+          );
+      },
+    );
   };
 
   return (
@@ -548,6 +645,67 @@ export default function PortraitScreen() {
           onAction={saveDraft}
           plain
         />
+
+        {legacyAvatarAvailable ? (
+          <BoardCard style={s.avatarBoard}>
+            <BoardSectionHeader title="Older device care twin found" />
+            <Text
+              style={[
+                s.tipText,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
+              Review this older avatar before deciding whether it belongs to
+              the current household.
+            </Text>
+            <View style={s.actionRow}>
+              <BoardActionButton
+                label="Review & import"
+                icon="download-outline"
+                variant="primary"
+                compact
+                onPress={reviewOlderAvatar}
+                accessibilityLabel="Review and import the older device care twin"
+              />
+              <BoardActionButton
+                label="Keep new twin"
+                icon="shield-checkmark-outline"
+                variant="soft"
+                compact
+                onPress={keepNewAvatar}
+                accessibilityLabel="Keep this account's new care twin separate"
+              />
+            </View>
+          </BoardCard>
+        ) : null}
+
+        {storageError ? (
+          <BoardCard style={s.avatarBoard}>
+            <BoardSectionHeader title="Care twin storage needs attention" />
+            <Text
+              accessibilityRole="alert"
+              style={[
+                s.tipText,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                },
+              ]}
+            >
+              {storageError}
+            </Text>
+            <BoardActionButton
+              label="Retry loading care twin"
+              icon="refresh-outline"
+              variant="soft"
+              onPress={retryAvatarStorage}
+              accessibilityLabel="Retry loading this household's care twin from device storage"
+            />
+          </BoardCard>
+        ) : null}
 
         {phase === "working" ? (
           <BoardCard
@@ -904,7 +1062,7 @@ export default function PortraitScreen() {
                     activeTab === "emotes"
                       ? "Try my moods."
                       : activeTab === "customize"
-                        ? "Make me Phoenix."
+                        ? "Make me yours."
                         : "I'm ready."
                   }
                   energy={status.energy}

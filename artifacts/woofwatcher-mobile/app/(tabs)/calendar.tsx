@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Animated,
   ImageBackground,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -13,9 +14,11 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReducedMotion } from "react-native-reanimated";
 import { useWoofAuth } from "@/lib/auth";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import {
@@ -30,6 +33,7 @@ import {
 import { useCare, CalendarEvent, Routine } from "@/context/CareContext";
 import { announce } from "@/lib/announce";
 import { useColors } from "@/hooks/useColors";
+import { useWebQaFontScale } from "@/hooks/useWebQaFontScale";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { PressScale, ProgressFill } from "@/components/motion/GameFeel";
@@ -46,6 +50,8 @@ import {
   buildReminderNotificationPreferencesForCenter,
 } from "@/lib/reminderNotificationPreferences";
 import {
+  createWebQaLayoutMarker,
+  getAccessibleLayoutMetrics,
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
@@ -279,6 +285,9 @@ interface PlanMissionRow {
 export default function CalendarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { fontScale: runtimeFontScale } = useWindowDimensions();
+  const { fontScale, qaFontScale } = useWebQaFontScale(runtimeFontScale);
+  const reducedMotion = useReducedMotion();
   const router = useRouter();
   const ownerOps = isOwnerOpsBuild();
   const { state, updateCareDoc, addEntry, deleteEntry } = useCare();
@@ -303,10 +312,15 @@ export default function CalendarScreen() {
   const bottomPadding = getTabbedRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+    fontScale,
   });
   const modalSheetBottomPadding = getModalSheetBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+  });
+  const layout = getAccessibleLayoutMetrics({
+    platform: Platform.OS,
+    fontScale,
   });
   const now = Date.now();
   const today = todayISO();
@@ -368,10 +382,9 @@ export default function CalendarScreen() {
     [monthView],
   );
   const monthEntryLabel = monthEntryDays === 0 ? "No logs yet" : `${monthEntryDays} active`;
-  // Fresh installs have no routines yet, so the schedule falls back to a
-  // hardcoded sample day. Those rows have no backing routine, so they must
-  // render as clearly-labeled, non-interactive preview content.
-  const isSampleSchedule = routineBoard.items.length === 0;
+  // Fresh installs have no routine evidence. Dashed structural rows show how
+  // a plan is organized without inventing care, times, portions, or completion.
+  const isStarterSchedule = routineBoard.items.length === 0;
   const scheduleRows = useMemo(() => {
     const fallback: {
       id: string;
@@ -382,13 +395,9 @@ export default function CalendarScreen() {
       status: RoutineBoardStatus;
       owner?: string;
     }[] = [
-      { id: "breakfast", label: "Breakfast", type: "meal", time: "7:00 AM", detail: "1 1/4 cups", status: "done" as RoutineBoardStatus },
-      { id: "walk-am", label: "Walk", type: "walk", time: "8:00 AM", detail: "45 min", status: "done" as RoutineBoardStatus },
-      { id: "training", label: "Training", type: "training", time: "10:00 AM", detail: "15 min", status: "done" as RoutineBoardStatus },
-      { id: "alone", label: "Alone Time", type: "alone", time: "12:30 PM", detail: "1h 30m", status: "due" as RoutineBoardStatus },
-      { id: "walk-pm", label: "Walk", type: "walk", time: "5:30 PM", detail: "30 min", status: "upcoming" as RoutineBoardStatus },
-      { id: "dinner", label: "Dinner", type: "meal", time: "7:00 PM", detail: "1 1/4 cups", status: "upcoming" as RoutineBoardStatus },
-      { id: "snack", label: "Bedtime Snack", type: "meal", time: "9:00 PM", detail: "small", status: "upcoming" as RoutineBoardStatus },
+      { id: "morning-placeholder", label: "Morning routine", type: "routine", time: "—", detail: "Add care type and time", status: "upcoming" as RoutineBoardStatus },
+      { id: "midday-placeholder", label: "Midday routine", type: "routine", time: "—", detail: "Add care type and time", status: "upcoming" as RoutineBoardStatus },
+      { id: "evening-placeholder", label: "Evening routine", type: "routine", time: "—", detail: "Add care type and time", status: "upcoming" as RoutineBoardStatus },
     ];
     const rows = routineBoard.items.length
       ? routineBoard.items.map((item) => ({
@@ -403,6 +412,9 @@ export default function CalendarScreen() {
       : fallback;
     return rows;
   }, [routineBoard.items]);
+  const routineActionLabel = isStarterSchedule
+    ? "Add your first routine"
+    : "Add routine";
 
   // Monday-start week containing today, for the mockup M T W T F S S dots.
   const weekDays = useMemo(() => {
@@ -492,17 +504,19 @@ export default function CalendarScreen() {
   const nextScheduleStatus = nextScheduleRow ? routineStatusLabel(nextScheduleRow.status) : "Ready";
   const firstUpcomingScheduleIndex = scheduleRows.findIndex((row) => row.status === "upcoming");
   const commandDeckTone =
-    nextScheduleRow?.status === "overdue"
+    isStarterSchedule
+      ? colors.mutedForeground
+      : nextScheduleRow?.status === "overdue"
       ? colors.rose
       : nextScheduleRow?.status === "due"
         ? colors.amber
         : colors.sage;
-  const commandDeckSpeech = isSampleSchedule
-    ? "Here's a sample day. Add your first routine to make it yours."
+  const commandDeckSpeech = isStarterSchedule
+    ? "No routine data yet. Add your first routine to build this care board."
     : nextScheduleRow
       ? `${nextScheduleRow.label} is next at ${nextScheduleRow.time}.`
       : `${resolvePetName(profile.name)} has a clear care board.`;
-  const commandDeckStatusTone: BoardStatusPillTone = isSampleSchedule
+  const commandDeckStatusTone: BoardStatusPillTone = isStarterSchedule
     ? "neutral"
     : nextScheduleRow?.status === "done"
       ? "done"
@@ -810,37 +824,21 @@ export default function CalendarScreen() {
   const leadReminder = careReminderCenter.items[0] ?? null;
   const planMissionRows: PlanMissionRow[] = [];
 
-  if (nextScheduleRow) {
-    planMissionRows.push(
-      isSampleSchedule
-        ? {
-            id: "next-plan",
-            eyebrow: "Next Mission",
-            title: "Add your first routine",
-            detail: "The schedule shows a sample day until you do",
-            icon: routinePixelIcon(nextScheduleRow.type),
-            tone: commandDeckTone,
-            actionLabel: "Add",
-            onPress: () => {
-              Haptics.selectionAsync();
-              openNewRoutine();
-            },
-          }
-        : {
-            id: "next-plan",
-            eyebrow: "Next Mission",
-            title: nextScheduleRow.label,
-            // No dangling "6:30 PM -" when the routine carries no note.
-            detail: [nextScheduleRow.time, nextScheduleRow.detail].filter(Boolean).join(" - "),
-            icon: routinePixelIcon(nextScheduleRow.type),
-            tone: commandDeckTone,
-            actionLabel: nextScheduleRoutine ? "Open" : nextScheduleStatus,
-            onPress: () => {
-              Haptics.selectionAsync();
-              if (nextScheduleRoutine) openBoardRoutine(nextScheduleRoutine);
-            },
-          },
-    );
+  if (nextScheduleRow && !isStarterSchedule) {
+    planMissionRows.push({
+      id: "next-plan",
+      eyebrow: "Next Mission",
+      title: nextScheduleRow.label,
+      // No dangling "6:30 PM -" when the routine carries no note.
+      detail: [nextScheduleRow.time, nextScheduleRow.detail].filter(Boolean).join(" - "),
+      icon: routinePixelIcon(nextScheduleRow.type),
+      tone: commandDeckTone,
+      actionLabel: nextScheduleRoutine ? "Open" : nextScheduleStatus,
+      onPress: () => {
+        Haptics.selectionAsync();
+        if (nextScheduleRoutine) openBoardRoutine(nextScheduleRoutine);
+      },
+    });
   }
 
   planMissionRows.push({
@@ -857,57 +855,56 @@ export default function CalendarScreen() {
     },
   });
 
-  planMissionRows.push(
-    leadReminder
-      ? {
-          id: "lead-reminder",
-          eyebrow: "Reminder",
-          title: leadReminder.label,
-          detail: leadReminder.action,
-          icon: leadReminder.kind === "medication" ? "medication" : "clock",
-          tone: reminderTone,
-          actionLabel: "Resolve",
-          onPress: () => openReminderAction(leadReminder),
-        }
-      : {
-          id: "clear-reminder",
-          eyebrow: "Reminder",
-          title: "No owner reminders",
-          detail: careReminderCenter.summary,
-          icon: "happy",
-          tone: colors.sage,
-          actionLabel: "Clear",
-          onPress: () => {
-            Haptics.selectionAsync();
-          },
-        },
-  );
+  if (leadReminder) {
+    planMissionRows.push({
+      id: "lead-reminder",
+      eyebrow: "Reminder",
+      title: leadReminder.label,
+      detail: leadReminder.action,
+      icon: leadReminder.kind === "medication" ? "medication" : "clock",
+      tone: reminderTone,
+      actionLabel: "Resolve",
+      onPress: () => openReminderAction(leadReminder),
+    });
+  }
 
   const isAdded = (sug: SuggestedEvent) =>
     calendarEvents.some((e) => e.title === sug.title && e.date === sug.date);
 
   // Mount animation
   const isWebRoutePreview = (Platform.OS as string) === "web";
-  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
-  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
+  const fade = useRef(
+    new Animated.Value(isWebRoutePreview || reducedMotion ? 1 : 0),
+  ).current;
+  const slide = useRef(
+    new Animated.Value(isWebRoutePreview || reducedMotion ? 0 : 16),
+  ).current;
   useEffect(() => {
     return () => {
       if (routineFeedbackTimer.current) clearTimeout(routineFeedbackTimer.current);
     };
   }, []);
   useEffect(() => {
-    if (isWebRoutePreview) return;
+    if (isWebRoutePreview || reducedMotion) {
+      fade.setValue(1);
+      slide.setValue(0);
+      return;
+    }
     Animated.parallel([
       Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
       Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
     ]).start();
-  }, [fade, isWebRoutePreview, slide]);
+  }, [fade, isWebRoutePreview, reducedMotion, slide]);
 
   const dateLabel = new Date(now).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
   const H_PAD = 16;
 
   return (
-    <View style={[s.root, { backgroundColor: colors.background }]}>
+    <View
+      testID="qa-layout-plan"
+      nativeID={createWebQaLayoutMarker(qaFontScale, layout)}
+      style={[s.root, { backgroundColor: colors.background }]}
+    >
       <ScrollView
         style={s.container}
         contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
@@ -936,7 +933,7 @@ export default function CalendarScreen() {
                     {commandDeckSpeech}
                   </Text>
                   <BoardStatusPill
-                    label={isSampleSchedule ? "Sample day" : nextScheduleStatus}
+                    label={isStarterSchedule ? "No routines" : nextScheduleStatus}
                     tone={commandDeckStatusTone}
                     style={s.commandDeckStatusPill}
                   />
@@ -959,8 +956,8 @@ export default function CalendarScreen() {
 
               <View style={s.commandDeckStats}>
                 {[
-                  { key: "done", label: "Done", value: isSampleSchedule ? "—" : `${completedScheduleCount}/${scheduleRows.length}` },
-                  { key: "open", label: "Open", value: isSampleSchedule ? "—" : `${openScheduleCount}` },
+                  { key: "done", label: "Done", value: isStarterSchedule ? "—" : `${completedScheduleCount}/${scheduleRows.length}` },
+                  { key: "open", label: "Open", value: isStarterSchedule ? "—" : `${openScheduleCount}` },
                 ].map((stat) => (
                   <View
                     key={stat.key}
@@ -978,13 +975,13 @@ export default function CalendarScreen() {
                 ))}
                 <View
                   accessible
-                  accessibilityLabel={`Signal: ${isSampleSchedule ? 1 : Math.max(1, Math.min(5, openScheduleCount + 1))} of 5`}
+                  accessibilityLabel={`Signal: ${isStarterSchedule ? 0 : Math.max(1, Math.min(5, openScheduleCount + 1))} of 5`}
                   style={[s.commandDeckStatChip, { backgroundColor: colors.background, borderColor: colors.border }]}
                 >
                   <Text style={[s.commandDeckStatLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>Signal</Text>
                   <View style={s.commandDeckSignalRow}>
                     {[0, 1, 2, 3, 4].map((bar) => {
-                      const activeBars = isSampleSchedule ? 1 : Math.max(1, Math.min(5, openScheduleCount + 1));
+                      const activeBars = isStarterSchedule ? 0 : Math.max(1, Math.min(5, openScheduleCount + 1));
                       const filled = bar < activeBars;
                       return (
                         <View
@@ -994,9 +991,7 @@ export default function CalendarScreen() {
                             {
                               height: 6 + bar * 2,
                               backgroundColor: filled
-                                ? isSampleSchedule
-                                  ? colors.mutedForeground
-                                  : commandDeckTone
+                                ? commandDeckTone
                                 : colors.muted,
                             },
                           ]}
@@ -1021,8 +1016,8 @@ export default function CalendarScreen() {
                 <BoardPill label={`${weeklyGoalDays}/7 days`} tone={colors.sage} />
               ) : scheduleTab === "month" ? (
                 <BoardPill label={monthEntryLabel} tone={colors.sage} />
-              ) : isSampleSchedule ? (
-                <BoardPill label="Sample day" tone={colors.mutedForeground} />
+              ) : isStarterSchedule ? (
+                <BoardPill label="No routines" tone={colors.mutedForeground} />
               ) : (
                 <BoardPill
                   label={openScheduleCount === 0 ? "Clear" : `${openScheduleCount} open`}
@@ -1243,7 +1238,7 @@ export default function CalendarScreen() {
                 const showBandHeader =
                   index === 0 || scheduleBandForTime(scheduleRows[index - 1].time) !== band;
                 const showNowLine =
-                  scheduleTab === "day" && !isSampleSchedule && index === firstUpcomingScheduleIndex;
+                  scheduleTab === "day" && !isStarterSchedule && index === firstUpcomingScheduleIndex;
                 const bandHeader = showBandHeader ? (
                   <View style={s.scheduleBand}>
                     <Text style={[s.scheduleBandText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
@@ -1262,19 +1257,19 @@ export default function CalendarScreen() {
                     <View style={[s.scheduleNowBar, { backgroundColor: colors.primary }]} />
                   </View>
                 ) : null;
-                if (isSampleSchedule) {
-                  // Preview-only sample rows: no backing routine exists, so no
-                  // Pressable wrappers and no mark-done toggles render here.
+                if (isStarterSchedule) {
+                  // Structural rows have no backing routine, so no Pressable
+                  // wrappers, status claims, or mark-done toggles render.
                   return (
                     <React.Fragment key={`${row.id}-${index}`}>
                     {bandHeader}
                     <View
                       accessible
-                      accessibilityLabel={`Sample day preview: ${row.time} ${row.label}`}
+                      accessibilityLabel={`${row.label} placeholder. Add care type and time.`}
                       style={[
                         s.scheduleRow,
-                        s.scheduleSampleRow,
-                        index > 0 && !showBandHeader && { borderTopColor: colors.border, borderTopWidth: 1 },
+                        s.scheduleStarterRow,
+                        { borderColor: colors.border },
                       ]}
                     >
                       <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
@@ -1290,9 +1285,6 @@ export default function CalendarScreen() {
                         <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                           {row.detail}
                         </Text>
-                        {showRowPill ? (
-                          <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
-                        ) : null}
                       </View>
                     </View>
                     </React.Fragment>
@@ -1370,16 +1362,17 @@ export default function CalendarScreen() {
             </View>
             )}
 
-            {isSampleSchedule && scheduleTab === "day" ? (
-              <Text style={[s.scheduleSampleNote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                This is a sample day to show how your plan will look. Add your first routine to make it real.
+            {isStarterSchedule && scheduleTab === "day" ? (
+              <Text style={[s.scheduleStarterNote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                These dashed rows show structure only. No care is scheduled or
+                completed until you add a real routine.
               </Text>
             ) : null}
 
             <BoardActionButton
-              label={isSampleSchedule ? "Add your first routine" : "Add routine"}
+              label={routineActionLabel}
               icon="add"
-              accessibilityLabel={isSampleSchedule ? "Add your first routine" : "Add routine"}
+              accessibilityLabel={routineActionLabel}
               onPress={() => {
                 Haptics.selectionAsync();
                 openNewRoutine();
@@ -1394,8 +1387,8 @@ export default function CalendarScreen() {
               accessory={
                 <BoardPill
                   label={
-                    isSampleSchedule
-                      ? "Sample day"
+                    isStarterSchedule
+                      ? "No routines"
                       : `${completedScheduleCount}/${scheduleRows.length} done`
                   }
                   tone={commandDeckTone}
@@ -1406,12 +1399,15 @@ export default function CalendarScreen() {
               {planMissionRows.map((mission, index) => (
                 <Pressable
                   key={mission.id}
+                  testID="plan-mission-row"
                   accessibilityRole="button"
-                  accessibilityLabel={`Open ${mission.eyebrow}: ${mission.title}`}
+                  accessibilityLabel={`Open ${mission.eyebrow}: ${mission.title}. ${mission.detail}. ${mission.actionLabel}`}
                   onPress={mission.onPress}
                   style={({ pressed }) => [
                     s.planMissionRow,
+                    layout.stackStatusRows && s.planMissionRowReflow,
                     {
+                      minHeight: layout.controlMinHeight,
                       backgroundColor: pressed ? mission.tone + "10" : colors.background,
                       borderColor: colors.border,
                     },
@@ -1424,19 +1420,53 @@ export default function CalendarScreen() {
                     <Text style={[s.planMissionEyebrow, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
                       {mission.eyebrow}
                     </Text>
-                    <Text numberOfLines={1} style={[s.planMissionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    <Text
+                      numberOfLines={layout.stackStatusRows ? undefined : 1}
+                      style={[s.planMissionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+                    >
                       {mission.title}
                     </Text>
-                    <Text numberOfLines={1} style={[s.planMissionDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    <Text
+                      numberOfLines={layout.stackStatusRows ? undefined : 1}
+                      style={[s.planMissionDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                    >
                       {mission.detail}
                     </Text>
+                    {layout.stackStatusRows ? (
+                      <View
+                        testID="plan-mission-action"
+                        style={[
+                          s.planMissionAction,
+                          s.planMissionActionReflow,
+                          { backgroundColor: mission.tone + "16" },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.planMissionActionText,
+                            { color: mission.tone, fontFamily: "Inter_800ExtraBold" },
+                          ]}
+                        >
+                          {mission.actionLabel}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={13} color={mission.tone} />
+                      </View>
+                    ) : null}
                   </View>
-                  <View style={[s.planMissionAction, { backgroundColor: mission.tone + "16" }]}>
-                    <Text style={[s.planMissionActionText, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
-                      {mission.actionLabel}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={13} color={mission.tone} />
-                  </View>
+                  {!layout.stackStatusRows ? (
+                    <View
+                      testID="plan-mission-action"
+                      style={[
+                        s.planMissionAction,
+                        { backgroundColor: mission.tone + "16" },
+                      ]}
+                    >
+                      <Text style={[s.planMissionActionText, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                        {mission.actionLabel}
+                      </Text>
+                      <Ionicons name="chevron-forward" size={13} color={mission.tone} />
+                    </View>
+                  ) : null}
                   {index < planMissionRows.length - 1 ? <View style={[s.planMissionDivider, { backgroundColor: colors.border }]} /> : null}
                 </Pressable>
               ))}
@@ -1474,7 +1504,7 @@ export default function CalendarScreen() {
                   onSubmitEditing={discover}
                 />
                 <Pressable onPress={discover} disabled={loadingEvents} style={[s.discoverGo, { backgroundColor: colors.copper }]}>
-                  {loadingEvents ? <ActivityIndicator size="small" color="#fff" /> : <Text style={[s.discoverGoText, { fontFamily: "Inter_700Bold" }]}>Find</Text>}
+                  {loadingEvents ? <ActivityIndicator size="small" color={colors.warmForeground} /> : <Text style={[s.discoverGoText, { color: colors.warmForeground, fontFamily: "Inter_700Bold" }]}>Find</Text>}
                 </Pressable>
               </View>
 
@@ -1766,24 +1796,27 @@ export default function CalendarScreen() {
                       {routineBoard.doneCount}/{routineBoard.items.length} done today
                     </Text>
                   )}
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Add routine"
-                    onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }}
-                    style={[s.sectionAddBtn, { backgroundColor: colors.primary }]}
-                  >
-                    <Ionicons name="add" size={18} color={colors.primaryForeground} />
-                  </Pressable>
+                  {routineBoard.items.length > 0 ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Add routine"
+                      onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }}
+                      style={[s.sectionAddBtn, { backgroundColor: colors.primary }]}
+                    >
+                      <Ionicons name="add" size={18} color={colors.primaryForeground} />
+                    </Pressable>
+                  ) : null}
                 </View>
               }
             />
             {routineBoard.items.length === 0 ? (
-              <Pressable onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }} style={[s.emptyPanel, { backgroundColor: colors.background }]}>
+              <View style={[s.emptyPanel, { backgroundColor: colors.background }]}>
                 <PulseIcon name="bowl" size={30} />
                 <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  No routines yet. Tap to add feeding times, walks, and more.
+                  No routines yet. Add one from the care board above to see
+                  assignments and today&apos;s progress here.
                 </Text>
-              </Pressable>
+              </View>
             ) : (
               <>
               <View style={[s.responsibilityPanel, { backgroundColor: colors.background, borderColor: responsibilityTone + "44" }]}>
@@ -1983,22 +2016,47 @@ export default function CalendarScreen() {
       ) : null}
 
       {/* Routine editor modal */}
-      <Modal visible={routineOpen} transparent animationType="slide" onRequestClose={() => setRoutineOpen(false)}>
+      <Modal
+        visible={routineOpen}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setRoutineOpen(false)}
+      >
         <Pressable accessible={false} style={s.modalBackdrop} onPress={() => setRoutineOpen(false)}>
-          <Pressable accessible={false} accessibilityViewIsModal style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
-            <View style={s.modalHandle} />
-            <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
-              {routineEditId ? "Edit Routine" : "New Routine"}
-            </Text>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={s.modalKeyboardAvoider}
+          >
+            <Pressable
+              accessible={false}
+              accessibilityViewIsModal
+              style={[s.modalSheet, { backgroundColor: colors.card }]}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <ScrollView
+                testID="routine-editor-scroll"
+                style={s.modalScroll}
+                contentContainerStyle={[
+                  s.modalSheetContent,
+                  { paddingBottom: modalSheetBottomPadding },
+                ]}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={s.modalHandle} />
+                <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                  {routineEditId ? "Edit Routine" : "New Routine"}
+                </Text>
 
-            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>LABEL</Text>
-            <TextInput
-              value={rLabel}
-              onChangeText={setRLabel}
-              placeholder="Morning walk"
-              placeholderTextColor={colors.mutedForeground}
-              style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-            />
+                <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>LABEL</Text>
+                <TextInput
+                  accessibilityLabel="Routine label"
+                  value={rLabel}
+                  onChangeText={setRLabel}
+                  placeholder="Morning walk"
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                />
             {(ROUTINE_LABEL_SUGGESTIONS[rType] ?? []).length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.ownerQuickRow}>
                 {(ROUTINE_LABEL_SUGGESTIONS[rType] ?? []).map((sug) => (
@@ -2020,7 +2078,20 @@ export default function CalendarScreen() {
               {ROUTINE_TYPES.map((t) => {
                 const active = rType === t.key;
                 return (
-                  <Pressable key={t.key} onPress={() => { Haptics.selectionAsync(); setRType(t.key); }} style={[s.typeChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}>
+                  <Pressable
+                    key={t.key}
+                    accessibilityRole="radio"
+                    accessibilityLabel={`Routine type ${t.label}`}
+                    accessibilityHint={
+                      active
+                        ? `${t.label} routine type is selected.`
+                        : `Selects routine type ${t.label}.`
+                    }
+                    accessibilityState={{ checked: active }}
+                    aria-checked={active}
+                    onPress={() => { Haptics.selectionAsync(); setRType(t.key); }}
+                    style={[s.typeChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}
+                  >
                     {t.key === "potty" ? (
                       <PixelIcon name="pee" size={14} />
                     ) : (
@@ -2032,10 +2103,11 @@ export default function CalendarScreen() {
               })}
             </ScrollView>
 
-            <View style={s.fieldRow}>
-              <View style={{ flex: 1 }}>
+            <View style={[s.fieldRow, layout.stackFormFields && s.fieldRowStacked]}>
+              <View style={layout.stackFormFields ? s.fieldColumnStacked : s.fieldColumn}>
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TIME</Text>
                 <TextInput
+                  accessibilityLabel="Routine time"
                   value={rTime}
                   onChangeText={(v) => { setRTime(v); setRTimeError(null); }}
                   placeholder="7:00 AM"
@@ -2046,9 +2118,10 @@ export default function CalendarScreen() {
                   <Text style={{ color: colors.rose, fontSize: 12, marginTop: 4, fontFamily: "Inter_500Medium" }}>{rTimeError}</Text>
                 )}
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={layout.stackFormFields ? s.fieldColumnStacked : s.fieldColumn}>
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>OWNER (OPTIONAL)</Text>
                 <TextInput
+                  accessibilityLabel="Routine owner (optional)"
                   value={rOwner}
                   onChangeText={setROwner}
                   placeholder="Apollo, Maya..."
@@ -2065,9 +2138,13 @@ export default function CalendarScreen() {
                 return (
                   <Pressable
                     key={t}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Set time ${t}`}
-                    aria-selected={active}
+                    accessibilityRole="radio"
+                    accessibilityLabel={t}
+                    accessibilityHint={
+                      active ? `${t} is selected.` : `Sets the routine time to ${t}.`
+                    }
+                    accessibilityState={{ checked: active }}
+                    aria-checked={active}
                     onPress={() => { Haptics.selectionAsync(); setRTime(t); setRTimeError(null); }}
                     style={[s.ownerQuickChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}
                   >
@@ -2084,6 +2161,15 @@ export default function CalendarScreen() {
                   return (
                     <Pressable
                       key={caregiver.name}
+                      accessibilityRole="radio"
+                      accessibilityLabel={caregiver.name}
+                      accessibilityHint={
+                        active
+                          ? `${caregiver.name} is selected as owner.`
+                          : `Assigns this routine to ${caregiver.name}.`
+                      }
+                      accessibilityState={{ checked: active }}
+                      aria-checked={active}
                       onPress={() => { Haptics.selectionAsync(); setROwner(caregiver.name); }}
                       style={[s.ownerQuickChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}
                     >
@@ -2098,6 +2184,7 @@ export default function CalendarScreen() {
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NOTE (OPTIONAL)</Text>
             <TextInput
+              accessibilityLabel="Routine note (optional)"
               value={rNote}
               onChangeText={setRNote}
               placeholder="Any extra details..."
@@ -2105,7 +2192,14 @@ export default function CalendarScreen() {
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
 
-            <Pressable onPress={submitRoutine} disabled={!rLabel.trim()} style={[s.saveBtn, { backgroundColor: rLabel.trim() ? colors.primary : colors.border }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={routineEditId ? "Save routine changes" : "Add routine"}
+              accessibilityState={{ disabled: !rLabel.trim() }}
+              onPress={submitRoutine}
+              disabled={!rLabel.trim()}
+              style={[s.saveBtn, { backgroundColor: rLabel.trim() ? colors.primary : colors.border }]}
+            >
               <Text style={[s.saveBtnText, { color: rLabel.trim() ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
             </Pressable>
             {/* Validation feedback lives next to the submit button so the
@@ -2121,37 +2215,82 @@ export default function CalendarScreen() {
             ) : null}
 
             {routineEditId && (
-              <Pressable onPress={() => deleteRoutine(routineEditId)} style={s.deleteBtn}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Delete routine"
+                onPress={() => deleteRoutine(routineEditId)}
+                style={s.deleteBtn}
+              >
                 <Ionicons name="trash-outline" size={15} color={colors.rose} />
                 <Text style={[s.deleteBtnText, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>Delete Routine</Text>
               </Pressable>
             )}
-          </Pressable>
+              </ScrollView>
+            </Pressable>
+          </KeyboardAvoidingView>
         </Pressable>
       </Modal>
 
       {/* Add-event modal */}
-      <Modal visible={addOpen} transparent animationType="slide" onRequestClose={() => setAddOpen(false)}>
+      <Modal
+        visible={addOpen}
+        transparent
+        animationType={reducedMotion ? "none" : "slide"}
+        onRequestClose={() => setAddOpen(false)}
+      >
         <Pressable accessible={false} style={s.modalBackdrop} onPress={() => setAddOpen(false)}>
-          <Pressable accessible={false} accessibilityViewIsModal style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
-            <View style={s.modalHandle} />
-            <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>New Event</Text>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={s.modalKeyboardAvoider}
+          >
+            <Pressable
+              accessible={false}
+              accessibilityViewIsModal
+              style={[s.modalSheet, { backgroundColor: colors.card }]}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <ScrollView
+                testID="event-editor-scroll"
+                style={s.modalScroll}
+                contentContainerStyle={[
+                  s.modalSheetContent,
+                  { paddingBottom: modalSheetBottomPadding },
+                ]}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={s.modalHandle} />
+                <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>New Event</Text>
 
-            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TITLE</Text>
-            <TextInput
-              value={evTitle}
-              onChangeText={setEvTitle}
-              placeholder="Beach day, vet visit, hike..."
-              placeholderTextColor={colors.mutedForeground}
-              style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-            />
+                <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TITLE</Text>
+                <TextInput
+                  accessibilityLabel="Event title"
+                  value={evTitle}
+                  onChangeText={setEvTitle}
+                  placeholder="Beach day, vet visit, hike..."
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                />
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TYPE</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
               {EVENT_TYPES.map((t) => {
                 const active = evType === t.key;
                 return (
-                  <Pressable key={t.key} onPress={() => { Haptics.selectionAsync(); setEvType(t.key); }} style={[s.typeChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}>
+                  <Pressable
+                    key={t.key}
+                    accessibilityRole="radio"
+                    accessibilityLabel={`Event type ${t.label}`}
+                    accessibilityHint={
+                      active
+                        ? `${t.label} event type is selected.`
+                        : `Selects event type ${t.label}.`
+                    }
+                    accessibilityState={{ checked: active }}
+                    aria-checked={active}
+                    onPress={() => { Haptics.selectionAsync(); setEvType(t.key); }}
+                    style={[s.typeChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}
+                  >
                     <Ionicons name={EVENT_ICON[t.key] ?? "calendar"} size={14} color={active ? colors.primaryForeground : colors.mutedForeground} />
                     <Text style={[s.typeChipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
                   </Pressable>
@@ -2159,10 +2298,11 @@ export default function CalendarScreen() {
               })}
             </ScrollView>
 
-            <View style={s.fieldRow}>
-              <View style={{ flex: 1 }}>
+            <View style={[s.fieldRow, layout.stackFormFields && s.fieldRowStacked]}>
+              <View style={layout.stackFormFields ? s.fieldColumnStacked : s.fieldColumn}>
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>DATE</Text>
                 <TextInput
+                  accessibilityLabel="Event date"
                   value={evDate}
                   onChangeText={(raw) => {
                     setDateError(null);
@@ -2183,9 +2323,10 @@ export default function CalendarScreen() {
                   <Text style={{ color: colors.rose, fontSize: 12, marginTop: 4, fontFamily: "Inter_500Medium" }}>{dateError}</Text>
                 )}
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={layout.stackFormFields ? s.fieldColumnStacked : s.fieldColumn}>
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TIME</Text>
                 <TextInput
+                  accessibilityLabel="Event time"
                   value={evTime}
                   onChangeText={setEvTime}
                   placeholder="9:00 AM"
@@ -2197,6 +2338,7 @@ export default function CalendarScreen() {
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>LOCATION (OPTIONAL)</Text>
             <TextInput
+              accessibilityLabel="Event location (optional)"
               value={evLocation}
               onChangeText={setEvLocation}
               placeholder="Where?"
@@ -2204,7 +2346,14 @@ export default function CalendarScreen() {
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
 
-            <Pressable onPress={submitEvent} disabled={!evTitle.trim()} style={[s.saveBtn, { backgroundColor: evTitle.trim() ? colors.primary : colors.border }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add event to calendar"
+              accessibilityState={{ disabled: !evTitle.trim() }}
+              onPress={submitEvent}
+              disabled={!evTitle.trim()}
+              style={[s.saveBtn, { backgroundColor: evTitle.trim() ? colors.primary : colors.border }]}
+            >
               <Text style={[s.saveBtnText, { color: evTitle.trim() ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Add to Calendar</Text>
             </Pressable>
             {/* Validation feedback lives next to the submit button so the
@@ -2218,7 +2367,9 @@ export default function CalendarScreen() {
                 {dateError}
               </Text>
             ) : null}
-          </Pressable>
+              </ScrollView>
+            </Pressable>
+          </KeyboardAvoidingView>
         </Pressable>
       </Modal>
     </View>
@@ -2254,7 +2405,7 @@ const s = StyleSheet.create({
   discoverInputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   discoverInput: { flex: 1, fontSize: 15, paddingVertical: 8 },
   discoverGo: { paddingHorizontal: 18, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, alignItems: "center", justifyContent: "center", minWidth: 64 },
-  discoverGoText: { color: "#fff", fontSize: 14 },
+  discoverGoText: { fontSize: 14 },
   discoverHint: { fontSize: 12, lineHeight: 17, marginTop: 10, marginBottom: 4 },
 
   sugRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
@@ -2374,6 +2525,10 @@ const s = StyleSheet.create({
     gap: 10,
     overflow: "hidden",
   },
+  planMissionRowReflow: {
+    alignItems: "flex-start",
+    paddingVertical: 11,
+  },
   planMissionIcon: {
     width: 36,
     height: 36,
@@ -2416,6 +2571,13 @@ const s = StyleSheet.create({
     lineHeight: 11,
     letterSpacing: 0.4,
     textTransform: "uppercase",
+  },
+  planMissionActionReflow: {
+    width: "100%",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    marginTop: 7,
+    paddingHorizontal: 10,
+    justifyContent: "space-between",
   },
   planMissionDivider: {
     position: "absolute",
@@ -2520,7 +2682,7 @@ const s = StyleSheet.create({
     opacity: 0.55,
   },
   scheduleRow: {
-    minHeight: 44,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
@@ -2564,8 +2726,14 @@ const s = StyleSheet.create({
     marginTop: 12,
   },
   scheduleAddEventText: { fontSize: 13 },
-  scheduleSampleRow: { opacity: 0.62 },
-  scheduleSampleNote: { fontSize: 11.5, lineHeight: 16, marginTop: 10, textAlign: "center" },
+  scheduleStarterRow: {
+    borderStyle: "dashed",
+    borderWidth: 1,
+    borderRadius: 14,
+    marginBottom: 8,
+    opacity: 0.72,
+  },
+  scheduleStarterNote: { fontSize: 11.5, lineHeight: 16, marginTop: 10, textAlign: "center" },
   scheduleStatus: {
     minWidth: MIN_MOBILE_TOUCH_TARGET,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -2842,12 +3010,18 @@ const s = StyleSheet.create({
   routineFeedbackButtonText: { fontSize: 12.5 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
-  modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
+  modalKeyboardAvoider: { flex: 1, justifyContent: "flex-end" },
+  modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "94%", overflow: "hidden" },
+  modalScroll: { flexGrow: 0 },
+  modalSheetContent: { paddingHorizontal: 22, paddingTop: 22 },
   modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
   modalTitle: { fontSize: 22, marginBottom: 16 },
   fieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 14 },
   field: { borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   fieldRow: { flexDirection: "row", gap: 12 },
+  fieldRowStacked: { flexDirection: "column" },
+  fieldColumn: { flex: 1, minWidth: 0 },
+  fieldColumnStacked: { width: "100%" },
   typeChip: { flexDirection: "row", alignItems: "center", gap: 5, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 12, borderWidth: 1 },
   typeChipText: { fontSize: 13 },
   ownerQuickRow: { gap: 8, paddingTop: 10, paddingRight: 20 },

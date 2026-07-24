@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import * as mobileLayoutModule from "./mobileLayout.ts";
 import {
   getCenteredModalBackdropPadding,
   getDockedComposerBottomPadding,
   getFloatingDebugButtonTopOffset,
   getFloatingFeedbackBottomOffset,
   getFloatingTabChromeMetrics,
+  getAccessibleLayoutMetrics,
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   getRouteTopPadding,
@@ -15,6 +17,16 @@ import {
   MOBILE_INLINE_HIT_SLOP,
   MIN_MOBILE_TOUCH_TARGET,
 } from "./mobileLayout.ts";
+
+type ResolveWebQaFontScale = (input: {
+  platform: string;
+  runtimeFontScale?: number;
+  qaEnabled?: boolean;
+  qaFontScale?: string | string[];
+}) => {
+  fontScale: number;
+  qaFontScale?: number;
+};
 
 test("derives iOS tabbed route padding from the floating paw and safe area", () => {
   const metrics = getFloatingTabChromeMetrics({ platform: "ios", bottomInset: 34 });
@@ -60,6 +72,41 @@ test("keeps the floating paw chrome compact enough for first-screen command card
   assert.ok(iosMetrics.centerFabSize >= MIN_MOBILE_TOUCH_TARGET);
 });
 
+test("grows tab chrome at large text sizes and keeps route content clear", () => {
+  const normal = getFloatingTabChromeMetrics({
+    platform: "ios",
+    bottomInset: 34,
+    fontScale: 1,
+  });
+  const large = getFloatingTabChromeMetrics({
+    platform: "ios",
+    bottomInset: 34,
+    fontScale: 1.4,
+  });
+  const accessibility = getFloatingTabChromeMetrics({
+    platform: "ios",
+    bottomInset: 34,
+    fontScale: 2,
+  });
+
+  assert.deepEqual(
+    [normal.tabBarHeight, large.tabBarHeight, accessibility.tabBarHeight],
+    [72, 82, 96],
+  );
+  assert.deepEqual(
+    [normal.centerFabSize, large.centerFabSize, accessibility.centerFabSize],
+    [56, 62, 72],
+  );
+  assert.deepEqual(
+    [
+      normal.contentBottomPadding,
+      large.contentBottomPadding,
+      accessibility.contentBottomPadding,
+    ],
+    [124, 130, 140],
+  );
+});
+
 test("keeps standalone routes independent from the bottom tab chrome", () => {
   assert.equal(getStandaloneRouteBottomPadding({ platform: "ios", bottomInset: 34 }), 74);
   assert.equal(getStandaloneRouteBottomPadding({ platform: "android", bottomInset: 0 }), 72);
@@ -102,4 +149,174 @@ test("keeps modal, feedback, debug, and keyboard offsets on shared contracts", (
 test("keeps mobile touch and inline hit targets release-safe", () => {
   assert.equal(MIN_MOBILE_TOUCH_TARGET, 48);
   assert.equal(MOBILE_INLINE_HIT_SLOP, 10);
+});
+
+test("reflows high-frequency care controls at 1.0, 1.4, and 2.0 font scale", () => {
+  assert.deepEqual(
+    getAccessibleLayoutMetrics({ platform: "ios", fontScale: 1 }),
+    {
+      fontScale: 1,
+      quickActionColumns: 3,
+      quickActionWidth: "31.5%",
+      quickActionMinHeight: 82,
+      actionLabelNumberOfLines: 2,
+      controlMinHeight: 48,
+      stackFormFields: false,
+      stackStatusRows: false,
+      metadataNumberOfLines: 2,
+    },
+  );
+
+  assert.deepEqual(
+    getAccessibleLayoutMetrics({ platform: "ios", fontScale: 1.4 }),
+    {
+      fontScale: 1.4,
+      quickActionColumns: 2,
+      quickActionWidth: "48.5%",
+      quickActionMinHeight: 97,
+      actionLabelNumberOfLines: 2,
+      controlMinHeight: 54,
+      stackFormFields: true,
+      stackStatusRows: true,
+      metadataNumberOfLines: 2,
+    },
+  );
+
+  assert.deepEqual(
+    getAccessibleLayoutMetrics({ platform: "ios", fontScale: 2 }),
+    {
+      fontScale: 2,
+      quickActionColumns: 2,
+      quickActionWidth: "48.5%",
+      quickActionMinHeight: 120,
+      actionLabelNumberOfLines: 2,
+      controlMinHeight: 64,
+      stackFormFields: true,
+      stackStatusRows: true,
+      metadataNumberOfLines: 1,
+    },
+  );
+});
+
+test("normalizes invalid font scale while preserving at least two quick-action columns", () => {
+  assert.equal(
+    getAccessibleLayoutMetrics({ platform: "android", fontScale: 0.5 }).fontScale,
+    1,
+  );
+  assert.equal(
+    getAccessibleLayoutMetrics({ platform: "android", fontScale: 9 }).fontScale,
+    2,
+  );
+  assert.ok(
+    getAccessibleLayoutMetrics({ platform: "android", fontScale: 9 })
+      .quickActionColumns >= 2,
+  );
+});
+
+test("resolves a QA font scale only for an explicit enabled web query", () => {
+  const candidate = (mobileLayoutModule as Record<string, unknown>)
+    .resolveWebQaFontScale;
+
+  assert.equal(
+    typeof candidate,
+    "function",
+    "mobileLayout must expose the web-only QA font-scale resolver",
+  );
+  if (typeof candidate !== "function") return;
+  const resolveWebQaFontScale = candidate as ResolveWebQaFontScale;
+
+  assert.deepEqual(
+    resolveWebQaFontScale({
+      platform: "web",
+      runtimeFontScale: 1,
+      qaEnabled: true,
+      qaFontScale: "1.4",
+    }),
+    { fontScale: 1.4, qaFontScale: 1.4 },
+  );
+  assert.deepEqual(
+    resolveWebQaFontScale({
+      platform: "web",
+      runtimeFontScale: 1,
+      qaEnabled: true,
+      qaFontScale: ["2", "1.4"],
+    }),
+    { fontScale: 2, qaFontScale: 2 },
+  );
+  assert.deepEqual(
+    resolveWebQaFontScale({
+      platform: "web",
+      runtimeFontScale: 1.25,
+      qaEnabled: true,
+      qaFontScale: "9",
+    }),
+    { fontScale: 2, qaFontScale: 2 },
+    "finite numeric QA values clamp to the supported 1x-2x proof range",
+  );
+
+  for (const [input, expectedFontScale] of [
+    [
+      {
+        platform: "ios",
+        runtimeFontScale: 1.6,
+        qaEnabled: true,
+        qaFontScale: "2",
+      },
+      1.6,
+    ],
+    [
+      {
+        platform: "web",
+        runtimeFontScale: 1.25,
+        qaEnabled: false,
+        qaFontScale: "2",
+      },
+      1.25,
+    ],
+    [
+      {
+        platform: "web",
+        runtimeFontScale: 1.25,
+        qaEnabled: true,
+        qaFontScale: "not-a-number",
+      },
+      1.25,
+    ],
+    [
+      {
+        platform: "web",
+        runtimeFontScale: 1.25,
+        qaEnabled: true,
+        qaFontScale: "",
+      },
+      1.25,
+    ],
+  ] as const) {
+    assert.deepEqual(resolveWebQaFontScale(input), {
+      fontScale: expectedFontScale,
+    });
+  }
+});
+
+test("encodes QA layout evidence in a native-safe marker", () => {
+  const candidate = (
+    mobileLayoutModule as typeof mobileLayoutModule & {
+      createWebQaLayoutMarker?: (
+        qaFontScale: number | undefined,
+        layout: ReturnType<typeof getAccessibleLayoutMetrics>,
+      ) => string | undefined;
+    }
+  ).createWebQaLayoutMarker;
+  assert.equal(typeof candidate, "function");
+  if (!candidate) return;
+
+  const layout = getAccessibleLayoutMetrics({
+    platform: "web",
+    fontScale: 1.4,
+  });
+  assert.equal(candidate(undefined, layout), undefined);
+  assert.equal(
+    candidate(1.4, layout),
+    "fontScale=1.4;stackStatusRows=true;quickActionColumns=2;controlMinHeight=54",
+  );
 });

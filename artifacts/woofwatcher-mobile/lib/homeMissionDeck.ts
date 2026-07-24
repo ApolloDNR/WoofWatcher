@@ -95,7 +95,7 @@ function safeNumber(value: number): number {
 }
 
 export function buildHomeMissionDeck(input: HomeMissionDeckInput): HomeMission[] {
-  const petName = clean(input.petName, "Phoenix");
+  const petName = clean(input.petName, "Your dog");
   const caregiverName = clean(input.caregiverName, "caregiver");
   const nextCareTitle = clean(input.nextCare.label, `${petName}'s next care`);
   const nextCareDetail = clean(input.nextCare.detail, `${caregiverName} can review today's plan.`);

@@ -36,12 +36,18 @@ import {
 } from "@/lib/quickLogEntry";
 import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import {
+  armWalkRouteCapture,
+  clearWalkRouteCaptureArming,
+  walkRouteSessionKey,
+} from "@/lib/walkRouteArming";
+import {
   getRouteTopPadding,
   getStandaloneRouteBottomPadding,
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
+import { resolvePetName } from "@/lib/petIdentity";
 import { shareTextPayload } from "@/lib/shareText";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -121,7 +127,7 @@ export default function AdventureScreen() {
     topInset: insets.top,
     surface: "standalone",
   });
-  const petName = state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
+  const petName = resolvePetName(state.profile.name);
   const now = Date.now();
   const adventure = useMemo(
     () =>
@@ -237,10 +243,13 @@ export default function AdventureScreen() {
       if (isDuplicateQuestTap("walk")) return;
       markQuestSave("walk");
       const entry = buildWalkSessionStartEntry({ caregiver, now, routineLabel: quest.title });
-      const id = addEntry({
+      const adventureEntry = {
         ...entry,
         details: adventureDetails(quest, entry.details),
-      } as Omit<Entry, "id">);
+      } as Omit<Entry, "id">;
+      const sessionKey = walkRouteSessionKey(adventureEntry);
+      const id = addEntry(adventureEntry);
+      if (sessionKey) armWalkRouteCapture(sessionKey);
       setQuestFeedback({ id, title: "Adventure walk started" });
       return;
     }
@@ -269,11 +278,16 @@ export default function AdventureScreen() {
     setQuestFeedback({ id, title: `${quest.title} logged` });
   };
 
-  const undoQuestFeedback = () => {
+  const undoQuestFeedback = async () => {
     if (!questFeedback) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void deleteEntry(questFeedback.id);
-    setQuestFeedback(null);
+    const feedbackEntry = state.entries.find(
+      (entry) => entry.id === questFeedback.id,
+    );
+    if (await deleteEntry(questFeedback.id)) {
+      clearWalkRouteCaptureArming(walkRouteSessionKey(feedbackEntry));
+      setQuestFeedback(null);
+    }
   };
 
   const openProofLog = (entryId: string) => {

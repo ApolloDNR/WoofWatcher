@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
+import { announce } from "@/lib/announce";
 import { isClerkConfigured } from "@/lib/auth";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
@@ -43,7 +44,7 @@ const TRUST_STEPS = [
   {
     icon: "sparkles-outline" as const,
     label: "CareTwin ready",
-    detail: "Set up Phoenix, then invite your household when providers are live.",
+    detail: "Set up your dog, then invite your household when providers are live.",
   },
 ];
 
@@ -124,7 +125,7 @@ export function AuthShell({
           <View style={[styles.stageHud, { backgroundColor: colors.ivory, borderColor: colors.border }]}>
             <View style={[styles.stageDot, { backgroundColor: colors.sage }]} />
             <Text style={[styles.stageHudText, { color: BUBBLE_INK, fontFamily: "Inter_700Bold" }]}>
-              Phoenix care starts here
+              Your dog&apos;s care starts here
             </Text>
           </View>
         </ImageBackground>
@@ -326,23 +327,26 @@ export function LocalPreviewGateway({ subtitle }: { subtitle: string }) {
 export function GoogleButton({
   onPress,
   loading,
+  disabled,
 }: {
   onPress: () => void;
   loading?: boolean;
+  disabled?: boolean;
 }) {
   const colors = useColors();
+  const isDisabled = Boolean(loading || disabled);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Continue with Google"
       onPress={onPress}
-      disabled={loading}
+      disabled={isDisabled}
       style={({ pressed }) => [
         styles.googleButton,
         {
           backgroundColor: colors.card,
           borderColor: colors.border,
-          opacity: loading ? 0.6 : pressed ? 0.9 : 1,
+          opacity: isDisabled ? 0.6 : pressed ? 0.9 : 1,
         },
       ]}
     >
@@ -379,9 +383,19 @@ export function Divider() {
 
 export function FormError({ message }: { message?: string }) {
   const colors = useColors();
+
+  React.useEffect(() => {
+    if (message && Platform.OS === "ios") {
+      announce(message);
+    }
+  }, [message]);
+
   if (!message) return null;
   return (
     <View
+      accessibilityRole="alert"
+      accessibilityLiveRegion="assertive"
+      aria-live="assertive"
       style={[
         styles.formError,
         { backgroundColor: colors.secondary, borderColor: colors.destructive },

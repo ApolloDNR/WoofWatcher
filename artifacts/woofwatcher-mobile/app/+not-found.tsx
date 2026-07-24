@@ -33,8 +33,8 @@ export default function NotFoundScreen() {
           { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
         ]}
       >
-        The screen you were looking for is not here. Head back to the Phoenix
-        Room and pick up the day from there.
+        The screen you were looking for is not here. Head back to your
+        dog&apos;s room and pick up the day from there.
       </Text>
       <Pressable
         accessibilityRole="button"
@@ -48,7 +48,12 @@ export default function NotFoundScreen() {
           },
         ]}
       >
-        <Text style={[styles.homeButtonText, { fontFamily: "Inter_700Bold" }]}>
+        <Text
+          style={[
+            styles.homeButtonText,
+            { color: colors.warmForeground, fontFamily: "Inter_700Bold" },
+          ]}
+        >
           Back to Home
         </Text>
       </Pressable>
@@ -91,7 +96,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   homeButtonText: {
-    color: "#FFFFFF",
     fontSize: 14,
   },
 });

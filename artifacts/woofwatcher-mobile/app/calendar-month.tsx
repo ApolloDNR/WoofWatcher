@@ -29,6 +29,7 @@ import {
   WEEKDAY_LABELS,
   type MonthDayCell,
 } from "@/lib/monthCalendar";
+import { resolvePetName } from "@/lib/petIdentity";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -121,6 +122,7 @@ export default function CalendarMonthScreen() {
   const reduced = useReducedMotion();
   const { width: screenWidth } = useWindowDimensions();
   const { state } = useCare();
+  const petName = resolvePetName(state.profile.name);
 
   // The quick-add FAB floats bottom-right (right: 20 + width 60 = 80px lane). On
   // short/narrow viewports the timeline header lands in that lane, so the
@@ -352,7 +354,7 @@ export default function CalendarMonthScreen() {
                 </Text>
                 <Text style={[s.emptyBody, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                   {selectedKey === todayKey
-                    ? "Tap the + to log Phoenix's first moment today."
+                    ? `Tap the + to log ${petName}'s first moment today.`
                     : "Real meals, walks, and potties you log will show up here."}
                 </Text>
               </View>

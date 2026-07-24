@@ -96,33 +96,34 @@ test("keeps route visual consistency as a launch-critical design QA gate", () =>
   assert.equal(surface.title, "Route Visual Consistency");
   assert.equal(surface.priority, "launch-critical");
   assert.match(surface.goal, /one planned premium neo-retro app/);
-  assert.match(surface.devicePrompt, /Log, Plan, Today, Pack, Story, Health, Records, and More/);
+  assert.match(surface.devicePrompt, /Today, Plan, Quick Log, Health, and More/);
+  assert.match(surface.devicePrompt, /Log History, Records, and Privacy/);
   assert.match(
     surface.acceptanceCriteria.join("\n"),
-    /No first-screen text, card, sprite, tab, or bottom navigation element overlaps/,
+    /No first-screen text, card, sprite, tab, or safe-navigation element overlaps/,
   );
   assert.match(surface.failureEscalation, /Option B pixel app boards/);
   assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
-    "Log",
-    "Plan",
     "Today",
-    "Pack",
-    "Story",
+    "Plan",
+    "Quick Log",
     "Health",
-    "Records",
     "More",
+    "Log History",
+    "Records",
+    "Privacy",
   ]);
   assert.match(
     surface.requiredEvidence.join("\n"),
-    /iOS screenshot of Log route top/,
+    /iOS screenshot of Quick Log route top/,
   );
   assert.match(
     surface.requiredEvidence.join("\n"),
-    /iOS screenshot of Pack route top/,
+    /iOS screenshot of Log History route top/,
   );
   assert.match(
     surface.requiredEvidence.join("\n"),
-    /Android screenshot of Story route top/,
+    /Android screenshot of Privacy route top/,
   );
   assert.match(
     surface.requiredEvidence.join("\n"),
@@ -154,18 +155,18 @@ test("builds a route visual proof manifest from native screenshot evidence", () 
   assert.equal(pending.statusLabel, "Native proof blocked");
   assert.equal(pending.rows.length, 8);
   assert.deepEqual(pending.rows.map((row) => row.label), [
-    "Log",
-    "Plan",
     "Today",
-    "Pack",
-    "Story",
+    "Plan",
+    "Quick Log",
     "Health",
-    "Records",
     "More",
+    "Log History",
+    "Records",
+    "Privacy",
   ]);
-  assert.match(pending.rows[0]?.iosStatus ?? "", /iOS Log screenshot pending/);
-  assert.match(pending.rows[0]?.androidStatus ?? "", /Android Log screenshot pending/);
-  assert.match(pending.blockers.join("\n"), /Log: iOS Log screenshot pending/);
+  assert.match(pending.rows[0]?.iosStatus ?? "", /iOS Today screenshot pending/);
+  assert.match(pending.rows[0]?.androidStatus ?? "", /Android Today screenshot pending/);
+  assert.match(pending.blockers.join("\n"), /Today: iOS Today screenshot pending/);
   assert.match(pending.blockers.join("\n"), /QA note pending/);
   assert.match(pending.webPreviewBoundary, /does not replace native iOS\/Android route screenshots/);
 
@@ -173,14 +174,14 @@ test("builds a route visual proof manifest from native screenshot evidence", () 
     surface,
     note: "No route-to-route design break found.",
     evidence: [
-      ...["log", "plan", "today", "pack", "story", "health", "records", "more"].map((route) => ({
+      ...["today", "plan", "quick-log", "health", "more", "log-history", "records", "privacy"].map((route) => ({
         uri: `file:///qa/${route}-ios.png`,
         fileName: `${route}-ios.png`,
         source: "library" as const,
         targetPlatform: "ios" as const,
         capturedAtIso: "2026-07-03T12:00:00.000Z",
       })),
-      ...["log", "plan", "today", "pack", "story", "health", "records", "more"].map((route) => ({
+      ...["today", "plan", "quick-log", "health", "more", "log-history", "records", "privacy"].map((route) => ({
         uri: `file:///qa/${route}-android.png`,
         fileName: `${route}-android.png`,
         source: "library" as const,
@@ -192,7 +193,7 @@ test("builds a route visual proof manifest from native screenshot evidence", () 
   assert.equal(complete.status, "ready");
   assert.equal(complete.statusLabel, "Native visual proof complete");
   assert.equal(complete.blockers.length, 0);
-  assert.match(complete.rows[7]?.androidStatus ?? "", /Android More screenshot attached: more-android\.png/);
+  assert.match(complete.rows[7]?.androidStatus ?? "", /Android Privacy screenshot attached: privacy-android\.png/);
 });
 
 test("keeps route visual proof blocked until screenshots are route-named", () => {
@@ -223,10 +224,10 @@ test("keeps route visual proof blocked until screenshots are route-named", () =>
   assert.equal(manifest.attachedIosScreenshots, 8);
   assert.equal(manifest.attachedAndroidScreenshots, 8);
   assert.equal(manifest.status, "blocked");
-  assert.match(manifest.rows[2]?.iosStatus ?? "", /iOS Today screenshot pending/);
-  assert.match(manifest.rows[7]?.androidStatus ?? "", /Android More screenshot pending/);
-  assert.match(manifest.blockers.join("\n"), /Today: iOS Today screenshot pending/);
-  assert.match(manifest.blockers.join("\n"), /More: Android More screenshot pending/);
+  assert.match(manifest.rows[2]?.iosStatus ?? "", /iOS Quick Log screenshot pending/);
+  assert.match(manifest.rows[7]?.androidStatus ?? "", /Android Privacy screenshot pending/);
+  assert.match(manifest.blockers.join("\n"), /Quick Log: iOS Quick Log screenshot pending/);
+  assert.match(manifest.blockers.join("\n"), /Privacy: Android Privacy screenshot pending/);
 });
 
 test("routes Incident Composer QA into the detail-first incident flow", () => {
@@ -252,7 +253,7 @@ test("keeps Phoenix Home long-press to Avatar Studio in native QA", () => {
   assert.match(home.acceptanceCriteria.join("\n"), /long press opens Avatar Studio/);
   assert.match(home.requiredEvidence.join("\n"), /long-press-to-Studio/);
   assert.ok(ownerLoop);
-  assert.match(ownerLoop.routeChecklist?.[2]?.expected ?? "", /long-press-to-Studio/);
+  assert.match(ownerLoop.routeChecklist?.[0]?.expected ?? "", /Today primary tab/);
 });
 
 test("keeps the Home mission deck as a launch-critical device QA target", () => {
@@ -287,24 +288,24 @@ test("keeps the owner preview core loop as a launch-critical beta QA target", ()
   assert.ok(surface);
   assert.equal(surface.route, "/");
   assert.equal(surface.priority, "launch-critical");
-  assert.match(surface.goal, /main beta loop/);
-  assert.match(surface.goal, /Log, Plan, Today, Pack, Story, Health, More/);
+  assert.match(surface.goal, /primary beta shell/);
+  assert.match(surface.goal, /Today, Plan, Quick Log, Health, and More/);
+  assert.match(surface.goal, /Log History, Records, Privacy/);
   assert.match(surface.goal, /Adventure/);
-  assert.match(surface.devicePrompt, /bottom-nav owner preview/);
+  assert.match(surface.devicePrompt, /primary-shell owner preview/);
   assert.match(surface.devicePrompt, /Adventure Mode/);
   assert.match(surface.devicePrompt, /Launch Readiness/);
   assert.match(surface.setupSteps.join("\n"), /provider, payment, storage, AI, and store gates/);
-  assert.match(surface.verificationSteps.join("\n"), /Open Log, Plan, Today, Pack, and Story in order/);
-  assert.match(surface.verificationSteps.join("\n"), /quick-log one safe care event/);
-  assert.match(surface.verificationSteps.join("\n"), /Pack links/);
-  assert.match(surface.verificationSteps.join("\n"), /care career, adventure trail, memories, walk story, and badges/);
+  assert.match(surface.verificationSteps.join("\n"), /Open Today, Plan, Quick Log, Health, and More in order/);
+  assert.match(surface.verificationSteps.join("\n"), /In Quick Log, log one safe care event/);
+  assert.match(surface.verificationSteps.join("\n"), /Log History, Records, Privacy/);
   assert.match(surface.verificationSteps.join("\n"), /Health Watch and Bile Watch/);
   assert.match(surface.verificationSteps.join("\n"), /Review packet/);
   assert.match(surface.verificationSteps.join("\n"), /Draft vet questions/);
   assert.match(surface.verificationSteps.join("\n"), /Adventure Mode/);
-  assert.match(surface.verificationSteps.join("\n"), /Records, Avatar Studio, and Care Pass/);
+  assert.match(surface.verificationSteps.join("\n"), /Launch Readiness, Log History, Records, Privacy, Avatar Studio, and Care Pass/);
   assert.match(surface.verificationSteps.join("\n"), /Report History storage status/);
-  assert.match(surface.acceptanceCriteria.join("\n"), /bottom-nav loop never hides the active action/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /primary shell never hides the active action/);
   assert.match(surface.acceptanceCriteria.join("\n"), /Adventure Mode/);
   assert.match(surface.acceptanceCriteria.join("\n"), /provider setup, store approval, payments, AI, and storage boundaries/);
   assert.match(surface.acceptanceCriteria.join("\n"), /Saved on this device/);
@@ -312,28 +313,28 @@ test("keeps the owner preview core loop as a launch-critical beta QA target", ()
   assert.match(surface.failureEscalation, /keyboard\/modal overlap/);
   assert.match(surface.failureEscalation, /Adventure/);
   assert.match(surface.failureEscalation, /claims provider\/store\/payment\/AI\/storage readiness/);
-  assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Quick Log or Log/);
+  assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Quick Log after opening/);
   assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Launch Readiness/);
   assert.match(surface.requiredEvidence.join("\n"), /Adventure Mode/);
   assert.match(surface.requiredEvidence.join("\n"), /without dead ends/);
   assert.match(surface.requiredEvidence.join("\n"), /Report History storage status/);
   assert.deepEqual(
     surface.routeChecklist?.map((item) => item.label),
-    ["Log", "Plan", "Today", "Pack", "Story", "Health", "More", "Adventure", "Records", "Avatar Studio", "Care Pass"],
+    ["Today", "Plan", "Quick Log", "Health", "More", "Log History", "Records", "Privacy", "Pack", "Story", "Adventure", "Avatar Studio", "Care Pass"],
   );
-  assert.match(surface.routeChecklist?.[0]?.expected ?? "", /Quick-log one safe care event/);
-  assert.equal(surface.routeChecklist?.[3]?.route, "/pack");
-  assert.match(surface.routeChecklist?.[3]?.expected ?? "", /Care Pass hub/);
-  assert.equal(surface.routeChecklist?.[4]?.route, "/story");
-  assert.match(surface.routeChecklist?.[4]?.expected ?? "", /care career, adventure trail, memories, walk story, and badges/);
-  assert.match(surface.routeChecklist?.[5]?.expected ?? "", /Today's header bell or the Pack links/);
-  assert.match(surface.routeChecklist?.[6]?.expected ?? "", /Today's header menu or the Pack links/);
-  assert.match(surface.routeChecklist?.[6]?.proof ?? "", /Launch Readiness/);
-  assert.equal(surface.routeChecklist?.[7]?.route, "/adventure");
-  assert.match(surface.routeChecklist?.[7]?.expected ?? "", /private care quests/);
-  assert.match(surface.routeChecklist?.[10]?.expected ?? "", /sitter\/vet\/trainer handoff/);
-  assert.match(surface.routeChecklist?.[10]?.expected ?? "", /Report History storage status/);
-  assert.match(surface.routeChecklist?.[10]?.proof ?? "", /Care Pass Report History storage status/);
+  assert.match(surface.routeChecklist?.[0]?.expected ?? "", /Today primary tab/);
+  assert.equal(surface.routeChecklist?.[2]?.route, "/fastlog");
+  assert.match(surface.routeChecklist?.[2]?.expected ?? "", /elevated center action/);
+  assert.equal(surface.routeChecklist?.[5]?.route, "/log");
+  assert.match(surface.routeChecklist?.[5]?.expected ?? "", /history-first timeline/);
+  assert.equal(surface.routeChecklist?.[6]?.route, "/records");
+  assert.equal(surface.routeChecklist?.[7]?.route, "/privacy");
+  assert.match(surface.routeChecklist?.[4]?.proof ?? "", /Launch Readiness/);
+  assert.equal(surface.routeChecklist?.[10]?.route, "/adventure");
+  assert.match(surface.routeChecklist?.[10]?.expected ?? "", /private care quests/);
+  assert.match(surface.routeChecklist?.[12]?.expected ?? "", /sitter\/vet\/trainer handoff/);
+  assert.match(surface.routeChecklist?.[12]?.expected ?? "", /Report History storage status/);
+  assert.match(surface.routeChecklist?.[12]?.proof ?? "", /Care Pass Report History storage status/);
   assert.match(surface.launchRisk, /real owner beta journey/);
 });
 
@@ -870,6 +871,16 @@ test("adds route-check proof to store screenshot QA surfaces", () => {
         requirement: "Show launch-gate truth before submission.",
         status: "blocked",
       },
+      {
+        screen: "Quick Log",
+        requirement: "Show the focused Quick Log composer.",
+        status: "needed",
+      },
+      {
+        screen: "Log History",
+        requirement: "Show the history-first timeline.",
+        status: "needed",
+      },
     ],
     reviewNotes: ["Prep only."],
     privacyDisclosures: ["No private data in screenshots."],
@@ -879,6 +890,8 @@ test("adds route-check proof to store screenshot QA surfaces", () => {
   const surfaces = buildStoreSubmissionScreenshotQaSurfaces(packet);
   const avatar = surfaces.find((item) => item.id === "store-avatar-studio");
   const privacy = surfaces.find((item) => item.id === "store-privacy-launch-gates");
+  const quickLog = surfaces.find((item) => item.id === "store-quick-log");
+  const logHistory = surfaces.find((item) => item.id === "store-log-history");
 
   assert.ok(avatar);
   assert.equal(avatar.route, "/portrait");
@@ -895,6 +908,14 @@ test("adds route-check proof to store screenshot QA surfaces", () => {
   assert.deepEqual(privacy.routeChecklist?.map((item) => item.label), ["Privacy & Launch Gates store frame"]);
   assert.match(privacy.routeChecklist?.[0]?.expected ?? "", /blocked launch gate visible/);
   assert.match(privacy.routeChecklist?.[0]?.proof ?? "", /blocker note/);
+
+  assert.ok(quickLog);
+  assert.equal(quickLog.route, "/fastlog");
+  assert.equal(quickLog.routeChecklist?.[0]?.route, "/fastlog");
+
+  assert.ok(logHistory);
+  assert.equal(logHistory.route, "/log");
+  assert.equal(logHistory.routeChecklist?.[0]?.route, "/log");
 });
 
 test("summarizes mobile release QA review status and screenshot evidence", () => {
@@ -960,9 +981,9 @@ test("keeps passed release QA surfaces pending until required proof and notes ar
     acceptanceCriteria: ["No route dead-ends."],
     failureEscalation: "Mark Needs tune if any route clips or dead-ends.",
     requiredEvidence: [
-      "iOS screenshot of Quick Log or Log.",
+      "iOS screenshot of Quick Log.",
       "Android screenshot of Launch Readiness from More.",
-      "Note confirming Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
+      "Note confirming Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy had no dead ends.",
     ],
     launchRisk: "This is the beta owner path.",
   } as const;
@@ -982,7 +1003,7 @@ test("keeps passed release QA surfaces pending until required proof and notes ar
   const completePass: MobileReleaseQaReview = {
     surfaceId: "owner-preview-core-loop",
     status: "pass",
-    note: "Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
+    note: "Today, Plan, Quick Log, Health, More, Log History, Records, and Privacy had no dead ends.",
     screenshotEvidence: [
       {
         uri: "file:///qa/ios-log.png",
