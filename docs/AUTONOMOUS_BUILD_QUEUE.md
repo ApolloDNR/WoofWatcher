@@ -7,8 +7,8 @@
   `automation/premium-revenue-product-builder` without rewriting history.
 - [x] Preserve durable Auth/Setup, payments, Records local-file, report-binary,
   and route-visual proof evidence across the reconciliation.
-- [ ] After the merge commit, require fresh branch CI before treating install,
-  build, or Expo export proof as current.
+- [x] Fresh branch CI passed for merge commit `c9b3abc8`: WoofWatcher Verify
+  run `30144755384`, job `89644315640`.
 - [ ] Next highest-impact external proof remains route-named native iOS and
   Android evidence for Auth/Setup, Records file handoff, report binary
   share/reopen, and route visual consistency.

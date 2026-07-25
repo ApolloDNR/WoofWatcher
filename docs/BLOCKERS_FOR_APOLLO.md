@@ -10,7 +10,9 @@
 - Exact local beta export proof remains blocked: Corepack and pinned
   `pnpm@10.24.0` are unavailable. The bundled pnpm 11 retry failed with
   `EPERM ... unlink ...\node_modules\typescript`.
-- Fresh branch CI is required after the merge. Native iOS/Android proof,
+- Fresh branch CI passed on merge commit `c9b3abc8`: WoofWatcher Verify run
+  `30144755384`, job `89644315640`, completed dependency install, JSON doctor,
+  focused tests, typecheck, and CI-safe builds. Native iOS/Android proof,
   provider credentials/approvals, store submission, public launch, and Apollo
   sign-off remain open.
 

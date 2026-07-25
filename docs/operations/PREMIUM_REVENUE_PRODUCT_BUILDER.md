@@ -22,6 +22,11 @@ pnpm 11 export retry failed during install with
 `EPERM ... unlink ...\node_modules\typescript`; branch CI is the pinned-pnpm
 install/build/export authority for this merge.
 
+Fresh branch authority: WoofWatcher Verify run `30144755384`, job
+`89644315640`, passed on merge commit `c9b3abc8` with pinned pnpm/Node setup,
+dependency install, JSON doctor, focused behavior tests, typecheck, CI-safe
+builds, and all post steps green.
+
 ## Purpose
 
 `Premium Revenue Product Builder` is the recurring autonomous build loop for WoofWatcher. Its job is to keep moving the app toward a premium mobile-first dog-care operating system without requiring Apollo to approve routine engineering decisions.
