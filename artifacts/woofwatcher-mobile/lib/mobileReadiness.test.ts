@@ -472,7 +472,28 @@ test("keeps the web preview frame inside compact mobile screenshots", () => {
   // app edge-to-edge on parchment - no navy letterbox, no rounded shell. The
   // framed presentation only survives on desktop-sized windows.
   assert.match(layout, /if \(shouldAnchorCompactPreview\) \{/);
-  assert.match(fullBleedBlock, /backgroundColor:\s*"#F7F1E1"/);
+  assert.doesNotMatch(
+    fullBleedBlock,
+    /backgroundColor/,
+    "the compact shell background must follow the active palette",
+  );
+  assert.match(layout, /const colors = useColors\(\)/);
+  assert.match(
+    layout,
+    /styles\.webFullBleed,\s*\{\s*backgroundColor:\s*colors\.background/,
+  );
+  assert.match(
+    layout,
+    /styles\.webFrame,\s*\{\s*backgroundColor:\s*colors\.background/,
+  );
+  assert.match(
+    layout,
+    /styles\.webBackdrop,\s*\{[\s\S]*backgroundColor:\s*colors\.shellNavy/,
+  );
+  assert.match(
+    layout,
+    /name="fastlog"[\s\S]*contentStyle:\s*\{\s*backgroundColor:\s*colors\.background\s*\}/,
+  );
   assert.doesNotMatch(fullBleedBlock, /borderRadius/);
   assert.doesNotMatch(fullBleedBlock, /padding/);
   assert.match(layout, /const frameWidth = Math\.min\(viewportWidth,\s*390\)/);

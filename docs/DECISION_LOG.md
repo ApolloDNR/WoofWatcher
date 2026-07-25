@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-07-25: Shared shell backgrounds follow the active palette
+
+- Decision: treat root compact/desktop shells and modal content backgrounds as
+  themed chrome.
+- Reason: hard-coded parchment created a light boundary behind dark route
+  content, especially around Fast Log.
+- Boundary: source wiring and static coverage do not replace dark screenshots
+  or native visual approval.
+
 ## 2026-07-24: Reconcile Mainline Premium Polish by Normal Merge
 
 - Decision: merge current `origin/main` into the automation branch rather than

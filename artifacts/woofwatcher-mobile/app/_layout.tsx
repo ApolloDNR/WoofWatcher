@@ -155,7 +155,7 @@ function RootLayoutNav() {
           // build ignores it, so the fastlog screen runs its own mount
           // fade/rise there.
           animation: "slide_from_bottom",
-          contentStyle: { backgroundColor: "#F7F1E1" },
+          contentStyle: { backgroundColor: colors.background },
         }}
       />
       <Stack.Screen
@@ -247,6 +247,7 @@ function useWebViewportClamp() {
 
 function AppFrame() {
   useWebViewportClamp();
+  const colors = useColors();
 
   if (Platform.OS !== "web") return <RootLayoutNav />;
 
@@ -280,7 +281,16 @@ function AppFrame() {
   // canvas needs a stage to sit on.
   if (shouldAnchorCompactPreview) {
     return (
-      <View style={[styles.webFullBleed, { width: viewportWidth, minHeight: viewportHeight }]}>
+      <View
+        style={[
+          styles.webFullBleed,
+          {
+            backgroundColor: colors.background,
+            width: viewportWidth,
+            minHeight: viewportHeight,
+          },
+        ]}
+      >
         <RootLayoutNav />
         <WebDialogHost />
       </View>
@@ -292,13 +302,23 @@ function AppFrame() {
       style={[
         styles.webBackdrop,
         {
+          backgroundColor: colors.shellNavy,
           width: viewportWidth,
           minHeight: viewportHeight,
           alignItems: "center",
         },
       ]}
     >
-      <View style={[styles.webFrame, { width: frameWidth, maxHeight: frameHeight }]}>
+      <View
+        style={[
+          styles.webFrame,
+          {
+            backgroundColor: colors.background,
+            width: frameWidth,
+            maxHeight: frameHeight,
+          },
+        ]}
+      >
         <RootLayoutNav />
         {/* Themed notice/confirm dialogs for web builds: notifyDialog and
             confirmThroughSteps render here instead of raw window.alert. */}
@@ -374,14 +394,12 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     overflow: "hidden",
-    backgroundColor: "#F7F1E1",
     alignSelf: "flex-start",
   },
   webBackdrop: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#081A2A",
     alignSelf: "flex-start",
     minWidth: 0,
     overflow: "hidden",
@@ -392,7 +410,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     overflow: "hidden",
-    backgroundColor: "#F7F1E1",
     borderColor: "rgba(255, 249, 239, 0.18)",
     borderRadius: 36,
     borderWidth: 1,

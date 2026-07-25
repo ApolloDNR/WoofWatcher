@@ -1,5 +1,14 @@
 # QA Test Plan
 
+## 2026-07-25 Dark-Scheme Shell Contract
+
+- Mobile readiness now requires the compact web shell, desktop preview
+  frame/backdrop, and Fast Log modal to use active theme tokens.
+- Red proof failed while `_layout.tsx` still hard-coded `#F7F1E1`; green proof
+  passed `116/116` after the theme-token implementation.
+- Route screenshots and interactive browser/native dark-mode review remain
+  open because Playwright and native Android tooling are unavailable locally.
+
 ## Current Automated Baseline
 
 Run focused behavior tests:

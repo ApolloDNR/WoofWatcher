@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-07-25 Dark-Scheme Shell Hardening
+
+- [x] Route the compact web shell, desktop preview frame/backdrop, and Fast Log
+  modal through the active palette instead of hard-coded light colors.
+- [x] Add a red-first readiness contract for those shared navigation surfaces.
+- [ ] Capture route-by-route dark screenshots when browser or device tooling is
+  available. This source/test pass is not visual QA.
+
 ## 2026-07-24 Automation/Main Reconciliation
 
 - [x] Merge current mainline premium mockup-parity, truthful-care, QA harness,

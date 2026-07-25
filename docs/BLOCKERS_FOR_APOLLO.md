@@ -1,5 +1,15 @@
 # Blockers For Apollo
 
+## 2026-07-25 Dark-Mode Visual Proof
+
+- Shared shell backgrounds are theme-aware and protected by a red/green
+  readiness regression.
+- Full screenshots remain unrecorded: `npx`/Playwright are unavailable, the
+  repo-local Playwright package is missing, and Expo cannot resolve from the
+  partial dependency checkout.
+- Native confirmation remains blocked by missing Android SDK/Java tooling. Do
+  not treat this source/test pass as iOS or Android visual approval.
+
 ## 2026-07-24 Reconciliation Proof Boundary
 
 - Current mainline premium polish has been reconciled into the automation

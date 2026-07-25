@@ -1,5 +1,12 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-07-25 Dark-Scheme Shared Chrome
+
+The compact shell, desktop preview frame/backdrop, and Fast Log modal now
+follow the active theme instead of forcing light parchment behind dark routes.
+Static readiness protects the seam; native/device dark-mode visual QA remains
+open.
+
 This file defines the gates required before calling WoofWatcher a Full Premium Release.
 
 ## Gate 1: Product Scope

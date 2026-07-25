@@ -1,5 +1,20 @@
 # Premium Revenue Product Builder
 
+## 2026-07-25 Dark-Scheme Shell Hardening
+
+The next non-provider-gated slice fixed shared navigation chrome that still
+forced light parchment in dark mode. `_layout.tsx` now themes the compact web
+shell, desktop preview frame/backdrop, and Fast Log modal through the active
+palette. A red-first readiness contract failed on the hard-coded shell and then
+passed `116/116`.
+
+Root TypeScript, PixelLab verification (`ok=149 missing=0 invalid=0`), and the
+care-domain suite (`148/148`) passed. The broad suite could not complete
+locally: `express` and the `@workspace/care-domain` package link are missing
+from the partial dependency checkout. The JSON beta doctor remains blocked on
+missing exact `pnpm@10.24.0` and unresolved Expo. Full dark route screenshots
+remain open because Playwright and native Android tooling are unavailable.
+
 ## 2026-07-24 Mainline Premium Reconciliation
 
 The automation branch now reconciles current `origin/main` through a normal
