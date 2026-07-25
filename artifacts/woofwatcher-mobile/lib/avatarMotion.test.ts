@@ -124,3 +124,45 @@ test("uses tired motion when energy is low without health alerts", () => {
   assert.equal(motion.avatarMood, "calm");
   assert.equal(motion.intensity, "soft");
 });
+
+test("reactionsSince gates pre-session entries out of reaction states", () => {
+  // A meal logged at 23:58 must not replay its eat reaction after an app
+  // reload at 00:02: the pre-session entry falls through to the standing
+  // quiet-hours scene instead.
+  const midnight = new Date(2026, 5, 9, 0, 2, 0, 0).getTime();
+  const motion = deriveAvatarMotion({
+    now: midnight,
+    reactionsSince: midnight - 60_000,
+    entries: [
+      {
+        id: "meal-late",
+        type: "meal",
+        title: "Late dinner",
+        occurredAt: new Date(midnight - 4 * 60_000).toISOString(),
+      },
+    ],
+    routines: [],
+  });
+
+  assert.equal(motion.state, "sleeping");
+  assert.equal(motion.speech, "Soft snooze.");
+});
+
+test("reactionsSince keeps reactions for entries logged in this session", () => {
+  const motion = deriveAvatarMotion({
+    now: NOW,
+    reactionsSince: NOW - 30 * 60_000,
+    entries: [
+      {
+        id: "meal-fresh",
+        type: "meal",
+        title: "Breakfast",
+        occurredAt: iso(-4),
+      },
+    ],
+    routines: [],
+  });
+
+  assert.equal(motion.state, "eating");
+  assert.equal(motion.cue, "chew");
+});

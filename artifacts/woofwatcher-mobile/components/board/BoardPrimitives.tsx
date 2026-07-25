@@ -11,12 +11,18 @@ import {
   type ViewStyle,
 } from "react-native";
 
+import Reanimated from "react-native-reanimated";
+
+import { enterUp, MeterPip, PressScale } from "@/components/motion/GameFeel";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useColors } from "@/hooks/useColors";
+import { hapticSelect } from "@/lib/haptics";
 import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+// Storybook mockup: big warm serif route titles, sans everywhere else.
+const TITLE_SERIF = "Fraunces_700Bold";
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 function firstParam(value: string | string[] | undefined): string | undefined {
@@ -103,9 +109,9 @@ export function BoardRouteHeader({
         ) : null}
         <View style={[styles.routeHeaderText, centered && styles.routeHeaderTextCentered]}>
           {kicker ? (
-            <Text style={[styles.routeKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>{kicker}</Text>
+            <Text style={[styles.routeKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{kicker}</Text>
           ) : null}
-          <Text style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: DISPLAY }]}>
+          <Text style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: TITLE_SERIF }]}>
             {title}
           </Text>
           {subtitle ? (
@@ -160,6 +166,161 @@ export function BoardRouteHeader({
         </Pressable>
       ) : null}
     </>
+  );
+}
+
+export type BoardStatusPillTone =
+  | "done"
+  | "due"
+  | "upNext"
+  | "upcoming"
+  | "neutral";
+
+/** Storybook-mockup status pill: Done / Due / Up Next / Upcoming. */
+export function BoardStatusPill({
+  label,
+  tone = "neutral",
+  style,
+}: {
+  label: string;
+  tone?: BoardStatusPillTone;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const colors = useColors();
+  const palette: Record<BoardStatusPillTone, { bg: string; fg: string }> = {
+    done: { bg: colors.sageSoft, fg: colors.forest },
+    due: { bg: colors.amberSoft, fg: colors.amber },
+    upNext: { bg: colors.amberSoft, fg: colors.amber },
+    upcoming: { bg: colors.blueSoft, fg: colors.blue },
+    neutral: { bg: colors.muted, fg: colors.mutedForeground },
+  };
+  const swatch = palette[tone];
+  return (
+    <View style={[styles.statusPill, { backgroundColor: swatch.bg }, style]}>
+      <Text style={[styles.statusPillText, { color: swatch.fg, fontFamily: "Inter_700Bold" }]}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+/** Storybook-mockup segmented chip tabs (Schedule | Routines | Reminders). */
+export function BoardSegmentTabs<T extends string>({
+  segments,
+  active,
+  onChange,
+  style,
+}: {
+  segments: readonly { key: T; label: string }[];
+  active: T;
+  onChange: (key: T) => void;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const colors = useColors();
+  return (
+    <View style={[styles.segmentRow, style]}>
+      {segments.map((segment) => {
+        const isActive = segment.key === active;
+        return (
+          <Pressable
+            key={segment.key}
+            accessibilityRole="button"
+            accessibilityLabel={segment.label}
+            accessibilityState={{ selected: isActive }}
+            onPress={() => {
+              if (!isActive) hapticSelect();
+              onChange(segment.key);
+            }}
+            style={({ pressed }) => [
+              styles.segmentChip,
+              {
+                backgroundColor: isActive
+                  ? colors.primary
+                  : pressed
+                    ? colors.secondary
+                    : colors.card,
+                borderColor: isActive ? colors.primary : colors.border,
+              },
+            ]}
+          >
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.segmentChipText,
+                {
+                  color: isActive ? colors.primaryForeground : colors.foreground,
+                  fontFamily: "Inter_700Bold",
+                },
+              ]}
+            >
+              {segment.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Storybook-mockup action button: forest primary, soft sage, or outline. */
+export function BoardActionButton({
+  label,
+  onPress,
+  variant = "primary",
+  icon,
+  disabled,
+  accessibilityLabel,
+  style,
+  compact,
+}: {
+  label: string;
+  onPress: () => void;
+  variant?: "primary" | "soft" | "outline";
+  icon?: IoniconName;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+  style?: StyleProp<ViewStyle>;
+  compact?: boolean;
+}) {
+  const colors = useColors();
+  const background =
+    variant === "primary"
+      ? colors.primary
+      : variant === "soft"
+        ? colors.secondary
+        : "transparent";
+  const foreground =
+    variant === "primary" ? colors.primaryForeground : colors.forest;
+  return (
+    <PressScale
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      onPress={onPress}
+      disabled={disabled}
+      scaleTo={0.96}
+      containerStyle={style}
+      style={[
+        styles.actionButton,
+        compact && styles.actionButtonCompact,
+        {
+          backgroundColor: background,
+          borderColor: variant === "outline" ? colors.border : background,
+          opacity: disabled ? 0.5 : 1,
+        },
+      ]}
+    >
+      {icon ? <Ionicons name={icon} size={compact ? 14 : 16} color={foreground} /> : null}
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.actionButtonText,
+          compact && styles.actionButtonTextCompact,
+          { color: variant === "outline" ? colors.foreground : foreground, fontFamily: "Inter_700Bold" },
+        ]}
+      >
+        {label}
+      </Text>
+    </PressScale>
   );
 }
 
@@ -237,18 +398,21 @@ export function BoardCard({
   style,
   padded = true,
   tone = "card",
+  enter,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   padded?: boolean;
   tone?: "card" | "soft" | "navy";
+  /** Staggered entrance slot: 0, 1, 2... plays the shared fade+rise spring. */
+  enter?: number;
 }) {
   const colors = useColors();
   const navy = tone === "navy";
   const backgroundColor = navy ? colors.brandNavy : tone === "soft" ? colors.accent : colors.card;
   const borderColor = navy ? colors.copper + "66" : tone === "soft" ? colors.stone : colors.border;
 
-  return (
+  const card = (
     <View
       style={[
         styles.card,
@@ -268,6 +432,9 @@ export function BoardCard({
       {children}
     </View>
   );
+
+  if (enter === undefined) return card;
+  return <Reanimated.View entering={enterUp(enter)}>{card}</Reanimated.View>;
 }
 
 export function BoardSectionHeader({
@@ -313,6 +480,7 @@ export function StatusMeter({
   icon,
   tone,
   segments,
+  polarity = "normal",
   onPress,
   accessibilityLabel,
   accessibilityHint,
@@ -323,6 +491,7 @@ export function StatusMeter({
   icon?: PixelIconName;
   tone?: string;
   segments?: number;
+  polarity?: "normal" | "inverse";
   onPress?: () => void;
   accessibilityLabel?: string;
   accessibilityHint?: string;
@@ -330,7 +499,13 @@ export function StatusMeter({
   const colors = useColors();
   const count = segments ?? colors.pixelUi.statusSegments;
   const pct = Math.max(0, Math.min(1, value > 1 ? value / 100 : value));
-  const filled = Math.max(1, Math.round(pct * count));
+  // A true zero reads as an empty meter - no phantom lit pip for "0 of 2"
+  // meals or a quiet Alone timer. Only a genuinely nonzero value keeps >=1 pip.
+  const rawFilled = pct <= 0 ? 0 : Math.max(1, Math.round(pct * count));
+  // Alone Time runs on inverse polarity: a full meter reads "together / not
+  // alone" (good) and drains as away-time accumulates, so its lit pips never
+  // read as the same "achievement" the Mood/Energy/Hunger meters show.
+  const filled = polarity === "inverse" ? count - rawFilled : rawFilled;
   const active = tone ?? colors.sage;
 
   const content = (
@@ -343,15 +518,12 @@ export function StatusMeter({
       </View>
       <View style={styles.meterSegments} accessibilityLabel={`${label} ${valueLabel ?? `${Math.round(pct * 100)} percent`}`}>
         {Array.from({ length: count }).map((_, index) => (
-          <View
+          <MeterPip
             key={`${label}-${index}`}
-            style={[
-              styles.meterSegment,
-              {
-                backgroundColor: index < filled ? active : colors.muted,
-                borderColor: index < filled ? active : colors.border,
-              },
-            ]}
+            filled={index < filled}
+            color={active}
+            emptyColor={colors.meterTrack}
+            index={index}
           />
         ))}
       </View>
@@ -419,21 +591,21 @@ export function QuickActionTile({
 }) {
   const colors = useColors();
   return (
-    <Pressable
+    <PressScale
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? `Log ${label}`}
       accessibilityHint={accessibilityHint}
       onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={onLongPress ? (delayLongPress ?? 350) : undefined}
-      style={({ pressed }) => [
+      scaleTo={0.94}
+      containerStyle={[styles.quickTileLayout, style]}
+      style={[
         styles.quickTile,
         {
           borderColor: colors.border,
-          backgroundColor: pressed ? colors.secondary : colors.card,
-          transform: [{ scale: pressed ? 0.97 : 1 }],
+          backgroundColor: colors.card,
         },
-        style,
       ]}
     >
       <View style={[styles.quickIcon, { backgroundColor: accent ?? colors.secondary }]}>
@@ -442,7 +614,7 @@ export function QuickActionTile({
       <Text style={[styles.quickText, { color: colors.foreground, fontFamily: "Inter_700Bold" }, labelStyle]}>
         {label}
       </Text>
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -567,14 +739,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   routeKicker: {
-    fontSize: 9.5,
-    letterSpacing: 0,
+    fontSize: 9,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
     marginBottom: 1,
+    opacity: 0.85,
   },
   routeTitle: {
-    fontSize: 24,
-    lineHeight: 28,
+    fontSize: 28,
+    lineHeight: 34,
     letterSpacing: 0,
   },
   routeTitleCentered: {
@@ -589,21 +762,71 @@ const styles = StyleSheet.create({
   routeSubtitleCentered: {
     textAlign: "center",
   },
+  statusPill: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    minHeight: 24,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusPillText: {
+    fontSize: 10.5,
+    letterSpacing: 0.2,
+  },
+  segmentRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 14,
+  },
+  segmentChip: {
+    flexShrink: 1,
+    minHeight: 36,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  segmentChipText: {
+    fontSize: 12.5,
+  },
+  actionButton: {
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  actionButtonCompact: {
+    minHeight: 36,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+  },
+  actionButtonText: {
+    fontSize: 13.5,
+  },
+  actionButtonTextCompact: {
+    fontSize: 12,
+  },
   pill: {
     alignSelf: "flex-start",
-    borderWidth: 1,
-    borderRadius: 5,
+    borderWidth: 0,
+    borderRadius: 999,
     minHeight: 28,
-    paddingHorizontal: 9,
+    paddingHorizontal: 11,
     paddingVertical: 5,
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
   },
   pillText: {
-    fontSize: 10.5,
-    textTransform: "uppercase",
-    letterSpacing: 0,
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
   metricTile: {
     borderWidth: 1,
@@ -641,11 +864,10 @@ const styles = StyleSheet.create({
   },
   card: {
     borderWidth: 1,
-    borderBottomWidth: 2,
-    elevation: 1,
+    elevation: 2,
   },
   cardPadded: {
-    padding: 12,
+    padding: 16,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -653,15 +875,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 10,
     marginBottom: 10,
-    paddingBottom: 7,
-    borderBottomWidth: 1,
+    paddingBottom: 2,
+    borderBottomWidth: 0,
   },
   sectionTitle: {
     flexShrink: 1,
     minWidth: 0,
-    fontSize: 13,
+    fontSize: 16,
     letterSpacing: 0,
-    textTransform: "uppercase",
   },
   sectionAction: {
     flexShrink: 0,
@@ -692,33 +913,30 @@ const styles = StyleSheet.create({
   meterSegments: {
     flex: 1,
     flexDirection: "row",
-    gap: 3,
-  },
-  meterSegment: {
-    flex: 1,
-    height: 12,
-    borderWidth: 1,
-    borderRadius: 2,
+    gap: 4,
   },
   meterValue: {
     minWidth: 42,
     textAlign: "right",
     fontSize: 11,
   },
-  quickTile: {
+  quickTileLayout: {
     width: "23.5%",
-    minHeight: 72,
+  },
+  quickTile: {
+    width: "100%",
+    minHeight: 76,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
-    paddingVertical: 8,
+    gap: 6,
+    paddingVertical: 9,
   },
   quickIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 7,
+    width: 38,
+    height: 38,
+    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
   },

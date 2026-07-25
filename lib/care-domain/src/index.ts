@@ -1,4 +1,5 @@
 export * from "./events.ts";
+export * from "./pet-identity.ts";
 export * from "./status.ts";
 export * from "./health.ts";
 export * from "./handoff.ts";

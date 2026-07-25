@@ -227,7 +227,7 @@ export function buildSetupWizardConfirmation(
   const syncLabel = !options.isClerkConfigured
     ? "Local preview: account sync is not configured in this build."
     : options.isSignedIn
-      ? "Signed in: this household plan can sync after provider rules are enabled."
+      ? "Signed in: this household plan is saved and ready for when household sync turns on."
       : "Account needed: sign in before this can sync across devices.";
 
   if (mode === "join") {
@@ -242,7 +242,7 @@ export function buildSetupWizardConfirmation(
       nextActions: [
         "Save the dog profile, diet baseline, starter routine, and caregiver.",
         "Keep the invite code attached to the household setup plan.",
-        "Use provider-backed invite acceptance only after account and role rules are approved.",
+        "Joining across devices is coming soon - the invite code stays saved on this device for now.",
       ],
     };
   }
@@ -257,7 +257,7 @@ export function buildSetupWizardConfirmation(
       nextActions: [
         "Save the dog profile, diet baseline, starter routine, and caregiver.",
         "Use backup/export before changing devices.",
-        "Sign in later to connect shared household sync when provider rules are ready.",
+        "Sign in later to connect shared household sync when it's ready.",
       ],
     };
   }
@@ -267,11 +267,11 @@ export function buildSetupWizardConfirmation(
     detail: `${householdName} becomes ${dogName}'s care home base for routines, logs, handoffs, and reports.`,
     householdLabel: `${householdName} - create household`,
     syncLabel,
-    providerBoundary: "Setup stores the household plan now; remote member invites remain provider-gated.",
+    providerBoundary: "Setup stores the household plan now; remote member invites are coming soon, so everything stays on this device for now.",
     nextActions: [
       "Save the dog profile, diet baseline, starter routine, and caregiver.",
       "Open Today to start logging real care.",
-      "Invite household members after provider-backed invites and role enforcement are enabled.",
+      "Remote household invites are coming soon - the plan is saved and ready for them.",
     ],
   };
 }

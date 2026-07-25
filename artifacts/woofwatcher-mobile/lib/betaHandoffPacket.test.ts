@@ -47,19 +47,19 @@ const ownerLoopSurface: MobileReleaseQaSurface = {
   priority: "launch-critical",
   goal: "Verify the real owner journey before beta sharing.",
   devicePrompt: "Run the owner route loop and attach proof.",
-  setupSteps: ["Use Phoenix demo care data.", "Confirm the app opens on Home."],
-  verificationSteps: ["Open Home.", "Open Log.", "Open More Launch Readiness."],
+  setupSteps: ["Use Phoenix demo care data.", "Confirm the app opens on Today (Phoenix's room)."],
+  verificationSteps: ["Open Today.", "Open Log.", "Open More Launch Readiness."],
   acceptanceCriteria: ["No route dead-ends.", "Primary controls are phone-sized."],
   failureEscalation: "Mark Needs tune if any route clips, dead-ends, or feels below App Store quality.",
   requiredEvidence: [
     "iOS screenshot of Quick Log or Log.",
     "Android screenshot of More Launch Readiness.",
-    "Note confirming Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
+    "Note confirming Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
   ],
   launchRisk: "This is the beta's real owner path.",
   routeChecklist: [
     {
-      label: "Home",
+      label: "Today",
       route: "/",
       expected: "Confirm Phoenix status, next care, and bottom navigation are clear.",
       proof: "Visual pass.",
@@ -136,7 +136,7 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Status: Not reviewed/);
   assert.match(text, /Missing proof: Attach 1 iOS screenshot for Owner Preview Core Loop\. Attach 1 Android screenshot/);
   assert.match(text, /Run order:/);
-  assert.match(text, /1\. Home \(\/\): Confirm Phoenix status/);
+  assert.match(text, /1\. Today \(\/\): Confirm Phoenix status/);
   assert.match(text, /2\. Log \(\/log\): Quick-log one safe care event/);
   assert.match(text, /Dependency proof commands:/);
   assert.match(text, /corepack prepare pnpm@10\.24\.0 --activate/);
@@ -225,9 +225,9 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Attach structured support\/legal proof files before public launch/);
   assert.match(text, /Apollo launch approval\/no-launch-boundary proof with MIME, byte size, and row-specific approvals/);
   assert.match(text, /Open focused route visual target: \/care-twin-qa\?qaSurface=route-visual-consistency/);
-  assert.match(text, /Capture Home, Log, Plans, Health, Records, and More on iOS and Android before claiming route visual proof/);
+  assert.match(text, /Capture Log, Plan, Today, Pack, Story, Health, Records, and More on iOS and Android before claiming route visual proof/);
   assert.match(text, /Name or save each Route Visual screenshot with the route label/);
-  assert.match(text, /Home-iOS.*More-Android/);
+  assert.match(text, /Log-iOS.*Pack-iOS.*Story-Android.*More-Android/);
   assert.match(text, /Save the Mission note and clear Pass pending proof in both \/care-twin-qa and More/);
   assert.match(text, /Native QA Needs tune fix brief:/);
   assert.match(text, /If any route is marked Needs tune, use More's Share Fix Brief before claiming beta proof/);
@@ -360,7 +360,7 @@ test("includes saved QA proof manifest when More shares the beta handoff", () =>
       "owner-preview-core-loop": "pass",
     },
     surfaceNotes: {
-      "owner-preview-core-loop": "Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass opened.",
+      "owner-preview-core-loop": "Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass opened.",
     },
     surfaceEvidenceById: {
       "owner-preview-core-loop": [

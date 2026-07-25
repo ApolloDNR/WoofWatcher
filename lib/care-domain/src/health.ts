@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
+import { resolvePetName } from "./pet-identity.ts";
 import { deriveCareDayStatus, type CareStatusRoutine } from "./status.ts";
 
 export type CareHealthStatus = "good" | "watch" | "alert";
@@ -29,6 +30,8 @@ export interface CareHealthInput {
   entries: readonly CareHealthEntry[];
   routines?: readonly CareStatusRoutine[];
   now?: number;
+  /** Display name for owner-facing copy; resolved via resolvePetName so renamed dogs never read "Phoenix". */
+  petName?: string | null;
 }
 
 export interface CareHealthSignal {
@@ -159,7 +162,7 @@ function isHealthUrgent(entry: CareHealthEntry): boolean {
   return ["alert", "urgent"].includes((entry.severity ?? "").toLowerCase());
 }
 
-function patternNextStep(signal: CareHealthSignal): string {
+function patternNextStep(signal: CareHealthSignal, petName: string): string {
   if (signal.kind === "vomit-pattern") {
     return "Track timing, color, meals, energy, and hydration. Contact a vet promptly if vomiting repeats, blood appears, belly pain, lethargy, dehydration, or appetite loss show up.";
   }
@@ -167,19 +170,19 @@ function patternNextStep(signal: CareHealthSignal): string {
     return "Compare meal notes, portion served, amount eaten, treats, anxiety context, and energy. Share the pattern with a vet if skipped or partial meals continue.";
   }
   if (signal.kind === "stool-watch") {
-    return "Log stool detail, hydration, food changes, and energy. Contact a vet if diarrhea repeats, blood appears, or Phoenix seems painful, weak, or dehydrated.";
+    return `Log stool detail, hydration, food changes, and energy. Contact a vet if diarrhea repeats, blood appears, or ${petName} seems painful, weak, or dehydrated.`;
   }
   return "Capture alone-time length, triggers, recovery time, exercise, and calming supports so the household can adjust the routine together.";
 }
 
-function patternForSignal(signal: CareHealthSignal): CareHealthPattern {
+function patternForSignal(signal: CareHealthSignal, petName: string): CareHealthPattern {
   return {
     kind: signal.kind,
     label: signal.label,
     status: signal.urgency,
     window: signal.kind === "vomit-pattern" ? "7-30 day pattern" : "7 day pattern",
     evidence: signal.detail,
-    nextStep: patternNextStep(signal),
+    nextStep: patternNextStep(signal, petName),
     entryIds: signal.entryIds,
   };
 }
@@ -199,6 +202,7 @@ function steadyPattern(): CareHealthPattern {
 export function deriveHealthWatch(input: CareHealthInput): CareHealthWatch {
   const now = input.now ?? Date.now();
   const entries = input.entries ?? [];
+  const petName = resolvePetName(input.petName);
   const recent7 = entries.filter((entry) => withinDays(entry, 7, now));
   const recent30 = entries.filter((entry) => withinDays(entry, 30, now));
   const dayStatus = deriveCareDayStatus(entries, input.routines ?? [], now);
@@ -286,7 +290,7 @@ export function deriveHealthWatch(input: CareHealthInput): CareHealthWatch {
       : signals.length > 0
         ? signals[0].detail
         : "No health watch signals logged in the selected window.";
-  const patterns = signals.length > 0 ? signals.map(patternForSignal) : [steadyPattern()];
+  const patterns = signals.length > 0 ? signals.map((signal) => patternForSignal(signal, petName)) : [steadyPattern()];
 
   return {
     status,

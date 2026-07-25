@@ -23,6 +23,7 @@ import {
   BoardRouteHeader,
   BoardSectionHeader,
 } from "@/components/board/BoardPrimitives";
+import { PressScale } from "@/components/motion/GameFeel";
 import { LivingPhoenixRoom } from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
@@ -67,6 +68,7 @@ import {
   hasAvatarTemplateSpritePack,
 } from "@/lib/avatarTemplateSpriteAssets";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import {
   getRouteTopPadding,
@@ -74,6 +76,7 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
+import { resolvePetName } from "@/lib/petIdentity";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
@@ -85,11 +88,11 @@ type Phase = "idle" | "working" | "result";
 type StudioTab = "scan" | "template" | "customize" | "emotes";
 
 const SCAN_LINES = [
-  "Reading body shape...",
-  "Finding coat colors...",
-  "Checking ears and muzzle...",
-  "Matching a pixel template...",
-  "Preparing owner review...",
+  "Opening your photo as a reference...",
+  "Lining up pixel template bases...",
+  "Setting your dog side by side...",
+  "Suggesting a base to start from...",
+  "Handing the picks back to you...",
 ];
 
 const SCAN_WORKFLOW_ACCESSIBILITY_SUMMARY =
@@ -163,7 +166,9 @@ function templateColor(templateId: AvatarTemplateId): string {
     spaniel: "#E07A2F",
     toy: "#C96358",
     slender: "#9DBAA7",
-    mixed: "#081424",
+    // Slate blue for mixed: the accent stays readable without reintroducing
+    // a dark navy chip into the parchment catalog.
+    mixed: "#5B7FA6",
   };
   return palette[templateId];
 }
@@ -172,6 +177,7 @@ export default function PortraitScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const ownerOps = isOwnerOpsBuild();
   const { state } = useCare();
   const {
     avatarConfig,
@@ -181,10 +187,7 @@ export default function PortraitScreen() {
     resetAvatarConfig,
   } = useAvatar();
 
-  const petName =
-    state.profile.name && state.profile.name !== "My Dog"
-      ? state.profile.name
-      : "Phoenix";
+  const petName = resolvePetName(state.profile.name);
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
     topInset: insets.top,
@@ -298,6 +301,9 @@ export default function PortraitScreen() {
   }, [templateLife]);
 
   const selectedTemplate = getAvatarTemplate(draft.templateId);
+  const faceMarkingLabel =
+    FACE_MARKINGS.find((marking) => marking.id === draft.faceMarkingId)?.label ??
+    draft.faceMarkingId;
   const liveTemplateCount = useMemo(
     () =>
       AVATAR_TEMPLATES.filter((template) =>
@@ -376,7 +382,7 @@ export default function PortraitScreen() {
       }),
     [state.entries, state.routines, state.caregivers, now, status.energy],
   );
-  const caregiver = state.caregivers[0]?.name ?? "Emma";
+  const caregiver = state.caregivers[0]?.name ?? "you";
   const scanTranslate = scanAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 250],
@@ -525,11 +531,11 @@ export default function PortraitScreen() {
         contentInsetAdjustmentBehavior="automatic"
       >
         <BoardRouteHeader
-          kicker="Avatar Studio"
+          kicker="Pixel Twin"
           title="Avatar Studio"
           subtitle="Choose a pixel twin, then customize."
           back
-          onBack={() => router.back()}
+          onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
           actionIcon="checkmark"
           actionLabel="Save avatar"
           onAction={saveDraft}
@@ -575,19 +581,19 @@ export default function PortraitScreen() {
               <View style={[s.corner, s.cornerBR]} />
             </Animated.View>
             <View style={s.workingCopy}>
-              <BoardPill
-                label="PixelLab template match"
-                icon="scan-outline"
-                tone={colors.amber}
-                active
-              />
+              <View style={[s.softPill, { backgroundColor: colors.amberSoft }]}>
+                <Ionicons name="scan-outline" size={12} color={colors.amber} />
+                <Text style={[s.softPillText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                  PixelLab template match
+                </Text>
+              </View>
               {sourceUri ? (
                 <View
                   style={[
                     s.sourceProofCard,
                     {
                       backgroundColor: "rgba(255,249,239,0.94)",
-                      borderColor: colors.copper,
+                      borderColor: colors.border,
                     },
                   ]}
                 >
@@ -601,7 +607,7 @@ export default function PortraitScreen() {
                     <Text
                       style={[
                         s.sourceProofKicker,
-                        { color: colors.copper, fontFamily: "Inter_700Bold" },
+                        { color: colors.sage, fontFamily: "Inter_700Bold" },
                       ]}
                     >
                       PHOTO REFERENCE
@@ -609,7 +615,7 @@ export default function PortraitScreen() {
                     <Text
                       style={[
                         s.sourceProofText,
-                        { color: colors.navy, fontFamily: "Inter_700Bold" },
+                        { color: colors.ink, fontFamily: "Inter_700Bold" },
                       ]}
                     >
                       Building a pixel twin, not using the photo as the avatar.
@@ -712,7 +718,7 @@ export default function PortraitScreen() {
                           s.templateSpriteViewport,
                           {
                             backgroundColor: "rgba(247,242,232,0.12)",
-                            borderColor: colors.navy,
+                            borderColor: colors.forest,
                           },
                         ]}
                       >
@@ -721,7 +727,7 @@ export default function PortraitScreen() {
                             s.templateSpriteGround,
                             {
                               backgroundColor: colors.sage,
-                              borderColor: colors.navy,
+                              borderColor: colors.forest,
                             },
                           ]}
                           pointerEvents="none"
@@ -864,14 +870,14 @@ export default function PortraitScreen() {
                       s.templateSpeech,
                       {
                         backgroundColor: colors.ivory,
-                        borderColor: colors.navy,
+                        borderColor: colors.forest,
                       },
                     ]}
                   >
                     <Text
                       style={[
                         s.templateSpeechText,
-                        { color: colors.navy, fontFamily: DISPLAY },
+                        { color: colors.forest, fontFamily: DISPLAY },
                       ]}
                     >
                       {heroSpeech}
@@ -906,14 +912,29 @@ export default function PortraitScreen() {
               pointerEvents="none"
             />
             <View style={s.heroCopy}>
-              <BoardPill
-                label={draft.scanAssisted ? "Scan-assisted" : "Template-built"}
-                icon={
-                  draft.scanAssisted ? "scan-outline" : "color-palette-outline"
-                }
-                tone={draft.scanAssisted ? colors.sage : colors.amber}
-                active
-              />
+              <View
+                style={[
+                  s.softPill,
+                  { backgroundColor: draft.scanAssisted ? colors.sageSoft : colors.amberSoft },
+                ]}
+              >
+                <Ionicons
+                  name={draft.scanAssisted ? "scan-outline" : "color-palette-outline"}
+                  size={12}
+                  color={draft.scanAssisted ? colors.forest : colors.amber}
+                />
+                <Text
+                  style={[
+                    s.softPillText,
+                    {
+                      color: draft.scanAssisted ? colors.forest : colors.amber,
+                      fontFamily: "Inter_700Bold",
+                    },
+                  ]}
+                >
+                  {draft.scanAssisted ? "Scan-assisted" : "Template-built"}
+                </Text>
+              </View>
               <Text numberOfLines={1} adjustsFontSizeToFit style={[s.savedName, { fontFamily: DISPLAY }]}>
                 {petName}'s Pixel Twin
               </Text>
@@ -933,18 +954,20 @@ export default function PortraitScreen() {
           ].map(([key, label]) => {
             const active = activeTab === key;
             return (
-              <Pressable
+              <PressScale
                 key={key}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={`Avatar Studio ${label}`}
                 hitSlop={MOBILE_INLINE_HIT_SLOP}
                 onPress={() => selectStudioTab(key as StudioTab)}
+                haptic="none"
+                containerStyle={s.tabLayout}
                 style={[
                   s.tab,
                   {
-                    backgroundColor: active ? colors.brandNavy : colors.card,
-                    borderColor: active ? colors.brandNavy : colors.border,
+                    backgroundColor: active ? colors.primary : colors.card,
+                    borderColor: active ? colors.primary : colors.border,
                   },
                 ]}
               >
@@ -952,14 +975,14 @@ export default function PortraitScreen() {
                   style={[
                     s.tabText,
                     {
-                      color: active ? "#FFF9EF" : colors.foreground,
+                      color: active ? colors.primaryForeground : colors.foreground,
                       fontFamily: "Inter_700Bold",
                     },
                   ]}
                 >
                   {label}
                 </Text>
-              </Pressable>
+              </PressScale>
             );
           })}
         </View>
@@ -979,7 +1002,9 @@ export default function PortraitScreen() {
                 },
               ]}
             >
-              {scanSuggestion.copy}
+              Set your photo side by side and pick the base that best matches
+              your dog. These are starting cues to compare against, not an
+              automatic detection.
             </Text>
             <View style={s.traitGrid}>
               {scanSuggestion.detectedTraits.map((trait) => (
@@ -1036,18 +1061,18 @@ export default function PortraitScreen() {
               traits, then you can edit every choice before saving.
             </Text>
             <View style={s.scanTruthRail}>
-              <BoardPill
-                label="PixelLab-backed template catalog"
-                icon="sparkles-outline"
-                tone={colors.sage}
-                active
-              />
-              <BoardPill
-                label="Not a photo filter"
-                icon="shield-checkmark-outline"
-                tone={colors.copper}
-                active
-              />
+              <View style={[s.softPill, { backgroundColor: colors.sageSoft }]}>
+                <Ionicons name="sparkles-outline" size={12} color={colors.forest} />
+                <Text style={[s.softPillText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
+                  PixelLab-backed template catalog
+                </Text>
+              </View>
+              <View style={[s.softPill, { backgroundColor: colors.amberSoft }]}>
+                <Ionicons name="shield-checkmark-outline" size={12} color={colors.amber} />
+                <Text style={[s.softPillText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                  Not a photo filter
+                </Text>
+              </View>
             </View>
             <View
               accessibilityLabel={SCAN_WORKFLOW_ACCESSIBILITY_SUMMARY}
@@ -1067,13 +1092,13 @@ export default function PortraitScreen() {
                   <View
                     style={[
                       s.scanPipelineNumber,
-                      { backgroundColor: colors.brandNavy },
+                      { backgroundColor: colors.primary },
                     ]}
                   >
                     <Text
                       style={[
                         s.scanPipelineNumberText,
-                        { fontFamily: "Inter_800ExtraBold" },
+                        { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" },
                       ]}
                     >
                       {index + 1}
@@ -1169,12 +1194,15 @@ export default function PortraitScreen() {
                   const tone = templateColor(template.id);
                   const liveSprite = hasAvatarTemplateSpritePack(template.id);
                   return (
-                    <Pressable
+                    <PressScale
                       key={template.id}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
                       accessibilityLabel={`Choose ${template.label} avatar template`}
                       onPress={() => selectTemplate(template.id)}
+                      haptic="none"
+                      scaleTo={0.97}
+                      containerStyle={s.templateTileLayout}
                       style={[
                         s.templateTile,
                         {
@@ -1207,10 +1235,10 @@ export default function PortraitScreen() {
                             s.templateLiveBadge,
                             {
                               backgroundColor: liveSprite
-                                ? colors.brandNavy
+                                ? colors.primary
                                 : colors.ivory,
                               borderColor: liveSprite
-                                ? colors.brandNavy
+                                ? colors.primary
                                 : colors.border,
                             },
                           ]}
@@ -1220,7 +1248,7 @@ export default function PortraitScreen() {
                               s.templateLiveBadgeText,
                               {
                                 color: liveSprite
-                                  ? "#FFF9EF"
+                                  ? colors.primaryForeground
                                   : colors.mutedForeground,
                                 fontFamily: "Inter_700Bold",
                               },
@@ -1276,12 +1304,13 @@ export default function PortraitScreen() {
                           ? "Breathes and walks in preview"
                           : "Sprite rig in production"}
                       </Text>
-                    </Pressable>
+                    </PressScale>
                   );
                 })}
               </View>
             </BoardCard>
 
+            {ownerOps ? (
             <BoardCard style={s.avatarBoard}>
               <BoardSectionHeader
                 title="Sprite production review"
@@ -1344,8 +1373,8 @@ export default function PortraitScreen() {
                       style={[
                         s.productionMetricKicker,
                         {
-                          color: colors.mutedForeground,
-                          fontFamily: "Inter_800ExtraBold",
+                          color: colors.sage,
+                          fontFamily: "Inter_700Bold",
                         },
                       ]}
                     >
@@ -1373,8 +1402,8 @@ export default function PortraitScreen() {
                       style={[
                         s.productionMetricKicker,
                         {
-                          color: colors.mutedForeground,
-                          fontFamily: "Inter_800ExtraBold",
+                          color: colors.sage,
+                          fontFamily: "Inter_700Bold",
                         },
                       ]}
                     >
@@ -1402,8 +1431,8 @@ export default function PortraitScreen() {
                       style={[
                         s.productionMetricKicker,
                         {
-                          color: colors.mutedForeground,
-                          fontFamily: "Inter_800ExtraBold",
+                          color: colors.sage,
+                          fontFamily: "Inter_700Bold",
                         },
                       ]}
                     >
@@ -1457,8 +1486,8 @@ export default function PortraitScreen() {
                         style={[
                           s.productionActionMeta,
                           {
-                            color: colors.copper,
-                            fontFamily: "Inter_800ExtraBold",
+                            color: colors.sage,
+                            fontFamily: "Inter_700Bold",
                           },
                         ]}
                       >
@@ -1486,8 +1515,8 @@ export default function PortraitScreen() {
                   style={[
                     s.productionCheckTitle,
                     {
-                      color: colors.foreground,
-                      fontFamily: "Inter_800ExtraBold",
+                      color: colors.sage,
+                      fontFamily: "Inter_700Bold",
                     },
                   ]}
                 >
@@ -1526,31 +1555,34 @@ export default function PortraitScreen() {
               >
                 {productionTemplateReview.nativeProofStatus}
               </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Open Avatar sprite production QA cockpit"
-                accessibilityHint="Opens the focused native QA checklist for sprite gait and phone crop review."
-                hitSlop={MOBILE_INLINE_HIT_SLOP}
-                onPress={openAvatarSpriteProductionQa}
-                style={({ pressed }) => [
-                  s.productionQaButton,
-                  {
-                    backgroundColor: colors.brandNavy,
-                    opacity: pressed ? 0.78 : 1,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    s.productionQaButtonText,
-                    { fontFamily: "Inter_800ExtraBold" },
+              {ownerOps ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open Avatar sprite production QA cockpit"
+                  accessibilityHint="Opens the focused native QA checklist for sprite gait and phone crop review."
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={openAvatarSpriteProductionQa}
+                  style={({ pressed }) => [
+                    s.productionQaButton,
+                    {
+                      backgroundColor: colors.primary,
+                      opacity: pressed ? 0.78 : 1,
+                    },
                   ]}
                 >
-                  Open sprite QA cockpit
-                </Text>
-                <Ionicons name="arrow-forward" size={17} color="#FFF9EF" />
-              </Pressable>
+                  <Text
+                    style={[
+                      s.productionQaButtonText,
+                      { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" },
+                    ]}
+                  >
+                    Open sprite QA cockpit
+                  </Text>
+                  <Ionicons name="arrow-forward" size={17} color={colors.primaryForeground} />
+                </Pressable>
+              ) : null}
             </BoardCard>
+            ) : null}
           </>
         ) : null}
 
@@ -1566,7 +1598,7 @@ export default function PortraitScreen() {
                   const primary = draft.coatPrimary === swatch;
                   const secondary = draft.coatSecondary === swatch;
                   return (
-                    <Pressable
+                    <PressScale
                       key={swatch}
                       accessibilityRole="button"
                       accessibilityState={{ selected: primary || secondary }}
@@ -1578,36 +1610,52 @@ export default function PortraitScreen() {
                       }
                       hitSlop={MOBILE_INLINE_HIT_SLOP}
                       onPress={() => setCoatColor(swatch, primary)}
+                      haptic="none"
+                      scaleTo={0.92}
                       style={[
                         s.swatch,
                         {
                           backgroundColor: swatch,
                           borderColor: primary
-                            ? colors.navy
+                            ? colors.forest
                             : secondary
-                              ? colors.copper
+                              ? colors.amber
                               : colors.border,
                           borderWidth: primary || secondary ? 3 : 1,
                         },
                       ]}
-                    />
+                    >
+                      <View />
+                    </PressScale>
                   );
                 })}
               </View>
+              <Text
+                style={[
+                  s.swatchLegend,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
+                Tap a swatch to set the primary coat, then tap it again to set
+                the secondary.
+              </Text>
             </BoardCard>
 
             <BoardCard style={s.avatarBoard}>
               <BoardSectionHeader
-                title="Face and ears"
+                title="Face markings"
                 accessory={
-                  <BoardPill label={draft.faceMarkingId} tone={colors.amber} />
+                  <BoardPill label={faceMarkingLabel} tone={colors.amber} />
                 }
               />
               <View style={s.optionGrid}>
                 {FACE_MARKINGS.map((marking) => {
                   const active = draft.faceMarkingId === marking.id;
                   return (
-                    <Pressable
+                    <PressScale
                       key={marking.id}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
@@ -1615,14 +1663,15 @@ export default function PortraitScreen() {
                       accessibilityHint="Double tap to apply this marking to the pixel twin."
                       hitSlop={MOBILE_INLINE_HIT_SLOP}
                       onPress={() => setFaceMarking(marking.id)}
+                      haptic="none"
                       style={[
                         s.optionPill,
                         {
                           backgroundColor: active
-                            ? colors.brandNavy
+                            ? colors.primary
                             : colors.background,
                           borderColor: active
-                            ? colors.brandNavy
+                            ? colors.primary
                             : colors.border,
                         },
                       ]}
@@ -1631,14 +1680,14 @@ export default function PortraitScreen() {
                         style={[
                           s.optionText,
                           {
-                            color: active ? "#FFF9EF" : colors.foreground,
+                            color: active ? colors.primaryForeground : colors.foreground,
                             fontFamily: "Inter_700Bold",
                           },
                         ]}
                       >
                         {marking.label}
                       </Text>
-                    </Pressable>
+                    </PressScale>
                   );
                 })}
               </View>
@@ -1647,7 +1696,7 @@ export default function PortraitScreen() {
             <BoardCard style={s.avatarBoard}>
               <BoardSectionHeader
                 title="Accessories"
-                accessory={<BoardPill label="Fit map" tone={colors.copper} />}
+                accessory={<BoardPill label="Fit map" tone={colors.amber} />}
               />
               <View
                 style={[
@@ -1662,8 +1711,8 @@ export default function PortraitScreen() {
                   style={[
                     s.accessoryFitTitle,
                     {
-                      color: colors.foreground,
-                      fontFamily: "Inter_800ExtraBold",
+                      color: colors.sage,
+                      fontFamily: "Inter_700Bold",
                     },
                   ]}
                 >
@@ -1688,12 +1737,15 @@ export default function PortraitScreen() {
                   );
                   const fit = deriveAvatarAccessoryFit(draft.templateId, item);
                   return (
-                    <Pressable
+                    <PressScale
                       key={item.id}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
                       accessibilityLabel={`Set ${item.label} ${item.slot} accessory`}
                       onPress={() => setAccessory(item)}
+                      haptic="none"
+                      scaleTo={0.97}
+                      containerStyle={s.accessoryTileLayout}
                       style={[
                         s.accessoryTile,
                         {
@@ -1722,8 +1774,8 @@ export default function PortraitScreen() {
                         style={[
                           s.accessorySlot,
                           {
-                            color: colors.mutedForeground,
-                            fontFamily: "Inter_600SemiBold",
+                            color: colors.sage,
+                            fontFamily: "Inter_700Bold",
                           },
                         ]}
                       >
@@ -1736,8 +1788,8 @@ export default function PortraitScreen() {
                             color:
                               fit.status === "template-fitted"
                                 ? colors.sage
-                                : colors.copper,
-                            fontFamily: "Inter_800ExtraBold",
+                                : colors.amber,
+                            fontFamily: "Inter_700Bold",
                           },
                         ]}
                       >
@@ -1754,7 +1806,7 @@ export default function PortraitScreen() {
                       >
                         {fit.placementHint}
                       </Text>
-                    </Pressable>
+                    </PressScale>
                   );
                 })}
               </View>
@@ -1786,7 +1838,7 @@ export default function PortraitScreen() {
                   emote,
                 );
                 return (
-                  <Pressable
+                  <PressScale
                     key={emote}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
@@ -1794,7 +1846,10 @@ export default function PortraitScreen() {
                     accessibilityHint="Double tap to update the live care-twin preview mood."
                     hitSlop={MOBILE_INLINE_HIT_SLOP}
                     onPress={() => previewMoodState(emote)}
-                    style={s.moodChip}
+                    haptic="none"
+                    scaleTo={0.94}
+                    containerStyle={s.moodChip}
+                    style={s.moodChipInner}
                   >
                     <View
                       style={[
@@ -1851,7 +1906,7 @@ export default function PortraitScreen() {
                     >
                       {emoteLabel(emote)}
                     </Text>
-                  </Pressable>
+                  </PressScale>
                 );
               })}
             </View>
@@ -1936,10 +1991,15 @@ export default function PortraitScreen() {
         <View
           style={[
             s.toast,
-            { backgroundColor: colors.brandNavy, bottom: insets.bottom + 22 },
+            { backgroundColor: colors.primary, bottom: insets.bottom + 22 },
           ]}
         >
-          <Text style={[s.toastText, { fontFamily: "Inter_700Bold" }]}>
+          <Text
+            style={[
+              s.toastText,
+              { color: colors.primaryForeground, fontFamily: "Inter_700Bold" },
+            ]}
+          >
             {savedToast}
           </Text>
         </View>
@@ -2015,8 +2075,25 @@ const s = StyleSheet.create({
     gap: 2,
   },
   sourceProofKicker: {
-    fontSize: 8.5,
-    letterSpacing: 0.8,
+    fontSize: 9,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+  },
+  /* Mock-board soft pills: sageSoft/amberSoft chips with forest/amber text. */
+  softPill: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderRadius: 999,
+    minHeight: 28,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+  },
+  softPillText: {
+    fontSize: 11,
+    letterSpacing: 0.2,
+    flexShrink: 1,
   },
   sourceProofText: {
     fontSize: 12,
@@ -2243,10 +2320,11 @@ const s = StyleSheet.create({
     gap: 7,
     marginBottom: 10,
   },
+  tabLayout: { flex: 1 },
   tab: {
-    flex: 1,
+    width: "100%",
     minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
+    borderRadius: 999,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -2282,7 +2360,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  scanPipelineNumberText: { color: "#FFF9EF", fontSize: 11 },
+  scanPipelineNumberText: { fontSize: 11 },
   scanPipelineLabel: { fontSize: 12 },
   scanPipelineDetail: { fontSize: 10.8, lineHeight: 14 },
   traitGrid: { gap: 8, marginTop: 12 },
@@ -2319,9 +2397,12 @@ const s = StyleSheet.create({
   },
   primaryBtnText: { color: "#FFF9EF", fontSize: 14 },
   templateGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
-  templateTile: {
+  templateTileLayout: {
     flexBasis: "48%",
     flexGrow: 1,
+  },
+  templateTile: {
+    width: "100%",
     minHeight: Math.max(178, MIN_MOBILE_TOUCH_TARGET),
     borderRadius: 8,
     borderWidth: 1,
@@ -2399,8 +2480,8 @@ const s = StyleSheet.create({
   },
   productionMetricValue: { fontSize: 17, lineHeight: 20 },
   productionMetricKicker: {
-    fontSize: 8.5,
-    letterSpacing: 0.7,
+    fontSize: 9,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
   },
   productionActionList: { gap: 8, marginTop: 12 },
@@ -2422,14 +2503,15 @@ const s = StyleSheet.create({
   productionActionCopy: { flex: 1, minWidth: 0, gap: 3 },
   productionActionTitle: { fontSize: 12.5 },
   productionActionMeta: {
-    fontSize: 10,
+    fontSize: 9,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
   },
   productionActionNotes: { fontSize: 11.5, lineHeight: 16 },
   productionCheckList: { gap: 8, marginTop: 12 },
   productionCheckTitle: {
-    fontSize: 11.5,
-    letterSpacing: 0.5,
+    fontSize: 9,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
   },
   productionCheckRow: {
@@ -2454,11 +2536,10 @@ const s = StyleSheet.create({
     gap: 8,
   },
   productionQaButtonText: {
-    color: "#FFF9EF",
     fontSize: 13,
-    textTransform: "uppercase",
   },
   swatchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
+  swatchLegend: { fontSize: 11.5, lineHeight: 15, marginTop: 8 },
   swatch: {
     minWidth: MIN_MOBILE_TOUCH_TARGET,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -2481,12 +2562,15 @@ const s = StyleSheet.create({
     paddingVertical: 10,
     gap: 4,
   },
-  accessoryFitTitle: { fontSize: 11.5, textTransform: "uppercase" },
+  accessoryFitTitle: { fontSize: 9, letterSpacing: 1.1, textTransform: "uppercase" },
   accessoryFitSummary: { fontSize: 12, lineHeight: 17 },
   accessoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
-  accessoryTile: {
+  accessoryTileLayout: {
     flexBasis: "47.5%",
     flexGrow: 1,
+  },
+  accessoryTile: {
+    width: "100%",
     minHeight: Math.max(126, MIN_MOBILE_TOUCH_TARGET),
     borderRadius: 8,
     borderWidth: 1,
@@ -2496,8 +2580,8 @@ const s = StyleSheet.create({
   },
   accessoryDot: { width: 18, height: 18, borderRadius: 5 },
   accessoryLabel: { fontSize: 12.5 },
-  accessorySlot: { fontSize: 10, textTransform: "uppercase" },
-  accessoryFitLabel: { fontSize: 9.5, textTransform: "uppercase" },
+  accessorySlot: { fontSize: 9, letterSpacing: 1.1, textTransform: "uppercase" },
+  accessoryFitLabel: { fontSize: 9, letterSpacing: 1.1, textTransform: "uppercase" },
   accessoryFitHint: { fontSize: 10.5, lineHeight: 14 },
   moodGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   moodChip: {
@@ -2505,6 +2589,10 @@ const s = StyleSheet.create({
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     alignItems: "center",
     justifyContent: "center",
+  },
+  moodChipInner: {
+    width: "100%",
+    alignItems: "center",
   },
   moodThumbWrap: {
     width: "100%",
@@ -2539,5 +2627,5 @@ const s = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 999,
   },
-  toastText: { color: "#FFF9EF", fontSize: 13 },
+  toastText: { fontSize: 13 },
 });

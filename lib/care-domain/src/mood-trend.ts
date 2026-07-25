@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
+import { resolvePetName } from "./pet-identity.ts";
 
 export type MoodTrendStatus = "needs-log" | "steady" | "watch";
 export type MoodEnergyLevel = "low" | "steady" | "high";
@@ -19,6 +20,8 @@ export interface MoodTrendInput {
   now?: number;
   lookbackDays?: number;
   limit?: number;
+  /** Display name for owner-facing copy; resolved via resolvePetName so renamed dogs never read "Phoenix". */
+  petName?: string | null;
 }
 
 export interface MoodTrendBar {
@@ -108,7 +111,7 @@ function summaryFor(total: number, averageScore: number, status: MoodTrendStatus
   return `${total} shared mood check-ins, ${averageScore.toFixed(1)}/5 average ${tone}.`;
 }
 
-function nextStepFor(status: MoodTrendStatus, latest: MoodTrendItem | null): string {
+function nextStepFor(status: MoodTrendStatus, latest: MoodTrendItem | null, petName: string): string {
   if (status === "needs-log") {
     return "Log the next mood with energy and care context so the household can connect feelings to food, visitors, walks, rest, and routines.";
   }
@@ -118,11 +121,12 @@ function nextStepFor(status: MoodTrendStatus, latest: MoodTrendItem | null): str
   if (status === "watch") {
     return "Add context to the next mood check-in and consider sharing the pattern with a vet or trainer if low energy or anxious behavior continues.";
   }
-  return "Keep quick mood check-ins going so Phoenix's care twin and household reports reflect real daily patterns.";
+  return `Keep quick mood check-ins going so ${petName}'s care twin and household reports reflect real daily patterns.`;
 }
 
 export function deriveMoodTrend(input: MoodTrendInput): MoodTrend {
   const now = input.now ?? Date.now();
+  const petName = resolvePetName(input.petName);
   const lookbackDays = input.lookbackDays ?? 30;
   const limit = input.limit ?? 5;
   const items = input.entries
@@ -180,7 +184,7 @@ export function deriveMoodTrend(input: MoodTrendInput): MoodTrend {
     caregivers,
     status,
     summary: summaryFor(total, averageScore, status),
-    nextStep: nextStepFor(status, latest),
+    nextStep: nextStepFor(status, latest, petName),
     latest,
   };
 }

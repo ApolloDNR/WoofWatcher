@@ -98,6 +98,27 @@ test("uses a steady message when potty logs are normal", () => {
   assert.match(potty.nextStep, /Keep logging/i);
 });
 
+test("watch nextStep uses the renamed dog's name, never Phoenix", () => {
+  const potty = derivePottyHealth({
+    now: NOW,
+    petName: "Biscuit",
+    entries: [
+      {
+        id: "watch-poop",
+        type: "potty",
+        title: "Potty - poop",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T09:00:00-07:00",
+        details: { kind: "poop", condition: "diarrhea" },
+      },
+    ],
+  });
+
+  assert.equal(potty.status, "watch");
+  assert.match(potty.nextStep, /Biscuit seems painful/);
+  assert.doesNotMatch(potty.nextStep, /Phoenix/);
+});
+
 test("uses stool color and context as review evidence", () => {
   const potty = derivePottyHealth({
     now: NOW,

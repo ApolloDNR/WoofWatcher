@@ -1,5 +1,19 @@
 # WoofWatcher Decision Log
 
+## 2026-07-24: Reconcile Mainline Premium Polish by Normal Merge
+
+- Decision: merge current `origin/main` into the automation branch rather than
+  cherry-picking the large July premium-polish stack or rewriting branch
+  history.
+- Reason: main now contains the completed mockup-parity screen set and related
+  truthful-care, QA, backend-prep, store, and PWA work. The conflict surface was
+  bounded, and a normal merge preserves provenance.
+- Resolution: Setup keeps both the breed-matched care-twin preview and saved
+  Auth/Setup proof evidence. Existing proof propagation contracts remain
+  protected by readiness tests and the JSON doctor.
+- Boundary: this reconciliation does not create native device screenshots,
+  provider approval, store approval, public-launch approval, or Apollo sign-off.
+
 ## Decision Format
 
 Each decision should include:

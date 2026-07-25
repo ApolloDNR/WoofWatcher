@@ -233,6 +233,123 @@ function carePassDraft(): WoofGuideActionDraft {
   };
 }
 
+export type WoofGuideAssistantGateReason =
+  | "ready"
+  | "provider-proof-missing"
+  | "api-domain-missing";
+
+export interface WoofGuideAssistantGateInput {
+  /** Base URL of the care-helper API, empty when no deployment domain exists. */
+  apiBaseUrl?: string | null;
+  /** True only when the structured AI provider proof manifest allows live AI. */
+  liveAiProofReady: boolean;
+}
+
+export interface WoofGuideAssistantGate {
+  enabled: boolean;
+  reason: WoofGuideAssistantGateReason;
+  statusLabel: string;
+  headline: string;
+  privacyNote: string;
+  composerNote: string;
+}
+
+export const WOOFGUIDE_ASSISTANT_OFF_STATUS_LABEL = "Not in this build";
+
+export const WOOFGUIDE_ASSISTANT_OFF_HEADLINE =
+  "WoofGuide's assistant isn't enabled in this build, so live answers are off.";
+
+export const WOOFGUIDE_ASSISTANT_OFF_PRIVACY_NOTE =
+  "Nothing you type here is sent anywhere, so the ask box is off until an assistant provider passes owner review.";
+
+export const WOOFGUIDE_ASSISTANT_OFF_COMPOSER_NOTE =
+  "Assistant off in this build — nothing typed here would be sent.";
+
+/**
+ * Mirrors the PWA rule from the decision log: WoofGuide never calls the live
+ * care-helper until structured AI provider proof is ready AND a deployment
+ * domain exists. Until both are true the screen must say so honestly instead
+ * of pretending the assistant is temporarily down.
+ */
+export function resolveWoofGuideAssistantGate(
+  input: WoofGuideAssistantGateInput,
+): WoofGuideAssistantGate {
+  const offGate = {
+    enabled: false,
+    statusLabel: WOOFGUIDE_ASSISTANT_OFF_STATUS_LABEL,
+    headline: WOOFGUIDE_ASSISTANT_OFF_HEADLINE,
+    privacyNote: WOOFGUIDE_ASSISTANT_OFF_PRIVACY_NOTE,
+    composerNote: WOOFGUIDE_ASSISTANT_OFF_COMPOSER_NOTE,
+  } as const;
+  if (!input.liveAiProofReady) {
+    return { ...offGate, reason: "provider-proof-missing" };
+  }
+  if (!(input.apiBaseUrl ?? "").trim()) {
+    return { ...offGate, reason: "api-domain-missing" };
+  }
+  return {
+    enabled: true,
+    reason: "ready",
+    statusLabel: "Ready",
+    headline: "",
+    privacyNote: "",
+    composerNote: "",
+  };
+}
+
+export interface WoofGuideAssistantFallbackLink {
+  id: "health" | "records" | "home";
+  label: string;
+  detail: string;
+  route: "/health" | "/records" | "/";
+  icon: WoofGuideActionIcon;
+}
+
+/** Honest, working destinations shown while the assistant is gated off. */
+export const WOOFGUIDE_ASSISTANT_FALLBACK_LINKS: readonly WoofGuideAssistantFallbackLink[] = [
+  {
+    id: "health",
+    label: "Health Watch patterns",
+    detail: "Non-diagnostic patterns from your own logs.",
+    route: "/health",
+    icon: "heart",
+  },
+  {
+    id: "records",
+    label: "Records and Care Pass",
+    detail: "Vaccines, documents, and shareable care summaries.",
+    route: "/records",
+    icon: "records",
+  },
+  {
+    id: "home",
+    label: "Today's care",
+    detail: "Back to the room to log meals, potty, and walks.",
+    route: "/",
+    icon: "paw",
+  },
+];
+
+/**
+ * Deterministic owner-reviewed vet-note draft for the Health Watch
+ * "Draft vet questions" funnel. Reuses the existing vetNoteDraft mechanism —
+ * no live AI and no new medical guidance.
+ */
+export function deriveWoofGuideVetNoteAction(
+  state: WoofGuideActionState,
+  now: number = Date.now(),
+): WoofGuideActionCard {
+  const health = deriveHealthWatch({ entries: state.entries, routines: state.routines, now });
+  return {
+    id: "health-review-vet-note",
+    label: "Draft vet note",
+    detail: health.summary,
+    urgency: health.status === "alert" ? "alert" : health.status === "watch" ? "watch" : "normal",
+    icon: "heart",
+    draft: vetNoteDraft(state, now),
+  };
+}
+
 export function deriveWoofGuideActions(
   state: WoofGuideActionState,
   now: number = Date.now(),

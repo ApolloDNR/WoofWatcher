@@ -4,12 +4,10 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   Modal,
   Platform,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -17,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetMe } from "@workspace/api-client-react";
+import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type LaunchSupportProfile } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
@@ -34,7 +33,10 @@ import {
   type AccountSafetySection,
   type AccountSafetyStatus,
 } from "@/lib/privacySafety";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
+import { resolvePetName } from "@/lib/petIdentity";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
+import { shareTextPayload } from "@/lib/shareText";
 import {
   buildSupportRunbookShareText,
   deriveSupportRunbookPlan,
@@ -82,7 +84,11 @@ export default function PrivacyScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, updateCareDoc } = useCare();
+  const { state, updateCareDoc, eraseAllLocalData } = useCare();
+  const { clearAvatarSet, resetAvatarConfig } = useAvatar();
+  // Launch-ops cards (support runbook, launch gates) are owner tooling and
+  // stay out of store production builds.
+  const ownerOps = isOwnerOpsBuild();
   const [launchEditorOpen, setLaunchEditorOpen] = useState(false);
   const [launchDraft, setLaunchDraft] = useState<LaunchSupportProfile>(state.launchSupportProfile);
   const me = useGetMe();
@@ -196,19 +202,19 @@ export default function PrivacyScreen() {
   const shareExport = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const fresh = buildPrivacyExportBundle(state, context, Date.now());
-    Share.share({
+    void shareTextPayload({
       title: `WoofWatcher care export - ${fresh.dogName}`,
       message: serializePrivacyExportBundle(fresh),
-    }).catch(() => Alert.alert("Export unavailable", "The device share sheet could not open."));
+    });
   };
 
   const shareDeletionRequest = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const request = buildAccountDeletionRequest(state, context, Date.now());
-    Share.share({
+    void shareTextPayload({
       title: request.subject,
       message: `${request.subject}\n\n${request.body}`,
-    }).catch(() => Alert.alert("Deletion request", request.body));
+    });
   };
 
   const shareSupportRunbook = () => {
@@ -217,10 +223,10 @@ export default function PrivacyScreen() {
       appName: "WoofWatcher",
       generatedAtIso: new Date().toISOString(),
     });
-    Share.share({
+    void shareTextPayload({
       title: "WoofWatcher Support Runbook",
       message,
-    }).catch(() => Alert.alert("Support runbook", message));
+    });
   };
 
   const openSupportLegalProofMission = () => {
@@ -228,11 +234,79 @@ export default function PrivacyScreen() {
     router.push("/care-twin-qa?qaSurface=support-legal-readiness-proof" as never);
   };
 
+  const openLegalDocuments = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/legal" as never);
+  };
+
+  // Themed two-step delete-all confirmation: the native confirm()/alert()
+  // fallback read as browser chrome on web, so the flow now runs in the
+  // app's own board-style sheet on every platform. Semantics are unchanged:
+  // two explicit confirmations, then a completion notice after the wipe.
+  const [eraseStage, setEraseStage] = useState<
+    "confirm" | "confirm-final" | "done" | null
+  >(null);
+  const [erasing, setErasing] = useState(false);
+
+  const eraseSteps = {
+    confirm: {
+      title: "Delete all data on this device?",
+      message: `This permanently removes every log, routine, record, memory, report, and avatar for ${resolvePetName(state.profile.name)} from this device. WoofWatcher keeps no copy anywhere else. Export first if you want a backup.`,
+      confirmLabel: "Delete everything",
+      cancelLabel: "Cancel",
+    },
+    "confirm-final": {
+      title: "This cannot be undone",
+      message: "Delete all WoofWatcher data from this device now?",
+      confirmLabel: "Yes, delete it all",
+      cancelLabel: "Keep my data",
+    },
+    done: {
+      title: "All data deleted",
+      message: "WoofWatcher has been reset to a fresh household on this device.",
+    },
+  } as const;
+
+  const confirmEraseAllLocalData = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setEraseStage("confirm");
+  };
+
+  const cancelEraseFlow = () => {
+    if (erasing) return;
+    setEraseStage(null);
+  };
+
+  const advanceEraseFlow = () => {
+    if (eraseStage === "confirm") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setEraseStage("confirm-final");
+      return;
+    }
+    if (eraseStage === "confirm-final") {
+      if (erasing) return;
+      setErasing(true);
+      // The avatar contexts hold hydrated in-memory state, so the wipe
+      // must reset them too or the custom twin would survive on screen
+      // (and a later Studio save would re-persist deleted data).
+      void Promise.all([eraseAllLocalData(), clearAvatarSet(), resetAvatarConfig()]).then(
+        () => {
+          setErasing(false);
+          setEraseStage("done");
+        },
+      );
+      return;
+    }
+    setEraseStage(null);
+  };
+
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 20, paddingBottom: bottomPadding }}
+        // 16 matches the tab screens' shared side gutter (Home/Log/Records
+        // all use 16), so modal routes stop sitting 4px narrower.
+        contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 16, paddingBottom: bottomPadding }}
       >
         <LinearGradient
           colors={[colors.midnight, colors.primary]}
@@ -245,7 +319,7 @@ export default function PrivacyScreen() {
               <Ionicons name="shield-checkmark-outline" size={22} color="#FFFFFF" />
             </View>
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => (router.canGoBack() ? router.back() : router.replace("/more"))}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               accessibilityRole="button"
               accessibilityLabel="Close Privacy and Safety"
@@ -255,7 +329,9 @@ export default function PrivacyScreen() {
           </View>
           <Text style={[s.heroTitle, { fontFamily: DISPLAY }]}>Privacy & Safety</Text>
           <Text style={[s.heroSub, { fontFamily: "Inter_500Medium" }]}>
-            Export care data, prepare deletion requests, and review the rules that keep AI, documents, and payments gated.
+            {ownerOps
+              ? "Export care data, prepare deletion requests, and review the rules that keep AI, documents, and payments gated."
+              : "Your household's care data lives on this device. Export it, read the policy, or delete everything at any time."}
           </Text>
         </LinearGradient>
 
@@ -303,17 +379,76 @@ export default function PrivacyScreen() {
             <Ionicons name="download-outline" size={18} color="#FFFFFF" />
             <Text style={[s.primaryText, { fontFamily: "Inter_700Bold" }]}>Export care data</Text>
           </Pressable>
-          <Pressable
-            onPress={shareDeletionRequest}
-            accessibilityRole="button"
-            accessibilityLabel="Prepare account deletion request"
-            style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.75 : 1 }]}
-          >
-            <Ionicons name="trash-outline" size={17} color={colors.rose} />
-            <Text style={[s.secondaryText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>Deletion request</Text>
-          </Pressable>
+          {/* The email-based "Deletion request" only makes sense once a
+              provider account exists. In the local-first build there is no
+              server copy, so the on-device "Delete all data" below is the
+              real, complete deletion path - keep this owner-gated. */}
+          {ownerOps ? (
+            <Pressable
+              onPress={shareDeletionRequest}
+              accessibilityRole="button"
+              accessibilityLabel="Prepare account deletion request"
+              style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, backgroundColor: colors.card, opacity: pressed ? 0.75 : 1 }]}
+            >
+              <Ionicons name="trash-outline" size={17} color={colors.rose} />
+              <Text style={[s.secondaryText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>Deletion request</Text>
+            </Pressable>
+          ) : null}
         </View>
 
+        <BoardCard style={s.privacyBoard}>
+          <BoardSectionHeader
+            title="Your data, your rules"
+            accessory={<BoardPill label="On this device" tone={colors.sage} />}
+          />
+          <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            Every care log lives only on this device. Read the full privacy
+            policy and terms, or erase everything in one step.
+          </Text>
+          <Pressable
+            onPress={openLegalDocuments}
+            accessibilityRole="button"
+            accessibilityLabel="Open privacy policy and terms of service"
+            style={({ pressed }) => [
+              s.legalRow,
+              { borderColor: colors.border, backgroundColor: pressed ? colors.secondary : colors.background },
+            ]}
+          >
+            <Ionicons name="document-text-outline" size={18} color={colors.forest} />
+            <View style={{ flex: 1 }}>
+              <Text style={[s.legalRowTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                Privacy policy & terms
+              </Text>
+              <Text style={[s.legalRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Plain-language rules for your household's data
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+          </Pressable>
+          <Pressable
+            onPress={confirmEraseAllLocalData}
+            accessibilityRole="button"
+            accessibilityLabel="Delete all WoofWatcher data on this device"
+            style={({ pressed }) => [
+              s.legalRow,
+              { borderColor: colors.rose + "55", backgroundColor: pressed ? colors.rose + "14" : colors.background },
+            ]}
+          >
+            <Ionicons name="trash-bin-outline" size={18} color={colors.rose} />
+            <View style={{ flex: 1 }}>
+              <Text style={[s.legalRowTitle, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>
+                Delete all data on this device
+              </Text>
+              <Text style={[s.legalRowSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Permanent. Resets WoofWatcher to a fresh household.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+          </Pressable>
+        </BoardCard>
+
+        {ownerOps ? (
+          <>
         <BoardCard style={s.privacyBoard}>
           <BoardSectionHeader
             title="Support runbook"
@@ -419,7 +554,127 @@ export default function PrivacyScreen() {
             </View>
           </View>
         </BoardCard>
+          </>
+        ) : null}
       </ScrollView>
+      <Modal
+        visible={eraseStage !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelEraseFlow}
+      >
+        <Pressable
+          style={s.modalBackdrop}
+          onPress={eraseStage === "done" ? advanceEraseFlow : cancelEraseFlow}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss delete confirmation"
+        >
+          <Pressable
+            style={[
+              s.confirmSheet,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                paddingBottom: Math.max(modalSheetBottomPadding, 18),
+              },
+            ]}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <View style={s.modalHandle} />
+            {eraseStage ? (
+              <>
+                <View style={s.confirmHeader}>
+                  <View
+                    style={[
+                      s.confirmIcon,
+                      {
+                        backgroundColor:
+                          eraseStage === "done" ? colors.sage + "16" : colors.rose + "14",
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={eraseStage === "done" ? "checkmark-circle-outline" : "trash-bin-outline"}
+                      size={20}
+                      color={eraseStage === "done" ? colors.sage : colors.rose}
+                    />
+                  </View>
+                  <Text style={[s.confirmTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                    {eraseSteps[eraseStage].title}
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    s.confirmMessage,
+                    { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                  ]}
+                >
+                  {eraseSteps[eraseStage].message}
+                </Text>
+                {eraseStage === "done" ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Close data deletion notice"
+                    onPress={advanceEraseFlow}
+                    style={({ pressed }) => [
+                      s.confirmPrimaryBtn,
+                      s.confirmDoneBtn,
+                      { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 },
+                    ]}
+                  >
+                    <Text style={[s.confirmPrimaryText, { fontFamily: "Inter_800ExtraBold" }]}>
+                      Done
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <View style={s.confirmActions}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={eraseSteps[eraseStage].cancelLabel}
+                      disabled={erasing}
+                      onPress={cancelEraseFlow}
+                      style={({ pressed }) => [
+                        s.confirmCancelBtn,
+                        {
+                          borderColor: colors.border,
+                          backgroundColor: colors.background,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.confirmCancelText,
+                          { color: colors.foreground, fontFamily: "Inter_800ExtraBold" },
+                        ]}
+                      >
+                        {eraseSteps[eraseStage].cancelLabel}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={eraseSteps[eraseStage].confirmLabel}
+                      disabled={erasing}
+                      onPress={advanceEraseFlow}
+                      style={({ pressed }) => [
+                        s.confirmPrimaryBtn,
+                        {
+                          backgroundColor: colors.rose,
+                          opacity: erasing ? 0.6 : pressed ? 0.84 : 1,
+                        },
+                      ]}
+                    >
+                      <Text style={[s.confirmPrimaryText, { fontFamily: "Inter_800ExtraBold" }]}>
+                        {erasing ? "Deleting..." : eraseSteps[eraseStage].confirmLabel}
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
+              </>
+            ) : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
       <Modal visible={launchEditorOpen} transparent animationType="slide" onRequestClose={() => setLaunchEditorOpen(false)}>
         <Pressable style={s.modalBackdrop} onPress={() => setLaunchEditorOpen(false)}>
           <Pressable
@@ -702,7 +957,7 @@ const s = StyleSheet.create({
   heroSub: { color: "rgba(255,255,255,0.84)", fontSize: 15, lineHeight: 22, marginTop: 10 },
   privacyBoard: { marginTop: 14 },
   statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  statTile: { width: "48.5%", borderRadius: 16, borderWidth: 1, padding: 15 },
+  statTile: { flexBasis: "45%", flexGrow: 1, borderRadius: 16, borderWidth: 1, padding: 15 },
   statValue: { fontSize: 24 },
   statLabel: { fontSize: 11.5, marginTop: 3, textTransform: "uppercase", letterSpacing: 0.6 },
   queueSummary: { fontSize: 12.5, lineHeight: 18, marginBottom: 10 },
@@ -722,6 +977,19 @@ const s = StyleSheet.create({
   primaryText: { color: "#FFFFFF", fontSize: 14 },
   secondaryBtn: { flex: 1, height: 52, borderRadius: 17, borderWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
   secondaryText: { fontSize: 13.5 },
+  legalRow: {
+    minHeight: 52,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  legalRowTitle: { fontSize: 13 },
+  legalRowSub: { fontSize: 11, marginTop: 1 },
   sectionStack: { gap: 10 },
   supportVerdict: { fontSize: 14, lineHeight: 18, marginBottom: 5 },
   launchProfilePanel: {
@@ -793,6 +1061,45 @@ const s = StyleSheet.create({
     justifyContent: "flex-end",
     backgroundColor: "rgba(8, 26, 42, 0.42)",
   },
+  confirmSheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  confirmHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  confirmIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmTitle: { flex: 1, fontSize: 20, lineHeight: 25 },
+  confirmMessage: { fontSize: 13.5, lineHeight: 20, marginTop: 12 },
+  confirmActions: { flexDirection: "row", gap: 10, marginTop: 18 },
+  confirmCancelBtn: {
+    flex: 1,
+    minHeight: 50,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  confirmCancelText: { fontSize: 13 },
+  confirmPrimaryBtn: {
+    flex: 1.2,
+    minHeight: 50,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    marginTop: 0,
+  },
+  confirmPrimaryText: { color: "#FFFFFF", fontSize: 13 },
+  confirmDoneBtn: { flex: 0, marginTop: 18 },
   launchModal: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,

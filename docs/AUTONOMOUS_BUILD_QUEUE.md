@@ -1,5 +1,18 @@
 # Autonomous Build Queue
 
+## 2026-07-24 Automation/Main Reconciliation
+
+- [x] Merge current mainline premium mockup-parity, truthful-care, QA harness,
+  Supabase prep, store asset, and installable-PWA work into
+  `automation/premium-revenue-product-builder` without rewriting history.
+- [x] Preserve durable Auth/Setup, payments, Records local-file, report-binary,
+  and route-visual proof evidence across the reconciliation.
+- [ ] After the merge commit, require fresh branch CI before treating install,
+  build, or Expo export proof as current.
+- [ ] Next highest-impact external proof remains route-named native iOS and
+  Android evidence for Auth/Setup, Records file handoff, report binary
+  share/reopen, and route visual consistency.
+
 ## Operating Rule
 
 Every autonomous run should improve at least one of: care workflow, household usefulness, premium feel, production safety, monetization path, or App Store readiness.

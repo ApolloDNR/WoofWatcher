@@ -5,7 +5,9 @@ import {
   buildQuickLogEntry,
   describeQuickLogDetailSheet,
   describeQuickLogLauncherAction,
+  findRecentQuickLogDuplicate,
   getQuickLogPolicy,
+  QUICK_LOG_DEDUPE_WINDOW_MS,
   type QuickLogState,
 } from "./quickLogEntry.ts";
 
@@ -326,4 +328,52 @@ test("detail sheet presentation explains quick logging, details, and safety boun
   );
   assert.match(medication.safetyBoundary ?? "", /requires context/i);
   assert.ok(medication.detailChecklist.some((item) => item.includes("dose")));
+});
+
+test("quick-log dedupe window treats a rapid same-type second tap as the same intent", () => {
+  const saved = {
+    id: "temp_1",
+    type: "meal",
+    occurredAt: new Date(NOW).toISOString(),
+    details: { mealCompletion: "served" },
+  };
+
+  // Same tick (0ms gap) and a fast bounce (120ms) both resolve to the entry
+  // the first tap already saved.
+  assert.equal(findRecentQuickLogDuplicate([saved], "meal", NOW), saved);
+  assert.equal(findRecentQuickLogDuplicate([saved], "meal", NOW + 120), saved);
+  // Anywhere inside the shared window still dedupes.
+  assert.equal(
+    findRecentQuickLogDuplicate([saved], "meal", NOW + QUICK_LOG_DEDUPE_WINDOW_MS),
+    saved,
+  );
+});
+
+test("quick-log dedupe never blocks a deliberate second log after the window", () => {
+  const saved = { id: "temp_1", type: "meal", occurredAt: new Date(NOW).toISOString() };
+
+  assert.equal(
+    findRecentQuickLogDuplicate([saved], "meal", NOW + QUICK_LOG_DEDUPE_WINDOW_MS + 1),
+    null,
+  );
+  assert.equal(findRecentQuickLogDuplicate([saved], "meal", NOW + 60_000), null);
+});
+
+test("quick-log dedupe only matches the same normalized care type", () => {
+  const meal = { id: "temp_meal", type: "meal", occurredAt: new Date(NOW).toISOString() };
+  const potty = { id: "temp_potty", type: "potty", occurredAt: new Date(NOW).toISOString() };
+
+  assert.equal(findRecentQuickLogDuplicate([meal, potty], "water", NOW + 100), null);
+  assert.equal(findRecentQuickLogDuplicate([meal, potty], "potty", NOW + 100), potty);
+  // Legacy alias types normalize before matching ("pee" is a potty log).
+  assert.equal(findRecentQuickLogDuplicate([potty], "pee", NOW + 100), potty);
+});
+
+test("quick-log dedupe returns the newest in-window entry and ignores bad timestamps", () => {
+  const older = { id: "a", type: "water", occurredAt: new Date(NOW - 900).toISOString() };
+  const newer = { id: "b", type: "water", occurredAt: new Date(NOW - 100).toISOString() };
+  const invalid = { id: "c", type: "water", occurredAt: "not-a-date" };
+  const future = { id: "d", type: "water", occurredAt: new Date(NOW + 5000).toISOString() };
+
+  assert.equal(findRecentQuickLogDuplicate([older, invalid, newer, future], "water", NOW), newer);
 });

@@ -108,6 +108,87 @@ test("builds a sitter care pass with routine, diet, and next action context", ()
   assert.match(pass.message, /Keep meals calm/);
 });
 
+test("resolves the stored pet-name placeholder so the pass matches the app", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    profile: { ...baseInput().profile, name: "My Dog" },
+  });
+
+  // "My Dog" is the stored profile default, not a name; every app surface
+  // shows "Phoenix" until the owner personalizes it, and the flagship share
+  // artifact has to agree.
+  assert.equal(pass.title, "Phoenix Sitter Care Pass");
+  assert.match(pass.summary, /^Phoenix care handoff/);
+  assert.doesNotMatch(pass.message, /My Dog/);
+
+  const empty = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    profile: { ...baseInput().profile, name: "" },
+  });
+  assert.equal(empty.title, "Phoenix Sitter Care Pass");
+});
+
+test("a renamed dog's care pass never reads Phoenix in derived copy", () => {
+  // Zero entries steer several derive helpers into their name-bearing
+  // branches (walk nextStep, weight baseline prompt), and the watch-stool
+  // entry exercises the potty/health branches. If any sibling module still
+  // hardcodes "Phoenix", this catches the leak at the shared-artifact level.
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    profile: { ...baseInput().profile, name: "Biscuit", weight: { current: 0, unit: "lb" } },
+    entries: [
+      {
+        id: "potty_watch",
+        type: "potty",
+        title: "Potty - poop",
+        caregiver: "Emma",
+        occurredAt: new Date(NOW - 60 * 60 * 1000).toISOString(),
+        details: { kind: "poop", condition: "diarrhea" },
+      },
+    ],
+  });
+
+  assert.equal(pass.title, "Biscuit Sitter Care Pass");
+  assert.match(pass.message, /Log the walk when Biscuit gets outside/);
+  assert.match(pass.message, /Add Biscuit's current weight/);
+  assert.match(pass.message, /Biscuit seems painful/);
+  assert.doesNotMatch(pass.message, /Phoenix/);
+});
+
+test("keeps each Next Care attention item as its own sentence line", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "sitter",
+    entries: [
+      {
+        id: "breakfast-served",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T14:00:00.000Z",
+        details: {
+          mealCompletion: "served",
+          mealLifecycle: "outcome-pending",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  const nextCare = pass.sections.find((section) => section.title === "Next Care");
+  assert.ok(nextCare);
+  assert.ok(nextCare.lines.includes(
+    "Meal outcome pending: 1 meal outcome needs confirmation - ate all, ate some, refused, or still grazing.",
+  ));
+  assert.ok(nextCare.lines.includes("Meal remaining: 1 more meal to log today."));
+  assert.ok(nextCare.lines.includes("Walk remaining: 1 more walk to log today."));
+  // No machine-glued joins like "still open.; Walk remaining" anywhere.
+  assert.doesNotMatch(pass.message, /\.;/);
+});
+
 test("sitter care pass includes a practical handoff checklist", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "sitter" });
 

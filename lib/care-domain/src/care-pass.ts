@@ -7,6 +7,7 @@ import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
 import { deriveIncidentWatch, type IncidentWatchItem } from "./incident-watch.ts";
 import { deriveGroomingCare, type GroomingCareItem } from "./grooming-care.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
+import { resolvePetName } from "./pet-identity.ts";
 import { derivePottyHealth } from "./potty-health.ts";
 import { deriveTrainingProgress, type TrainingProgressItem } from "./training-progress.ts";
 import { deriveWaterHydration } from "./water.ts";
@@ -806,10 +807,15 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const entries = input.entries ?? [];
   const routines = input.routines ?? [];
   const records = input.records ?? [];
-  const name = clean(profile.name) || "Dog";
+  // The share artifact must agree with every app surface: the stored "My Dog"
+  // placeholder (and an empty name) resolve to the same display name the rest
+  // of the app shows, never a raw placeholder in the pass title or Dog card.
+  const name = resolvePetName(clean(profile.name));
   const audienceLabel = AUDIENCE_LABEL[input.audience];
   const generatedAt = formatDateTime(now);
-  const health = deriveHealthWatch({ entries, routines, now });
+  // Every derive helper that writes dog-name copy gets the same resolved name,
+  // so a renamed dog never reads "Phoenix" anywhere in the shared pass.
+  const health = deriveHealthWatch({ entries, routines, now, petName: name });
   const handoff = deriveCareHandoff({
     entries,
     routines,
@@ -819,16 +825,16 @@ export function buildCarePass(input: CarePassInput): CarePass {
   const medication = deriveMedicationAdherence({ entries, routines, now });
   const medicationFollowUps = deriveMedicationFollowUps({ entries, routines, records, now }).slice(0, 4);
   const hydration = deriveWaterHydration({ entries, now });
-  const walkActivity = deriveWalkActivity({ entries, now });
+  const walkActivity = deriveWalkActivity({ entries, now, petName: name });
   const walkRouteTemplates = deriveWalkRouteTemplates({ entries, now, limit: 3 });
-  const pottyHealth = derivePottyHealth({ entries, now });
+  const pottyHealth = derivePottyHealth({ entries, now, petName: name });
   const careTrends = deriveCareTrends({ entries, now, windowDays: 7 });
   const dietProgress = deriveDietProgress({ dietProfile: diet, entries, now });
   const trainingProgress = deriveTrainingProgress({ entries, now, lookbackDays: 30 });
   const aloneTime = deriveAloneTime({ entries, now, lookbackDays: 30 });
-  const weightTrend = deriveWeightTrend({ entries, profile, goals: input.goals ?? [], now, lookbackDays: 90 });
+  const weightTrend = deriveWeightTrend({ entries, profile, goals: input.goals ?? [], now, lookbackDays: 90, petName: name });
   const groomingCare = deriveGroomingCare({ entries, now, lookbackDays: 45 });
-  const incidentWatch = deriveIncidentWatch({ entries, now, lookbackDays: 90 });
+  const incidentWatch = deriveIncidentWatch({ entries, now, lookbackDays: 90, petName: name });
 
   const latestMeals = latestEntries(entries, "meal", 2);
   const latestWalks = latestEntries(entries, "walk", 2);
@@ -865,7 +871,9 @@ export function buildCarePass(input: CarePassInput): CarePass {
     ]),
     section("Next Care", [
       handoff.next ? `${handoff.next.label} at ${handoff.next.time}${handoff.next.owner ? ` with ${handoff.next.owner}` : ""}` : "No upcoming routine is currently scheduled.",
-      handoff.sections.needsAttention.map((item) => `${item.label}: ${item.detail}`).join("; "),
+      // Each attention item is its own full sentence; gluing them with "; "
+      // produced machine-joined text like "...still open.; Walk remaining...".
+      ...handoff.sections.needsAttention.map((item) => `${item.label}: ${item.detail}`),
       handoff.message,
     ]),
     section("Handoff Checklist", audienceChecklist(input.audience, name)),

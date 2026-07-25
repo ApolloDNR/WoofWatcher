@@ -51,7 +51,7 @@ test("keeps future pet slots provider-gated so logs do not mix across dogs", () 
   assert.equal(roster.pets[1].isActive, false);
   assert.equal(roster.pets[1].canSwitch, false);
   assert.equal(roster.futureCount, 1);
-  assert.match(roster.nextStep, /provider-backed multi-dog care documents/);
+  assert.match(roster.nextStep, /Multi-dog care is coming soon - planned pets stay as slots on this device/);
 });
 
 test("builds a sanitized planned pet draft for the local roster", () => {

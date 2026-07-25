@@ -3,6 +3,7 @@ import {
   Inter_500Medium,
   Inter_600SemiBold,
   Inter_700Bold,
+  Inter_800ExtraBold,
   useFonts,
 } from "@expo-google-fonts/inter";
 import {
@@ -29,8 +30,11 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { WalkRouteRecorderBridge } from "@/components/WalkRouteRecorder";
+import { WebDialogHost } from "@/components/WebDialogHost";
 import { CareProvider } from "@/context/CareContext";
 import { AvatarProvider } from "@/context/AvatarContext";
+import { useColors } from "@/hooks/useColors";
 import {
   clerkProxyUrl,
   clerkPublishableKey,
@@ -58,6 +62,7 @@ function RootLayoutNav() {
   const { isSignedIn } = useWoofAuth();
   const segments = useSegments();
   const router = useRouter();
+  const colors = useColors();
 
   // Development convenience: skip the sign-in gate so the app can be reviewed
   // in the web preview / simulator without logging in on every reload. Real
@@ -79,7 +84,18 @@ function RootLayoutNav() {
   return (
     <Stack
       initialRouteName="(tabs)"
-      screenOptions={{ headerBackTitle: "Back", headerTintColor: "#2E5846" }}
+      screenOptions={{
+        headerBackTitle: "Back",
+        headerTintColor: colors.copper,
+        headerTitleStyle: {
+          fontFamily: "Fredoka_700Bold",
+          fontSize: 19,
+          color: colors.foreground,
+        },
+        headerStyle: { backgroundColor: colors.background },
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: colors.background },
+      }}
     >
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -92,7 +108,6 @@ function RootLayoutNav() {
         options={{
           title: "Setup",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
       <Stack.Screen
@@ -100,7 +115,6 @@ function RootLayoutNav() {
         options={{
           title: "WoofGuide",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
       <Stack.Screen
@@ -108,7 +122,6 @@ function RootLayoutNav() {
         options={{
           title: "WoofWatcher Plus",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
       <Stack.Screen
@@ -116,7 +129,13 @@ function RootLayoutNav() {
         options={{
           title: "Privacy & Safety",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
+        }}
+      />
+      <Stack.Screen
+        name="legal"
+        options={{
+          headerShown: false,
+          presentation: "card",
         }}
       />
       <Stack.Screen
@@ -124,7 +143,19 @@ function RootLayoutNav() {
         options={{
           title: "Adventure Mode",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
+        }}
+      />
+      <Stack.Screen
+        name="fastlog"
+        options={{
+          headerShown: false,
+          presentation: "modal",
+          // iOS modals slide by default; this keeps Android's native
+          // transition matching instead of a platform-default cut. The web
+          // build ignores it, so the fastlog screen runs its own mount
+          // fade/rise there.
+          animation: "slide_from_bottom",
+          contentStyle: { backgroundColor: "#F7F1E1" },
         }}
       />
       <Stack.Screen
@@ -132,10 +163,28 @@ function RootLayoutNav() {
         options={{
           title: "Care Twin QA",
           presentation: "card",
-          headerStyle: { backgroundColor: "#F7F5F1" },
         }}
       />
-      <Stack.Screen name="+not-found" />
+      {/* Standalone board screens from Apollo's mockups. Each renders its own
+          BoardRouteHeader (or a full-bleed hero with a back chip), so the
+          native stack header stays hidden. */}
+      <Stack.Screen
+        name="trends"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen
+        name="profile"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen
+        name="reminders"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen
+        name="calendar-month"
+        options={{ headerShown: false, presentation: "card" }}
+      />
+      <Stack.Screen name="+not-found" options={{ title: "Not Found" }} />
     </Stack>
   );
 }
@@ -225,6 +274,19 @@ function AppFrame() {
   const frameWidth = Math.min(viewportWidth, 390);
   const frameHeight = Math.min(viewportHeight, 932);
 
+  // Phone-sized viewports get the real app edge-to-edge, exactly like the
+  // mock boards - no navy letterboxing, no rounded shell. The framed
+  // presentation only appears on desktop-sized windows where the phone
+  // canvas needs a stage to sit on.
+  if (shouldAnchorCompactPreview) {
+    return (
+      <View style={[styles.webFullBleed, { width: viewportWidth, minHeight: viewportHeight }]}>
+        <RootLayoutNav />
+        <WebDialogHost />
+      </View>
+    );
+  }
+
   return (
     <View
       style={[
@@ -232,12 +294,15 @@ function AppFrame() {
         {
           width: viewportWidth,
           minHeight: viewportHeight,
-          alignItems: shouldAnchorCompactPreview ? "flex-start" : "center",
+          alignItems: "center",
         },
       ]}
     >
       <View style={[styles.webFrame, { width: frameWidth, maxHeight: frameHeight }]}>
         <RootLayoutNav />
+        {/* Themed notice/confirm dialogs for web builds: notifyDialog and
+            confirmThroughSteps render here instead of raw window.alert. */}
+        <WebDialogHost />
       </View>
     </View>
   );
@@ -250,6 +315,7 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    Inter_800ExtraBold,
     Fredoka_500Medium,
     Fredoka_600SemiBold,
     Fredoka_700Bold,
@@ -272,6 +338,9 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <AuthBridge />
             <CareProvider>
+              {/* Follows the shared walk lifecycle: starts route capture when
+                  any surface opens a walk session, persists it on finish. */}
+              <WalkRouteRecorderBridge />
               <AvatarProvider>
                 <GestureHandlerRootView style={{ flex: 1 }}>
                   <KeyboardProvider>
@@ -301,6 +370,13 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
+  webFullBleed: {
+    flex: 1,
+    minWidth: 0,
+    overflow: "hidden",
+    backgroundColor: "#F7F1E1",
+    alignSelf: "flex-start",
+  },
   webBackdrop: {
     flex: 1,
     alignItems: "center",
@@ -316,7 +392,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     overflow: "hidden",
-    backgroundColor: "#FFF9EF",
+    backgroundColor: "#F7F1E1",
     borderColor: "rgba(255, 249, 239, 0.18)",
     borderRadius: 36,
     borderWidth: 1,

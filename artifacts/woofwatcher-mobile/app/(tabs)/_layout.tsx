@@ -1,12 +1,17 @@
-import { Tabs, useRouter } from "expo-router";
+import { Tabs, usePathname, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React from "react";
-import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBounce } from "@/components/motion/GameFeel";
 import { useColors } from "@/hooks/useColors";
-import { PixelIcon } from "@/components/PixelIcon";
 import { getFloatingTabChromeMetrics } from "@/lib/mobileLayout";
+
+export const unstable_settings = {
+  initialRouteName: "index",
+};
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -26,40 +31,60 @@ function TabIcon({
   return <Ionicons name={focused ? ionFilled : ion} size={size} color={color} />;
 }
 
-function CenterPaw() {
+/* Today is the elevated center tab: the paw button drops the owner into
+   Phoenix's living room. Pressing it again while already home opens the
+   fast-log sheet, so the paw is also the quickest way to log care. */
+function CenterToday() {
   const colors = useColors();
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { style: bounceStyle, bounce } = useBounce();
   const chrome = getFloatingTabChromeMetrics({
     platform: Platform.OS,
     bottomInset: insets.bottom,
   });
+  const onToday = pathname === "/" || pathname === "/index";
   return (
     <View pointerEvents="box-none" style={[s.fabWrap, { bottom: chrome.centerFabBottom }]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Quick log"
+        accessibilityLabel={onToday ? "Quick log" : "Today"}
+        accessibilityHint={
+          onToday
+            ? "Opens the fast log sheet"
+            : "Open Phoenix's room and today's care"
+        }
         onPress={() => {
           if (Platform.OS !== "web") {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           }
-          router.push("/log");
+          bounce();
+          if (onToday) {
+            router.push("/fastlog" as never);
+            return;
+          }
+          router.push("/");
         }}
-        style={({ pressed }) => [
-          s.fab,
-          {
-            width: chrome.centerFabSize,
-            height: chrome.centerFabSize,
-            borderRadius: chrome.centerFabSize / 2,
-            backgroundColor: colors.copperBright,
-            borderColor: colors.card,
-            shadowColor: colors.brandNavy,
-            transform: [{ scale: pressed ? 0.94 : 1 }],
-          },
-        ]}
       >
-        <PixelIcon name="walk" size={30} />
+        <Animated.View
+          style={[
+            s.fab,
+            {
+              width: chrome.centerFabSize,
+              height: chrome.centerFabSize,
+              borderRadius: chrome.centerFabSize / 2,
+              backgroundColor: colors.forest,
+              borderColor: colors.card,
+              shadowColor: colors.brandNavy,
+            },
+            bounceStyle,
+          ]}
+        >
+          <Ionicons name="paw" size={26} color={colors.primaryForeground} />
+        </Animated.View>
       </Pressable>
+      <Text style={[s.fabLabel, { color: colors.forest }]}>Today</Text>
     </View>
   );
 }
@@ -77,16 +102,15 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: colors.copperBright,
-          tabBarInactiveTintColor: colors.foreground,
-          tabBarActiveBackgroundColor: "transparent",
+          tabBarActiveTintColor: colors.forest,
+          tabBarInactiveTintColor: colors.mutedForeground,
           tabBarLabelStyle: { fontFamily: "Inter_700Bold", fontSize: 10, lineHeight: 12 },
           tabBarItemStyle: {
             paddingTop: 2,
-            paddingBottom: 5,
+            paddingBottom: 3,
             marginVertical: 2,
-            marginHorizontal: 2,
-            borderRadius: colors.pixelUi.radius.card,
+            marginHorizontal: 3,
+            borderRadius: 999,
           },
           tabBarStyle: {
             position: "absolute",
@@ -123,15 +147,6 @@ export default function TabLayout() {
         }}
       >
         <Tabs.Screen
-          name="index"
-          options={{
-            title: "Home",
-            tabBarIcon: ({ color, focused }) => (
-              <TabIcon focused={focused} color={color} ion="home-outline" ionFilled="home" />
-            ),
-          }}
-        />
-        <Tabs.Screen
           name="log"
           options={{
             title: "Log",
@@ -145,13 +160,10 @@ export default function TabLayout() {
             ),
           }}
         />
-        {/* Empty center slot reserves space under the floating paw FAB so it
-            never swallows taps meant for the Log/Plans tabs. The records
-            screen stays reachable via router.push("/records"). */}
         <Tabs.Screen
           name="calendar"
           options={{
-            title: "Plans",
+            title: "Plan",
             tabBarIcon: ({ color, focused }) => (
               <TabIcon
                 focused={focused}
@@ -163,33 +175,53 @@ export default function TabLayout() {
             ),
           }}
         />
+        {/* Today keeps its route registered but renders an empty slot in the
+            bar; the elevated CenterToday paw above it owns the tap target. */}
         <Tabs.Screen
-          name="health"
+          name="index"
           options={{
-            title: "Health",
+            title: "Today",
+            tabBarButton: () => (
+              <View pointerEvents="none" style={s.centerSlot} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="pack"
+          options={{
+            title: "Pack",
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon focused={focused} color={color} ion="paw-outline" ionFilled="paw" />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="story"
+          options={{
+            title: "Story",
             tabBarIcon: ({ color, focused }) => (
               <TabIcon
                 focused={focused}
                 color={color}
-                ion="heart-outline"
-                ionFilled="heart"
+                ion="book-outline"
+                ionFilled="book"
                 size={21}
               />
             ),
           }}
         />
+        {/* Health, More, and Records stay registered for deep links and the
+            Pack/Story/Today entry points; they are no longer primary tabs. */}
+        <Tabs.Screen
+          name="health"
+          options={{
+            href: null,
+          }}
+        />
         <Tabs.Screen
           name="more"
           options={{
-            title: "More",
-            tabBarIcon: ({ color, focused }) => (
-              <TabIcon
-                focused={focused}
-                color={color}
-                ion="ellipsis-horizontal"
-                ionFilled="ellipsis-horizontal"
-              />
-            ),
+            href: null,
           }}
         />
         <Tabs.Screen
@@ -199,7 +231,7 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
-      <CenterPaw />
+      <CenterToday />
     </View>
   );
 }
@@ -221,5 +253,14 @@ const s = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 10,
+  },
+  fabLabel: {
+    marginTop: 2,
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 10,
+    lineHeight: 12,
+  },
+  centerSlot: {
+    flex: 1,
   },
 });

@@ -78,10 +78,10 @@ test("uses the hard-pixel Option B Phoenix family for live runtime actions", () 
   ];
 
   for (const action of optionBActions) {
-    assert.match(CARE_TWIN_SPRITE_MANIFEST[action].requiredAsset, /assets\/avatar\/phoenix\/candidates\/option-b-/);
+    assert.match(CARE_TWIN_SPRITE_MANIFEST[action].requiredAsset, /assets\/avatar\/phoenix\/storybook\/storybook-/);
   }
   assert.equal(CARE_TWIN_SPRITE_MANIFEST["walk-loop"].frameCount, 8);
-  assert.match(CARE_TWIN_SPRITE_MANIFEST["bark-loop"].requiredAsset, /option-b-bark-reaction-strip\.png/);
+  assert.match(CARE_TWIN_SPRITE_MANIFEST["bark-loop"].requiredAsset, /storybook-bark-reaction-strip\.png/);
   assert.notEqual(CARE_TWIN_SPRITE_MANIFEST["bark-loop"].requiredAsset, CARE_TWIN_SPRITE_MANIFEST["ear-perk"].requiredAsset);
 });
 

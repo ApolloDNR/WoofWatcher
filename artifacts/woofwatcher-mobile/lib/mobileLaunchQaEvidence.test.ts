@@ -216,13 +216,13 @@ test("promotes the owner preview core loop as the primary mission before isolate
       goal: "Prove a real owner can move through the main beta loop without dead ends.",
       devicePrompt: "Run the owner route loop on iOS and Android.",
       setupSteps: ["Use local preview data with no private real household details visible."],
-      verificationSteps: ["Open Home, Log, Plans, Health, and More in order from the bottom navigation."],
+      verificationSteps: ["Open Log, Plan, Today, Pack, and Story in order from the bottom navigation."],
       acceptanceCriteria: ["The bottom-nav loop never hides the active action or routes to a blank screen."],
       failureEscalation: "Mark Needs tune if any core route is confusing, clipped, or a dead end.",
       requiredEvidence: [
         "iOS screenshot of Quick Log or Log.",
         "Android screenshot of Launch Readiness from More.",
-        "Note confirming Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
+        "Note confirming Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
       ],
       launchRisk: "If this loop is not proven, the real owner beta journey is untrusted.",
     },
@@ -527,9 +527,11 @@ test("preserves owner preview route-loop details in the capture plan and share s
   assert.deepEqual(
     target?.routeChecklist?.map((item) => `${item.label}:${item.route}`),
     [
-      "Home:/",
       "Log:/log",
-      "Plans:/calendar",
+      "Plan:/calendar",
+      "Today:/",
+      "Pack:/pack",
+      "Story:/story",
       "Health:/health",
       "More:/more",
       "Adventure:/adventure",
@@ -538,16 +540,18 @@ test("preserves owner preview route-loop details in the capture plan and share s
       "Care Pass:/records",
     ],
   );
-  assert.match(target?.routeChecklist?.[1]?.expected ?? "", /Quick-log one safe care event/);
-  assert.match(target?.routeChecklist?.[4]?.proof ?? "", /Android Launch Readiness screenshot/);
-  assert.match(target?.routeChecklist?.[5]?.expected ?? "", /private care quests/);
+  assert.match(target?.routeChecklist?.[0]?.expected ?? "", /Quick-log one safe care event/);
+  assert.match(target?.routeChecklist?.[6]?.proof ?? "", /Android Launch Readiness screenshot/);
+  assert.match(target?.routeChecklist?.[7]?.expected ?? "", /private care quests/);
 
   const text = buildMobileLaunchQaCaptureShareText(plan, "2026-06-25T09:30:00.000Z");
 
   assert.match(text, /Route loop:/);
-  assert.match(text, /Home \(\/\): Confirm Phoenix status/);
+  assert.match(text, /Today \(\/\): Confirm Phoenix status/);
   assert.match(text, /Log \(\/log\): Quick-log one safe care event/);
-  assert.match(text, /More \(\/more\): Open Launch Readiness/);
+  assert.match(text, /Pack \(\/pack\): Confirm pets, people, household access/);
+  assert.match(text, /Story \(\/story\): Confirm care career, adventure trail/);
+  assert.match(text, /More \(\/more\): Open More from Today's header menu or the Pack links/);
   assert.match(text, /Adventure \(\/adventure\): Confirm private care quests/);
   assert.match(text, /Care Pass \(\/records\): Confirm sitter\/vet\/trainer handoff/);
 });
@@ -563,8 +567,8 @@ test("expands route visual consistency into route-by-route native screenshot pro
 
   assert.equal(target?.surfaceId, "route-visual-consistency");
   assert.deepEqual(target?.missingEvidence.slice(0, 3), [
-    "Attach 6 iOS screenshots for Route Visual Consistency.",
-    "Attach 6 Android screenshots for Route Visual Consistency.",
+    "Attach 8 iOS screenshots for Route Visual Consistency.",
+    "Attach 8 Android screenshots for Route Visual Consistency.",
     "Add QA note for Route Visual Consistency.",
   ]);
   assert.ok(target?.routeChecklist?.every((item) => item.requiredNativePlatforms?.join(",") === "ios,android"));
@@ -572,9 +576,11 @@ test("expands route visual consistency into route-by-route native screenshot pro
   const text = buildMobileLaunchQaCaptureShareText(plan, "2026-07-03T09:30:00.000Z");
 
   assert.match(text, /Route Visual Consistency/);
-  assert.match(text, /Missing: Attach 6 iOS screenshots for Route Visual Consistency\./);
-  assert.match(text, /Attach 6 Android screenshots for Route Visual Consistency\./);
-  assert.match(text, /Home \(\/\): Phoenix Room/);
+  assert.match(text, /Missing: Attach 8 iOS screenshots for Route Visual Consistency\./);
+  assert.match(text, /Attach 8 Android screenshots for Route Visual Consistency\./);
+  assert.match(text, /Today \(\/\): Phoenix Room/);
+  assert.match(text, /Pack \(\/pack\): Pack keeps pets, people, household access/);
+  assert.match(text, /Story \(\/story\): Story keeps care career, adventure trail/);
   assert.match(text, /Proof: iOS \+ Android native screenshot required\./);
   assert.match(text, /More \(\/more\): Command Directory maps the app/);
 });
@@ -627,7 +633,7 @@ test("keeps note-required owner preview evidence open until the QA note is writt
     ...sessionWithoutNote,
     surfaceNotes: {
       "owner-preview-core-loop":
-        "Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass were reachable without dead ends. Care Pass Report History storage status stayed truthful.",
+        "Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass were reachable without dead ends. Care Pass Report History storage status stayed truthful.",
     },
   };
 
@@ -725,7 +731,7 @@ test("keeps owner preview beta proof visible even when it is outside the visible
       requiredEvidence: [
         "iOS screenshot of Quick Log or Log.",
         "Android screenshot of More Launch Readiness.",
-        "Note confirming Home, Log, Plans, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
+        "Note confirming Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass had no dead ends.",
       ],
       launchRisk: "This is the beta's real owner path.",
     },

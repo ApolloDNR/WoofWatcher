@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef } from "react";
 import {
-  Alert,
   Animated,
   ImageBackground,
   Platform,
@@ -14,6 +13,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { OwnerOpsUnavailableScreen } from "@/components/board/OwnerOpsBoundary";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import {
   deriveHealthWatch,
   derivePremiumPreview,
@@ -27,13 +28,14 @@ import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/Boa
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
+import { notifyDialog } from "@/lib/confirmDialog";
 import { MIN_MOBILE_TOUCH_TARGET, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import { buildPaymentsProviderProofManifest } from "@/lib/paymentsProviderProof";
-import { pixelImageStyle } from "@/lib/pixelRendering";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
-const PIXEL_DISPLAY = "PressStart2P_400Regular";
+const PIXEL_DISPLAY = "Fredoka_600SemiBold";
 const PREMIUM_VALUE_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-pixellab-400x300.png");
 const PREMIUM_VALUE_STAGE_SPRITE = getCareTwinSpriteAsset("celebrate-hop");
 const PREMIUM_VALUE_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["celebrate-hop"];
@@ -47,6 +49,15 @@ function signalIcon(key: PremiumValueSignal["key"]): keyof typeof Ionicons.glyph
 }
 
 export default function PremiumScreen() {
+  // Store builds hide the gated Plus preview: pricing tiers may not be
+  // shown to reviewers or households until checkout is provider-approved.
+  if (!isOwnerOpsBuild()) {
+    return <OwnerOpsUnavailableScreen title="WoofWatcher Plus preview unavailable" />;
+  }
+  return <PremiumScreenBody />;
+}
+
+function PremiumScreenBody() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -107,7 +118,7 @@ export default function PremiumScreen() {
 
   const showLaunchChecklist = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert(
+    notifyDialog(
       "Premium launch checklist",
       "Payments stay disabled until privacy terms, support scope, refund workflow, subscription packaging, and app-store launch target are approved.",
     );
@@ -134,12 +145,11 @@ export default function PremiumScreen() {
             <ImageBackground
               source={PREMIUM_VALUE_STAGE_ROOM}
               resizeMode="stretch"
-              imageStyle={[s.premiumValueStageImage, pixelImageStyle]}
+              imageStyle={[stageImageFill, s.premiumValueStageImage, pixelImageStyle]}
               style={s.premiumValueStage}
               testID="premium-value-pixel-stage"
             >
               <View style={s.premiumValueStageShade} />
-              <View style={s.premiumValueStageScanline} />
 
               <View style={s.premiumValueStageTop}>
                 <View style={s.premiumValueBubble}>
@@ -497,11 +507,6 @@ const s = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(8, 20, 36, 0.14)",
   },
-  premiumValueStageScanline: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
-    borderColor: "rgba(255, 249, 239, 0.22)",
-  },
   premiumValueStageTop: {
     padding: 14,
     flexDirection: "row",
@@ -547,6 +552,7 @@ const s = StyleSheet.create({
     transform: [{ rotate: "45deg" }],
   },
   premiumValueChip: {
+    flexShrink: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 8,

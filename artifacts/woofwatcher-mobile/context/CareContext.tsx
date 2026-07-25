@@ -446,6 +446,12 @@ interface CareContextValue {
   updateEntry: (id: string, patch: Partial<Omit<Entry, "id">>) => void;
   updateCareDoc: (updater: (doc: CareDoc) => CareDoc) => void;
   refresh: () => void;
+  /**
+   * Store-compliance data deletion: resets the live care document and
+   * removes every WoofWatcher key on this device (care state, avatar art,
+   * QA sessions). Local-first means this is the complete deletion.
+   */
+  eraseAllLocalData: () => Promise<void>;
   syncOutbox: CareSyncOutbox;
   isLoaded: boolean;
   isSyncing: boolean;
@@ -473,6 +479,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   // arrive before a create resolves (post-log quick-note race).
   const realIdByTemp = useRef<Map<string, string>>(new Map());
   const pendingPatch = useRef<Map<string, Partial<Omit<Entry, "id">>>>(new Map());
+  // Bumped by eraseAllLocalData so in-flight sync results can't resurrect
+  // data the owner just deleted from this device.
+  const eraseGenerationRef = useRef(0);
   useEffect(() => {
     docRef.current = doc;
   }, [doc]);
@@ -637,10 +646,15 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const syncFromServer = useCallback(async () => {
     if (!signedInRef.current || syncingRef.current) return;
+    // Capture the erase generation so results from a sync that was in
+    // flight when the owner wiped this device are discarded instead of
+    // resurrecting the deleted data.
+    const eraseGenerationAtStart = eraseGenerationRef.current;
     syncingRef.current = true;
     setIsSyncing(true);
     try {
       const envelope = await getCareState();
+      if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
       const plan = reconcileCareDocFromServer<CareDoc>({
         localDoc: docRef.current,
         localVersion: versionRef.current,
@@ -667,6 +681,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         hasDeleteTombstones: false,
       });
       const rows = await listCareEntries(entryRefreshPlan.params);
+      if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
       const serverEntries = rows.map(toEntry);
       const retryableCreates = entriesRef.current.filter(
         (entry) => shouldRetryCreate(entry) && entry.syncStatus !== "pending",
@@ -714,14 +729,18 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const deleteEntry = useCallback(
     async (id: string) => {
+      // A quick undo can arrive after the optimistic create already swapped
+      // its temp id for the server id; resolve through the mapping so the
+      // right row is removed locally AND on the server.
+      const realId = realIdByTemp.current.get(id) ?? id;
       let removed: Entry | undefined;
       setEntries((prev) => {
-        removed = prev.find((e) => e.id === id);
-        return prev.filter((e) => e.id !== id);
+        removed = prev.find((e) => e.id === realId || e.id === id);
+        return prev.filter((e) => e.id !== realId && e.id !== id);
       });
-      if (!signedInRef.current || id.startsWith("temp_")) return true;
+      if (!signedInRef.current || realId.startsWith("temp_")) return true;
       try {
-        await deleteCareEntry(id);
+        await deleteCareEntry(realId);
         queryClient.invalidateQueries({
           queryKey: getListCareEntriesQueryKey(),
         });
@@ -839,6 +858,28 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const syncOutbox = useMemo(() => deriveCareSyncOutbox(entries), [entries]);
 
+  const eraseAllLocalData = useCallback(async () => {
+    // Reset the live document first so the UI reflects the wipe instantly,
+    // then remove every WoofWatcher-owned key on the device. The persist
+    // effect re-saves only a pristine default household afterward.
+    eraseGenerationRef.current += 1;
+    setDoc(getDefaultDoc());
+    setEntries([]);
+    setServerVersion(0);
+    realIdByTemp.current.clear();
+    pendingPatch.current.clear();
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const owned = keys.filter((key) => key.startsWith("woofwatcher"));
+      if (owned.length) {
+        await AsyncStorage.multiRemove(owned);
+      }
+    } catch {
+      // Best effort: the in-memory reset above already cleared the live
+      // document, and the persist effect overwrites the primary cache key.
+    }
+  }, []);
+
   const value = useMemo<CareContextValue>(
     () => ({
       state,
@@ -847,6 +888,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       updateEntry,
       updateCareDoc,
       refresh: () => void syncFromServer(),
+      eraseAllLocalData,
       syncOutbox,
       isLoaded: hydrated,
       isSyncing,
@@ -858,6 +900,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       updateEntry,
       updateCareDoc,
       syncFromServer,
+      eraseAllLocalData,
       syncOutbox,
       hydrated,
       isSyncing,

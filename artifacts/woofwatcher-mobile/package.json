@@ -47,7 +47,6 @@
     "expo-image-picker": "~17.0.9",
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.10",
-    "expo-location": "~19.0.8",
     "expo-router": "~6.0.17",
     "expo-secure-store": "^15.0.8",
     "expo-splash-screen": "~31.0.12",
@@ -74,6 +73,7 @@
     "@expo-google-fonts/fraunces": "^0.4.1",
     "@expo-google-fonts/fredoka": "^0.4.1",
     "expo-file-system": "~19.0.23",
-    "expo-image-manipulator": "~14.0.8"
+    "expo-image-manipulator": "~14.0.8",
+    "expo-location": "~19.0.8"
   }
 }

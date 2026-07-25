@@ -6,6 +6,8 @@ import {
   type RoutineBoardItem,
 } from "../../../lib/care-domain/src/index.ts";
 
+import { resolvePetName } from "./petIdentity.ts";
+
 export type TodayCommandUrgency = "normal" | "watch" | "alert";
 
 export type TodayCommandRoute =
@@ -269,7 +271,18 @@ function isHouseholdVisible(entry: TodayCommandEntry): boolean {
   return detailRecord(entry).householdVisible !== false;
 }
 
-function isPendingMealOutcome(entry: TodayCommandEntry): boolean {
+/**
+ * How long a served meal's unresolved outcome stays actionable after serving.
+ * A dinner served at 23:58 must still offer its outcome card at 00:02 - the
+ * local-day rollover alone never hides an open meal loop. Meals served on the
+ * current local day always stay visible regardless of this window (existing
+ * behavior); the 12h cap only bounds how far back a previous day's served
+ * meal keeps surfacing before it quietly expires.
+ */
+export const PENDING_MEAL_OUTCOME_WINDOW_MS = 12 * 60 * 60 * 1000;
+
+/** A served/grazing meal whose ate-all/some/refused outcome is unrecorded. */
+export function isPendingMealOutcome(entry: TodayCommandEntry): boolean {
   if (normalizeCareEventType(entry.type, entry.details) !== "meal") return false;
   const details = detailRecord(entry);
   const completion = lower(details.mealCompletion ?? details.completion ?? details.outcome);
@@ -278,10 +291,34 @@ function isPendingMealOutcome(entry: TodayCommandEntry): boolean {
     ["served", "pending", "outcome-pending", "still grazing", "grazing"].includes(lifecycle);
 }
 
-function oldestPendingMeal(todays: readonly TodayCommandEntry[]): TodayCommandEntry | null {
+/**
+ * Whether a pending outcome should still surface: served today (any hour), or
+ * served within the last 12 hours - which keeps the loop open across the
+ * midnight rollover until it is resolved or sensibly expires.
+ */
+export function isPendingMealOutcomeActionable(
+  entry: TodayCommandEntry,
+  now: number,
+): boolean {
+  if (!isPendingMealOutcome(entry)) return false;
+  if (isSameLocalDay(entry.occurredAt, now)) return true;
+  const occurred = new Date(entry.occurredAt).getTime();
+  if (!Number.isFinite(occurred)) return false;
+  return occurred <= now && now - occurred <= PENDING_MEAL_OUTCOME_WINDOW_MS;
+}
+
+/**
+ * Oldest household-visible meal still waiting on its outcome, spanning the
+ * midnight rollover. Exported so Home's open-loop chip can share the exact
+ * same window as the Today Command primary action.
+ */
+export function findPendingMealOutcome(
+  entries: readonly TodayCommandEntry[],
+  now: number,
+): TodayCommandEntry | null {
   return (
-    todays
-      .filter((entry) => isHouseholdVisible(entry) && isPendingMealOutcome(entry))
+    entries
+      .filter((entry) => isHouseholdVisible(entry) && isPendingMealOutcomeActionable(entry, now))
       .sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime())[0] ?? null
   );
 }
@@ -371,10 +408,11 @@ export function deriveTodayCommand(
       primaryAction: {
         kind: "sync",
         label: "Retry care sync",
+        // Short enough for Home's one-line glance without clipping.
         detail:
           sync.failed > 0
             ? "A local care log failed to reach the shared household record."
-            : "Offline logs are saved locally and need to sync.",
+            : "Logs save here and share when connected.",
         route: "/log",
         urgency: "watch",
         icon: "bolt",
@@ -403,14 +441,25 @@ export function deriveTodayCommand(
     };
   }
 
-  const pendingMeal = oldestPendingMeal(todays);
+  // Searched across the midnight rollover: a meal served at 23:58 keeps its
+  // outcome loop open at 00:02 instead of silently vanishing with the day.
+  const pendingMeal = findPendingMealOutcome(entries, now);
   if (pendingMeal) {
     const title = pendingMealTitle(pendingMeal);
+    const petName = resolvePetName(state.profile?.name);
+    const servedEarlierDay = !isSameLocalDay(pendingMeal.occurredAt, now);
     return {
       primaryAction: {
         kind: "update-meal-outcome",
-        label: `Update ${title.toLowerCase()} outcome`,
-        detail: `${title} was served. Confirm whether Phoenix ate all, ate some, refused, or is still grazing.`,
+        label: servedEarlierDay
+          ? `Update last night's ${title.toLowerCase()}`
+          : `Update ${title.toLowerCase()} outcome`,
+        // Short enough for Home's clamped lines; the meal log itself offers
+        // the full ate all / some / refused / grazing outcomes. Cross-midnight
+        // copy owns the rollover honestly instead of pretending it is today's.
+        detail: servedEarlierDay
+          ? `Last night's ${title.toLowerCase()} - how did it go? Confirm how much ${petName} ate.`
+          : `${title} served. Confirm how much ${petName} ate.`,
         route: entryRoute(pendingMeal.id),
         urgency: "normal",
         icon: "bowl",

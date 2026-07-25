@@ -1,5 +1,27 @@
 # Premium Revenue Product Builder
 
+## 2026-07-24 Mainline Premium Reconciliation
+
+The automation branch now reconciles current `origin/main` through a normal
+merge. This carries the July mockup-parity screen set, truthful care-loop
+polish, breed-matched Setup twin preview, populated-account QA harness,
+Supabase migration/RLS preparation, store-listing assets, and installable PWA
+work into the premium builder without rewriting either history.
+
+The only content conflict was Setup. Its resolution deliberately preserves
+both the mainline breed-matched care-twin plan and the automation branch's
+durable Auth/Setup proof evidence. The route-visual, Records local-file,
+report-binary, Auth/Setup, and payments proof evidence propagation guards also
+remain source-backed.
+
+Local reconciliation proof passed the 660-test zero-dependency suite,
+`mobileReadiness.test.ts` at 116/116, TypeScript build, and PixelLab verification
+at `ok=149 missing=0 invalid=0`. JSON beta doctor remains truthfully `BLOCKED`
+because exact `pnpm@10.24.0` and Corepack are unavailable locally. A bundled
+pnpm 11 export retry failed during install with
+`EPERM ... unlink ...\node_modules\typescript`; branch CI is the pinned-pnpm
+install/build/export authority for this merge.
+
 ## Purpose
 
 `Premium Revenue Product Builder` is the recurring autonomous build loop for WoofWatcher. Its job is to keep moving the app toward a premium mobile-first dog-care operating system without requiring Apollo to approve routine engineering decisions.

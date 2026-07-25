@@ -120,7 +120,10 @@ export function buildHomeMissionDeck(input: HomeMissionDeckInput): HomeMission[]
       key: "adventure",
       label: "Adventure",
       title: clean(input.adventure.title, `${petName}'s next quest`),
-      detail: `Level ${adventureLevel} - ${todayXp} XP today - ${memoriesCount} memories`,
+      // Adventure's daily quest track is labeled "Quest level"/"quest XP" so
+      // it never collides with the canonical care level ("Lv") and care XP
+      // from careCareer that Pack/More/Story render.
+      detail: `Quest level ${adventureLevel} - ${todayXp} quest XP today - ${memoriesCount} memories`,
       statusLabel: "Care RPG",
       cta: "Start quest",
       icon: "walk",

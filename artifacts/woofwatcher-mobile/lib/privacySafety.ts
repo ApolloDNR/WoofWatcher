@@ -20,6 +20,7 @@ import {
   deriveSupportRunbookPlan,
   type SupportRunbookInput,
 } from "./supportRunbook.ts";
+import { resolvePetName } from "./petIdentity.ts";
 
 export interface PrivacyExportProfile {
   name?: string;
@@ -184,7 +185,10 @@ function safeArray<T>(value: readonly T[] | undefined): readonly T[] {
 }
 
 function dogName(state: PrivacyExportState): string {
-  return state.profile?.name?.trim() || "your dog";
+  // Route through the canonical pet-name rule so exports and deletion
+  // requests say "Phoenix" (or the real name), matching every app surface
+  // instead of leaking the "My Dog" placeholder.
+  return resolvePetName(state.profile?.name);
 }
 
 function generatedAt(now: number): string {

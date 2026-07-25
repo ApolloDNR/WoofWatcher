@@ -1,3 +1,5 @@
+import { resolvePetName } from "./petIdentity.ts";
+
 export type CareTwinRosterPetStatus = "live" | "setup-needed" | "provider-gated";
 
 export interface CareTwinRosterWeight {
@@ -97,17 +99,20 @@ function normalizeStatus(status: unknown, isPrimary: boolean): CareTwinRosterPet
 function statusLabel(status: CareTwinRosterPetStatus): string {
   if (status === "live") return "Live care twin";
   if (status === "setup-needed") return "Needs setup";
-  return "Provider-gated";
+  return "Coming soon";
 }
 
 function statusDetail(status: CareTwinRosterPetStatus, name: string): string {
   if (status === "live") return `${name} is the active dog for logs, routines, records, and the room.`;
-  if (status === "setup-needed") return "Profile can be staged, but care data is not separated until multi-dog storage is approved.";
-  return "Stored as a planned pet slot. Switching and separate logs need provider-backed multi-dog care documents.";
+  if (status === "setup-needed") return "Profile can be saved now; separate care data for this dog is coming soon.";
+  return "Saved as a planned pet slot. Switching and separate logs are coming soon - everything stays on this device for now.";
 }
 
 function petFromProfile(profile: CareTwinRosterProfile | null | undefined, isPrimary: boolean): CareTwinRosterPet {
-  const name = clean(profile?.publicLabel) || clean(profile?.name) || (isPrimary ? "Phoenix" : "Future dog");
+  const rawName = clean(profile?.publicLabel) || clean(profile?.name);
+  // One shared rule so the roster never says "My Dog" while the rest of the
+  // app says "Phoenix"; non-primary rows keep their own name or a placeholder.
+  const name = isPrimary ? resolvePetName(rawName) : rawName || "Future dog";
   const status = normalizeStatus(profile?.status, isPrimary);
   return {
     id: isPrimary ? "primary" : clean(profile?.id) || `pet_${slugify(name)}`,
@@ -159,12 +164,12 @@ export function deriveCareTwinRoster(doc: CareTwinRosterDoc): CareTwinRoster {
   const providerGatedCount = pets.filter((pet) => pet.status === "provider-gated").length;
   const summary =
     futureCount > 0
-      ? `${primary.name} is the live care twin. ${futureCount} future pet${futureCount === 1 ? "" : "s"} staged for multi-dog care.`
+      ? `${primary.name} is the live care twin. ${futureCount} future pet${futureCount === 1 ? " saved as a planned slot" : "s saved as planned slots"}.`
       : `${primary.name} is the live care twin for this household.`;
   const nextStep =
     futureCount > 0
-      ? "provider-backed multi-dog care documents are required before switching pets or separating logs."
-      : "Add future pets only as planned slots until multi-dog storage is approved.";
+      ? "Multi-dog care is coming soon - planned pets stay as slots on this device for now."
+      : "Add future pets only as planned slots for now - multi-dog care is coming soon.";
 
   return {
     activePet: primary,

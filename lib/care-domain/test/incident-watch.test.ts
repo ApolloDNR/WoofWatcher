@@ -120,6 +120,40 @@ test("derives improving trend when recent incidents quiet down", () => {
   assert.equal(watch.trend.windows[0]?.count, 0);
   assert.equal(watch.trend.windows[2]?.count, 1);
   assert.match(watch.trend.detail, /lower than the prior window/);
+  // Default copy keeps the app-wide Phoenix fallback.
+  assert.match(watch.trend.detail, /helped Phoenix recover calmly/);
+});
+
+test("incident copy uses the renamed dog's name, never Phoenix", () => {
+  const watch = deriveIncidentWatch({
+    now: NOW,
+    lookbackDays: 90,
+    petName: "Biscuit",
+    entries: [
+      {
+        id: "older-dog",
+        type: "incident",
+        title: "Incident - dog conflict",
+        caregiver: "Emma",
+        occurredAt: "2026-06-09T08:30:00-07:00",
+        details: {
+          incidentTrigger: "Fence line dog",
+          incidentExposure: "Neighbor dog",
+          incidentInjury: "None",
+          incidentAction: "Crossed street",
+          incidentFollowUp: "Practice calm pass",
+          householdVisible: true,
+        },
+      },
+    ],
+  });
+
+  assert.match(watch.trend.detail, /helped Biscuit recover calmly/);
+  assert.doesNotMatch(watch.trend.detail, /Phoenix/);
+  assert.doesNotMatch(watch.nextStep, /Phoenix/);
+  for (const goal of watch.trainerGoals) {
+    assert.doesNotMatch(goal.detail, /Phoenix/);
+  }
 });
 
 test("returns a clear baseline when no incidents are visible", () => {

@@ -3,24 +3,23 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   Image,
   ImageBackground,
+  type LayoutChangeEvent,
   Modal,
   Platform,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useWoofAuth } from "@/lib/auth";
+import { isClerkConfigured, useWoofAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetMe,
@@ -42,9 +41,10 @@ import {
 import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
 import { useAvatar } from "@/context/AvatarContext";
+import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
-import { deriveCareSyncDashboard } from "@/lib/careSync";
+import { deriveCareSyncDashboard, type CareSyncDashboard } from "@/lib/careSync";
 import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
@@ -86,6 +86,7 @@ import {
 import { buildReleasePacket, buildReleasePacketShareText } from "@/lib/releasePacket";
 import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from "@/lib/storeSubmissionPacket";
 import { deriveSupportRunbookPlan } from "@/lib/supportRunbook";
+import { shareTextPayload } from "@/lib/shareText";
 import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
@@ -97,8 +98,15 @@ import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
-import { pixelImageStyle } from "@/lib/pixelRendering";
-import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
+import { BoardActionButton, BoardCard, BoardMetricTile, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { ProgressFill } from "@/components/motion/GameFeel";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
+import {
+  deriveCareCareer,
+  deriveCareerWeek,
+  deriveCareStreak,
+} from "@/lib/careCareer";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -342,16 +350,24 @@ export default function MoreScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  // Owner launch tooling renders in development/internal builds only; store
+  // production builds keep More to household care surfaces.
+  const ownerOps = isOwnerOpsBuild();
   const routeParams = useLocalSearchParams<{
     section?: string | string[];
   }>();
   const sectionParam = Array.isArray(routeParams.section) ? routeParams.section[0] : routeParams.section;
+  // `focus` is a navigation nonce (Date.now() at the call site). More stays
+  // mounted between tab visits, so without it a second tap on the same
+  // Pack/Story shortcut would leave `section` unchanged and never re-scroll.
+  const rawFocusParam = (routeParams as Record<string, string | string[] | undefined>).focus;
+  const focusParam = Array.isArray(rawFocusParam) ? rawFocusParam[0] : rawFocusParam;
   const householdFocus = sectionParam === "household";
   const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
   const { dietProfile, profile, entries, routines, caregivers, accessPasses } = state;
   const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
 
-  const { signOut } = useWoofAuth();
+  const { signOut, isSignedIn } = useWoofAuth();
   const queryClient = useQueryClient();
   const me = useGetMe();
   const updateHousehold = useUpdateHousehold();
@@ -365,6 +381,18 @@ export default function MoreScreen() {
 
   const now = Date.now();
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  const moreCareCareer = useMemo(
+    () => deriveCareCareer(state.entries, now),
+    [state.entries, now],
+  );
+  const moreCareStreak = useMemo(
+    () => deriveCareStreak(state.entries, now),
+    [state.entries, now],
+  );
+  const moreCareerWeek = useMemo(
+    () => deriveCareerWeek(state.entries, now),
+    [state.entries, now],
+  );
   const careIntelligence = useMemo(
     () =>
       deriveCareIntelligence({
@@ -417,27 +445,55 @@ export default function MoreScreen() {
     [entries],
   );
 
-  const syncDashboard = useMemo(
-    () =>
-      deriveCareSyncDashboard({
-        outbox: syncOutbox,
-        isLoaded,
-        isSyncing,
-        lastUpdatedAt: latestCareUpdate ?? state.updatedAt,
-        householdMemberCount: members.length || (household ? 1 : 0),
-        totalEntries: entries.length,
-      }),
-    [
-      syncOutbox,
+  const syncDashboard = useMemo<CareSyncDashboard>(() => {
+    if (!isClerkConfigured) {
+      // Local-first build: device storage is the success state, so Sync
+      // Health reports the honest on-device record instead of implying a
+      // cloud outbox or retries that no provider can service.
+      return {
+        status: "healthy",
+        title: "Saved on this device",
+        message: "Every care log is stored in this device's local care record. Nothing is waiting.",
+        nextStep: "Household sync is coming soon - every care log stays on this device for now.",
+        actionLabel: "Refresh",
+        metrics: [
+          {
+            label: "Care log",
+            value: `${entries.length} ${entries.length === 1 ? "entry" : "entries"}`,
+            detail: "Saved on this device",
+          },
+          {
+            label: "Care team",
+            value: `${caregivers.length} ${caregivers.length === 1 ? "member" : "members"}`,
+            detail: "Household roster",
+          },
+          {
+            label: "Waiting",
+            value: "0",
+            detail: "Nothing to sync",
+          },
+        ],
+      };
+    }
+    return deriveCareSyncDashboard({
+      outbox: syncOutbox,
       isLoaded,
       isSyncing,
-      latestCareUpdate,
-      state.updatedAt,
-      members.length,
-      household,
-      entries.length,
-    ],
-  );
+      lastUpdatedAt: latestCareUpdate ?? state.updatedAt,
+      householdMemberCount: members.length || (household ? 1 : 0),
+      totalEntries: entries.length,
+    });
+  }, [
+    syncOutbox,
+    isLoaded,
+    isSyncing,
+    latestCareUpdate,
+    state.updatedAt,
+    members.length,
+    household,
+    entries.length,
+    caregivers.length,
+  ]);
   const launchProviderSetupPlan = useMemo(
     () => deriveLaunchProviderSetup(state.launchProviderProfile),
     [state.launchProviderProfile],
@@ -486,8 +542,9 @@ export default function MoreScreen() {
       : syncDashboard.status === "syncing" || syncDashboard.status === "loading"
         ? colors.primary
         : colors.sage;
-  const syncIcon: keyof typeof Ionicons.glyphMap =
-    syncDashboard.status === "attention"
+  const syncIcon: keyof typeof Ionicons.glyphMap = !isClerkConfigured
+    ? "phone-portrait-outline"
+    : syncDashboard.status === "attention"
       ? "cloud-offline-outline"
       : syncDashboard.status === "syncing" || syncDashboard.status === "loading"
         ? "cloud-upload-outline"
@@ -577,6 +634,62 @@ export default function MoreScreen() {
     platform: Platform.OS,
     bottomInset: insets.bottom,
   });
+
+  /**
+   * Anchored deep-links: `/more?section=household|access|care-pass|diet|career`
+   * scrolls the matching board into view, so arrivals from Pack, Home, or
+   * Story land on the section itself instead of the top of this very long
+   * page. Each anchor is a zero-height View that reports its y-offset inside
+   * the scroll content (the health.tsx scrollRef pattern); if the target has
+   * not laid out yet on a cold mount, the scroll settles when it does.
+   */
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionAnchorYRef = useRef<Record<string, number>>({});
+  const pendingAnchorRef = useRef<string | null>(null);
+
+  const scrollToAnchor = useCallback(
+    (key: string): boolean => {
+      const anchorY = sectionAnchorYRef.current[key];
+      if (anchorY == null) return false;
+      // Anchors measure against the content wrapper, which starts below the
+      // ScrollView's own top content padding.
+      scrollRef.current?.scrollTo({ y: Math.max(0, topPadding + anchorY - 8), animated: true });
+      return true;
+    },
+    [topPadding],
+  );
+
+  const registerSectionAnchor = useCallback(
+    (key: string) => (event: LayoutChangeEvent) => {
+      sectionAnchorYRef.current[key] = event.nativeEvent.layout.y;
+      if (pendingAnchorRef.current === key) {
+        pendingAnchorRef.current = null;
+        requestAnimationFrame(() => scrollToAnchor(key));
+      }
+    },
+    [scrollToAnchor],
+  );
+
+  const sectionAnchorTarget =
+    sectionParam === "care-pass" || sectionParam === "carepass"
+      ? "care-pass"
+      : sectionParam === "household" ||
+          sectionParam === "access" ||
+          sectionParam === "diet" ||
+          sectionParam === "career"
+        ? sectionParam
+        : null;
+
+  useEffect(() => {
+    if (!sectionAnchorTarget) return;
+    pendingAnchorRef.current = sectionAnchorTarget;
+    const frame = requestAnimationFrame(() => {
+      if (pendingAnchorRef.current === sectionAnchorTarget && scrollToAnchor(sectionAnchorTarget)) {
+        pendingAnchorRef.current = null;
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [sectionAnchorTarget, focusParam, scrollToAnchor]);
   const modalSheetBottomPadding = getModalSheetBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -674,10 +787,10 @@ export default function MoreScreen() {
   const shareInvite = () => {
     if (!household) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({
+    void shareTextPayload({
       message: `Join our ${household.name} on WoofWatcher to help care for ${petName}. Invite code: ${household.inviteCode}`,
       title: "WoofWatcher invite",
-    }).catch(() => Alert.alert("Invite code", household.inviteCode));
+    });
   };
 
   const openFuturePetSheet = () => {
@@ -729,7 +842,7 @@ export default function MoreScreen() {
   const shareAccessPassSummary = () => {
     const pass = accessPassPlan.passes[0];
     if (!pass) {
-      Alert.alert("Access Pass", "Create a local Access Pass draft before sharing helper instructions.");
+      notifyDialog("Access Pass", "Create a local Access Pass draft before sharing helper instructions.");
       return;
     }
     const message = [
@@ -750,9 +863,7 @@ export default function MoreScreen() {
       "Provider-backed sharing is not live yet; review this before granting real access.",
     ].join("\n");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message, title: `WoofWatcher Access Pass - ${pass.holderName}` }).catch(() =>
-      Alert.alert("Access Pass", message),
-    );
+    void shareTextPayload({ message, title: `WoofWatcher Access Pass - ${pass.holderName}` });
   };
 
   const submitJoin = () => {
@@ -768,7 +879,7 @@ export default function MoreScreen() {
           refreshMe();
           refresh();
         },
-        onError: () => Alert.alert("Couldn't join", "That invite code didn't match a household."),
+        onError: () => notifyDialog("Couldn't join", "That invite code didn't match a household."),
       },
     );
   };
@@ -784,7 +895,7 @@ export default function MoreScreen() {
           setRenameOpen(false);
           refreshMe();
         },
-        onError: () => Alert.alert("Couldn't rename", "Please try again."),
+        onError: () => notifyDialog("Couldn't rename", "Please try again."),
       },
     );
   };
@@ -800,7 +911,7 @@ export default function MoreScreen() {
           setNameOpen(false);
           refreshMe();
         },
-        onError: () => Alert.alert("Couldn't update name", "Please try again."),
+        onError: () => notifyDialog("Couldn't update name", "Please try again."),
       },
     );
   };
@@ -884,17 +995,21 @@ export default function MoreScreen() {
   };
 
   const confirmSignOut = () => {
-    Alert.alert("Sign out", "You'll need to sign back in to sync care logs.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign out",
-        style: "destructive",
-        onPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          signOut();
+    confirmThroughSteps(
+      [
+        {
+          title: "Sign out",
+          message:
+            "Care logs stay saved on this device. You'll need to sign back in before future changes can reach the household.",
+          confirmLabel: "Sign out",
+          destructive: true,
         },
+      ],
+      () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        signOut();
       },
-    ]);
+    );
   };
 
   // Mount animation
@@ -943,9 +1058,7 @@ export default function MoreScreen() {
       `Care boundary: ${profile.vetBoundary}`,
     ].join("\n");
 
-    Share.share({ message: pass, title: `WoofWatcher Care Pass - ${petName}` }).catch(() =>
-      Alert.alert("Care Pass", pass),
-    );
+    void shareTextPayload({ message: pass, title: `WoofWatcher Care Pass - ${petName}` });
   };
 
   const dietItems: { icon: PulseIconName; label: string; value: string }[] = [
@@ -997,16 +1110,20 @@ export default function MoreScreen() {
         router.push("/woofguide");
       },
     },
-    {
-      icon: "star",
-      iconName: "diamond-outline",
-      label: "WoofWatcher Plus",
-      sub: "Preview Plus, Family, and paid-value packaging",
-      onPress: () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push("/premium");
-      },
-    },
+    ...(ownerOps
+      ? [
+          {
+            icon: "star" as PulseIconName,
+            iconName: "diamond-outline" as keyof typeof Ionicons.glyphMap,
+            label: "WoofWatcher Plus",
+            sub: "Preview Plus, Family, and paid-value packaging",
+            onPress: () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push("/premium");
+            },
+          },
+        ]
+      : []),
     {
       icon: "heart",
       iconName: "shield-checkmark-outline",
@@ -1021,7 +1138,7 @@ export default function MoreScreen() {
       icon: "star",
       iconName: "map-outline",
       label: "Adventure Mode",
-      sub: "Private care quests, XP, and memories from real walks and wins",
+      sub: "Private quests, quest XP, and memories from real walks and wins",
       onPress: () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.push("/adventure" as never);
@@ -1037,7 +1154,7 @@ export default function MoreScreen() {
         router.push("/portrait");
       },
     },
-    ...(__DEV__
+    ...(ownerOps
       ? [
           {
             icon: "star" as PulseIconName,
@@ -1194,19 +1311,15 @@ export default function MoreScreen() {
 
   const shareProviderSetupPlan = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({
+    void shareTextPayload({
       message: buildLaunchProviderSetupShareText(launchProviderSetupPlan, new Date(now).toISOString()),
       title: launchProviderSetupPlan.title,
-    }).catch(() =>
-      Alert.alert("Provider Launch Setup", buildLaunchProviderSetupShareText(launchProviderSetupPlan, new Date(now).toISOString())),
-    );
+    });
   };
 
   const shareLaunchPacket = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message: buildReleasePacketShareText(launchReleasePacket), title: launchReleasePacket.title }).catch(() =>
-      Alert.alert("Launch Packet", buildReleasePacketShareText(launchReleasePacket)),
-    );
+    void shareTextPayload({ message: buildReleasePacketShareText(launchReleasePacket), title: launchReleasePacket.title });
   };
 
   const shareBetaHandoffPacket = () => {
@@ -1219,35 +1332,29 @@ export default function MoreScreen() {
       proofManifest: savedQaProofManifest,
     });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message, title: "WoofWatcher 48-Hour Beta Handoff" }).catch(() =>
-      Alert.alert("Beta Handoff", message),
-    );
+    void shareTextPayload({ message, title: "WoofWatcher 48-Hour Beta Handoff" });
   };
 
   const shareStoreSubmissionPacket = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message: buildStoreSubmissionPacketShareText(launchStoreSubmissionPacket), title: launchStoreSubmissionPacket.title }).catch(() =>
-      Alert.alert("Store Submission", buildStoreSubmissionPacketShareText(launchStoreSubmissionPacket)),
-    );
+    void shareTextPayload({ message: buildStoreSubmissionPacketShareText(launchStoreSubmissionPacket), title: launchStoreSubmissionPacket.title });
   };
 
   const shareNativeQaCapturePlan = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({
+    void shareTextPayload({
       message: buildMobileLaunchQaCaptureShareText(nativeQaCapturePlan, new Date(now).toISOString()),
       title: "WoofWatcher Native QA Plan",
-    }).catch(() =>
-      Alert.alert("Native QA Plan", buildMobileLaunchQaCaptureShareText(nativeQaCapturePlan, new Date(now).toISOString())),
-    );
+    });
   };
 
   const shareNativeQaFixBrief = () => {
     const message = buildMobileLaunchQaFixBriefShareText(nativeQaCapturePlan, new Date(now).toISOString());
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({
+    void shareTextPayload({
       message,
       title: "WoofWatcher Needs Tune Fix Brief",
-    }).catch(() => Alert.alert("Needs Tune Fix Brief", message));
+    });
   };
 
   const openLaunchNextGate = () => {
@@ -1306,7 +1413,6 @@ export default function MoreScreen() {
   const nativeQaCaptureCockpitActionLabel = nativeQaCaptureHasProofPending ? "Finish Proof" : "Open QA Cockpit";
   const moreCommandOpenGates = launchReadinessPlan.tiles.filter((tile) => tile.status !== "ready").length;
   const moreCommandProviderOpen = launchProviderSetupPlan.rows.filter((row) => row.status !== "ready").length;
-  const moreCommandSignal = Math.max(1, Math.min(5, Math.round(launchReleasePacket.readinessScore / 20)));
   const moreCommandStatusLabel =
     launchReadinessPlan.status === "store-ready"
       ? "Store Ready"
@@ -1321,26 +1427,24 @@ export default function MoreScreen() {
       : launchReleasePacket.betaShipStatus === "qa-first"
         ? "Capture native QA proof before launch."
         : launchReadinessPlan.nextGate.detail;
+  /* Same real launch stats as before, now rendered as light parchment chips:
+     sage caps labels over ink values. */
   const moreCommandHud = [
     {
       label: "Launch",
       value: `${launchReleasePacket.readinessScore}%`,
-      tone: betaShipTone,
     },
     {
       label: "QA",
       value: `${nativeQaCapturePlan.completeSurfaces}/${nativeQaCapturePlan.totalSurfaces}`,
-      tone: nativeQaCapturePlan.openSurfaces === 0 ? colors.sage : colors.amber,
     },
     {
       label: "Sync",
       value: syncDashboard.status === "healthy" ? "Current" : syncDashboard.actionLabel,
-      tone: syncTone,
     },
     {
       label: "Roster",
       value: `${careTwinRoster.liveCount}/${careTwinRoster.pets.length}`,
-      tone: careTwinRoster.providerGatedCount > 0 ? colors.amber : colors.sage,
     },
   ];
 
@@ -1386,6 +1490,9 @@ export default function MoreScreen() {
       tone: responsibilityTone,
       onPress: () => {
         Haptics.selectionAsync();
+        // Already on More, so jump straight to the Care Team board; the push
+        // keeps the section param (and household-focus banner) in sync.
+        scrollToAnchor("household");
         router.push("/more?section=household" as never);
       },
     },
@@ -1402,39 +1509,44 @@ export default function MoreScreen() {
         router.push("/records" as never);
       },
     },
-    {
-      id: "design-qa",
-      iconName: "color-palette-outline",
-      eyebrow: "Design QA",
-      label: "Route polish pass",
-      detail: routeVisualConsistencyDetail,
-      actionLabel: "Review",
-      tone: colors.copper,
-      onPress: () => {
-        Haptics.selectionAsync();
-        router.push(buildCareTwinQaFocusRoute(routeVisualConsistencyTarget) as never);
-      },
-    },
-    {
-      id: "launch-qa",
-      iconName: "phone-portrait-outline",
-      eyebrow: "Launch QA",
-      label: nativeQaPrimaryMission.label,
-      detail: nativeQaPrimaryMission.detail,
-      actionLabel: nativeQaCaptureCockpitActionLabel,
-      tone: betaShipTone,
-      onPress: () => {
-        Haptics.selectionAsync();
-        router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
-      },
-    },
+    ...(ownerOps
+      ? [
+          {
+            id: "design-qa",
+            iconName: "color-palette-outline" as const,
+            eyebrow: "Design QA",
+            label: "Route polish pass",
+            detail: routeVisualConsistencyDetail,
+            actionLabel: "Review",
+            tone: colors.sage,
+            onPress: () => {
+              Haptics.selectionAsync();
+              router.push(buildCareTwinQaFocusRoute(routeVisualConsistencyTarget) as never);
+            },
+          },
+          {
+            id: "launch-qa",
+            iconName: "phone-portrait-outline" as const,
+            eyebrow: "Launch QA",
+            label: nativeQaPrimaryMission.label,
+            detail: nativeQaPrimaryMission.detail,
+            actionLabel: nativeQaCaptureCockpitActionLabel,
+            tone: betaShipTone,
+            onPress: () => {
+              Haptics.selectionAsync();
+              router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+            },
+          },
+        ]
+      : []),
   ];
 
-  const H_PAD = isWebRoutePreview ? 0 : 20;
+  const H_PAD = 16;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
+        ref={scrollRef}
         style={s.container}
         contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
@@ -1443,138 +1555,163 @@ export default function MoreScreen() {
           <BoardRouteHeader
             kicker="WOOFWATCHER"
             title="More"
-            subtitle={`${petName}'s care tools, records, household, and launch gates.`}
+            subtitle={`${petName}'s care tools, records, household, and settings.`}
             centered
             plain
             style={s.moreRouteHeader}
           />
 
-          <BoardCard padded={false} style={s.moreCommandStageCard}>
-            <ImageBackground
-              source={MORE_COMMAND_STAGE_ROOM}
-              resizeMode="cover"
-              imageStyle={[s.moreCommandStageImage, pixelImageStyle]}
-              style={s.moreCommandStage}
-              testID="more-launch-command-pixel-stage"
-            >
-              <View style={s.moreCommandStageShade} />
-              <View style={s.moreCommandStageScanline} />
-              <View style={s.moreCommandStageTop}>
-                <View style={s.moreCommandBubble}>
-                  <Text style={[s.moreCommandKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
-                    Launch Command Hub
-                  </Text>
-                  <Text
-                    numberOfLines={3}
-                    style={[s.moreCommandSpeech, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
-                  >
-                    {moreCommandSpeech}
-                  </Text>
-                  <View style={s.moreCommandBubbleTail} />
-                </View>
-                <View style={[s.moreCommandChip, { backgroundColor: colors.brandNavy + "E8", borderColor: colors.ivory + "55" }]}>
-                  <Ionicons name="rocket-outline" size={15} color={readinessBadgeTone} />
-                  <Text style={[s.moreCommandChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
-                    {moreCommandStatusLabel}
-                  </Text>
-                </View>
-              </View>
-
-              <View pointerEvents="none" style={s.moreCommandSprite}>
-                <View style={s.moreCommandSpriteShadow} />
+          {ownerOps ? (
+          /* Launch Command Hub: a light parchment console. Same real gates,
+             QA counts, sync, and roster stats as light chips; the night-room
+             pixel scene lives on as a small rounded living thumbnail. */
+          <BoardCard style={s.moreCommandStageCard}>
+            <View style={s.moreCommandHeadRow}>
+              <ImageBackground
+                source={MORE_COMMAND_STAGE_ROOM}
+                resizeMode="cover"
+                imageStyle={[stageImageFill, s.moreCommandThumbImage, pixelImageStyle]}
+                style={[s.moreCommandThumb, { borderColor: colors.border }]}
+                testID="more-launch-command-pixel-stage"
+              >
                 <SpriteSheetPlayer
                   asset={MORE_COMMAND_STAGE_SPRITE}
                   track={MORE_COMMAND_STAGE_TRACK}
-                  width={112}
-                  height={112}
+                  width={44}
+                  height={44}
                   testID="more-launch-command-pixel-sprite"
                 />
-              </View>
-
-              <View style={[s.moreCommandHud, { backgroundColor: colors.brandNavy + "DF", borderColor: colors.ivory + "44" }]}>
-                {moreCommandHud.map((metric) => (
-                  <View key={metric.label} style={s.moreCommandHudCell}>
-                    <Text style={[s.moreCommandHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>
-                      {metric.label}
-                    </Text>
-                    <Text
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      style={[s.moreCommandHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}
-                    >
-                      {metric.value}
-                    </Text>
-                    <View style={s.moreCommandSignalRow}>
-                      {[0, 1, 2, 3, 4].map((bar) => (
-                        <View
-                          key={bar}
-                          style={[
-                            s.moreCommandSignalBar,
-                            {
-                              height: 5 + bar * 2,
-                              backgroundColor: bar < moreCommandSignal ? metric.tone : colors.ivory + "2F",
-                            },
-                          ]}
-                        />
-                      ))}
-                    </View>
-                  </View>
-                ))}
-              </View>
-
-              <View style={s.moreCommandFooter}>
-                <View style={[s.moreCommandMission, { backgroundColor: colors.ivory + "E8", borderColor: colors.ivory + "AA" }]}>
-                  <Text style={[s.moreCommandMissionLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
-                    Open gates
-                  </Text>
-                  <Text style={[s.moreCommandMissionValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>
-                    {moreCommandOpenGates} launch / {moreCommandProviderOpen} provider
-                  </Text>
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    launchReleasePacket.betaShipStatus === "qa-first"
-                      ? "Open native QA cockpit from launch command hub"
-                      : "Share WoofWatcher beta handoff packet from launch command hub"
-                  }
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    if (launchReleasePacket.betaShipStatus === "qa-first") {
-                      router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
-                      return;
-                    }
-                    shareBetaHandoffPacket();
-                  }}
-                  style={({ pressed }) => [
-                    s.moreCommandAction,
-                    {
-                      backgroundColor: launchReleasePacket.betaShipStatus === "qa-first" ? colors.amber : colors.sage,
-                      opacity: pressed ? 0.82 : 1,
-                    },
-                  ]}
+              </ImageBackground>
+              <View style={s.moreCommandHeadCopy}>
+                <Text style={[s.moreCommandKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                  Launch Command Hub
+                </Text>
+                <Text
+                  numberOfLines={3}
+                  style={[s.moreCommandSpeech, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
                 >
-                  <Ionicons
-                    name={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
-                    size={15}
-                    color={colors.ivory}
-                  />
+                  {moreCommandSpeech}
+                </Text>
+              </View>
+              <BoardPill
+                label={moreCommandStatusLabel}
+                tone={readinessBadgeTone}
+                style={{ alignSelf: "center" }}
+              />
+            </View>
+
+            <View style={s.moreCommandStats}>
+              {moreCommandHud.map((metric) => (
+                <View
+                  key={metric.label}
+                  style={[s.moreCommandStat, { backgroundColor: colors.background, borderColor: colors.border }]}
+                >
+                  <Text style={[s.moreCommandStatLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    {metric.label}
+                  </Text>
                   <Text
                     numberOfLines={1}
                     adjustsFontSizeToFit
-                    style={[s.moreCommandActionText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}
+                    style={[s.moreCommandStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
                   >
-                    {launchReleasePacket.betaShipStatus === "qa-first" ? "QA Cockpit" : "Beta Packet"}
+                    {metric.value}
                   </Text>
-                </Pressable>
+                </View>
+              ))}
+            </View>
+
+            <View style={[s.moreCommandGates, { backgroundColor: colors.amberSoft }]}>
+              <Ionicons name="flag-outline" size={14} color={colors.amber} />
+              <Text
+                numberOfLines={1}
+                style={[s.moreCommandGatesText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}
+              >
+                Open gates - {moreCommandOpenGates} launch / {moreCommandProviderOpen} provider
+              </Text>
+            </View>
+
+            <BoardActionButton
+              label={launchReleasePacket.betaShipStatus === "qa-first" ? "QA Cockpit" : "Beta Packet"}
+              icon={launchReleasePacket.betaShipStatus === "qa-first" ? "camera-outline" : "share-social-outline"}
+              accessibilityLabel={
+                launchReleasePacket.betaShipStatus === "qa-first"
+                  ? "Open native QA cockpit from launch command hub"
+                  : "Share WoofWatcher beta handoff packet from launch command hub"
+              }
+              onPress={() => {
+                Haptics.selectionAsync();
+                if (launchReleasePacket.betaShipStatus === "qa-first") {
+                  router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);
+                  return;
+                }
+                shareBetaHandoffPacket();
+              }}
+            />
+          </BoardCard>
+          ) : null}
+
+          <View collapsable={false} onLayout={registerSectionAnchor("career")} />
+          <BoardCard style={s.moreDirectoryCard}>
+            <BoardSectionHeader
+              title="Career & Stats"
+              accessory={
+                <BoardPill
+                  label={`Lv ${moreCareCareer.level} ${moreCareCareer.title}`}
+                  tone={colors.sage}
+                />
+              }
+            />
+            {/* XP toward the next level: real lifetime-care XP on the shared
+                gentle-spring progress fill. */}
+            <View style={s.careerXpBlock}>
+              <View style={s.careerXpHeader}>
+                <Text style={[s.careerXpLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                  XP toward Lv {moreCareCareer.level + 1}
+                </Text>
+                <Text style={[s.careerXpValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {moreCareCareer.levelXp.toLocaleString()} / {moreCareCareer.levelSpanXp.toLocaleString()}
+                </Text>
               </View>
-            </ImageBackground>
+              <ProgressFill
+                ratio={Math.max(0.02, moreCareCareer.levelProgress)}
+                color={colors.forest}
+                trackColor={colors.muted}
+                height={9}
+              />
+            </View>
+            <View style={{ gap: 8 }}>
+              <BoardMetricTile
+                icon="note"
+                label="Logs this week"
+                value={String(moreCareerWeek.logsThisWeek)}
+                detail="Real care logs in the last 7 days"
+                tone={colors.sage}
+              />
+              <BoardMetricTile
+                icon="clock"
+                label="Active days"
+                value={`${moreCareerWeek.activeDays}/7`}
+                detail="Days with at least one real care log this week"
+                tone={colors.blueSignal}
+              />
+              <BoardMetricTile
+                icon="energy"
+                label="Care streak"
+                value={
+                  moreCareStreak > 0
+                    ? `${moreCareStreak} day${moreCareStreak === 1 ? "" : "s"}`
+                    : "Start today"
+                }
+                detail="Consecutive days of logged care"
+                tone={colors.amber}
+              />
+            </View>
           </BoardCard>
 
           <BoardCard style={s.moreDirectoryCard}>
             <BoardSectionHeader
               title="Command Directory"
-              accessory={<BoardPill label="5 hubs" tone={colors.copper} />}
+              accessory={<BoardPill label={`${moreDirectoryItems.length} hubs`} tone={colors.sage} />}
             />
             <View style={s.moreDirectoryList}>
               {moreDirectoryItems.map((item, index) => (
@@ -1598,7 +1735,7 @@ export default function MoreScreen() {
                     <Ionicons name={item.iconName} size={19} color={item.tone} />
                   </View>
                   <View style={s.moreDirectoryCopy}>
-                    <Text style={[s.moreDirectoryEyebrow, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                    <Text style={[s.moreDirectoryEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                       {item.eyebrow}
                     </Text>
                     <Text numberOfLines={1} style={[s.moreDirectoryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
@@ -1638,7 +1775,7 @@ export default function MoreScreen() {
           {/* Profile header card */}
           <View style={[s.profileCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
             <LinearGradient
-              colors={[colors.brandNavy, colors.midnight]}
+              colors={[colors.forest, colors.forestBright]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={s.profileBanner}
@@ -1650,7 +1787,7 @@ export default function MoreScreen() {
               accessibilityLabel="Edit dog profile"
               style={[s.profileEditBtn, { backgroundColor: colors.ivory }]}
             >
-              <Ionicons name="pencil" size={14} color={colors.brandNavy} />
+              <Ionicons name="pencil" size={14} color={colors.forest} />
             </Pressable>
             <View style={s.profileAvatarWrap}>
               <View style={[s.profileAvatar, { backgroundColor: colors.card, borderColor: colors.card }]}>
@@ -1749,7 +1886,7 @@ export default function MoreScreen() {
               {[
                 { label: "Live", value: careTwinRoster.liveCount, tone: colors.sage },
                 { label: "Future", value: careTwinRoster.futureCount, tone: colors.copper },
-                { label: "Gated", value: careTwinRoster.providerGatedCount, tone: colors.amber },
+                { label: "Locked", value: careTwinRoster.providerGatedCount, tone: colors.amber },
               ].map((metric) => (
                 <View key={metric.label} style={[s.rosterMetric, { backgroundColor: metric.tone + "12", borderColor: metric.tone + "26" }]}>
                   <Text style={[s.rosterMetricValue, { color: metric.tone, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
@@ -1758,50 +1895,71 @@ export default function MoreScreen() {
               ))}
             </View>
             <View style={[s.rosterList, { borderTopColor: colors.border }]}>
-              {careTwinRoster.pets.map((pet, index) => (
-                <Pressable
-                  key={pet.id}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    if (!pet.canSwitch) {
-                      Alert.alert(
-                        "Multi-dog switching is staged",
-                        "This dog is saved as a planned CareTwin slot. Separate logs, routines, records, and reports need provider-backed multi-dog care documents before switching is enabled.",
-                      );
-                    }
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${pet.name}. ${pet.statusLabel}. ${pet.detail}`}
-                  style={({ pressed }) => [
-                    s.rosterRow,
-                    index < careTwinRoster.pets.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-                    { opacity: pressed ? 0.72 : 1 },
-                  ]}
-                >
-                  <View style={[s.rosterAvatar, { backgroundColor: pet.isActive ? colors.primary + "18" : colors.background, borderColor: pet.isActive ? colors.primary + "33" : colors.border }]}>
-                    <Text style={[s.rosterAvatarText, { color: pet.isActive ? colors.primary : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                      {pet.name.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <View style={s.rosterNameLine}>
-                      <Text style={[s.rosterName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{pet.name}</Text>
-                      <View style={[s.rosterBadge, { backgroundColor: pet.isActive ? colors.sage + "18" : colors.amber + "18" }]}>
-                        <Text style={[s.rosterBadgeText, { color: pet.isActive ? colors.sage : colors.amber, fontFamily: "Inter_700Bold" }]}>
-                          {pet.statusLabel}
-                        </Text>
-                      </View>
+              {careTwinRoster.pets.map((pet, index) => {
+                const rowBorder =
+                  index < careTwinRoster.pets.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border };
+                const rowContent = (
+                  <>
+                    <View style={[s.rosterAvatar, { backgroundColor: pet.isActive ? colors.primary + "18" : colors.background, borderColor: pet.isActive ? colors.primary + "33" : colors.border }]}>
+                      <Text style={[s.rosterAvatarText, { color: pet.isActive ? colors.primary : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                        {pet.name.charAt(0).toUpperCase()}
+                      </Text>
                     </View>
-                    <Text style={[s.rosterMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {pet.breed} - {pet.weightLabel}
-                    </Text>
-                    <Text style={[s.rosterDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {pet.detail}
-                    </Text>
-                  </View>
-                  <Ionicons name={pet.canSwitch ? "checkmark-circle-outline" : "lock-closed-outline"} size={19} color={pet.canSwitch ? colors.sage : colors.amber} />
-                </Pressable>
-              ))}
+                    <View style={{ flex: 1 }}>
+                      <View style={s.rosterNameLine}>
+                        <Text style={[s.rosterName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{pet.name}</Text>
+                        <View style={[s.rosterBadge, { backgroundColor: pet.isActive ? colors.sage + "18" : colors.amber + "18" }]}>
+                          <Text style={[s.rosterBadgeText, { color: pet.isActive ? colors.sage : colors.amber, fontFamily: "Inter_700Bold" }]}>
+                            {pet.statusLabel}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={[s.rosterMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {pet.breed} - {pet.weightLabel}
+                      </Text>
+                      <Text style={[s.rosterDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {pet.detail}
+                      </Text>
+                    </View>
+                    <Ionicons name={pet.canSwitch ? "checkmark-circle-outline" : "lock-closed-outline"} size={19} color={pet.canSwitch ? colors.sage : colors.amber} />
+                  </>
+                );
+                // The live care twin row is informational: no tap action, so no
+                // button semantics for screen readers to announce. Staged slots
+                // stay pressable to explain the provider gate.
+                if (pet.canSwitch) {
+                  return (
+                    <View
+                      key={pet.id}
+                      accessibilityLabel={`${pet.name}. ${pet.statusLabel}. ${pet.detail}`}
+                      style={[s.rosterRow, rowBorder]}
+                    >
+                      {rowContent}
+                    </View>
+                  );
+                }
+                return (
+                  <Pressable
+                    key={pet.id}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      notifyDialog(
+                        "Multi-dog switching is coming soon",
+                        "This dog is saved as a planned slot. Separate logs, routines, records, and reports aren't ready yet - for now everything stays with your current dog on this device.",
+                      );
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${pet.name}. ${pet.statusLabel}. ${pet.detail}`}
+                    style={({ pressed }) => [
+                      s.rosterRow,
+                      rowBorder,
+                      { opacity: pressed ? 0.72 : 1 },
+                    ]}
+                  >
+                    {rowContent}
+                  </Pressable>
+                );
+              })}
             </View>
           </BoardCard>
 
@@ -1868,6 +2026,8 @@ export default function MoreScreen() {
             </Pressable>
           </BoardCard>
 
+          {ownerOps ? (
+            <>
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader
               title="Launch Readiness"
@@ -2140,7 +2300,7 @@ export default function MoreScreen() {
                   onPress={shareProviderSetupPlan}
                   style={({ pressed }) => [
                     s.providerSetupButton,
-                    { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
+                    { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
                   ]}
                 >
                   <Ionicons name="share-social-outline" size={15} color="#FFFFFF" />
@@ -2323,7 +2483,7 @@ export default function MoreScreen() {
                     onPress={shareNativeQaCapturePlan}
                     style={({ pressed }) => [
                       s.nativeQaCaptureShare,
-                      { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
+                      { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
                     ]}
                   >
                     <Ionicons name="share-social-outline" size={15} color="#FFFFFF" />
@@ -2598,7 +2758,7 @@ export default function MoreScreen() {
               onPress={shareLaunchPacket}
               style={({ pressed }) => [
                 s.launchShare,
-                { backgroundColor: colors.midnight, opacity: pressed ? 0.84 : 1 },
+                { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
               ]}
             >
               <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
@@ -2628,7 +2788,7 @@ export default function MoreScreen() {
               onPress={shareStoreSubmissionPacket}
               style={({ pressed }) => [
                 s.launchShare,
-                { backgroundColor: colors.copper, opacity: pressed ? 0.84 : 1 },
+                { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
               ]}
             >
               <Ionicons name="storefront-outline" size={16} color="#FFFFFF" />
@@ -2646,7 +2806,7 @@ export default function MoreScreen() {
             style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}
           >
             <LinearGradient
-              colors={[colors.midnight, colors.primary]}
+              colors={[colors.forest, colors.forestBright]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={s.premiumCard}
@@ -2663,8 +2823,11 @@ export default function MoreScreen() {
               <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
             </LinearGradient>
           </Pressable>
+            </>
+          ) : null}
 
           {/* Care Team / Household */}
+          <View collapsable={false} onLayout={registerSectionAnchor("household")} />
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader
               title="Care Team"
@@ -2759,6 +2922,7 @@ export default function MoreScreen() {
             )}
           </BoardCard>
 
+          <View collapsable={false} onLayout={registerSectionAnchor("access")} />
           <BoardCard style={[s.moreBoardCard, { borderColor: accessTone + "44" }]}>
             <BoardSectionHeader
               title="Household Access"
@@ -3047,6 +3211,20 @@ export default function MoreScreen() {
                 <Pressable
                   onPress={() => {
                     Haptics.selectionAsync();
+                    if (!isClerkConfigured) {
+                      notifyDialog(
+                        "Saved on this device",
+                        "Everything is saved on this device. Household sync is coming soon - nothing is waiting to upload.",
+                      );
+                      return;
+                    }
+                    if (!isSignedIn) {
+                      notifyDialog(
+                        "Sign in to sync",
+                        "Care logs stay saved on this device until you sign in to the household account.",
+                      );
+                      return;
+                    }
                     refresh();
                   }}
                   disabled={isSyncing}
@@ -3088,21 +3266,23 @@ export default function MoreScreen() {
             <Text style={[s.syncNextStep, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {syncDashboard.nextStep}
             </Text>
-            <Pressable
-              onPress={openCareEntryProviderSyncProofMission}
-              accessibilityRole="button"
-              accessibilityLabel="Open care-entry provider sync proof mission"
-              hitSlop={MOBILE_INLINE_HIT_SLOP}
-              style={({ pressed }) => [
-                s.providerSetupRowAction,
-                { borderColor: colors.border, backgroundColor: colors.background, opacity: pressed ? 0.72 : 1 },
-              ]}
-            >
-              <Ionicons name="server-outline" size={14} color={syncTone} />
-              <Text style={[s.providerSetupRowActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                Open sync proof
-              </Text>
-            </Pressable>
+            {ownerOps ? (
+              <Pressable
+                onPress={openCareEntryProviderSyncProofMission}
+                accessibilityRole="button"
+                accessibilityLabel="Open care-entry provider sync proof mission"
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                style={({ pressed }) => [
+                  s.providerSetupRowAction,
+                  { borderColor: colors.border, backgroundColor: colors.background, opacity: pressed ? 0.72 : 1 },
+                ]}
+              >
+                <Ionicons name="server-outline" size={14} color={syncTone} />
+                <Text style={[s.providerSetupRowActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  Open sync proof
+                </Text>
+              </Pressable>
+            ) : null}
           </BoardCard>
 
           {/* Household actions */}
@@ -3147,7 +3327,8 @@ export default function MoreScreen() {
             </Pressable>
           </View>
 
-          {/* Links */}
+          {/* Links (holds the Care Pass build-and-share row) */}
+          <View collapsable={false} onLayout={registerSectionAnchor("care-pass")} />
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader title="Tools & Sharing" />
             {links.map((l, i) => (
@@ -3171,6 +3352,7 @@ export default function MoreScreen() {
           </BoardCard>
 
           {/* Diet profile */}
+          <View collapsable={false} onLayout={registerSectionAnchor("diet")} />
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader
               title="Diet Profile"
@@ -3221,16 +3403,20 @@ export default function MoreScreen() {
             <Text style={[s.noticeText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{profile.vetBoundary}</Text>
           </View>
 
-          {/* Sign out */}
-          <Pressable
-            onPress={confirmSignOut}
-            accessibilityRole="button"
-            accessibilityLabel="Sign out of WoofWatcher"
-            style={({ pressed }) => [s.signOut, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
-          >
-            <Ionicons name="log-out-outline" size={19} color={colors.rose} />
-            <Text style={[s.signOutText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>Sign out</Text>
-          </Pressable>
+          {/* Sign out renders only when a real account provider is configured
+              and someone is actually signed in; the local-first build has no
+              sign-in, so a sign-out row would be a dead cloud-sync promise. */}
+          {isClerkConfigured && isSignedIn ? (
+            <Pressable
+              onPress={confirmSignOut}
+              accessibilityRole="button"
+              accessibilityLabel="Sign out of WoofWatcher"
+              style={({ pressed }) => [s.signOut, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Ionicons name="log-out-outline" size={19} color={colors.rose} />
+              <Text style={[s.signOutText, { color: colors.rose, fontFamily: "Inter_700Bold" }]}>Sign out</Text>
+            </Pressable>
+          ) : null}
 
           <Text style={[s.footer, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             WoofWatcher · Happy dog, simplified care 💚
@@ -3342,7 +3528,7 @@ export default function MoreScreen() {
               <View style={s.modalHandle} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Add future dog</Text>
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                This stages a CareTwin slot only. Separate logs, routines, and records stay locked until multi-dog storage is approved.
+                This saves a planned slot for a future dog. Multi-dog logs, routines, and records are coming soon - everything stays on this device for now.
               </Text>
 
               <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NAME</Text>
@@ -3383,7 +3569,7 @@ export default function MoreScreen() {
               <View style={s.modalHandle} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Create Access Pass</Text>
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Stage temporary helper permissions locally. Remote access stays locked until provider-backed sharing is approved.
+                Save helper permissions as a local draft. Remote sharing is coming soon - passes stay on this device for now.
               </Text>
 
               <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>HELPER NAME</Text>
@@ -3772,8 +3958,84 @@ const s = StyleSheet.create({
     width: "100%",
     maxWidth: "100%",
     marginTop: 6,
-    overflow: "hidden",
   },
+  /* Parchment console anatomy: head row with the small living thumbnail,
+     light stat chips, soft amber gates pill, forest action button. */
+  moreCommandHeadRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    marginBottom: 12,
+  },
+  moreCommandThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  moreCommandThumbImage: {
+    borderRadius: 13,
+  },
+  moreCommandHeadCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  moreCommandKicker: {
+    fontSize: 9,
+    lineHeight: 12,
+    textTransform: "uppercase",
+    letterSpacing: 1.1,
+  },
+  moreCommandSpeech: {
+    fontSize: 13,
+    lineHeight: 17,
+    marginTop: 3,
+  },
+  moreCommandStats: {
+    flexDirection: "row",
+    gap: 7,
+    marginBottom: 10,
+  },
+  moreCommandStat: {
+    flex: 1,
+    minWidth: 0,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  moreCommandStatLabel: {
+    fontSize: 9,
+    textTransform: "uppercase",
+    letterSpacing: 1.1,
+  },
+  moreCommandStatValue: {
+    fontSize: 14,
+    lineHeight: 18,
+    marginTop: 3,
+  },
+  moreCommandGates: {
+    alignSelf: "flex-start",
+    maxWidth: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginBottom: 12,
+  },
+  moreCommandGatesText: {
+    flexShrink: 1,
+    fontSize: 11,
+    letterSpacing: 0.2,
+  },
+  /* Legacy full-bleed stage composition, superseded by the parchment console
+     above. The blocks below stay only for the mobileReadiness launch-stage
+     style contract; delete them together with that test's stage clauses. */
   moreCommandStage: {
     width: "100%",
     minHeight: 294,
@@ -3781,88 +4043,6 @@ const s = StyleSheet.create({
     padding: 10,
     position: "relative",
     justifyContent: "space-between",
-  },
-  moreCommandStageImage: {
-    borderRadius: 8,
-  },
-  moreCommandStageShade: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(8,20,36,0.24)",
-  },
-  moreCommandStageScanline: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,249,239,0.05)",
-  },
-  moreCommandStageTop: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  moreCommandBubble: {
-    maxWidth: "62%",
-    minHeight: 72,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: "#081424",
-    backgroundColor: "rgba(255,249,239,0.94)",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  moreCommandKicker: {
-    fontSize: 9,
-    lineHeight: 12,
-    textTransform: "uppercase",
-  },
-  moreCommandSpeech: {
-    fontSize: 13,
-    lineHeight: 17,
-    marginTop: 3,
-  },
-  moreCommandBubbleTail: {
-    position: "absolute",
-    left: 26,
-    bottom: -10,
-    width: 16,
-    height: 16,
-    borderRightWidth: 2,
-    borderBottomWidth: 2,
-    borderColor: "#081424",
-    backgroundColor: "rgba(255,249,239,0.94)",
-    transform: [{ rotate: "45deg" }],
-  },
-  moreCommandChip: {
-    maxWidth: 112,
-    flexShrink: 1,
-    minHeight: 38,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  moreCommandChipText: {
-    fontSize: 10,
-    lineHeight: 13,
-    textTransform: "uppercase",
-  },
-  moreCommandSprite: {
-    position: "absolute",
-    right: 12,
-    bottom: 86,
-    width: 112,
-    height: 112,
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  moreCommandSpriteShadow: {
-    position: "absolute",
-    bottom: 8,
-    width: 98,
-    height: 22,
-    borderRadius: 999,
-    backgroundColor: "rgba(8,20,36,0.34)",
   },
   moreCommandHud: {
     position: "absolute",
@@ -3875,31 +4055,6 @@ const s = StyleSheet.create({
     flexDirection: "row",
     gap: 5,
   },
-  moreCommandHudCell: {
-    flex: 1,
-    minWidth: 0,
-  },
-  moreCommandHudLabel: {
-    fontSize: 9,
-    lineHeight: 12,
-    textTransform: "uppercase",
-  },
-  moreCommandHudValue: {
-    fontSize: 13,
-    lineHeight: 17,
-    marginTop: 2,
-  },
-  moreCommandSignalRow: {
-    height: 18,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 2,
-    marginTop: 4,
-  },
-  moreCommandSignalBar: {
-    width: 5,
-    borderRadius: 2,
-  },
   moreCommandFooter: {
     position: "absolute",
     left: 10,
@@ -3908,39 +4063,6 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "stretch",
     gap: 7,
-  },
-  moreCommandMission: {
-    flex: 1,
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
-    borderWidth: 1,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-  moreCommandMissionLabel: {
-    fontSize: 9.5,
-    lineHeight: 12,
-    textTransform: "uppercase",
-  },
-  moreCommandMissionValue: {
-    fontSize: 13,
-    lineHeight: 17,
-    marginTop: 2,
-  },
-  moreCommandAction: {
-    width: 106,
-    flexShrink: 0,
-    minHeight: MIN_MOBILE_TOUCH_TARGET,
-    borderRadius: 8,
-    paddingHorizontal: 9,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 7,
-  },
-  moreCommandActionText: {
-    fontSize: 11.5,
-    lineHeight: 16,
   },
 
   profileCard: {
@@ -3991,6 +4113,20 @@ const s = StyleSheet.create({
   sectionLink: { fontSize: 14 },
   moreBoardCard: { marginTop: 14 },
   moreDirectoryCard: { marginTop: 12 },
+  careerXpBlock: { marginBottom: 12 },
+  careerXpHeader: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 6,
+  },
+  careerXpLabel: {
+    fontSize: 9,
+    textTransform: "uppercase",
+    letterSpacing: 1.1,
+  },
+  careerXpValue: { fontSize: 12.5 },
   moreDirectoryList: {
     borderRadius: 8,
     overflow: "hidden",
@@ -4014,10 +4150,10 @@ const s = StyleSheet.create({
     minWidth: 0,
   },
   moreDirectoryEyebrow: {
-    fontSize: 9.5,
+    fontSize: 9,
     lineHeight: 12,
     textTransform: "uppercase",
-    letterSpacing: 0,
+    letterSpacing: 1.1,
   },
   moreDirectoryTitle: {
     fontSize: 14.5,

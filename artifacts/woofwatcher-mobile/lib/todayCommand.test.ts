@@ -91,10 +91,102 @@ test("served meal with pending outcome becomes the primary update action", () =>
   assert.equal(command.primaryAction.icon, "bowl");
   assert.match(command.primaryAction.label, /Update breakfast outcome/i);
   assert.match(command.primaryAction.detail, /served/i);
-  assert.match(command.primaryAction.detail, /ate all|some|refused|grazing/i);
+  // Copy stays short so Home's clamped lines never clip it mid-sentence.
+  assert.match(command.primaryAction.detail, /Confirm how much Phoenix ate/i);
   assert.match(command.handoff.detail, /Emma served Breakfast/i);
   assert.match(command.handoff.detail, /outcome pending/i);
   assert.doesNotMatch(command.handoff.detail, /logged Breakfast/i);
+});
+
+test("meal served before midnight keeps its outcome action after the rollover", () => {
+  // Served 23:58, checked 00:02: the unresolved outcome must survive the
+  // local-day rollover instead of silently vanishing from Home.
+  const command = deriveTodayCommand(
+    state({
+      entries: [
+        {
+          id: "meal_dinner",
+          type: "meal",
+          title: "Dinner",
+          caregiver: "Emma",
+          occurredAt: "2026-06-06T23:58:00-07:00",
+          details: {
+            mealCompletion: "served",
+            mealLifecycle: "outcome-pending",
+            servedAmount: 1,
+            servedUnit: "cup",
+            householdVisible: true,
+          },
+        },
+      ],
+    }),
+    new Date("2026-06-07T00:02:00-07:00").getTime(),
+  );
+
+  assert.equal(command.primaryAction.kind, "update-meal-outcome");
+  assert.equal(command.primaryAction.route, "/log?entry=meal_dinner");
+  assert.equal(command.primaryAction.icon, "bowl");
+  // Copy owns the rollover: it says last night's meal, it does not pretend
+  // the serving happened today.
+  assert.match(command.primaryAction.label, /last night's dinner/i);
+  assert.match(command.primaryAction.detail, /Last night's dinner - how did it go\?/);
+  assert.match(command.primaryAction.detail, /Confirm how much Phoenix ate/i);
+  assert.match(command.handoff.detail, /outcome pending/i);
+});
+
+test("previous-day pending meal expires after the 12h outcome window", () => {
+  // Served 10:00 yesterday; at 00:02 that is 14h old - past the sensible
+  // expiry, so the stale loop no longer hijacks the primary action.
+  const command = deriveTodayCommand(
+    state({
+      entries: [
+        {
+          id: "meal_stale",
+          type: "meal",
+          title: "Breakfast",
+          caregiver: "Emma",
+          occurredAt: "2026-06-06T10:00:00-07:00",
+          details: {
+            mealCompletion: "served",
+            mealLifecycle: "outcome-pending",
+            householdVisible: true,
+          },
+        },
+      ],
+    }),
+    new Date("2026-06-07T00:02:00-07:00").getTime(),
+  );
+
+  assert.notEqual(command.primaryAction.kind, "update-meal-outcome");
+});
+
+test("same-day pending meal stays actionable past 12 hours", () => {
+  // Served 07:38, checked 21:00 the same local day (>13h): same-day pending
+  // outcomes never expire mid-day - the 12h window only bounds carryover
+  // from a previous day.
+  const command = deriveTodayCommand(
+    state({
+      entries: [
+        {
+          id: "meal_served",
+          type: "meal",
+          title: "Breakfast",
+          caregiver: "Emma",
+          occurredAt: "2026-06-06T07:38:00-07:00",
+          details: {
+            mealCompletion: "served",
+            mealLifecycle: "outcome-pending",
+            householdVisible: true,
+          },
+        },
+      ],
+    }),
+    new Date("2026-06-06T21:00:00-07:00").getTime(),
+  );
+
+  assert.equal(command.primaryAction.kind, "update-meal-outcome");
+  assert.match(command.primaryAction.label, /Update breakfast outcome/i);
+  assert.doesNotMatch(command.primaryAction.detail, /last night/i);
 });
 
 test("vomit watch event creates health watch urgency", () => {

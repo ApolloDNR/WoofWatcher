@@ -5,7 +5,6 @@ import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   ImageBackground,
   KeyboardAvoidingView,
@@ -57,6 +56,7 @@ import {
   getRecordDueStatus,
   normalizeCareEventType,
   summarizeRecordVault,
+  type CareEventType,
   type CarePass,
   type CarePassAudience,
   type CarePassArtifact,
@@ -74,11 +74,16 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
+import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { PressScale } from "@/components/motion/GameFeel";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
-import { pixelImageStyle } from "@/lib/pixelRendering";
+import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
+import { homeImmersiveRoomIsNight } from "./index";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import {
   buildReportArtifactExportFilePlan,
   buildReportArtifactShareContent,
@@ -92,12 +97,18 @@ import {
   type GeneratedBinaryArtifactSource,
 } from "@/lib/reportGeneratedBinaryArtifact";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
+import { resolvePetName } from "@/lib/petIdentity";
 import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
+import { shareTextPayload } from "@/lib/shareText";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 
 const RECORDS_CREDENTIAL_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-pixellab-400x300.png");
+// Night sibling for the credential stage: the storybook night render of the
+// same Phoenix room (identical 4:3 frame), picked with the same clock rule
+// Home's immersive room uses so Records never shows daylight at night.
+const RECORDS_CREDENTIAL_STAGE_ROOM_NIGHT = require("@/assets/avatar/rooms/phoenix-room-night.png");
 const RECORDS_CREDENTIAL_STAGE_SPRITE = getCareTwinSpriteAsset("tail-wag");
 const RECORDS_CREDENTIAL_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["tail-wag"];
 
@@ -190,6 +201,14 @@ function entryType(entry: Entry): string {
   return normalizeCareEventType(entry.type, entry.details);
 }
 
+function countNoun(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+function sentenceCase(value: string): string {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+}
+
 function hasAttachment(record: unknown): boolean {
   const attachment = (record as { attachmentUri?: unknown }).attachmentUri;
   return typeof attachment === "string" && attachment.trim().length > 0;
@@ -204,6 +223,7 @@ export default function RecordsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const ownerOps = isOwnerOpsBuild();
   const { state, updateCareDoc } = useCare();
   const { width } = useWindowDimensions();
 
@@ -230,6 +250,11 @@ export default function RecordsScreen() {
     const id = setInterval(() => setNow(Date.now()), 60000);
     return () => clearInterval(id);
   }, []);
+  // Time-aware credential stage: same clock rule as Home's immersive room
+  // (dark theme or lamplit hours), so Records follows the household's real
+  // day instead of staying frozen in daylight.
+  const recordsStageIsNight =
+    colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours());
 
   const unit = state.profile.weight.unit;
 
@@ -279,7 +304,7 @@ export default function RecordsScreen() {
     [state.entries, now],
   );
   const walkActivity = useMemo(
-    () => deriveWalkActivity({ entries: state.entries, now }),
+    () => deriveWalkActivity({ entries: state.entries, now, petName: state.profile.name }),
     [state.entries, now],
   );
   const walkRouteTemplates = useMemo(
@@ -290,6 +315,17 @@ export default function RecordsScreen() {
     () => derivePottyHealth({ entries: state.entries, now }),
     [state.entries, now],
   );
+  // The shared summary says "stool normal" whenever nothing needs review, but
+  // quick taps carry no stool detail at all. Until a condition or stool color
+  // is actually recorded, say so instead of claiming a normal outcome.
+  // (derivePottyHealth also feeds Care Pass, so this stays a display-only fix.)
+  const pottyOutcomeRecorded = pottyHealth.items.some(
+    (item) => item.condition !== "not logged" || Boolean(item.stoolColor),
+  );
+  const pottySummary =
+    pottyHealth.total > 0 && pottyHealth.watchCount === 0 && !pottyOutcomeRecorded
+      ? `${countNoun(pottyHealth.total, "potty log")} today - ${pottyHealth.peeCount} pee, ${pottyHealth.poopCount} poop, outcome not recorded`
+      : pottyHealth.summary;
   const trainingProgress = useMemo(
     () => deriveTrainingProgress({ entries: state.entries, now, lookbackDays: 30 }),
     [state.entries, now],
@@ -306,35 +342,20 @@ export default function RecordsScreen() {
     () => deriveWeightTrend({ entries: state.entries, profile: state.profile, goals: state.goals, now, lookbackDays: 90, limit: 8 }),
     [state.entries, state.profile, state.goals, now],
   );
-  const current = weightTrend.currentWeight || state.profile.weight.current;
+  const current = weightTrend.currentWeight;
 
-  // ---- Weight trend (prefer real weight logs, fall back to gentle synthesis) ----
-  const goalWeight = weightTrend.goalWeight || Math.round(current) + 2;
+  // ---- Weight trend (real weigh-ins only; never synthesize a series) ----
+  const goalWeight = weightTrend.goalWeight;
 
-  const { series, labels, isRealWeight } = useMemo(() => {
+  const { series, labels } = useMemo(() => {
     const real = weightTrend.items;
-    if (real.length >= 2) {
-      return {
-        series: real.map((item) => item.weight),
-        labels: real.map((item, i) => (i === real.length - 1 ? "Now" : shortDate(item.occurredAt))),
-        isRealWeight: true,
-      };
-    }
-    const n = 7;
-    const start = current - 1.6;
-    const wobble = [0, 0.25, -0.15, 0.35, 0.1, 0.4, 0];
-    const arr: number[] = [];
-    for (let i = 0; i < n; i++) {
-      const base = start + (current - start) * (i / (n - 1));
-      arr.push(Math.round((base + (i < n - 1 ? wobble[i] : 0)) * 10) / 10);
-    }
-    arr[n - 1] = current;
+    if (real.length < 2) return { series: [] as number[], labels: [] as string[] };
     return {
-      series: arr,
-      labels: arr.map((_, i) => (i === n - 1 ? "Now" : `${n - 1 - i}w`)),
-      isRealWeight: false,
+      series: real.map((item) => item.weight),
+      labels: real.map((item, i) => (i === real.length - 1 ? "Now" : shortDate(item.occurredAt))),
     };
-  }, [weightTrend.items, current]);
+  }, [weightTrend.items]);
+  const hasWeightSeries = series.length >= 2;
 
   // ---- Mood distribution (last 30 days) ----
   const moodStats = useMemo(
@@ -394,16 +415,32 @@ export default function RecordsScreen() {
         .slice(0, 4),
     [state.entries],
   );
+  const dietPrimaryFood = (state.dietProfile.primaryFood ?? "").trim();
+  const dietMeta = [state.dietProfile.normalPortion, state.dietProfile.mealSchedule]
+    .map((value) => (value ?? "").trim())
+    .filter(Boolean)
+    .join(" - ");
+  const hasDietOnFile = Boolean(dietPrimaryFood || dietMeta);
 
   const recordVault = useMemo(() => summarizeRecordVault(state.records), [state.records]);
-  const recordReminders = useMemo(
-    () => deriveRecordReminders(state.records, { now }).slice(0, 4),
+  // One reminder derivation feeds both surfaces: the HUD counts every open
+  // setup item exactly once (missing-critical records are already reminders,
+  // so adding missingCritical on top double-counted them), while the visible
+  // checklist shows the top four.
+  const recordRemindersAll = useMemo(
+    () => deriveRecordReminders(state.records, { now }),
     [state.records, now],
+  );
+  const recordReminders = useMemo(
+    () => recordRemindersAll.slice(0, 4),
+    [recordRemindersAll],
   );
   const credential = useMemo(
     () =>
+      // Resolve the placeholder profile name first so shares, exports, and the
+      // ID card all say "Phoenix" (or the real name), never "My Dog Dog ID".
       buildPetCredential({
-        profile: state.profile,
+        profile: { ...state.profile, name: resolvePetName(state.profile.name) },
         caregivers: state.caregivers,
         records: state.records,
       }),
@@ -448,6 +485,15 @@ export default function RecordsScreen() {
     Haptics.selectionAsync();
   };
 
+  // Stage checklist button: opens the add-record form on the first missing
+  // critical section so the "Checklist" state always has a real next step.
+  const openRecordsChecklist = () => {
+    const missingKind = recordVault.sections.find(
+      (section) => section.label === recordVault.missingCritical[0],
+    )?.kind;
+    openRecordForm(missingKind ?? "document");
+  };
+
   const pickRecordAttachment = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -458,14 +504,14 @@ export default function RecordsScreen() {
         setRecordAttachmentUri(result.assets[0].uri);
       }
     } catch {
-      Alert.alert("Attachment unavailable", "Choose the file details manually for now.");
+      notifyDialog("Attachment unavailable", "Choose the file details manually for now.");
     }
   };
 
   const saveRecord = () => {
     const title = recordTitle.trim();
     if (!title) {
-      Alert.alert("Add a title", `Name this ${recordOption.label.toLowerCase()} record.`);
+      notifyDialog("Add a title", `Name this ${recordOption.label.toLowerCase()} record.`);
       return;
     }
     const id = `record_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -494,17 +540,20 @@ export default function RecordsScreen() {
 
   const deleteRecord = (id: string | undefined, title: string) => {
     if (!id) return;
-    Alert.alert("Delete record", `Remove "${title}" from ${state.profile.name}'s vault?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          updateCareDoc((doc) => ({ ...doc, records: doc.records.filter((record) => record.id !== id) }));
+    confirmThroughSteps(
+      [
+        {
+          title: "Delete record",
+          message: `Remove "${title}" from ${resolvePetName(state.profile.name)}'s vault?`,
+          confirmLabel: "Delete",
+          destructive: true,
         },
+      ],
+      () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        updateCareDoc((doc) => ({ ...doc, records: doc.records.filter((record) => record.id !== id) }));
       },
-    ]);
+    );
   };
 
   const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? "Month";
@@ -513,7 +562,7 @@ export default function RecordsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const lines = [
       `WOOFWATCHER PROGRESS REPORT - Last ${period} days`,
-      `${state.profile.name} (${state.profile.breed})`,
+      `${resolvePetName(state.profile.name)} (${state.profile.breed})`,
       "",
       `Total entries logged: ${report.total}`,
       `Meals: ${report.meals}`,
@@ -524,23 +573,21 @@ export default function RecordsScreen() {
       `Health incidents: ${report.incidents}`,
       report.topCaregiver ? `Most active caregiver: ${report.topCaregiver.name} (${report.topCaregiver.count})` : "",
       "",
-      `Current weight: ${current} ${unit} (goal ${goalWeight} ${unit})`,
+      current > 0
+        ? `Current weight: ${current} ${unit}${goalWeight > 0 ? ` (goal ${goalWeight} ${unit})` : ""}`
+        : "",
       moodStats.total ? `Mood average: ${moodStats.averageScore.toFixed(1)}/5 over ${moodStats.total} check-ins` : "",
       "",
       "Shared from WoofWatcher - patterns for caregiver & vet review.",
     ]
       .filter(Boolean)
       .join("\n");
-    Share.share({ message: lines, title: `${state.profile.name} - ${periodLabel} report` }).catch(() =>
-      Alert.alert("Progress report", lines),
-    );
+    void shareTextPayload({ message: lines, title: `${resolvePetName(state.profile.name)} - ${periodLabel} report` });
   };
 
   const shareCredential = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Share.share({ message: credential.message, title: `${credential.name} Dog ID` }).catch(() =>
-      Alert.alert(`${credential.name} Dog ID`, credential.message),
-    );
+    void shareTextPayload({ message: credential.message, title: `${credential.name} Dog ID` });
   };
 
   const sharePrintableSourceFile = async (
@@ -562,11 +609,7 @@ export default function RecordsScreen() {
         title: options.title,
       });
       const fallbackContent = buildReportArtifactShareContent(fallbackPlan);
-      try {
-        await Share.share(fallbackContent);
-      } catch {
-        Alert.alert(fallbackContent.title, fallbackContent.message);
-      }
+      await shareTextPayload({ title: fallbackContent.title, message: fallbackContent.message });
     };
 
     if (plan.canWriteLocalFile && plan.directoryUri && plan.fileUri) {
@@ -605,11 +648,7 @@ export default function RecordsScreen() {
         title: options.title,
       });
       const fallbackContent = buildGeneratedBinaryArtifactShareContent(fallbackPlan);
-      try {
-        await Share.share(fallbackContent);
-      } catch {
-        Alert.alert(fallbackContent.title, fallbackContent.message);
-      }
+      await shareTextPayload({ title: fallbackContent.title, message: fallbackContent.message });
     };
 
     if (plan.canWriteLocalFile && plan.directoryUri && plan.fileUri) {
@@ -718,16 +757,12 @@ export default function RecordsScreen() {
         ...doc.reportArtifacts.filter((item) => item.id !== artifact.id),
       ].slice(0, 12),
     }));
-    Share.share({ message: pass.message, title: pass.title }).catch(() =>
-      Alert.alert(pass.title, pass.message),
-    );
+    void shareTextPayload({ message: pass.message, title: pass.title });
   };
 
   const shareReportArtifact = (artifact: CarePassArtifact) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Share.share({ message: artifact.message, title: artifact.title }).catch(() =>
-      Alert.alert(artifact.title, artifact.message),
-    );
+    void shareTextPayload({ message: artifact.message, title: artifact.title });
   };
 
   const sharePrintableReportArtifact = async (artifact: CarePassArtifact) => {
@@ -774,7 +809,7 @@ export default function RecordsScreen() {
   }, [fade, isWebRoutePreview, slide]);
 
   // Chart geometry
-  const H_PAD = isWebRoutePreview ? 0 : 20;
+  const H_PAD = 16;
   const cardPad = 18;
   const chartW = width - H_PAD * 2 - cardPad * 2;
   const chartH = 140;
@@ -785,15 +820,17 @@ export default function RecordsScreen() {
   const plotW = chartW - padL - padR;
   const plotH = chartH - padT - padB;
 
-  const allVals = [...series, goalWeight];
-  const minV = Math.min(...allVals) - 0.6;
-  const maxV = Math.max(...allVals) + 0.6;
+  const allVals = goalWeight > 0 ? [...series, goalWeight] : series;
+  const minV = allVals.length ? Math.min(...allVals) - 0.6 : 0;
+  const maxV = allVals.length ? Math.max(...allVals) + 0.6 : 1;
   const xAt = (i: number) => padL + (i / Math.max(1, series.length - 1)) * plotW;
   const yAt = (v: number) => padT + (1 - (v - minV) / (maxV - minV || 1)) * plotH;
   const linePath = series.map((v, i) => `${i === 0 ? "M" : "L"} ${xAt(i).toFixed(1)} ${yAt(v).toFixed(1)}`).join(" ");
   const areaPath = `${linePath} L ${xAt(series.length - 1).toFixed(1)} ${(padT + plotH).toFixed(1)} L ${xAt(0).toFixed(1)} ${(padT + plotH).toFixed(1)} Z`;
   const goalY = yAt(goalWeight);
-  const remaining = weightTrend.goalWeight ? weightTrend.remainingToGoal : Math.max(0, goalWeight - current);
+  // Goal-distance math only exists once a real current weight and a real goal
+  // are on file (the lib already returns 0 when no goal is set).
+  const remaining = current > 0 ? weightTrend.remainingToGoal : 0;
   const maxBar = Math.max(1, ...moodStats.bars.map((b) => b.count));
   const incidentMax = Math.max(1, incident7, incident30, incident90);
 
@@ -815,11 +852,15 @@ export default function RecordsScreen() {
     return Math.floor(daysBetween(incidents[0].occurredAt, now));
   }, [incidents, now]);
 
-  const reportStats: { icon: PulseIconName; label: string; value: string }[] = [
+  // `icon` tints the stat chip; `pixelIcon` (when set) overrides the glyph with
+  // a shared pixel-art icon. Potty reads as the same green "pee" leaf used on
+  // every care timeline (its "heart" tint just keeps the chip green); the blue
+  // "drop" glyph stays reserved for Water.
+  const reportStats: { icon: PulseIconName; pixelIcon?: PixelIconName; label: string; value: string }[] = [
     { icon: "bowl", label: "Meals", value: String(report.meals) },
     { icon: "paw", label: "Walks", value: `${report.walks} - ${report.walkMinutes}m` },
     { icon: "candy", label: "Play & train", value: String(report.play) },
-    { icon: "drop", label: "Potty", value: String(report.potty) },
+    { icon: "heart", pixelIcon: "pee", label: "Potty", value: String(report.potty) },
     { icon: "bone", label: "Treats", value: String(report.treats) },
     { icon: "vomit", label: "Incidents", value: String(report.incidents) },
   ];
@@ -833,7 +874,18 @@ export default function RecordsScreen() {
   );
   const recordList = recordVault.priorityRecords;
   const filedRecordSections = recordSections.filter((section) => section.count > 0).length;
-  const recordCoveragePercent = Math.round((filedRecordSections / Math.max(1, recordSections.length)) * 100);
+  // One readiness number per measure, each verifiable on this screen:
+  // - Vault readiness is filed-section coverage, matching the Record Vault
+  //   grid below; the stage HUD and the Vault Command pill show this same
+  //   value from this same variable.
+  // - Dog ID readiness is "N of M ID fields" from the same credential that
+  //   renders the ID card, and it is worded as ID fields so it can never
+  //   read as a second, contradicting vault percent. (The old blended
+  //   65/35 score put "Vault 5%" beside "14% ready" with no visible source
+  //   for either number.)
+  const recordsVaultScore = Math.round(
+    (filedRecordSections / Math.max(1, recordSections.length)) * 100,
+  );
   const credentialReadyFields = [
     credential.breed,
     credential.weight,
@@ -844,11 +896,11 @@ export default function RecordsScreen() {
     credential.vaccines,
   ].filter(credentialFieldReady).length;
   const credentialFieldTotal = 7;
-  const credentialReadinessPercent = Math.round((credentialReadyFields / credentialFieldTotal) * 100);
-  const recordsVaultScore = Math.round(recordCoveragePercent * 0.65 + credentialReadinessPercent * 0.35);
+  // Missing records for a fresh vault are setup suggestions, not emergencies:
+  // keep the chip and HUD wording calm while the counts stay real.
   const recordsVaultStatus =
     recordVault.missingCritical.length > 0
-      ? "Needs records"
+      ? "Checklist"
       : recordReminders.length > 0
         ? "Review soon"
         : "Vault steady";
@@ -859,7 +911,7 @@ export default function RecordsScreen() {
         ? `${recordReminders[0].label} is worth checking.`
         : recordVault.total > 0
           ? "Dog ID and care files are ready."
-          : "Let's build Phoenix's care vault.";
+          : `Let's build ${resolvePetName(state.profile.name)}'s care vault.`;
   const recordsVaultTone =
     recordVault.missingCritical.length > 0
       ? colors.amber
@@ -871,8 +923,8 @@ export default function RecordsScreen() {
       id: "dog-id",
       icon: "card-outline",
       eyebrow: "Dog ID",
-      label: `${credential.name} credential`,
-      detail: `${credentialReadinessPercent}% ready for sitter, vet, and emergency handoff.`,
+      label: `${resolvePetName(credential.name)} credential`,
+      detail: `${credentialReadyFields} of ${credentialFieldTotal} ID fields ready for sitter, vet, and emergency handoff.`,
       actionLabel: "Share",
       tone: recordsVaultTone,
       onPress: shareCredential,
@@ -881,7 +933,7 @@ export default function RecordsScreen() {
       id: "record-vault",
       icon: "folder-open-outline",
       eyebrow: "Record vault",
-      label: `${recordVault.total} records saved`,
+      label: `${countNoun(recordVault.total, "record")} saved`,
       detail: recordVault.missingCritical.length
         ? `File ${recordVault.missingCritical[0].toLowerCase()} next.`
         : recordReminders[0]?.label ?? "Vaccines, visits, receipts, insurance, chip, and meds.",
@@ -904,22 +956,74 @@ export default function RecordsScreen() {
       icon: "analytics-outline",
       eyebrow: "Reports",
       label: `${periodLabel} progress`,
-      detail: `${report.total} logs and ${recordReminders.length} record reminders are ready to review.`,
+      detail: `${countNoun(report.total, "log")} and ${countNoun(recordReminders.length, "record reminder")} are ready to review.`,
       actionLabel: "Share",
       tone: colors.primary,
       onPress: shareReport,
     },
-    {
-      id: "proof",
-      icon: "shield-checkmark-outline",
-      eyebrow: "Native proof",
-      label: "Records file handoff",
-      detail: "Capture Care Pass local HTML, Dog ID HTML/SVG, share-sheet behavior, and fallback copy.",
-      actionLabel: "Proof",
-      tone: colors.amber,
-      onPress: openRecordsFileProofMission,
-    },
+    ...(ownerOps
+      ? [
+          {
+            id: "proof",
+            icon: "shield-checkmark-outline" as const,
+            eyebrow: "Native proof",
+            label: "Records file handoff",
+            detail: "Capture Care Pass local HTML, Dog ID HTML/SVG, share-sheet behavior, and fallback copy.",
+            actionLabel: "Proof",
+            tone: colors.amber,
+            onPress: openRecordsFileProofMission,
+          },
+        ]
+      : []),
   ];
+
+  // Trend sections with zero logs in their own window fold into one compact
+  // Baselines Checklist row each instead of a corridor of near-identical
+  // all-zero cards. A section gets its full trend card back the moment it
+  // has real data, and every row routes to the same Log composer flow that
+  // starts that baseline. Each status states the section's real derivation
+  // window (today / 30 days / 45 days) so the zero is verifiable.
+  const openBaselineLog = (type: CareEventType) => {
+    Haptics.selectionAsync();
+    router.push(`/log?type=${type}&detail=1&intent=${Date.now()}` as never);
+  };
+  interface BaselineChecklistRow {
+    key: string;
+    icon: IoniconName;
+    label: string;
+    status: string;
+    type: CareEventType;
+  }
+  const baselineChecklistCandidates: (BaselineChecklistRow | null)[] = [
+    weightTrend.totalWeighIns === 0 && current <= 0
+      ? { key: "weight", icon: "scale-outline" as const, label: "Weight Trend", status: "No weight on file", type: "weight" as const }
+      : null,
+    moodStats.total === 0
+      ? { key: "mood", icon: "heart-circle-outline" as const, label: "Mood Trend", status: "0 check-ins in 30 days", type: "mood" as const }
+      : null,
+    waterHydration.total === 0
+      ? { key: "water", icon: "water-outline" as const, label: "Hydration", status: "0 water logs today", type: "water" as const }
+      : null,
+    walkActivity.total === 0
+      ? { key: "walk", icon: "walk-outline" as const, label: "Walk Activity", status: "0 walks today", type: "walk" as const }
+      : null,
+    trainingProgress.totalSessions === 0
+      ? { key: "training", icon: "school-outline" as const, label: "Training Progress", status: "0 sessions in 30 days", type: "training" as const }
+      : null,
+    aloneTime.totalSessions === 0
+      ? { key: "alone", icon: "home-outline" as const, label: "Alone Time", status: "0 logs in 30 days", type: "alone" as const }
+      : null,
+    groomingCare.totalSessions === 0
+      ? { key: "grooming", icon: "sparkles-outline" as const, label: "Grooming Care", status: "0 logs in 45 days", type: "grooming" as const }
+      : null,
+    pottyHealth.total === 0
+      ? { key: "potty", icon: "medical-outline" as const, label: "Potty Health", status: "0 potty logs today", type: "potty" as const }
+      : null,
+  ];
+  const baselineChecklist: BaselineChecklistRow[] =
+    baselineChecklistCandidates.filter(
+      (row): row is BaselineChecklistRow => row !== null,
+    );
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -932,36 +1036,52 @@ export default function RecordsScreen() {
           <BoardRouteHeader
             kicker="Records"
             title="Records"
-            subtitle={`${state.profile.name}'s file cabinet - trends, incidents & reports`}
+            subtitle={`${resolvePetName(state.profile.name)}'s file cabinet - trends, incidents & reports`}
             icon="folder-open-outline"
           />
 
-          <BoardCard padded={false} style={s.recordsCredentialStageCard}>
+          <BoardCard padded={false} style={s.recordsCredentialStageCard} enter={0}>
             <ImageBackground
-              source={RECORDS_CREDENTIAL_STAGE_ROOM}
+              source={
+                recordsStageIsNight
+                  ? RECORDS_CREDENTIAL_STAGE_ROOM_NIGHT
+                  : RECORDS_CREDENTIAL_STAGE_ROOM
+              }
               resizeMode="stretch"
-              imageStyle={[s.recordsCredentialStageImage, pixelImageStyle]}
+              imageStyle={[stageImageFill, s.recordsCredentialStageImage, pixelImageStyle]}
               style={s.recordsCredentialStage}
               testID="records-credential-pixel-stage"
             >
               <View style={s.recordsCredentialStageShade} />
-              <View style={s.recordsCredentialStageScanline} />
               <View style={s.recordsCredentialStageTop}>
                 <View style={s.recordsCredentialBubble}>
-                  <Text style={[s.recordsCredentialKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                  <Text style={[s.recordsCredentialKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                     Records Command Vault
                   </Text>
-                  <Text style={[s.recordsCredentialSpeech, { color: colors.navy, fontFamily: DISPLAY_SEMI }]}>
+                  {/* brandNavy: constant ink for the fixed-light bubble in both themes
+                      (colors.navy flips to cream in dark mode and disappears). */}
+                  <Text style={[s.recordsCredentialSpeech, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>
                     {recordsVaultSpeech}
                   </Text>
                   <View style={s.recordsCredentialBubbleTail} />
                 </View>
-                <View style={[s.recordsCredentialChip, { backgroundColor: colors.brandNavy + "DD", borderColor: colors.ivory + "55" }]}>
-                  <Ionicons name={recordsVaultScore >= 80 ? "shield-checkmark" : "folder-open"} size={16} color={colors.ivory} />
-                  <Text style={[s.recordsCredentialChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+                {/* Soft cream checklist button (was a navy HUD chip). brandNavy:
+                    constant ink for this fixed-light surface in both themes,
+                    same rule as the speech bubble above. */}
+                <PressScale
+                  accessibilityRole="button"
+                  accessibilityLabel={`Records checklist: ${recordsVaultStatus}. Opens the add record form.`}
+                  onPress={openRecordsChecklist}
+                  haptic="none"
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  scaleTo={0.95}
+                  style={[s.recordsCredentialChip, { backgroundColor: colors.ivory + "F2", borderColor: colors.brandNavy + "33" }]}
+                >
+                  <Ionicons name={recordsVaultScore >= 80 ? "shield-checkmark" : "folder-open"} size={16} color={colors.brandNavy} />
+                  <Text style={[s.recordsCredentialChipText, { color: colors.brandNavy, fontFamily: "Inter_700Bold" }]}>
                     {recordsVaultStatus}
                   </Text>
-                </View>
+                </PressScale>
               </View>
 
               <View pointerEvents="none" style={s.recordsCredentialSprite}>
@@ -981,41 +1101,47 @@ export default function RecordsScreen() {
                   <Ionicons name="paw" size={16} color={recordsVaultTone} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[s.recordsCredentialIdLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                  <Text style={[s.recordsCredentialIdLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                     WOOFWATCHER DOG ID
                   </Text>
-                  <Text numberOfLines={1} style={[s.recordsCredentialIdName, { color: colors.navy, fontFamily: DISPLAY }]}>
-                    {credential.name}
+                  <Text numberOfLines={1} style={[s.recordsCredentialIdName, { color: colors.brandNavy, fontFamily: DISPLAY }]}>
+                    {resolvePetName(credential.name)}
                   </Text>
-                  <Text numberOfLines={1} style={[s.recordsCredentialIdMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text numberOfLines={1} style={[s.recordsCredentialIdMeta, { color: colors.brandNavy + "99", fontFamily: "Inter_600SemiBold" }]}>
                     {credential.breed} - {credential.weight}
                   </Text>
                 </View>
               </View>
 
-              <View style={[s.recordsCredentialHud, { backgroundColor: colors.brandNavy, borderColor: colors.brandNavy + "22" }]}>
+              {/* Light parchment stat chips (was a navy strip): sage caps
+                  labels, ink values - same real vault numbers. */}
+              <View style={s.recordsCredentialHud}>
                 {[
                   { label: "Saved", value: String(recordVault.total) },
-                  { label: "Ready", value: `${recordsVaultScore}%` },
-                  { label: "Alerts", value: String(recordReminders.length + recordVault.missingCritical.length) },
+                  { label: "Vault", value: `${recordsVaultScore}%` },
+                  { label: "To set up", value: String(recordRemindersAll.length) },
                 ].map((item) => (
-                  <View key={item.label} style={s.recordsCredentialHudCell}>
-                    <Text style={[s.recordsCredentialHudLabel, { color: colors.ivory, fontFamily: DISPLAY_SEMI }]}>{item.label}</Text>
-                    <Text style={[s.recordsCredentialHudValue, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>{item.value}</Text>
+                  <View
+                    key={item.label}
+                    style={[s.recordsCredentialHudCell, { backgroundColor: colors.cream, borderColor: colors.border }]}
+                  >
+                    <Text style={[s.recordsCredentialHudLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
+                    <Text style={[s.recordsCredentialHudValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>{item.value}</Text>
                   </View>
                 ))}
               </View>
             </View>
           </BoardCard>
 
-          <BoardCard style={s.recordsCommandCard}>
+          <BoardCard style={s.recordsCommandCard} enter={1}>
             <BoardSectionHeader title="Vault Command" accessory={<BoardPill label={`${recordsVaultScore}% ready`} tone={recordsVaultTone} />} />
             <View style={s.recordsCommandList}>
               {recordsCommandItems.map((item) => (
-                <Pressable
+                <PressScale
                   key={item.id}
                   onPress={item.onPress}
                   hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  scaleTo={0.97}
                   style={[s.recordsCommandRow, { borderColor: colors.border }]}
                   accessibilityRole="button"
                   accessibilityLabel={`${item.label}. ${item.detail}. ${item.actionLabel}`}
@@ -1024,14 +1150,15 @@ export default function RecordsScreen() {
                     <Ionicons name={item.icon} size={18} color={item.tone} />
                   </View>
                   <View style={s.recordsCommandCopy}>
-                    <Text style={[s.recordsCommandEyebrow, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}>{item.eyebrow}</Text>
+                    {/* Quiet sage caps eyebrow (was tone-colored copper/orange). */}
+                    <Text style={[s.recordsCommandEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{item.eyebrow}</Text>
                     <Text style={[s.recordsCommandTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{item.label}</Text>
                     <Text style={[s.recordsCommandDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{item.detail}</Text>
                   </View>
                   <View style={[s.recordsCommandAction, { backgroundColor: item.tone + "14" }]}>
                     <Text style={[s.recordsCommandActionText, { color: item.tone, fontFamily: "Inter_800ExtraBold" }]}>{item.actionLabel}</Text>
                   </View>
-                </Pressable>
+                </PressScale>
               ))}
             </View>
           </BoardCard>
@@ -1051,7 +1178,7 @@ export default function RecordsScreen() {
           </View>
 
           {/* Care trends */}
-          <BoardCard style={s.recordsBoardCard}>
+          <BoardCard style={s.recordsBoardCard} enter={2}>
             <BoardSectionHeader title="Care Trends" accessory={<BoardPill label="7 days" tone={colors.primary} />} />
             <View style={s.trendHeroRow}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.primary + "14" }]}>
@@ -1105,56 +1232,55 @@ export default function RecordsScreen() {
             <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{careTrends.nextStep}</Text>
           </BoardCard>
 
-          {/* Dog ID card */}
-          <BoardSectionHeader
-            title={`${credential.name} ID Card`}
-            style={{ marginTop: 28 }}
-            accessory={
-              <View style={s.shareInlineGroup}>
-                <Pressable
-                  onPress={shareCredential}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share dog ID card"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  style={s.shareInline}
-                >
-                  <Ionicons name="share-outline" size={15} color={colors.copper} />
-                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
-                </Pressable>
-                <Pressable
-                  onPress={sharePrintableCredential}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share local printable Dog ID source file"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  style={s.shareInline}
-                >
-                  <Ionicons name="print-outline" size={15} color={colors.copper} />
-                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Print</Text>
-                </Pressable>
-                <Pressable
-                  onPress={shareCredentialImageSource}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share local SVG Dog ID image source"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  style={s.shareInline}
-                >
-                  <Ionicons name="image-outline" size={15} color={colors.copper} />
-                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>SVG</Text>
-                </Pressable>
-                <Pressable
-                  onPress={shareCredentialPngArtifact}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share generated Dog ID PNG"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  style={s.shareInline}
-                >
-                  <Ionicons name="download-outline" size={15} color={colors.copper} />
-                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>PNG</Text>
-                </Pressable>
-              </View>
-            }
-          />
-          <BoardCard tone="navy" padded={false} style={s.idCard}>
+          {/* Dog ID card. The four export actions live on their own wrapping
+              row under the heading so the title and every action stay fully
+              visible at narrow widths (a single header row clipped the title
+              to "ID ..." at 393px). The pet's name is shown large on the card
+              itself right below. */}
+          <BoardSectionHeader title="ID Card" style={{ marginTop: 28, marginBottom: 2 }} />
+          <View style={s.idShareRow}>
+            <Pressable
+              onPress={shareCredential}
+              accessibilityRole="button"
+              accessibilityLabel="Share dog ID card"
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={s.shareInline}
+            >
+              <Ionicons name="share-outline" size={15} color={colors.copper} />
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
+            </Pressable>
+            <Pressable
+              onPress={sharePrintableCredential}
+              accessibilityRole="button"
+              accessibilityLabel="Share local printable Dog ID source file"
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={s.shareInline}
+            >
+              <Ionicons name="print-outline" size={15} color={colors.copper} />
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Print</Text>
+            </Pressable>
+            <Pressable
+              onPress={shareCredentialImageSource}
+              accessibilityRole="button"
+              accessibilityLabel="Share local SVG Dog ID image source"
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={s.shareInline}
+            >
+              <Ionicons name="image-outline" size={15} color={colors.copper} />
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>SVG</Text>
+            </Pressable>
+            <Pressable
+              onPress={shareCredentialPngArtifact}
+              accessibilityRole="button"
+              accessibilityLabel="Share generated Dog ID PNG"
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={s.shareInline}
+            >
+              <Ionicons name="download-outline" size={15} color={colors.copper} />
+              <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>PNG</Text>
+            </Pressable>
+          </View>
+          <BoardCard tone="navy" padded={false} style={s.idCard} enter={3}>
             <View style={s.idCardTop}>
               <View style={[s.idBadge, { backgroundColor: colors.copper }]}>
                 <Ionicons name="paw" size={16} color="#FFFFFF" />
@@ -1187,7 +1313,7 @@ export default function RecordsScreen() {
           </BoardCard>
 
           {/* Record vault */}
-          <BoardCard style={s.recordsBoardCard}>
+          <BoardCard style={s.recordsBoardCard} enter={4}>
             <BoardSectionHeader
               title="Record Vault"
               accessory={
@@ -1202,13 +1328,17 @@ export default function RecordsScreen() {
                 const option = RECORD_OPTIONS.find((item) => item.kind === section.kind) ?? RECORD_OPTIONS[0];
                 const tone = section.status === "On file" ? colors.sage : colors.amber;
                 return (
-                  <Pressable
+                  <PressScale
                     key={section.kind}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${section.label}. ${section.count > 0 ? `${section.count} on file` : "Nothing filed yet"}. Add a ${option.label.toLowerCase()} record.`}
                     onPress={() => openRecordForm(section.kind)}
-                    style={({ pressed }) => [
+                    scaleTo={0.96}
+                    containerStyle={s.vaultCardLayout}
+                    style={[
                       s.vaultCard,
                       {
-                        backgroundColor: pressed ? colors.secondary : colors.background,
+                        backgroundColor: colors.background,
                         borderColor: section.status === "On file" ? colors.border : colors.amber + "66",
                       },
                     ]}
@@ -1220,7 +1350,7 @@ export default function RecordsScreen() {
                     <Text style={[s.vaultMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       {section.count > 0 ? `${section.count} on file` : "Add now"}
                     </Text>
-                  </Pressable>
+                  </PressScale>
                 );
               })}
             </View>
@@ -1262,67 +1392,158 @@ export default function RecordsScreen() {
             ) : null}
           </BoardCard>
 
-          {/* Weight trend */}
+          {/* Baselines checklist - every zero-data trend section as one
+              tappable row; full cards below render only with real data. */}
+          {baselineChecklist.length > 0 ? (
+            <BoardCard style={s.recordsBoardCard} enter={5}>
+              <BoardSectionHeader
+                title="Baselines Checklist"
+                accessory={
+                  <BoardPill
+                    label={`${baselineChecklist.length} to start`}
+                    tone={colors.mutedForeground}
+                  />
+                }
+              />
+              <Text style={[s.baselineIntro, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Nothing logged in these sections yet. Tap one to log its first
+                entry; each grows into a full trend card with real data.
+              </Text>
+              {baselineChecklist.map((row, index) => (
+                <PressScale
+                  key={row.key}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${row.label}. ${row.status}. Log the first entry.`}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={() => openBaselineLog(row.type)}
+                  scaleTo={0.97}
+                  style={[
+                    s.baselineRow,
+                    {
+                      borderTopColor: colors.border,
+                      borderTopWidth: index > 0 ? 1 : 0,
+                    },
+                  ]}
+                >
+                  <View style={[s.baselineIcon, { backgroundColor: colors.mutedForeground + "14" }]}>
+                    <Ionicons name={row.icon} size={17} color={colors.mutedForeground} />
+                  </View>
+                  <Text style={[s.baselineLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {row.label}
+                  </Text>
+                  <Text style={[s.baselineStatus, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    {row.status}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+                </PressScale>
+              ))}
+            </BoardCard>
+          ) : null}
+
+          {/* Weight trend - charts real weigh-ins only; with fewer than two
+              logged weights it shows an honest empty state instead of a
+              synthesized line, and goal math only appears once a goal is set. */}
+          {weightTrend.totalWeighIns > 0 || current > 0 ? (
           <BoardCard style={[s.recordsBoardCard, { padding: cardPad }]}>
             <BoardSectionHeader
               title="Weight Trend"
               accessory={
                 <BoardPill
-                  label={remaining > 0 ? `${remaining.toFixed(1)} ${unit} ${weightTrend.direction === "reduce" ? "over goal" : "to go"}` : "Goal reached"}
-                  tone={remaining > 0 ? colors.amber : colors.sage}
+                  label={remaining > 0 ? `${remaining.toFixed(1)} ${unit} ${weightTrend.direction === "reduce" ? "over goal" : "to go"}` : goalWeight > 0 ? (current > 0 ? "Goal reached" : `Goal ${goalWeight} ${unit}`) : "No goal set"}
+                  tone={remaining > 0 ? colors.amber : goalWeight > 0 ? colors.sage : colors.mutedForeground}
                 />
               }
             />
-            <View style={s.chartTopRow}>
-              <View>
-                <Text style={[s.chartBig, { color: colors.foreground, fontFamily: DISPLAY }]}>
-                  {current}
-                  <Text style={[s.chartUnit, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}> {unit}</Text>
-                </Text>
-                <Text style={[s.chartCaption, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {isRealWeight ? "From logged weigh-ins" : "Current weight"}
-                </Text>
+            {current > 0 ? (
+              <View style={s.chartTopRow}>
+                <View>
+                  <Text style={[s.chartBig, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                    {current}
+                    <Text style={[s.chartUnit, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}> {unit}</Text>
+                  </Text>
+                  <Text style={[s.chartCaption, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    {hasWeightSeries ? "From logged weigh-ins" : "Current weight on profile"}
+                  </Text>
+                </View>
+                {goalWeight > 0 ? (
+                  <View style={[s.goalPill, { backgroundColor: colors.sage + "16" }]}>
+                    <Ionicons name="flag" size={13} color={colors.sage} />
+                    <Text style={[s.goalPillText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                      Goal {goalWeight} {unit}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
-              <View style={[s.goalPill, { backgroundColor: colors.sage + "16" }]}>
-                <Ionicons name="flag" size={13} color={colors.sage} />
-                <Text style={[s.goalPillText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                  Goal {goalWeight} {unit}
-                </Text>
-              </View>
-            </View>
+            ) : null}
 
-            <Svg width={chartW} height={chartH}>
-              <Defs>
-                <SvgGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={colors.sage} stopOpacity={0.28} />
-                  <Stop offset="1" stopColor={colors.sage} stopOpacity={0.02} />
-                </SvgGradient>
-              </Defs>
-              {[0.25, 0.5, 0.75].map((t) => {
-                const gy = padT + t * plotH;
-                return <Line key={t} x1={padL} y1={gy} x2={padL + plotW} y2={gy} stroke={colors.border} strokeWidth={1} opacity={0.7} />;
-              })}
-              <Line x1={padL} y1={goalY} x2={padL + plotW} y2={goalY} stroke={colors.sage} strokeWidth={1.5} strokeDasharray="5 5" opacity={0.55} />
-              <Path d={areaPath} fill="url(#weightFill)" />
-              <Path d={linePath} fill="none" stroke={colors.primary} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
-              {series.map((v, i) => {
-                const last = i === series.length - 1;
-                return (
-                  <Circle key={i} cx={xAt(i)} cy={yAt(v)} r={last ? 5.5 : 3} fill={last ? colors.copper : colors.card} stroke={last ? colors.card : colors.primary} strokeWidth={last ? 2.5 : 2} />
-                );
-              })}
-              {labels.map((lbl, i) => (
-                <SvgText key={`l${i}`} x={xAt(i)} y={chartH - 8} fill={colors.mutedForeground} fontSize={10} fontFamily="Inter_500Medium" textAnchor="middle">
-                  {lbl}
-                </SvgText>
-              ))}
-            </Svg>
+            {hasWeightSeries ? (
+              <Svg width={chartW} height={chartH}>
+                <Defs>
+                  <SvgGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0" stopColor={colors.sage} stopOpacity={0.28} />
+                    <Stop offset="1" stopColor={colors.sage} stopOpacity={0.02} />
+                  </SvgGradient>
+                </Defs>
+                {[0.25, 0.5, 0.75].map((t) => {
+                  const gy = padT + t * plotH;
+                  return <Line key={t} x1={padL} y1={gy} x2={padL + plotW} y2={gy} stroke={colors.border} strokeWidth={1} opacity={0.7} />;
+                })}
+                {goalWeight > 0 ? (
+                  <Line x1={padL} y1={goalY} x2={padL + plotW} y2={goalY} stroke={colors.sage} strokeWidth={1.5} strokeDasharray="5 5" opacity={0.55} />
+                ) : null}
+                <Path d={areaPath} fill="url(#weightFill)" />
+                <Path d={linePath} fill="none" stroke={colors.primary} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
+                {series.map((v, i) => {
+                  const last = i === series.length - 1;
+                  return (
+                    <Circle key={i} cx={xAt(i)} cy={yAt(v)} r={last ? 5.5 : 3} fill={last ? colors.copper : colors.card} stroke={last ? colors.card : colors.primary} strokeWidth={last ? 2.5 : 2} />
+                  );
+                })}
+                {labels.map((lbl, i) => (
+                  <SvgText
+                    key={`l${i}`}
+                    x={xAt(i)}
+                    y={chartH - 8}
+                    fill={colors.mutedForeground}
+                    fontSize={10}
+                    fontFamily="Inter_500Medium"
+                    // End labels anchor inward so they never clip at the card edges.
+                    textAnchor={i === 0 ? "start" : i === labels.length - 1 ? "end" : "middle"}
+                  >
+                    {lbl}
+                  </SvgText>
+                ))}
+              </Svg>
+            ) : (
+              <View style={[s.weightEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Ionicons name="scale-outline" size={24} color={colors.mutedForeground} />
+                <Text style={[s.weightEmptyTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {weightTrend.totalWeighIns === 1
+                    ? "Log another weigh-in to chart the trend"
+                    : "Log a weight to start the trend"}
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    router.push(`/log?type=weight&detail=1&intent=${Date.now()}` as never);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Log a weight from the Log tab"
+                  style={({ pressed }) => [s.emptyAddBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                >
+                  <Ionicons name="add" size={16} color="#FFFFFF" />
+                  <Text style={[s.emptyAddText, { fontFamily: "Inter_700Bold" }]}>Log weight</Text>
+                </Pressable>
+              </View>
+            )}
             <Text style={[s.chartNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-              {isRealWeight ? weightTrend.nextStep : "Gentle, vet-guided pacing - slow and steady."}
+              {weightTrend.nextStep}
             </Text>
           </BoardCard>
+          ) : null}
 
           {/* Mood trend */}
+          {moodStats.total > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Mood Trend"
@@ -1407,12 +1628,14 @@ export default function RecordsScreen() {
               </>
             )}
           </BoardCard>
+          ) : null}
 
           {/* Hydration */}
+          {waterHydration.total > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Hydration"
-              accessory={<BoardPill label={waterHydration.total ? `${waterHydration.total} logs` : "No logs"} tone={colors.primary} />}
+              accessory={<BoardPill label={waterHydration.total ? countNoun(waterHydration.total, "log") : "No logs"} tone={colors.primary} />}
             />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.primary + "18" }]}>
@@ -1459,12 +1682,14 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Walk activity */}
+          {walkActivity.total > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Walk Activity"
-              accessory={<BoardPill label={walkActivity.total ? `${walkActivity.total} walks` : "No walks"} tone={colors.sage} />}
+              accessory={<BoardPill label={walkActivity.total ? countNoun(walkActivity.total, "walk") : "No walks"} tone={colors.sage} />}
             />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.sage + "18" }]}>
@@ -1490,7 +1715,8 @@ export default function RecordsScreen() {
               ].map((item, index) => (
                 <View key={item.label} style={[s.hydrationStat, index < 2 && { borderRightWidth: 1, borderRightColor: colors.border }]}>
                   <Text style={[s.hydrationValue, { color: colors.foreground, fontFamily: DISPLAY }]}>{item.value}</Text>
-                  <Text style={[s.hydrationLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{item.label}</Text>
+                  {/* sentenceCase keeps "Dog interactions" aligned with its Title-case siblings. */}
+                  <Text style={[s.hydrationLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{sentenceCase(item.label)}</Text>
                 </View>
               ))}
             </View>
@@ -1524,7 +1750,7 @@ export default function RecordsScreen() {
                 <View style={s.routeTemplateHeader}>
                   <Text style={[s.routeTemplateTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Saved Routes</Text>
                   <Text style={[s.routeTemplateCount, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    {walkRouteTemplates.length} templates
+                    {countNoun(walkRouteTemplates.length, "template")}
                   </Text>
                 </View>
                 {walkRouteTemplates.map((template, index) => (
@@ -1557,14 +1783,16 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Training progress */}
+          {trainingProgress.totalSessions > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Training Progress"
               accessory={
                 <BoardPill
-                  label={trainingProgress.totalSessions ? `${trainingProgress.totalSessions} sessions` : "No sessions"}
+                  label={trainingProgress.totalSessions ? countNoun(trainingProgress.totalSessions, "session") : "No sessions"}
                   tone={colors.copper}
                 />
               }
@@ -1632,21 +1860,23 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Alone time */}
+          {aloneTime.totalSessions > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Alone Time"
               accessory={
                 <BoardPill
-                  label={aloneTime.totalSessions ? `${aloneTime.totalSessions} logs` : "No logs"}
-                  tone={aloneTime.distressedCount ? colors.rose : aloneTime.anxiousCount ? colors.amber : colors.secondary}
+                  label={aloneTime.totalSessions ? countNoun(aloneTime.totalSessions, "log") : "No logs"}
+                  tone={aloneTime.distressedCount ? colors.rose : aloneTime.anxiousCount ? colors.amber : colors.mutedForeground}
                 />
               }
             />
             <View style={s.hydrationSummary}>
-              <View style={[s.watchSummaryIcon, { backgroundColor: colors.secondary + "18" }]}>
-                <Ionicons name="home-outline" size={18} color={colors.secondary} />
+              <View style={[s.watchSummaryIcon, { backgroundColor: colors.mutedForeground + "18" }]}>
+                <Ionicons name="home-outline" size={18} color={colors.mutedForeground} />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={[s.watchSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
@@ -1690,7 +1920,7 @@ export default function RecordsScreen() {
             </Text>
             {aloneTime.latest ? (
               <View style={[s.watchPatternRow, { borderTopColor: colors.border }]}>
-                <View style={[s.watchSignalDot, { backgroundColor: aloneTime.distressedCount ? colors.rose : aloneTime.anxiousCount ? colors.amber : colors.secondary }]} />
+                <View style={[s.watchSignalDot, { backgroundColor: aloneTime.distressedCount ? colors.rose : aloneTime.anxiousCount ? colors.amber : colors.mutedForeground }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                     Latest: {aloneTime.latest.label}
@@ -1713,12 +1943,14 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Grooming care */}
+          {groomingCare.totalSessions > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Grooming Care"
-              accessory={<BoardPill label={groomingCare.totalSessions ? `${groomingCare.totalSessions} logs` : "No logs"} tone={colors.sage} />}
+              accessory={<BoardPill label={groomingCare.totalSessions ? countNoun(groomingCare.totalSessions, "log") : "No logs"} tone={colors.sage} />}
             />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.sage + "18" }]}>
@@ -1783,12 +2015,14 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Potty health */}
+          {pottyHealth.total > 0 ? (
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
               title="Potty Health"
-              accessory={<BoardPill label={pottyHealth.total ? `${pottyHealth.total} logs` : "No logs"} tone={pottyHealth.watchCount ? colors.amber : colors.sage} />}
+              accessory={<BoardPill label={pottyHealth.total ? countNoun(pottyHealth.total, "log") : "No logs"} tone={pottyHealth.watchCount ? colors.amber : colors.sage} />}
             />
             <View style={s.hydrationSummary}>
               <View style={[s.watchSummaryIcon, { backgroundColor: colors.amber + "18" }]}>
@@ -1799,7 +2033,7 @@ export default function RecordsScreen() {
                   {pottyHealth.status === "watch" ? "Stool watch" : pottyHealth.status === "steady" ? "Potty steady" : "Potty check"}
                 </Text>
                 <Text style={[s.watchSummaryDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {pottyHealth.summary}
+                  {pottySummary}
                 </Text>
               </View>
             </View>
@@ -1833,7 +2067,7 @@ export default function RecordsScreen() {
                 <View style={[s.watchSignalDot, { backgroundColor: pottyHealth.watchCount ? colors.amber : colors.sage }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={[s.watchPatternLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                    Latest: {pottyHealth.last.kindLabel}
+                    Latest: {sentenceCase(pottyHealth.last.kindLabel)}
                   </Text>
                   <Text style={[s.watchPatternEvidence, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                     {[
@@ -1848,6 +2082,7 @@ export default function RecordsScreen() {
               </View>
             ) : null}
           </BoardCard>
+          ) : null}
 
           {/* Incident lookback */}
           <BoardCard style={s.recordsBoardCard}>
@@ -2028,7 +2263,18 @@ export default function RecordsScreen() {
             />
             <View style={[s.medSummaryRow, { borderBottomColor: colors.border }]}>
               {[
-                { value: `${medicationAdherence.adherencePercent}%`, label: "Logged", color: medicationAdherence.missedCount > 0 ? colors.rose : colors.sage },
+                // With no medications on file there is nothing to have logged,
+                // so show a dash instead of a fabricated 100%.
+                {
+                  value: medicationAdherence.total === 0 ? "—" : `${medicationAdherence.adherencePercent}%`,
+                  label: "Logged",
+                  color:
+                    medicationAdherence.total === 0
+                      ? colors.mutedForeground
+                      : medicationAdherence.missedCount > 0
+                        ? colors.rose
+                        : colors.sage,
+                },
                 { value: String(medicationAdherence.dueCount), label: "Due now", color: medicationAdherence.dueCount > 0 ? colors.amber : colors.sage },
                 { value: String(medicationAdherence.missedCount), label: "Missed", color: medicationAdherence.missedCount > 0 ? colors.rose : colors.sage },
               ].map((item, index) => (
@@ -2110,9 +2356,12 @@ export default function RecordsScreen() {
                 <Text style={[s.medFollowUpTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                   Medication Follow-ups
                 </Text>
-                <Text style={[s.medFollowUpCount, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
-                  {medicationFollowUps.length ? `${medicationFollowUps.length} active` : "Clear"}
-                </Text>
+                {/* Calm pill grammar (matches Incident Watch's green Clear pill)
+                    instead of orange all-caps text that reads as an alert. */}
+                <BoardPill
+                  label={medicationFollowUps.length ? `${medicationFollowUps.length} active` : "Clear"}
+                  tone={medicationFollowUps.length ? colors.copper : colors.sage}
+                />
               </View>
               {medicationFollowUps.length === 0 ? (
                 <Text style={[s.medFollowUpEmpty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
@@ -2153,9 +2402,10 @@ export default function RecordsScreen() {
                 <Text style={[s.medFollowUpTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                   Medication History
                 </Text>
-                <Text style={[s.medFollowUpCount, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
-                  {medicationHistory.total ? `${medicationHistory.total} logs` : "No logs"}
-                </Text>
+                <BoardPill
+                  label={medicationHistory.total ? countNoun(medicationHistory.total, "log") : "No logs"}
+                  tone={medicationHistory.total ? colors.copper : colors.mutedForeground}
+                />
               </View>
               <View style={[s.medSearchCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Ionicons name="search" size={16} color={colors.mutedForeground} />
@@ -2270,13 +2520,16 @@ export default function RecordsScreen() {
             <BoardSectionHeader title="Care Pass" accessory={<BoardPill label="Preview" tone={colors.copper} />} />
             <View style={s.carePassList}>
               {CARE_PASS_OPTIONS.map((option) => (
-                <Pressable
+                <PressScale
                   key={option.audience}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Preview the ${option.label} Care Pass. ${option.detail}.`}
                   onPress={() => openCarePassPreview(option.audience)}
-                  style={({ pressed }) => [
+                  scaleTo={0.97}
+                  style={[
                     s.carePassRow,
                     {
-                      backgroundColor: pressed ? colors.secondary : colors.background,
+                      backgroundColor: colors.background,
                       borderColor: colors.border,
                     },
                   ]}
@@ -2293,7 +2546,7 @@ export default function RecordsScreen() {
                     </Text>
                   </View>
                   <Ionicons name="share-outline" size={16} color={colors.copper} />
-                </Pressable>
+                </PressScale>
               ))}
             </View>
           </BoardCard>
@@ -2359,7 +2612,7 @@ export default function RecordsScreen() {
                         {artifact.title}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {shortDate(artifact.createdAt)} - {sectionCount} sections - {exportView.sourceStatus === "ready" ? "Print-ready" : "Print restored"}
+                        {shortDate(artifact.createdAt)} - {countNoun(sectionCount, "section")} - {exportView.sourceStatus === "ready" ? "Print-ready" : "Print restored"}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
                         {exportView.fileName}
@@ -2500,18 +2753,20 @@ export default function RecordsScreen() {
                         >
                           <Ionicons name="download-outline" size={15} color={colors.sage} />
                         </Pressable>
-                        <Pressable
-                          onPress={openReportBinaryExportProofMission}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Open report binary export proof mission for ${artifact.title}`}
-                          hitSlop={MOBILE_INLINE_HIT_SLOP}
-                          style={({ pressed }) => [
-                            s.artifactIconButton,
-                            { backgroundColor: colors.amber + "14", opacity: pressed ? 0.75 : 1 },
-                          ]}
-                        >
-                          <Ionicons name="shield-checkmark-outline" size={15} color={colors.amber} />
-                        </Pressable>
+                        {ownerOps ? (
+                          <Pressable
+                            onPress={openReportBinaryExportProofMission}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Open report binary export proof mission for ${artifact.title}`}
+                            hitSlop={MOBILE_INLINE_HIT_SLOP}
+                            style={({ pressed }) => [
+                              s.artifactIconButton,
+                              { backgroundColor: colors.amber + "14", opacity: pressed ? 0.75 : 1 },
+                            ]}
+                          >
+                            <Ionicons name="shield-checkmark-outline" size={15} color={colors.amber} />
+                          </Pressable>
+                        ) : null}
                       </View>
                     </View>
                   </View>
@@ -2560,7 +2815,7 @@ export default function RecordsScreen() {
                   <Ionicons name="ribbon" size={13} color={colors.sage} />
                   <Text style={[s.topCaregiverInlineText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                     {report.topCaregiver.name}
-                    <Text style={{ fontFamily: "Inter_400Regular", color: colors.mutedForeground }}> - {report.topCaregiver.count} logs</Text>
+                    <Text style={{ fontFamily: "Inter_400Regular", color: colors.mutedForeground }}> - {countNoun(report.topCaregiver.count, "log")}</Text>
                   </Text>
                 </View>
               )}
@@ -2569,7 +2824,11 @@ export default function RecordsScreen() {
               {reportStats.map((r) => (
                 <View key={r.label} style={[s.reportCell, { backgroundColor: colors.background }]}>
                   <View style={[s.reportIcon, { backgroundColor: PULSE_COLORS[r.icon] + "16" }]}>
-                    <PulseIcon name={r.icon} size={16} />
+                    {r.pixelIcon ? (
+                      <PixelIcon name={r.pixelIcon} size={16} />
+                    ) : (
+                      <PulseIcon name={r.icon} size={16} />
+                    )}
                   </View>
                   <Text style={[s.reportValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{r.value}</Text>
                   <Text style={[s.reportLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{r.label}</Text>
@@ -2593,15 +2852,19 @@ export default function RecordsScreen() {
                 <PulseIcon name="bowl" size={20} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.rowTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{state.dietProfile.primaryFood}</Text>
+                <Text style={[s.rowTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {hasDietOnFile ? dietPrimaryFood || "Food not set yet" : "No diet set yet"}
+                </Text>
                 <Text style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {state.dietProfile.normalPortion} - {state.dietProfile.mealSchedule}
+                  {hasDietOnFile
+                    ? dietMeta || "Add portion and schedule with Edit."
+                    : "Add food and portion with Edit."}
                 </Text>
               </View>
             </View>
             {dietHistory.length > 0 && (
               <View style={{ marginTop: 4 }}>
-                <Text style={[s.subHeading, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>RECENT MEAL NOTES</Text>
+                <Text style={[s.subHeading, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>RECENT MEAL NOTES</Text>
                 {dietHistory.map((e) => (
                   <View key={e.id} style={s.dietNoteRow}>
                     <View style={[s.dot, { backgroundColor: colors.copper }]} />
@@ -2848,7 +3111,16 @@ const s = StyleSheet.create({
     paddingHorizontal: 8,
     gap: 4,
   },
-  shareInlineGroup: { flexDirection: "row", alignItems: "center", gap: 14 },
+  // Dog ID export actions: a wrapping row under the section title so all four
+  // actions and the title stay visible at narrow (393px) widths.
+  idShareRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    columnGap: 8,
+    marginLeft: -8,
+    marginBottom: 4,
+  },
 
   recordsCredentialStageCard: {
     alignSelf: "stretch",
@@ -2872,11 +3144,6 @@ const s = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(4, 16, 28, 0.12)",
   },
-  recordsCredentialStageScanline: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.22)",
-  },
   recordsCredentialStageTop: {
     zIndex: 3,
     flexDirection: "row",
@@ -2898,10 +3165,11 @@ const s = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
   },
+  // Quiet sage caps kicker (mockup parity: no copper/orange kickers).
   recordsCredentialKicker: {
     fontSize: 9,
     textTransform: "uppercase",
-    letterSpacing: 0.7,
+    letterSpacing: 1.1,
     marginBottom: 2,
   },
   recordsCredentialSpeech: {
@@ -2982,9 +3250,9 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   recordsCredentialIdLabel: {
-    fontSize: 9.8,
+    fontSize: 9,
     textTransform: "uppercase",
-    letterSpacing: 0.8,
+    letterSpacing: 1.1,
   },
   recordsCredentialIdName: {
     fontSize: 21,
@@ -2995,22 +3263,25 @@ const s = StyleSheet.create({
     fontSize: 11.5,
     marginTop: 2,
   },
+  // Parchment stat chips (was one navy strip): each cell is its own light
+  // chip with a sage caps label over an ink value.
   recordsCredentialHud: {
     flexDirection: "row",
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    gap: 7,
   },
   recordsCredentialHudCell: {
     flex: 1,
     alignItems: "center",
     gap: 2,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
   },
   recordsCredentialHudLabel: {
-    fontSize: 10,
+    fontSize: 9,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1.1,
   },
   recordsCredentialHudValue: {
     fontSize: 16,
@@ -3045,10 +3316,10 @@ const s = StyleSheet.create({
     minWidth: 0,
   },
   recordsCommandEyebrow: {
-    fontSize: 9.5,
+    fontSize: 9,
     lineHeight: 12,
     textTransform: "uppercase",
-    letterSpacing: 0,
+    letterSpacing: 1.1,
   },
   recordsCommandTitle: {
     fontSize: 14.6,
@@ -3094,8 +3365,11 @@ const s = StyleSheet.create({
   idFooterText: { fontSize: 12.5, lineHeight: 17 },
 
   vaultGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  // Springy vault tiles: layout width lives on the PressScale container,
+  // visuals on the inner scaled card.
+  vaultCardLayout: { width: "48%" },
   vaultCard: {
-    width: "48%",
+    width: "100%",
     minHeight: 92,
     borderRadius: 14,
     borderWidth: 1,
@@ -3120,6 +3394,16 @@ const s = StyleSheet.create({
   goalPill: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 13 },
   goalPillText: { fontSize: 12.5 },
   chartNote: { fontSize: 12.5, lineHeight: 18, marginTop: 6 },
+  weightEmpty: {
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  weightEmptyTitle: { fontSize: 14.5, textAlign: "center" },
 
   empty: { fontSize: 14, paddingVertical: 16, textAlign: "center" },
   trendHeroRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 12 },
@@ -3207,7 +3491,6 @@ const s = StyleSheet.create({
   medFollowUps: { borderTopWidth: 1, marginTop: 4, paddingTop: 14 },
   medFollowUpHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 2 },
   medFollowUpTitle: { fontSize: 15 },
-  medFollowUpCount: { fontSize: 11.5, textTransform: "uppercase", letterSpacing: 0.4 },
   medFollowUpEmpty: { fontSize: 12.5, lineHeight: 18, paddingTop: 8 },
   medFollowUpRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 12 },
   medFollowUpAction: { fontSize: 12, lineHeight: 17, marginTop: 5 },
@@ -3247,6 +3530,24 @@ const s = StyleSheet.create({
   medHistoryNote: { fontSize: 12.2, lineHeight: 17, marginTop: 5 },
 
   recordsBoardCard: { marginTop: 20 },
+  baselineIntro: { fontSize: 12.5, lineHeight: 18, marginBottom: 6 },
+  baselineRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  baselineIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  baselineLabel: { flex: 1, minWidth: 0, fontSize: 13.5 },
+  baselineStatus: { fontSize: 11.5 },
   carePassList: { gap: 9 },
   carePassRow: {
     flexDirection: "row",
@@ -3368,7 +3669,7 @@ const s = StyleSheet.create({
   reportValue: { fontSize: 18, letterSpacing: -0.3 },
   reportLabel: { fontSize: 11, marginTop: 2 },
   dietHead: { flexDirection: "row", alignItems: "center", gap: 12, paddingBottom: 6 },
-  subHeading: { fontSize: 11, letterSpacing: 0.6, marginTop: 10, marginBottom: 4 },
+  subHeading: { fontSize: 9, letterSpacing: 1.1, textTransform: "uppercase", marginTop: 10, marginBottom: 4 },
   dietNoteRow: { flexDirection: "row", gap: 10, paddingVertical: 7, alignItems: "flex-start" },
   dot: { width: 7, height: 7, borderRadius: 4, marginTop: 6 },
 

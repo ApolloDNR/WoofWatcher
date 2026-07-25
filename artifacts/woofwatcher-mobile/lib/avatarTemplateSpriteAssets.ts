@@ -46,22 +46,22 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       label: "Shepherd live idle",
       asset: spriteAsset(
         bundledAsset(
-          "assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png",
+          "assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png",
           () =>
-            require("@/assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png"),
+            require("@/assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png"),
         ),
       ),
       track: {
-        key: "shepherd:option-b-idle-tail-wag",
+        key: "shepherd:storybook-idle-tail-wag",
         frameCount: 8,
         fps: 7,
         loop: true,
         slotSize: 256,
         requiredAsset:
-          "assets/avatar/phoenix/candidates/option-b-idle-tail-wag-strip.png",
+          "assets/avatar/phoenix/storybook/storybook-idle-tail-wag-strip.png",
         anchor: "bottom-center",
         notes:
-          "Approved Option B Phoenix shepherd idle/tail-wag strip for the live Avatar Studio care-twin preview.",
+          "Storybook board-matched shepherd idle/tail-wag strip for the live Avatar Studio care-twin preview.",
       },
     },
     "walk-loop": {
@@ -69,22 +69,22 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       label: "Shepherd walk loop",
       asset: spriteAsset(
         bundledAsset(
-          "assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png",
+          "assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png",
           () =>
-            require("@/assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png"),
+            require("@/assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png"),
         ),
       ),
       track: {
-        key: "shepherd:option-b-walk-loop",
+        key: "shepherd:storybook-walk-loop",
         frameCount: 8,
         fps: 9,
         loop: true,
         slotSize: 256,
         requiredAsset:
-          "assets/avatar/phoenix/candidates/option-b-walk-loop-strip.png",
+          "assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png",
         anchor: "bottom-center",
         notes:
-          "Approved Option B Phoenix shepherd walk loop for live Avatar Studio movement.",
+          "Storybook board-matched shepherd walk loop for live Avatar Studio movement.",
       },
     },
   },

@@ -45,7 +45,11 @@ test("builds a care-RPG mission deck from real open care state", () => {
 
   assert.equal(missions[1].route, "/adventure");
   assert.equal(missions[1].cta, "Start quest");
-  assert.match(missions[1].detail, /Level 12/);
+  // The Adventure mission speaks in "Quest level"/"quest XP" (the daily
+  // quest track), never bare "Level"/"XP", so Home cannot show the same
+  // vocabulary as the canonical careCareer level with different numbers.
+  assert.match(missions[1].detail, /Quest level 12/);
+  assert.match(missions[1].detail, /50 quest XP today/);
   assert.match(missions[1].detail, /18 memories/);
 
   assert.equal(missions[2].route, "/health?tab=bile");

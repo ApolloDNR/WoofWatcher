@@ -1,9 +1,13 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
+  Easing,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -21,6 +25,8 @@ import {
   type CareEventType,
 } from "@workspace/care-domain";
 
+import Reanimated from "react-native-reanimated";
+
 import {
   BoardCard,
   BoardPill,
@@ -29,18 +35,21 @@ import {
   QuickActionTile,
   StatusMeter,
 } from "@/components/board/BoardPrimitives";
+import { enterUp, PressScale } from "@/components/motion/GameFeel";
+import { notifyDialog } from "@/lib/confirmDialog";
 import {
   LivingPhoenixRoom,
   type PhoenixRoomReaction,
   type PhoenixRoomStat,
 } from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
-import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
+import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import {
+  getFloatingFeedbackBottomOffset,
   getFloatingTabChromeMetrics,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
@@ -50,10 +59,7 @@ import {
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
 import { deriveCareTwinScene } from "@/lib/avatarLifeEngine";
 import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
-import {
-  describeCareTwinReactionForLog,
-  type CareTwinReactionToneRole,
-} from "@/lib/careTwinReactionPolicy";
+import { describeCareTwinReactionForLog } from "@/lib/careTwinReactionPolicy";
 import {
   buildHomeMissionDeck,
   type HomeMissionTone,
@@ -61,13 +67,25 @@ import {
 import { getHomeFirstScreenLayout } from "@/lib/homeFirstScreenLayout";
 import { getHomeMissionDeckLayout } from "@/lib/homeMissionLayout";
 import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
-import { buildQuickLogEntry, getQuickLogPolicy } from "@/lib/quickLogEntry";
 import {
+  careXpForEntry,
+  deriveCareCareer,
+  deriveCareStreak,
+} from "@/lib/careCareer";
+import {
+  buildQuickLogEntry,
+  findRecentQuickLogDuplicate,
+  getQuickLogPolicy,
+  QUICK_LOG_DEDUPE_WINDOW_MS,
+} from "@/lib/quickLogEntry";
+import {
+  buildWalkSessionFinishPatch,
   buildWalkSessionStartEntry,
   findOpenWalkSession,
 } from "@/lib/walkSession";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
-import { deriveTodayCommand, type TodayCommandIcon } from "@/lib/todayCommand";
+import { resolvePetName } from "@/lib/petIdentity";
+import { deriveTodayCommand, findPendingMealOutcome } from "@/lib/todayCommand";
 
 interface QuickItem {
   key: string;
@@ -78,19 +96,14 @@ interface QuickItem {
   mood?: string;
   severity?: string;
   route?: "/log";
+  /** Always open the detail flow - some logs need context before saving. */
+  forceDetail?: boolean;
 }
 
 type StatusTileTarget = "mood" | "health" | "diet" | "bond";
 type TodayMetricTarget = "activity" | "meals" | "potty";
-type PhoenixStatusMeterTarget =
-  | "energy"
-  | "hunger"
-  | "hydration"
-  | "bile"
-  | "bond";
 type HomeWatchTarget = "health" | "bile" | "alone";
 type HomePresenceRoute =
-  | "/more?section=household"
   | `/log?entry=${string}`
   | `/log?type=${string}&detail=1&intent=${number}`;
 type HomeNextUpRoute =
@@ -103,6 +116,10 @@ type HomeNextUpItem = {
   icon: PixelIconName;
   route: HomeNextUpRoute;
   meta?: string;
+  /** open-loop = an active session/outcome to close; routine = a planned item. */
+  kind: "open-loop" | "routine" | "suggestion";
+  routineId?: string;
+  owner?: string;
 };
 
 const todayMetricRouteType: Record<TodayMetricTarget, CareEventType> = {
@@ -111,10 +128,54 @@ const todayMetricRouteType: Record<TodayMetricTarget, CareEventType> = {
   potty: "potty",
 };
 
+// Framed storybook room: the living sprite layer floats over this backdrop
+// inside the Today card. The art is lifted straight from Apollo's mock
+// boards (baked-in dog and camera chip removed with the approved edit
+// pipeline, recomposed to 3:2 for the card). The room follows the
+// household's real clock - lamplit night after 8 PM, daylight from 6 AM -
+// so the world feels alive without faking anything.
+// Full-bleed home scene from the mock boards: tall 9:16 art where the
+// furniture band and paw-print rug live in the top third (the dog's traffic
+// area) and calm wooden floor flows down behind the floating console.
+const HOME_IMMERSIVE_ROOM_DAY = require("@/assets/avatar/rooms/home-fullbleed-day.png");
+const HOME_IMMERSIVE_ROOM_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-night.png");
+// During a real walk session the home scene becomes the park and the twin
+// visibly walks it - the room returns when the walk is finished.
+const HOME_IMMERSIVE_PARK_DAY = require("@/assets/avatar/rooms/home-fullbleed-park-day.png");
+const HOME_IMMERSIVE_PARK_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-park-night.png");
+
+// Device-local flag so the first-run welcome card stays dismissed across
+// reloads. It keeps the "woofwatcher" key prefix so the privacy
+// erase-all-data flow removes it with every other WoofWatcher key.
+const HOME_WELCOME_DISMISSED_KEY = "woofwatcher.homeWelcomeDismissed.v1";
+
+export function homeImmersiveRoomIsNight(hour: number): boolean {
+  return hour >= 20 || hour < 6;
+}
+
+// Storybook status sentence, non-diagnostic by design.
+const HOME_MOOD_WORD: Record<Mood, string> = {
+  happy: "happy",
+  excited: "excited",
+  calm: "calm",
+  anxious: "a little unsettled",
+  unwell: "having a gentle day",
+};
+
+// Mock-board Quick Log row: Meal · Potty · Walk · Meds · Water · Note.
+// Meds and Note always open their detail flow - a med log needs dosage
+// context and a note needs words before anything is saved.
 const HOME_QUICK_LOG: QuickItem[] = [
   { key: "meal", icon: "meal", label: "Meal", type: "meal", title: "Meal" },
-  { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
   { key: "potty", icon: "pee", label: "Potty", type: "potty", title: "Potty" },
+  { key: "walk", icon: "walk", label: "Walk", type: "walk", title: "Walk" },
+  {
+    key: "meds",
+    icon: "medication",
+    label: "Meds",
+    type: "medication",
+    title: "Medication",
+  },
   {
     key: "water",
     icon: "bile",
@@ -123,33 +184,12 @@ const HOME_QUICK_LOG: QuickItem[] = [
     title: "Fresh water",
   },
   {
-    key: "training",
-    icon: "training",
-    label: "Training",
-    type: "training",
-    title: "Training win",
-  },
-  {
-    key: "treat",
-    icon: "treat",
-    label: "Treat",
-    type: "treat",
-    title: "Treat",
-  },
-  {
-    key: "play",
-    icon: "play",
-    label: "Play",
-    type: "play",
-    title: "Play session",
-  },
-  {
-    key: "more",
+    key: "note",
     icon: "note",
-    label: "More",
+    label: "Note",
     type: "note",
-    title: "Open quick log",
-    route: "/log",
+    title: "Care note",
+    forceDetail: true,
   },
 ];
 
@@ -226,18 +266,6 @@ function careDetails(details: unknown): CareEventDetails {
   return details as CareEventDetails;
 }
 
-function isPendingMealLog(entry: { type: string; details?: unknown }): boolean {
-  const details = careDetails(entry.details);
-  if (normalizeCareEventType(entry.type, details) !== "meal") return false;
-  const completion = String(detailValue(entry.details, "mealCompletion") ?? "");
-  const lifecycle = String(detailValue(entry.details, "mealLifecycle") ?? "");
-  return (
-    lifecycle === "outcome-pending" ||
-    completion === "served" ||
-    completion === "grazing"
-  );
-}
-
 function homeLogEntryRoute(entryId: string): `/log?entry=${string}` {
   return `/log?entry=${encodeURIComponent(entryId)}`;
 }
@@ -254,23 +282,6 @@ function adventureQuestIcon(id: string): PixelIconName {
   if (id.includes("training")) return "training";
   if (id.includes("play")) return "play";
   return "heart";
-}
-
-function todayCommandPixelIcon(icon: TodayCommandIcon): PixelIconName {
-  if (icon === "bowl") return "meal";
-  if (icon === "paw") return "walk";
-  if (icon === "drop") return "bile";
-  if (icon === "star") return "training";
-  if (icon === "heart") return "heart";
-  if (icon === "bone") return "treat";
-  if (icon === "candy") return "play";
-  if (icon === "bolt") return "energy";
-  if (icon === "sad") return "anxious";
-  if (icon === "vomit") return "vomit";
-  if (icon === "house") return "clock";
-  if (icon === "scale") return "health";
-  if (icon === "pill") return "medication";
-  return "note";
 }
 
 function HomeHeaderAction({
@@ -323,7 +334,7 @@ export default function HomeScreen() {
   const { width: viewportWidth, height: viewportHeight } =
     useWindowDimensions();
   const router = useRouter();
-  const { state, addEntry, deleteEntry, refresh } = useCare();
+  const { state, addEntry, deleteEntry, updateEntry, refresh } = useCare();
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
 
   const topPadding = getRouteTopPadding({
@@ -360,6 +371,13 @@ export default function HomeScreen() {
   }, []);
 
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  // Session-scoped reaction gate: the room only reacts to care logged in
+  // THIS session. Without the floor, a meal logged minutes before an app
+  // reload replayed "Meal logged. Tail wag." plus the eat loop on mount -
+  // reactions arrived from storage instead of being earned live. Entries
+  // already on disk when Home mounts derive the standing scene (quiet-hours
+  // sleep, routine pressure, steady) instead of a reaction state.
+  const reactionSessionFloor = useRef(now);
   const avatarMotion = useMemo(
     () =>
       deriveAvatarMotion({
@@ -368,9 +386,54 @@ export default function HomeScreen() {
         caregivers: state.caregivers,
         now,
         energy: status.energy,
+        reactionsSince: reactionSessionFloor.current,
       }),
     [state.entries, state.routines, state.caregivers, now, status.energy],
   );
+  // The heart status line and the living room must tell one story: the room
+  // scheduler can have the twin asleep (quiet hours, low energy) while the
+  // day's walk math still reads "excited" - and "Phoenix is excited." over
+  // a sleeping dog looks broken. Upbeat words defer to rest; concern moods
+  // (anxious, unwell) keep their honest care signal.
+  const restWord =
+    avatarMotion.state === "sleeping"
+      ? "snoozing"
+      : avatarMotion.state === "tired"
+        ? "resting"
+        : null;
+  const homeMoodWord =
+    restWord &&
+    (status.mood === "happy" ||
+      status.mood === "excited" ||
+      status.mood === "calm")
+      ? restWord
+      : HOME_MOOD_WORD[status.mood];
+
+  // Care Sense card derivations - each meter is a presentation of the same
+  // real, derived state the old chips carried. Mood maps ordinally (the word
+  // stays the source of truth in the value label), hunger reads meals done
+  // against target, alone time fills over a four-hour window while an away
+  // session is actually open. No invented numbers.
+  const careSenseHeadline =
+    status.mood === "unwell"
+      ? "Extra-gentle day underway."
+      : status.mood === "anxious"
+        ? "A gentle day - stay close."
+        : status.mood === "excited"
+          ? "Ready for adventure!"
+          : status.mood === "happy"
+            ? "Great day so far!"
+            : "A calm, steady day.";
+  const careSenseMoodRatio =
+    status.mood === "happy"
+      ? 0.95
+      : status.mood === "excited"
+        ? 0.8
+        : status.mood === "calm"
+          ? 0.7
+          : status.mood === "anxious"
+            ? 0.45
+            : 0.3;
   const careIntelligence = useMemo(
     () =>
       deriveCareIntelligence({
@@ -380,6 +443,14 @@ export default function HomeScreen() {
         now,
       }),
     [state.entries, state.routines, state.caregivers, now],
+  );
+  const careCareer = useMemo(
+    () => deriveCareCareer(state.entries, now),
+    [state.entries, now],
+  );
+  const careStreak = useMemo(
+    () => deriveCareStreak(state.entries, now),
+    [state.entries, now],
   );
   const todayCommand = useMemo(
     () =>
@@ -395,15 +466,71 @@ export default function HomeScreen() {
     [state.caregivers, state.entries, state.profile, state.routines, now],
   );
 
-  const petName =
-    state.profile.name && state.profile.name !== "My Dog"
-      ? state.profile.name
-      : "Phoenix";
+  const petName = resolvePetName(state.profile.name);
   const avatarTemplate = useMemo(
     () => getAvatarTemplate(avatarConfig.templateId),
     [avatarConfig.templateId],
   );
-  const caregiver = state.caregivers[0]?.name ?? "Emma";
+  // Never invent a person: with no caregivers yet, care is simply "You".
+  const hasCaregivers = state.caregivers.length > 0;
+  const caregiver = state.caregivers[0]?.name ?? "you";
+  // A brand-new household: no care logged and no profile finished yet. We
+  // greet them once (dismissible) and point at setup, without ever blocking
+  // the app - guest/preview mode stays fully usable behind the card.
+  // `null` means the persisted flag has not hydrated yet, so the card never
+  // flashes for someone who already dismissed it.
+  const [welcomeDismissed, setWelcomeDismissed] = useState<boolean | null>(
+    null,
+  );
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(HOME_WELCOME_DISMISSED_KEY)
+      .then((raw) => {
+        if (!cancelled) setWelcomeDismissed(raw === "true");
+      })
+      .catch(() => {
+        if (!cancelled) setWelcomeDismissed(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const dismissWelcome = () => {
+    setWelcomeDismissed(true);
+    AsyncStorage.setItem(HOME_WELCOME_DISMISSED_KEY, "true").catch(() => {});
+  };
+  const isFreshStart =
+    !hasCaregivers &&
+    state.entries.length === 0 &&
+    !state.profile.breed?.trim();
+
+  // The welcome card leaves by folding shut (height + opacity, ~250ms)
+  // instead of unmounting instantly - the first quick log used to yank the
+  // whole screen up 200+ px right under the finger. The card keeps rendering
+  // through the collapse and is removed only when the fold finishes.
+  const welcomeShouldShow = isFreshStart && welcomeDismissed === false;
+  const [welcomeCollapsed, setWelcomeCollapsed] = useState(false);
+  const welcomeWasShown = useRef(false);
+  const welcomeCollapse = useRef(new Animated.Value(1)).current;
+  const [welcomeCardHeight, setWelcomeCardHeight] = useState(0);
+  useEffect(() => {
+    if (welcomeShouldShow) {
+      welcomeWasShown.current = true;
+      return;
+    }
+    if (!welcomeWasShown.current || welcomeCollapsed) return;
+    Animated.timing(welcomeCollapse, {
+      toValue: 0,
+      duration: 250,
+      easing: Easing.out(Easing.cubic),
+      // Height cannot animate on the native driver; this is a one-off exit.
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (finished) setWelcomeCollapsed(true);
+    });
+  }, [welcomeCollapse, welcomeCollapsed, welcomeShouldShow]);
+  const welcomeVisible =
+    welcomeShouldShow || (welcomeWasShown.current && !welcomeCollapsed);
   const timeLabel = useMemo(
     () => shortTime(new Date(now).toISOString()),
     [now],
@@ -438,6 +565,16 @@ export default function HomeScreen() {
     if (!Number.isFinite(startedAt)) return 0;
     return Math.max(0, Math.round((now - startedAt) / 60000));
   }, [now, openWalkStartedAt]);
+  // Care Sense meter ratios that depend on live sessions/counts.
+  const careSenseMealsRatio = status.counts.meals.target
+    ? Math.min(1, status.counts.meals.done / status.counts.meals.target)
+    : status.counts.meals.done > 0
+      ? 1
+      : 0;
+  const careSenseAloneRatio = openAloneSession
+    ? Math.min(1, openAloneMinutes / 240)
+    : 0;
+
   const presenceState = openAloneSession
     ? "home-alone"
     : openWalkSession
@@ -451,7 +588,7 @@ export default function HomeScreen() {
   const presenceSub = openAloneSession
     ? `${formatDuration(openAloneMinutes)} active - tap I\u2019m Home in Log`
     : openWalkSession
-      ? `${formatDuration(openWalkMinutes)} active - finish in Log`
+      ? `${formatDuration(openWalkMinutes)} active - tap Finish in Next Up`
       : `At home - ${timeLabel}`;
   const presenceRoute: HomePresenceRoute = openAloneSession
     ? openAloneSession.id
@@ -461,12 +598,12 @@ export default function HomeScreen() {
       ? openWalkSession.id
         ? homeLogEntryRoute(openWalkSession.id)
         : homeLogDetailRoute("walk", now)
-      : "/more?section=household";
+      : homeLogDetailRoute("alone", now);
   const presenceActionHint = openAloneSession
     ? "Opens the active Alone Time log so you can complete the return check-in."
     : openWalkSession
       ? "Opens the active walk log so you can finish or edit the walk."
-      : "Opens Household Pulse and care-team status in More.";
+      : "Opens the Alone Time flow to log heading out or time apart.";
 
   const meals = status.counts.meals;
   const fed = meals.target > 0 ? meals.done >= meals.target : true;
@@ -477,17 +614,16 @@ export default function HomeScreen() {
   const bondScore = status.mood === "anxious" ? 70 : 92;
   const moodIcon = MOOD_ICON[status.mood];
 
+  // Shared with Today Command: pending meal outcomes stay actionable across
+  // the midnight rollover (up to 12h) instead of vanishing at 12:00 AM.
   const pendingMeal = useMemo(
-    () =>
-      [...state.entries]
-        .filter(
-          (entry) => isToday(entry.occurredAt, now) && isPendingMealLog(entry),
-        )
-        .sort(
-          (a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt),
-        )[0] ?? null,
+    () => findPendingMealOutcome(state.entries, now),
     [state.entries, now],
   );
+
+  // Session-local snooze: a snoozed routine steps out of Next Up for 30
+  // minutes on this device, without touching the Plan schedule itself.
+  const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
 
   const nextUp = useMemo<HomeNextUpItem[]>(() => {
     if (openAloneSession) {
@@ -500,6 +636,7 @@ export default function HomeScreen() {
             ? homeLogEntryRoute(openAloneSession.id)
             : homeLogDetailRoute("alone", now),
           meta: "Return",
+          kind: "open-loop" as const,
         },
       ];
     }
@@ -507,48 +644,47 @@ export default function HomeScreen() {
       return [
         {
           label: "Walk active",
-          time: `${formatDuration(openWalkMinutes)} - finish in Log`,
+          time: `${formatDuration(openWalkMinutes)} - tap Finish to complete`,
           icon: "walk" as PixelIconName,
           route: openWalkSession.id
             ? homeLogEntryRoute(openWalkSession.id)
             : homeLogDetailRoute("walk", now),
           meta: "Finish",
+          kind: "open-loop" as const,
         },
       ];
     }
-    if (pendingMeal) {
-      const label = pendingMeal.title.split(" - ")[0] || "Meal";
-      return [
-        {
-          label: `${label} served`,
-          time: "Outcome pending",
-          icon: "meal" as PixelIconName,
-          route: pendingMeal.id
-            ? homeLogEntryRoute(pendingMeal.id)
-            : homeLogDetailRoute("meal", now),
-          meta: "Update",
-        },
-      ];
-    }
-    if (state.routines.length) {
-      return state.routines.slice(0, 3).map((r) => {
+    const awakeRoutines = state.routines.filter(
+      (r) => (snoozedUntil[r.id] ?? 0) <= now,
+    );
+    if (awakeRoutines.length) {
+      return awakeRoutines.slice(0, 3).map((r) => {
         const routineType = normalizeCareEventType(r.type ?? "note");
         return {
           label: r.label,
           time: r.time,
           icon: routineIcon(routineType),
-          route: "/calendar" as const,
-          meta: "Plan",
+          route: homeLogDetailRoute(routineType, now),
+          meta: "Start",
+          kind: "routine" as const,
+          routineId: r.id,
+          owner: r.owner || undefined,
         };
       });
     }
+    if (state.routines.length) {
+      // Everything scheduled is snoozed right now.
+      return [];
+    }
     return [
       {
-        label: `Walk with ${caregiver}`,
+        label: hasCaregivers ? `Walk with ${caregiver}` : "Evening walk",
         time: "5:30 PM",
         icon: "walk" as PixelIconName,
         route: homeLogDetailRoute("walk", now),
         meta: "Start",
+        kind: "suggestion" as const,
+        owner: hasCaregivers ? caregiver : undefined,
       },
       {
         label: "Dinner",
@@ -556,6 +692,7 @@ export default function HomeScreen() {
         icon: "meal" as PixelIconName,
         route: homeLogDetailRoute("meal", now),
         meta: "Serve",
+        kind: "suggestion" as const,
       },
       {
         label: "Training",
@@ -563,6 +700,7 @@ export default function HomeScreen() {
         icon: "training" as PixelIconName,
         route: homeLogDetailRoute("training", now),
         meta: "Log",
+        kind: "suggestion" as const,
       },
     ];
   }, [
@@ -570,33 +708,78 @@ export default function HomeScreen() {
     openAloneSession,
     openWalkMinutes,
     openWalkSession,
-    pendingMeal,
+    snoozedUntil,
     state.routines,
     caregiver,
+    hasCaregivers,
     now,
   ]);
 
+  // Served meal awaiting its outcome: rendered as its own open-loop chip
+  // stacked above the planned Next Up item, so closing the meal loop never
+  // hides the plan (or the "more in Plan" link) from the hero flow.
+  const pendingMealOpenLoop = useMemo(
+    () =>
+      pendingMeal
+        ? {
+            label: `${(pendingMeal.title ?? "Meal").split(" - ")[0] || "Meal"} served`,
+            time: "Outcome pending",
+            icon: "meal" as PixelIconName,
+            route: pendingMeal.id
+              ? homeLogEntryRoute(pendingMeal.id)
+              : homeLogDetailRoute("meal", now),
+          }
+        : null,
+    [now, pendingMeal],
+  );
+
   const nextPrimary = nextUp[0];
   const nextCount = Math.max(nextUp.length, 1);
-  const nextMeta = pendingMeal
-    ? "Open meal"
-    : openAloneSession
-      ? "I'm Home"
-      : openWalkSession
-        ? "Finish walk"
-        : status.minutesUntilNext !== null
-          ? `In ${formatDuration(status.minutesUntilNext)}`
-          : (nextPrimary?.time ?? "Ready");
-  const nextDetail = pendingMeal
-    ? "Outcome pending - update when Phoenix finishes"
-    : openAloneSession
-      ? `${formatDuration(openAloneMinutes)} active - log return`
-      : openWalkSession
-        ? `${formatDuration(openWalkMinutes)} active - finish in Log`
-        : status.minutesUntilNext !== null
-          ? `${nextMeta} - ${nextPrimary?.time ?? "Scheduled"}`
-          : (nextPrimary?.time ?? "Ready when you are");
+  const nextMeta = openAloneSession
+    ? "I'm Home"
+    : openWalkSession
+      ? "Finish walk"
+      : status.minutesUntilNext !== null
+        ? `In ${formatDuration(status.minutesUntilNext)}`
+        : (nextPrimary?.time ?? "Ready");
+  const nextDetail = openAloneSession
+    ? `${formatDuration(openAloneMinutes)} active - log return`
+    : openWalkSession
+      ? `${formatDuration(openWalkMinutes)} active - tap Finish to complete`
+      : status.minutesUntilNext !== null
+        ? `${nextMeta} - ${nextPrimary?.time ?? "Scheduled"}`
+        : (nextPrimary?.time ?? "Ready when you are");
   const nextUpRoute = nextPrimary?.route ?? "/calendar";
+
+  const snoozeNextUp = (item: HomeNextUpItem) => {
+    if (!item.routineId) return;
+    void Haptics.selectionAsync();
+    setSnoozedUntil((prev) => ({
+      ...prev,
+      [item.routineId as string]: now + 30 * 60000,
+    }));
+    showToast(`${item.label} snoozed 30 min`);
+  };
+
+  // "Walk with Emma in 25 min · Dinner at 7:00 PM" - built from the same
+  // real Next Up items, never invented.
+  const glanceLine = useMemo(() => {
+    // Next Up already owns the live-walk "Finish" CTA, so the mood card falls
+    // back to the calm command line instead of echoing the active walk here.
+    if (openWalkSession) return todayCommand.primaryAction.detail;
+    const parts = nextUp.slice(0, 2).map((item, index) => {
+      if (index === 0 && item.kind === "routine" && status.minutesUntilNext !== null) {
+        return `${item.label} in ${formatDuration(status.minutesUntilNext)}`;
+      }
+      return `${item.label} ${item.time.includes(" - ") ? "" : "at "}${item.time}`;
+    });
+    if (!parts.length) return todayCommand.primaryAction.detail;
+    return parts.join(" · ");
+  }, [nextUp, openWalkSession, status.minutesUntilNext, todayCommand.primaryAction.detail]);
+
+  // The old Fed/Potty/Walk/Alone recency chips folded into the Care Sense
+  // meters above - same real-log truth, one calmer surface.
+
   const todayCommandTone =
     todayCommand.primaryAction.urgency === "alert"
       ? colors.rose
@@ -649,6 +832,22 @@ export default function HomeScreen() {
           sub: `${bileCount} flagged today`,
           color: colors.amber,
         };
+
+  // Header bell badge mirrors the Health/Bile watch cards below: one signal
+  // per watch surface that currently needs owner attention, hidden when calm.
+  const watchSignalCount =
+    (status.counts.healthAlert ? 1 : 0) + (bileCount > 0 ? 1 : 0);
+
+  // Header care line + heart card, straight from real state: watch signals
+  // first, then live sessions, then the calm baseline.
+  const careLine =
+    watchSignalCount > 0
+      ? "Needs a look today"
+      : openWalkSession
+        ? "On a walk now"
+        : openAloneSession
+          ? "Home alone now"
+          : "Care on track";
 
   const roomStats = useMemo<PhoenixRoomStat[]>(
     () => [
@@ -753,7 +952,6 @@ export default function HomeScreen() {
     [state.entries],
   );
 
-  const careProgress = careIntelligence.score;
   const questLine = careIntelligence.title;
   const adventureMode = useMemo(
     () =>
@@ -767,40 +965,8 @@ export default function HomeScreen() {
   );
   const adventureQuest = adventureMode.quests[0];
 
-  const statusTiles = [
-    {
-      label: "Happiness",
-      value: status.meta.label,
-      icon: moodIcon,
-      tone: colors.amber,
-      target: "mood" as StatusTileTarget,
-      actionLabel: "Open mood details",
-    },
-    {
-      label: "Energy",
-      value: `${status.energy}%`,
-      icon: "energy" as PixelIconName,
-      tone: colors.sage,
-      target: "health" as StatusTileTarget,
-      actionLabel: "Open Health Watch",
-    },
-    {
-      label: "Hunger",
-      value: hungerLabel,
-      icon: "hunger" as PixelIconName,
-      tone: fed ? colors.sage : colors.copper,
-      target: "diet" as StatusTileTarget,
-      actionLabel: "Open Diet Profile",
-    },
-    {
-      label: "Bond",
-      value: bondLabel,
-      icon: "heart" as PixelIconName,
-      tone: colors.rose,
-      target: "bond" as StatusTileTarget,
-      actionLabel: "Open play details",
-    },
-  ];
+  // The old four-tile status grid folded into Care Sense; the Care Status
+  // card now carries only Bond and the diet-profile door via openStatusTile.
   const openStatusTile = (target: StatusTileTarget) => {
     void Haptics.selectionAsync();
     if (target === "mood") {
@@ -823,27 +989,6 @@ export default function HomeScreen() {
     router.push(
       `/log?type=${todayMetricRouteType[target]}&detail=1&intent=${Date.now()}` as never,
     );
-  };
-
-  const openPhoenixStatusMeter = (target: PhoenixStatusMeterTarget) => {
-    void Haptics.selectionAsync();
-    if (target === "energy") {
-      router.push("/health?tab=health" as never);
-      return;
-    }
-    if (target === "bile") {
-      router.push("/health?tab=bile" as never);
-      return;
-    }
-    if (target === "hunger") {
-      router.push(`/log?type=meal&detail=1&intent=${Date.now()}` as never);
-      return;
-    }
-    if (target === "hydration") {
-      router.push(`/log?type=water&detail=1&intent=${Date.now()}` as never);
-      return;
-    }
-    router.push(`/log?type=play&detail=1&intent=${Date.now()}` as never);
   };
 
   const openHomeWatchCard = (target: HomeWatchTarget) => {
@@ -935,7 +1080,7 @@ export default function HomeScreen() {
           detail:
             state.records.length || state.reportArtifacts.length
               ? `${state.records.length} records and ${state.reportArtifacts.length} reports ready`
-              : "Build a vet, sitter, or trainer packet from Phoenix's care history",
+              : `Build a vet, sitter, or trainer packet from ${petName}'s care history`,
           ready: Boolean(state.records.length || state.reportArtifacts.length),
         },
       }),
@@ -963,13 +1108,19 @@ export default function HomeScreen() {
       status.counts.healthAlert,
     ],
   );
+  // The Next Up card already owns today's care action; the deck keeps the
+  // quest, health, and Care Pass missions so nothing repeats on one screen.
+  const deckMissions = useMemo(
+    () => homeMissions.filter((mission) => mission.key !== "care-today"),
+    [homeMissions],
+  );
   const missionLayout = useMemo(
     () =>
       getHomeMissionDeckLayout({
         width: viewportWidth,
-        missionCount: homeMissions.length,
+        missionCount: deckMissions.length,
       }),
-    [homeMissions.length, viewportWidth],
+    [deckMissions.length, viewportWidth],
   );
 
   const missionToneColor = (tone: HomeMissionTone) => {
@@ -978,13 +1129,6 @@ export default function HomeScreen() {
     if (tone === "rose") return colors.rose;
     if (tone === "navy") return colors.blueSignal;
     return colors.sage;
-  };
-  const reactionToneColor = (tone: CareTwinReactionToneRole) => {
-    if (tone === "health") return colors.rose;
-    if (tone === "reward") return colors.copper;
-    if (tone === "hydration") return colors.blueSignal;
-    if (tone === "soft") return colors.sage;
-    return colors.brandNavy;
   };
 
   const [toast, setToast] = useState<string | null>(null);
@@ -1000,8 +1144,75 @@ export default function HomeScreen() {
     () => deriveCareTwinChoreography(deriveCareTwinScene(avatarMotion)),
     [avatarMotion],
   );
+  // Celebrate care level-ups through the room choreography. The level is
+  // derived from real logged evidence only, so this fires exactly when a
+  // real log crosses the next threshold.
+  const prevCareLevel = useRef<number | null>(null);
+  useEffect(() => {
+    if (prevCareLevel.current === null) {
+      prevCareLevel.current = careCareer.level;
+      return;
+    }
+    if (careCareer.level > prevCareLevel.current) {
+      setRoomReaction({
+        id: Date.now(),
+        icon: "energy",
+        label: "Level up!",
+        detail: `${petName} reached Lv ${careCareer.level} ${careCareer.title}.`,
+        tone: colors.amber,
+        spriteAction: "celebrate-hop",
+      });
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => {});
+      }
+    }
+    prevCareLevel.current = careCareer.level;
+  }, [careCareer.level, careCareer.title, colors.amber, petName]);
+  // Quick logs acknowledge through the room's own speech bubble (the charm
+  // layer) instead of stacking a dark reaction card over the dog. Feedback
+  // stays two layers total: bubble in the room + one actionable toast above
+  // the tab bar carrying XP, Undo, and Add details.
+  const [roomSpeechOverride, setRoomSpeechOverride] = useState<string | null>(
+    null,
+  );
+  const roomSpeechTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showRoomSpeech = (line: string) => {
+    setRoomSpeechOverride(line);
+    if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
+    roomSpeechTimer.current = setTimeout(
+      () => setRoomSpeechOverride(null),
+      3200,
+    );
+  };
+  useEffect(
+    () => () => {
+      if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
+    },
+    [],
+  );
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // While the actionable toast for a just-served meal is alive, its "Add
+  // details" button opens the exact log the Next Up "Update" chip would.
+  // The chip waits and slides in when the toast fades, so the toast never
+  // floats on top of a live Update button (and the reveal never jumps).
+  const pendingMealChipSuppressed = Boolean(
+    toast &&
+      quickFeedback &&
+      pendingMeal &&
+      quickFeedback.id === pendingMeal.id,
+  );
+  const mealChipReveal = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(mealChipReveal, {
+      toValue: pendingMealChipSuppressed ? 0 : 1,
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [mealChipReveal, pendingMealChipSuppressed]);
   const showToast = (
     msg: string,
     feedback?: { id: string; title: string; type: CareEventType },
@@ -1041,6 +1252,11 @@ export default function HomeScreen() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     void deleteEntry(quickFeedback.id);
     setQuickFeedback(null);
+    // Clear the room bubble in the same commit: the undone log's "Meal
+    // served"/"Walk started" line must not linger over the twin for the
+    // rest of its 3.2s timer after the entry is already gone.
+    if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
+    setRoomSpeechOverride(null);
     showToast(`${title} undone`);
   };
 
@@ -1075,9 +1291,86 @@ export default function HomeScreen() {
     router.push(activeWalkRoute as never);
   };
 
+  // Home's Finish completes the walk right here with the same shared
+  // lifecycle patch /log's "Finish walk session" applies (route, distance,
+  // and notes stay optional and editable from the saved log afterward).
+  const finishWalkFromHome = () => {
+    if (!openWalkSession?.id) return;
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    }
+    const patch = buildWalkSessionFinishPatch(openWalkSession, {
+      caregiver,
+      now: Date.now(),
+    });
+    updateEntry(openWalkSession.id, patch as Partial<Omit<Entry, "id">>);
+    showRoomSpeech("Walk completed");
+    showToast(
+      `Walk completed · ${formatDuration(patch.durationMinutes)} logged · +${careXpForEntry({ ...openWalkSession, details: patch.details })} care XP`,
+    );
+  };
+
+  // Double-tap safety: one save per intent on every quick-log surface. The
+  // synchronous ref catches a second press in the same tick (React state
+  // cannot update between the two), and the shared entry-window check covers
+  // slower bounces and cross-surface repeats. A deliberate second log after
+  // the 1.5s window still saves normally.
+  const recentQuickSave = useRef<{ type: CareEventType; at: number } | null>(
+    null,
+  );
+  const isDuplicateQuickTap = (type: CareEventType): boolean => {
+    const prev = recentQuickSave.current;
+    return Boolean(
+      prev &&
+        prev.type === type &&
+        Date.now() - prev.at <= QUICK_LOG_DEDUPE_WINDOW_MS,
+    );
+  };
+  const markQuickSave = (type: CareEventType) => {
+    recentQuickSave.current = { type, at: Date.now() };
+  };
+
+  // One shared start path for every Home surface that begins a real walk
+  // session (Quick Log tile and Next Up's walk "Start"): same lifecycle
+  // entry, same dedupe guard, same toast. Returns the started entry id, or
+  // null when the tap was a duplicate already answered by the first tap.
+  const startWalkSessionFromHome = (options?: {
+    routineId?: string;
+    routineLabel?: string;
+  }): string | null => {
+    // A rapid second Walk tap lands before the open session exists in
+    // state; it is the same intent, already answered by the first tap.
+    if (isDuplicateQuickTap("walk")) return null;
+    markQuickSave("walk");
+    const entry = buildWalkSessionStartEntry({
+      caregiver,
+      now,
+      routineId: options?.routineId,
+      routineLabel: options?.routineLabel,
+    });
+    const id = addEntry(entry as Omit<Entry, "id">);
+    const reactionPlan = describeCareTwinReactionForLog({
+      type: "walk",
+      label: "Walk",
+      title: "Walk started",
+      details: entry.details,
+    });
+    showRoomSpeech(reactionPlan.label);
+    showToast("Walk started · care XP lands when you finish", {
+      id,
+      title: "Walk started",
+      type: "walk",
+    });
+    return id;
+  };
+
   const logQuick = (item: QuickItem) => {
     if (item.route) {
       router.push(item.route);
+      return;
+    }
+    if (item.forceDetail) {
+      openQuickDetails(item);
       return;
     }
     const policy = getQuickLogPolicy(item.type);
@@ -1093,25 +1386,21 @@ export default function HomeScreen() {
         openActiveWalkFromHomeQuickLog();
         return;
       }
-      const entry = buildWalkSessionStartEntry({ caregiver, now });
-      const id = addEntry(entry as Omit<Entry, "id">);
-      const reactionPlan = describeCareTwinReactionForLog({
-        type: "walk",
-        label: "Walk",
-        title: "Walk started",
-        details: entry.details,
-      });
-      setRoomReaction({
-        id: Date.now(),
-        icon: reactionPlan.icon,
-        label: reactionPlan.label,
-        detail: reactionPlan.detail,
-        tone: reactionToneColor(reactionPlan.toneRole),
-        spriteAction: reactionPlan.spriteAction,
-      });
-      showToast("Walk started", { id, title: "Walk started", type: "walk" });
+      startWalkSessionFromHome();
       return;
     }
+    // Dedupe against the same tick (ref) and the saved timeline (shared
+    // window): the first tap's entry and toast already answered this tap.
+    // The timeline check runs on wall-clock time - the screen's 30s `now`
+    // tick would otherwise make a deliberate second log inside the same
+    // tick look like a bounce forever.
+    if (
+      isDuplicateQuickTap(policy.type) ||
+      findRecentQuickLogDuplicate(state.entries, item.type, Date.now())
+    ) {
+      return;
+    }
+    markQuickSave(policy.type);
     const role = state.caregivers.find(
       (person) => person.name === caregiver,
     )?.role;
@@ -1134,23 +1423,23 @@ export default function HomeScreen() {
       severity: entry.severity,
       details: entry.details,
     });
-    setRoomReaction({
-      id: Date.now(),
-      icon: reactionPlan.icon,
-      label: reactionPlan.label,
-      detail:
-        avatarMotion.cue === "health-watch" &&
-        reactionPlan.toneRole !== "health"
-          ? "Main Phoenix stays gentle while health context remains visible."
-          : reactionPlan.detail,
-      tone: reactionToneColor(reactionPlan.toneRole),
-      spriteAction: reactionPlan.spriteAction,
-    });
-    showToast(`${item.title} logged`, {
-      id,
-      title: item.title,
-      type: item.type,
-    });
+    showRoomSpeech(reactionPlan.label);
+    // The served-meal explainer lives in this one toast (with the room
+    // bubble) - no third dark callout over the sprite. The outcome-pending
+    // Next Up chip stays the persistent affordance after the toast fades.
+    const mealOutcomeOpen =
+      entry.type === "meal" &&
+      entry.details?.mealLifecycle === "outcome-pending";
+    showToast(
+      mealOutcomeOpen
+        ? `Meal served · outcome stays open · +${careXpForEntry(entry)} care XP`
+        : `${item.title} logged · +${careXpForEntry(entry)} care XP`,
+      {
+        id,
+        title: item.title,
+        type: item.type,
+      },
+    );
   };
 
   const tapPhoenixRoom = () => {
@@ -1176,8 +1465,46 @@ export default function HomeScreen() {
     router.push("/portrait");
   };
 
+  // Today's Story: one honest sentence from the day's real log evidence.
+  const todayStoryLine = useMemo(() => {
+    const todayKey = new Date(now).toDateString();
+    const todaysEntries = state.entries.filter(
+      (entry) => new Date(entry.occurredAt).toDateString() === todayKey,
+    );
+    if (!todaysEntries.length) {
+      return `${petName}'s story is ready for its first care moment today.`;
+    }
+    const latest = [...todaysEntries].sort((a, b) =>
+      b.occurredAt.localeCompare(a.occurredAt),
+    )[0];
+    const count = todaysEntries.length;
+    return `${latest.title} logged by ${latest.caregiver}. ${count} care ${count === 1 ? "moment" : "moments"} today.`;
+  }, [now, petName, state.entries]);
+
   const isWebRoutePreview = (Platform.OS as string) === "web";
-  const routeHorizontalPadding = isWebRoutePreview ? 0 : 16;
+  // The web preview mirrors the native inset so the room console floats
+  // with the same clean margins reviewers see on a real device.
+  const routeHorizontalPadding = 16;
+  // Height-based hero clamp for short phones (SE-class, 568-640pt): the
+  // whole stage - room band, roaming twin, bubble - scales down as one
+  // unit, so the fixed 150px twin rig shrinks with its floor instead of
+  // dwarfing the screen or wandering under the floating tab pill.
+  const isShortViewport = viewportHeight > 0 && viewportHeight < 640;
+  const heroStageWidth = Math.max(
+    240,
+    viewportWidth - routeHorizontalPadding * 2,
+  );
+  const heroDesignHeight = Math.round(
+    heroStageWidth / homeFirstScreenLayout.heroAspectRatio,
+  );
+  const heroStageScale = isShortViewport
+    ? Math.max(0.72, Math.min(1, viewportHeight / 700))
+    : 1;
+  const heroStageHeight = Math.round(heroDesignHeight * heroStageScale);
+  // On those same short screens the first-run welcome card plus the full
+  // stage cannot both fit above the tab pill, so the room stays folded
+  // behind the welcome card and grows in as the card folds away.
+  const heroDeferredForWelcome = isShortViewport && welcomeVisible;
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
   useEffect(() => {
     if (isWebRoutePreview) return;
@@ -1190,6 +1517,40 @@ export default function HomeScreen() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
+      {/* Full-bleed storybook backdrop from the mock boards: the scene fills
+          the whole screen top to bottom. The dog's traffic area is the top
+          band; a soft scrim quiets the lower floor so the floating console
+          stays legible while the background still peeks through. */}
+      <Image
+        source={
+          openWalkSession
+            ? colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours())
+              ? HOME_IMMERSIVE_PARK_NIGHT
+              : HOME_IMMERSIVE_PARK_DAY
+            : colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours())
+              ? HOME_IMMERSIVE_ROOM_NIGHT
+              : HOME_IMMERSIVE_ROOM_DAY
+        }
+        resizeMode="cover"
+        style={s.fullBleedArt}
+        fadeDuration={0}
+      />
+      {colors.isDark ? (
+        <View
+          style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(9,17,32,0.16)" }]}
+          pointerEvents="none"
+        />
+      ) : null}
+      <LinearGradient
+        colors={[
+          "rgba(0,0,0,0)",
+          colors.background + "55",
+          colors.background + "E0",
+        ]}
+        locations={[0.42, 0.62, 0.95]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
       <ScrollView
         style={s.container}
         contentContainerStyle={{
@@ -1200,34 +1561,66 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fade }}>
-          <View style={s.header}>
+          <View style={[s.header, { backgroundColor: colors.card }]}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Open More"
-              onPress={() => router.push("/more")}
+              accessibilityLabel={`${petName}. ${careStatusLabel}. Open profile`}
+              accessibilityHint={`Opens ${petName}'s profile.`}
+              onPress={() => router.push("/profile" as never)}
+              hitSlop={MOBILE_INLINE_HIT_SLOP}
+              style={({ pressed }) => [s.identityWrap, { opacity: pressed ? 0.75 : 1 }]}
+            >
+              <Image
+                source={require("@/assets/images/phoenix-avatar.png")}
+                style={[s.identityAvatar, { borderColor: colors.border, backgroundColor: colors.secondary }]}
+              />
+              <View style={s.identityCopy}>
+                <View style={s.identityNameRow}>
+                  <Text
+                    numberOfLines={1}
+                    style={[s.identityName, { color: colors.foreground, fontFamily: "Fraunces_700Bold" }]}
+                  >
+                    {petName}
+                  </Text>
+                  <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                </View>
+                <View style={s.identityCareLine}>
+                  <Ionicons
+                    name="heart"
+                    size={13}
+                    color={watchSignalCount > 0 ? colors.amber : colors.forest}
+                  />
+                  <Text
+                    numberOfLines={1}
+                    style={[s.identityCareText, { color: watchSignalCount > 0 ? colors.amber : colors.forest, fontFamily: "Inter_700Bold" }]}
+                  >
+                    {careLine}
+                  </Text>
+                </View>
+              </View>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open the Pack"
+              accessibilityHint="Opens pets and people who share the care."
+              onPress={() => router.push("/pack" as never)}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[
                 s.headerButton,
                 { borderColor: "transparent", backgroundColor: "transparent" },
               ]}
             >
-              <Ionicons name="menu" size={27} color={colors.navy} />
+              <Ionicons name="people-outline" size={24} color={colors.foreground} />
             </Pressable>
-            <View style={s.logoWrap}>
-              <WoofWatcherLogo size={39} wordmarkSize={30} />
-              <Text
-                style={[
-                  s.logoSub,
-                  { color: colors.navy, fontFamily: "Inter_600SemiBold" },
-                ]}
-              >
-                Real care. Pixel heart.
-              </Text>
-            </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Open Health Watch"
-              onPress={() => router.push("/health?tab=health" as never)}
+              accessibilityLabel="Open reminders"
+              accessibilityHint={
+                watchSignalCount > 0
+                  ? `${watchSignalCount} ${watchSignalCount === 1 ? "signal needs" : "signals need"} attention`
+                  : "Upcoming care reminders"
+              }
+              onPress={() => router.push("/reminders" as never)}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[
                 s.headerButton,
@@ -1239,96 +1632,141 @@ export default function HomeScreen() {
                 size={23}
                 color={colors.navy}
               />
-              <View style={[s.badge, { backgroundColor: colors.rose }]}>
-                <Text style={[s.badgeText, { fontFamily: "Inter_700Bold" }]}>
-                  3
-                </Text>
-              </View>
+              {watchSignalCount > 0 ? (
+                <View style={[s.badge, { backgroundColor: colors.rose }]}>
+                  <Text style={[s.badgeText, { fontFamily: "Inter_700Bold" }]}>
+                    {watchSignalCount}
+                  </Text>
+                </View>
+              ) : null}
             </Pressable>
           </View>
 
-          <BoardCard padded={false} style={s.heroCard}>
-            <View
-              style={[
-                s.heroConsoleHeader,
-                {
-                  minHeight: homeFirstScreenLayout.heroHeaderMinHeight,
-                  paddingVertical:
-                    homeFirstScreenLayout.heroHeaderVerticalPadding,
-                  backgroundColor: colors.ivory,
-                  borderBottomColor: colors.border,
-                },
-              ]}
+          {welcomeVisible ? (
+            <Animated.View
+              pointerEvents={welcomeShouldShow ? "auto" : "none"}
+              onLayout={(event) => {
+                const measured = Math.round(event.nativeEvent.layout.height);
+                if (welcomeShouldShow && measured > 0) {
+                  setWelcomeCardHeight((prev) => Math.max(prev, measured));
+                }
+              }}
+              style={{
+                opacity: welcomeCollapse,
+                overflow: "hidden",
+                ...(welcomeCardHeight > 0
+                  ? {
+                      maxHeight: welcomeCollapse.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, welcomeCardHeight],
+                      }),
+                    }
+                  : {}),
+              }}
             >
-              <View style={s.heroConsoleTitleRow}>
-                <PixelIcon name="heart" size={22} />
-                <View style={s.heroConsoleCopy}>
-                  <Text
-                    style={[
-                      s.heroConsoleKicker,
-                      {
-                        color: colors.copper,
-                        fontFamily: "Fredoka_600SemiBold",
-                      },
-                    ]}
-                  >
-                    PHOENIX HOME
-                  </Text>
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      s.heroConsoleTitle,
-                      { color: colors.navy, fontFamily: "Fredoka_700Bold" },
-                    ]}
-                  >
-                    Phoenix Room
-                  </Text>
-                </View>
-              </View>
+            <View style={[s.welcomeCard, s.softShadow, { backgroundColor: colors.forest }]}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
-                onPress={openAvatarStudio}
-                style={({ pressed }) => [
-                  s.heroStudioButton,
-                  {
-                    width: homeFirstScreenLayout.heroStudioButtonWidth,
-                    minHeight: homeFirstScreenLayout.heroStudioButtonMinHeight,
-                    backgroundColor: pressed ? colors.secondary : colors.card,
-                    borderColor: colors.border,
-                  },
-                ]}
+                accessibilityLabel="Dismiss welcome"
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                onPress={dismissWelcome}
+                style={s.welcomeDismiss}
               >
-                <Text
-                  style={[
-                    s.heroStudioKicker,
-                    { color: colors.copper, fontFamily: "Inter_700Bold" },
-                  ]}
-                >
-                  Care Twin
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    s.heroStudioTitle,
-                    { color: colors.navy, fontFamily: "Inter_700Bold" },
-                  ]}
-                >
-                  {avatarTemplate.label}
-                </Text>
+                <Ionicons name="close" size={16} color={colors.primaryForeground} />
               </Pressable>
+              <Text style={[s.welcomeKicker, { color: colors.amberSoft, fontFamily: "Fredoka_600SemiBold" }]}>
+                WELCOME TO WOOFWATCHER
+              </Text>
+              <Text style={[s.welcomeTitle, { color: colors.primaryForeground, fontFamily: "Fraunces_700Bold" }]}>
+                Let's make {petName} yours
+              </Text>
+              <Text style={[s.welcomeBody, { color: colors.primaryForeground, fontFamily: "Inter_500Medium" }]}>
+                Add your dog's name, breed, and routines so Today, Log, and Records fit your real day. It takes a minute.
+              </Text>
+              <View style={s.welcomeActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Set up ${petName}`}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    router.push("/setup" as never);
+                  }}
+                  style={({ pressed }) => [
+                    s.welcomePrimary,
+                    { backgroundColor: colors.primaryForeground, opacity: pressed ? 0.85 : 1 },
+                  ]}
+                >
+                  <Text style={[s.welcomePrimaryText, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
+                    Set up {petName}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={15} color={colors.forest} />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Explore first"
+                  onPress={dismissWelcome}
+                  style={({ pressed }) => [s.welcomeGhost, { opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <Text style={[s.welcomeGhostText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                    Explore first
+                  </Text>
+                </Pressable>
+              </View>
             </View>
+            </Animated.View>
+          ) : null}
+
+          {/* The room is a framed storybook card: day/night art fills the
+              frame and the living twin roams inside it, matching Apollo's
+              storybook mockup Home. On short phones the stage height is
+              clamped (uniform scale) and it stays folded while the first-run
+              welcome card is up, growing in as the card folds away. */}
+          <Animated.View
+            pointerEvents={heroDeferredForWelcome ? "none" : "auto"}
+            style={
+              heroDeferredForWelcome
+                ? {
+                    overflow: "hidden",
+                    opacity: welcomeCollapse.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 0],
+                    }),
+                    maxHeight: welcomeCollapse.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [heroStageHeight, 0],
+                    }),
+                  }
+                : null
+            }
+          >
+          <View style={s.heroBackdrop}>
             <View
+              accessibilityLabel={`${petName} Room`}
               accessibilityHint={homeFirstScreenLayout.qaLabel}
               style={[
                 s.heroWrap,
-                { aspectRatio: homeFirstScreenLayout.heroAspectRatio },
+                { height: heroStageHeight, overflow: "hidden" },
               ]}
             >
+             <View
+               style={
+                 heroStageScale < 1
+                   ? {
+                       width: heroStageWidth,
+                       height: heroDesignHeight,
+                       transform: [{ scale: heroStageScale }],
+                       transformOrigin: "top center",
+                     }
+                   : { width: "100%", height: heroDesignHeight }
+               }
+             >
               <LivingPhoenixRoom
                 mood={avatarMotion.avatarMood}
                 motion={avatarMotion}
-                speech={avatarMotion.speech || SPEECH_BY_MOOD[status.mood]}
+                speech={
+                  roomSpeechOverride ??
+                  (avatarMotion.speech || SPEECH_BY_MOOD[status.mood])
+                }
                 energy={status.energy}
                 presenceLabel={presenceLabel}
                 nextLabel={
@@ -1341,14 +1779,642 @@ export default function HomeScreen() {
                 reaction={roomReaction}
                 statusReadouts={roomStats}
                 avatarConfig={avatarConfig}
+                petName={petName}
+                awayOnWalk={Boolean(openWalkSession)}
+                awayMinutes={openWalkMinutes}
                 chromeDensity="compact"
+                transparentScene
                 onPress={tapPhoenixRoom}
                 onLongPress={openAvatarStudio}
                 accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
               />
             </View>
-          </BoardCard>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
+              onPress={openAvatarStudio}
+              style={({ pressed }) => [
+                s.heroStudioChip,
+                {
+                  minHeight: homeFirstScreenLayout.heroStudioButtonMinHeight,
+                  backgroundColor: pressed
+                    ? colors.ivory
+                    : "rgba(251,246,231,0.94)",
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Ionicons name="color-wand-outline" size={17} color={colors.forest} />
+            </Pressable>
+          </View>
+          </View>
+          </Animated.View>
 
+          {/* Mock-board Care Sense card: mood, energy, hunger, and alone
+              time as chunky pip meters. Every fill derives from real logged
+              care - the same truth the old chips carried, now at a glance.
+              The headline row is still the Today Command surface. */}
+          <Reanimated.View entering={enterUp(0)}>
+            <BoardCard style={s.careSenseCard}>
+              <View style={s.careSenseHeader}>
+                <Text
+                  style={[
+                    s.careSenseKicker,
+                    { color: colors.sage, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
+                  Care Sense
+                </Text>
+                <View style={s.careSenseHeaderActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Open Trends and Insights"
+                    accessibilityHint="Charts these meters over time from real logged care."
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() => router.push("/trends" as never)}
+                    style={({ pressed }) => [
+                      s.careSenseTrendsLink,
+                      { opacity: pressed ? 0.6 : 1 },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.careSenseTrendsText,
+                        { color: colors.sage, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
+                      Trends
+                    </Text>
+                    <Ionicons name="chevron-forward" size={13} color={colors.sage} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="How Care Sense works"
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() =>
+                      notifyDialog(
+                        "Care Sense",
+                        `Every meter reads from real logged care only. Mood and energy derive from today's walks, meals, potty, and notes. Hunger tracks meals against ${petName}'s daily target. Alone Time fills while an away session is open. Nothing here is invented.`,
+                      )
+                    }
+                    style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                  >
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={17}
+                      color={colors.mutedForeground}
+                    />
+                  </Pressable>
+                </View>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Today Command. ${petName} is ${homeMoodWord}. ${glanceLine}`}
+                accessibilityHint="Opens the exact care workflow behind today's recommended action."
+                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                onPress={() =>
+                  router.push(todayCommand.primaryAction.route as never)
+                }
+                style={({ pressed }) => [
+                  s.careSenseHeadlineRow,
+                  { opacity: pressed ? 0.72 : 1 },
+                ]}
+              >
+                <View style={s.careSenseHeadlineCopy}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      s.careSenseHeadline,
+                      { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                    ]}
+                  >
+                    {careSenseHeadline}
+                  </Text>
+                  <Text
+                    numberOfLines={2}
+                    style={[
+                      s.careSenseSub,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  >
+                    {petName} is {homeMoodWord}. {glanceLine}
+                  </Text>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.mutedForeground}
+                />
+              </Pressable>
+              <View style={s.careSenseMeters}>
+                <StatusMeter
+                  label="Mood"
+                  icon={MOOD_ICON[status.mood]}
+                  value={careSenseMoodRatio}
+                  valueLabel={status.meta.label}
+                  tone={colors.meterMood}
+                  onPress={() =>
+                    router.push(todayCommand.primaryAction.route as never)
+                  }
+                  accessibilityLabel={`Mood ${status.meta.label}`}
+                  accessibilityHint="Opens today's recommended care workflow."
+                />
+                <StatusMeter
+                  label="Energy"
+                  icon="energy"
+                  value={status.energy / 100}
+                  valueLabel={`${status.energy}%`}
+                  tone={colors.meterEnergy}
+                  onPress={() =>
+                    router.push(homeLogDetailRoute("walk", now) as never)
+                  }
+                  accessibilityLabel={`Energy ${status.energy} percent`}
+                  accessibilityHint="Opens the walk detail flow - activity builds energy."
+                />
+                <StatusMeter
+                  label="Hunger"
+                  icon="hunger"
+                  value={careSenseMealsRatio}
+                  valueLabel={`${status.counts.meals.done}/${Math.max(
+                    status.counts.meals.target,
+                    status.counts.meals.done,
+                  )}`}
+                  tone={colors.meterHunger}
+                  onPress={() =>
+                    router.push(homeLogDetailRoute("meal", now) as never)
+                  }
+                  accessibilityLabel={`Meals ${status.counts.meals.done} of ${status.counts.meals.target} logged`}
+                  accessibilityHint="Opens the meal detail flow."
+                />
+                <StatusMeter
+                  label="Alone"
+                  icon="clock"
+                  value={careSenseAloneRatio}
+                  polarity="inverse"
+                  valueLabel={
+                    openAloneSession ? formatDuration(openAloneMinutes) : "OK"
+                  }
+                  tone={colors.meterAlone}
+                  onPress={() =>
+                    router.push(
+                      (openAloneSession?.id
+                        ? homeLogEntryRoute(openAloneSession.id)
+                        : homeLogDetailRoute("alone", now)) as never,
+                    )
+                  }
+                  accessibilityLabel={
+                    openAloneSession
+                      ? `Alone time active, ${formatDuration(openAloneMinutes)}`
+                      : "Alone time none logged today"
+                  }
+                  accessibilityHint={
+                    openAloneSession
+                      ? "Opens the return check-in for the active alone time."
+                      : "Opens the Alone Time detail flow."
+                  }
+                />
+              </View>
+            </BoardCard>
+          </Reanimated.View>
+
+          <View style={s.homeSplit}>
+            {/* Mock-board Quick Log card: Meal · Potty · Walk · Meds · More
+                as springy medallion tiles inside one cream card. More opens
+                the fast-log sheet where Water, Note, and the rest live. */}
+            <Reanimated.View entering={enterUp(1)}>
+              <BoardCard style={s.quickHomeCard}>
+                <View style={s.quickSectionHeader}>
+                  <Text
+                    style={[
+                      s.quickSectionTitle,
+                      { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                    ]}
+                  >
+                    Quick Log
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Open full Quick Log"
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() => router.push("/log")}
+                    style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                  >
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={colors.mutedForeground}
+                    />
+                  </Pressable>
+                </View>
+                <View style={s.homeQuickGrid}>
+                  {HOME_QUICK_LOG.slice(0, 4).map((item) => (
+                    <PressScale
+                      key={item.key}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Log ${item.label}`}
+                      accessibilityHint={
+                        item.forceDetail
+                          ? "Opens details before saving."
+                          : "Long press opens details before saving."
+                      }
+                      onPress={() => logQuick(item)}
+                      onLongPress={() => openQuickDetails(item)}
+                      scaleTo={0.92}
+                      containerStyle={s.homeQuickTileLayout}
+                      style={s.homeQuickTile}
+                    >
+                      {hasMedallion(item.icon) ? (
+                        <BoardMedallion name={item.icon} size={54} style={s.softShadow} />
+                      ) : (
+                        <View
+                          style={[
+                            s.homeQuickCircle,
+                            s.softShadow,
+                            {
+                              backgroundColor: colors.card,
+                              borderColor: colors.border,
+                            },
+                          ]}
+                        >
+                          <PixelIcon name={item.icon} size={26} />
+                        </View>
+                      )}
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          s.homeQuickText,
+                          { color: colors.navy, fontFamily: "Inter_600SemiBold" },
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </PressScale>
+                  ))}
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityLabel="More quick log options"
+                    accessibilityHint="Opens the fast log sheet with water, notes, and every other care lane."
+                    onPress={() => router.push("/fastlog" as never)}
+                    scaleTo={0.92}
+                    containerStyle={s.homeQuickTileLayout}
+                    style={s.homeQuickTile}
+                  >
+                    <View
+                      style={[
+                        s.homeQuickCircle,
+                        s.softShadow,
+                        {
+                          backgroundColor: colors.secondary,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="ellipsis-horizontal"
+                        size={22}
+                        color={colors.forest}
+                      />
+                    </View>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.homeQuickText,
+                        { color: colors.navy, fontFamily: "Inter_600SemiBold" },
+                      ]}
+                    >
+                      More
+                    </Text>
+                  </PressScale>
+                </View>
+              </BoardCard>
+            </Reanimated.View>
+
+            <BoardCard style={s.nextCard} enter={2}>
+              <BoardSectionHeader
+                title="Next Up"
+                accessory={
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open Plan. 1 of ${nextCount} next up.`}
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    onPress={() => router.push("/calendar")}
+                    style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                  >
+                    <Ionicons
+                      name="ellipsis-horizontal"
+                      size={18}
+                      color={colors.mutedForeground}
+                    />
+                  </Pressable>
+                }
+              />
+              {pendingMealOpenLoop ? (
+                <Animated.View
+                  pointerEvents={pendingMealChipSuppressed ? "none" : "auto"}
+                  style={{
+                    opacity: mealChipReveal,
+                    overflow: "hidden",
+                    maxHeight: mealChipReveal.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 88],
+                    }),
+                  }}
+                >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Update ${pendingMealOpenLoop.label}. Outcome pending.`}
+                  accessibilityHint="Opens the served meal log so the outcome can be confirmed."
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    router.push(pendingMealOpenLoop.route as never);
+                  }}
+                  style={({ pressed }) => [
+                    s.nextOpenLoopChip,
+                    {
+                      backgroundColor: pressed
+                        ? colors.secondary
+                        : colors.amberSoft,
+                      borderColor: colors.amber,
+                    },
+                  ]}
+                >
+                  <PixelIcon name={pendingMealOpenLoop.icon} size={20} />
+                  <View style={s.nextOpenLoopCopy}>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.nextOpenLoopTitle,
+                        { color: colors.navy, fontFamily: "Inter_700Bold" },
+                      ]}
+                    >
+                      {pendingMealOpenLoop.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.nextOpenLoopMeta,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_600SemiBold",
+                        },
+                      ]}
+                    >
+                      {pendingMealOpenLoop.time}
+                    </Text>
+                  </View>
+                  <View
+                    style={[s.nextButton, { backgroundColor: colors.primary }]}
+                  >
+                    <Text
+                      style={[
+                        s.nextButtonText,
+                        {
+                          color: colors.primaryForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      Update
+                    </Text>
+                  </View>
+                </Pressable>
+                </Animated.View>
+              ) : null}
+              {nextPrimary ? (
+                <View style={s.nextPrimaryRow}>
+                  <Image
+                    source={require("@/assets/images/phoenix-avatar.png")}
+                    style={[s.nextThumb, { borderColor: colors.border, backgroundColor: colors.secondary }]}
+                    resizeMode="cover"
+                    accessibilityLabel={`${petName} thumbnail`}
+                  />
+                  <View style={s.nextPrimaryCopy}>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        s.nextPrimaryTitle,
+                        { color: colors.foreground, fontFamily: "Fredoka_600SemiBold" },
+                      ]}
+                    >
+                      {nextPrimary.label}
+                    </Text>
+                    <Text
+                      numberOfLines={2}
+                      style={[
+                        s.nextPrimaryMeta,
+                        { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                      ]}
+                    >
+                      {nextPrimary.kind === "open-loop"
+                        ? nextDetail
+                        : `${nextPrimary.time}${
+                            nextPrimary.owner
+                              ? ` · ${nextPrimary.owner} assigned`
+                              : nextPrimary.kind === "suggestion"
+                                ? " · Suggested"
+                                : ""
+                          }`}
+                    </Text>
+                    <View style={s.nextButtonRow}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`${nextPrimary.meta ?? "Start"} ${nextPrimary.label}`}
+                        accessibilityHint={
+                          nextPrimary.kind === "open-loop" &&
+                          nextPrimary.icon === "walk"
+                            ? "Completes the active walk now and logs the real duration."
+                            : nextPrimary.icon === "walk" &&
+                                nextPrimary.kind !== "open-loop"
+                              ? "Starts the walk session now. Finish it from here or the walk log."
+                              : undefined
+                        }
+                        onPress={() => {
+                          // The active-walk Finish acts here instead of
+                          // deep-linking to /log - same shared lifecycle
+                          // patch, zero extra hunting.
+                          if (
+                            nextPrimary.kind === "open-loop" &&
+                            nextPrimary.icon === "walk" &&
+                            openWalkSession
+                          ) {
+                            finishWalkFromHome();
+                            return;
+                          }
+                          // "Start" on a planned or suggested walk starts
+                          // the real session right here - same shared start
+                          // path and dedupe guard as the Quick Log walk
+                          // tile - so the button does what it says instead
+                          // of deep-linking to /log with Walk preselected.
+                          if (
+                            nextPrimary.icon === "walk" &&
+                            nextPrimary.kind !== "open-loop" &&
+                            !openWalkSession
+                          ) {
+                            if (Platform.OS !== "web") {
+                              Haptics.impactAsync(
+                                Haptics.ImpactFeedbackStyle.Light,
+                              );
+                            }
+                            startWalkSessionFromHome({
+                              routineId: nextPrimary.routineId,
+                              routineLabel:
+                                nextPrimary.kind === "routine"
+                                  ? nextPrimary.label
+                                  : undefined,
+                            });
+                            return;
+                          }
+                          router.push(nextPrimary.route as never);
+                        }}
+                        style={({ pressed }) => [
+                          s.nextButton,
+                          {
+                            backgroundColor: colors.primary,
+                            opacity: pressed ? 0.85 : 1,
+                          },
+                        ]}
+                      >
+                        <Text style={[s.nextButtonText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                          {nextPrimary.meta ?? "Start"}
+                        </Text>
+                      </Pressable>
+                      {nextPrimary.kind === "routine" ? (
+                        <>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Snooze ${nextPrimary.label} for 30 minutes`}
+                            onPress={() => snoozeNextUp(nextPrimary)}
+                            style={({ pressed }) => [
+                              s.nextButton,
+                              s.nextButtonSoft,
+                              {
+                                backgroundColor: pressed ? colors.muted : colors.secondary,
+                              },
+                            ]}
+                          >
+                            <Text style={[s.nextButtonText, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
+                              Snooze
+                            </Text>
+                          </Pressable>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Reassign ${nextPrimary.label} in Plan`}
+                            accessibilityHint="Opens the Plan tab, where routines and owners are edited."
+                            onPress={() => router.push("/calendar")}
+                            style={({ pressed }) => [
+                              s.nextButton,
+                              s.nextButtonSoft,
+                              {
+                                backgroundColor: pressed ? colors.muted : colors.secondary,
+                              },
+                            ]}
+                          >
+                            <Text style={[s.nextButtonText, { color: colors.navy, fontFamily: "Inter_600SemiBold" }]}>
+                              Reassign
+                            </Text>
+                          </Pressable>
+                        </>
+                      ) : null}
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <Text
+                  style={[
+                    s.nextEmptyText,
+                    { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                  ]}
+                >
+                  Everything scheduled is snoozed. It returns in 30 minutes, or
+                  open Plan to review.
+                </Text>
+              )}
+              {nextUp.length > 1 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`View ${nextUp.length - 1} more planned ${nextUp.length - 1 === 1 ? "item" : "items"} in Plan`}
+                  onPress={() => router.push("/calendar")}
+                  style={({ pressed }) => [s.nextMoreRow, { opacity: pressed ? 0.6 : 1 }]}
+                >
+                  <Text
+                    style={[
+                      s.nextMoreText,
+                      { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
+                    ]}
+                  >
+                    {nextUp.length - 1} more in Plan
+                  </Text>
+                  <Ionicons name="chevron-forward" size={13} color={colors.mutedForeground} />
+                </Pressable>
+              ) : null}
+            </BoardCard>
+          </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Today's Story. ${todayStoryLine} Open Story.`}
+            accessibilityHint={`Opens ${petName}'s living story.`}
+            onPress={() => router.push("/story" as never)}
+            style={({ pressed }) => [
+              s.todayStoryCard,
+              s.softShadow,
+              {
+                backgroundColor: pressed ? colors.secondary : colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Image
+              source={require("@/assets/board/hero.png")}
+              style={[s.todayStoryThumb, { borderColor: colors.border }]}
+              resizeMode="cover"
+            />
+            <View style={s.todayStoryCopy}>
+              <Text
+                style={[
+                  s.todayStoryKicker,
+                  { color: colors.sage, fontFamily: "Inter_700Bold", letterSpacing: 1.1, textTransform: "uppercase", fontSize: 9 },
+                ]}
+              >
+                Today's Story
+              </Text>
+              <Text
+                numberOfLines={2}
+                style={[
+                  s.todayStoryText,
+                  { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+                ]}
+              >
+                {todayStoryLine}
+              </Text>
+              <View style={s.todayStoryChips}>
+                {careCareer.todayXp > 0 ? (
+                  <View style={[s.todayStoryChip, { backgroundColor: colors.amberSoft }]}>
+                    <Text style={[s.todayStoryChipText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
+                      +{careCareer.todayXp} XP
+                    </Text>
+                  </View>
+                ) : null}
+                {careStreak >= 2 ? (
+                  <View style={[s.todayStoryChip, { backgroundColor: colors.sageSoft }]}>
+                    <Text style={[s.todayStoryChipText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
+                      {careStreak}-day streak
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+          </Pressable>
+
+          {/* Presence panel: who Phoenix is with right now, still one tap
+              from the live alone-time workflow. During an active walk, Next
+              Up already owns the live "Finish" CTA, so the panel steps aside
+              instead of echoing the same walk status a second time. */}
+          {openWalkSession ? null : (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${presenceLabel}. Presence state ${presenceState}`}
@@ -1356,12 +2422,10 @@ export default function HomeScreen() {
             onPress={openPresencePanel}
             style={[
               s.presencePanel,
+              s.softShadow,
               {
-                width: `${homeFirstScreenLayout.presencePanelWidthPercent}%`,
                 minHeight: homeFirstScreenLayout.presencePanelMinHeight,
-                marginTop: -homeFirstScreenLayout.presencePanelOverlap,
-                marginBottom: homeFirstScreenLayout.presencePanelMarginBottom,
-                backgroundColor: colors.ivory,
+                backgroundColor: colors.card,
                 borderColor: colors.border,
               },
             ]}
@@ -1392,6 +2456,7 @@ export default function HomeScreen() {
             </View>
             <View style={s.presenceCopy}>
               <Text
+                numberOfLines={1}
                 style={[
                   s.presenceText,
                   { color: colors.navy, fontFamily: "Inter_700Bold" },
@@ -1404,6 +2469,7 @@ export default function HomeScreen() {
                     : `${petName} is with ${caregiver}`}
               </Text>
               <Text
+                numberOfLines={1}
                 style={[
                   s.presenceSub,
                   {
@@ -1417,234 +2483,93 @@ export default function HomeScreen() {
             </View>
             <Ionicons name="chevron-forward" size={17} color={colors.navy} />
           </Pressable>
+          )}
 
+          {/* Care Status keeps only what Care Sense doesn't already show:
+              the presence pill, the Bond meter, and the diet-profile door.
+              Mood/energy/hunger live in the Care Sense card up top - one
+              meters surface, exactly like the mock boards. */}
           <BoardCard style={s.careStatusCard}>
             <BoardSectionHeader
               title="Care Status"
               accessory={<BoardPill label={careStatusLabel} tone={careStatusTone} />}
             />
-            <View
-              style={[
-                s.statusTiles,
-                {
-                  gap: homeFirstScreenLayout.statusTileGap,
-                  marginBottom: 0,
-                },
-              ]}
-            >
-              {statusTiles.map((tile) => (
-                <Pressable
-                  key={tile.label}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${tile.label}. ${tile.value}. ${tile.actionLabel}`}
-                  onPress={() => openStatusTile(tile.target)}
-                  style={({ pressed }) => [
-                    s.statusTile,
-                    {
-                      minHeight: homeFirstScreenLayout.statusTileMinHeight,
-                      backgroundColor: pressed ? colors.secondary : colors.background,
-                      borderColor: colors.border,
-                      opacity: pressed ? 0.78 : 1,
-                      transform: [{ scale: pressed ? 0.98 : 1 }],
-                    },
-                  ]}
-                >
-                  <View
-                    style={[
-                      s.statusTileIcon,
-                      {
-                        width: homeFirstScreenLayout.statusTileIconBoxSize,
-                        height: homeFirstScreenLayout.statusTileIconBoxSize,
-                        backgroundColor: tile.tone + "16",
-                      },
-                    ]}
-                  >
-                    <PixelIcon
-                      name={tile.icon}
-                      size={homeFirstScreenLayout.statusTileIconSize}
-                    />
-                  </View>
-                  <Text
-                    style={[
-                      s.statusTileLabel,
-                      { color: colors.navy, fontFamily: "Inter_700Bold" },
-                    ]}
-                  >
-                    {tile.label}
-                  </Text>
-                  <Text
-                    style={[
-                      s.statusTileValue,
-                      { color: tile.tone, fontFamily: "Inter_700Bold" },
-                    ]}
-                  >
-                    {tile.value}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            <StatusMeter
+              label="Bond"
+              icon="heart"
+              value={bondScore / 100}
+              valueLabel={bondLabel}
+              tone={colors.rose}
+              onPress={() => openStatusTile("bond")}
+              accessibilityLabel={`Bond ${bondLabel}`}
+              accessibilityHint="Opens play details - shared play grows the bond."
+            />
+            <CareRow
+              icon="meal"
+              title="Diet profile"
+              detail="Meals, portions, and sensitivities on file"
+              onPress={() => openStatusTile("diet")}
+              accessibilityLabel="Open Diet Profile"
+            />
           </BoardCard>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Today Command. ${todayCommand.primaryAction.label}. ${todayCommand.primaryAction.detail}`}
-            accessibilityHint="Opens the exact care workflow behind today's recommended action."
-            hitSlop={MOBILE_INLINE_HIT_SLOP}
-            onPress={() =>
-              router.push(todayCommand.primaryAction.route as never)
-            }
-            style={({ pressed }) => [
-              s.todayCommandCard,
-              {
-                backgroundColor: pressed ? colors.secondary : colors.ivory,
-                borderColor: pressed ? todayCommandTone : colors.border,
-              },
-            ]}
-          >
+          <BoardCard style={s.careerCard}>
             <View
-              style={[
-                s.todayCommandIcon,
-                { backgroundColor: todayCommandTone + "18" },
-              ]}
+              accessible
+              accessibilityLabel={`Care level ${careCareer.level}, ${careCareer.title}. ${careCareer.levelXp} of ${careCareer.levelSpanXp} XP toward the next level.${careCareer.todayXp > 0 ? ` ${careCareer.todayXp} XP earned today.` : ""}`}
+              style={s.careerRow}
             >
-              <PixelIcon
-                name={todayCommandPixelIcon(todayCommand.primaryAction.icon)}
-                size={28}
-              />
-            </View>
-            <View style={s.todayCommandCopy}>
-              <Text
-                style={[
-                  s.todayCommandKicker,
-                  { color: colors.copper, fontFamily: "Fredoka_600SemiBold" },
-                ]}
-              >
-                Today Command
-              </Text>
-              <Text
-                numberOfLines={1}
-                style={[
-                  s.todayCommandTitle,
-                  { color: colors.navy, fontFamily: "Fredoka_700Bold" },
-                ]}
-              >
-                {todayCommand.primaryAction.label}
-              </Text>
-              <Text
-                numberOfLines={2}
-                style={[
-                  s.todayCommandDetail,
-                  {
-                    color: colors.mutedForeground,
-                    fontFamily: "Inter_600SemiBold",
-                  },
-                ]}
-              >
-                {todayCommand.primaryAction.detail}
-              </Text>
-            </View>
-            <View
-              style={[s.todayCommandCta, { backgroundColor: todayCommandTone }]}
-            >
-              <Text
-                style={[
-                  s.todayCommandCtaText,
-                  { fontFamily: "Inter_800ExtraBold" },
-                ]}
-              >
-                {todayCommandCta}
-              </Text>
-              <Ionicons name="chevron-forward" size={15} color="#FFF9EF" />
-            </View>
-          </Pressable>
-
-          <View style={s.homeSplit}>
-            <BoardCard style={[s.nextCard, s.homeSplitCard]}>
-              <BoardSectionHeader
-                title="Next Up"
-                accessory={
-                  <BoardPill
-                    label={`1 of ${nextCount}`}
-                    icon="list-outline"
-                    tone={colors.sage}
-                  />
-                }
-              />
-              {nextUp.slice(0, 3).map((item, index) => (
-                <CareRow
-                  key={`${item.label}-${item.time}-${index}`}
-                  icon={item.icon}
-                  title={item.label}
-                  detail={index === 0 ? nextDetail : item.time}
-                  meta={item.meta ?? ""}
-                  onPress={() => router.push(item.route as never)}
-                />
-              ))}
-            </BoardCard>
-
-            <BoardCard style={[s.quickHomeCard, s.homeSplitCard]}>
-              <BoardSectionHeader
-                title="Quick Log"
-                accessory={
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Open full Quick Log"
-                    hitSlop={MOBILE_INLINE_HIT_SLOP}
-                    onPress={() => router.push("/log")}
-                    style={({ pressed }) => [
-                      s.quickHeaderAction,
-                      {
-                        backgroundColor: pressed
-                          ? colors.secondary
-                          : colors.accent,
-                        borderColor: colors.border,
-                      },
-                    ]}
+              <View style={[s.careerBadge, { backgroundColor: colors.amberSoft, borderColor: colors.amber }]}>
+                <Text style={[s.careerBadgeKicker, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
+                  LV
+                </Text>
+                <Text style={[s.careerBadgeLevel, { color: colors.foreground, fontFamily: "Fraunces_700Bold" }]}>
+                  {careCareer.level}
+                </Text>
+              </View>
+              <View style={s.careerBody}>
+                <View style={s.careerTitleRow}>
+                  <Text
+                    numberOfLines={1}
+                    style={[s.careerTitle, { color: colors.navy, fontFamily: "Fredoka_600SemiBold" }]}
                   >
-                    <Text
+                    {careCareer.title}
+                  </Text>
+                  {careCareer.todayXp > 0 ? (
+                    <Text style={[s.careerToday, { color: colors.sage, fontFamily: "Inter_800ExtraBold" }]}>
+                      +{careCareer.todayXp} XP today
+                    </Text>
+                  ) : null}
+                </View>
+                <View style={s.careerSegments}>
+                  {Array.from({ length: 10 }).map((_, index) => (
+                    <View
+                      key={`career-seg-${index}`}
                       style={[
-                        s.quickHeaderActionText,
+                        s.careerSegment,
                         {
-                          color: colors.navy,
-                          fontFamily: "Inter_800ExtraBold",
+                          backgroundColor:
+                            index < Math.round(careCareer.levelProgress * 10)
+                              ? colors.amber
+                              : colors.muted,
+                          borderColor:
+                            index < Math.round(careCareer.levelProgress * 10)
+                              ? colors.amber
+                              : colors.border,
                         },
                       ]}
-                    >
-                      Open
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={13}
-                      color={colors.navy}
                     />
-                  </Pressable>
-                }
-              />
-              <View style={s.homeQuickGrid}>
-                {HOME_QUICK_LOG.slice(0, 4).map((item) => (
-                  <QuickActionTile
-                    key={item.key}
-                    icon={item.icon}
-                    label={item.label}
-                    accessibilityLabel={
-                      item.route ? "Open Quick Log" : `Log ${item.label}`
-                    }
-                    accessibilityHint={
-                      item.route
-                        ? "Opens the full Quick Log."
-                        : "Long press opens details before saving."
-                    }
-                    onPress={() => logQuick(item)}
-                    onLongPress={() => openQuickDetails(item)}
-                    accent={colors.secondary}
-                    style={s.homeQuickTile}
-                    iconSize={25}
-                    labelStyle={s.homeQuickText}
-                  />
-                ))}
+                  ))}
+                </View>
+                <Text style={[s.careerXp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  {careCareer.levelXp.toLocaleString()} / {careCareer.levelSpanXp.toLocaleString()} XP ·{" "}
+                  {careStreak >= 2
+                    ? `${careStreak}-day care streak`
+                    : "every point from real care logs"}
+                </Text>
               </View>
-            </BoardCard>
-          </View>
+            </View>
+          </BoardCard>
 
           <BoardCard
             tone="navy"
@@ -1669,7 +2594,7 @@ export default function HomeScreen() {
                   numberOfLines={1}
                   style={[s.missionTitle, { fontFamily: "Fredoka_700Bold" }]}
                 >
-                  Care RPG command center
+                  Quest board
                 </Text>
               </View>
               {missionLayout.showBadge ? (
@@ -1687,7 +2612,7 @@ export default function HomeScreen() {
               ) : null}
             </View>
             <View style={[s.missionRows, { gap: missionLayout.rowGap }]}>
-              {homeMissions.map((mission) => {
+              {deckMissions.map((mission) => {
                 const tone = missionToneColor(mission.tone);
                 return (
                   <Pressable
@@ -1738,15 +2663,21 @@ export default function HomeScreen() {
                         >
                           {mission.label}
                         </Text>
-                        <Text
-                          numberOfLines={1}
-                          style={[
-                            s.missionStatus,
-                            { color: tone, fontFamily: "Inter_800ExtraBold" },
-                          ]}
-                        >
-                          {mission.statusLabel}
-                        </Text>
+                        {/* The Quest board header already carries the "Care
+                            RPG" badge, so the adventure row drops its
+                            duplicate status pill and reads under its own
+                            "Adventure" category label. */}
+                        {mission.key === "adventure" ? null : (
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              s.missionStatus,
+                              { color: tone, fontFamily: "Inter_800ExtraBold" },
+                            ]}
+                          >
+                            {mission.statusLabel}
+                          </Text>
+                        )}
                       </View>
                       <Text
                         numberOfLines={1}
@@ -1776,21 +2707,9 @@ export default function HomeScreen() {
                         },
                       ]}
                     >
-                      <Text
-                        numberOfLines={1}
-                        style={[
-                          s.missionCtaText,
-                          {
-                            maxWidth: missionLayout.ctaTextMaxWidth,
-                            fontFamily: "Inter_800ExtraBold",
-                          },
-                        ]}
-                      >
-                        {mission.cta}
-                      </Text>
                       <Ionicons
                         name="chevron-forward"
-                        size={15}
+                        size={17}
                         color="#FFF9EF"
                       />
                     </View>
@@ -2035,74 +2954,77 @@ export default function HomeScreen() {
             ))}
           </View>
 
-          <BoardCard tone="navy" style={s.questCard}>
+          {/* Care quest sits on the default card surface, not navy, so it
+              reads as its own lighter block instead of a second dark panel
+              stacked under the Quest board mission deck. */}
+          <BoardCard style={s.questCard}>
             <View style={s.questTop}>
-              <View>
+              <View style={s.questTopCopy}>
                 <Text
                   style={[
                     s.questKicker,
-                    { color: colors.amber, fontFamily: "Fredoka_600SemiBold" },
+                    { color: colors.sage, fontFamily: "Inter_700Bold", letterSpacing: 1.1, textTransform: "uppercase", fontSize: 9 },
                   ]}
                 >
                   Care quest
                 </Text>
-                <Text style={[s.questTitle, { fontFamily: "Fredoka_700Bold" }]}>
+                <Text
+                  style={[
+                    s.questTitle,
+                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                  ]}
+                >
                   {questLine}
                 </Text>
-                <Text style={[s.questSub, { fontFamily: "Inter_600SemiBold" }]}>
+                <Text
+                  style={[
+                    s.questSub,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
                   {careIntelligence.subtitle}
                 </Text>
               </View>
-              <View style={s.questBadge}>
+              <View
+                style={[
+                  s.questBadge,
+                  {
+                    backgroundColor: colors.rose + "1C",
+                    borderColor: colors.rose + "55",
+                  },
+                ]}
+              >
                 <PixelIcon name="heart" size={30} />
               </View>
             </View>
-            <View style={s.questProofGrid}>
-              {careIntelligence.metrics.slice(0, 3).map((metric) => (
-                <View key={metric.label} style={s.questProofTile}>
-                  <Text
-                    style={[
-                      s.questProofValue,
-                      { fontFamily: "Fredoka_700Bold" },
-                    ]}
-                  >
-                    {metric.value}
-                  </Text>
-                  <Text
-                    style={[s.questProofLabel, { fontFamily: "Inter_700Bold" }]}
-                  >
-                    {metric.label}
-                  </Text>
-                </View>
-              ))}
-            </View>
-            <View style={s.questMeterWrap}>
-              {Array.from({ length: 10 }).map((_, index) => {
-                const active = index < Math.round(careProgress / 10);
-                return (
-                  <View
-                    key={`quest-${index}`}
-                    style={[
-                      s.questPip,
-                      {
-                        backgroundColor: active
-                          ? colors.sage
-                          : "rgba(255,249,239,0.18)",
-                        borderColor: active
-                          ? colors.sage
-                          : "rgba(255,249,239,0.26)",
-                      },
-                    ]}
-                  />
-                );
-              })}
-            </View>
             <View style={s.questMetaRow}>
-              <Text style={[s.questMeta, { fontFamily: "Inter_700Bold" }]}>
-                {careIntelligence.score}% Care IQ
+              <Text
+                style={[
+                  s.questMeta,
+                  { color: colors.navy, fontFamily: "Inter_700Bold" },
+                ]}
+              >
+                {/* Zero-log day: "--" instead of a fabricated percentage -
+                    the score starts with the first real log. */}
+                {careIntelligence.visibleLogCount === 0
+                  ? "-- Care IQ"
+                  : `${careIntelligence.score}% Care IQ`}
               </Text>
-              <Text style={[s.questMeta, { fontFamily: "Inter_600SemiBold" }]}>
-                {careIntelligence.confidenceScore}% log confidence
+              <Text
+                style={[
+                  s.questMeta,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
+                {careIntelligence.visibleLogCount === 0
+                  ? "Starts with your first log"
+                  : `${careIntelligence.confidenceScore}% log confidence`}
               </Text>
             </View>
             <Pressable
@@ -2113,30 +3035,42 @@ export default function HomeScreen() {
               style={({ pressed }) => [
                 s.questNextAction,
                 {
-                  borderColor: pressed
-                    ? colors.amber
-                    : "rgba(255,249,239,0.26)",
+                  borderColor: pressed ? colors.amber : colors.border,
                   backgroundColor: pressed
-                    ? "rgba(255,249,239,0.16)"
-                    : "rgba(255,249,239,0.1)",
+                    ? colors.secondary
+                    : colors.background,
                 },
               ]}
             >
-              <View style={s.questNextIcon}>
+              <View
+                style={[
+                  s.questNextIcon,
+                  {
+                    backgroundColor: colors.amber + "1C",
+                    borderColor: colors.amber + "55",
+                  },
+                ]}
+              >
                 <PixelIcon name={homeCareIntelligenceIcon} size={24} />
               </View>
               <View style={s.questNextCopy}>
                 <Text
                   style={[
                     s.questNextKicker,
-                    { fontFamily: "Inter_800ExtraBold" },
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_800ExtraBold",
+                    },
                   ]}
                 >
                   Next care move
                 </Text>
                 <Text
                   numberOfLines={1}
-                  style={[s.questNextTitle, { fontFamily: "Fredoka_700Bold" }]}
+                  style={[
+                    s.questNextTitle,
+                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                  ]}
                 >
                   {careIntelligence.nextAction.label}
                 </Text>
@@ -2144,22 +3078,34 @@ export default function HomeScreen() {
                   numberOfLines={2}
                   style={[
                     s.questNextDetail,
-                    { fontFamily: "Inter_600SemiBold" },
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
                   ]}
                 >
                   {careIntelligence.nextAction.detail}
                 </Text>
               </View>
-              <View style={s.questNextCta}>
+              <View
+                style={[s.questNextCta, { backgroundColor: colors.primary }]}
+              >
                 <Text
                   style={[
                     s.questNextCtaText,
-                    { fontFamily: "Inter_800ExtraBold" },
+                    {
+                      color: colors.primaryForeground,
+                      fontFamily: "Inter_800ExtraBold",
+                    },
                   ]}
                 >
                   {homeCareIntelligenceCta}
                 </Text>
-                <Ionicons name="chevron-forward" size={15} color="#FFF9EF" />
+                <Ionicons
+                  name="chevron-forward"
+                  size={15}
+                  color={colors.primaryForeground}
+                />
               </View>
             </Pressable>
             <Pressable
@@ -2169,12 +3115,21 @@ export default function HomeScreen() {
               style={({ pressed }) => [
                 s.adventureInline,
                 {
-                  borderColor: "rgba(255,249,239,0.28)",
+                  backgroundColor: pressed ? colors.secondary : colors.background,
+                  borderColor: colors.border,
                   opacity: pressed ? 0.78 : 1,
                 },
               ]}
             >
-              <View style={s.adventureIcon}>
+              <View
+                style={[
+                  s.adventureIcon,
+                  {
+                    backgroundColor: colors.copper + "1C",
+                    borderColor: colors.copper + "55",
+                  },
+                ]}
+              >
                 <PixelIcon
                   name={adventureQuestIcon(adventureQuest.id)}
                   size={25}
@@ -2182,91 +3137,41 @@ export default function HomeScreen() {
               </View>
               <View style={s.adventureCopy}>
                 <Text
-                  style={[s.adventureKicker, { fontFamily: "Inter_700Bold" }]}
+                  style={[
+                    s.adventureKicker,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_700Bold",
+                    },
+                  ]}
                 >
                   Adventure Mode
                 </Text>
                 <Text
                   numberOfLines={1}
-                  style={[s.adventureTitle, { fontFamily: "Fredoka_700Bold" }]}
+                  style={[
+                    s.adventureTitle,
+                    { color: colors.foreground, fontFamily: "Fredoka_700Bold" },
+                  ]}
                 >
                   {adventureQuest.title}
                 </Text>
                 <Text
                   numberOfLines={2}
-                  style={[s.adventureSub, { fontFamily: "Inter_600SemiBold" }]}
+                  style={[
+                    s.adventureSub,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
                 >
-                  Level {adventureMode.level} - {adventureMode.todayXp} XP today
-                  - {adventureMode.memoriesCount} memories
+                  Quest level {adventureMode.level} - {adventureMode.todayXp}{" "}
+                  quest XP today - {adventureMode.memoriesCount} memories
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#FFF9EF" />
+              <Ionicons name="chevron-forward" size={18} color={colors.navy} />
             </Pressable>
-          </BoardCard>
-
-          <BoardCard style={s.statusCard}>
-            <BoardSectionHeader
-              title="Phoenix status"
-              accessory={
-                <HomeHeaderAction
-                  label="View full report"
-                  accessibilityLabel="Open full Health Watch"
-                  route="/health?tab=health"
-                />
-              }
-            />
-            <View style={s.meterStack}>
-              <StatusMeter
-                label="Energy"
-                icon="energy"
-                value={status.energy}
-                valueLabel={`${status.energy}%`}
-                tone={colors.sage}
-                accessibilityLabel="Open Phoenix energy in Health Watch"
-                accessibilityHint="Opens Health Watch for energy and activity context."
-                onPress={() => openPhoenixStatusMeter("energy")}
-              />
-              <StatusMeter
-                label="Hunger"
-                icon="hunger"
-                value={hungerScore}
-                valueLabel={fed ? "Full" : "Hungry"}
-                tone={fed ? colors.sage : colors.copper}
-                accessibilityLabel="Open Phoenix meal detail from hunger"
-                accessibilityHint="Opens the meal detail flow for portions and outcomes."
-                onPress={() => openPhoenixStatusMeter("hunger")}
-              />
-              <StatusMeter
-                label="Hydration"
-                icon="bile"
-                value={hydrationScore}
-                valueLabel="Good"
-                tone={colors.blueSignal}
-                accessibilityLabel="Open Phoenix water detail from hydration"
-                accessibilityHint="Opens the water detail flow for hydration notes."
-                onPress={() => openPhoenixStatusMeter("hydration")}
-              />
-              <StatusMeter
-                label="Bile Risk"
-                icon="bile"
-                value={bileCount ? 46 : 82}
-                valueLabel={bile.status}
-                tone={bile.color}
-                accessibilityLabel="Open Phoenix bile risk in Health Watch"
-                accessibilityHint="Opens Health Watch and Bile Watch context."
-                onPress={() => openPhoenixStatusMeter("bile")}
-              />
-              <StatusMeter
-                label="Bond"
-                icon="bond"
-                value={bondScore}
-                valueLabel={bondLabel}
-                tone={colors.sage}
-                accessibilityLabel="Open Phoenix bond play detail"
-                accessibilityHint="Opens the play detail flow for bond-building care."
-                onPress={() => openPhoenixStatusMeter("bond")}
-              />
-            </View>
           </BoardCard>
         </Animated.View>
       </ScrollView>
@@ -2279,7 +3184,13 @@ export default function HomeScreen() {
             {
               backgroundColor: colors.brandNavy,
               opacity: toastOpacity,
-              bottom: insets.bottom + 96,
+              // The one feedback toast anchors just above the floating tab
+              // bar through the shared chrome metric, never mid-screen.
+              bottom: getFloatingFeedbackBottomOffset({
+                platform: Platform.OS,
+                bottomInset: insets.bottom,
+                surface: "tabbed",
+              }),
             },
           ]}
         >
@@ -2351,6 +3262,9 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 10,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   headerButton: {
     width: MIN_MOBILE_TOUCH_TARGET,
@@ -2373,46 +3287,67 @@ const s = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: { color: "#FFFFFF", fontSize: 10 },
-  logoWrap: { flex: 1, alignItems: "center", gap: 0 },
-  logoSub: { fontSize: 11.5, marginTop: -1 },
-
-  heroCard: {
-    overflow: "hidden",
-    marginBottom: 0,
-    borderWidth: 1,
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  heroConsoleHeader: {
-    minHeight: 58,
-    borderBottomWidth: 1,
-    paddingHorizontal: 13,
-    paddingVertical: 10,
+  identityWrap: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     gap: 10,
   },
-  heroConsoleTitleRow: {
+  identityAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1,
+  },
+  identityCopy: {
     flex: 1,
     minWidth: 0,
+    gap: 3,
+  },
+  identityNameRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 9,
+    gap: 4,
   },
-  heroConsoleCopy: {
-    flex: 1,
-    minWidth: 0,
+  identityName: {
+    fontSize: 20,
+    lineHeight: 24,
   },
-  heroConsoleKicker: {
-    fontSize: 10,
-    letterSpacing: 0.9,
+  identityCareLine: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
-  heroConsoleTitle: {
-    fontSize: 17,
-    lineHeight: 20,
-    marginTop: 1,
+  identityCareText: {
+    fontSize: 11.5,
+  },
+
+  heroBackdrop: {
+    width: "100%",
+    marginBottom: 0,
+  },
+  fullBleedArt: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
+  },
+  heroStudioChip: {
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    zIndex: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   heroStudioButton: {
     width: 116,
@@ -2437,11 +3372,8 @@ const s = StyleSheet.create({
     position: "relative",
   },
   presencePanel: {
-    width: "84%",
+    width: "100%",
     minHeight: MIN_MOBILE_TOUCH_TARGET,
-    alignSelf: "flex-start",
-    marginTop: -30,
-    marginLeft: 12,
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -2450,11 +3382,130 @@ const s = StyleSheet.create({
     borderRadius: 18,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    shadowColor: "#081424",
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
+  },
+
+  // Soft premium elevation for the mock-board surfaces, matching the
+  // BoardCard shadow language so everything floats gently on the parchment.
+  softShadow: {
+    shadowColor: "#2A2118",
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
+  },
+
+  // First-run welcome (fresh household only)
+  welcomeCard: {
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 14,
+  },
+  welcomeDismiss: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
+  welcomeKicker: {
+    fontSize: 11,
+    letterSpacing: 1.3,
+    marginBottom: 4,
+  },
+  welcomeTitle: {
+    fontSize: 22,
+    marginBottom: 6,
+  },
+  welcomeBody: {
+    fontSize: 13,
+    lineHeight: 19,
+    opacity: 0.92,
+    marginBottom: 14,
+    paddingRight: 8,
+  },
+  welcomeActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  welcomePrimary: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+  },
+  welcomePrimaryText: {
+    fontSize: 14,
+  },
+  welcomeGhost: {
+    paddingHorizontal: 10,
+    paddingVertical: 11,
+  },
+  welcomeGhostText: {
+    fontSize: 13,
+  },
+
+  // Mock-board Care Sense card: quiet kicker, big honest headline, four
+  // chunky pip meters (mood / energy / hunger / alone time).
+  careSenseCard: {
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  careSenseHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 2,
+  },
+  careSenseHeaderActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  careSenseTrendsLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 1,
+  },
+  careSenseTrendsText: {
+    fontSize: 11.5,
+    letterSpacing: 0.2,
+  },
+  careSenseKicker: {
+    fontSize: 9,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+    opacity: 0.85,
+  },
+  careSenseHeadlineRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+  },
+  careSenseHeadlineCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  careSenseHeadline: {
+    fontSize: 18,
+    lineHeight: 23,
+  },
+  careSenseSub: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  careSenseMeters: {
+    marginTop: 8,
+    gap: 2,
   },
   presenceAvatar: {
     width: 38,
@@ -2465,6 +3516,102 @@ const s = StyleSheet.create({
   },
   presenceInitial: { color: "#FFFFFF", fontSize: 17 },
   presenceCopy: { flex: 1, minWidth: 0 },
+  todayStoryCard: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  todayStoryThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  todayStoryCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+  },
+  todayStoryKicker: {
+    fontSize: 11,
+  },
+  todayStoryText: {
+    fontSize: 12.5,
+    lineHeight: 17,
+  },
+  todayStoryChips: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  todayStoryChip: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  todayStoryChipText: {
+    fontSize: 10,
+  },
+  careerCard: {
+    marginBottom: 12,
+  },
+  careerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  careerBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  careerBadgeKicker: {
+    fontSize: 8,
+    letterSpacing: 1,
+  },
+  careerBadgeLevel: {
+    fontSize: 21,
+    lineHeight: 24,
+  },
+  careerBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  careerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  careerTitle: {
+    flexShrink: 1,
+    fontSize: 15,
+  },
+  careerToday: {
+    fontSize: 10.5,
+  },
+  careerSegments: {
+    flexDirection: "row",
+    gap: 3,
+    marginTop: 6,
+  },
+  careerSegment: {
+    flex: 1,
+    height: 10,
+    borderWidth: 1,
+    borderRadius: 2,
+  },
+  careerXp: {
+    fontSize: 10.5,
+    marginTop: 5,
+  },
   presenceText: { fontSize: 14 },
   presenceSub: { fontSize: 11, marginTop: 2 },
   careStatusCard: {
@@ -2472,30 +3619,42 @@ const s = StyleSheet.create({
     marginBottom: 8,
   },
   statusTiles: {
-    flexDirection: "row",
-    gap: 8,
+    flexDirection: "column",
+    gap: 6,
     marginBottom: 10,
   },
   statusTile: {
-    flex: 1,
-    minHeight: 62,
-    borderWidth: 1,
-    borderRadius: 8,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
+    gap: 12,
+    borderWidth: 0,
+    borderRadius: 14,
+    paddingHorizontal: 10,
     paddingVertical: 6,
   },
   statusTileIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 3,
   },
-  statusTileLabel: { fontSize: 9.5, textAlign: "center" },
-  statusTileValue: { fontSize: 11.5, marginTop: 1, textAlign: "center" },
+  statusTileLabel: { flex: 1, fontSize: 14 },
+  statusTileValuePill: {
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  statusTileValue: { fontSize: 13, textAlign: "right" },
+  statusTileSegments: {
+    flexDirection: "row",
+    gap: 3,
+  },
+  statusTileSegment: {
+    width: 13,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
   todayCommandCard: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     marginBottom: 10,
@@ -2662,18 +3821,17 @@ const s = StyleSheet.create({
   },
 
   homeSplit: {
-    flexDirection: "row",
+    flexDirection: "column",
     gap: 10,
     alignItems: "stretch",
     marginBottom: 10,
   },
   homeSplitCard: {
-    flex: 1,
     minWidth: 0,
   },
   nextCard: { marginTop: 0 },
   quickHomeCard: {
-    minHeight: 188,
+    minHeight: 0,
   },
   quickHeaderAction: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -2705,25 +3863,125 @@ const s = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0,
   },
+  quickSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  },
+  quickSectionTitle: {
+    fontSize: 17,
+    lineHeight: 22,
+  },
   homeQuickGrid: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
     justifyContent: "space-between",
-    rowGap: 8,
+    marginTop: 4,
+  },
+  homeQuickTileLayout: {
+    width: "18.5%",
   },
   homeQuickTile: {
-    width: "48%",
-    minHeight: 54,
+    width: "100%",
+    minHeight: 74,
+    alignItems: "center",
+    gap: 5,
+  },
+  homeQuickCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 999,
     borderWidth: 1,
-    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
-    paddingVertical: 5,
   },
   homeQuickText: {
     fontSize: 9.5,
     textAlign: "center",
+  },
+
+  // Open-loop chip stacked above the planned Next Up item: a served meal
+  // waiting on its outcome never displaces the plan itself.
+  nextOpenLoopChip: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  nextOpenLoopCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  nextOpenLoopTitle: {
+    fontSize: 12.5,
+  },
+  nextOpenLoopMeta: {
+    fontSize: 10.5,
+    marginTop: 1,
+  },
+
+  // Next Up primary row: thumb + copy + Start/Snooze/Reassign
+  nextPrimaryRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    paddingTop: 2,
+  },
+  nextThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  nextPrimaryCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  nextPrimaryTitle: {
+    fontSize: 15,
+    lineHeight: 19,
+  },
+  nextPrimaryMeta: {
+    fontSize: 11.5,
+    lineHeight: 15,
+    marginTop: 2,
+  },
+  nextButtonRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+  nextButton: {
+    minHeight: 34,
+    borderRadius: 999,
+    paddingHorizontal: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nextButtonSoft: {},
+  nextButtonText: {
+    fontSize: 11.5,
+  },
+  nextEmptyText: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  nextMoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    marginTop: 10,
+    alignSelf: "flex-start",
+  },
+  nextMoreText: {
+    fontSize: 11,
   },
   questCard: {
     marginTop: 10,
@@ -2737,20 +3995,20 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
   },
+  questTopCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
   questKicker: { fontSize: 11, textTransform: "uppercase" },
   questTitle: {
-    color: "#FFF9EF",
     fontSize: 17,
     lineHeight: 21,
     marginTop: 2,
-    maxWidth: 245,
   },
   questSub: {
-    color: "rgba(255,249,239,0.78)",
     fontSize: 11.5,
     lineHeight: 16,
     marginTop: 5,
-    maxWidth: 245,
   },
   questBadge: {
     width: 44,
@@ -2758,57 +4016,16 @@ const s = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,249,239,0.12)",
     borderWidth: 1,
-    borderColor: "rgba(255,249,239,0.18)",
-  },
-  questProofGrid: {
-    flexDirection: "row",
-    gap: 7,
-    marginTop: 13,
-  },
-  questProofTile: {
-    flex: 1,
-    minHeight: 54,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,249,239,0.16)",
-    backgroundColor: "rgba(255,249,239,0.08)",
-    paddingHorizontal: 8,
-    paddingVertical: 7,
-    justifyContent: "center",
-  },
-  questProofValue: {
-    color: "#FFF9EF",
-    fontSize: 16,
-  },
-  questProofLabel: {
-    color: "rgba(255,249,239,0.68)",
-    fontSize: 9,
-    lineHeight: 12,
-    marginTop: 1,
-    textTransform: "uppercase",
-  },
-  questMeterWrap: {
-    flexDirection: "row",
-    gap: 5,
-    marginTop: 13,
-  },
-  questPip: {
-    flex: 1,
-    height: 12,
-    borderWidth: 1,
-    borderRadius: 2,
   },
   questMetaRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
-    marginTop: 9,
+    marginTop: 12,
   },
   questMeta: {
-    color: "rgba(255,249,239,0.82)",
     fontSize: 11.5,
   },
   questNextAction: {
@@ -2828,28 +4045,23 @@ const s = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,249,239,0.16)",
     borderWidth: 1,
-    borderColor: "rgba(255,249,239,0.2)",
   },
   questNextCopy: {
     flex: 1,
     minWidth: 0,
   },
   questNextKicker: {
-    color: "rgba(255,249,239,0.64)",
     fontSize: 8.5,
     letterSpacing: 0,
     textTransform: "uppercase",
   },
   questNextTitle: {
-    color: "#FFF9EF",
     fontSize: 13.5,
     lineHeight: 16,
     marginTop: 1,
   },
   questNextDetail: {
-    color: "rgba(255,249,239,0.74)",
     fontSize: 10.5,
     lineHeight: 14,
     marginTop: 2,
@@ -2862,10 +4074,8 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    backgroundColor: "rgba(255,249,239,0.12)",
   },
   questNextCtaText: {
-    color: "#FFF9EF",
     fontSize: 10.5,
   },
   adventureInline: {
@@ -2878,7 +4088,6 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "rgba(255,249,239,0.09)",
   },
   adventureIcon: {
     width: 38,
@@ -2886,28 +4095,23 @@ const s = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,249,239,0.16)",
+    borderWidth: 1,
   },
   adventureCopy: { flex: 1, minWidth: 0 },
   adventureKicker: {
-    color: "rgba(255,249,239,0.68)",
     fontSize: 9,
     textTransform: "uppercase",
   },
   adventureTitle: {
-    color: "#FFF9EF",
     fontSize: 14,
     lineHeight: 17,
     marginTop: 1,
   },
   adventureSub: {
-    color: "rgba(255,249,239,0.74)",
     fontSize: 10.5,
     lineHeight: 14,
     marginTop: 2,
   },
-  statusCard: { marginBottom: 10 },
-  meterStack: { gap: 8 },
   cardGrid: { gap: 10, marginTop: 10 },
   gridCard: { minHeight: 124 },
   todayGrid: {

@@ -62,7 +62,15 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(file).pipe(res);
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`WoofWatcher preview: http://127.0.0.1:${port}`);
+// Bind all interfaces by default so managed hosts (Replit, container
+// previews) can reach the server through their proxy. Local reviewers still
+// reach it at http://127.0.0.1:${port}. Override with HOST if needed.
+const host = process.env.HOST || "0.0.0.0";
+
+server.listen(port, host, () => {
+  console.log(`WoofWatcher preview (local): http://127.0.0.1:${port}`);
+  if (host === "0.0.0.0") {
+    console.log(`WoofWatcher preview (network): listening on 0.0.0.0:${port} - open the host's forwarded URL.`);
+  }
   console.log("Keep this terminal open while Apollo, Fable, Replit, or device QA reviews the exported beta.");
 });

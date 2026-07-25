@@ -49,6 +49,31 @@ if (result.status !== 0) {
   fail(`Expo web export smoke failed with exit code ${result.status ?? "unknown"}`);
 }
 
+// Make the web app installable. The manifest + icon ship from public/, but the
+// single-output (SPA) index.html Expo generates has no <link> to them and no
+// theme color (and +html.tsx only applies to Expo's `static` output, which the
+// app isn't SSR-safe for). So inject the PWA head tags into the built
+// index.html here. Idempotent — safe to re-run.
+const indexHtmlPath = path.join(outputDir, "index.html");
+if (fs.existsSync(indexHtmlPath)) {
+  let html = fs.readFileSync(indexHtmlPath, "utf8");
+  if (!html.includes('rel="manifest"')) {
+    const pwaTags = [
+      '<link rel="manifest" href="/manifest.json" />',
+      '<link rel="apple-touch-icon" href="/icon.png" />',
+      '<meta name="apple-mobile-web-app-capable" content="yes" />',
+      '<meta name="mobile-web-app-capable" content="yes" />',
+      '<meta name="apple-mobile-web-app-title" content="WoofWatcher" />',
+      '<meta name="apple-mobile-web-app-status-bar-style" content="default" />',
+      '<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F7F1E1" />',
+      '<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#081424" />',
+    ].join("\n    ");
+    html = html.replace("</head>", `    ${pwaTags}\n  </head>`);
+    fs.writeFileSync(indexHtmlPath, html);
+    console.log("[smoke-web-export] Injected PWA head tags into index.html.");
+  }
+}
+
 const files = walk(outputDir);
 const hasHtml = files.some((file) => file.endsWith(".html"));
 const hasJavaScript = files.some((file) => file.endsWith(".js"));

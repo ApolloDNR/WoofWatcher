@@ -11,13 +11,26 @@ import {
   Field,
   FormError,
   GoogleButton,
+  LocalPreviewGateway,
   PrimaryButton,
 } from "@/components/auth-ui";
 import { useColors } from "@/hooks/useColors";
+import { isClerkConfigured } from "@/lib/auth";
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignUpScreen() {
+  // Clerk hooks throw without a configured provider, so the local-preview
+  // gateway renders instead of mounting the account form in preview builds.
+  if (!isClerkConfigured) {
+    return (
+      <LocalPreviewGateway subtitle="Account creation is not connected in this preview build. Care data stays local-first until production sync providers are configured." />
+    );
+  }
+  return <ClerkSignUpScreen />;
+}
+
+function ClerkSignUpScreen() {
   const colors = useColors();
   const { signUp, errors, fetchStatus } = useSignUp();
   const { startSSOFlow } = useSSO();

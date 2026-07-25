@@ -224,7 +224,7 @@ function helperText(state: CareLogTrustState, confirmationRequired: boolean, can
   if (state === "rejected") return "This log stays in history, but the household should not treat it as confirmed care.";
   if (state === "corrected") return "This log was corrected so the care record keeps the original trail.";
   if (proofStatus === "requested") return "Photo proof has been requested before this log is confirmed.";
-  if (proofStatus === "attached") return "Photo proof is attached to this log. Cloud file storage is still provider-gated.";
+  if (proofStatus === "attached") return "Photo proof is attached to this log. The photo stays on this device - cloud storage isn't available yet.";
   if (confirmationRequired || state === "pending-confirmation") {
     return "Review this log before it drives household handoff, medication, or report decisions.";
   }

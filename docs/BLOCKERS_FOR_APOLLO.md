@@ -1,5 +1,19 @@
 # Blockers For Apollo
 
+## 2026-07-24 Reconciliation Proof Boundary
+
+- Current mainline premium polish has been reconciled into the automation
+  branch while preserving the structured proof-evidence contracts.
+- Local proof passed 660 zero-dependency tests, 116 mobile readiness tests,
+  TypeScript build, and PixelLab verification at
+  `ok=149 missing=0 invalid=0`.
+- Exact local beta export proof remains blocked: Corepack and pinned
+  `pnpm@10.24.0` are unavailable. The bundled pnpm 11 retry failed with
+  `EPERM ... unlink ...\node_modules\typescript`.
+- Fresh branch CI is required after the merge. Native iOS/Android proof,
+  provider credentials/approvals, store submission, public launch, and Apollo
+  sign-off remain open.
+
 ## Product Decisions
 
 - Confirm launch target: Expo preview, TestFlight, App Store, web dashboard, or staged launch.

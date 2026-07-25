@@ -23,7 +23,7 @@ import { useCare } from "@/context/CareContext";
 import { isClerkConfigured } from "@/lib/auth";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
-import { pixelImageStyle } from "@/lib/pixelRendering";
+import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 
 const PIXEL_ROOM_SOURCE = require("@/assets/avatar/rooms/phoenix-room-day-option-b.png");
 const PIXEL_DOG_SOURCE = require("@/assets/avatar/phoenix/approved/phoenix-main-avatar-v2-crisp.png");
@@ -106,7 +106,7 @@ export function AuthShell({
         <ImageBackground
           source={PIXEL_ROOM_SOURCE}
           resizeMode="cover"
-          imageStyle={[styles.stageImage, pixelImageStyle]}
+          imageStyle={[stageImageFill, styles.stageImage, pixelImageStyle]}
           style={styles.stage}
         >
           <View style={[styles.speechBubble, { backgroundColor: colors.ivory, borderColor: BUBBLE_INK }]}>
@@ -300,6 +300,28 @@ export function PrimaryButton({
         </Text>
       )}
     </Pressable>
+  );
+}
+
+export function LocalPreviewGateway({ subtitle }: { subtitle: string }) {
+  const colors = useColors();
+  const router = useRouter();
+  return (
+    <AuthShell title="Local preview" subtitle={subtitle}>
+      <PrimaryButton
+        label="Continue in local preview"
+        onPress={() => router.replace("/(tabs)")}
+      />
+      <Text
+        style={[
+          styles.previewBoundary,
+          { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+        ]}
+      >
+        Provider sign-in stays off until production auth setup and launch
+        approval are complete. Care data stays on this device.
+      </Text>
+    </AuthShell>
   );
 }
 
@@ -642,5 +664,11 @@ const styles = StyleSheet.create({
   },
   formErrorText: {
     fontSize: 13,
+  },
+  previewBoundary: {
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: "center",
+    marginTop: 16,
   },
 });
