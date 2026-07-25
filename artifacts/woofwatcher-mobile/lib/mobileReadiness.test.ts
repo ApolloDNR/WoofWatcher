@@ -2644,6 +2644,16 @@ test("keeps Quick Log aligned to the mobile design-system recovery recipe", () =
   assert.match(log, /logCommandStage:[\s\S]*width: "100%"[\s\S]*minHeight: 82/);
   assert.match(log, /resizeMode="cover"[\s\S]*testID="quick-log-command-pixel-stage"/);
   assert.match(log, /logCommandBubble:[\s\S]*maxWidth: "68%"/);
+  assert.match(
+    log,
+    /logCommandSpeech,\s*\{\s*color:\s*colors\.brandNavy/,
+    "the fixed-light Quick Care Console bubble must keep dark ink in dark mode",
+  );
+  assert.doesNotMatch(
+    log,
+    /logCommandSpeech,\s*\{\s*color:\s*colors\.foreground/,
+    "adaptive foreground becomes near-white and loses contrast on the fixed-light bubble",
+  );
   assert.match(log, /logCommandSprite:[\s\S]*right: 12/);
   assert.match(log, /logCommandDock/);
   assert.doesNotMatch(log, /logCommandMission/);

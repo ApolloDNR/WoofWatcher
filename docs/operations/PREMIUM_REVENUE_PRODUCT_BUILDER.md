@@ -1,5 +1,18 @@
 # Premium Revenue Product Builder
 
+## 2026-07-25 Quick Care Console Dark Contrast
+
+The route-level dark-mode audit found another concrete Log-tab contrast
+failure: the Quick Care Console speech bubble is intentionally fixed light,
+but its primary sentence used the adaptive foreground token. Dark mode turned
+that sentence near-white against the cream bubble. The sentence now uses the
+constant `brandNavy` ink already established for other fixed-light pixel-art
+surfaces.
+
+A red-first mobile readiness assertion failed on the adaptive foreground and
+then passed `117/117` after the one-token fix. Route-by-route dark screenshots
+and native device approval remain open; this static guard is source proof only.
+
 ## 2026-07-25 Quick Log Dark Selection Contrast
 
 The route-level dark-mode audit found a real contrast failure in Quick Log:

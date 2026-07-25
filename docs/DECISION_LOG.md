@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-07-25: Fixed-light art surfaces keep constant dark ink
+
+- Decision: use `brandNavy` for primary copy inside the Quick Care Console's
+  fixed-light speech bubble in both color schemes.
+- Reason: the adaptive dark-scheme foreground becomes near-white and loses
+  contrast against the intentionally cream pixel-art bubble.
+- Boundary: this source/readiness guard does not replace dark-mode screenshots
+  or native visual approval.
+
 ## 2026-07-25: Shared shell backgrounds follow the active palette
 
 - Decision: treat root compact/desktop shells and modal content backgrounds as

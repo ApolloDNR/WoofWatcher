@@ -2470,7 +2470,7 @@ export default function LogScreen() {
                   </Text>
                   <Text
                     numberOfLines={2}
-                    style={[s.logCommandSpeech, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+                    style={[s.logCommandSpeech, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
                   >
                     {logCommandSpeech}
                   </Text>
