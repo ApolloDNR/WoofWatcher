@@ -15,6 +15,12 @@ The preceding selected-mood contrast commit `164cce20` is dependency-complete
 green in WoofWatcher Verify run `30178415387`, job `89730878839`. Rerun branch
 CI after this template-badge commit before treating dependency proof as current.
 
+Dependency-complete CI proved template-badge implementation commit `55bdbae3`
+in WoofWatcher Verify run `30178528061`, job `89731163097`, with install,
+JSON doctor, focused tests, typecheck, CI-safe builds, and all post steps green.
+Rerun after this proof-record commit before treating the final branch tip as
+current dependency proof.
+
 ## 2026-07-25 Records Dog ID Dark Boundary
 
 The route-level dark-mode audit found a Records contrast defect: the Dog ID
