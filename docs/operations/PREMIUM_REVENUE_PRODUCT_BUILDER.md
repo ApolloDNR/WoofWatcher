@@ -15,6 +15,11 @@ from the partial dependency checkout. The JSON beta doctor remains blocked on
 missing exact `pnpm@10.24.0` and unresolved Expo. Full dark route screenshots
 remain open because Playwright and native Android tooling are unavailable.
 
+Dependency-complete branch proof passed for implementation commit `1fe57ba8`
+in WoofWatcher Verify run `30150170653`, job `89659086829`. Pinned dependency
+install, JSON mobile beta doctor, focused behavior tests, typecheck, CI-safe
+builds, post steps, and Complete job all passed.
+
 ## 2026-07-24 Mainline Premium Reconciliation
 
 The automation branch now reconciles current `origin/main` through a normal
