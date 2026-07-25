@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-07-25: Fixed-light Avatar Studio badges use constant dark ink
+
+- Decision: use `brandNavy` for inactive template-status copy rendered on the
+  scheme-independent ivory badge.
+- Reason: dark mode's adaptive `mutedForeground` becomes pale and loses
+  contrast against the intentionally light template badge.
+- Boundary: this source/readiness guard does not replace route-named dark-mode
+  screenshots or native visual approval.
+
 ## 2026-07-25: Fixed-light credential boundaries use constant dark ink
 
 - Decision: use `brandNavy` for the Records Dog ID plate border in both color

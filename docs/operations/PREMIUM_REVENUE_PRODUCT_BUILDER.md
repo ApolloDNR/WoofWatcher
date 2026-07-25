@@ -1,5 +1,20 @@
 # Premium Revenue Product Builder
 
+## 2026-07-25 Avatar Studio template-badge dark-mode contrast
+
+The route-level dark-mode audit found a second Avatar Studio contrast defect:
+inactive template status badges keep an intentionally ivory surface in both
+themes, while their label used the adaptive muted foreground. Dark mode made
+that label pale against the fixed-light badge. Inactive badge copy now uses
+constant `brandNavy`, with a focused mobile-readiness contract.
+
+This is source-backed contrast hardening only. Route-named iOS/Android dark
+screenshots, accessibility traversal, and Apollo visual approval remain open.
+
+The preceding selected-mood contrast commit `164cce20` is dependency-complete
+green in WoofWatcher Verify run `30178415387`, job `89730878839`. Rerun branch
+CI after this template-badge commit before treating dependency proof as current.
+
 ## 2026-07-25 Records Dog ID Dark Boundary
 
 The route-level dark-mode audit found a Records contrast defect: the Dog ID

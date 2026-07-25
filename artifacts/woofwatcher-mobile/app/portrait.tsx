@@ -1249,7 +1249,7 @@ export default function PortraitScreen() {
                               {
                                 color: liveSprite
                                   ? colors.primaryForeground
-                                  : colors.mutedForeground,
+                                  : colors.brandNavy,
                                 fontFamily: "Inter_700Bold",
                               },
                             ]}

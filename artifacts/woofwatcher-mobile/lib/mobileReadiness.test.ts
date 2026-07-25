@@ -574,6 +574,21 @@ test("keeps selected Avatar Studio mood labels readable in dark mode", () => {
   );
 });
 
+test("keeps fixed-light Avatar Studio template badges readable in dark mode", () => {
+  const avatarStudio = readAppFile("portrait.tsx");
+
+  assert.match(
+    avatarStudio,
+    /color:\s*liveSprite\s*\?\s*colors\.primaryForeground\s*:\s*colors\.brandNavy/,
+    "the fixed-light inactive template badge needs constant dark ink",
+  );
+  assert.doesNotMatch(
+    avatarStudio,
+    /color:\s*liveSprite\s*\?\s*colors\.primaryForeground\s*:\s*colors\.mutedForeground/,
+    "dark muted foreground becomes pale against the scheme-independent ivory badge",
+  );
+});
+
 test("keeps critical mobile actions accessible to screen readers", () => {
   const privacy = readAppFile("privacy.tsx");
   const premium = readAppFile("premium.tsx");

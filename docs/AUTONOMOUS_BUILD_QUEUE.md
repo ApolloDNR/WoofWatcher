@@ -11,6 +11,12 @@
 - [x] Keep the fixed-light Records Dog ID plate boundary visible in dark mode
   by using constant brand-navy instead of the theme-flipping navy token.
 - [x] Add a red-first readiness contract for the Dog ID plate boundary.
+- [x] Keep Avatar Studio's fixed-light inactive template status badges
+  readable in dark mode with constant brand-navy ink.
+- [x] Add a red-first readiness contract for the template badge contrast.
+- [x] Dependency-complete branch CI passed for the earlier Avatar Studio mood
+  contrast commit `164cce20`: WoofWatcher Verify run `30178415387`, job
+  `89730878839`.
 - [x] Dependency-complete branch CI passed for the Records Dog ID implementation
   commit `a94675e0`: WoofWatcher Verify run `30166602309`, job `89700603998`.
 - [x] Dependency-complete branch CI passed for Quick Care implementation commit
