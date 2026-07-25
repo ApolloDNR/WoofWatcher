@@ -2631,7 +2631,7 @@ export default function LogScreen() {
                     style={[
                       s.launcherTile,
                       {
-                        backgroundColor: active ? colors.ivory : colors.background,
+                        backgroundColor: active ? colors.card : colors.background,
                         borderColor: launcherPresentation.detailRequired
                           ? colors.amber + "66"
                           : active

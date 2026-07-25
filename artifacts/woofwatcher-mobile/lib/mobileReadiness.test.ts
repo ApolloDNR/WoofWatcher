@@ -545,6 +545,20 @@ test("keeps auth entry styled as the truthful CareTwin gateway", () => {
   assert.match(signUp, /Care data stays local-first until production sync providers are configured/);
 });
 
+test("keeps selected Quick Log launcher tiles readable in dark mode", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+
+  assert.match(
+    log,
+    /backgroundColor:\s*active\s*\?\s*colors\.card\s*:\s*colors\.background/,
+  );
+  assert.doesNotMatch(
+    log,
+    /backgroundColor:\s*active\s*\?\s*colors\.ivory\s*:\s*colors\.background/,
+    "scheme-independent ivory makes the dark foreground label disappear",
+  );
+});
+
 test("keeps critical mobile actions accessible to screen readers", () => {
   const privacy = readAppFile("privacy.tsx");
   const premium = readAppFile("premium.tsx");

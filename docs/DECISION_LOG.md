@@ -2527,3 +2527,15 @@ visual proof gains explicit revision timestamps and conflict resolution.
 - Production providers for auth, database, storage, AI, deployment, and mobile release.
 - Whether Figma is the canonical visual design source.
 - Privacy/legal requirements for storing dog medical records and AI-assisted health summaries.
+
+# 2026-07-25 - Quick Log selected tiles use adaptive card surfaces
+
+- Decision: selected Quick Log launcher tiles use `colors.card`, not the
+  scheme-independent `colors.ivory`, while their labels use
+  `colors.foreground`.
+- Why: ivory is an intentional light art/credential color in both palettes.
+  Pairing it with the dark palette foreground made the selected action label
+  disappear. The adaptive card token preserves the light design and restores
+  dark contrast without creating a separate route-local color.
+- Boundary: this is source-backed contrast hardening. It does not replace
+  route-named iOS/Android dark-mode screenshots or native accessibility review.

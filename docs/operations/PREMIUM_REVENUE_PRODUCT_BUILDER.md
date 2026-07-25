@@ -1,5 +1,25 @@
 # Premium Revenue Product Builder
 
+## 2026-07-25 Quick Log Dark Selection Contrast
+
+The route-level dark-mode audit found a real contrast failure in Quick Log:
+selected launcher tiles used the scheme-independent ivory art token while their
+labels used the active foreground token. In dark mode this paired near-white
+text with a near-white tile. Selected tiles now use the adaptive card token, so
+the warm light board remains intact and the dark palette keeps readable labels.
+
+A red-first mobile readiness contract failed on the ivory selection surface and
+then passed `117/117`. Native route screenshots are still required before
+claiming dark-mode device proof.
+
+Fresh local follow-up also passed root TypeScript and PixelLab verification at
+`ok=149 missing=0 invalid=0`. The broad zero-dependency command reached
+`648/649` and failed only because this partial checkout cannot resolve
+`@workspace/care-domain` from `careCareer.test.ts`. The JSON beta doctor keeps
+all source-backed guards passing but remains truthfully `BLOCKED` on missing
+exact `pnpm@10.24.0` and unresolved Expo. Branch CI remains the
+dependency-complete authority.
+
 ## 2026-07-25 Dark-Scheme Shell Hardening
 
 The next non-provider-gated slice fixed shared navigation chrome that still
