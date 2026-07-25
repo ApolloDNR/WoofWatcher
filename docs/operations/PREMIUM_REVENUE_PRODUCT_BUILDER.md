@@ -4222,3 +4222,8 @@ TypeScript, PixelLab verification at `ok=149 missing=0 invalid=0`, and the JSON
 doctor source-backed guard passed. The doctor remains blocked on unavailable
 local pnpm `10.24.0`. Real native route screenshots, device safe-area/touch
 review, Apollo approval, store review, and public launch remain open.
+
+Branch CI proved implementation commit `6c1c5e7e` in `WoofWatcher Verify` run
+`30139367465`, job `89629537631`, with the full dependency-complete workflow
+passing. Rerun after this proof-record commit before treating the final branch
+tip as current dependency proof.

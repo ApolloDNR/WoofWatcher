@@ -353,3 +353,8 @@ propagation gap only. Real route-named Home, Log, Plans, Health, Records, and
 More screenshots on iOS and Android, native safe-area/touch review, Apollo
 visual approval, store review, and public launch remain blocked. Rerun branch
 CI after this commit before treating dependency proof as current.
+
+Branch CI proved implementation commit `6c1c5e7e` in `WoofWatcher Verify` run
+`30139367465`, job `89629537631`, with dependency install, JSON doctor, focused
+tests, typecheck, and CI-safe builds passing. Rerun after this proof-record
+commit before treating dependency proof as current for the final branch tip.
