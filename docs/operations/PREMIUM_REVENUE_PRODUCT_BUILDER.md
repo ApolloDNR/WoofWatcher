@@ -4334,3 +4334,6 @@ Branch CI proved implementation commit `6c1c5e7e` in `WoofWatcher Verify` run
 `30139367465`, job `89629537631`, with the full dependency-complete workflow
 passing. Rerun after this proof-record commit before treating the final branch
 tip as current dependency proof.
+## 2026-07-25 Avatar Studio dark-mode contrast slice
+
+Hardened selected mood labels against native dark-mode washout and added a red/green mobile-readiness contract. Real device screenshots and Apollo visual approval remain required.

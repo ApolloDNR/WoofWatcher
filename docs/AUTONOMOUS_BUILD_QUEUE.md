@@ -1276,3 +1276,7 @@ Operational manifest: `docs/operations/PREMIUM_REVENUE_PRODUCT_BUILDER.md`.
 ## Stop Conditions
 
 Stop only for missing secrets, destructive data risk, app-store approval, legal/veterinary safety boundaries, production approval, or source-of-truth contradictions.
+## 2026-07-25 Avatar Studio dark-mode contrast
+
+- Selected mood labels now use constant brand-navy ink on their scheme-independent light aura, preserving readable contrast in native dark mode.
+- Source coverage does not replace route-by-route iOS/Android screenshot proof; native proof remains open.

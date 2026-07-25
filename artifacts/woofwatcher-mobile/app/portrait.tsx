@@ -1898,7 +1898,7 @@ export default function PortraitScreen() {
                         s.moodChipLabel,
                         {
                           color: active
-                            ? colors.foreground
+                            ? colors.brandNavy
                             : colors.mutedForeground,
                           fontFamily: "Inter_600SemiBold",
                         },

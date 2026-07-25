@@ -2557,3 +2557,6 @@ visual proof gains explicit revision timestamps and conflict resolution.
   dark contrast without creating a separate route-local color.
 - Boundary: this is source-backed contrast hardening. It does not replace
   route-named iOS/Android dark-mode screenshots or native accessibility review.
+## 2026-07-25 - Keep fixed-light Avatar Studio aura labels dark
+
+Selected Avatar Studio mood previews use light translucent art-direction auras in both themes, so their selected labels use `brandNavy` rather than the adaptive foreground token.

@@ -559,6 +559,21 @@ test("keeps selected Quick Log launcher tiles readable in dark mode", () => {
   );
 });
 
+test("keeps selected Avatar Studio mood labels readable in dark mode", () => {
+  const avatarStudio = readAppFile("portrait.tsx");
+
+  assert.match(
+    avatarStudio,
+    /color:\s*active\s*\?\s*colors\.brandNavy\s*:\s*colors\.mutedForeground/,
+    "selected mood labels sit on scheme-independent translucent aura colors and need constant dark ink",
+  );
+  assert.doesNotMatch(
+    avatarStudio,
+    /color:\s*active\s*\?\s*colors\.foreground\s*:\s*colors\.mutedForeground/,
+    "adaptive foreground becomes near-white and loses contrast on the light mood aura",
+  );
+});
+
 test("keeps critical mobile actions accessible to screen readers", () => {
   const privacy = readAppFile("privacy.tsx");
   const premium = readAppFile("premium.tsx");
