@@ -20,6 +20,11 @@ all source-backed guards passing but remains truthfully `BLOCKED` on missing
 exact `pnpm@10.24.0` and unresolved Expo. Branch CI remains the
 dependency-complete authority.
 
+Dependency-complete proof passed for implementation commit `8c8ff586` in
+WoofWatcher Verify run `30155257785`, job `89672089402`, in `1m43s`.
+Checkout, pinned pnpm/Node setup, dependency install, JSON doctor, focused
+tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+
 ## 2026-07-25 Dark-Scheme Shell Hardening
 
 The next non-provider-gated slice fixed shared navigation chrome that still
