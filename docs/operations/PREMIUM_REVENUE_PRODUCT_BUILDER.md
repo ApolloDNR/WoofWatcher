@@ -12,6 +12,11 @@ A red-first mobile readiness assertion failed on the adaptive border and then
 passed `117/117` after the one-token fix. Route-by-route dark screenshots and
 native device approval remain open; this static guard is source proof only.
 
+Dependency-complete branch proof passed for implementation commit `a94675e0`
+in WoofWatcher Verify run `30166602309`, job `89700603998`, in `2m8s`.
+Checkout, pinned pnpm/Node setup, dependency install, JSON doctor, focused
+tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+
 ## 2026-07-25 Quick Care Console Dark Contrast
 
 The route-level dark-mode audit found another concrete Log-tab contrast

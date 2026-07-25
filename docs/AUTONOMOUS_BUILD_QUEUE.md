@@ -11,6 +11,8 @@
 - [x] Keep the fixed-light Records Dog ID plate boundary visible in dark mode
   by using constant brand-navy instead of the theme-flipping navy token.
 - [x] Add a red-first readiness contract for the Dog ID plate boundary.
+- [x] Dependency-complete branch CI passed for the Records Dog ID implementation
+  commit `a94675e0`: WoofWatcher Verify run `30166602309`, job `89700603998`.
 - [x] Dependency-complete branch CI passed for Quick Care implementation commit
   `0d9c6e26`: WoofWatcher Verify run `30160597968`, job `89685181345`.
 - [x] Dependency-complete branch CI passed for implementation commit
