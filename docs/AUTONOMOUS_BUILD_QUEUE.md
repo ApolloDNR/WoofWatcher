@@ -8,6 +8,8 @@
 - [x] Keep the fixed-light Quick Care Console speech bubble readable in dark
   mode by using constant dark ink instead of the adaptive foreground token.
 - [x] Add a red-first readiness contract for the console speech contrast.
+- [x] Dependency-complete branch CI passed for Quick Care implementation commit
+  `0d9c6e26`: WoofWatcher Verify run `30160597968`, job `89685181345`.
 - [x] Dependency-complete branch CI passed for implementation commit
   `1fe57ba8`: WoofWatcher Verify run `30150170653`, job `89659086829`.
 - [ ] Capture route-by-route dark screenshots when browser or device tooling is
