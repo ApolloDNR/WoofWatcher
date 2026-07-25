@@ -2472,6 +2472,31 @@ Revisit trigger: WoofWatcher gains an in-app proof attachment editor, native
 Records file QA attaches real iOS/Android evidence, or provider-backed document
 storage is approved.
 
+### 2026-07-24: Durable Route Visual Proof Must Yield To Newer QA
+
+Decision: Preserve Route Visual Consistency screenshots and notes in Provider
+Launch Setup, but prefer evidence from the active native QA session whenever it
+exists.
+
+Reason: Route-named iOS/Android screenshots must survive care-document
+normalization and later launch review without allowing an older saved packet to
+override a tester's current device session.
+
+Consequences:
+
+- `LaunchProviderProfile` preserves `routeVisualProofEvidence`.
+- CareContext keeps the evidence durable through local persistence, backup, and
+  existing care-document sync.
+- The focused Route Visual Consistency mission uses active-session screenshots
+  and notes first, then falls back to saved evidence.
+- Readiness remains blocked until every required route has real iOS and Android
+  proof plus a QA note; source wiring alone is not native or launch proof.
+
+Owner: Codex.
+
+Revisit trigger: A provider-backed QA evidence store becomes approved or route
+visual proof gains explicit revision timestamps and conflict resolution.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

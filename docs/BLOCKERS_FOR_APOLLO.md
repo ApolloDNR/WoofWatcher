@@ -343,3 +343,13 @@ Branch CI proved implementation commit `db6f280c` in `WoofWatcher Verify` run
 doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and
 Complete job all passing. Rerun CI after the proof-record docs commit before
 dependency proof is current for the final branch tip.
+
+## 2026-07-24 Route Visual Proof Evidence Boundary
+
+Route Visual Consistency evidence now survives Provider Launch Setup and
+CareContext persistence, and the focused QA mission falls back to that saved
+packet when no newer active-session proof exists. This removes an evidence
+propagation gap only. Real route-named Home, Log, Plans, Health, Records, and
+More screenshots on iOS and Android, native safe-area/touch review, Apollo
+visual approval, store review, and public launch remain blocked. Rerun branch
+CI after this commit before treating dependency proof as current.

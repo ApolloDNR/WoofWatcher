@@ -30,6 +30,7 @@ import {
   type ReportBinaryExportProofEvidence,
 } from "./reportBinaryExportProof.ts";
 import type { RecordsLocalFileHandoffProofEvidence } from "./reportArtifactExportFile.ts";
+import type { RouteVisualProofManifestInput } from "./mobileReleaseQa.ts";
 import {
   PAYMENTS_PROVIDER_PROOF_ITEMS,
   PAYMENTS_PROVIDER_PROOF_SUMMARY,
@@ -92,6 +93,7 @@ export interface LaunchProviderProfile {
   storageProviderEvidence?: LaunchStorageProviderEvidence | null;
   recordsLocalFileHandoffEvidence?: RecordsLocalFileHandoffProofEvidence | null;
   reportBinaryExportProofEvidence?: ReportBinaryExportProofEvidence | null;
+  routeVisualProofEvidence?: RouteVisualProofManifestInput | null;
   aiProviderConfigured: boolean;
   aiProviderProofReady: boolean;
   aiProviderEvidence?: AiProviderProofEvidence | null;
@@ -178,6 +180,7 @@ const DEFAULT_PROFILE: LaunchProviderProfile = {
   storageProviderEvidence: null,
   recordsLocalFileHandoffEvidence: null,
   reportBinaryExportProofEvidence: null,
+  routeVisualProofEvidence: null,
   aiProviderConfigured: false,
   aiProviderProofReady: false,
   aiProviderEvidence: null,
@@ -222,6 +225,12 @@ function normalizeRecordsLocalFileHandoffEvidence(
 function normalizeReportBinaryExportProofEvidence(
   value: ReportBinaryExportProofEvidence | null | undefined,
 ): ReportBinaryExportProofEvidence | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+
+function normalizeRouteVisualProofEvidence(
+  value: RouteVisualProofManifestInput | null | undefined,
+): RouteVisualProofManifestInput | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value : null;
 }
 
@@ -285,6 +294,9 @@ export function normalizeLaunchProviderProfile(input: LaunchProviderProfileInput
     ),
     reportBinaryExportProofEvidence: normalizeReportBinaryExportProofEvidence(
       source.reportBinaryExportProofEvidence,
+    ),
+    routeVisualProofEvidence: normalizeRouteVisualProofEvidence(
+      source.routeVisualProofEvidence,
     ),
     aiProviderConfigured: Boolean(source.aiProviderConfigured),
     aiProviderProofReady: Boolean(source.aiProviderProofReady),

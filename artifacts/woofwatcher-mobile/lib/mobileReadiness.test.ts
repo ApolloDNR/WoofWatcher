@@ -4924,6 +4924,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(careContext, /storageProviderEvidence\?:\s*LaunchStorageProviderEvidence \| null/);
   assert.match(careContext, /recordsLocalFileHandoffEvidence\?:\s*RecordsLocalFileHandoffProofEvidence \| null/);
   assert.match(careContext, /reportBinaryExportProofEvidence\?:\s*ReportBinaryExportProofEvidence \| null/);
+  assert.match(careContext, /routeVisualProofEvidence\?:\s*RouteVisualProofManifestInput \| null/);
   assert.match(careContext, /aiProviderEvidence\?:\s*AiProviderProofEvidence \| null/);
   assert.match(careContext, /paymentsProviderEvidence\?:\s*PaymentsProviderProofManifestInput \| null/);
   assert.match(careContext, /pushNotificationsProofEvidence\?:\s*PushNotificationsProofEvidence \| null/);
@@ -4952,6 +4953,9 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(providerSetup, /ReportBinaryExportProofEvidence/);
   assert.match(providerSetup, /reportBinaryExportProofEvidence\?:\s*ReportBinaryExportProofEvidence \| null/);
   assert.match(providerSetup, /reportBinaryExportProofEvidence:\s*normalizeReportBinaryExportProofEvidence\(\s*source\.reportBinaryExportProofEvidence,\s*\)/);
+  assert.match(providerSetup, /RouteVisualProofManifestInput/);
+  assert.match(providerSetup, /routeVisualProofEvidence\?:\s*RouteVisualProofManifestInput \| null/);
+  assert.match(providerSetup, /routeVisualProofEvidence:\s*normalizeRouteVisualProofEvidence\(\s*source\.routeVisualProofEvidence,\s*\)/);
   assert.match(providerSetup, /authSetupProofEvidence\?:\s*AuthSetupProofManifestInput \| null/);
   assert.match(providerSetup, /authSetupProofEvidence:\s*normalizeAuthSetupProofEvidence\(source\.authSetupProofEvidence\)/);
   assert.match(providerSetup, /careEntryProviderSyncEvidence\?:\s*CareEntryProviderSyncProofEvidence \| null/);
@@ -4983,6 +4987,9 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   assert.match(careTwinQaRoute, /generatedDogIdPng:\s*savedProof\.generatedDogIdPng/);
   assert.match(careTwinQaRoute, /nativeArtifactEvidence:\s*savedProof\.nativeArtifactEvidence/);
   assert.match(careTwinQaRoute, /providerStorageEvidence:\s*savedProof\.providerStorageEvidence/);
+  assert.match(careTwinQaRoute, /const savedRouteVisualProof = state\.launchProviderProfile\.routeVisualProofEvidence \?\? \{\}/);
+  assert.match(careTwinQaRoute, /evidence:\s*focusedQaEvidence\.length\s*\?\s*focusedQaEvidence\s*:\s*savedRouteVisualProof\.evidence/);
+  assert.match(careTwinQaRoute, /note:\s*surfaceNotes\[focusedQaTarget\.target\.surfaceId\]\s*\|\|\s*savedRouteVisualProof\.note/);
   assert.match(
     careTwinQaRoute,
     /deriveCareEntryProviderSyncProof\(state\.launchProviderProfile\.careEntryProviderSyncEvidence\)/,
@@ -6129,6 +6136,13 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.checks?.some(
       (check) =>
         check.label === "records local file proof evidence propagation is source-backed" &&
+        check.status === "PASS",
+    ),
+  );
+  assert.ok(
+    payload.checks?.some(
+      (check) =>
+        check.label === "route visual proof evidence propagation is source-backed" &&
         check.status === "PASS",
     ),
   );

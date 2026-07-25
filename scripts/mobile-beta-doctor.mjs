@@ -1274,6 +1274,28 @@ check(
     : "preserve and forward Report Binary Export generated artifact, native proof, and provider storage evidence from Provider Launch Setup into the focused QA mission",
 );
 
+const routeVisualProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
+  "routeVisualProofEvidence?: RouteVisualProofManifestInput | null",
+  "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",
+])
+  && includesAll(launchProviderSetupSource, [
+    "RouteVisualProofManifestInput",
+    "routeVisualProofEvidence?: RouteVisualProofManifestInput | null",
+    "routeVisualProofEvidence: normalizeRouteVisualProofEvidence",
+  ])
+  && includesAll(careTwinQaRouteSource, [
+    "const savedRouteVisualProof = state.launchProviderProfile.routeVisualProofEvidence ?? {}",
+    "focusedQaEvidence.length ? focusedQaEvidence : savedRouteVisualProof.evidence",
+    "surfaceNotes[focusedQaTarget.target.surfaceId] || savedRouteVisualProof.note",
+  ]);
+check(
+  "route visual proof evidence propagation is source-backed",
+  routeVisualProofEvidencePropagationIsSourceBacked,
+  routeVisualProofEvidencePropagationIsSourceBacked
+    ? "Focused Route Visual Consistency mission consumes saved route-named iOS/Android screenshot evidence and QA notes from the durable Provider Launch Setup profile when the active QA session has no newer proof"
+    : "preserve and forward Route Visual Consistency screenshot evidence and QA notes from Provider Launch Setup into the focused QA mission",
+);
+
 const accountDeletionProofEvidencePropagationIsSourceBacked = includesAll(careContextSource, [
   "accountDeletionEvidence?: AccountDeletionProofEvidence | null",
   "launchProviderProfile: normalizeLaunchProviderProfile(merged.launchProviderProfile)",

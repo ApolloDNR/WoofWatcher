@@ -4210,3 +4210,15 @@ Branch CI proved implementation commit `27970715` in `WoofWatcher Verify` run
 `automation/premium-revenue-product-builder` with install, tests, typecheck,
 and CI-safe builds passing. Rerun CI after the proof-record docs commit before
 dependency proof is current for the final branch tip.
+
+## 2026-07-24 Route Visual Proof Evidence Propagation
+
+`LaunchProviderProfile` and CareContext now preserve
+`routeVisualProofEvidence`. The focused Route Visual Consistency mission uses
+newer active-session screenshots and notes first, then falls back to saved
+route-named iOS/Android evidence. Red-first mobile readiness passed `114/114`
+after implementation; the full zero-dependency mobile/care-domain suite, root
+TypeScript, PixelLab verification at `ok=149 missing=0 invalid=0`, and the JSON
+doctor source-backed guard passed. The doctor remains blocked on unavailable
+local pnpm `10.24.0`. Real native route screenshots, device safe-area/touch
+review, Apollo approval, store review, and public launch remain open.

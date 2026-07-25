@@ -44,6 +44,7 @@ import {
 } from "@/lib/launchProviderSetup";
 import type { RecordsLocalFileHandoffProofEvidence } from "@/lib/reportArtifactExportFile";
 import type { ReportBinaryExportProofEvidence } from "@/lib/reportBinaryExportProof";
+import type { RouteVisualProofManifestInput } from "@/lib/mobileReleaseQa";
 import type { AuthSetupProofManifestInput } from "@/lib/authProviderProof";
 import type { CareEntryProviderSyncProofEvidence } from "@/lib/careEntryProviderSyncProof";
 import type { AiProviderProofEvidence } from "@/lib/aiProviderProof";
@@ -126,6 +127,7 @@ export interface LaunchProviderProfile {
   storageProviderEvidence?: LaunchStorageProviderEvidence | null;
   recordsLocalFileHandoffEvidence?: RecordsLocalFileHandoffProofEvidence | null;
   reportBinaryExportProofEvidence?: ReportBinaryExportProofEvidence | null;
+  routeVisualProofEvidence?: RouteVisualProofManifestInput | null;
   aiProviderConfigured: boolean;
   aiProviderProofReady: boolean;
   aiProviderEvidence?: AiProviderProofEvidence | null;

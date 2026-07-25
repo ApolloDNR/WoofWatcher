@@ -519,15 +519,17 @@ export default function CareTwinQaScreen() {
     ],
   );
   const routeVisualProofManifest = useMemo(
-    () =>
-      focusedQaTarget?.surface.id === "route-visual-consistency"
+    () => {
+      const savedRouteVisualProof = state.launchProviderProfile.routeVisualProofEvidence ?? {};
+      return focusedQaTarget?.surface.id === "route-visual-consistency"
         ? buildRouteVisualProofManifest({
             surface: focusedQaTarget.surface,
-            evidence: focusedQaEvidence,
-            note: surfaceNotes[focusedQaTarget.target.surfaceId],
+            evidence: focusedQaEvidence.length ? focusedQaEvidence : savedRouteVisualProof.evidence,
+            note: surfaceNotes[focusedQaTarget.target.surfaceId] || savedRouteVisualProof.note,
           })
-        : null,
-    [focusedQaEvidence, focusedQaTarget, surfaceNotes],
+        : null;
+    },
+    [focusedQaEvidence, focusedQaTarget, state.launchProviderProfile.routeVisualProofEvidence, surfaceNotes],
   );
   const careEntryProviderSyncProofManifest = useMemo(
     () =>
