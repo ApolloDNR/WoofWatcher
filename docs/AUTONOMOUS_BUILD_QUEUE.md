@@ -8,6 +8,9 @@
 - [x] Keep the fixed-light Quick Care Console speech bubble readable in dark
   mode by using constant dark ink instead of the adaptive foreground token.
 - [x] Add a red-first readiness contract for the console speech contrast.
+- [x] Keep the fixed-light Records Dog ID plate boundary visible in dark mode
+  by using constant brand-navy instead of the theme-flipping navy token.
+- [x] Add a red-first readiness contract for the Dog ID plate boundary.
 - [x] Dependency-complete branch CI passed for Quick Care implementation commit
   `0d9c6e26`: WoofWatcher Verify run `30160597968`, job `89685181345`.
 - [x] Dependency-complete branch CI passed for implementation commit

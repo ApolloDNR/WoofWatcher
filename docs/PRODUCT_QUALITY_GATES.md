@@ -4,6 +4,8 @@
 
 The compact shell, desktop preview frame/backdrop, and Fast Log modal now
 follow the active theme instead of forcing light parchment behind dark routes.
+Fixed-light Quick Log and Records art surfaces now keep constant dark contrast
+for their copy and credential boundaries instead of using theme-flipping ink.
 Static readiness protects the seam; native/device dark-mode visual QA remains
 open.
 

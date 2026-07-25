@@ -1096,7 +1096,7 @@ export default function RecordsScreen() {
               </View>
             </ImageBackground>
             <View style={[s.recordsCredentialDock, { backgroundColor: colors.ivory + "F4", borderColor: colors.border }]}>
-              <View style={[s.recordsCredentialIdPlate, { backgroundColor: colors.ivory, borderColor: colors.navy + "22" }]}>
+              <View style={[s.recordsCredentialIdPlate, { backgroundColor: colors.ivory, borderColor: colors.brandNavy + "22" }]}>
                 <View style={[s.recordsCredentialIdBadge, { backgroundColor: recordsVaultTone + "1F" }]}>
                   <Ionicons name="paw" size={16} color={recordsVaultTone} />
                 </View>

@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-07-25: Fixed-light credential boundaries use constant dark ink
+
+- Decision: use `brandNavy` for the Records Dog ID plate border in both color
+  schemes.
+- Reason: the adaptive navy token becomes pale in dark mode and loses the
+  plate boundary against the intentionally ivory credential surface.
+- Boundary: this source/readiness guard does not replace dark-mode screenshots
+  or native visual approval.
+
 ## 2026-07-25: Fixed-light art surfaces keep constant dark ink
 
 - Decision: use `brandNavy` for primary copy inside the Quick Care Console's

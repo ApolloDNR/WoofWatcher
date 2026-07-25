@@ -4673,6 +4673,11 @@ test("keeps Records rooted in a live pixel credential stage", () => {
     /position:\s*"absolute"/,
     "Records HUD should sit in a dock instead of overlapping the pixel room",
   );
+  assert.match(
+    records,
+    /recordsCredentialIdPlate,\s*\{\s*backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22"/,
+    "the fixed-light Dog ID plate must keep a visible dark border in dark mode",
+  );
 });
 
 test("keeps More rooted in a live pixel launch command stage", () => {

@@ -1,5 +1,17 @@
 # Premium Revenue Product Builder
 
+## 2026-07-25 Records Dog ID Dark Boundary
+
+The route-level dark-mode audit found a Records contrast defect: the Dog ID
+plate is intentionally fixed ivory with constant dark copy, but its border used
+the theme-flipping navy token. Dark mode turned that border pale against the
+ivory plate. The border now uses constant `brandNavy`, matching the fixed-light
+credential convention already used by the adjacent checklist control.
+
+A red-first mobile readiness assertion failed on the adaptive border and then
+passed `117/117` after the one-token fix. Route-by-route dark screenshots and
+native device approval remain open; this static guard is source proof only.
+
 ## 2026-07-25 Quick Care Console Dark Contrast
 
 The route-level dark-mode audit found another concrete Log-tab contrast
