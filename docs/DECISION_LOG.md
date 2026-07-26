@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-07-26: Fixed-light Records console uses constant dark boundaries
+
+- Decision: use translucent `brandNavy` boundaries for the fixed-light Records
+  credential dock and HUD cells in both color schemes.
+- Reason: the adaptive border token becomes pale in dark mode and weakens the
+  Dog ID console hierarchy against its intentionally ivory and cream surfaces.
+- Boundary: this source/readiness guard does not replace route-named dark-mode
+  screenshots, native Records file proof, or Apollo visual approval.
+
 ## 2026-07-25: Fixed-light Home launcher uses constant dark chrome
 
 - Decision: keep the Home hero's Avatar Studio launcher warm and light in both

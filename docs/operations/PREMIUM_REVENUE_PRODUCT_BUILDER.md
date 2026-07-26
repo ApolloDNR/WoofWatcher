@@ -1,5 +1,18 @@
 # Premium Revenue Product Builder
 
+## 2026-07-26 Records credential console dark-mode contrast
+
+The route-level dark-mode audit found a high-use Records defect: the credential
+dock and HUD cells remain intentionally ivory/cream in both themes, while their
+boundaries used the adaptive border token. Dark mode made those boundaries pale
+against the fixed-light credential console. The dock and HUD cells now use
+constant translucent `brandNavy` boundaries, protected by a red-first
+mobile-readiness contract.
+
+This is source-backed contrast hardening only. Route-named iOS/Android dark
+screenshots, Records local-file share/reopen proof, accessibility traversal,
+and Apollo visual approval remain open.
+
 ## 2026-07-26 More profile edit dark-mode contrast
 
 The route-level dark-mode audit found a high-use More profile defect: the edit

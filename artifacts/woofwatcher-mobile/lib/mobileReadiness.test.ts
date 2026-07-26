@@ -589,6 +589,26 @@ test("keeps the fixed-light Quick Care status and HUD bounded in dark mode", () 
   );
 });
 
+test("keeps the fixed-light Records credential dock bounded in dark mode", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(
+    records,
+    /s\.recordsCredentialDock,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"F4",\s*borderColor:\s*colors\.brandNavy\s*\+\s*"33"\s*\}/,
+    "the fixed-light Records credential dock needs a constant dark boundary",
+  );
+  assert.match(
+    records,
+    /s\.recordsCredentialHudCell,\s*\{\s*backgroundColor:\s*colors\.cream,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22"\s*\}/,
+    "the fixed-light Records credential HUD cells need constant dark boundaries",
+  );
+  assert.doesNotMatch(
+    records,
+    /s\.recordsCredential(?:Dock|HudCell),\s*\{[^}]*borderColor:\s*colors\.border/,
+    "adaptive borders become too faint on the fixed-light Records credential console",
+  );
+});
+
 test("keeps selected Avatar Studio mood labels readable in dark mode", () => {
   const avatarStudio = readAppFile("portrait.tsx");
 

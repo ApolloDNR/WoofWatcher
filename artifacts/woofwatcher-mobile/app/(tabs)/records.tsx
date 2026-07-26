@@ -1095,7 +1095,7 @@ export default function RecordsScreen() {
                 />
               </View>
             </ImageBackground>
-            <View style={[s.recordsCredentialDock, { backgroundColor: colors.ivory + "F4", borderColor: colors.border }]}>
+            <View style={[s.recordsCredentialDock, { backgroundColor: colors.ivory + "F4", borderColor: colors.brandNavy + "33" }]}>
               <View style={[s.recordsCredentialIdPlate, { backgroundColor: colors.ivory, borderColor: colors.brandNavy + "22" }]}>
                 <View style={[s.recordsCredentialIdBadge, { backgroundColor: recordsVaultTone + "1F" }]}>
                   <Ionicons name="paw" size={16} color={recordsVaultTone} />
@@ -1123,7 +1123,7 @@ export default function RecordsScreen() {
                 ].map((item) => (
                   <View
                     key={item.label}
-                    style={[s.recordsCredentialHudCell, { backgroundColor: colors.cream, borderColor: colors.border }]}
+                    style={[s.recordsCredentialHudCell, { backgroundColor: colors.cream, borderColor: colors.brandNavy + "22" }]}
                   >
                     <Text style={[s.recordsCredentialHudLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
                     <Text style={[s.recordsCredentialHudValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>{item.value}</Text>
