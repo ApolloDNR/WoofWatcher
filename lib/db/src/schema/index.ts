@@ -5,3 +5,4 @@ export * from "./householdInvitations";
 export * from "./householdAuditEvents";
 export * from "./careState";
 export * from "./careEntries";
+export * from "./accountDeletions";
