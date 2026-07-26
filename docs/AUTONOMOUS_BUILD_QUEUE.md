@@ -20,6 +20,9 @@
 - [x] Keep Home's fixed-light Avatar Studio launcher visible in dark mode with
   a constant brand-navy icon and boundary.
 - [x] Add a red-first readiness contract for the Home Avatar Studio launcher.
+- [x] Keep WoofGuide's fixed-light veterinary safety card visibly bounded in
+  dark mode with a constant translucent brand-navy border.
+- [x] Add a red-first readiness contract for the WoofGuide safety boundary.
 - [x] Dependency-complete branch CI passed for the Home launcher contrast
   implementation commit `c34acded`: WoofWatcher Verify run `30188629419`, job
   `89757619879`.

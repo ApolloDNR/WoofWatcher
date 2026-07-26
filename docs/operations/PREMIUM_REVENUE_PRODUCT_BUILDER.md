@@ -1,5 +1,17 @@
 # Premium Revenue Product Builder
 
+## 2026-07-26 WoofGuide safety-card dark-mode contrast
+
+The route-level dark-mode audit found that WoofGuide's fixed-light “Not
+veterinary advice / Drafts stay owner-reviewed” card used an ivory border on
+its translucent ivory surface. The safety boundary could visually dissolve
+over light parts of the pixel stage. The card now uses a constant translucent
+`brandNavy` border, protected by a red-first mobile-readiness contract.
+
+This is source-backed contrast hardening only. Route-named iOS/Android dark
+screenshots, native screen-reader traversal, veterinary/legal review, and
+Apollo visual approval remain open.
+
 ## 2026-07-26 Records credential console dark-mode contrast
 
 The route-level dark-mode audit found a high-use Records defect: the credential

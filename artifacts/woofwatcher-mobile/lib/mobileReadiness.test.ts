@@ -4849,6 +4849,23 @@ test("keeps Records rooted in a live pixel credential stage", () => {
   );
 });
 
+test("keeps the fixed-light WoofGuide safety boundary visible in dark mode", () => {
+  const woofGuide = readAppFile("woofguide.tsx");
+
+  assert.match(woofGuide, /Not veterinary advice/);
+  assert.match(woofGuide, /Drafts stay owner-reviewed/);
+  assert.match(
+    woofGuide,
+    /guideBoundaryCard,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"E8",\s*borderColor:\s*colors\.brandNavy\s*\+\s*"55"/,
+    "the fixed-light WoofGuide safety card must keep a visible dark border in dark mode",
+  );
+  assert.doesNotMatch(
+    woofGuide,
+    /guideBoundaryCard,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"E8",\s*borderColor:\s*colors\.ivory/,
+    "an ivory border disappears against the fixed-light safety card",
+  );
+});
+
 test("keeps More rooted in a live pixel launch command stage", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-07-26: WoofGuide safety boundary keeps constant dark chrome
+
+- Decision: use a translucent `brandNavy` border for the fixed-light
+  “Not veterinary advice” card in both color schemes.
+- Reason: an ivory border disappears against the translucent ivory card and
+  weakens the non-diagnostic, owner-reviewed boundary over the pixel stage.
+- Boundary: this source/readiness guard does not replace route-named dark-mode
+  screenshots, native screen-reader review, or veterinary/legal approval.
+
 ## 2026-07-26: Fixed-light Records console uses constant dark boundaries
 
 - Decision: use translucent `brandNavy` boundaries for the fixed-light Records

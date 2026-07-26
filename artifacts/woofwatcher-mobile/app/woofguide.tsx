@@ -448,7 +448,7 @@ export default function WoofGuideScreen() {
                     </View>
 
                     <View style={s.guideStageFooter}>
-                      <View style={[s.guideBoundaryCard, { backgroundColor: colors.ivory + "E8", borderColor: colors.ivory + "AA" }]}>
+                      <View style={[s.guideBoundaryCard, { backgroundColor: colors.ivory + "E8", borderColor: colors.brandNavy + "55" }]}>
                         <Text style={[s.guideBoundaryLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
                           Not veterinary advice
                         </Text>
