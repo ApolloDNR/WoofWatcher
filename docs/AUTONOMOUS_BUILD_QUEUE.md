@@ -20,6 +20,9 @@
 - [x] Keep Home's fixed-light Avatar Studio launcher visible in dark mode with
   a constant brand-navy icon and boundary.
 - [x] Add a red-first readiness contract for the Home Avatar Studio launcher.
+- [x] Dependency-complete branch CI passed for the Home launcher contrast
+  implementation commit `c34acded`: WoofWatcher Verify run `30188629419`, job
+  `89757619879`.
 - [x] Dependency-complete branch CI passed for the template speech contrast
   implementation commit `f92aec90`: WoofWatcher Verify run `30183727973`, job
   `89744661646`.
