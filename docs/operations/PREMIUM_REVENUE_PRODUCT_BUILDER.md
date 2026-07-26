@@ -10,7 +10,12 @@ over light parts of the pixel stage. The card now uses a constant translucent
 
 This is source-backed contrast hardening only. Route-named iOS/Android dark
 screenshots, native screen-reader traversal, veterinary/legal review, and
-Apollo visual approval remain open.
+Apollo visual approval remain open. Dependency-complete CI proved
+implementation commit `d874ef9b` in WoofWatcher Verify run `30218103984`, job
+`89835669054`, with checkout, pinned pnpm/Node setup, dependency install, JSON
+doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete
+job green. Rerun after this proof-record commit before treating the final branch
+tip as current.
 
 ## 2026-07-26 Records credential console dark-mode contrast
 

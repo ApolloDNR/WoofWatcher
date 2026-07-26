@@ -23,6 +23,9 @@
 - [x] Keep WoofGuide's fixed-light veterinary safety card visibly bounded in
   dark mode with a constant translucent brand-navy border.
 - [x] Add a red-first readiness contract for the WoofGuide safety boundary.
+- [x] Dependency-complete branch CI passed for the WoofGuide safety-card
+  implementation commit `d874ef9b`: WoofWatcher Verify run `30218103984`, job
+  `89835669054`.
 - [x] Dependency-complete branch CI passed for the Home launcher contrast
   implementation commit `c34acded`: WoofWatcher Verify run `30188629419`, job
   `89757619879`.
