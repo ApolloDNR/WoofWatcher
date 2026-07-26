@@ -969,6 +969,7 @@ before Task 2 starts.
 - Modify: `artifacts/api-server/test/accountDeletion.test.ts`
 - Modify: `artifacts/api-server/test/accountDeletionMigration.test.ts`
 - Modify: `artifacts/api-server/test/support/account-deletion-memory-test-harness.ts`
+- Modify: `.github/workflows/verify.yml`
 
 **Cleanup, recovery, and object contracts:**
 
@@ -1278,6 +1279,9 @@ transaction callback returns.
 
 `0011` creates these server-only rows:
 
+- `account_deletion_deployment_identity`: exactly one immutable singleton row
+  with a database-local random `deployment_id` and the fixed schema marker
+  `account-deletion-store-v1`;
 - `account_deletion_cleanup_plans`: one immutable header per request with
   `request_id`, `user_id`, immutable `plan_generation`,
   `plan_digest_sha256`, and `created_at`;
@@ -1301,6 +1305,19 @@ other_owner_count)` rows plus the request ID, user ID, and immutable
 `plan_generation`. `AccountDeletionCleanupPlan.generation` is loaded from that
 header; it is never derived from the mutable job state generation. The cleanup
 routine recomputes and verifies the digest before mutation.
+
+`0011` owns and seeds the deployment-identity singleton once with
+`gen_random_uuid()`. A primary-key/check constraint permits only the literal
+singleton key, a unique constraint protects `deployment_id`, and immutable
+triggers reject every update, delete, truncate, or second insert. Rerunning
+the exact migration preserves the original ID. The table has no direct grant
+to either runtime login. Instead,
+`public.ww_account_deletion_deployment_identity()` is a zero-argument
+`SECURITY DEFINER` function owned by the cleanup owner, fixed to
+`search_path = pg_catalog, public`, which returns the one UUID and raises
+unless the singleton and schema marker are exact. `PUBLIC`, `anon`, and
+`authenticated` receive no execution right; only the app and cleanup-worker
+roles may execute it.
 
 ```ts
 export interface SubjectRedactionValues {
@@ -1405,6 +1422,7 @@ the next state.
 `REVOKE ALL` applies first to every new table, sequence, and function for
 `PUBLIC`, `anon`, and `authenticated`. It also removes default
 `PUBLIC EXECUTE` from `ww_lock_keys`,
+`ww_account_deletion_deployment_identity`,
 `ww_account_deletion_cleanup_bypass_allowed`, every trigger function, and the
 cleanup routine. Exact grants then apply:
 
@@ -1419,11 +1437,13 @@ cleanup routine. Exact grants then apply:
   `h:[0-9a-f-]{36}`, rejects every other value before acquiring a lock, and
   sorts the accepted keys in database byte order;
 - `woofwatcher_app` receives `EXECUTE` on
+  `ww_account_deletion_deployment_identity`;
+- `woofwatcher_app` receives `EXECUTE` on
   `ww_account_deletion_cleanup_bypass_allowed` so invoker guards can evaluate
   it; a direct app call is safe and deterministically returns `false` because
   its `session_user` is not the cleanup worker;
-- the cleanup worker receives only cleanup-routine execution and no direct
-  table or helper-function privilege;
+- the cleanup worker receives only deployment-identity and cleanup-routine
+  execution and no direct table or other helper-function privilege;
 - the cleanup owner receives the exact `SELECT`/`INSERT`/`UPDATE`/`DELETE`
   table and sequence privileges the routine needs. Its `BYPASSRLS` attribute
   is the explicit reason the `SECURITY DEFINER` routine can mutate existing
@@ -1706,6 +1726,7 @@ export interface CreateAccountDeletionPostgresStoreInput {
   applicationPool: Pool;
   cleanupPool: Pool;
   leaseTokenFactory(): string;
+  attestationLockKeyFactory(): bigint;
 }
 
 export interface WorkerLease extends LeaseFence {
@@ -1743,7 +1764,7 @@ export type AccountDeletionTask2Store =
 
 export declare function createAccountDeletionPostgresStore(
   input: CreateAccountDeletionPostgresStoreInput,
-): AccountDeletionTask2Store;
+): Promise<AccountDeletionTask2Store>;
 
 // Replace the Task 1 step input with this exact intersection.
 export interface AccountDeletionStepInput {
@@ -1759,10 +1780,38 @@ export declare function runAccountDeletionStep(
 ): Promise<AccountDeletionStepResult>;
 ```
 
-Construction verifies `current_user = 'woofwatcher_app'` on the application
-pool and
-`current_user = 'woofwatcher_account_deletion_cleanup_worker'` on the cleanup
-pool before returning the store.
+The async factory acquires one client from each pool and performs one
+attestation query per client that returns exactly one row containing
+`session_user`, `current_user`, `current_database()`, and
+`ww_account_deletion_deployment_identity()`. On the application client, both
+user fields must equal `woofwatcher_app`; on the cleanup client, both must
+equal `woofwatcher_account_deletion_cleanup_worker`. This rejects a superuser
+or other login that merely selected the expected role. The database names and
+nonblank deployment UUIDs must also be byte-identical across both rows.
+
+Because a physical database clone copies both names and stored UUIDs, the
+factory then performs a live cross-client challenge. It validates one
+cryptographically random, nonzero signed-64-bit key from
+`attestationLockKeyFactory`, begins a transaction on the app client, and
+requires `pg_try_advisory_xact_lock(key)` to return exactly one `true` row. The
+cleanup client's autocommit call for the same key must then return exactly one
+`false` row. After the app client rolls back and thereby releases the
+transaction-scoped lock, the cleanup client's second autocommit call must
+return exactly one `true` row. This proves both clients share the same live
+PostgreSQL database lock namespace rather than two copied clusters. The key is
+never reused as an application lock or persisted.
+
+The factory releases both clients in `finally`; an app client whose rollback
+cannot be proven is destroyed rather than returned to its pool. It rejects on
+a missing pool, acquisition/query/rollback failure, malformed or extra row,
+role mismatch, database mismatch, deployment-identity mismatch, invalid key,
+or any lock-challenge mismatch and never exposes a store before all checks
+pass. Only then may it construct, freeze, and resolve the store. Every call
+site must await the factory; Task 3 composition must await it before worker
+startup or HTTP listening. Tests prove fail-closed behavior for role-only
+impersonation, different databases, different deployment IDs, and two
+independent fake backends that report the same copied database name and marker,
+as well as query/acquisition/rollback failures.
 
 Task 2 extends `runAccountDeletionStep` rather than creating a second worker
 entry point:
@@ -1868,6 +1917,64 @@ trigger-verified bypass.
 PGlite separately proves rerunnable `0011`, exact Drizzle/catalog parity, RLS,
 and revocation of `PUBLIC`, `anon`, and `authenticated`, including hostile
 default grants.
+
+Task 2 also makes this real-PostgreSQL gate reproducible in
+`.github/workflows/verify.yml`. The existing GitHub-hosted `verify` job gains a
+`postgres:17.10-bookworm` service, declares workflow-level
+`permissions: contents: read` with no write scope, and also runs on pushes to
+`recovery/account-deletion-v2`; this job must never use `pull_request_target`
+or a self-hosted/reused runner under the CI credential model below. The
+service starts as `postgres` against database `postgres`, publishes
+runner-local port 5432, and must pass
+`pg_isready -U postgres -d postgres` with a two-second interval, five-second
+timeout, and 30 retries. After checkout, toolchain setup, and frozen install
+but before any focused test, an `ON_ERROR_STOP` bootstrap step creates one
+database named
+`woofwatcher_account_deletion_test_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}`,
+sets its comment to `woofwatcher-account-deletion-disposable-v1`, and creates
+the three exact protocol roles:
+
+- `woofwatcher_app LOGIN NOINHERIT BYPASSRLS NOSUPERUSER NOCREATEDB
+  NOCREATEROLE NOREPLICATION PASSWORD 'wwad_ci_app_v1'`;
+- `woofwatcher_account_deletion_cleanup_owner NOLOGIN NOINHERIT BYPASSRLS
+  NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION`;
+- `woofwatcher_account_deletion_cleanup_worker LOGIN NOINHERIT NOBYPASSRLS
+  NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD
+  'wwad_ci_cleanup_v1'`.
+
+Bootstrap also creates the test-only Supabase client roles `anon` and
+`authenticated`, each as `NOLOGIN NOINHERIT NOBYPASSRLS NOSUPERUSER NOCREATEDB
+NOCREATEROLE NOREPLICATION`. They are required because committed migrations
+revoke privileges from those role names; neither receives database `CONNECT`,
+a password, or a DSN.
+
+Before interpolating the database name into SQL or a URI, bootstrap requires
+both GitHub values to match `[0-9]+` and the complete identifier to match
+`[a-z0-9_]+` and remain within PostgreSQL's 63-byte identifier limit. A
+validation failure stops the job before any SQL.
+
+The database remains owned by `postgres`; bootstrap revokes database privileges
+from `PUBLIC` and grants only `CONNECT` to the app and cleanup-worker roles.
+It then asserts the database comment and exact `pg_roles` flags for all five
+roles and proves `SELECT current_user` over all three connections. It exports
+these DSNs for the same database through `GITHUB_ENV` before invoking `pnpm
+run test:focused`:
+
+- admin:
+  `postgresql://postgres:wwad_ci_admin_v1@127.0.0.1:5432/<database>?sslmode=disable`;
+- app:
+  `postgresql://woofwatcher_app:wwad_ci_app_v1@127.0.0.1:5432/<database>?sslmode=disable`;
+- cleanup:
+  `postgresql://woofwatcher_account_deletion_cleanup_worker:wwad_ci_cleanup_v1@127.0.0.1:5432/<database>?sslmode=disable`.
+
+The service uses `wwad_ci_admin_v1` as its bootstrap password, and the app and
+cleanup-worker role declarations use the corresponding passwords shown in the
+DSNs. These static values authorize only this disposable, runner-local service;
+they are not production secrets, may not be reused by deployment
+configuration, and are forbidden for an externally reachable cluster. A
+health pass alone is not bootstrap success, and no test runs after partial
+role/database setup. The test harness—not the workflow—owns public-schema
+reset, migrations, catalog checks, fixtures, pool shutdown, and teardown.
 
 The object gateway follows the same sealed, captured-function construction as
 the provider gateway. The store first persists and commits the complete
@@ -1978,10 +2085,15 @@ Test canonical locks from both OLD and NEW identities, JIT-versus-tombstone
 races, care-state writes, care-entry create/update/delete, invitations, Access
 Pass, household rename, profile writes, audit/tombstone writes, cleanup-fence
 mismatch, spoofed cleanup context under the normal app role, and
-post-terminal resurrection. Also cover the exact app, cleanup-owner, and
-cleanup-worker role attributes and grants, default `PUBLIC EXECUTE` denial for every
-new function, hostile pre-existing table/function/policy/trigger/owner/ACL
-rollback, and bidirectional terminal-provider-outcome correlation.
+post-terminal resurrection. Prove store construction rejects `SET ROLE`
+impersonation, mismatched session/current users, different database names,
+different deployment IDs, same-name/same-marker independent fake backends,
+lock-challenge result mismatches, missing/duplicate/malformed attestation rows,
+and pool acquisition/query/rollback failures before exposing a store. Also
+cover the exact app, cleanup-owner, and cleanup-worker role attributes and
+grants, default `PUBLIC EXECUTE` denial for every new function, hostile
+pre-existing table/function/policy/trigger/owner/ACL rollback, and
+bidirectional terminal-provider-outcome correlation.
 
 Use this exact matrix as the implementation inventory:
 
@@ -2003,6 +2115,7 @@ Use this exact matrix as the implementation inventory:
 | `account_deletion_recovery_token_digests` | request-derived `user_id` | none | Monotonic generation, immutable original expiry | No |
 | `account_deletion_receipts` | request-derived `user_id` | none | Immutable terminal row | No |
 | `account_deletion_tombstones` | `user_id` | cleanup-plan household IDs | Prevent JIT and durable writes for active or terminal deletion | No |
+| `account_deletion_deployment_identity` | none | none | Immutable singleton deployment UUID and schema marker | No |
 | `account_deletion_cleanup_plans` | `user_id` | none | Immutable plan header and digest after initiation | No |
 | `account_deletion_cleanup_plan_households` | request-derived `user_id` | `household_id` | Immutable normalized plan row after initiation | No |
 | `account_deletion_cleanup_executions` | request-derived `user_id` | plan household rows | Immutable privileged transaction evidence | Owner-only insert/finalize |
@@ -2059,7 +2172,8 @@ generation; neither path may validate before the lock and mutate afterward.
   policy, trigger, role attribute, or version/body digest before mutation;
 - create account tombstones, cleanup plans, object inventory, recovery handoff,
   cleanup executions, database-cleanup evidence, object-inventory snapshot
-  headers, cleanup receipts, and lease/outcome columns/tables;
+  headers, cleanup receipts, the immutable deployment-identity singleton and
+  attestation function, and lease/outcome columns/tables;
 - constrain `object_delete` effects to a non-null unique inventory foreign key,
   constrain Apple/Clerk effects to a null inventory key, and expose fenced
   load/list/claim queries by exact effect and inventory IDs;
@@ -2082,7 +2196,10 @@ generation; neither path may validate before the lock and mutate afterward.
 - add `lease_attempt` and terminal provider outcome parity to PostgreSQL,
   Drizzle, and the Task 1 in-memory harness;
 - add the production `claimNextLease`, `renewLease`, and `releaseLease`
-  methods that Task 3's worker consumes.
+  methods that Task 3's worker consumes;
+- update `WoofWatcher Verify` with the PostgreSQL 17 service, exact role and
+  disposable-database bootstrap, three job-level test DSNs, and recovery
+  branch trigger defined above.
 
 The initiation transaction locks the deleting user's `a:` key and every
 involved household's `h:` key in sorted order, then selects the durable user
@@ -2119,7 +2236,10 @@ git diff --check
 Commit Task 2. Review the exact Task 2 range with concurrency, database-role,
 cleanup-boundary, object-inventory, and recovery emphasis. Fix and re-review
 every Critical/Important issue. Re-run Step 11 on the approved commit, publish
-that exact tree, fetch it, and verify remote/local tree equality.
+that exact tree, fetch it, and verify remote/local tree equality. The
+`WoofWatcher Verify` run triggered by that exact published SHA must finish
+successfully, including the PostgreSQL-backed tests; a skipped, stale-SHA,
+cancelled, or failed run does not approve Task 2.
 
 ---
 
