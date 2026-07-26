@@ -107,7 +107,16 @@ Query, Expo SDK 54, Expo Router 6, and expo-secure-store.
   Internal store records use JavaScript `Date`; PostgreSQL decisions use
   database time, never API-process time.
 - `Sha256Hex` is a lowercase 64-character SHA-256 hex digest.
-- `RequestId`, `ChallengeId`, `EffectId`, and `ReceiptId` are UUID strings.
+- `RequestId`, `ChallengeId`, `EffectId`, `ObjectInventoryAttemptId`, and
+  `ReceiptId` are UUID strings.
+- Every UUID that enters a digest, HMAC, replay key, or authenticated-data
+  frame must already be the canonical lowercase hyphenated ASCII form emitted
+  by PostgreSQL's `uuid` type (`8-4-4-4-12` lowercase hexadecimal). A boundary
+  rejects uppercase, braces, a `urn:uuid:` prefix, missing hyphens, surrounding
+  whitespace, or any other alternate text for the same UUID; it never hashes
+  one spelling and later lets PostgreSQL coerce it to another. Store-generated
+  UUIDs are read back from PostgreSQL and checked by the same parser before
+  cryptographic framing.
 - `UserId` is the exact durable Clerk subject string.
 - `RecoveryGeneration` and `EffectAttempt` are positive safe integers.
 - A provider outcome is `unknown` only when the provider can prove no terminal
@@ -139,6 +148,7 @@ export type IsoTimestamp = string;
 export type RequestId = string;
 export type ChallengeId = string;
 export type EffectId = string;
+export type ObjectInventoryAttemptId = string;
 export type ProviderActionId = string;
 export type ReceiptId = string;
 export type UserId = string;
@@ -587,6 +597,17 @@ export interface CompareAndSetProviderActionInput {
   lease: LeaseFence;
 }
 
+export interface FinalizeAccountDeletionReceiptInput {
+  requestId: RequestId;
+  expectedJobGeneration: number;
+  lease: LeaseFence;
+}
+
+export interface FinalizeAccountDeletionReceiptResult {
+  job: AccountDeletionJobRecord;
+  receipt: AccountDeletionReceiptRecord;
+}
+
 export interface AccountDeletionStore {
   createChallenge(
     input: CreateDeletionChallengeInput,
@@ -624,9 +645,8 @@ export interface AccountDeletionStore {
   commitEffect(input: CommitProviderEffectInput): Promise<void>;
   transition(input: RecordStateTransitionInput): Promise<AccountDeletionJobRecord>;
   finalizeReceipt(
-    record: AccountDeletionReceiptRecord,
-    lease: LeaseFence,
-  ): Promise<AccountDeletionReceiptRecord>;
+    input: FinalizeAccountDeletionReceiptInput,
+  ): Promise<FinalizeAccountDeletionReceiptResult>;
 }
 
 export type AccountDeletionStepResult =
@@ -695,7 +715,11 @@ success.
   encryption keys, and is never generated per store instance. Secret rotation
   is out of scope until a versioned replay-key protocol exists.
   `createProviderEffectIntent` accepts an effect ID but never a replay key; the
-  store derives the stable key from the effect ID plus its captured secret.
+  store requires canonical lowercase UUID text for both effect and request IDs,
+  then derives the stable key from the effect ID, request ID, provider-effect
+  kind, and object correlation through a versioned length-framed HMAC using
+  its captured secret. Alternate UUID spellings reject before lookup or
+  derivation.
   The method is idempotent only for the identical
   effect-ID/request/kind/object tuple and conflicts on any mismatch. Replay
   key, kind, request, object inventory ID, and non-null replay material are
@@ -764,12 +788,12 @@ The legal state adjacency is:
 | `preflight` | `cleanup_pending` | Valid cleanup plan and fence prerequisites |
 | `cleanup_pending` | `cleanup_running` | Fenced cleanup claim |
 | `cleanup_running` | `object_inventory`, `retry_required` | Atomic database cleanup completion, or retry resuming to `cleanup_pending` |
-| `object_inventory` | `object_cleanup_pending`, `retry_required` | Complete committed snapshot, or retry resuming to `object_inventory` |
+| `object_inventory` | `object_cleanup_pending`, `retry_required` | Singleton attempt lookup/create outcome and complete attempt-ID snapshot commit atomically, or indeterminate lookup retrying that same attempt |
 | `object_cleanup_pending` | `object_cleanup_running`, `object_cleanup_complete` | All object intents committed; direct completion only for an empty inventory |
 | `object_cleanup_running` | `object_cleanup_complete`, `retry_required` | All effects committed and counts reconcile, or retry resuming to `object_cleanup_running` |
 | `object_cleanup_complete` | `clerk_deleting`, `failed` | The Clerk edge requires exact cleanup parity, confirmed current handoff, and database time before recovery expiry; the failed edge requires database time at/after expiry and atomically derives the immutable `recovery_expired_before_clerk_deletion` receipt with no Clerk intent/call |
 | `clerk_deleting` | `receipt_finalizing`, `retry_required` | Committed deleted/already-absent Clerk outcome, or retry resuming to `clerk_deleting` |
-| `receipt_finalizing` | `succeeded`, `failed`, `retry_required` | Immutable receipt committed atomically, or retry resuming to `receipt_finalizing` |
+| `receipt_finalizing` | `succeeded`, `retry_required` | Store-derived immutable success receipt committed atomically, or retry resuming to `receipt_finalizing`; no generic caller-selected failed edge exists |
 | `retry_required` | the exact stored `retryResumeState` | No caller-selected resume state; provider phases look up outcome before mutation |
 | `blocked`, `failed`, `succeeded` | none | Terminal immutability |
 
@@ -1048,7 +1072,7 @@ export interface IssuedRecoveryCredential {
 
 export interface AccountDeletionObjectRef {
   inventoryId: string;
-  snapshotId: string;
+  snapshotId: ObjectInventoryAttemptId;
   requestId: RequestId;
   userId: UserId;
   cleanupGeneration: number;
@@ -1067,13 +1091,31 @@ export interface DiscoveredAccountObject {
   objectVersion: string | null;
 }
 
-export interface ObjectInventorySnapshot {
+export interface ProviderObjectInventorySnapshot {
   requestId: RequestId;
-  snapshotId: string;
+  userId: UserId;
+  providerSnapshotNamespace: string;
+  providerSnapshotId: string;
   complete: true;
   objects: DiscoveredAccountObject[];
   capturedAt: Date;
 }
+
+export type ObjectInventoryProviderOutcome =
+  | { kind: "unknown" }
+  | { kind: "indeterminate"; reasonCode: string }
+  | {
+      kind: "complete";
+      snapshot: ProviderObjectInventorySnapshot;
+    };
+
+export type SealedObjectInventoryOutcome =
+  | { kind: "unknown" }
+  | { kind: "indeterminate"; reasonCode: string }
+  | {
+      kind: "complete";
+      snapshot: CompleteObjectInventorySnapshot;
+    };
 
 export type ObjectDeletionOutcome =
   | { kind: "unknown" }
@@ -1085,10 +1127,20 @@ export type ObjectDeletionOutcome =
     };
 
 export interface AccountDeletionObjectAdapters {
-  inventoryAccountObjects(input: {
+  lookupObjectInventoryOutcome(input: {
+    replayKey: string;
     requestId: RequestId;
     userId: UserId;
-  }): Promise<ObjectInventorySnapshot>;
+    providerSnapshotNamespace: string;
+  }): Promise<ObjectInventoryProviderOutcome>;
+  createObjectInventorySnapshot(input: {
+    replayKey: string;
+    requestId: RequestId;
+    userId: UserId;
+    providerSnapshotNamespace: string;
+  }): Promise<
+    Extract<ObjectInventoryProviderOutcome, { kind: "complete" }>
+  >;
   lookupObjectDeletionOutcome(input: {
     replayKey: string;
     object: DiscoveredAccountObject;
@@ -1102,10 +1154,23 @@ export interface AccountDeletionObjectAdapters {
 }
 
 export interface AccountDeletionObjectGateway {
-  inventoryAccountObjects(input: {
+  readonly providerSnapshotNamespace: string;
+  lookupObjectInventoryOutcome(input: {
+    inventoryAttemptId: ObjectInventoryAttemptId;
+    replayKey: string;
     requestId: RequestId;
     userId: UserId;
-  }): Promise<CompleteObjectInventorySnapshot>;
+    providerSnapshotNamespace: string;
+  }): Promise<SealedObjectInventoryOutcome>;
+  createObjectInventorySnapshot(input: {
+    inventoryAttemptId: ObjectInventoryAttemptId;
+    replayKey: string;
+    requestId: RequestId;
+    userId: UserId;
+    providerSnapshotNamespace: string;
+  }): Promise<
+    Extract<SealedObjectInventoryOutcome, { kind: "complete" }>
+  >;
   lookupObjectDeletionOutcome(input: {
     replayKey: string;
     object: AccountDeletionObjectRef;
@@ -1126,7 +1191,10 @@ export interface CleanupCompletionReceipt {
   planDigestSha256: Sha256Hex;
   databaseRowsComplete: true;
   databaseCleanupEvidenceId: string;
-  objectInventorySnapshotId: string;
+  objectInventorySnapshotId: ObjectInventoryAttemptId;
+  providerSnapshotNamespace: string;
+  providerSnapshotId: string;
+  providerCapturedAt: Date;
   objectManifestDigestSha256: Sha256Hex;
   objectCount: number;
   objectDeleteCount: number;
@@ -1137,11 +1205,16 @@ export interface CleanupCompletionReceipt {
 export declare function createAccountDeletionObjectGateway(
   adapters: AccountDeletionObjectAdapters,
   locatorCodec: AccountDeletionObjectLocatorCodec,
+  configuration: AccountDeletionObjectGatewayConfiguration,
 ): AccountDeletionObjectGateway;
+
+export interface AccountDeletionObjectGatewayConfiguration {
+  providerSnapshotNamespace: string;
+}
 
 export interface CreateObjectEffectIntentsInput {
   requestId: RequestId;
-  snapshotId: string;
+  snapshotId: ObjectInventoryAttemptId;
   expectedJobGeneration: number;
   inventoryIds: string[];
   lease: LeaseFence;
@@ -1228,6 +1301,93 @@ without a sign or leading zero. The operation-specific fields are:
 Each store path recomputes this digest from its typed fields and
 constant-time-compares it with `requestFingerprintSha256`; a caller-supplied
 digest is never authoritative.
+
+Before any recovery-token HMAC, provider-effect replay HMAC, object-inventory
+replay HMAC, object-locator HMAC, manifest digest, or AEAD authenticated-data
+frame, every UUID field passes the shared canonical-lowercase parser. The
+parser returns the same input string or rejects; it never normalizes a hostile
+alternate spelling. Tests submit uppercase, braced, `urn:uuid:`, unhyphenated,
+whitespace-padded, and mixed-case forms of the same UUID and prove rejection
+before digest lookup, provider/object calls, pool checkout, or mutation.
+
+Replay-key framing uses these byte-exact shared primitives:
+
+- `field(text)` is four-byte unsigned big-endian UTF-8 byte length followed by
+  those exact UTF-8 bytes;
+- `nullableField(null)` is `0x00`; a present value is `0x01 || field(text)`;
+- `positiveIntegerField(value)` first requires a positive safe integer, emits
+  canonical unsigned base-10 ASCII with no sign or leading zero, then applies
+  `field`; its nullable form is `0x00` or
+  `0x01 || positiveIntegerField(value)`;
+- UUID fields require canonical lowercase text before `field`; digest fields
+  require exactly 64 lowercase hexadecimal ASCII characters before
+  `field`/`nullableField`.
+
+The HMAC-SHA-256 output is exactly the 32 digest bytes encoded as 64 lowercase
+hexadecimal characters. The three provider-effect frames have this common
+field order:
+
+```text
+field(domainTag)
+|| field(effectId)
+|| field(requestId)
+|| field(userId)
+|| nullableField(objectInventorySnapshotId)
+|| nullableField(objectInventoryId)
+|| nullableField(cleanupReceiptId)
+|| nullablePositiveIntegerField(cleanupGeneration)
+|| nullableField(planDigestSha256)
+```
+
+The exact domain and presence shape is:
+
+| Effect kind | Domain tag | Snapshot | Inventory | Cleanup receipt | Generation | Plan digest |
+|---|---|---:|---:|---:|---:|---:|
+| `apple_revoke` | `WWAD-EFFECT-APPLE-v1` | null | null | null | null | null |
+| `object_delete` | `WWAD-EFFECT-OBJECT-v1` | present | present | null | present | present |
+| `clerk_delete` | `WWAD-EFFECT-CLERK-v1` | null | null | present | present | present |
+
+The locked stored kind and SQL kind-shape check select the frame; a caller
+cannot choose the domain or substitute null/empty correlation. The inventory
+attempt frame is:
+
+```text
+field("WWAD-INVENTORY-v1")
+|| field(attemptId)
+|| field(requestId)
+|| field(userId)
+|| field(providerSnapshotNamespace)
+|| positiveIntegerField(cleanupGeneration)
+|| field(planDigestSha256)
+|| field(databaseCleanupEvidenceId)
+```
+
+Effect, request, snapshot, inventory, cleanup-receipt, attempt, and evidence
+UUIDs are canonical before framing. The store derives each replay key from its
+captured secret and locked row values; no caller-supplied key or preframed byte
+sequence is authoritative.
+
+Fixed tests use the 32 secret bytes `00 01 ... 1f`, attempt/snapshot
+`11111111-1111-4111-8111-111111111111`, request
+`22222222-2222-4222-8222-222222222222`, effect
+`33333333-3333-4333-8333-333333333333`, evidence
+`44444444-4444-4444-8444-444444444444`, inventory
+`55555555-5555-4555-8555-555555555555`, cleanup receipt
+`66666666-6666-4666-8666-666666666666`, user `user_fixed_vector`, generation
+`7`, provider snapshot namespace `supabase:project-fixed/storage`, and 64
+lowercase `a` characters as the plan digest. The expected replay keys are:
+
+- Apple: `fb68c531ff7a47efa413b979b1c532cc97a37140fc1a180a6ae37604c44f5647`;
+- object: `72cf4591973db780ab3918c1e45b1e6dcf1bc104e230a7db350c05b0f3599797`;
+- Clerk: `e6e1a7512a460f38b5bc2bc98468568308030eec05d0ee7d6c5ac11b988c81f5`;
+- inventory attempt:
+  `499d3489d5d4ef664f4dbce11678eb24c0d57cb2fb6165db12b2c4a882d983f3`.
+
+Tests implement the vector independently of the production helper, construct
+two stores and a restarted store with the same secret and require identical
+keys, then change one field/domain at a time and require different keys.
+Null-versus-empty, alternate UUID text, cross-kind replay, and a different
+secret must also differ or reject before lookup.
 
 The operation ID is therefore present in both the uniqueness domain and the
 fingerprint. Reusing a raw idempotency key across different operations creates
@@ -1366,7 +1526,8 @@ export declare function initiateAccountDeletionRequest(
 cryptographically random bytes, base64url-encodes them only for the synchronous
 `seal` callback, computes an HMAC-SHA-256 digest with the configured recovery
 pepper over the length-delimited tuple
-`requestId + generation + bearer bytes`, clears the mutable byte buffer in a
+`requestId + generation + bearer bytes` after rejecting a noncanonical request
+UUID, clears the mutable byte buffer in a
 `finally`, rejects a thenable sealer result, and returns only the digest and
 encrypted stored response. A raw bearer is never a store result, row, log, or
 async value.
@@ -1401,6 +1562,53 @@ No response builder or credential sealer may perform I/O, return a promise or
 thenable, re-enter the store, or observe an uncommitted object after its
 transaction callback returns.
 
+**Database-derived terminal receipt finalization**
+
+`finalizeReceipt` accepts only
+`{ requestId, expectedJobGeneration, lease }`. It never accepts a receipt ID,
+terminal state/code, provider state, cleanup state, object state, user ID, or
+finalization timestamp from a caller. In one application-role transaction it
+validates the canonical request UUID, derives and acquires the request's
+`a:<user>` lock, locks the exact job, and requires
+`state = 'receipt_finalizing'`, the expected generation, and the exact live
+worker/token/lease-attempt fence using database time. It then joins, locks, and
+revalidates exactly one cleanup receipt through its complete plan,
+database-evidence, committed inventory-attempt, snapshot, inventory, and
+object-effect tuples. The cleanup receipt's provider-snapshot
+namespace/ID/time must be
+byte-identical to both attempt and snapshot rows, and its manifest/count must
+match the same deferred composite keys.
+
+For an Apple-inapplicable job it requires no Apple effect and derives
+`appleState = 'not_applicable'`. For an Apple-applicable job it requires the
+sole immutable Apple effect to be committed and derives
+`appleState = 'revoked'`. It requires the sole cleanup-receipt-bound Clerk
+effect to be immutable and committed with exactly one terminal provider
+outcome, deriving `clerkState = 'deleted'` or `already_absent`. It derives
+`dataCleanupState = 'complete'` and `objectState = 'complete'` only from the
+validated cleanup tuple, sets `terminalState = 'succeeded'` and
+`terminalCode = null`, generates the receipt UUID in PostgreSQL, and assigns
+`finalizedAt` from database time.
+
+The same compare-and-set inserts that immutable receipt and moves
+`receipt_finalizing -> succeeded` with one generation increment and cleared
+retry fields. A missing, duplicate, nonterminal, cross-request, cross-user,
+cross-plan, cross-evidence, changed/cross-attempt provider-snapshot identity,
+cross-snapshot, cross-inventory, cross-receipt, or count-mismatched companion
+aborts without a receipt or state change. A failure
+after receipt insert but before job update rolls back both, and two concurrent
+finalizers yield exactly one commit. A crash after commit is recovered by
+loading the already-terminal job and receipt on the next bounded step; it does
+not invoke the finalizer again.
+
+The recovery-expiry path remains the separate store-owned
+`object_cleanup_complete -> failed` transaction defined below. There is no
+generic `receipt_finalizing -> failed` edge and no caller-selected failed
+receipt. Any future failed finalization reason requires its own durable
+authority, derived receipt contract, tests, and review; until then a
+finalization infrastructure error records `retry_required` with
+`retryResumeState = 'receipt_finalizing'`.
+
 **Normalized cleanup and canonical redaction**
 
 `0011` creates these server-only rows:
@@ -1423,6 +1631,103 @@ transaction callback returns.
 - `account_deletion_database_cleanup_evidence`: one row per request with
   `evidence_id`, `user_id`, cleanup generation, plan digest,
   deleted/redacted row counts, and database completion time.
+- `account_deletion_object_inventory_attempts`: exactly one immutable-identity
+  attempt per request, with a database-generated attempt ID, request/user,
+  cleanup generation, plan digest, database-evidence ID, store-derived replay
+  key, the store's captured provider-snapshot namespace, attempt state/count,
+  nullable claim/reason fields, and nullable provider-snapshot ID/time,
+  committed snapshot ID, committed namespace copy, manifest/count, and
+  committed timestamp. The attempt ID is also the only legal local
+  object-snapshot ID.
+
+The SQL and Drizzle attempt definitions have exact column parity:
+
+```sql
+attempt_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+request_id uuid NOT NULL,
+user_id text NOT NULL,
+cleanup_generation integer NOT NULL CHECK (cleanup_generation > 0),
+plan_digest_sha256 text NOT NULL
+  CHECK (plan_digest_sha256 ~ '^[0-9a-f]{64}$'),
+database_cleanup_evidence_id uuid NOT NULL,
+replay_key text NOT NULL UNIQUE
+  CHECK (replay_key ~ '^[0-9a-f]{64}$'),
+state text NOT NULL DEFAULT 'intent'
+  CHECK (state IN ('intent', 'claimed', 'indeterminate', 'committed')),
+attempt integer NOT NULL DEFAULT 0 CHECK (attempt >= 0),
+claimed_job_generation integer,
+claimed_lease_attempt integer,
+last_reason_code text,
+provider_snapshot_namespace text NOT NULL
+  CHECK (
+    octet_length(provider_snapshot_namespace) BETWEEN 1 AND 128
+    AND provider_snapshot_namespace COLLATE "C"
+      ~ '^[a-z0-9][a-z0-9._:/-]{0,127}$'
+  ),
+provider_snapshot_id text,
+provider_captured_at timestamptz,
+committed_snapshot_id uuid,
+committed_provider_snapshot_namespace text,
+committed_manifest_digest_sha256 text,
+committed_object_count integer,
+committed_at timestamptz
+```
+
+The captured namespace is non-null, immutable, and valid in every state. One
+validated state-parity check governs every other mutable column; no looser
+per-column checks substitute for it:
+
+- `intent`: `attempt = 0` and every claim, reason, provider ID/time, snapshot,
+  manifest/count, and commit column is null;
+- `claimed`: `attempt > 0`, both claimed generations are positive, and every
+  reason/provider-ID/time/snapshot/manifest/count/commit column is null;
+- `indeterminate`: the same positive attempt/claim fields, a non-null
+  `last_reason_code` with positive UTF-8 byte length, and every
+  provider-ID/time/snapshot/manifest/count/commit column null;
+- `committed`: positive attempt/claim fields, null reason, non-null
+  provider-snapshot ID with positive byte length,
+  `provider_captured_at`, `committed_at`, lowercase 64-hex committed manifest,
+  nonnegative committed count, and
+  `committed_snapshot_id = attempt_id` plus
+  `committed_provider_snapshot_namespace = provider_snapshot_namespace`.
+
+The attempt update trigger permits only `intent -> claimed`,
+`claimed -> indeterminate`, `indeterminate -> claimed`, stale-lease
+`claimed -> claimed`, or `claimed -> committed`. The two claim/reclaim edges
+change state, `attempt = OLD.attempt + 1`,
+`claimed_job_generation`, and `claimed_lease_attempt`, and the
+`indeterminate -> claimed` edge also clears `last_reason_code`; the new lease attempt
+must be greater than the prior non-null value. An exact repeat under the same
+live lease performs no UPDATE and returns the current row. The indeterminate
+edge preserves attempt/claim fields and sets only the nonblank reason.
+The commit edge preserves identity, replay, attempt, and claim fields and fills
+the commit-only provider/snapshot/manifest/count/commit fields once. Request,
+user, cleanup generation, plan digest, evidence ID, replay key, captured
+provider-snapshot namespace, and attempt ID are immutable in every state; a
+committed row is wholly immutable. Immutable-row triggers reject every DELETE
+and TRUNCATE, and neither runtime role receives either privilege.
+
+The migration adds ordinary targetable
+`UNIQUE (provider_snapshot_namespace, provider_snapshot_id)`. The captured
+namespace is non-null in every state while the ID is null before commitment
+and non-null exactly in `committed`, so PostgreSQL's ordinary unique semantics
+permit precommit rows but reject two committed attempts with the same captured
+namespace/ID pair. The same ID in two different validated namespaces is
+intentionally allowed because namespaces identify disjoint provider snapshot
+authorities.
+
+Every claim, reclaim, indeterminate, and commit statement also locks the job
+and requires its exact request, `state = 'object_inventory'`, expected state
+generation, lease owner, lease token, lease attempt, and
+`lease_until > clock_timestamp()`. A fresh claim requires attempt state
+`intent` or `indeterminate`. A stale claimed-row reclaim additionally requires
+`claimed_lease_attempt < jobs.lease_attempt`; the job's already-committed new
+lease proves the old claim expired. `recordObjectInventoryIndeterminate`
+changes the attempt to `indeterminate` and the job to `retry_required` with
+resume `object_inventory` in one transaction. `commitCompleteObjectInventory`
+changes the attempt to `committed`, inserts the exact snapshot/header rows,
+and changes the job to `object_cleanup_pending` in one transaction. SQL row
+counts other than exactly one abort.
 
 `0011` also closes the relational identity graph left open by the earlier
 migrations. All foreign keys below are `ON DELETE RESTRICT`, every referenced
@@ -1464,34 +1769,81 @@ updates that would rebind any component:
   filled only after that evidence insert and then uses the reverse composite
   foreign key; completion time and evidence ID are either both null or both
   non-null;
+- the singleton object-inventory attempt repeats request, user, cleanup
+  generation, plan digest, and database-evidence ID; references the exact
+  evidence tuple; is unique by request; and exposes unique
+  `(attempt_id, request_id, user_id, cleanup_generation,
+  plan_digest_sha256, database_cleanup_evidence_id)`. It also exposes, in this
+  exact order, the target key
+  `(attempt_id, request_id, user_id, cleanup_generation,
+  plan_digest_sha256, database_cleanup_evidence_id, state,
+  committed_snapshot_id, committed_provider_snapshot_namespace,
+  provider_snapshot_id, provider_captured_at,
+  committed_manifest_digest_sha256, committed_object_count)`. Its identity
+  and replay key are immutable; only the state-machine columns above may
+  change through the declared compare-and-set methods;
 - every object-snapshot header carries evidence ID, request, user, cleanup
   generation, plan digest, `complete boolean NOT NULL CHECK (complete)`,
-  manifest digest, and object count. It references the exact evidence tuple,
-  is unique by request, exposes routing unique
+  provider-snapshot namespace/ID/time, manifest digest, and object count. It has
+  `inventory_attempt_id = snapshot_id`, an `attempt_state` column constrained
+  to the literal `committed`, is unique by request, exposes routing unique
   `(snapshot_id, request_id, user_id, cleanup_generation,
   plan_digest_sha256)`, and exposes the canonical count/manifest key
   `(snapshot_id, request_id, user_id, cleanup_generation,
   plan_digest_sha256, database_cleanup_evidence_id,
-  manifest_digest_sha256, object_count)`. Exactly one complete header is
+  provider_snapshot_namespace, provider_snapshot_id, provider_captured_at,
+  manifest_digest_sha256,
+  object_count)`. Exactly one complete header is
   therefore the canonical snapshot, including for zero objects;
+- attempt/snapshot commitment uses two named
+  `ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED` foreign keys. The forward
+  `MATCH FULL` key has the exact child order
+  `(inventory_attempt_id, request_id, user_id, cleanup_generation,
+  plan_digest_sha256, database_cleanup_evidence_id, attempt_state, snapshot_id,
+  provider_snapshot_namespace, provider_snapshot_id, provider_captured_at,
+  manifest_digest_sha256,
+  object_count)` and references the attempt target key in the order declared
+  above. Every snapshot child column is non-null, `attempt_state =
+  'committed'`, and `inventory_attempt_id = snapshot_id`, so it can reference
+  only a fully committed attempt. The reverse `MATCH FULL` key has child order
+  `(committed_snapshot_id, committed_provider_snapshot_namespace,
+  provider_snapshot_id, provider_captured_at,
+  committed_manifest_digest_sha256, committed_object_count)` and references
+  snapshot unique
+  `(snapshot_id, provider_snapshot_namespace, provider_snapshot_id,
+  provider_captured_at,
+  manifest_digest_sha256, object_count)`. The state-parity check makes all
+  six reverse-child columns null before commitment and all six non-null in
+  `committed`, preventing nullable-component bypass. Both keys resolve only at
+  transaction end, after the snapshot insert and attempt update; either side
+  alone or any changed identity/time/manifest/count rolls the transaction
+  back;
 - every inventory row repeats the snapshot ID, request, user, cleanup
   generation, and plan digest and references that complete header tuple. It
   exposes unique `(inventory_id, request_id, user_id, cleanup_generation,
   plan_digest_sha256)` and unique `(request_id, locator_digest_sha256)`;
-- an `object_delete` effect repeats the inventory request/user/generation/plan
-  tuple and references the exact inventory composite key. Its inventory ID is
-  unique. A `clerk_delete` effect instead carries
+- an `object_delete` effect repeats the inventory snapshot ID,
+  inventory ID, request/user/generation/plan tuple and references the exact
+  inventory composite key. Its inventory ID is unique. A `clerk_delete`
+  effect instead carries
   `cleanup_receipt_id`, request, user, cleanup generation, and plan digest and
   references the exact committed cleanup-receipt tuple. An Apple effect has
-  neither binding. A validated kind check makes those three nullable-column
-  shapes mutually exclusive;
+  neither binding. A validated kind check makes the snapshot/inventory,
+  receipt, generation, and plan columns match the replay-frame presence table
+  exactly and makes the three shapes mutually exclusive;
 - each cleanup receipt carries request, user, cleanup generation, plan digest,
-  database-evidence ID, snapshot ID, object-manifest digest, and all counts.
+  database-evidence ID, snapshot ID, provider-snapshot namespace/ID/time,
+  object-manifest digest, and all counts.
   Composite foreign keys bind it to the exact evidence and snapshot tuples; it
   uses the snapshot's full canonical count/manifest key, is unique by request,
-  and exposes unique
+  exposes the Clerk-routing unique
   `(cleanup_receipt_id, request_id, user_id, cleanup_generation,
-  plan_digest_sha256)`. Validated checks require nonnegative counts and
+  plan_digest_sha256)`, and exposes the full provider-bound unique
+  `(cleanup_receipt_id, request_id, user_id, cleanup_generation,
+  plan_digest_sha256, provider_snapshot_namespace, provider_snapshot_id,
+  provider_captured_at,
+  object_manifest_digest_sha256, object_count)`. Validated checks require
+  nonnegative counts and
   `object_delete_count + object_already_absent_count = object_count`.
 
 For additive binding columns on pre-existing `0009`/`0010` rows, the valid
@@ -1504,13 +1856,19 @@ any such row stops the preflight instead of being inferred.
 
 The locked store transaction does not rely on foreign keys alone. Before
 create, load, replay, claim, or finalize, it joins the complete tuple, requires
-one row at every link, recomputes the normalized plan and object-manifest
-digests, and proves header count equals distinct inventory count equals
-persisted inventory count. Finalization additionally proves exactly one
-object effect per inventory row, no extra effect, and derived outcome counts
-equal both the receipt and header. Any absent, duplicate, cross-request,
-cross-user, cross-generation, cross-digest, cross-snapshot, or
-cross-inventory link conflicts without mutation.
+one row at every link, includes the singleton inventory attempt between
+database evidence and snapshot, recomputes the normalized plan and
+object-manifest digests, and proves the snapshot ID equals the attempt ID and
+the provider-snapshot namespace equals both the attempt's immutable captured
+namespace and commit-only namespace copy, while provider ID/time, manifest
+digest, and object count equal the attempt's committed values. It proves
+header count equals distinct inventory count equals persisted inventory count.
+Finalization additionally proves exactly one object effect per inventory row,
+no extra effect, and derived outcome counts equal both the receipt and header.
+Any absent, duplicate, cross-request, cross-user, cross-generation,
+cross-digest, cross-attempt, changed or cross-attempt provider-snapshot
+identity/time, cross-snapshot, or cross-inventory link conflicts without
+mutation.
 
 The household rows, not an opaque JSON plan, are the canonical household lock
 and policy inventory. The plan header digest is the SHA-256 of the
@@ -1527,12 +1885,15 @@ the locked job, a positive safe plan generation, and the canonical digest of
 the exact normalized rows to equal the header digest before any mutation. Its
 evidence row copies that exact request, user, plan generation, and digest.
 `finalizeObjectCleanup` joins and requires exact parity among job, plan,
-evidence, snapshot, inventory, and effects: request/user, plan generation and
-digest, evidence ID, snapshot ID/manifest/count, and one immutable effect per
-inventory row. It derives receipt counts from committed outcomes. Loading or
+evidence, inventory attempt, snapshot, inventory, and effects: request/user,
+plan generation and digest, evidence ID, attempt/snapshot ID,
+provider-snapshot namespace/ID/time, manifest/count, and one immutable effect per
+inventory row. It derives receipt counts from committed outcomes and copies
+the exact provider-snapshot namespace/ID/time to the cleanup receipt. Loading or
 replaying an existing evidence/receipt row repeats the same checks and accepts
-only a byte-identical result; any mismatched user, request, generation, digest,
-snapshot, inventory/effect tuple, or count conflicts without a state change.
+only a byte-identical result; any mismatched user, request, generation,
+digest, attempt, provider-snapshot identity/time, snapshot, inventory/effect
+tuple, or count conflicts without a state change.
 
 `0011` owns and seeds the deployment-identity singleton once with
 `gen_random_uuid()`. A primary-key/check constraint permits only the literal
@@ -1703,10 +2064,24 @@ function owned by any role other than the cleanup owner.
 
 - `woofwatcher_app` receives only the table/column
   `SELECT`/`INSERT`/compare-and-set `UPDATE` privileges needed by the
-  PostgreSQL store on protocol, plan, recovery, inventory, effect, evidence,
-  and receipt tables; it receives no `DELETE`/`TRUNCATE`, no execution-row
+  PostgreSQL store on protocol, plan, recovery, inventory-attempt, snapshot,
+  inventory, effect, evidence, and receipt tables; it receives no
+  `DELETE`/`TRUNCATE`, no execution-row
   insert/finalize privilege, no cleanup-routine execution, and no membership
   in a cleanup role;
+- on `account_deletion_object_inventory_attempts`, that means `SELECT` on all
+  columns; `INSERT` only on request ID, user ID, cleanup generation, plan
+  digest, evidence ID, replay key, and captured provider-snapshot namespace;
+  and `UPDATE` only on state, attempt, claimed job generation, claimed lease
+  attempt, reason, provider-snapshot ID/time, committed snapshot ID,
+  commit-only provider-snapshot namespace, committed manifest/count, and
+  committed time. The database supplies attempt ID and all intent defaults,
+  while the captured namespace has no `UPDATE` grant. On snapshot headers and
+  cleanup receipts the app receives `SELECT` plus `INSERT` on the declared
+  non-generated columns, including provider-snapshot namespace/ID/time, but
+  no `UPDATE`, `DELETE`, or `TRUNCATE`. The cleanup owner and cleanup worker
+  receive no direct privilege on attempts, snapshot headers, or cleanup
+  receipts;
 - `woofwatcher_app` receives `EXECUTE` on `ww_lock_keys`; that helper
   accepts at most 256 distinct keys matching `a:[^[:space:]]+` or
   `h:[0-9a-f-]{36}`, rejects every other value before acquiring a lock, and
@@ -1751,6 +2126,14 @@ name. `0011` adds `handoff_confirmed_at`; `consumed_at` means invalidated by
 rotation. The job's `active_recovery_generation`, fixed
 `recovery_expires_at`, and `recovery_handoff_generation` are the current
 summary. Rotation never changes the first issuance expiry.
+
+Task 2 proves store authority only: bearer validation grants no mutation
+method, while rotation and handoff require the exact owning authenticated
+subject in addition to their other inputs. HTTP middleware, router mounting,
+and the proof that a bearer-only request receives 401/403 from start,
+authorize, retry, rotate, handoff, and care routes are Task 3 acceptance
+requirements because those routes do not exist in Task 2. Task 2 tests must
+not invent a test-only router and call that production authorization proof.
 
 ```ts
 export interface RotateRecoveryInput {
@@ -1892,9 +2275,22 @@ export interface AccountDeletionObjectLocatorCodec {
   };
 }
 
+export interface CreateAccountDeletionObjectLocatorCodecInput {
+  encryptionKey: Uint8Array;
+  locatorHmacKey: Uint8Array;
+  randomBytes?(length: number): Uint8Array;
+}
+
+export declare function createAccountDeletionObjectLocatorCodec(
+  input: CreateAccountDeletionObjectLocatorCodecInput,
+): AccountDeletionObjectLocatorCodec;
+
 export interface CompleteObjectInventorySnapshot {
   requestId: RequestId;
-  snapshotId: string;
+  snapshotId: ObjectInventoryAttemptId;
+  providerSnapshotNamespace: string;
+  providerSnapshotId: string;
+  providerCapturedAt: Date;
   complete: true;
   manifestDigestSha256: Sha256Hex;
   objectCount: number;
@@ -1908,20 +2304,53 @@ export interface CompleteObjectInventorySnapshot {
       | "planDigestSha256"
     >
   >;
-  capturedAt: Date;
 }
 
 export interface ObjectInventorySnapshotRecord {
-  snapshotId: string;
+  snapshotId: ObjectInventoryAttemptId;
+  inventoryAttemptId: ObjectInventoryAttemptId;
+  attemptState: "committed";
   requestId: RequestId;
   userId: UserId;
   cleanupGeneration: number;
   planDigestSha256: Sha256Hex;
   databaseCleanupEvidenceId: string;
+  providerSnapshotNamespace: string;
+  providerSnapshotId: string;
+  providerCapturedAt: Date;
   complete: true;
   manifestDigestSha256: Sha256Hex;
   objectCount: number;
   completedAt: Date;
+}
+
+export type ObjectInventoryAttemptState =
+  | "intent"
+  | "claimed"
+  | "indeterminate"
+  | "committed";
+
+export interface ObjectInventoryAttemptRecord {
+  id: ObjectInventoryAttemptId;
+  requestId: RequestId;
+  userId: UserId;
+  cleanupGeneration: number;
+  planDigestSha256: Sha256Hex;
+  databaseCleanupEvidenceId: string;
+  replayKey: string;
+  state: ObjectInventoryAttemptState;
+  attempt: number;
+  claimedJobGeneration: number | null;
+  claimedLeaseAttempt: number | null;
+  lastReasonCode: string | null;
+  providerSnapshotNamespace: string;
+  providerSnapshotId: string | null;
+  providerCapturedAt: Date | null;
+  committedSnapshotId: ObjectInventoryAttemptId | null;
+  committedProviderSnapshotNamespace: string | null;
+  committedManifestDigestSha256: Sha256Hex | null;
+  committedObjectCount: number | null;
+  committedAt: Date | null;
 }
 
 export type ProviderEffectTerminalOutcome =
@@ -1933,6 +2362,7 @@ export interface ProviderEffectRecord {
   requestId: RequestId;
   userId: UserId;
   kind: ProviderEffectKind;
+  objectInventorySnapshotId: ObjectInventoryAttemptId | null;
   objectInventoryId: string | null;
   cleanupReceiptId: string | null;
   cleanupGeneration: number | null;
@@ -1966,23 +2396,48 @@ export interface FinalizeObjectCleanupInput {
   requestId: RequestId;
   expectedJobGeneration: number;
   databaseCleanupEvidenceId: string;
-  snapshotId: string;
+  snapshotId: ObjectInventoryAttemptId;
   lease: LeaseFence;
 }
 
 export interface AccountDeletionObjectStore {
-  persistCompleteObjectInventory(input: {
-    snapshot: CompleteObjectInventorySnapshot;
-    expectedUserId: UserId;
-    cleanupGeneration: number;
-    planDigestSha256: Sha256Hex;
+  readonly providerSnapshotNamespace: string;
+  createOrLoadObjectInventoryAttempt(input: {
+    requestId: RequestId;
+    expectedJobGeneration: number;
     databaseCleanupEvidenceId: string;
+    lease: LeaseFence;
+  }): Promise<ObjectInventoryAttemptRecord>;
+  claimObjectInventoryAttempt(input: {
+    requestId: RequestId;
+    inventoryAttemptId: ObjectInventoryAttemptId;
+    expectedJobGeneration: number;
+    lease: LeaseFence;
+  }): Promise<ObjectInventoryAttemptRecord>;
+  recordObjectInventoryIndeterminate(input: {
+    requestId: RequestId;
+    inventoryAttemptId: ObjectInventoryAttemptId;
+    expectedAttempt: number;
+    expectedReplayKey: string;
+    reasonCode: string;
+    lease: LeaseFence;
+  }): Promise<AccountDeletionJobRecord>;
+  commitCompleteObjectInventory(input: {
+    requestId: RequestId;
+    inventoryAttemptId: ObjectInventoryAttemptId;
+    expectedAttempt: number;
+    expectedReplayKey: string;
+    snapshot: CompleteObjectInventorySnapshot;
     expectedJobGeneration: number;
     lease: LeaseFence;
   }): Promise<{
+    job: AccountDeletionJobRecord;
     snapshot: ObjectInventorySnapshotRecord;
     objects: AccountDeletionObjectRef[];
   }>;
+  loadObjectInventoryAttempt(
+    requestId: RequestId,
+  ): Promise<ObjectInventoryAttemptRecord | null>;
   loadObjectInventorySnapshot(
     requestId: RequestId,
   ): Promise<ObjectInventorySnapshotRecord | null>;
@@ -2007,14 +2462,97 @@ export interface AccountDeletionObjectStore {
 }
 ```
 
-`0011` creates `account_deletion_object_inventory_snapshots` separately from
+`createOrLoadObjectInventoryAttempt` is the only inventory-intent creator. In
+one fenced transaction it locks the exact `object_inventory` job, plan, and
+database-evidence tuple, inserts or loads the singleton attempt, generates its
+canonical UUID in PostgreSQL, persists the store's captured
+provider-snapshot namespace in the intent row, and derives a stable replay key
+as HMAC-SHA-256 over the exact `WWAD-INVENTORY-v1` frame above, including that
+namespace in its declared position. It uses the same store-owned replay secret
+with a domain distinct from Apple, Clerk, and object-delete keys. No caller
+supplies a namespace, replay key, attempt ID, user, plan generation, or plan
+digest.
+
+`claimObjectInventoryAttempt` validates the exact live lease and
+`object_inventory` state/generation. It claims `intent` or `indeterminate`, or
+reclaims a prior `claimed` row only after that row's owning job lease has
+expired and a new job lease attempt is live; it rejects `committed`. Each
+successful claim increments the attempt and records the claimed job generation
+and lease attempt; an exact repeat under that same lease returns the same
+claim without incrementing. A bounded worker step then calls
+`objectGateway.lookupObjectInventoryOutcome` first with that exact replay key
+and the namespace loaded from the attempt. Before this lookup and before any
+same-key create, including after restart or reclaim, the worker requires exact
+equality among `store.providerSnapshotNamespace`,
+`objectGateway.providerSnapshotNamespace`, and
+`attempt.providerSnapshotNamespace`; a mismatch fails before an adapter call.
+A `complete` result is eligible for atomic commit. An `indeterminate` result
+calls `recordObjectInventoryIndeterminate`, which atomically records the
+reason and moves the job to `retry_required` with
+`retryResumeState = 'object_inventory'`; it never calls create. Only
+`unknown`, meaning the adapter can prove that no immutable provider snapshot
+exists for the replay key, permits `createObjectInventorySnapshot` with the
+same key and attempt namespace.
+
+`AccountDeletionObjectGatewayConfiguration.providerSnapshotNamespace` is
+required with no default. It is stable for one provider snapshot authority
+across processes, replicas, restarts, and deployments; changing provider
+account/project/bucket authority requires a different namespace. Construction
+requires 1–128 ASCII bytes matching
+`^[a-z0-9][a-z0-9._:/-]{0,127}$`, captures that exact primitive value and both
+adapter functions, and exposes the captured value as the gateway's readonly
+namespace. Every gateway lookup/create first requires its input namespace to
+equal the captured value and then passes that value to the adapter. Adapter
+mutation after construction and caller input cannot change it.
+
+The provider adapter contract makes creation idempotent by replay key and
+registers an immutable complete outcome before resolving. Every later lookup
+for that key returns the byte-identical
+request/user/provider-snapshot-namespace/ID, capture time, and ordered object
+tuple. The sealed gateway rejects a namespace mismatch and a provider snapshot
+ID outside 1–512 UTF-8 bytes, preserves namespace, ID, and provider capture
+time exactly, seals every locator, uses the inventory attempt ID as the local
+snapshot ID, and returns no plaintext locator. A second complete result with a
+changed namespace, provider-snapshot ID, capture time, or manifest for the
+same replay key conflicts. The database unique rejects the same namespace/ID
+won concurrently by another attempt; the same ID in a distinct validated
+namespace is intentionally a different provider snapshot identity.
+
+`commitCompleteObjectInventory` is one transaction. It locks and revalidates
+the claimed attempt, job, full plan/evidence tuple, live lease, expected
+attempt/replay key, and `snapshot.snapshotId === inventoryAttemptId`; recomputes
+the manifest; inserts the complete header and all inventory rows; copies the
+exact provider-snapshot namespace/ID/time and manifest/count onto the attempt; fills the
+reverse snapshot ID; marks the attempt committed; and moves `object_inventory ->
+object_cleanup_pending` with one generation increment. A fault after any row
+insert but before the state edge rolls back the header, rows, attempt update,
+and job update together. A crash after the provider response or lease loss
+before local commit leaves the same attempt and replay key durable; a reclaimed
+worker looks up that provider-owned outcome and never creates a second logical
+inventory. Both deferred foreign keys must validate before commit. A committed
+attempt/header, including provider-snapshot namespace/ID/time, is immutable and
+cannot be reinventoried.
+
+`0011` creates `account_deletion_object_inventory_attempts` and
+`account_deletion_object_inventory_snapshots` separately from
 `account_deletion_object_inventory`. A committed header with
 `complete = true`, `object_count = 0`, and the empty-manifest digest is durable
 evidence of a complete empty inventory. Zero rows without that header is never
 complete. Each inventory row references the header and is unique by
 `(request_id, locator_digest_sha256)`. Replaying the same snapshot ID and
-manifest returns the original rows; a different manifest for a committed
-request conflicts.
+provider-snapshot namespace/ID/time and manifest returns the original rows; a
+different provider identity, capture time, or manifest for a committed request
+conflicts.
+
+`createAccountDeletionObjectLocatorCodec` is the production codec constructor.
+It requires two copied, byte-distinct, nonzero `Uint8Array` values of exactly
+32 bytes: one AES-256 key and one locator-HMAC key. It captures the optional
+test-only `randomBytes` function or Node's cryptographic source and requires
+each call to synchronously return a non-thenable `Uint8Array` of exactly the
+requested length; a thrown, reused-buffer, wrong-type, or wrong-length result
+fails before encryption. Mutating either original key or the original random
+adapter after construction has no effect. The returned codec is a frozen
+null-prototype object containing only captured `seal` and `open` functions.
 
 The locator codec computes `locatorDigestSha256` as a keyed HMAC over the
 versioned canonical bytes
@@ -2025,8 +2563,10 @@ is a four-byte unsigned big-endian UTF-8 byte length followed by those bytes;
 present value, so null and empty are distinct. No platform string
 concatenation is a cryptographic frame.
 
-`objectKeyCiphertext` and a present `objectVersionCiphertext` use
-AES-256-GCM with fresh 96-bit nonces. Their authenticated additional data is
+The request ID must pass the canonical lowercase UUID parser before HMAC or
+encryption. `objectKeyCiphertext` and a present
+`objectVersionCiphertext` use AES-256-GCM with fresh 96-bit nonces. Their
+authenticated additional data is
 the same protocol version plus canonically framed request ID, provider,
 bucket, locator digest, and field tag (`key` or `version`). `open` first
 authenticates/decrypts both fields with that AAD, then recomputes the locator
@@ -2130,6 +2670,7 @@ export interface CreateAccountDeletionPostgresStoreInput {
   applicationPool: Pool;
   cleanupPool: Pool;
   effectReplayHmacSecret: Uint8Array;
+  providerSnapshotNamespace: string;
   providerActionPayloadCodec: AccountDeletionProviderActionPayloadCodec;
   leaseTokenFactory(): string;
   attestationLockKeyFactory?(): bigint;
@@ -2197,11 +2738,19 @@ export declare function runAccountDeletionStep(
 Construction copies `effectReplayHmacSecret` into private store-owned memory
 and rejects a non-`Uint8Array`, fewer than 32 bytes, or an all-zero value. It
 is the required environment-stable dedicated secret used only for framed
-provider-effect replay HMACs; every process and replica for that database uses
-the same value across restarts. The store never generates, persists, returns,
-or logs it. Task 3 composition compares key material before construction and
+provider-effect and object-inventory-attempt replay HMACs under distinct
+versioned domain tags; every process and replica for that database uses the
+same value across restarts. The store never generates, persists, returns, or
+logs it. Task 3 composition compares key material before construction and
 fails unless it is byte-distinct from the recovery pepper, response-encryption
 key, provider-action AEAD key, and both object-locator AEAD/HMAC keys.
+
+`CreateAccountDeletionPostgresStoreInput.providerSnapshotNamespace` is also
+required with no default and is validated before pool checkout by the exact
+1–128 ASCII-byte rule used by the object gateway. The factory captures that
+primitive value, exposes it as the store's readonly namespace, and uses only
+that captured value when it creates an inventory-attempt intent; no store
+method input can override it.
 
 The factory captures bound `seal` and `open` functions from the required
 provider-action payload codec. They are synchronous, deterministic except for
@@ -2308,8 +2857,14 @@ entry point:
   `executeDatabaseCleanup`; the privileged routine itself writes exact
   request/user/generation/digest-bound evidence and transitions to
   `object_inventory`;
-- `object_inventory` inventories through `objectGateway`, persists a complete
-  snapshot header and rows, then transitions to `object_cleanup_pending`;
+- `object_inventory` creates or reloads the singleton durable inventory
+  attempt, claims it, requires exact store/gateway/attempt namespace equality,
+  and performs lookup-first reconciliation by its stable replay key. A
+  mismatch fails before every provider lookup or create, including after
+  restart or reclaim. A complete outcome atomically persists the attempt-ID
+  snapshot header and rows, marks the attempt committed, and transitions to
+  `object_cleanup_pending`; `unknown` alone permits same-key creation, while
+  `indeterminate` records retry with resume to this exact attempt;
 - `object_cleanup_pending` commits the exact effect-intent set. An empty
   snapshot atomically writes the zero-count cleanup receipt and transitions to
   `object_cleanup_complete`; a non-empty set transitions to
@@ -2396,12 +2951,15 @@ unexpected overload, default `PUBLIC EXECUTE`, wrong function owner/search
 path, wrong role flag, membership edge, one-object partial install, stale
 comment hash, uncorrelated challenge idempotency row, and unknown/malformed
 rotation idempotency operation. It also removes or alters the exact recovery
-token triple unique and rotation-source composite FK one at a time. Every case
-must fail
-in the read-only preflight and leave the complete pre-existing fixture
-unchanged. A second run of the exact clean migration must produce one copy of
-every object, identical canonical catalog hashes, and the original deployment
-singleton.
+token triple unique, rotation-source composite FK, singleton inventory-attempt
+unique, full attempt-to-evidence composite FK, state-parity check,
+provider-snapshot columns, each ordered `MATCH FULL` deferred circular FK,
+captured-namespace format/immutability and committed-copy equality,
+committed-state constant, ordinary namespace/ID unique, and exact
+attempt/snapshot/receipt column ACL one at a time. Every case must fail in the
+read-only preflight and leave the complete pre-existing fixture unchanged. A
+second run of the exact clean migration must produce one copy of every object,
+identical canonical catalog hashes, and the original deployment singleton.
 
 PGlite remains the fast migration/catalog and deterministic service-test
 layer. It cannot satisfy concurrency or role-isolation acceptance. The command
@@ -2524,9 +3082,11 @@ role/database setup. The test harness—not the workflow—owns public-schema
 reset, migrations, catalog checks, fixtures, pool shutdown, and teardown.
 
 The object gateway follows the same sealed, captured-function construction as
-the provider gateway. The store first persists and commits the complete
-snapshot, assigning each object an inventory ID. Only a subsequent fenced
-transaction may create exactly one `object_delete` effect per inventory ID.
+the provider gateway. The store first persists the singleton attempt, performs
+lookup-first same-key provider reconciliation, and atomically commits the
+complete attempt-ID snapshot, assigning each object an inventory ID. Only a
+subsequent fenced transaction may create exactly one `object_delete` effect
+per inventory ID.
 Each effect has its own effect ID, a non-null foreign key to that inventory
 row, and is loaded and claimed by the `(effectId, inventoryId)` pair before it
 performs lookup or mutation. Apple/Clerk effects must have a null inventory ID;
@@ -2593,6 +3153,8 @@ Before implementing recovery, prove:
   `recovery_expired_before_clerk_deletion`, a truthful failed receipt, and no
   Clerk effect/provider call; the same holds for an earlier confirmed handoff;
 - old-token replay and generation rollback fail;
+- uppercase, braced, prefixed, unhyphenated, whitespace-padded, and mixed-case
+  request UUID spellings reject before recovery HMAC calculation or lookup;
 - rotation succeeds in each globally enumerated pre-Clerk state and is
   rejected from `challenge_required`, `retry_required`, `clerk_deleting`,
   `receipt_finalizing`, and every terminal state;
@@ -2600,9 +3162,11 @@ Before implementing recovery, prove:
   connections yields exactly one commit: a winning rotation invalidates the
   old handoff and forces the transition to refetch, while a winning transition
   makes rotation fail without changing generation or expiry;
-- recovery GET can validate the active bearer after Clerk is absent;
-- bearer-only calls cannot start, authorize, retry, rotate, acknowledge
-  handoff, or call care APIs;
+- store-level bearer validation still works after Clerk is absent and exposes
+  no mutation capability;
+- rotate and handoff store methods reject unless the exact owning
+  authenticated subject is present; Task 3 route tests separately prove
+  bearer-only HTTP denial for every mutation and care API;
 - handoff confirmation requires both owning Clerk auth and the current bearer;
 - a stale generation cannot confirm handoff;
 - state transition to `clerk_deleting` fails until the current recovery
@@ -2620,18 +3184,57 @@ not exist.
 
 - [ ] **Step 5: Write RED object-inventory and provider-effect tests**
 
-Test a sealed object gateway, complete inventory persistence before deletion,
-no intent before the complete snapshot commits, one durable effect ID per
-inventory ID, load/list/claim by exact effect and inventory IDs,
-lookup-before-mutation, replay after a crash response, already-absent success,
-indeterminate fail-closed behavior, inventory/effect count mismatch, and no
-Clerk effect claim before a committed cleanup receipt. Test that private
-objects and request-scoped export artifacts are included. Explicitly persist
-and reload a complete zero-object snapshot header, prove that zero rows without
-the header are incomplete, reject a mismatched empty-manifest digest, and
-prove the empty path atomically writes a zero-count cleanup receipt while
-transitioning `object_cleanup_pending -> object_cleanup_complete`. Mutation
-proof: remove only the header insert and require that empty-path test to fail.
+Test the named production locator-codec constructor with copied distinct
+nonzero 32-byte keys, captured random function, fresh 96-bit nonces, exact
+round trips, null-versus-empty framing, and rejection of repeated-buffer,
+wrong-type, wrong-length, tampered, truncated, wrong-key, wrong-request,
+wrong-provider, wrong-bucket, wrong-field-tag, field-swapped, and
+noncanonical-UUID inputs before an adapter call.
+
+Test a sealed object gateway and singleton durable inventory attempt. Prove the
+attempt and stable store-derived replay key commit before any adapter call;
+every bounded step performs lookup first; `unknown` permits exactly one
+same-key create; `indeterminate` performs no create and durably resumes the
+same attempt; and a crash after a complete provider response but before the
+local commit is reconciled by lookup with create-call count still one. Cover a
+reclaimed lease, restart, hostile changed/cross-request/cross-user provider
+outcome, blank provider snapshot ID, and an injected failure after inventory
+rows but before the state update. The latter must roll back header, rows,
+attempt commit, and state together. Assert the attempt ID is the local snapshot
+ID and a committed request can never receive a second attempt.
+
+Exercise every attempt truth-table row and legal edge against both the memory
+harness and PostgreSQL, including exact same-lease no-op, stale-lease
+attempt+1 reclaim, live-lease predicates, indeterminate reason parity, and
+explicit reason clearing on `indeterminate -> claimed`, and committed
+immutability. Prove provider-snapshot namespace/ID/time persist byte-for-byte
+through gateway result, attempt, header, cleanup receipt, and terminal
+finalizer; changed or cross-attempt identity fails. Remove or alter each
+deferred circular FK, its `MATCH FULL`, target-key column order, constant
+committed-state column, or one provider/manifest/count component and require
+catalog preflight or commit to fail. Run the four fixed replay-key vectors,
+cross-store/restart equality, one-field/domain separation, and null/empty
+cases.
+
+Reject invalid or mutable namespace configuration before adapter capture. Race
+two attempts that return the same namespace/ID and prove exactly one commit;
+the loser leaves no header or state edge. Prove the same ID under two distinct
+valid captured namespaces may commit, while changing namespace for one replay
+key or restarting/reclaiming with a store/gateway namespace different from the
+persisted attempt conflicts before any provider call or persistence.
+
+Then prove complete inventory persistence before deletion, no delete intent
+before the complete snapshot commits, one durable effect ID per inventory ID,
+load/list/claim by exact effect and inventory IDs, lookup-before-mutation,
+replay after a deletion response, already-absent success, indeterminate
+fail-closed behavior, inventory/effect count mismatch, and no Clerk effect
+claim before a committed cleanup receipt. Test that private objects and
+request-scoped export artifacts are included. Explicitly persist and reload a
+complete zero-object snapshot header, prove that zero rows without the header
+are incomplete, reject a mismatched empty-manifest digest, and prove the empty
+path atomically writes a zero-count cleanup receipt while transitioning
+`object_cleanup_pending -> object_cleanup_complete`. Mutation proof: remove
+only the header insert and require that empty-path test to fail.
 
 - [ ] **Step 6: Run object tests and verify RED**
 
@@ -2680,16 +3283,32 @@ reference another request and that the load path independently rejects such a
 hostile tuple before decrypting.
 
 Seed hostile protocol and cleanup relations with wrong user, request,
-generation, digest, action, effect, evidence, snapshot, inventory, manifest,
-or receipt component and require create/load/claim/finalization/replay to fail
-without state change. Mutate snapshot manifests/counts and inventory/effect
-tuples independently and require the same fail-closed result. Prove duplicate
+generation, digest, action, effect, evidence, inventory attempt, snapshot,
+inventory, manifest, or receipt component and require
+create/load/claim/finalization/replay to fail without state change. Mutate
+attempt replay keys, snapshot manifests/counts, and inventory/effect tuples
+independently and require the same fail-closed result. Prove duplicate
 Apple/Clerk intents fail, kind-to-state claim fencing is exact, and the sole
 Clerk intent appears only in the handoff-gated state-transition transaction.
-Cover immutable non-null terminal-provider outcomes. Cover the exact app,
+Cover immutable non-null terminal-provider outcomes.
+
+For `finalizeReceipt`, prove the input has only request ID, expected job
+generation, and lease; PostgreSQL derives every receipt field. A wrong
+state/generation/lease or any missing, duplicate, noncommitted, or cross-bound
+Apple/Clerk/cleanup companion leaves no receipt and no state change. Inject a
+failure after receipt insert and prove full rollback; race two finalizers and
+prove exactly one commit; prove database time is authoritative, the receipt is
+immutable, and a crash after commit is observed as terminal without a second
+insert. Reject every alternate textual spelling of request/effect/attempt UUIDs
+before replay-HMAC lookup or provider/object work.
+
+Cover the exact app,
 cleanup-owner, and cleanup-worker role attributes and
 grants, default `PUBLIC EXECUTE` denial for every new function, hostile
-pre-existing table/function/policy/trigger/owner/ACL rollback, and
+pre-existing table/function/policy/trigger/owner/ACL rollback, exact
+inventory-attempt column INSERT/UPDATE grants, and rejection of one missing
+required grant or one extra identity-column UPDATE, owner/worker table grant,
+DELETE, or TRUNCATE privilege, and
 the full read-only catalog preflight. Run the three-DSN, unreachable-DSN, and
 contiguous/hostile bind-placeholder cases from the real-PostgreSQL contract
 above.
@@ -2719,6 +3338,7 @@ Use this exact matrix as the implementation inventory:
 | `account_deletion_cleanup_plan_households` | request-derived `user_id` | `household_id` | Immutable normalized plan row after initiation | No |
 | `account_deletion_cleanup_executions` | request-derived `user_id` | plan household rows | Immutable privileged transaction evidence | Owner-only insert/finalize |
 | `account_deletion_database_cleanup_evidence` | request-derived `user_id` | plan household rows | Immutable relational-cleanup evidence | Owner-only insert |
+| `account_deletion_object_inventory_attempts` | request-derived `user_id` | none | Singleton immutable replay identity; fenced attempt/reason/commit CAS | No |
 | `account_deletion_object_inventory_snapshots` | request-derived `user_id` | none | One immutable complete manifest per request, including empty | No |
 | `account_deletion_object_inventory` | request-derived `user_id` | none | Complete snapshot and unique provider locator | Exact effect-driven outcome only |
 | `account_deletion_cleanup_receipts` | request-derived `user_id` | none | Immutable reconciled database/object cleanup evidence | No |
@@ -2755,9 +3375,12 @@ cleanup routine do not exist.
 - [ ] **Step 9: Implement pure cleanup, recovery, and sealed object gateway**
 
 Implement only the behavior established in Steps 1–8. Keep recursive redaction
-pure and independently tested. Persist and commit the complete object snapshot,
-then create and commit all per-inventory-ID effects before deleting an object.
-Hash recovery bearer bytes with a keyed digest, compare
+pure and independently tested. Construct the production locator codec with
+captured distinct keys. Commit the singleton inventory attempt before the
+adapter call, reconcile lookup-first by its stable replay key, and atomically
+commit the attempt-ID snapshot and state edge before creating any
+per-inventory-ID deletion effect. Hash recovery bearer bytes with a keyed
+digest, compare
 digests in constant time, and perform issuance/rotation/handoff against
 database time. Rotation and the `clerk_deleting` transition acquire the same
 sorted account/job lock set, lock the job row, and CAS the same state
@@ -2779,15 +3402,22 @@ generation; neither path may validate before the lock and mutate afterward.
   provider action, effect, proof, recovery, tombstone, and terminal receipt
   without changing `0009` or `0010`;
 - create account tombstones, cleanup plans, object inventory, recovery handoff,
-  cleanup executions, database-cleanup evidence, object-inventory snapshot
-  headers, cleanup receipts, the immutable deployment-identity singleton and
-  attestation function, and lease/outcome columns/tables;
-- install the exact plan/execution/evidence/snapshot/inventory/effect/receipt
-  composite keys and locked parity checks, including one complete canonical
-  snapshot header with exact manifest/count;
-- constrain `object_delete` effects to a non-null unique inventory foreign key,
-  constrain Apple/Clerk effects to a null inventory key, and expose fenced
-  load/list/claim queries by exact effect and inventory IDs;
+  cleanup executions, database-cleanup evidence, singleton object-inventory
+  attempts, object-inventory snapshot headers, cleanup receipts, the immutable
+  deployment-identity singleton and attestation function, and
+  lease/outcome columns/tables;
+- install the exact
+  plan/execution/evidence/inventory-attempt/snapshot/inventory/effect/receipt
+  composite keys and locked parity checks, including the attempt truth table,
+  legal transition trigger, exact column ACLs, both ordered `MATCH FULL`
+  deferred circular FKs, and one complete canonical snapshot header whose ID,
+  provider-snapshot namespace/ID/time, manifest, and count equal the committed
+  attempt and cleanup receipt, with the namespace/ID pair unique across
+  committed attempts;
+- constrain `object_delete` effects to non-null snapshot and unique inventory
+  foreign keys, constrain Apple/Clerk effects to null snapshot/inventory keys,
+  enforce the exact replay-frame kind shapes, and expose fenced
+  load/list/claim queries by exact effect, snapshot, and inventory IDs;
 - constrain one Apple and one Clerk effect per request, make terminal provider
   outcomes write-once, fence claims by kind/job state, and create the only
   Clerk intent atomically inside the confirmed-handoff transition;
@@ -2806,8 +3436,18 @@ generation; neither path may validate before the lock and mutate afterward.
 - bind cleanup execution, evidence, snapshots, effects, and receipts to the
   exact job user, canonical plan generation/digest, and derived counts at every
   create/load/replay boundary;
+- derive canonical provider-effect and inventory-attempt replay keys inside
+  the store only after strict lowercase UUID validation, using the exact
+  per-kind frames and fixed vectors, including the store-captured inventory
+  namespace; require store/gateway/persisted-attempt namespace equality before
+  every lookup/create; implement lookup-first inventory reconciliation and
+  atomic attempt/snapshot/state commit;
 - preserve immutable effects, idempotency records, proof claims, recovery
   expiry, and terminal receipts;
+- implement the request/generation/lease-only `finalizeReceipt` transaction,
+  derive every success-receipt field from exact committed cleanup and provider
+  companions, and remove the unsupported generic
+  `receipt_finalizing -> failed` edge;
 - atomically terminalize an expired pre-Clerk request with the truthful
   `recovery_expired_before_clerk_deletion` receipt and no Clerk effect;
 - update the history-generation trigger to use canonical locking;
@@ -2819,6 +3459,9 @@ generation; neither path may validate before the lock and mutate afterward.
   Drizzle, and the Task 1 in-memory harness;
 - require the stable effect-replay HMAC secret and synchronous provider-action
   payload codec, and never project `client_payload_ciphertext` as plaintext;
+- implement `createAccountDeletionObjectLocatorCodec` with copied distinct
+  nonzero 32-byte keys, validated randomness, strict canonical UUID framing,
+  AES-256-GCM AAD, locator HMAC verification, and captured frozen methods;
 - implement exact parameter binding, startup cross-pool proof, process-held
   session anchor, per-checkout identity/anchor attestation, client destruction
   on mismatch, and idempotent awaited store close;
@@ -3318,6 +3961,10 @@ Expected: no hash difference. Re-run Step 2; runtime and compile-only contract
 gates must now pass before route production code begins.
 
 - [ ] **Step 5: Write RED route-authority and recovery-handoff tests**
+
+This is the first task with an executable HTTP authority seam. Do not treat
+Task 2's store-level subject-plus-bearer checks as proof of router placement or
+bearer-only denial.
 
 Prove 401/403/409/410/422/503 boundaries, challenge purpose validation,
 provider-owned client-envelope passthrough, raw-proof non-leakage,
