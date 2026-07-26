@@ -17,6 +17,9 @@
 - [x] Keep Avatar Studio's fixed-light template speech bubble readable in dark
   mode with a constant brand-navy boundary and headline.
 - [x] Add a red-first readiness contract for the template speech bubble.
+- [x] Dependency-complete branch CI passed for the template speech contrast
+  implementation commit `f92aec90`: WoofWatcher Verify run `30183727973`, job
+  `89744661646`.
 - [x] Dependency-complete branch CI passed for the earlier Avatar Studio mood
   contrast commit `164cce20`: WoofWatcher Verify run `30178415387`, job
   `89730878839`.

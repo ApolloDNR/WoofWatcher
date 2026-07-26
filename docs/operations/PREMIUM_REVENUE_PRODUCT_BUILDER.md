@@ -10,7 +10,10 @@ use constant `brandNavy`, protected by a red-first mobile-readiness contract.
 
 This is source-backed contrast hardening only. Route-named iOS/Android dark
 screenshots, accessibility traversal, and Apollo visual approval remain open.
-Rerun branch CI after this change before treating dependency proof as current.
+Dependency-complete CI proved implementation commit `f92aec90` in WoofWatcher
+Verify run `30183727973`, job `89744661646`, with install, JSON doctor, focused
+tests, typecheck, CI-safe builds, and all post steps green. Rerun after this
+proof-record commit before treating the final branch tip as current.
 
 ## 2026-07-25 Avatar Studio template-badge dark-mode contrast
 
