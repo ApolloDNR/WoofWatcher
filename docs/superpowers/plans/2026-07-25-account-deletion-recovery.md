@@ -86,8 +86,9 @@ Query, Expo SDK 54, Expo Router 6, and expo-secure-store.
   server types, OpenAPI, generated Zod, generated React types, the dedicated
   compile fixture, and the nested recovery DTO.
 - Production composition fails closed when Clerk, Apple, recovery-pepper,
-  encryption, object-inventory, object-deletion, cleanup-role, worker-lease, or
-  shutdown primitives are absent.
+  encryption, a distinct effect-replay HMAC secret, the provider-declared
+  client-hint envelope byte limit, object-inventory, object-deletion,
+  cleanup-role, worker-lease, or shutdown primitives are absent.
 - The runtime account-deletion protocol remains separate from
   `accountDeletionProof.ts`; launch-proof booleans never enable provider
   deletion.
@@ -181,20 +182,44 @@ export type ProviderEffectState =
   | "retry_required"
   | "indeterminate";
 
-export interface ClerkReauthVerification {
+export interface ClerkReauthAdapterVerification {
   proofId: string;
   subjectUserId: UserId;
+  challengeId: ChallengeId;
+  purpose: "account_deletion";
   verifiedAt: Date;
   expiresAt: Date;
   rawProofBinding: Uint8Array;
+}
+
+export interface ClerkChallengeAdapterResult {
+  challengeId: ChallengeId;
+  subjectUserId: UserId;
+  clientHintEnvelope: string;
+  rawProofBinding: Uint8Array;
+  expiresAt: Date;
+}
+
+export interface ClerkReauthVerification {
+  proofId: string;
+  subjectUserId: UserId;
+  challengeId: ChallengeId;
+  purpose: "account_deletion";
+  verifiedAt: Date;
+  expiresAt: Date;
+  proofBindingSha256: Sha256Hex;
 }
 
 export interface ClerkChallengeResult {
   challengeId: ChallengeId;
   subjectUserId: UserId;
   clientHintEnvelope: string;
-  rawProofBinding: Uint8Array;
+  proofBindingSha256: Sha256Hex;
   expiresAt: Date;
+}
+
+export interface AccountDeletionProviderGatewayConfiguration {
+  maxClientHintEnvelopeBytes: number;
 }
 
 export interface AuthoritativeIdentity {
@@ -227,12 +252,12 @@ export interface AccountDeletionProviderAdapters {
   createClerkReauthChallenge(input: {
     userId: UserId;
     purpose: "account_deletion";
-  }): Promise<ClerkChallengeResult>;
+  }): Promise<ClerkChallengeAdapterResult>;
   verifyClerkReauth(input: {
     envelope: Uint8Array;
     expectedUserId: UserId;
     expectedChallengeId: ChallengeId;
-  }): Promise<ClerkReauthVerification>;
+  }): Promise<ClerkReauthAdapterVerification>;
   getAuthoritativeIdentity(userId: UserId): Promise<AuthoritativeIdentity>;
   lookupAppleRevocationOutcome(input: {
     replayKey: string;
@@ -310,9 +335,18 @@ export interface AccountDeletionJobRecord {
   recoveryHandoffGeneration: RecoveryGeneration | null;
   blockedCode: "last_owner" | "missing_user" | "provider_unavailable" | null;
   retryCode: string | null;
+  retryResumeState: RetryResumeState | null;
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type RetryResumeState =
+  | "apple_revoking"
+  | "cleanup_pending"
+  | "object_inventory"
+  | "object_cleanup_running"
+  | "clerk_deleting"
+  | "receipt_finalizing";
 
 export type AccountDeletionProviderActionRecord =
   | {
@@ -342,6 +376,7 @@ export interface ProviderEffectRecord {
   replayKey: string;
   state: ProviderEffectState;
   attempt: number;
+  replayMaterialCiphertext: string | null;
   checkpointCiphertext: string | null;
   providerReceiptCiphertext: string | null;
   lastReasonCode: string | null;
@@ -357,6 +392,11 @@ export interface AccountDeletionIdempotencyRecord {
   encryptedResponseBody: string;
   responseStatus: number;
   createdAt: Date;
+}
+
+export interface StoredIdempotentResponse {
+  encryptedResponseBody: string;
+  responseStatus: number;
 }
 
 export interface AccountDeletionReceiptRecord {
@@ -379,10 +419,17 @@ export interface CreateDeletionChallengeInput {
   expiresAt: Date;
   idempotencyKeyHash: Sha256Hex;
   requestFingerprintSha256: Sha256Hex;
+  encryptedResponseBody: string;
+  responseStatus: number;
 }
 
 export type CreateDeletionChallengeResult =
-  | { kind: "created"; record: DeletionChallengeRecord }
+  | {
+      kind: "created";
+      record: DeletionChallengeRecord;
+      encryptedResponseBody: string;
+      responseStatus: number;
+    }
   | {
       kind: "replay";
       record: DeletionChallengeRecord;
@@ -396,14 +443,30 @@ export interface CreateDeletionRequestInput {
   userId: UserId;
   challengeId: ChallengeId;
   proofId: string;
+  proofBindingSha256: Sha256Hex;
+  proofExpiresAt: Date;
   exactEnvelopeSha256: Sha256Hex;
   appleApplicable: boolean;
   idempotencyKeyHash: Sha256Hex;
   requestFingerprintSha256: Sha256Hex;
+  initialProviderEffectIntent:
+    | {
+        effectId: EffectId;
+        kind: "apple_revoke";
+      }
+    | null;
+  buildStoredResponse(created: {
+    job: AccountDeletionJobRecord;
+  }): StoredIdempotentResponse;
 }
 
 export type CreateDeletionRequestResult =
-  | { kind: "created"; job: AccountDeletionJobRecord }
+  | {
+      kind: "created";
+      job: AccountDeletionJobRecord;
+      encryptedResponseBody: string;
+      responseStatus: number;
+    }
   | {
       kind: "replay";
       job: AccountDeletionJobRecord;
@@ -417,11 +480,12 @@ export interface CreateBlockedDeletionInput {
   requestId: RequestId;
   authenticatedSubjectUserId: UserId;
   code: "missing_user" | "last_owner";
-  deletionStartsAt: Date;
   idempotencyKeyHash: Sha256Hex;
   requestFingerprintSha256: Sha256Hex;
-  encryptedResponseBody: string;
-  responseStatus: number;
+  buildStoredResponse(created: {
+    job: AccountDeletionJobRecord;
+    receipt: AccountDeletionReceiptRecord;
+  }): StoredIdempotentResponse;
 }
 
 export type CreateBlockedDeletionResult =
@@ -429,6 +493,8 @@ export type CreateBlockedDeletionResult =
       kind: "created";
       job: AccountDeletionJobRecord;
       receipt: AccountDeletionReceiptRecord;
+      encryptedResponseBody: string;
+      responseStatus: number;
     }
   | {
       kind: "replay";
@@ -444,6 +510,29 @@ export interface ClaimProviderEffectInput {
   expectedObjectInventoryId: string | null;
   expectedJobGeneration: number;
   lease: LeaseFence;
+}
+
+export interface CreateProviderEffectIntentInput {
+  effectId: EffectId;
+  requestId: RequestId;
+  kind: ProviderEffectKind;
+  objectInventoryId: string | null;
+  expectedJobGeneration: number;
+  replayMaterialCiphertext: string | null;
+  lease: LeaseFence;
+}
+
+export interface AttachProviderEffectReplayMaterialAndAcceptInput {
+  effectId: EffectId;
+  requestId: RequestId;
+  expectedJobGeneration: number;
+  expectedProviderActionId: ProviderActionId;
+  replayMaterialCiphertext: string;
+}
+
+export interface AttachProviderEffectReplayMaterialAndAcceptResult {
+  job: AccountDeletionJobRecord;
+  effect: ProviderEffectRecord;
 }
 
 export interface CommitProviderEffectInput {
@@ -467,6 +556,7 @@ export interface RecordStateTransitionInput {
   expectedGeneration: number;
   nextState: AccountDeletionState;
   retryCode: string | null;
+  retryResumeState: RetryResumeState | null;
   blockedCode: AccountDeletionJobRecord["blockedCode"];
   lease: LeaseFence;
 }
@@ -501,6 +591,12 @@ export interface AccountDeletionStore {
     requestId: RequestId,
     kind: ProviderEffectKind,
   ): Promise<ProviderEffectRecord[]>;
+  createProviderEffectIntent(
+    input: CreateProviderEffectIntentInput,
+  ): Promise<ProviderEffectRecord>;
+  attachProviderEffectReplayMaterialAndAccept(
+    input: AttachProviderEffectReplayMaterialAndAcceptInput,
+  ): Promise<AttachProviderEffectReplayMaterialAndAcceptResult>;
   claimEffect(
     input: ClaimProviderEffectInput,
   ): Promise<ProviderEffectRecord | null>;
@@ -527,6 +623,7 @@ export interface AccountDeletionStepInput {
 
 export declare function createAccountDeletionProviderGateway(
   adapters: AccountDeletionProviderAdapters,
+  configuration: AccountDeletionProviderGatewayConfiguration,
 ): AccountDeletionProviderGateway;
 
 export declare function runAccountDeletionStep(
@@ -534,11 +631,11 @@ export declare function runAccountDeletionStep(
 ): Promise<AccountDeletionStepResult>;
 ```
 
-`createAccountDeletionProviderGateway(adapters)` returns a frozen
-null-prototype object. Each method closes over a bound provider function and a
-copied immutable configuration value. `runAccountDeletionStep({ requestId,
-store, gateway, workerId })` performs at most one database-claimed transition
-or effect and returns `AccountDeletionStepResult`.
+`createAccountDeletionProviderGateway(adapters, configuration)` returns a
+frozen null-prototype object. Each method closes over a bound provider function
+and a copied immutable configuration value. `runAccountDeletionStep({
+requestId, store, gateway, lease })` performs at most one database-claimed
+transition or effect and returns `AccountDeletionStepResult`.
 
 **Provider replay contract:**
 
@@ -552,6 +649,118 @@ the response but before the local commit is handled by lookup. A lookup result
 of `checkpoint`, `complete`, `deleted`, or `already_absent` is committed
 locally without a second mutation. No adapter may return an untraceable
 success.
+
+**Binding Task 1 contract clarifications:**
+
+- `rawProofBinding` exists only on the trusted provider-adapter result types.
+  The sealed gateway rejects anything other than a non-empty `Uint8Array`,
+  copies the returned bytes, hashes that exact copy, clears its temporary copy
+  on a best-effort basis, and returns only
+  `proofBindingSha256`. Neither gateway-safe result type, store input, log,
+  serialized response, nor durable row contains the raw bytes. The gateway
+  also validates the adapter-returned subject, challenge, purpose, and expiry
+  before returning its digest-only verification.
+- `clientHintEnvelope` is an opaque provider-owned string. The gateway validates
+  the primitive type, rejects a zero-byte UTF-8 encoding, and rejects a UTF-8
+  byte length above the required positive-safe-integer
+  `maxClientHintEnvelopeBytes` configuration. It does not trim, normalize,
+  parse, reserialize, or assume base64/JWT syntax. Task 1 fixtures choose an
+  explicit test maximum; production has no default and fails closed until the
+  provider integration supplies the maximum.
+- Every store implementation captures the same environment-scoped
+  effect-replay HMAC secret at construction. The configured secret is shared
+  by every replica and worker in that environment, remains stable across
+  process restarts and deployments, is distinct from recovery peppers and
+  encryption keys, and is never generated per store instance. Secret rotation
+  is out of scope until a versioned replay-key protocol exists.
+  `createProviderEffectIntent` accepts an effect ID but never a replay key; the
+  store derives the stable key from the effect ID plus its captured secret.
+  The method is idempotent only for the identical
+  effect-ID/request/kind/object tuple and conflicts on any mismatch. Replay
+  key, kind, request, object inventory ID, and non-null replay material are
+  immutable. `claimEffect` rejects a provider effect whose required replay
+  material is absent.
+- `attachProviderEffectReplayMaterialAndAccept` is the sole pre-worker Apple
+  credential bind. In one locked transaction it validates the exact request in
+  `provider_action_required`, expected job generation, active unconsumed Apple
+  action ID/generation, and matching existing Apple effect; performs the
+  effect replay-material compare-and-set; consumes and clears that action; and
+  transitions the job to `accepted` with one generation increment. Only
+  `null -> supplied ciphertext` is a new replay-material write. Replaying the
+  identical ciphertext against the same now-consumed action and resulting
+  accepted generation returns the same job/effect without another transition;
+  a different non-null ciphertext, wrong action/effect/request, stale
+  generation outside that exact committed replay, wrong source state, or
+  non-Apple effect conflicts. It never accepts or changes a replay key, and no
+  crash-visible state can contain a consumed Apple action without the accepted
+  job transition.
+- `createRequestAndConsumeProof` is one transaction. It resolves idempotency
+  first; locks the durable challenge; checks its subject, challenge ID, binding
+  digest, database-time expiry, and `consumedAt IS NULL`; sets its
+  `consumedAt`; claims the globally unique proof ID; creates the job with
+  database `transaction_timestamp()` as immutable
+  `deletionStartsAt`; inserts the initial Apple intent when and only when
+  authoritative identity says Apple applies; calls `buildStoredResponse` only
+  after database-generated values exist; stores that exact encrypted body and
+  status; and commits. An exact idempotency replay returns before challenge or
+  proof consumption. The trusted response sealer is synchronous,
+  deterministic, bounded, and side-effect-free: it may serialize/encrypt the
+  response but may not return a thenable, call a provider or object store,
+  re-enter the store, or open another database transaction. Every required
+  database-generated value is passed in its context. It is never called for
+  replay or conflict. Created and replay results return the same stored
+  response bytes/status. Task 2 may extend the sealer context with recovery
+  credential data created inside the same transaction.
+- `createChallenge` and `createBlockedRequest` likewise return the exact stored
+  response on both create and replay. For blocked creation, the synchronous
+  `buildStoredResponse({ job, receipt })` runs only after both database-time
+  rows exist in the same transaction. Store/database time, not a
+  caller-supplied date, assigns `deletionStartsAt` and receipt finalization
+  time. SQL enforces immutability.
+- `retryResumeState` is non-null exactly when job state is `retry_required`.
+  A transition into retry records one of the enumerated resume states in the
+  same compare-and-set. A retry may transition only back to that exact stored
+  state, where provider phases perform outcome lookup before any mutation.
+  Manual conversion of an indeterminate provider outcome into terminal failure
+  requires a future explicit authority/audit contract and is not implemented
+  by Task 1.
+- The leased worker, not a Clerk session or recovery bearer, autonomously
+  performs internal `retry_required -> retryResumeState` transitions. This is
+  required for `clerk_deleting` and `receipt_finalizing`, where Clerk may
+  already be absent. The later Clerk-authenticated retry endpoint may only
+  nudge eligible pre-Clerk work; it is not required for post-Clerk recovery.
+
+The legal state adjacency is:
+
+| From | Legal successor(s) | Binding guard |
+|---|---|---|
+| `challenge_required` | `reauth_verified` | Exact current Clerk action and generation; matching, unexpired, globally one-use proof |
+| `reauth_verified` | `provider_action_required`, `accepted` | Persist an Apple action before the first edge; use the second edge only when authoritative identity says Apple is not applicable |
+| `provider_action_required` | `reauth_verified`, `accepted` | Exact unconsumed action ID/kind/generation; Clerk action returns to reauthentication, while the Apple edge occurs atomically inside `attachProviderEffectReplayMaterialAndAccept` |
+| `accepted` | `apple_revoking`, `preflight` | Apple-applicable jobs take only the first edge; non-applicable jobs only the second |
+| `apple_revoking` | `apple_revoked`, `retry_required` | Committed Apple completion, or a durable retry/indeterminate outcome resuming to `apple_revoking` |
+| `apple_revoked` | `preflight` | Committed Apple completion |
+| `preflight` | `cleanup_pending` | Valid cleanup plan and fence prerequisites |
+| `cleanup_pending` | `cleanup_running` | Fenced cleanup claim |
+| `cleanup_running` | `object_inventory`, `retry_required` | Atomic database cleanup completion, or retry resuming to `cleanup_pending` |
+| `object_inventory` | `object_cleanup_pending`, `retry_required` | Complete committed snapshot, or retry resuming to `object_inventory` |
+| `object_cleanup_pending` | `object_cleanup_running`, `object_cleanup_complete` | All object intents committed; direct completion only for an empty inventory |
+| `object_cleanup_running` | `object_cleanup_complete`, `retry_required` | All effects committed and counts reconcile, or retry resuming to `object_cleanup_running` |
+| `object_cleanup_complete` | `clerk_deleting` | Committed cleanup receipt, reconciled object outcomes, and confirmed current recovery handoff |
+| `clerk_deleting` | `receipt_finalizing`, `retry_required` | Committed deleted/already-absent Clerk outcome, or retry resuming to `clerk_deleting` |
+| `receipt_finalizing` | `succeeded`, `failed`, `retry_required` | Immutable receipt committed atomically, or retry resuming to `receipt_finalizing` |
+| `retry_required` | the exact stored `retryResumeState` | No caller-selected resume state; provider phases look up outcome before mutation |
+| `blocked`, `failed`, `succeeded` | none | Terminal immutability |
+
+Blocked initiation creates `blocked` directly rather than using a generic
+transition. `provider_unavailable` remains a reserved public terminal code
+until a later task defines its creation authority. Task 1 defines and tests the
+complete structural table but executes only the reauthentication/Apple path
+through `preflight`. Cleanup/object transitions stay unreachable until Task 2
+persists their evidence. Clerk gateway replay is unit-tested in Task 1, but
+`object_cleanup_complete -> clerk_deleting` stays unreachable until Task 2
+provides cleanup, object, and recovery-handoff evidence; the leased worker
+executes Clerk deletion/finalization in Task 3.
 
 - [ ] **Step 1: Write RED state-machine, proof, and idempotency tests**
 
@@ -568,12 +777,21 @@ Test proof and request initiation directly:
 - exact envelope byte copy remains stable when the caller mutates its input;
 - the verified subject and challenge must match the durable user/challenge;
 - expired proofs fail;
+- a challenge is consumed in the same transaction as its first successful
+  request, and another proof ID cannot reuse that challenge;
 - two users and two requests concurrently claiming the same `proofId` yield
   exactly one committed claim;
 - the same idempotency key plus the same canonical fingerprint returns the
   byte-exact encrypted stored response;
 - the same key plus a different fingerprint returns conflict;
-- a retry after response persistence does not consume a second proof.
+- a retry after response persistence does not consume a second proof or
+  challenge;
+- synchronous response sealers receive database-generated values, while a
+  returned thenable or store re-entry fails closed before commit;
+- Apple replay material attachment, action consumption/clearing, and the
+  transition to `accepted` commit atomically through exact
+  action/effect/generation fencing; identical replay is idempotent and
+  different ciphertext conflicts.
 
 - [ ] **Step 2: Run state/proof/idempotency tests and verify RED**
 
@@ -673,11 +891,13 @@ Implement only after Steps 1–6 have produced the intended failures.
 - [ ] **Step 8: Implement `0009`, fail-closed additive `0010`, and Drizzle schema**
 
 `0009` creates server-only jobs (including immutable
-`deletion_starts_at`), provider-action records, effects, legacy proof claims,
-idempotency records, recovery-token digest rows, worker lease fields, and
-immutable receipts. Provider actions store an action ID, request ID, kind,
-generation, encrypted client-safe payload, expiry, and consumed timestamp. It
-stores request/user identity without cascading from `users`,
+`deletion_starts_at` and constrained nullable `retry_resume_state`),
+provider-action records, effects (including nullable encrypted replay material),
+legacy proof claims, idempotency records, recovery-token digest rows, worker
+lease fields, and immutable receipts. Provider actions store an action ID,
+request ID, kind, generation, encrypted client-safe payload, expiry, and
+consumed timestamp. It stores request/user identity without cascading from
+`users`,
 enforces unique `(user_id, operation_id, idempotency_key_hash)`, unique replay
 keys, and encrypted replayable bodies for bearer-issuing responses.
 
