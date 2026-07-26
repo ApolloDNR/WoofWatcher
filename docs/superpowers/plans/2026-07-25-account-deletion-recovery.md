@@ -77,7 +77,9 @@ Query, Expo SDK 54, Expo Router 6, and expo-secure-store.
   generation, so exactly one commits and the loser must refetch.
 - Clerk deletion is forbidden until the currently active recovery generation
   has been saved by the client and acknowledged through a Clerk-authenticated,
-  token-possession handoff.
+  token-possession handoff, and database time remains strictly before its fixed
+  expiry. Expiry before Clerk deletion terminalizes truthfully without a Clerk
+  call.
 - OpenAPI is the public contract source of truth. Generated Zod and React files
   are never hand-edited.
 - Strict Zod generation applies only to account-deletion operations. Existing
@@ -748,7 +750,7 @@ The legal state adjacency is:
 | `object_inventory` | `object_cleanup_pending`, `retry_required` | Complete committed snapshot, or retry resuming to `object_inventory` |
 | `object_cleanup_pending` | `object_cleanup_running`, `object_cleanup_complete` | All object intents committed; direct completion only for an empty inventory |
 | `object_cleanup_running` | `object_cleanup_complete`, `retry_required` | All effects committed and counts reconcile, or retry resuming to `object_cleanup_running` |
-| `object_cleanup_complete` | `clerk_deleting` | Committed cleanup receipt, reconciled object outcomes, and confirmed current recovery handoff |
+| `object_cleanup_complete` | `clerk_deleting`, `failed` | The Clerk edge requires exact cleanup parity, confirmed current handoff, and database time before recovery expiry; the failed edge requires database time at/after expiry and atomically derives the immutable `recovery_expired_before_clerk_deletion` receipt with no Clerk intent/call |
 | `clerk_deleting` | `receipt_finalizing`, `retry_required` | Committed deleted/already-absent Clerk outcome, or retry resuming to `clerk_deleting` |
 | `receipt_finalizing` | `succeeded`, `failed`, `retry_required` | Immutable receipt committed atomically, or retry resuming to `receipt_finalizing` |
 | `retry_required` | the exact stored `retryResumeState` | No caller-selected resume state; provider phases look up outcome before mutation |
@@ -773,6 +775,9 @@ server-derived Apple applicability. Test that `deletionStartsAt` is written
 once and never computed during projection; each authorization state must load
 an exact durable provider-action record, and missing, stale-generation, or
 consumed action records fail closed rather than producing invented fields.
+The transition-table fixture must include
+`object_cleanup_complete -> failed` only for the exact database-expiry receipt
+branch and reject that edge before expiry or without its derived receipt.
 
 Test proof and request initiation directly:
 
@@ -982,6 +987,7 @@ export interface AccountDeletionCleanupPlan {
   requestId: RequestId;
   userId: UserId;
   generation: number;
+  planDigestSha256: Sha256Hex;
   households: Array<{
     householdId: string;
     action: HouseholdDeletionAction;
@@ -1295,16 +1301,30 @@ transaction callback returns.
   one-way null-to-value completion/evidence finalization performed by the same
   routine transaction;
 - `account_deletion_database_cleanup_evidence`: one row per request with
-  `evidence_id`, cleanup generation, plan digest, deleted/redacted row counts,
-  and database completion time.
+  `evidence_id`, `user_id`, cleanup generation, plan digest,
+  deleted/redacted row counts, and database completion time.
 
 The household rows, not an opaque JSON plan, are the canonical household lock
 and policy inventory. The plan header digest is the SHA-256 of the
 length-delimited, byte-sorted `(household_id, action, member_count,
 other_owner_count)` rows plus the request ID, user ID, and immutable
-`plan_generation`. `AccountDeletionCleanupPlan.generation` is loaded from that
-header; it is never derived from the mutable job state generation. The cleanup
-routine recomputes and verifies the digest before mutation.
+`plan_generation`. `AccountDeletionCleanupPlan.generation` and
+`planDigestSha256` are loaded from that header; neither is derived from the
+mutable job state generation. The cleanup routine recomputes and verifies the
+digest before mutation.
+
+Every cleanup boundary revalidates this chain rather than trusting a supplied
+evidence ID. `executeDatabaseCleanup` requires the plan request/user to equal
+the locked job, a positive safe plan generation, and the canonical digest of
+the exact normalized rows to equal the header digest before any mutation. Its
+evidence row copies that exact request, user, plan generation, and digest.
+`finalizeObjectCleanup` joins and requires exact parity among job, plan,
+evidence, snapshot, inventory, and effects: request/user, plan generation and
+digest, evidence ID, snapshot ID/manifest/count, and one immutable effect per
+inventory row. It derives receipt counts from committed outcomes. Loading or
+replaying an existing evidence/receipt row repeats the same checks and accepts
+only a byte-identical result; any mismatched user, request, generation, digest,
+snapshot, inventory/effect tuple, or count conflicts without a state change.
 
 `0011` owns and seeds the deployment-identity singleton once with
 `gen_random_uuid()`. A primary-key/check constraint permits only the literal
@@ -1334,6 +1354,7 @@ export declare function redactExactSubjectScalars(
 export interface DatabaseCleanupEvidence {
   evidenceId: string;
   requestId: RequestId;
+  userId: UserId;
   cleanupGeneration: number;
   planDigestSha256: Sha256Hex;
   deletedRowCount: number;
@@ -1523,6 +1544,11 @@ export interface AccountDeletionRecoveryStore {
   ): Promise<
     | { kind: "transitioned"; job: AccountDeletionJobRecord }
     | { kind: "waiting_for_handoff"; job: AccountDeletionJobRecord }
+    | {
+        kind: "recovery_expired";
+        job: AccountDeletionJobRecord;
+        receipt: AccountDeletionReceiptRecord;
+      }
     | { kind: "conflict" }
   >;
 }
@@ -1540,7 +1566,18 @@ subject and the current bearer; it stamps the active digest row and job
 summary. The Clerk transition validates the current handoff, committed cleanup
 receipt, reconciled inventory/effects, live lease, and state-generation CAS in
 one transaction. Exactly one of a concurrent rotation or Clerk transition can
-commit.
+commit. It also requires database time to be strictly before the fixed recovery
+expiry. At `database_now >= recovery_expires_at`, whether or not handoff was
+previously confirmed, that same fenced transaction performs no Clerk effect or
+provider call; it writes one immutable failed account-deletion receipt and
+moves `object_cleanup_complete -> failed`, returning `recovery_expired`.
+The receipt is derived—not caller supplied—with terminal code
+`recovery_expired_before_clerk_deletion`, complete data/object cleanup, Clerk
+still present, Apple state proven by the committed Apple effect or
+`not_applicable`, and database `finalizedAt`. A wait/retry is forbidden because
+the fixed expiry cannot be extended. The owner-authenticated status may expose
+the failed receipt while Clerk remains; recovery GET returns expired and never
+authorizes access after the boundary.
 
 **Sealed object locators, snapshots, effects, and receipts**
 
@@ -1825,8 +1862,10 @@ entry point:
 - `preflight` loads and verifies the immutable cleanup plan, then performs the
   fenced transition to `cleanup_pending`;
 - `cleanup_pending` claims `cleanup_running`;
-- `cleanup_running` calls `executeDatabaseCleanup`; the privileged routine
-  itself writes evidence and transitions to `object_inventory`;
+- `cleanup_running` reloads and validates the canonical plan, then calls
+  `executeDatabaseCleanup`; the privileged routine itself writes exact
+  request/user/generation/digest-bound evidence and transitions to
+  `object_inventory`;
 - `object_inventory` inventories through `objectGateway`, persists a complete
   snapshot header and rows, then transitions to `object_cleanup_pending`;
 - `object_cleanup_pending` commits the exact effect-intent set. An empty
@@ -1843,7 +1882,8 @@ entry point:
   `transitionToClerkDeleting`. A missing or mismatched receipt fails closed;
   no prior-step in-memory value or test-only inspector is authoritative. An
   unconfirmed current handoff returns `waiting` without mutation, while a
-  successful CAS returns `advanced`.
+  successful unexpired CAS returns `advanced`; an expired result returns
+  `terminal` with the transaction's immutable failed receipt.
 
 Every branch remains one bounded step and retains Task 1's crash-reconciliation
 rule: a claimed or indeterminate effect is looked up by its stable replay key
@@ -2039,6 +2079,9 @@ Before implementing recovery, prove:
 - rotation N to N+1 is transactional, invalidates N, and retains the original
   expiry;
 - rotation at `database_now = expires_at` fails;
+- Clerk transition at `database_now = expires_at` atomically terminalizes with
+  `recovery_expired_before_clerk_deletion`, a truthful failed receipt, and no
+  Clerk effect/provider call; the same holds for an earlier confirmed handoff;
 - old-token replay and generation rollback fail;
 - rotation succeeds in each globally enumerated pre-Clerk state and is
   rejected from `challenge_required`, `retry_required`, `clerk_deleting`,
@@ -2100,7 +2143,11 @@ impersonation, mismatched session/current users, different database names,
 different deployment IDs, same-name/same-marker independent fake backends,
 lock-challenge result mismatches, missing/duplicate/malformed attestation rows,
 and pool acquisition/query/rollback failures before exposing a store. Also
-cover the exact app, cleanup-owner, and cleanup-worker role attributes and
+seed hostile cleanup plans/evidence with wrong user, request, generation, or
+digest and require execution/finalization/replay to fail without state change.
+Mutate snapshot manifests/counts and inventory/effect tuples independently and
+require the same fail-closed result. Cover the exact app, cleanup-owner, and
+cleanup-worker role attributes and
 grants, default `PUBLIC EXECUTE` denial for every new function, hostile
 pre-existing table/function/policy/trigger/owner/ACL rollback, and
 bidirectional terminal-provider-outcome correlation.
@@ -2197,8 +2244,13 @@ generation; neither path may validate before the lock and mutate afterward.
 - expose the cleanup routine only to the cleanup role and validate the exact
   fence, lease attempt, transaction/backend evidence, and live lease in the
   database;
+- bind cleanup execution, evidence, snapshots, effects, and receipts to the
+  exact job user, canonical plan generation/digest, and derived counts at every
+  create/load/replay boundary;
 - preserve immutable effects, idempotency records, proof claims, recovery
   expiry, and terminal receipts;
+- atomically terminalize an expired pre-Clerk request with the truthful
+  `recovery_expired_before_clerk_deletion` receipt and no Clerk effect;
 - update the history-generation trigger to use canonical locking;
 - enable RLS, revoke `PUBLIC`/`anon`/`authenticated`, and install the exact
   app/cleanup owner/cleanup worker grants and function ACLs defined by the
@@ -2294,6 +2346,7 @@ export interface RedactedAccountDeletionReceipt {
     | "provider_unavailable"
     | "cleanup_failed"
     | "provider_indeterminate"
+    | "recovery_expired_before_clerk_deletion"
     | null;
   finalizedAt: string;
 }
