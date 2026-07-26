@@ -1291,6 +1291,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 1221. DONE 2026-07-26: Continued the route-level dark-mode audit on More. The dog profile edit control keeps its intentionally ivory surface in both themes, but its pencil now uses constant `brandNavy` instead of adaptive `forest`, so the edit affordance remains visible in dark mode.
 1222. DONE 2026-07-26: Red-first mobile readiness failed on the adaptive More profile edit icon, then passed after the constant-ink fix. This is source-backed contrast hardening only; route-named iOS/Android dark screenshots, native accessibility traversal, and Apollo visual approval remain open.
 1223. NEXT: Run the strongest local verification, push the verified implementation, and require fresh branch CI before treating dependency-complete proof as current. Native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen evidence remain the highest-impact external blockers.
+1224. DONE 2026-07-26: Dependency-complete branch CI proved More profile edit contrast commit `12d54876` in `WoofWatcher Verify` run `30193821002`, job `89771673873`. Checkout, pinned pnpm/Node setup, dependency install, JSON mobile beta doctor, focused behavior tests, typecheck plus CI-safe builds, all post steps, and Complete job passed.
+1225. NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip. Then continue real native Auth/Setup, Records local-file, Route Visual Consistency, and PDF/PNG share/reopen proof when device tooling is available; otherwise continue the source-level dark-mode audit on high-use care surfaces.
 
 ## Cadence
 

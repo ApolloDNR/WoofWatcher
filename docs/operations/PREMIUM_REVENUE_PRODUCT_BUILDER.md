@@ -10,8 +10,11 @@ mobile-readiness contract.
 
 This is source-backed contrast hardening only. Route-named iOS/Android dark
 screenshots, accessibility traversal, and Apollo visual approval remain open.
-Fresh dependency-complete branch CI is required after the implementation
-commit before the result is treated as release proof.
+Dependency-complete CI proved implementation commit `12d54876` in WoofWatcher
+Verify run `30193821002`, job `89771673873`, with checkout, pinned pnpm/Node
+setup, dependency install, JSON doctor, focused tests, typecheck plus CI-safe
+builds, all post steps, and Complete job green. Rerun after this proof-record
+commit before treating the final branch tip as current.
 
 ## 2026-07-25 Home Avatar Studio launcher dark-mode contrast
 
