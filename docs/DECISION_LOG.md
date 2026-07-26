@@ -2565,6 +2565,18 @@ Owner: Codex.
 Revisit trigger: A provider-backed QA evidence store becomes approved or route
 visual proof gains explicit revision timestamps and conflict resolution.
 
+## 2026-07-26: Fixed-light More profile controls use constant ink
+
+Decision: Keep the More dog-profile edit button on its warm ivory surface in
+both themes, and render its pencil with constant `brandNavy`.
+
+Reason: `forest` is an adaptive semantic token. In dark mode it becomes pale
+and loses definition against the intentionally fixed-light edit button.
+
+Boundary: This is source-backed contrast hardening. It does not replace
+route-named iOS/Android dark-mode screenshots, native accessibility traversal,
+or Apollo visual approval.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.

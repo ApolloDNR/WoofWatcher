@@ -629,6 +629,26 @@ test("keeps the fixed-light Home Avatar Studio launcher visible in dark mode", (
   );
 });
 
+test("keeps the fixed-light More profile edit control visible in dark mode", () => {
+  const more = readAppFile("(tabs)/more.tsx");
+
+  assert.match(
+    more,
+    /s\.profileEditBtn,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\}/,
+    "the More profile edit control should keep its fixed-light surface",
+  );
+  assert.match(
+    more,
+    /name="pencil"\s+size=\{14\}\s+color=\{colors\.brandNavy\}/,
+    "the fixed-light More profile edit control needs a constant dark icon",
+  );
+  assert.doesNotMatch(
+    more,
+    /name="pencil"\s+size=\{14\}\s+color=\{colors\.forest\}/,
+    "adaptive forest becomes pale and loses contrast on the fixed-light edit control",
+  );
+});
+
 test("keeps critical mobile actions accessible to screen readers", () => {
   const privacy = readAppFile("privacy.tsx");
   const premium = readAppFile("premium.tsx");

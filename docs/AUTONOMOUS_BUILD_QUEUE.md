@@ -1288,6 +1288,10 @@ Every autonomous run should improve at least one of: care workflow, household us
 1219. DONE 2026-07-25: Dependency-complete branch CI proved Quick Log dark selection contrast commit `8c8ff586` in `WoofWatcher Verify` run `30155257785`, job `89672089402`, completed success in `1m43s` with checkout, pinned pnpm/Node setup, dependency install, JSON mobile beta doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job all passing.
 1220. NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip. Continue real native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG proof when device tooling is available; otherwise continue the route-by-route dark-mode audit on the highest-use care surfaces.
 
+1221. DONE 2026-07-26: Continued the route-level dark-mode audit on More. The dog profile edit control keeps its intentionally ivory surface in both themes, but its pencil now uses constant `brandNavy` instead of adaptive `forest`, so the edit affordance remains visible in dark mode.
+1222. DONE 2026-07-26: Red-first mobile readiness failed on the adaptive More profile edit icon, then passed after the constant-ink fix. This is source-backed contrast hardening only; route-named iOS/Android dark screenshots, native accessibility traversal, and Apollo visual approval remain open.
+1223. NEXT: Run the strongest local verification, push the verified implementation, and require fresh branch CI before treating dependency-complete proof as current. Native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen evidence remain the highest-impact external blockers.
+
 ## Cadence
 
 Recommended automation cadence from Apollo's shared thread: every 3 hours, using a dedicated Git worktree where the automation system supports it.

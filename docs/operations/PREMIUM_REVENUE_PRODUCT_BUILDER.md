@@ -1,5 +1,18 @@
 # Premium Revenue Product Builder
 
+## 2026-07-26 More profile edit dark-mode contrast
+
+The route-level dark-mode audit found a high-use More profile defect: the edit
+button remains intentionally ivory in both themes, while its pencil used the
+adaptive forest token. Dark mode made the icon pale against that fixed-light
+surface. The pencil now uses constant `brandNavy`, protected by a red-first
+mobile-readiness contract.
+
+This is source-backed contrast hardening only. Route-named iOS/Android dark
+screenshots, accessibility traversal, and Apollo visual approval remain open.
+Fresh dependency-complete branch CI is required after the implementation
+commit before the result is treated as release proof.
+
 ## 2026-07-25 Home Avatar Studio launcher dark-mode contrast
 
 The route-level dark-mode audit found a Home first-screen contrast defect: the

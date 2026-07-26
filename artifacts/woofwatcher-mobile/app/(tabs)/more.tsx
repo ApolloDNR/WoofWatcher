@@ -1787,7 +1787,7 @@ export default function MoreScreen() {
               accessibilityLabel="Edit dog profile"
               style={[s.profileEditBtn, { backgroundColor: colors.ivory }]}
             >
-              <Ionicons name="pencil" size={14} color={colors.forest} />
+              <Ionicons name="pencil" size={14} color={colors.brandNavy} />
             </Pressable>
             <View style={s.profileAvatarWrap}>
               <View style={[s.profileAvatar, { backgroundColor: colors.card, borderColor: colors.card }]}>
