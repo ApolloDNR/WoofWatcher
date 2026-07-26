@@ -1,5 +1,19 @@
 # Premium Revenue Product Builder
 
+## 2026-07-26 Avatar Studio badge-boundary dark-mode contrast
+
+The route-level dark-mode audit found a remaining Avatar Studio template-grid
+defect: the earlier pass gave the fixed-light inactive “Still” badge constant
+dark ink, but left its ivory boundary on the adaptive border token. The
+inactive badge now uses a constant translucent `brandNavy` border while live
+badges retain adaptive primary chrome, protected by a red-first
+mobile-readiness contract.
+
+This is source-backed contrast hardening only. Route-named iOS/Android dark
+screenshots, native accessibility traversal, and Apollo visual approval remain
+open. Dependency-complete branch CI must pass the implementation commit before
+this branch tip is treated as release proof.
+
 ## 2026-07-26 WoofGuide safety-card dark-mode contrast
 
 The route-level dark-mode audit found that WoofGuide's fixed-light “Not

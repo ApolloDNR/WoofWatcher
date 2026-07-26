@@ -1239,7 +1239,7 @@ export default function PortraitScreen() {
                                 : colors.ivory,
                               borderColor: liveSprite
                                 ? colors.primary
-                                : colors.border,
+                                : colors.brandNavy + "22",
                             },
                           ]}
                         >

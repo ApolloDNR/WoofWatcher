@@ -629,8 +629,18 @@ test("keeps fixed-light Avatar Studio template badges readable in dark mode", ()
 
   assert.match(
     avatarStudio,
+    /borderColor:\s*liveSprite\s*\?\s*colors\.primary\s*:\s*colors\.brandNavy\s*\+\s*"22"/,
+    "the fixed-light inactive template badge needs a constant dark boundary",
+  );
+  assert.match(
+    avatarStudio,
     /color:\s*liveSprite\s*\?\s*colors\.primaryForeground\s*:\s*colors\.brandNavy/,
     "the fixed-light inactive template badge needs constant dark ink",
+  );
+  assert.doesNotMatch(
+    avatarStudio,
+    /borderColor:\s*liveSprite\s*\?\s*colors\.primary\s*:\s*colors\.border/,
+    "the adaptive border token becomes too faint around the fixed-light inactive badge",
   );
   assert.doesNotMatch(
     avatarStudio,

@@ -13,7 +13,10 @@
 - [x] Add a red-first readiness contract for the Dog ID plate boundary.
 - [x] Keep Avatar Studio's fixed-light inactive template status badges
   readable in dark mode with constant brand-navy ink.
-- [x] Add a red-first readiness contract for the template badge contrast.
+- [x] Keep the same fixed-light inactive template badges visibly bounded in
+  dark mode with a constant translucent brand-navy border.
+- [x] Add a red-first readiness contract for the template badge ink and
+  boundary contrast.
 - [x] Keep Avatar Studio's fixed-light template speech bubble readable in dark
   mode with a constant brand-navy boundary and headline.
 - [x] Add a red-first readiness contract for the template speech bubble.

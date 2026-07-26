@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-07-26: Fixed-light Avatar Studio badges use constant dark boundaries
+
+- Decision: use a translucent `brandNavy` border around fixed-light inactive
+  template badges while preserving the live badge's adaptive primary chrome.
+- Reason: the earlier ink correction left the ivory “Still” badge using the
+  adaptive border token, which weakens its boundary in native dark mode.
+- Boundary: this source/readiness guard does not replace route-named dark-mode
+  screenshots, native accessibility review, or Apollo visual approval.
+
 ## 2026-07-26: WoofGuide safety boundary keeps constant dark chrome
 
 - Decision: use a translucent `brandNavy` border for the fixed-light
