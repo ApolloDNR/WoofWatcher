@@ -4437,3 +4437,10 @@ partial-checkout suite passed `655/656` and failed only on the known missing
 truthfully blocked on local pnpm/Corepack and Expo resolution. This protects
 source-level contrast only; route-named native dark-mode screenshots, device
 touch/accessibility review, and Apollo visual approval remain required.
+
+Dependency-complete branch CI proved implementation commit `5fb7e8ad` in
+`WoofWatcher Verify` run `30205237007`, job `89802035304`, completed success in
+`2m13s`; checkout, pinned dependency setup/install, JSON mobile beta doctor,
+focused tests, typecheck plus CI-safe builds, all post steps, and Complete job
+passed. Rerun after this proof-record commit before treating the final branch
+tip as current.
