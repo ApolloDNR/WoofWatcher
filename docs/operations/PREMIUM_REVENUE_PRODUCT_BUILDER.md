@@ -11,7 +11,12 @@ mobile-readiness contract.
 
 This is source-backed contrast hardening only. Route-named iOS/Android dark
 screenshots, Records local-file share/reopen proof, accessibility traversal,
-and Apollo visual approval remain open.
+and Apollo visual approval remain open. Dependency-complete CI proved
+implementation commit `ade55dba` in WoofWatcher Verify run `30211709210`, job
+`89818931493`, with checkout, pinned pnpm/Node setup, dependency install, JSON
+doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete
+job green. Rerun after this proof-record commit before treating the final branch
+tip as current.
 
 ## 2026-07-26 More profile edit dark-mode contrast
 
