@@ -86,9 +86,10 @@ Query, Expo SDK 54, Expo Router 6, and expo-secure-store.
   server types, OpenAPI, generated Zod, generated React types, the dedicated
   compile fixture, and the nested recovery DTO.
 - Production composition fails closed when Clerk, Apple, recovery-pepper,
-  encryption, a distinct effect-replay HMAC secret, the provider-declared
-  client-hint envelope byte limit, object-inventory, object-deletion,
-  cleanup-role, worker-lease, or shutdown primitives are absent.
+  encryption, distinct effect-replay and object-locator HMAC secrets, the
+  provider-declared client-hint envelope byte limit, object-inventory,
+  object-deletion, cleanup-role, worker-lease, or shutdown primitives are
+  absent.
 - The runtime account-deletion protocol remains separate from
   `accountDeletionProof.ts`; launch-proof booleans never enable provider
   deletion.
@@ -146,6 +147,7 @@ export interface LeaseFence {
   workerId: string;
   leaseToken: string;
   leaseUntil: Date;
+  leaseAttempt: number;
 }
 
 export type AccountDeletionState =
@@ -964,7 +966,9 @@ before Task 2 starts.
 - Create: `artifacts/api-server/test/accountDeletionPostgres.test.ts`
 - Create: `artifacts/api-server/test/accountDeletionRecovery.test.ts`
 - Create: `artifacts/api-server/test/accountDeletionWriteGuard.test.ts`
+- Modify: `artifacts/api-server/test/accountDeletion.test.ts`
 - Modify: `artifacts/api-server/test/accountDeletionMigration.test.ts`
+- Modify: `artifacts/api-server/test/support/account-deletion-memory-test-harness.ts`
 
 **Cleanup, recovery, and object contracts:**
 
@@ -1017,11 +1021,13 @@ export interface IssuedRecoveryCredential {
 
 export interface AccountDeletionObjectRef {
   inventoryId: string;
+  snapshotId: string;
   requestId: RequestId;
   storageProvider: string;
   bucket: string;
   objectKeyCiphertext: string;
   objectVersionCiphertext: string | null;
+  locatorDigestSha256: Sha256Hex;
 }
 
 export interface DiscoveredAccountObject {
@@ -1055,11 +1061,11 @@ export interface AccountDeletionObjectAdapters {
   }): Promise<ObjectInventorySnapshot>;
   lookupObjectDeletionOutcome(input: {
     replayKey: string;
-    object: AccountDeletionObjectRef;
+    object: DiscoveredAccountObject;
   }): Promise<ObjectDeletionOutcome>;
   deleteObject(input: {
     replayKey: string;
-    object: AccountDeletionObjectRef;
+    object: DiscoveredAccountObject;
   }): Promise<
     Extract<ObjectDeletionOutcome, { kind: "deleted" | "already_absent" }>
   >;
@@ -1069,7 +1075,7 @@ export interface AccountDeletionObjectGateway {
   inventoryAccountObjects(input: {
     requestId: RequestId;
     userId: UserId;
-  }): Promise<ObjectInventorySnapshot>;
+  }): Promise<CompleteObjectInventorySnapshot>;
   lookupObjectDeletionOutcome(input: {
     replayKey: string;
     object: AccountDeletionObjectRef;
@@ -1083,9 +1089,11 @@ export interface AccountDeletionObjectGateway {
 }
 
 export interface CleanupCompletionReceipt {
+  cleanupReceiptId: string;
   requestId: RequestId;
   cleanupGeneration: number;
   databaseRowsComplete: true;
+  databaseCleanupEvidenceId: string;
   objectInventorySnapshotId: string;
   objectCount: number;
   objectDeleteCount: number;
@@ -1095,12 +1103,8 @@ export interface CleanupCompletionReceipt {
 
 export declare function createAccountDeletionObjectGateway(
   adapters: AccountDeletionObjectAdapters,
+  locatorCodec: AccountDeletionObjectLocatorCodec,
 ): AccountDeletionObjectGateway;
-
-export interface PersistCompleteObjectInventoryInput {
-  snapshot: ObjectInventorySnapshot;
-  lease: LeaseFence;
-}
 
 export interface CreateObjectEffectIntentsInput {
   requestId: RequestId;
@@ -1116,11 +1120,502 @@ export interface ClaimObjectEffectInput {
   expectedJobGeneration: number;
   lease: LeaseFence;
 }
+```
+
+#### Task 2 binding clarification
+
+The following contracts are normative for Task 2. They replace any looser
+wording later in this task and preserve the Task 1 public names unless an
+explicit extension is shown here.
+
+**Start and idempotency boundary**
+
+Accepted and blocked starts use the same idempotency operation,
+`operationId: "request"`, and the same unique key
+`(user_id, operation_id, idempotency_key_hash)`. There is no separate blocked
+operation. `lookupRequestIdempotency` remains the first store call and returns
+the encrypted byte-exact response for both accepted and blocked requests
+before a provider call.
+
+```ts
+export interface StartDeletionPreflightInput {
+  requestId: RequestId;
+  authenticatedSubjectUserId: UserId;
+  idempotencyKeyHash: Sha256Hex;
+  requestFingerprintSha256: Sha256Hex;
+  buildBlockedStoredResponse(created: {
+    job: AccountDeletionJobRecord;
+    receipt: AccountDeletionReceiptRecord;
+  }): StoredIdempotentResponse;
+}
+
+export type StartDeletionPreflightResult =
+  | { kind: "ready" }
+  | {
+      kind: "blocked";
+      job: AccountDeletionJobRecord;
+      receipt: AccountDeletionReceiptRecord;
+      encryptedResponseBody: string;
+      responseStatus: number;
+    }
+  | {
+      kind: "replay";
+      job: AccountDeletionJobRecord;
+      encryptedResponseBody: string;
+      responseStatus: number;
+    }
+  | { kind: "conflict" };
+
+export interface RecoveryCredentialIssuer {
+  issueAndSeal(input: {
+    requestId: RequestId;
+    generation: RecoveryGeneration;
+    issuedAt: Date;
+    expiresAt: Date;
+    seal(credential: IssuedRecoveryCredential): StoredIdempotentResponse;
+  }): {
+    tokenDigestSha256: Sha256Hex;
+    storedResponse: StoredIdempotentResponse;
+  };
+  digest(input: {
+    requestId: RequestId;
+    generation: RecoveryGeneration;
+    bearer: string;
+  }): Sha256Hex;
+}
+
+export interface CommitDeletionStartInput
+  extends Omit<
+    CreateDeletionRequestInput,
+    "appleApplicable" | "initialProviderEffectIntent" | "buildStoredResponse"
+  > {
+  authenticatedSubjectUserId: UserId;
+  authoritativeIdentity: AuthoritativeIdentity;
+  appleEffectId: EffectId;
+  recoveryIssuer: RecoveryCredentialIssuer;
+  buildStoredResponse(created: {
+    job: AccountDeletionJobRecord;
+    recoveryCredential: IssuedRecoveryCredential;
+  }): StoredIdempotentResponse;
+  buildBlockedStoredResponse(created: {
+    job: AccountDeletionJobRecord;
+    receipt: AccountDeletionReceiptRecord;
+  }): StoredIdempotentResponse;
+}
+
+export type CommitDeletionStartResult =
+  | CreateDeletionRequestResult
+  | {
+      kind: "blocked";
+      job: AccountDeletionJobRecord;
+      receipt: AccountDeletionReceiptRecord;
+      encryptedResponseBody: string;
+      responseStatus: number;
+    };
+
+export interface AccountDeletionStartStore {
+  preflightDeletionStart(
+    input: StartDeletionPreflightInput,
+  ): Promise<StartDeletionPreflightResult>;
+  commitDeletionStart(
+    input: CommitDeletionStartInput,
+  ): Promise<CommitDeletionStartResult>;
+}
+
+// Replace the Task 1 initiation input with this Task 2 contract; do not add
+// an alternate entry point.
+export interface InitiateAccountDeletionRequestInput {
+  store: AccountDeletionTask2Store;
+  gateway: AccountDeletionProviderGateway;
+  request: Omit<CommitDeletionStartInput, "authoritativeIdentity">;
+}
+
+export declare function initiateAccountDeletionRequest(
+  input: InitiateAccountDeletionRequestInput,
+): Promise<CommitDeletionStartResult>;
+```
+
+`RecoveryCredentialIssuer.issueAndSeal` is synchronous. It creates exactly 32
+cryptographically random bytes, base64url-encodes them only for the synchronous
+`seal` callback, computes an HMAC-SHA-256 digest with the configured recovery
+pepper over the length-delimited tuple
+`requestId + generation + bearer bytes`, clears the mutable byte buffer in a
+`finally`, rejects a thenable sealer result, and returns only the digest and
+encrypted stored response. A raw bearer is never a store result, row, log, or
+async value.
+
+The start sequence is exact:
+
+1. Reject unless `request.userId` and
+   `request.authenticatedSubjectUserId` are byte-identical, then call
+   `lookupRequestIdempotency`. Replay or conflict returns immediately.
+2. `preflightDeletionStart` acquires the `a:<subject>` lock and all current
+   `h:<household>` locks, uses database time, and selects the durable user and
+   memberships `FOR UPDATE`. A missing user or all-households policy failure
+   writes only the blocked job, immutable terminal receipt, and encrypted
+   idempotent response, then returns `blocked`.
+3. Only a `ready` result permits
+   `getAuthoritativeIdentity(authenticatedSubjectUserId)`.
+4. `commitDeletionStart` reacquires the same canonical lock set, repeats the
+   idempotency check, repeats the durable user/membership policy check, and
+   rejects identity subject substitution. If the user or policy changed, it
+   writes the same blocked-only shape and does not consume the challenge or
+   proof.
+5. On the accepted path, the same transaction consumes the challenge, claims
+   the globally unique proof, inserts the job, normalized cleanup plan,
+   tombstone, generation-1 recovery digest with
+   `expires_at = database_now + interval '30 days'`, optional Apple effect
+   intent, and byte-exact encrypted response.
+6. No provider effect runs before commit. A race that removes the user between
+   Steps 2 and 4 may have performed the one authoritative identity read, but
+   it still commits only the blocked shape and consumes no proof.
+
+No response builder or credential sealer may perform I/O, return a promise or
+thenable, re-enter the store, or observe an uncommitted object after its
+transaction callback returns.
+
+**Normalized cleanup and canonical redaction**
+
+`0011` creates these server-only rows:
+
+- `account_deletion_cleanup_plans`: one immutable header per request with
+  `request_id`, `user_id`, immutable `plan_generation`,
+  `plan_digest_sha256`, and `created_at`;
+- `account_deletion_cleanup_plan_households`: one immutable row per
+  `(request_id, household_id)` with `action`, `member_count`, and
+  `other_owner_count`;
+- `account_deletion_cleanup_executions`: one privileged execution record
+  containing `execution_id`, request/generation/lease attempt, PostgreSQL
+  transaction ID and backend PID, start/completion timestamps, and the
+  resulting database-cleanup evidence ID; every field is immutable except the
+  one-way null-to-value completion/evidence finalization performed by the same
+  routine transaction;
+- `account_deletion_database_cleanup_evidence`: one row per request with
+  `evidence_id`, cleanup generation, plan digest, deleted/redacted row counts,
+  and database completion time.
+
+The household rows, not an opaque JSON plan, are the canonical household lock
+and policy inventory. The plan header digest is the SHA-256 of the
+length-delimited, byte-sorted `(household_id, action, member_count,
+other_owner_count)` rows plus the request ID, user ID, and immutable
+`plan_generation`. `AccountDeletionCleanupPlan.generation` is loaded from that
+header; it is never derived from the mutable job state generation. The cleanup
+routine recomputes and verifies the digest before mutation.
+
+```ts
+export interface SubjectRedactionValues {
+  userIds: readonly string[];
+  emails: readonly string[];
+  displayNames: readonly string[];
+}
+
+export declare function redactExactSubjectScalars(
+  value: unknown,
+  subject: SubjectRedactionValues,
+): unknown;
+
+export interface DatabaseCleanupEvidence {
+  evidenceId: string;
+  requestId: RequestId;
+  cleanupGeneration: number;
+  planDigestSha256: Sha256Hex;
+  deletedRowCount: number;
+  redactedRowCount: number;
+  completedAt: Date;
+}
+
+export interface AccountDeletionCleanupStore {
+  loadCleanupPlan(
+    requestId: RequestId,
+  ): Promise<AccountDeletionCleanupPlan | null>;
+  executeDatabaseCleanup(
+    fence: CleanupFence,
+  ): Promise<DatabaseCleanupEvidence>;
+  loadDatabaseCleanupEvidence(
+    requestId: RequestId,
+  ): Promise<DatabaseCleanupEvidence | null>;
+}
+```
+
+The canonical redactor walks JSON arrays and object values recursively,
+preserves keys, order, numbers, booleans, and null, and replaces a string only
+when it is byte-for-byte equal to a member of the captured subject scalar set.
+The replacement is exactly `"deleted_account"`. It never case-folds,
+normalizes, or substring-matches. Before deleting the user row, the privileged
+routine captures the user ID, stored email/display name, and every
+subject-linked membership display name under row locks. Directly
+subject-authored private rows are deleted; shared rows use the canonical
+redactor and clear direct attribution columns. The TypeScript and SQL
+implementations must run the same fixture vectors from
+`accountDeletionCleanup.test.ts`; SQL is the mutation authority and the pure
+TypeScript function is the independently testable specification.
+
+**Privileged cleanup routine and bypass evidence**
+
+The deployment provisions the normal application login
+`woofwatcher_app` (`LOGIN NOINHERIT BYPASSRLS`) and two non-inheriting cleanup
+roles:
+`woofwatcher_account_deletion_cleanup_owner` (`NOLOGIN NOINHERIT BYPASSRLS`)
+and `woofwatcher_account_deletion_cleanup_worker`
+(`LOGIN NOINHERIT NOBYPASSRLS`). The normal application role, `PUBLIC`, `anon`,
+and `authenticated` have no membership in either cleanup role. `0011` fails if
+these three named deployment roles or their exact LOGIN/INHERIT/BYPASSRLS
+attributes do not match.
+
+```sql
+public.ww_execute_account_deletion_cleanup(
+  p_request_id uuid,
+  p_expected_generation integer,
+  p_worker_id text,
+  p_lease_token text,
+  p_lease_attempt integer
+) returns table (
+  evidence_id uuid,
+  deleted_row_count integer,
+  redacted_row_count integer,
+  completed_at timestamptz
+)
+```
+
+The routine is `SECURITY DEFINER`, owned by the cleanup owner, fixes
+`search_path = pg_catalog, public`, and is executable only by the cleanup
+worker. It locks and validates the exact job, `cleanup_running` state,
+generation, worker, lease token, lease attempt, and
+`lease_until > clock_timestamp()`. It inserts an execution row bound to
+`pg_current_xact_id()` and `pg_backend_pid()`, sets the transaction-local
+execution ID, and performs all cleanup in that transaction.
+
+Every guarded trigger calls `ww_account_deletion_cleanup_bypass_allowed`.
+The helper is `SECURITY DEFINER`, owned by the cleanup owner, and fixes
+`search_path = pg_catalog, public`. Bypass succeeds only when
+`session_user = 'woofwatcher_account_deletion_cleanup_worker'`, the helper's
+`current_user` is the cleanup owner, the transaction-local execution ID
+resolves to an in-progress execution row for the same PostgreSQL
+transaction/backend, the row identifies the exact
+request/generation/lease attempt, and the normalized plan covers the affected
+user/household. A caller-set GUC without that row and worker session identity
+never bypasses. Guard trigger functions are `SECURITY INVOKER`; ordinary app
+writes call the helper under an app session and receive `false`, while writes
+inside the cleanup routine retain the worker `session_user` and owner
+`current_user`. The routine writes
+database-cleanup evidence and atomically moves
+`cleanup_running -> object_inventory`; callers cannot supply row counts or
+the next state.
+
+`REVOKE ALL` applies first to every new table, sequence, and function for
+`PUBLIC`, `anon`, and `authenticated`. It also removes default
+`PUBLIC EXECUTE` from `ww_lock_keys`,
+`ww_account_deletion_cleanup_bypass_allowed`, every trigger function, and the
+cleanup routine. Exact grants then apply:
+
+- `woofwatcher_app` receives only the table/column
+  `SELECT`/`INSERT`/compare-and-set `UPDATE` privileges needed by the
+  PostgreSQL store on protocol, plan, recovery, inventory, effect, evidence,
+  and receipt tables; it receives no `DELETE`/`TRUNCATE`, no execution-row
+  insert/finalize privilege, no cleanup-routine execution, and no membership
+  in a cleanup role;
+- `woofwatcher_app` receives `EXECUTE` on `ww_lock_keys`; that helper
+  accepts at most 256 distinct keys matching `a:[^[:space:]]+` or
+  `h:[0-9a-f-]{36}`, rejects every other value before acquiring a lock, and
+  sorts the accepted keys in database byte order;
+- `woofwatcher_app` receives `EXECUTE` on
+  `ww_account_deletion_cleanup_bypass_allowed` so invoker guards can evaluate
+  it; a direct app call is safe and deterministically returns `false` because
+  its `session_user` is not the cleanup worker;
+- the cleanup worker receives only cleanup-routine execution and no direct
+  table or helper-function privilege;
+- the cleanup owner receives the exact `SELECT`/`INSERT`/`UPDATE`/`DELETE`
+  table and sequence privileges the routine needs. Its `BYPASSRLS` attribute
+  is the explicit reason the `SECURITY DEFINER` routine can mutate existing
+  RLS-protected care tables; function definer status alone is never treated as
+  an RLS bypass.
+
+Tests prove the application connection can execute every non-cleanup store
+operation but cannot set role, insert/finalize execution evidence, call the
+cleanup routine, invoke trigger functions directly, or spoof the
+transaction-local setting. A direct app call to the bypass helper must return
+false and must not permit the following guarded mutation. Tests also prove the
+cleanup connection can call only the routine and cannot directly select or
+mutate tables.
+
+**Recovery access and handoff**
+
+`account_deletion_recovery_token_digests` is the only recovery-token table
+name. `0011` adds `handoff_confirmed_at`; `consumed_at` means invalidated by
+rotation. The job's `active_recovery_generation`, fixed
+`recovery_expires_at`, and `recovery_handoff_generation` are the current
+summary. Rotation never changes the first issuance expiry.
+
+```ts
+export interface RotateRecoveryInput {
+  requestId: RequestId;
+  authenticatedSubjectUserId: UserId;
+  expectedJobGeneration: number;
+  expectedRecoveryGeneration: RecoveryGeneration;
+  idempotencyKeyHash: Sha256Hex;
+  requestFingerprintSha256: Sha256Hex;
+  recoveryIssuer: RecoveryCredentialIssuer;
+  buildStoredResponse(created: {
+    job: AccountDeletionJobRecord;
+    recoveryCredential: IssuedRecoveryCredential;
+  }): StoredIdempotentResponse;
+}
+
+export interface ConfirmRecoveryHandoffInput {
+  requestId: RequestId;
+  authenticatedSubjectUserId: UserId;
+  expectedJobGeneration: number;
+  expectedRecoveryGeneration: RecoveryGeneration;
+  bearer: string;
+}
+
+export interface TransitionToClerkDeletingInput {
+  requestId: RequestId;
+  expectedJobGeneration: number;
+  expectedRecoveryGeneration: RecoveryGeneration;
+  cleanupReceiptId: string;
+  lease: LeaseFence;
+}
+
+export interface AccountDeletionRecoveryStore {
+  validateRecoveryBearer(input: {
+    requestId: RequestId;
+    bearer: string;
+    recoveryIssuer: RecoveryCredentialIssuer;
+  }): Promise<RecoveryAccessRecord>;
+  rotateRecovery(
+    input: RotateRecoveryInput,
+  ): Promise<
+    | {
+        kind: "rotated" | "replay";
+        job: AccountDeletionJobRecord;
+        encryptedResponseBody: string;
+        responseStatus: number;
+      }
+    | { kind: "conflict" | "expired" | "state_forbidden" }
+  >;
+  confirmRecoveryHandoff(
+    input: ConfirmRecoveryHandoffInput,
+  ): Promise<AccountDeletionJobRecord>;
+  transitionToClerkDeleting(
+    input: TransitionToClerkDeletingInput,
+  ): Promise<
+    | { kind: "transitioned"; job: AccountDeletionJobRecord }
+    | { kind: "waiting_for_handoff"; job: AccountDeletionJobRecord }
+    | { kind: "conflict" }
+  >;
+}
+```
+
+Validation selects the active digest using database time and compares a
+recomputed digest in constant time. Rotation and
+`transitionToClerkDeleting` acquire the same sorted `a:<user>` plus job-row
+locks before validating state or generation. Rotation consumes generation N,
+inserts N+1 with the original expiry, updates the active generation, and clears
+handoff in one transaction. Handoff requires both the owning authenticated
+subject and the current bearer; it stamps the active digest row and job
+summary. The Clerk transition validates the current handoff, committed cleanup
+receipt, reconciled inventory/effects, live lease, and state-generation CAS in
+one transaction. Exactly one of a concurrent rotation or Clerk transition can
+commit.
+
+**Sealed object locators, snapshots, effects, and receipts**
+
+Plaintext object keys and versions exist only inside the sealed object
+gateway. Adapters inventory and mutate plaintext locators; the gateway encrypts
+inventory results before returning them to the store and decrypts persisted
+refs only immediately before adapter lookup/delete.
+
+```ts
+export interface AccountDeletionObjectLocatorCodec {
+  seal(input: {
+    requestId: RequestId;
+    storageProvider: string;
+    bucket: string;
+    objectKey: string;
+    objectVersion: string | null;
+  }): {
+    objectKeyCiphertext: string;
+    objectVersionCiphertext: string | null;
+    locatorDigestSha256: Sha256Hex;
+  };
+  open(input: AccountDeletionObjectRef): {
+    objectKey: string;
+    objectVersion: string | null;
+  };
+}
+
+export interface CompleteObjectInventorySnapshot {
+  requestId: RequestId;
+  snapshotId: string;
+  complete: true;
+  manifestDigestSha256: Sha256Hex;
+  objectCount: number;
+  objects: Array<Omit<AccountDeletionObjectRef, "inventoryId" | "snapshotId">>;
+  capturedAt: Date;
+}
+
+export interface ObjectInventorySnapshotRecord {
+  snapshotId: string;
+  requestId: RequestId;
+  manifestDigestSha256: Sha256Hex;
+  objectCount: number;
+  completedAt: Date;
+}
+
+export type ProviderEffectTerminalOutcome =
+  | "deleted"
+  | "already_absent";
+
+export interface ProviderEffectRecord {
+  id: EffectId;
+  requestId: RequestId;
+  kind: ProviderEffectKind;
+  objectInventoryId: string | null;
+  replayKey: string;
+  state: ProviderEffectState;
+  attempt: number;
+  claimedJobGeneration: number | null;
+  replayMaterialCiphertext: string | null;
+  checkpointCiphertext: string | null;
+  providerReceiptCiphertext: string | null;
+  terminalProviderOutcome: ProviderEffectTerminalOutcome | null;
+  lastReasonCode: string | null;
+  committedAt: Date | null;
+}
+
+export interface CommitProviderEffectInput {
+  effectId: EffectId;
+  expectedAttempt: number;
+  expectedReplayKey: string;
+  checkpointCiphertext: string | null;
+  providerReceiptCiphertext: string | null;
+  terminalProviderOutcome: ProviderEffectTerminalOutcome | null;
+  outcome: "checkpointed" | "committed" | "retry_required" | "indeterminate";
+  reasonCode: string | null;
+  lease: LeaseFence;
+}
+
+export interface FinalizeObjectCleanupInput {
+  requestId: RequestId;
+  expectedJobGeneration: number;
+  databaseCleanupEvidenceId: string;
+  snapshotId: string;
+  lease: LeaseFence;
+}
 
 export interface AccountDeletionObjectStore {
-  persistCompleteObjectInventory(
-    input: PersistCompleteObjectInventoryInput,
-  ): Promise<AccountDeletionObjectRef[]>;
+  persistCompleteObjectInventory(input: {
+    snapshot: CompleteObjectInventorySnapshot;
+    expectedJobGeneration: number;
+    lease: LeaseFence;
+  }): Promise<{
+    snapshot: ObjectInventorySnapshotRecord;
+    objects: AccountDeletionObjectRef[];
+  }>;
+  loadObjectInventorySnapshot(
+    requestId: RequestId,
+  ): Promise<ObjectInventorySnapshotRecord | null>;
   loadObjectInventoryItem(
     inventoryId: string,
   ): Promise<AccountDeletionObjectRef | null>;
@@ -1132,8 +1627,247 @@ export interface AccountDeletionObjectStore {
   claimObjectEffect(
     input: ClaimObjectEffectInput,
   ): Promise<ProviderEffectRecord | null>;
+  finalizeObjectCleanup(
+    input: FinalizeObjectCleanupInput,
+  ): Promise<CleanupCompletionReceipt>;
 }
 ```
+
+`0011` creates `account_deletion_object_inventory_snapshots` separately from
+`account_deletion_object_inventory`. A committed header with
+`complete = true`, `object_count = 0`, and the empty-manifest digest is durable
+evidence of a complete empty inventory. Zero rows without that header is never
+complete. Each inventory row references the header and is unique by
+`(request_id, locator_digest_sha256)`. Replaying the same snapshot ID and
+manifest returns the original rows; a different manifest for a committed
+request conflicts.
+
+The locator codec computes `locatorDigestSha256` as a keyed HMAC over the
+versioned canonical bytes
+`"WWAD-OBJLOC-v1" || field(requestId) || field(storageProvider) ||
+field(bucket) || field(objectKey) || nullableField(objectVersion)`. `field`
+is a four-byte unsigned big-endian UTF-8 byte length followed by those bytes;
+`nullableField` begins with `0x00` for null or `0x01` followed by `field` for a
+present value, so null and empty are distinct. No platform string
+concatenation is a cryptographic frame.
+
+`objectKeyCiphertext` and a present `objectVersionCiphertext` use
+AES-256-GCM with fresh 96-bit nonces. Their authenticated additional data is
+the same protocol version plus canonically framed request ID, provider,
+bucket, locator digest, and field tag (`key` or `version`). `open` first
+authenticates/decrypts both fields with that AAD, then recomputes the locator
+HMAC from the recovered canonical plaintext and compares the 32 digest bytes
+with `timingSafeEqual` before returning a locator to an adapter. Any malformed
+frame, changed routing column, null/empty substitution, AEAD failure, or digest
+mismatch throws `AccountDeletionObjectLocatorIntegrityError`; lookup or delete
+is never called.
+
+The manifest digest is SHA-256 over the byte-sorted locator digests plus
+canonically framed request and snapshot IDs. `objectCount` must equal both the
+distinct digest count and persisted row count. These rules make randomized
+locator encryption compatible with deterministic replay checks. The AEAD key
+and locator-HMAC key are distinct configuration secrets.
+
+Task 2 adds `terminal_provider_outcome` to `ProviderEffectRecord`,
+`CommitProviderEffectInput`, SQL, and Drizzle. A committed `object_delete` or
+`clerk_delete` effect requires exactly one of `deleted` or `already_absent`;
+Apple effects require null. For object and Clerk effects,
+`state = 'committed'` is equivalent to
+`terminal_provider_outcome IS NOT NULL`; every intent, claimed, checkpointed,
+retry-required, or indeterminate row requires null. The locked stored effect
+kind and requested next state determine the valid value—callers cannot label
+an uncommitted effect terminal or choose a value for Apple. PostgreSQL checks,
+the store CAS, Drizzle parity, and negative tests enforce both directions.
+Receipt counts come from committed effects, never caller input.
+
+`account_deletion_database_cleanup_evidence` proves only relational cleanup.
+`account_deletion_cleanup_receipts` is separate and is written by
+`finalizeObjectCleanup` after the complete snapshot and complete intent set
+exist and every non-empty object effect is committed. It references the
+database evidence and snapshot and stores reconciled object counts. An empty
+snapshot may move directly from `object_cleanup_pending` to
+`object_cleanup_complete` only while writing the zero-count cleanup receipt in
+the same transaction. `account_deletion_receipts` remains the later immutable
+terminal account-deletion receipt.
+
+**PostgreSQL store and lease ownership**
+
+`createAccountDeletionPostgresStore` is the sole production store constructor
+and implements the complete Task 1 store plus
+`AccountDeletionStartStore`, `AccountDeletionCleanupStore`,
+`AccountDeletionRecoveryStore`, `AccountDeletionObjectStore`, and
+`AccountDeletionWorkerStore`. It accepts the normal application pool and a
+separate cleanup-role pool; construction fails if either is absent.
+
+```ts
+import type { Pool } from "pg";
+
+export interface CreateAccountDeletionPostgresStoreInput {
+  applicationPool: Pool;
+  cleanupPool: Pool;
+  leaseTokenFactory(): string;
+}
+
+export interface WorkerLease extends LeaseFence {
+  requestId: RequestId;
+  leasedAt: Date;
+}
+
+export interface AccountDeletionWorkerStore {
+  claimNextLease(input: {
+    workerId: string;
+    leaseTtlSeconds: number;
+  }): Promise<WorkerLease | null>;
+  renewLease(input: {
+    requestId: RequestId;
+    workerId: string;
+    leaseToken: string;
+    leaseAttempt: number;
+    leaseTtlSeconds: number;
+  }): Promise<WorkerLease>;
+  releaseLease(input: {
+    requestId: RequestId;
+    workerId: string;
+    leaseToken: string;
+    leaseAttempt: number;
+  }): Promise<void>;
+}
+
+export type AccountDeletionTask2Store =
+  AccountDeletionStore &
+  AccountDeletionStartStore &
+  AccountDeletionCleanupStore &
+  AccountDeletionRecoveryStore &
+  AccountDeletionObjectStore &
+  AccountDeletionWorkerStore;
+
+export declare function createAccountDeletionPostgresStore(
+  input: CreateAccountDeletionPostgresStoreInput,
+): AccountDeletionTask2Store;
+
+// Replace the Task 1 step input with this exact intersection.
+export interface AccountDeletionStepInput {
+  requestId: RequestId;
+  store: AccountDeletionTask2Store;
+  gateway: AccountDeletionProviderGateway;
+  objectGateway: AccountDeletionObjectGateway;
+  lease: LeaseFence;
+}
+
+export declare function runAccountDeletionStep(
+  input: AccountDeletionStepInput,
+): Promise<AccountDeletionStepResult>;
+```
+
+Construction verifies `current_user = 'woofwatcher_app'` on the application
+pool and
+`current_user = 'woofwatcher_account_deletion_cleanup_worker'` on the cleanup
+pool before returning the store.
+
+Task 2 extends `runAccountDeletionStep` rather than creating a second worker
+entry point:
+
+- `preflight` loads and verifies the immutable cleanup plan, then performs the
+  fenced transition to `cleanup_pending`;
+- `cleanup_pending` claims `cleanup_running`;
+- `cleanup_running` calls `executeDatabaseCleanup`; the privileged routine
+  itself writes evidence and transitions to `object_inventory`;
+- `object_inventory` inventories through `objectGateway`, persists a complete
+  snapshot header and rows, then transitions to `object_cleanup_pending`;
+- `object_cleanup_pending` commits the exact effect-intent set. An empty
+  snapshot atomically writes the zero-count cleanup receipt and transitions to
+  `object_cleanup_complete`; a non-empty set transitions to
+  `object_cleanup_running`;
+- `object_cleanup_running` processes at most one exact claimed object effect
+  using lookup-before-mutation. Once every effect is committed,
+  `finalizeObjectCleanup` reconciles counts, writes the cleanup receipt, and
+  transitions to `object_cleanup_complete`;
+- `object_cleanup_complete` calls `transitionToClerkDeleting`; an unconfirmed
+  current handoff returns `waiting` without mutation, while a successful CAS
+  returns `advanced`.
+
+Every branch remains one bounded step and retains Task 1's crash-reconciliation
+rule: a claimed or indeterminate effect is looked up by its stable replay key
+before another mutation is permitted.
+
+Task 2 adds `lease_attempt integer not null default 0` to jobs and
+`leaseAttempt` to `LeaseFence`. It updates every Task 1 in-memory harness call
+and every PostgreSQL mutation predicate. `claimNextLease` uses
+`FOR UPDATE SKIP LOCKED`, PostgreSQL `clock_timestamp()`, a fresh random lease
+token, and increments `lease_attempt` on each new or reclaimed claim.
+`renewLease` retains worker/token/attempt and extends from database time.
+`releaseLease` clears worker/token/until only when all three identifiers match.
+Every state, action, effect, cleanup, recovery-to-Clerk, and receipt mutation
+validates worker, token, attempt, and an unexpired database lease. Caller
+`leaseUntil` is descriptive; database time is authoritative.
+
+Task 2 implements `claimNextLease`, `renewLease`, and `releaseLease` in the
+PostgreSQL store. Task 3 implements only polling, bounded-step orchestration,
+startup, and shutdown over those methods; it does not reopen store SQL or
+lease schema.
+
+**Database proof split**
+
+`0011` is rerunnable only by exact identity, never by blind
+`IF NOT EXISTS`. Before accepting a pre-existing object it validates:
+
+- table/schema/owner/persistence, exact columns and defaults, validated checks,
+  unique constraints, restrictive foreign keys, indexes, RLS/force-RLS state,
+  expected triggers, absence of policies, and exact effective ACLs;
+- function name, argument and return types, function kind, volatility,
+  parallel/leakproof/security-definer attributes, fixed `search_path`, owner,
+  ACL, a migration-owned version digest stored in the object comment, and the
+  matching normalized `pg_get_functiondef` SHA-256;
+- role existence and exact LOGIN/INHERIT/BYPASSRLS attributes;
+- absence of unexpected overloads, policies, user triggers, helper functions,
+  or same-prefix relations.
+
+Any mismatch raises before data or ACL mutation and the transaction rolls back.
+The migration test seeds, one at a time, a wrong table owner/column/check,
+permissive policy, unexpected trigger, wrong function body/version marker,
+unexpected overload, default `PUBLIC EXECUTE`, wrong function owner/search
+path, and wrong role attribute; every case must fail atomically and leave the
+pre-existing fixture unchanged. A second run of the exact clean migration must
+produce one copy of every object and identical catalog definitions.
+
+PGlite remains the fast migration/catalog and deterministic service-test
+layer. It cannot satisfy concurrency or role-isolation acceptance. The command
+
+```bash
+ACCOUNT_DELETION_TEST_ADMIN_DATABASE_URL="$ACCOUNT_DELETION_TEST_ADMIN_DATABASE_URL" \
+ACCOUNT_DELETION_TEST_APP_DATABASE_URL="$ACCOUNT_DELETION_TEST_APP_DATABASE_URL" \
+ACCOUNT_DELETION_TEST_CLEANUP_DATABASE_URL="$ACCOUNT_DELETION_TEST_CLEANUP_DATABASE_URL" \
+  node --experimental-strip-types --test \
+  artifacts/api-server/test/accountDeletionPostgres.test.ts \
+  artifacts/api-server/test/accountDeletionWriteGuard.test.ts
+```
+
+must connect two independent clients to real PostgreSQL. Those suites fail
+closed when any of the three DSNs is absent; they do not skip. All three DSNs
+must target the same exclusive disposable database named
+`woofwatcher_account_deletion_test_<run-id>` in a disposable PostgreSQL
+cluster. The database comment must equal
+`woofwatcher-account-deletion-disposable-v1`. The suite refuses to run unless
+the name/comment match and the admin connection proves no unexpected sessions
+exist. Schema-only isolation is forbidden because migrations qualify
+`public.*` and the three named roles are cluster-wide.
+
+Cluster bootstrap creates the exact roles and credentials before the Node
+suite. The admin connection drops/recreates the disposable database's entire
+`public` schema, validates the cluster-wide role attributes, runs migrations,
+and performs fixture teardown only after app and cleanup pools close. The
+cluster/database is never reused after an interrupted run. Application
+operations connect through the app DSN and cleanup calls through the cleanup
+DSN; neither test pool may `SET ROLE`. Every concurrency case asserts distinct
+`pg_backend_pid()` values, uses an explicit barrier while one transaction
+holds its lock, and proves the second connection blocks before the first
+commits. The suites prove advisory-lock blocking/order, OLD+NEW races in both
+directions, rotation-versus-Clerk exactly-one-commit, lease
+reclamation/attempt fencing, cleanup-owner versus normal-role separation, and
+trigger-verified bypass.
+PGlite separately proves rerunnable `0011`, exact Drizzle/catalog parity, RLS,
+and revocation of `PUBLIC`, `anon`, and `authenticated`, including hostile
+default grants.
 
 The object gateway follows the same sealed, captured-function construction as
 the provider gateway. The store first persists and commits the complete
@@ -1222,7 +1956,12 @@ inventory ID, load/list/claim by exact effect and inventory IDs,
 lookup-before-mutation, replay after a crash response, already-absent success,
 indeterminate fail-closed behavior, inventory/effect count mismatch, and no
 Clerk effect claim before a committed cleanup receipt. Test that private
-objects and request-scoped export artifacts are included.
+objects and request-scoped export artifacts are included. Explicitly persist
+and reload a complete zero-object snapshot header, prove that zero rows without
+the header are incomplete, reject a mismatched empty-manifest digest, and
+prove the empty path atomically writes a zero-count cleanup receipt while
+transitioning `object_cleanup_pending -> object_cleanup_complete`. Mutation
+proof: remove only the header insert and require that empty-path test to fail.
 
 - [ ] **Step 6: Run object tests and verify RED**
 
@@ -1239,7 +1978,10 @@ Test canonical locks from both OLD and NEW identities, JIT-versus-tombstone
 races, care-state writes, care-entry create/update/delete, invitations, Access
 Pass, household rename, profile writes, audit/tombstone writes, cleanup-fence
 mismatch, spoofed cleanup context under the normal app role, and
-post-terminal resurrection.
+post-terminal resurrection. Also cover the exact app, cleanup-owner, and
+cleanup-worker role attributes and grants, default `PUBLIC EXECUTE` denial for every
+new function, hostile pre-existing table/function/policy/trigger/owner/ACL
+rollback, and bidirectional terminal-provider-outcome correlation.
 
 Use this exact matrix as the implementation inventory:
 
@@ -1255,14 +1997,19 @@ Use this exact matrix as the implementation inventory:
 | `household_audit_events` | `actor_user_id`, `target_user_id`, plus exact scalar IDs in `metadata` | `household_id` | Reject new/moved subject references; normal-role rows remain immutable | Exact fenced in-place PII redaction while preserving non-PII audit facts |
 | `account_deletion_jobs` | `user_id` | cleanup-plan household IDs | Only compare-and-set state transitions | No trigger bypass; store methods only |
 | `account_deletion_provider_actions` | request-derived `user_id` | none | Immutable action payload/generation; action-ID plus job-generation CAS consume/replace | No |
-| `account_deletion_effects` | request-derived `user_id` | request-derived household IDs | Immutable intent/replay key; CAS outcome | No |
+| `account_deletion_provider_effects` | request-derived `user_id` | request-derived household IDs | Immutable intent/replay key; CAS outcome | No |
 | `account_deletion_idempotency` | `user_id` | none | Immutable fingerprint and stored response | No |
 | `account_deletion_reauth_proof_claims` | `user_id` | none | Immutable globally unique proof ID | No |
-| `account_deletion_recovery_tokens` | request-derived `user_id` | none | Monotonic generation, immutable original expiry | No |
+| `account_deletion_recovery_token_digests` | request-derived `user_id` | none | Monotonic generation, immutable original expiry | No |
 | `account_deletion_receipts` | request-derived `user_id` | none | Immutable terminal row | No |
 | `account_deletion_tombstones` | `user_id` | cleanup-plan household IDs | Prevent JIT and durable writes for active or terminal deletion | No |
-| `account_deletion_cleanup_plans` | `user_id` | every `household_id` | Immutable after initiation | No |
+| `account_deletion_cleanup_plans` | `user_id` | none | Immutable plan header and digest after initiation | No |
+| `account_deletion_cleanup_plan_households` | request-derived `user_id` | `household_id` | Immutable normalized plan row after initiation | No |
+| `account_deletion_cleanup_executions` | request-derived `user_id` | plan household rows | Immutable privileged transaction evidence | Owner-only insert/finalize |
+| `account_deletion_database_cleanup_evidence` | request-derived `user_id` | plan household rows | Immutable relational-cleanup evidence | Owner-only insert |
+| `account_deletion_object_inventory_snapshots` | request-derived `user_id` | none | One immutable complete manifest per request, including empty | No |
 | `account_deletion_object_inventory` | request-derived `user_id` | none | Complete snapshot and unique provider locator | Exact effect-driven outcome only |
+| `account_deletion_cleanup_receipts` | request-derived `user_id` | none | Immutable reconciled database/object cleanup evidence | No |
 
 For every UPDATE matrix row, test moving a protected value both out of OLD and
 into NEW. Lock keys are the distinct union of the literal prefix `a:` plus a
@@ -1281,7 +2028,11 @@ establish bypass.
 
 ```bash
 node --experimental-strip-types --test \
-  artifacts/api-server/test/accountDeletionMigration.test.ts \
+  artifacts/api-server/test/accountDeletionMigration.test.ts
+ACCOUNT_DELETION_TEST_ADMIN_DATABASE_URL="$ACCOUNT_DELETION_TEST_ADMIN_DATABASE_URL" \
+ACCOUNT_DELETION_TEST_APP_DATABASE_URL="$ACCOUNT_DELETION_TEST_APP_DATABASE_URL" \
+ACCOUNT_DELETION_TEST_CLEANUP_DATABASE_URL="$ACCOUNT_DELETION_TEST_CLEANUP_DATABASE_URL" \
+  node --experimental-strip-types --test \
   artifacts/api-server/test/accountDeletionWriteGuard.test.ts \
   artifacts/api-server/test/accountDeletionPostgres.test.ts
 ```
@@ -1304,8 +2055,11 @@ generation; neither path may validate before the lock and mutate afterward.
 
 `0011` must:
 
+- reject every mismatched pre-existing table, function, overload, owner, ACL,
+  policy, trigger, role attribute, or version/body digest before mutation;
 - create account tombstones, cleanup plans, object inventory, recovery handoff,
-  cleanup receipt, and lease/outcome columns/tables;
+  cleanup executions, database-cleanup evidence, object-inventory snapshot
+  headers, cleanup receipts, and lease/outcome columns/tables;
 - constrain `object_delete` effects to a non-null unique inventory foreign key,
   constrain Apple/Clerk effects to a null inventory key, and expose fenced
   load/list/claim queries by exact effect and inventory IDs;
@@ -1317,11 +2071,18 @@ generation; neither path may validate before the lock and mutate afterward.
   exact scalar subject references;
 - reject new references to active or terminal deletion tombstones;
 - expose the cleanup routine only to the cleanup role and validate the exact
-  fence and live lease in the database;
+  fence, lease attempt, transaction/backend evidence, and live lease in the
+  database;
 - preserve immutable effects, idempotency records, proof claims, recovery
   expiry, and terminal receipts;
 - update the history-generation trigger to use canonical locking;
-- enable RLS and revoke `anon` and `authenticated` on every new table.
+- enable RLS, revoke `PUBLIC`/`anon`/`authenticated`, and install the exact
+  app/cleanup owner/cleanup worker grants and function ACLs defined by the
+  binding clarification;
+- add `lease_attempt` and terminal provider outcome parity to PostgreSQL,
+  Drizzle, and the Task 1 in-memory harness;
+- add the production `claimNextLease`, `renewLease`, and `releaseLease`
+  methods that Task 3's worker consumes.
 
 The initiation transaction locks the deleting user's `a:` key and every
 involved household's `h:` key in sorted order, then selects the durable user
@@ -1332,13 +2093,21 @@ tombstone, recovery token, cleanup plan, inventory, or effect. When household
 policy blocks, use the same non-mutating blocked-job/receipt/idempotency shape
 with `last_owner`. Otherwise, atomically write the request, cleanup plan,
 tombstone, first recovery-token digest, Apple effect intent when applicable,
-and idempotent response before any provider work. Object effects are not
-created during initiation.
+and idempotent response before any provider mutation. The sole provider call
+permitted between preflight and this final transaction is the authoritative
+identity read defined by the start sequence. Object effects are not created
+during initiation.
 
 - [ ] **Step 11: Verify Task 2**
 
 ```bash
 node --experimental-strip-types --test artifacts/api-server/test/accountDeletion*.test.ts
+ACCOUNT_DELETION_TEST_ADMIN_DATABASE_URL="$ACCOUNT_DELETION_TEST_ADMIN_DATABASE_URL" \
+ACCOUNT_DELETION_TEST_APP_DATABASE_URL="$ACCOUNT_DELETION_TEST_APP_DATABASE_URL" \
+ACCOUNT_DELETION_TEST_CLEANUP_DATABASE_URL="$ACCOUNT_DELETION_TEST_CLEANUP_DATABASE_URL" \
+  node --experimental-strip-types --test \
+  artifacts/api-server/test/accountDeletionPostgres.test.ts \
+  artifacts/api-server/test/accountDeletionWriteGuard.test.ts
 COREPACK_HOME=/tmp/woofwatcher-corepack corepack pnpm \
   --filter @workspace/api-server run typecheck
 COREPACK_HOME=/tmp/woofwatcher-corepack corepack pnpm run typecheck:libs
@@ -1673,7 +2442,6 @@ the exact stored status/body; the same key with another fingerprint returns
 export interface WorkerLease extends LeaseFence {
   requestId: RequestId;
   leasedAt: Date;
-  attempt: number;
 }
 
 export interface AccountDeletionWorkerStore {
@@ -1685,12 +2453,14 @@ export interface AccountDeletionWorkerStore {
     requestId: RequestId;
     workerId: string;
     leaseToken: string;
+    leaseAttempt: number;
     leaseTtlSeconds: number;
   }): Promise<WorkerLease>;
   releaseLease(input: {
     requestId: RequestId;
     workerId: string;
     leaseToken: string;
+    leaseAttempt: number;
   }): Promise<void>;
 }
 
@@ -1704,7 +2474,7 @@ export interface CreateAccountDeletionWorkerInput {
   workerId: string;
   leaseTtlSeconds: number;
   pollIntervalMilliseconds: number;
-  store: AccountDeletionStore & AccountDeletionWorkerStore;
+  store: AccountDeletionTask2Store;
   gateway: AccountDeletionProviderGateway;
   objectGateway: AccountDeletionObjectGateway;
   abortController: AbortController;
@@ -1718,9 +2488,10 @@ export declare function createAccountDeletionWorker(
 Lease claim, expiry, renewal, and reclamation use PostgreSQL
 `clock_timestamp()` inside the transaction. `claimNextLease` uses
 `FOR UPDATE SKIP LOCKED`, reclaims rows where `lease_until <=
-clock_timestamp()`, creates a fresh random lease token, and increments attempt.
-Every state/effect/cleanup commit validates owner, token, and unexpired lease
-against database time. The claimed `WorkerLease` is passed unchanged as the
+clock_timestamp()`, creates a fresh random lease token, and increments
+`lease_attempt`. Every state/effect/cleanup commit validates owner, token,
+attempt, and unexpired lease against database time. The claimed `WorkerLease`
+is passed unchanged as the
 `LeaseFence` in `AccountDeletionStepInput`, provider-action CAS, effect claim,
 effect commit, state transition, and receipt finalization. A process clock is
 never an authority.
