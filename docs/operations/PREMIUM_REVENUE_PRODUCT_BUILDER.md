@@ -11,8 +11,11 @@ mobile-readiness contract.
 
 This is source-backed contrast hardening only. Route-named iOS/Android dark
 screenshots, native accessibility traversal, and Apollo visual approval remain
-open. Dependency-complete branch CI must pass the implementation commit before
-this branch tip is treated as release proof.
+open. Dependency-complete branch CI proved implementation commit `e9d1c36c`
+in WoofWatcher Verify run `30224467419`, job `89852313500`; checkout, pinned
+dependency setup/install, JSON doctor, focused tests, typecheck plus CI-safe
+builds, post steps, and Complete job all passed. Rerun after this proof-record
+commit before treating the final branch tip as current.
 
 ## 2026-07-26 WoofGuide safety-card dark-mode contrast
 
