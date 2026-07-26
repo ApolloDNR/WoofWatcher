@@ -1487,6 +1487,7 @@ export interface ConfirmRecoveryHandoffInput {
   expectedJobGeneration: number;
   expectedRecoveryGeneration: RecoveryGeneration;
   bearer: string;
+  recoveryIssuer: RecoveryCredentialIssuer;
 }
 
 export interface TransitionToClerkDeletingInput {
@@ -1527,8 +1528,10 @@ export interface AccountDeletionRecoveryStore {
 }
 ```
 
-Validation selects the active digest using database time and compares a
-recomputed digest in constant time. Rotation and
+Validation and handoff select the active digest using database time, recompute
+the request-and-generation-bound digest only through the supplied
+`RecoveryCredentialIssuer`, and compare it in constant time. The store and
+store factory never receive or retain the recovery pepper. Rotation and
 `transitionToClerkDeleting` acquire the same sorted `a:<user>` plus job-row
 locks before validating state or generation. Rotation consumes generation N,
 inserts N+1 with the original expiry, updates the active generation, and clears
