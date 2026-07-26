@@ -2585,6 +2585,21 @@ or Apollo visual approval.
 - Whether Figma is the canonical visual design source.
 - Privacy/legal requirements for storing dog medical records and AI-assisted health summaries.
 
+## 2026-07-26: Fixed-light Auth panels use constant boundaries
+
+Decision: Keep the Auth gateway stage HUD and proof manifest on their warm
+ivory surfaces in both themes, and render their boundaries with translucent
+constant `brandNavy`.
+
+Reason: the shared `border` token follows the active theme and becomes a dark
+navy seam in dark mode. These panels intentionally remain light, so they need
+the same constant-ink convention as other fixed-light pixel and credential
+surfaces.
+
+Boundary: This is source-backed contrast hardening. It does not configure
+Clerk, prove native Auth/Setup screenshots, replace device accessibility
+review, or provide Apollo visual approval.
+
 # 2026-07-25 - Quick Log selected tiles use adaptive card surfaces
 
 - Decision: selected Quick Log launcher tiles use `colors.card`, not the

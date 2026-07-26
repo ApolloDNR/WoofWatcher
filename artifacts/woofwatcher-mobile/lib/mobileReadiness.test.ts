@@ -649,6 +649,35 @@ test("keeps the fixed-light More profile edit control visible in dark mode", () 
   );
 });
 
+test("keeps fixed-light Auth gateway panels bounded in dark mode", () => {
+  const authUi = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "components",
+      "auth-ui.tsx",
+    ),
+    "utf8",
+  );
+
+  assert.match(
+    authUi,
+    /styles\.stageHud,\s*\{\s*backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22"\s*\}/,
+    "the fixed-light Auth stage HUD needs a constant dark boundary",
+  );
+  assert.match(
+    authUi,
+    /styles\.proofManifest,\s*\{\s*backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22"\s*\}/,
+    "the fixed-light Auth proof manifest needs a constant dark boundary",
+  );
+  assert.doesNotMatch(
+    authUi,
+    /backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.border/,
+    "the adaptive dark border becomes too faint on fixed-light Auth panels",
+  );
+});
+
 test("keeps critical mobile actions accessible to screen readers", () => {
   const privacy = readAppFile("privacy.tsx");
   const premium = readAppFile("premium.tsx");

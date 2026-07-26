@@ -123,7 +123,7 @@ export function AuthShell({
             fadeDuration={0}
             style={[styles.stageDog, pixelImageStyle]}
           />
-          <View style={[styles.stageHud, { backgroundColor: colors.ivory, borderColor: colors.border }]}>
+          <View style={[styles.stageHud, { backgroundColor: colors.ivory, borderColor: colors.brandNavy + "22" }]}>
             <View style={[styles.stageDot, { backgroundColor: colors.sage }]} />
             <Text style={[styles.stageHudText, { color: BUBBLE_INK, fontFamily: "Inter_700Bold" }]}>
               Phoenix care starts here
@@ -161,7 +161,7 @@ export function AuthShell({
             Open setup proof
           </Text>
         </Pressable>
-        <View style={[styles.proofManifest, { backgroundColor: colors.ivory, borderColor: colors.border }]}>
+        <View style={[styles.proofManifest, { backgroundColor: colors.ivory, borderColor: colors.brandNavy + "22" }]}>
           <View style={styles.proofManifestHead}>
             <Text style={[styles.proofManifestTitle, { color: BUBBLE_INK, fontFamily: "Inter_800ExtraBold" }]}>
               Auth/Setup proof manifest

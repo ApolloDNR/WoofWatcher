@@ -4405,3 +4405,15 @@ tip as current dependency proof.
 ## 2026-07-25 Avatar Studio dark-mode contrast slice
 
 Hardened selected mood labels against native dark-mode washout and added a red/green mobile-readiness contract. Real device screenshots and Apollo visual approval remain required.
+
+## 2026-07-26 Auth gateway dark-mode boundary slice
+
+The fixed-light Auth stage HUD and Auth/Setup proof manifest now keep a
+constant translucent brand-navy boundary in both themes. Red-first mobile
+readiness passed `123/123` after implementation; root TypeScript, care-domain
+`148/148`, PixelLab `ok=149 missing=0 invalid=0`, and `git diff --check` also
+passed. The broad partial-checkout suite remains blocked on missing `express`,
+and the JSON beta doctor remains truthfully blocked on local pnpm/Expo
+resolution. This protects source-level contrast only; real native Auth/Setup
+screenshots, provider configuration, device accessibility review, and Apollo
+approval remain required.
