@@ -1,5 +1,17 @@
 # Premium Revenue Product Builder
 
+## 2026-07-25 Avatar Studio template-speech dark-mode contrast
+
+The route-level dark-mode audit found another Avatar Studio contrast defect:
+the template-preview speech bubble stays intentionally ivory in both themes,
+while its border and headline used the adaptive forest token. Dark mode made
+that token pale against the fixed-light bubble. The boundary and headline now
+use constant `brandNavy`, protected by a red-first mobile-readiness contract.
+
+This is source-backed contrast hardening only. Route-named iOS/Android dark
+screenshots, accessibility traversal, and Apollo visual approval remain open.
+Rerun branch CI after this change before treating dependency proof as current.
+
 ## 2026-07-25 Avatar Studio template-badge dark-mode contrast
 
 The route-level dark-mode audit found a second Avatar Studio contrast defect:

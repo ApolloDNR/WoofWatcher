@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-07-25: Fixed-light Avatar Studio speech uses constant dark ink
+
+- Decision: use `brandNavy` for the template-preview speech bubble border and
+  headline rendered on the scheme-independent ivory surface.
+- Reason: dark mode's adaptive forest token becomes pale and weakens both the
+  bubble boundary and headline contrast.
+- Boundary: this source/readiness guard does not replace route-named dark-mode
+  screenshots or native visual approval.
+
 ## 2026-07-25: Fixed-light Avatar Studio badges use constant dark ink
 
 - Decision: use `brandNavy` for inactive template-status copy rendered on the

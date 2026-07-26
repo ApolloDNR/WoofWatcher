@@ -870,14 +870,14 @@ export default function PortraitScreen() {
                       s.templateSpeech,
                       {
                         backgroundColor: colors.ivory,
-                        borderColor: colors.forest,
+                        borderColor: colors.brandNavy,
                       },
                     ]}
                   >
                     <Text
                       style={[
                         s.templateSpeechText,
-                        { color: colors.forest, fontFamily: DISPLAY },
+                        { color: colors.brandNavy, fontFamily: DISPLAY },
                       ]}
                     >
                       {heroSpeech}

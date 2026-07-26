@@ -589,6 +589,26 @@ test("keeps fixed-light Avatar Studio template badges readable in dark mode", ()
   );
 });
 
+test("keeps the fixed-light Avatar Studio speech bubble readable in dark mode", () => {
+  const avatarStudio = readAppFile("portrait.tsx");
+
+  assert.match(
+    avatarStudio,
+    /backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.brandNavy/,
+    "the fixed-light template speech bubble needs a constant dark boundary",
+  );
+  assert.match(
+    avatarStudio,
+    /s\.templateSpeechText,\s*\{\s*color:\s*colors\.brandNavy/,
+    "the fixed-light template speech bubble needs constant dark ink",
+  );
+  assert.doesNotMatch(
+    avatarStudio,
+    /s\.templateSpeechText,\s*\{\s*color:\s*colors\.forest/,
+    "dark forest becomes too light against the scheme-independent ivory bubble",
+  );
+});
+
 test("keeps critical mobile actions accessible to screen readers", () => {
   const privacy = readAppFile("privacy.tsx");
   const premium = readAppFile("premium.tsx");
