@@ -1653,6 +1653,9 @@ export interface AccountDeletionObjectStore {
   finalizeObjectCleanup(
     input: FinalizeObjectCleanupInput,
   ): Promise<CleanupCompletionReceipt>;
+  loadCleanupCompletionReceipt(
+    requestId: RequestId,
+  ): Promise<CleanupCompletionReceipt | null>;
 }
 ```
 
@@ -1834,9 +1837,13 @@ entry point:
   using lookup-before-mutation. Once every effect is committed,
   `finalizeObjectCleanup` reconciles counts, writes the cleanup receipt, and
   transitions to `object_cleanup_complete`;
-- `object_cleanup_complete` calls `transitionToClerkDeleting`; an unconfirmed
-  current handoff returns `waiting` without mutation, while a successful CAS
-  returns `advanced`.
+- `object_cleanup_complete` reloads the committed cleanup receipt by request
+  after every fresh step or restart, revalidates its request/evidence/snapshot
+  binding, and passes its exact `cleanupReceiptId` to
+  `transitionToClerkDeleting`. A missing or mismatched receipt fails closed;
+  no prior-step in-memory value or test-only inspector is authoritative. An
+  unconfirmed current handoff returns `waiting` without mutation, while a
+  successful CAS returns `advanced`.
 
 Every branch remains one bounded step and retains Task 1's crash-reconciliation
 rule: a claimed or indeterminate effect is looked up by its stable replay key
