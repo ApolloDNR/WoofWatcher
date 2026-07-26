@@ -609,6 +609,26 @@ test("keeps the fixed-light Avatar Studio speech bubble readable in dark mode", 
   );
 });
 
+test("keeps the fixed-light Home Avatar Studio launcher visible in dark mode", () => {
+  const home = readAppFile("(tabs)/index.tsx");
+
+  assert.match(
+    home,
+    /s\.heroStudioChip,[\s\S]*?backgroundColor:\s*pressed\s*\?\s*colors\.ivory\s*:\s*"rgba\(251,246,231,0\.94\)"[\s\S]*?borderColor:\s*colors\.brandNavy/,
+    "the fixed-light Home Avatar Studio launcher needs a constant dark boundary",
+  );
+  assert.match(
+    home,
+    /name="color-wand-outline"\s+size=\{17\}\s+color=\{colors\.brandNavy\}/,
+    "the fixed-light Home Avatar Studio launcher needs a constant dark icon",
+  );
+  assert.doesNotMatch(
+    home,
+    /name="color-wand-outline"\s+size=\{17\}\s+color=\{colors\.forest\}/,
+    "dark forest becomes too light against the scheme-independent launcher",
+  );
+});
+
 test("keeps critical mobile actions accessible to screen readers", () => {
   const privacy = readAppFile("privacy.tsx");
   const premium = readAppFile("premium.tsx");

@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-07-25: Fixed-light Home launcher uses constant dark chrome
+
+- Decision: keep the Home hero's Avatar Studio launcher warm and light in both
+  schemes, with `brandNavy` for its wand icon and boundary.
+- Reason: adaptive forest and border tokens become too pale against that
+  fixed-light surface in dark mode, weakening a first-screen care-twin action.
+- Boundary: this source/readiness guard does not replace route-named dark-mode
+  screenshots or native visual approval.
+
 ## 2026-07-25: Fixed-light Avatar Studio speech uses constant dark ink
 
 - Decision: use `brandNavy` for the template-preview speech bubble border and

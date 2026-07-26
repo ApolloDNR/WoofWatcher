@@ -1,5 +1,17 @@
 # Premium Revenue Product Builder
 
+## 2026-07-25 Home Avatar Studio launcher dark-mode contrast
+
+The route-level dark-mode audit found a Home first-screen contrast defect: the
+Avatar Studio launcher stays intentionally warm and light in both themes, while
+its wand icon used adaptive `forest` and its boundary used the adaptive border
+token. In dark mode those tokens became too pale against the fixed-light
+launcher. The icon and boundary now use constant `brandNavy`, protected by a
+red-first mobile-readiness contract.
+
+This is source-backed contrast hardening only. Route-named iOS/Android dark
+screenshots, accessibility traversal, and Apollo visual approval remain open.
+
 ## 2026-07-25 Avatar Studio template-speech dark-mode contrast
 
 The route-level dark-mode audit found another Avatar Studio contrast defect:

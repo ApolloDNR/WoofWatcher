@@ -1800,11 +1800,11 @@ export default function HomeScreen() {
                   backgroundColor: pressed
                     ? colors.ivory
                     : "rgba(251,246,231,0.94)",
-                  borderColor: colors.border,
+                  borderColor: colors.brandNavy,
                 },
               ]}
             >
-              <Ionicons name="color-wand-outline" size={17} color={colors.forest} />
+              <Ionicons name="color-wand-outline" size={17} color={colors.brandNavy} />
             </Pressable>
           </View>
           </View>
