@@ -4417,3 +4417,9 @@ and the JSON beta doctor remains truthfully blocked on local pnpm/Expo
 resolution. This protects source-level contrast only; real native Auth/Setup
 screenshots, provider configuration, device accessibility review, and Apollo
 approval remain required.
+
+Dependency-complete branch CI proved implementation commit `b6ee5368` in
+`WoofWatcher Verify` run `30199366669`, job `89786536191`; checkout, pinned
+dependency setup/install, JSON mobile beta doctor, focused tests, typecheck and
+CI-safe builds, all post steps, and Complete job passed. Rerun after this
+proof-record commit before treating the final branch tip as current.
