@@ -4423,3 +4423,17 @@ Dependency-complete branch CI proved implementation commit `b6ee5368` in
 dependency setup/install, JSON mobile beta doctor, focused tests, typecheck and
 CI-safe builds, all post steps, and Complete job passed. Rerun after this
 proof-record commit before treating the final branch tip as current.
+
+## 2026-07-26 Quick Care Console dark-mode boundary slice
+
+The fixed-light Quick Care status chip, HUD dock, and HUD cells now keep
+constant translucent brand-navy boundaries in both themes. The `Ready` status
+also uses constant brand-navy ink instead of adaptive forest. Red-first mobile
+readiness failed on the old adaptive tokens, then passed `124/124` after the
+fix. Root TypeScript passed, care-domain tests passed `148/148`, PixelLab
+passed `ok=149 missing=0 invalid=0`, and `git diff --check` passed. The broad
+partial-checkout suite passed `655/656` and failed only on the known missing
+`@workspace/care-domain` link in `careCareer.test.ts`; JSON beta doctor remains
+truthfully blocked on local pnpm/Corepack and Expo resolution. This protects
+source-level contrast only; route-named native dark-mode screenshots, device
+touch/accessibility review, and Apollo visual approval remain required.

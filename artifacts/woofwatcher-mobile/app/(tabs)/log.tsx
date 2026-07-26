@@ -2476,13 +2476,13 @@ export default function LogScreen() {
                   </Text>
                   <View style={s.logCommandBubbleTail} />
                 </View>
-                <View style={[s.logCommandChip, { backgroundColor: colors.ivory + "F2", borderColor: colors.border }]}>
+                <View style={[s.logCommandChip, { backgroundColor: colors.ivory + "F2", borderColor: colors.brandNavy + "33" }]}>
                   <PixelIcon name={selectedLauncherAction?.icon ?? "heart"} size={17} />
                   <Text
                     style={[
                       s.logCommandChipText,
                       {
-                        color: selectedLauncherRequiresDetail ? colors.amber : colors.forest,
+                        color: selectedLauncherRequiresDetail ? colors.amber : colors.brandNavy,
                         fontFamily: "Inter_700Bold",
                       },
                     ]}
@@ -2504,12 +2504,12 @@ export default function LogScreen() {
               </View>
 
             </ImageBackground>
-            <View style={[s.logCommandDock, { backgroundColor: colors.ivory + "F3", borderColor: colors.border }]}>
+            <View style={[s.logCommandDock, { backgroundColor: colors.ivory + "F3", borderColor: colors.brandNavy + "33" }]}>
               <View style={s.logCommandHud}>
                 {logCommandHud.map((metric) => (
                   <View
                     key={metric.label}
-                    style={[s.logCommandHudCell, { backgroundColor: colors.cream, borderColor: colors.border }]}
+                    style={[s.logCommandHudCell, { backgroundColor: colors.cream, borderColor: colors.brandNavy + "22" }]}
                   >
                     <Text style={[s.logCommandHudLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                       {metric.label}

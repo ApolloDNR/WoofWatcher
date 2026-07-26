@@ -2600,6 +2600,20 @@ Boundary: This is source-backed contrast hardening. It does not configure
 Clerk, prove native Auth/Setup screenshots, replace device accessibility
 review, or provide Apollo visual approval.
 
+## 2026-07-26: Fixed-light Quick Care controls use constant boundaries
+
+Decision: Keep the Quick Care status chip and HUD dock on their warm light
+surfaces in both themes, and render their borders plus the `Ready` status with
+constant translucent or solid `brandNavy`.
+
+Reason: `border` and `forest` are adaptive semantic tokens. On the intentionally
+fixed-light Quick Care console, their dark-mode values become too pale to define
+status and HUD structure reliably.
+
+Boundary: This is source-backed contrast hardening. It does not replace
+route-named iOS/Android dark-mode screenshots, native touch/accessibility
+review, or Apollo visual approval.
+
 # 2026-07-25 - Quick Log selected tiles use adaptive card surfaces
 
 - Decision: selected Quick Log launcher tiles use `colors.card`, not the

@@ -559,6 +559,36 @@ test("keeps selected Quick Log launcher tiles readable in dark mode", () => {
   );
 });
 
+test("keeps the fixed-light Quick Care status and HUD bounded in dark mode", () => {
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+
+  assert.match(
+    log,
+    /s\.logCommandChip,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"F2",\s*borderColor:\s*colors\.brandNavy\s*\+\s*"33"\s*\}/,
+    "the fixed-light Quick Care status chip needs a constant dark boundary",
+  );
+  assert.match(
+    log,
+    /selectedLauncherRequiresDetail\s*\?\s*colors\.amber\s*:\s*colors\.brandNavy/,
+    "the fixed-light Ready status needs constant dark ink",
+  );
+  assert.match(
+    log,
+    /s\.logCommandDock,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"F3",\s*borderColor:\s*colors\.brandNavy\s*\+\s*"33"\s*\}/,
+    "the fixed-light Quick Care HUD dock needs a constant dark boundary",
+  );
+  assert.match(
+    log,
+    /s\.logCommandHudCell,\s*\{\s*backgroundColor:\s*colors\.cream,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22"\s*\}/,
+    "the fixed-light Quick Care HUD cells need constant dark boundaries",
+  );
+  assert.doesNotMatch(
+    log,
+    /s\.logCommand(?:Chip|Dock|HudCell),\s*\{[^}]*borderColor:\s*colors\.border/,
+    "adaptive borders become too faint on the fixed-light Quick Care controls",
+  );
+});
+
 test("keeps selected Avatar Studio mood labels readable in dark mode", () => {
   const avatarStudio = readAppFile("portrait.tsx");
 
