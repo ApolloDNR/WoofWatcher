@@ -16,6 +16,9 @@
 - [x] Keep Avatar Studio's fixed-light production action icons readable in
   dark mode with constant brand-navy ink.
 - [x] Add a red-first readiness contract for production action icon contrast.
+- [x] Dependency-complete branch CI passed for the Avatar Studio production
+  action implementation commit `107ee880`: WoofWatcher Verify run
+  `30238765977`, job `89891533935`.
 - [x] Keep the same fixed-light inactive template badges visibly bounded in
   dark mode with a constant translucent brand-navy border.
 - [x] Add a red-first readiness contract for the template badge ink and
@@ -1326,6 +1329,8 @@ Every autonomous run should improve at least one of: care workflow, household us
 1241. DONE 2026-07-26: Continued the Avatar Studio dark-mode audit. Fixed-light production action icon tiles now use constant `brandNavy` glyph ink instead of adaptive `primary`, preserving contrast on their scheme-independent ivory surface.
 1242. DONE 2026-07-26: Red-first mobile readiness failed on the adaptive production action icon, then passed `127/127` after the constant-ink fix. Root TypeScript passed, care-domain tests passed `148/148`, PixelLab passed `ok=149 missing=0 invalid=0`, and `git diff --check` passed with expected Windows line-ending warnings. The broad partial-checkout suite failed only on missing `express` and the missing `@workspace/care-domain` package link; JSON beta doctor kept source guards passing but remained truthfully `BLOCKED` on local pnpm/Corepack and Expo resolution. This is source-backed contrast hardening only; route-named iOS/Android dark screenshots, native accessibility review, and Apollo visual approval remain open.
 1243. NEXT: Run the strongest local verification, push the verified implementation, and require fresh branch CI before treating dependency-complete proof as current. Native Auth/Setup, Records local-file, Route Visual Consistency, and PDF/PNG share/reopen evidence remain the highest-impact external blockers.
+1244. DONE 2026-07-26: Dependency-complete branch CI proved Avatar Studio production action contrast commit `107ee880` in WoofWatcher Verify run `30238765977`, job `89891533935`, completed successfully in `2m5s`. Checkout, pinned pnpm/Node setup, dependency install, JSON mobile beta doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+1245. NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip. Then continue real native Auth/Setup, Records local-file, Route Visual Consistency, and PDF/PNG share/reopen proof when device tooling is available; otherwise continue source-level dark-mode auditing on high-use care surfaces.
 
 ## Cadence
 

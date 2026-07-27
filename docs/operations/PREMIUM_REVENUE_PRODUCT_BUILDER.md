@@ -10,8 +10,11 @@ by a red-first mobile-readiness contract.
 
 This is source-backed contrast hardening only. Route-named iOS/Android dark
 screenshots, native accessibility traversal, and Apollo visual approval remain
-open. Fresh dependency-complete branch CI is required before this slice can be
-treated as current remote build proof.
+open. Dependency-complete branch CI proved implementation commit `107ee880`
+in WoofWatcher Verify run `30238765977`, job `89891533935`; checkout, pinned
+dependency setup/install, JSON doctor, focused tests, typecheck plus CI-safe
+builds, post steps, and Complete job all passed. Rerun after this proof-record
+commit before treating the final branch tip as current.
 
 ## 2026-07-26 Avatar Studio badge-boundary dark-mode contrast
 
