@@ -4559,3 +4559,9 @@ passing but remained truthfully `BLOCKED` on exact pnpm/Corepack and local Expo
 resolution. This protects source-level contrast only; real route-named
 iOS/Android dark screenshots, production sprite review, device
 touch/accessibility review, and Apollo visual approval remain required.
+
+Dependency-complete branch CI proved implementation commit `5a7a38ff` in
+`WoofWatcher Verify` run `30273548325`, job `90001804654`; checkout, pinned
+dependency setup/install, JSON mobile beta doctor, focused behavior tests,
+typecheck plus CI-safe builds, all post steps, and Complete job passed. Rerun
+after this proof-record commit before treating the final branch tip as current.
