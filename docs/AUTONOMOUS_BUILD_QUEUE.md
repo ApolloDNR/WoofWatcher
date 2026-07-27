@@ -16,6 +16,9 @@
 - [x] Keep Avatar Studio's fixed-light production action icons readable in
   dark mode with constant brand-navy ink.
 - [x] Add a red-first readiness contract for production action icon contrast.
+- [x] Keep Avatar Studio's fixed-light emote icon tiles visibly bounded over
+  light sprite/photo art and in dark mode with translucent brand-navy.
+- [x] Add a red-first readiness contract for the emote icon boundary.
 - [x] Keep the Plus value console's fixed-light recommended-plan card visibly
   bounded in dark mode with a constant translucent brand-navy border.
 - [x] Add a red-first readiness contract for the recommended-plan boundary.

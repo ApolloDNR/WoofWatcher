@@ -2686,3 +2686,16 @@ Decision: Keep the Plans command-room thumbnail as fixed pixel artwork in both t
 Reason: The image does not adapt with the palette, so an adaptive border can become too faint to separate the scene from the surrounding board in dark mode.
 
 Boundary: This is source-backed contrast hardening. It does not replace route-named iOS/Android dark-mode screenshots, native touch/accessibility review, or Apollo visual approval.
+
+## 2026-07-27: Fixed-light Avatar emote tiles use constant boundaries
+
+Decision: Keep Avatar Studio's small emote icon tiles ivory in both themes and
+outline them with translucent constant `brandNavy`.
+
+Reason: The tiles overlay variable sprite and photo artwork. Without a boundary,
+an ivory tile can dissolve into light art, while an adaptive dark-mode border
+can become too faint to preserve the icon silhouette.
+
+Boundary: This is source-backed contrast hardening. It does not replace
+route-named iOS/Android dark-mode screenshots, native touch/accessibility
+review, production sprite review, or Apollo visual approval.

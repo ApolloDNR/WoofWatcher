@@ -664,6 +664,21 @@ test("keeps fixed-light Avatar Studio production action icons readable in dark m
   );
 });
 
+test("keeps fixed-light Avatar Studio emote icons bounded in dark mode", () => {
+  const avatarStudio = readAppFile("portrait.tsx");
+
+  assert.match(
+    avatarStudio,
+    /s\.emoteIcon,\s*\{\s*backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22",?\s*\}/,
+    "the fixed-light emote icon needs a constant dark boundary",
+  );
+  assert.doesNotMatch(
+    avatarStudio,
+    /s\.emoteIcon,\s*\{\s*backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.border\s*\}/,
+    "the adaptive border becomes too faint around the fixed-light emote icon",
+  );
+});
+
 test("keeps the fixed-light Avatar Studio speech bubble readable in dark mode", () => {
   const avatarStudio = readAppFile("portrait.tsx");
 

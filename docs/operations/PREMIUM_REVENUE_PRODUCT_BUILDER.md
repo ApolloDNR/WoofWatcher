@@ -4544,3 +4544,18 @@ Dependency-complete branch CI proved implementation commit `3693af17` in
 dependency setup/install, JSON mobile beta doctor, focused behavior tests,
 typecheck plus CI-safe builds, all post steps, and Complete job passed. Rerun
 after this proof-record commit before treating the final branch tip as current.
+
+## 2026-07-27 Avatar emote icon dark-mode boundary slice
+
+Avatar Studio's fixed-light emote icon tiles now keep a constant translucent
+brand-navy outline over variable sprite/photo artwork and in both themes. A
+red-first mobile readiness assertion failed on the unbounded tile before the
+source correction. Local verification passed mobile readiness `130/130`, root
+TypeScript, care-domain `148/148`, PixelLab `ok=149 missing=0 invalid=0`, and
+`git diff --check`. The broad partial-checkout suite passed `661/662` and
+failed only on the known missing `@workspace/care-domain` package link in
+`careCareer.test.ts`. The JSON beta doctor kept all source-backed guards
+passing but remained truthfully `BLOCKED` on exact pnpm/Corepack and local Expo
+resolution. This protects source-level contrast only; real route-named
+iOS/Android dark screenshots, production sprite review, device
+touch/accessibility review, and Apollo visual approval remain required.

@@ -1888,7 +1888,13 @@ export default function PortraitScreen() {
                         ]}
                       />
                       <View
-                        style={[s.emoteIcon, { backgroundColor: colors.ivory }]}
+                        style={[
+                          s.emoteIcon,
+                          {
+                            backgroundColor: colors.ivory,
+                            borderColor: colors.brandNavy + "22",
+                          },
+                        ]}
                       >
                         <PixelIcon name={EMOTE_ICON[emote]} size={18} />
                       </View>
@@ -2614,6 +2620,7 @@ const s = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 7,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
