@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-07-27: Auth proof cells keep constant dark boundaries
+
+- Decision: use translucent `brandNavy` borders for cells inside the
+  scheme-independent ivory Auth/Setup proof manifest.
+- Reason: the adaptive border token becomes pale in dark mode and weakens the
+  scan hierarchy inside this launch-proof surface.
+- Boundary: this source/readiness guard does not replace native Auth/Setup
+  screenshots, provider proof, accessibility review, or Apollo approval.
+
 ## 2026-07-26: Fixed-light Avatar Studio action icons use constant dark ink
 
 - Decision: use `brandNavy` for production action glyphs rendered on

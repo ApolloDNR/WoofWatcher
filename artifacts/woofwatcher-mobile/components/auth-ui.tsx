@@ -172,7 +172,7 @@ export function AuthShell({
           </View>
           <View style={styles.proofManifestGrid}>
             {authSetupProofManifest.rows.map((row) => (
-              <View key={row.label} style={[styles.proofManifestCell, { borderColor: colors.border }]}>
+              <View key={row.label} style={[styles.proofManifestCell, { borderColor: colors.brandNavy + "22" }]}>
                 <Text style={[styles.proofManifestLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
                   {row.label}
                 </Text>

@@ -761,6 +761,11 @@ test("keeps fixed-light Auth gateway panels bounded in dark mode", () => {
     /styles\.proofManifest,\s*\{\s*backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22"\s*\}/,
     "the fixed-light Auth proof manifest needs a constant dark boundary",
   );
+  assert.match(
+    authUi,
+    /styles\.proofManifestCell,\s*\{\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22"\s*\}/,
+    "the fixed-light Auth proof manifest cells need constant dark boundaries",
+  );
   assert.doesNotMatch(
     authUi,
     /backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.border/,

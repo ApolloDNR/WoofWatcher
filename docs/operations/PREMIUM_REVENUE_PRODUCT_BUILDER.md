@@ -1,5 +1,16 @@
 # Premium Revenue Product Builder
 
+## 2026-07-27 Auth proof-manifest cell contrast
+
+The source-level dark-mode audit found that the fixed-ivory Auth/Setup proof
+manifest had corrected outer chrome but retained adaptive borders on its
+internal proof cells. Those cells now use constant translucent `brandNavy`
+boundaries, protected by a red-first mobile-readiness contract.
+
+This is source-backed contrast hardening only. Real Clerk/provider setup,
+route-named iOS/Android Auth/Setup screenshots, native accessibility review,
+public launch, and Apollo approval remain open.
+
 ## 2026-07-27 Plus recommended-plan dark-mode contrast
 
 The route-level dark-mode audit found a remaining Plus value-console defect:

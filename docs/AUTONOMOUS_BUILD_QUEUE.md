@@ -2,6 +2,9 @@
 
 ## 2026-07-25 Dark-Scheme Shell Hardening
 
+- [x] Keep the fixed-light Auth proof manifest's internal cells visibly
+  separated in dark mode with translucent brand-navy boundaries.
+- [x] Add a red-first readiness contract for the Auth proof cell boundaries.
 - [x] Route the compact web shell, desktop preview frame/backdrop, and Fast Log
   modal through the active palette instead of hard-coded light colors.
 - [x] Add a red-first readiness contract for those shared navigation surfaces.
