@@ -724,8 +724,8 @@ test("keeps the fixed-light More profile edit control visible in dark mode", () 
 
   assert.match(
     more,
-    /s\.profileEditBtn,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\}/,
-    "the More profile edit control should keep its fixed-light surface",
+    /s\.profileEditBtn,\s*\{\s*backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22"\s*\}/,
+    "the fixed-light More profile edit control needs a constant dark boundary",
   );
   assert.match(
     more,
@@ -736,6 +736,11 @@ test("keeps the fixed-light More profile edit control visible in dark mode", () 
     more,
     /name="pencil"\s+size=\{14\}\s+color=\{colors\.forest\}/,
     "adaptive forest becomes pale and loses contrast on the fixed-light edit control",
+  );
+  assert.doesNotMatch(
+    more,
+    /s\.profileEditBtn,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\}/,
+    "an unbounded ivory control can disappear against light profile artwork",
   );
 });
 

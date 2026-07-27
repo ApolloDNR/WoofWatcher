@@ -1369,3 +1369,9 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: Red-first mobile readiness failed on the adaptive frame and passes after the fixed-light boundary correction.
 - DONE: Dependency-complete branch CI proved implementation commit `3693af17` in `WoofWatcher Verify` run `30260712876`, job `89959671913`; checkout, pinned dependency setup/install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip. Real route-named iOS/Android dark screenshots and native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen proof remain open.
+
+## 2026-07-27 More profile edit dark-mode boundary
+
+- DONE: The fixed-ivory dog-profile edit control on More now uses a constant translucent brand-navy outline, preserving its edge over light or variable profile artwork in both themes.
+- DONE: Red-first mobile readiness failed on the unbounded control, then passed `130/130` after the correction. Root TypeScript, care-domain `148/148`, PixelLab `ok=149 missing=0 invalid=0`, and `git diff --check` passed. The broad partial-checkout suite failed only on the known missing `@workspace/care-domain` package link in `careCareer.test.ts`; JSON beta doctor kept source-backed guards passing but remained truthfully `BLOCKED` on exact pnpm/Corepack and local Expo resolution.
+- NEXT: Run the strongest local verification, push the verified implementation, and require fresh branch CI before treating dependency-complete proof as current. Real route-named iOS/Android dark screenshots and native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen proof remain open.

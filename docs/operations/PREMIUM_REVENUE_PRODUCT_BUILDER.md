@@ -4579,3 +4579,20 @@ Dependency-complete branch CI proved implementation commit `5a7a38ff` in
 dependency setup/install, JSON mobile beta doctor, focused behavior tests,
 typecheck plus CI-safe builds, all post steps, and Complete job passed. Rerun
 after this proof-record commit before treating the final branch tip as current.
+
+## 2026-07-27 More profile edit dark-mode boundary slice
+
+More's fixed-ivory dog-profile edit control now keeps a constant translucent
+brand-navy outline over variable profile artwork and in both themes. A
+red-first mobile readiness assertion failed on the unbounded control, then
+passed `130/130` after the source correction. Root TypeScript, care-domain
+`148/148`, PixelLab `ok=149 missing=0 invalid=0`, and `git diff --check`
+passed. The broad partial-checkout suite failed only on the known missing
+`@workspace/care-domain` package link in `careCareer.test.ts`; JSON beta doctor
+kept source-backed guards passing but remained truthfully `BLOCKED` on exact
+pnpm/Corepack and local Expo resolution. This protects source-level contrast
+only; real route-named iOS/Android dark screenshots, native accessibility
+traversal, and Apollo visual approval remain required.
+
+Run the strongest local verification and final branch CI before treating this
+slice as dependency-complete proof.

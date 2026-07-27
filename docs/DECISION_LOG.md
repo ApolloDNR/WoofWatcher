@@ -2708,3 +2708,16 @@ can become too faint to preserve the icon silhouette.
 Boundary: This is source-backed contrast hardening. It does not replace
 route-named iOS/Android dark-mode screenshots, native touch/accessibility
 review, production sprite review, or Apollo visual approval.
+
+## 2026-07-27: Fixed-light More profile edit control uses a constant boundary
+
+Decision: Keep More's dog-profile edit control ivory in both themes and outline
+it with translucent constant `brandNavy`.
+
+Reason: The control overlays variable profile artwork. Constant dark ink keeps
+the pencil readable, but the ivory tile itself can still dissolve into light
+art unless its edge is explicitly bounded.
+
+Boundary: This is source-backed contrast hardening. It does not replace
+route-named iOS/Android dark-mode screenshots, native accessibility traversal,
+or Apollo visual approval.

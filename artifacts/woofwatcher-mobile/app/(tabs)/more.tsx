@@ -1785,7 +1785,7 @@ export default function MoreScreen() {
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               accessibilityRole="button"
               accessibilityLabel="Edit dog profile"
-              style={[s.profileEditBtn, { backgroundColor: colors.ivory }]}
+              style={[s.profileEditBtn, { backgroundColor: colors.ivory, borderColor: colors.brandNavy + "22" }]}
             >
               <Ionicons name="pencil" size={14} color={colors.brandNavy} />
             </Pressable>
@@ -4713,6 +4713,7 @@ const s = StyleSheet.create({
     right: 12,
     minWidth: MIN_MOBILE_TOUCH_TARGET,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
