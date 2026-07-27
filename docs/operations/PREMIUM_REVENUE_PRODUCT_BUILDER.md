@@ -4594,5 +4594,9 @@ pnpm/Corepack and local Expo resolution. This protects source-level contrast
 only; real route-named iOS/Android dark screenshots, native accessibility
 traversal, and Apollo visual approval remain required.
 
-Run the strongest local verification and final branch CI before treating this
-slice as dependency-complete proof.
+Dependency-complete branch CI proved implementation commit `f4059be3` in
+`WoofWatcher Verify` run `30301224391`, job `90094366601`, completed
+successfully in `2m3s`; checkout, pinned dependency setup/install, JSON doctor,
+focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete
+job all passed. Rerun after this proof-record commit before treating the final
+branch tip as current.
