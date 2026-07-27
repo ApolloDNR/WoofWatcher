@@ -1467,7 +1467,7 @@ export default function PortraitScreen() {
                             : "pulse-outline"
                         }
                         size={18}
-                        color={colors.primary}
+                        color={colors.brandNavy}
                       />
                     </View>
                     <View style={s.productionActionCopy}>

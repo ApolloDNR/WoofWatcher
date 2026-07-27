@@ -1,5 +1,18 @@
 # Premium Revenue Product Builder
 
+## 2026-07-26 Avatar Studio production-action dark-mode contrast
+
+The route-level dark-mode audit found another fixed-light Avatar Studio
+defect: production action glyphs sit on scheme-independent ivory icon tiles but
+used the adaptive primary token. In dark mode that green becomes lighter and
+weakens the icon contrast. The glyphs now use constant `brandNavy`, protected
+by a red-first mobile-readiness contract.
+
+This is source-backed contrast hardening only. Route-named iOS/Android dark
+screenshots, native accessibility traversal, and Apollo visual approval remain
+open. Fresh dependency-complete branch CI is required before this slice can be
+treated as current remote build proof.
+
 ## 2026-07-26 Avatar Studio badge-boundary dark-mode contrast
 
 The route-level dark-mode audit found a remaining Avatar Studio template-grid

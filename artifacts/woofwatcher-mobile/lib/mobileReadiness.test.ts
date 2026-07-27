@@ -649,6 +649,21 @@ test("keeps fixed-light Avatar Studio template badges readable in dark mode", ()
   );
 });
 
+test("keeps fixed-light Avatar Studio production action icons readable in dark mode", () => {
+  const avatarStudio = readAppFile("portrait.tsx");
+
+  assert.match(
+    avatarStudio,
+    /s\.productionActionIcon,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\}[\s\S]*?size=\{18\}\s*color=\{colors\.brandNavy\}/,
+    "the fixed-light production action icon needs constant dark ink",
+  );
+  assert.doesNotMatch(
+    avatarStudio,
+    /s\.productionActionIcon,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\}[\s\S]*?size=\{18\}\s*color=\{colors\.primary\}/,
+    "adaptive primary becomes too pale on the scheme-independent ivory action tile",
+  );
+});
+
 test("keeps the fixed-light Avatar Studio speech bubble readable in dark mode", () => {
   const avatarStudio = readAppFile("portrait.tsx");
 

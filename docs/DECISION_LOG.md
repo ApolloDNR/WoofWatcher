@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-07-26: Fixed-light Avatar Studio action icons use constant dark ink
+
+- Decision: use `brandNavy` for production action glyphs rendered on
+  scheme-independent ivory icon tiles.
+- Reason: dark mode's adaptive primary becomes lighter and weakens contrast on
+  a surface that intentionally remains light.
+- Boundary: this source/readiness guard does not replace route-named dark-mode
+  screenshots, native accessibility review, or Apollo visual approval.
+
 ## 2026-07-26: Fixed-light Avatar Studio badges use constant dark boundaries
 
 - Decision: use a translucent `brandNavy` border around fixed-light inactive
