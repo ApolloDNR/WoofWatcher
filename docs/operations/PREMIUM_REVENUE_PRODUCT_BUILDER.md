@@ -1,5 +1,18 @@
 # Premium Revenue Product Builder
 
+## 2026-07-27 Avatar production-action dark-mode boundary
+
+The source-level dark-mode audit found that Avatar Studio's fixed-light
+production-action icons had corrected constant dark glyph ink but still had no
+boundary over variable studio artwork. The icon tiles now use a one-pixel
+translucent `brandNavy` outline, protected by a red-first mobile-readiness
+contract.
+
+This is source-backed contrast hardening only. Route-named iOS/Android dark
+screenshots, production sprite review, native accessibility traversal, and
+Apollo visual approval remain open. Rerun dependency-complete branch CI after
+the implementation commit before treating this slice as current release proof.
+
 ## 2026-07-27 Auth proof-manifest cell contrast
 
 The source-level dark-mode audit found that the fixed-ivory Auth/Setup proof

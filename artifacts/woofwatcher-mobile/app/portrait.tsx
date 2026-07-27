@@ -1457,7 +1457,10 @@ export default function PortraitScreen() {
                     <View
                       style={[
                         s.productionActionIcon,
-                        { backgroundColor: colors.ivory },
+                        {
+                          backgroundColor: colors.ivory,
+                          borderColor: colors.brandNavy + "22",
+                        },
                       ]}
                     >
                       <Ionicons
@@ -2503,6 +2506,7 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },

@@ -1,5 +1,15 @@
 # WoofWatcher Decision Log
 
+## 2026-07-27: Avatar production-action tiles keep dark boundaries
+
+- Decision: add a one-pixel translucent `brandNavy` outline to the fixed-light
+  production-action icon tiles while retaining their constant dark glyph ink.
+- Reason: the prior ink correction left the ivory tiles unbounded over the
+  variable Avatar Studio artwork, weakening their edge in dark mode.
+- Boundary: this source/readiness guard does not replace route-named native
+  screenshots, accessibility traversal, production sprite review, or Apollo
+  visual approval.
+
 ## 2026-07-27: Auth proof cells keep constant dark boundaries
 
 - Decision: use translucent `brandNavy` borders for cells inside the

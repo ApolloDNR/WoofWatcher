@@ -654,13 +654,18 @@ test("keeps fixed-light Avatar Studio production action icons readable in dark m
 
   assert.match(
     avatarStudio,
-    /s\.productionActionIcon,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\}[\s\S]*?size=\{18\}\s*color=\{colors\.brandNavy\}/,
-    "the fixed-light production action icon needs constant dark ink",
+    /s\.productionActionIcon,\s*\{\s*backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"22",?\s*\}[\s\S]*?size=\{18\}\s*color=\{colors\.brandNavy\}/,
+    "the fixed-light production action icon needs constant dark ink and a constant dark boundary",
+  );
+  assert.match(
+    avatarStudio,
+    /productionActionIcon:\s*\{[\s\S]*?borderWidth:\s*1,[\s\S]*?\}/,
+    "the production action icon boundary needs a visible one-pixel width",
   );
   assert.doesNotMatch(
     avatarStudio,
-    /s\.productionActionIcon,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\}[\s\S]*?size=\{18\}\s*color=\{colors\.primary\}/,
-    "adaptive primary becomes too pale on the scheme-independent ivory action tile",
+    /s\.productionActionIcon,\s*\{\s*backgroundColor:\s*colors\.ivory(?:,\s*borderColor:\s*colors\.border)?\s*\}/,
+    "an absent or adaptive border becomes too faint around the scheme-independent ivory action tile",
   );
 });
 
