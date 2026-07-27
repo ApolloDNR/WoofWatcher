@@ -5,6 +5,8 @@
 - [x] Keep the fixed-light Auth proof manifest's internal cells visibly
   separated in dark mode with translucent brand-navy boundaries.
 - [x] Add a red-first readiness contract for the Auth proof cell boundaries.
+- [x] Dependency-complete branch CI passed for implementation commit
+  `9de72c87`: WoofWatcher Verify run `30287783222`, job `90049755104`.
 - [x] Route the compact web shell, desktop preview frame/backdrop, and Fast Log
   modal through the active palette instead of hard-coded light colors.
 - [x] Add a red-first readiness contract for those shared navigation surfaces.

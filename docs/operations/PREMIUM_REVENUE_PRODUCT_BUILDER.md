@@ -9,7 +9,10 @@ boundaries, protected by a red-first mobile-readiness contract.
 
 This is source-backed contrast hardening only. Real Clerk/provider setup,
 route-named iOS/Android Auth/Setup screenshots, native accessibility review,
-public launch, and Apollo approval remain open.
+public launch, and Apollo approval remain open. Dependency-complete branch CI
+proved implementation commit `9de72c87` in WoofWatcher Verify run
+`30287783222`, job `90049755104`; all steps passed. Rerun after this
+proof-record commit before treating the final branch tip as current.
 
 ## 2026-07-27 Plus recommended-plan dark-mode contrast
 
