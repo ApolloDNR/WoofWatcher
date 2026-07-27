@@ -4906,6 +4906,21 @@ test("keeps the fixed-light premium plan boundary visible in dark mode", () => {
   );
 });
 
+test("keeps the fixed-light Plans command-room art bounded in dark mode", () => {
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+
+  assert.match(
+    calendar,
+    /s\.commandDeckScene,\s*\{\s*borderColor:\s*colors\.brandNavy\s*\+\s*"33"\s*\}/,
+    "the fixed-light Plans command-room thumbnail needs a constant dark boundary",
+  );
+  assert.doesNotMatch(
+    calendar,
+    /s\.commandDeckScene,\s*\{\s*borderColor:\s*colors\.border\s*\}/,
+    "the adaptive border becomes too faint around the fixed-light Plans artwork",
+  );
+});
+
 test("keeps More rooted in a live pixel launch command stage", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

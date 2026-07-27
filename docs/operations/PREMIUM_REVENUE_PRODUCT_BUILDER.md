@@ -4529,3 +4529,12 @@ Dependency-complete branch CI proved implementation commit `5fb7e8ad` in
 focused tests, typecheck plus CI-safe builds, all post steps, and Complete job
 passed. Rerun after this proof-record commit before treating the final branch
 tip as current.
+
+## 2026-07-27 Plans command-room dark-mode boundary slice
+
+The fixed pixel-art command-room thumbnail on Plans now keeps a constant
+translucent brand-navy frame in both themes instead of using the adaptive
+border token. Red-first mobile readiness failed on the old frame before the
+source correction. This protects source-level contrast only; real route-named
+iOS/Android dark screenshots, device touch/accessibility review, and Apollo
+visual approval remain required.

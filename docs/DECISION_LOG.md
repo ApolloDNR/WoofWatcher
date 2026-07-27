@@ -2678,3 +2678,11 @@ review, or Apollo visual approval.
 ## 2026-07-25 - Keep fixed-light Avatar Studio aura labels dark
 
 Selected Avatar Studio mood previews use light translucent art-direction auras in both themes, so their selected labels use `brandNavy` rather than the adaptive foreground token.
+
+## 2026-07-27: Fixed Plans artwork uses a constant boundary
+
+Decision: Keep the Plans command-room thumbnail as fixed pixel artwork in both themes and frame it with translucent constant `brandNavy`.
+
+Reason: The image does not adapt with the palette, so an adaptive border can become too faint to separate the scene from the surrounding board in dark mode.
+
+Boundary: This is source-backed contrast hardening. It does not replace route-named iOS/Android dark-mode screenshots, native touch/accessibility review, or Apollo visual approval.

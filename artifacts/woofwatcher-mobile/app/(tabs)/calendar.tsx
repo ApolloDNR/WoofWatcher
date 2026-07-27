@@ -903,7 +903,7 @@ export default function CalendarScreen() {
                   source={PLANS_COMMAND_STAGE_ROOM}
                   resizeMode="cover"
                   imageStyle={[stageImageFill, s.commandDeckSceneImage, pixelImageStyle]}
-                  style={[s.commandDeckScene, { borderColor: colors.border }]}
+                  style={[s.commandDeckScene, { borderColor: colors.brandNavy + "33" }]}
                 >
                   <SpriteSheetPlayer
                     asset={PLANS_COMMAND_STAGE_SPRITE}

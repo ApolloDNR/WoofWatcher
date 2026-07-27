@@ -1351,3 +1351,9 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 
 - Selected mood labels now use constant brand-navy ink on their scheme-independent light aura, preserving readable contrast in native dark mode.
 - Source coverage does not replace route-by-route iOS/Android screenshot proof; native proof remains open.
+
+## 2026-07-27 Plans command-room dark-mode boundary
+
+- DONE: The fixed pixel-art command-room thumbnail on Plans now uses a constant translucent brand-navy frame instead of the adaptive border token.
+- DONE: Red-first mobile readiness failed on the adaptive frame and passes after the fixed-light boundary correction.
+- NEXT: Run the strongest local verification, push the verified implementation, and require fresh branch CI. Real route-named iOS/Android dark screenshots and native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen proof remain open.
