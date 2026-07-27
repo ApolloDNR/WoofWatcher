@@ -1356,4 +1356,5 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 
 - DONE: The fixed pixel-art command-room thumbnail on Plans now uses a constant translucent brand-navy frame instead of the adaptive border token.
 - DONE: Red-first mobile readiness failed on the adaptive frame and passes after the fixed-light boundary correction.
-- NEXT: Run the strongest local verification, push the verified implementation, and require fresh branch CI. Real route-named iOS/Android dark screenshots and native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen proof remain open.
+- DONE: Dependency-complete branch CI proved implementation commit `3693af17` in `WoofWatcher Verify` run `30260712876`, job `89959671913`; checkout, pinned dependency setup/install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip. Real route-named iOS/Android dark screenshots and native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen proof remain open.

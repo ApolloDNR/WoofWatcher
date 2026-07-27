@@ -4538,3 +4538,9 @@ border token. Red-first mobile readiness failed on the old frame before the
 source correction. This protects source-level contrast only; real route-named
 iOS/Android dark screenshots, device touch/accessibility review, and Apollo
 visual approval remain required.
+
+Dependency-complete branch CI proved implementation commit `3693af17` in
+`WoofWatcher Verify` run `30260712876`, job `89959671913`; checkout, pinned
+dependency setup/install, JSON mobile beta doctor, focused behavior tests,
+typecheck plus CI-safe builds, all post steps, and Complete job passed. Rerun
+after this proof-record commit before treating the final branch tip as current.
