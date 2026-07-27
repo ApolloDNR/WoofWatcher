@@ -10,8 +10,12 @@ contract.
 
 This is source-backed contrast hardening only. Route-named iOS/Android dark
 screenshots, production sprite review, native accessibility traversal, and
-Apollo visual approval remain open. Rerun dependency-complete branch CI after
-the implementation commit before treating this slice as current release proof.
+Apollo visual approval remain open. Dependency-complete branch CI proved
+implementation commit `16076314` in WoofWatcher Verify run `30313148200`, job
+`90132964077`; checkout, pinned dependency setup/install, JSON doctor, focused
+behavior tests, typecheck plus CI-safe builds, post steps, and Complete job all
+passed. Rerun after this proof-record commit before treating the final branch
+tip as current.
 
 ## 2026-07-27 Auth proof-manifest cell contrast
 
