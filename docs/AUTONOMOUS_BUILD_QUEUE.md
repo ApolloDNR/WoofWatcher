@@ -19,6 +19,9 @@
 - [x] Keep the Plus value console's fixed-light recommended-plan card visibly
   bounded in dark mode with a constant translucent brand-navy border.
 - [x] Add a red-first readiness contract for the recommended-plan boundary.
+- [x] Dependency-complete branch CI passed for the recommended-plan
+  implementation commit `561c44f4`: WoofWatcher Verify run `30248465495`, job
+  `89920782424`.
 - [x] Dependency-complete branch CI passed for the Avatar Studio production
   action implementation commit `107ee880`: WoofWatcher Verify run
   `30238765977`, job `89891533935`.

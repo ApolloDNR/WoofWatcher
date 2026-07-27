@@ -10,8 +10,12 @@ light parts of the pixel stage. The card now uses a constant translucent
 
 This is source-backed contrast hardening only. Checkout remains gated, and
 route-named iOS/Android dark screenshots, native accessibility traversal, and
-Apollo visual approval remain open. Dependency-complete branch CI must pass
-before this implementation is treated as release proof.
+Apollo visual approval remain open. Dependency-complete CI proved
+implementation commit `561c44f4` in WoofWatcher Verify run `30248465495`, job
+`89920782424`; checkout, pinned dependency setup/install, JSON doctor, focused
+tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+Rerun after this proof-record commit before treating the final branch tip as
+current.
 
 ## 2026-07-26 Avatar Studio production-action dark-mode contrast
 
