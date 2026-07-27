@@ -4891,6 +4891,21 @@ test("keeps the fixed-light WoofGuide safety boundary visible in dark mode", () 
   );
 });
 
+test("keeps the fixed-light premium plan boundary visible in dark mode", () => {
+  const premium = readAppFile("premium.tsx");
+
+  assert.match(
+    premium,
+    /premiumValuePlanCard,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"E8",\s*borderColor:\s*colors\.brandNavy\s*\+\s*"55"/,
+    "the fixed-light recommended plan card must keep a visible dark border in dark mode",
+  );
+  assert.doesNotMatch(
+    premium,
+    /premiumValuePlanCard,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"E8",\s*borderColor:\s*colors\.ivory/,
+    "an ivory border disappears against the fixed-light recommended plan card",
+  );
+});
+
 test("keeps More rooted in a live pixel launch command stage", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

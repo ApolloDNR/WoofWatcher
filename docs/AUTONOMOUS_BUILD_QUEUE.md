@@ -16,6 +16,9 @@
 - [x] Keep Avatar Studio's fixed-light production action icons readable in
   dark mode with constant brand-navy ink.
 - [x] Add a red-first readiness contract for production action icon contrast.
+- [x] Keep the Plus value console's fixed-light recommended-plan card visibly
+  bounded in dark mode with a constant translucent brand-navy border.
+- [x] Add a red-first readiness contract for the recommended-plan boundary.
 - [x] Dependency-complete branch CI passed for the Avatar Studio production
   action implementation commit `107ee880`: WoofWatcher Verify run
   `30238765977`, job `89891533935`.

@@ -1,5 +1,18 @@
 # Premium Revenue Product Builder
 
+## 2026-07-27 Plus recommended-plan dark-mode contrast
+
+The route-level dark-mode audit found a remaining Plus value-console defect:
+the recommended-plan card stays intentionally translucent ivory in both
+themes, while its border was also ivory. The boundary could disappear against
+light parts of the pixel stage. The card now uses a constant translucent
+`brandNavy` border, protected by a red-first mobile-readiness contract.
+
+This is source-backed contrast hardening only. Checkout remains gated, and
+route-named iOS/Android dark screenshots, native accessibility traversal, and
+Apollo visual approval remain open. Dependency-complete branch CI must pass
+before this implementation is treated as release proof.
+
 ## 2026-07-26 Avatar Studio production-action dark-mode contrast
 
 The route-level dark-mode audit found another fixed-light Avatar Studio

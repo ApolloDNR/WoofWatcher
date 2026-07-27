@@ -229,7 +229,7 @@ function PremiumScreenBody() {
                 <View
                   style={[
                     s.premiumValuePlanCard,
-                    { backgroundColor: colors.ivory + "E8", borderColor: colors.ivory + "AA" },
+                    { backgroundColor: colors.ivory + "E8", borderColor: colors.brandNavy + "55" },
                   ]}
                 >
                   <Text style={[s.premiumValuePlanLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>

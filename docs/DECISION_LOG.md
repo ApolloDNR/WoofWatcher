@@ -2613,6 +2613,20 @@ Boundary: This is source-backed contrast hardening. It does not replace
 route-named iOS/Android dark-mode screenshots, native accessibility traversal,
 or Apollo visual approval.
 
+## 2026-07-27: Fixed-light premium plan cards use constant boundaries
+
+Decision: Keep the Plus value console's recommended-plan card on its
+translucent ivory surface in both themes, and render its boundary with
+translucent constant `brandNavy`.
+
+Reason: An ivory border dissolves into the intentionally fixed-light card and
+the light pixel stage behind it. Constant dark ink preserves the plan hierarchy
+in dark mode without changing the art-directed surface.
+
+Boundary: This is source-backed contrast hardening. It does not enable
+checkout, prove route-named iOS/Android dark-mode screenshots, replace native
+accessibility review, or provide Apollo visual approval.
+
 ## Open Decisions For Apollo
 
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
