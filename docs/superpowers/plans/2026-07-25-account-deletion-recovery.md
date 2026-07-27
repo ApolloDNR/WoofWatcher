@@ -66,20 +66,32 @@ Query, Expo SDK 54, Expo Router 6, and expo-secure-store.
 - A recovery bearer alone authorizes only the dedicated redacted recovery GET.
   It cannot start, authorize, retry, rotate, acknowledge handoff, mutate care,
   or access full owner status.
-- Recovery access lasts exactly 30 days from first issue. Rotation does not
-  extend expiry. Store only keyed token digests.
+- The production PostgreSQL store captures exactly one recovery credential
+  authority at construction. No request, route, worker step, or store method
+  accepts a per-call issuer, pepper, digest function, or authority override.
+  Every new recovery-token row carries the store-bound non-secret authority
+  fingerprint, and binding, pre-issue assertion, and token insertion serialize
+  through the same deployment-identity singleton row lock.
+- Recovery access lasts exactly 30 days from first issue. The first issuance
+  transaction fixes one database `issued_at` and
+  `expires_at = issued_at + interval '30 days'`; rotation never recomputes or
+  extends it. Store only keyed token digests.
 - Rotation is allowed only in `reauth_verified`,
   `provider_action_required`, `accepted`, `apple_revoking`, `apple_revoked`,
   `preflight`, `cleanup_pending`, `cleanup_running`, `object_inventory`,
   `object_cleanup_pending`, `object_cleanup_running`, or
   `object_cleanup_complete`. Rotation and the transition to `clerk_deleting`
   take the same canonical account/job locks and compare the same job
-  generation, so exactly one commits and the loser must refetch.
+  generation, so exactly one commits and the loser must refetch. Each
+  transaction acquires every potentially blocking canonical advisory and row
+  lock first, then samples `clock_timestamp()` exactly once immediately before
+  its expiry/CAS decision and uses that same post-lock value throughout the
+  decision.
 - Clerk deletion is forbidden until the currently active recovery generation
   has been saved by the client and acknowledged through a Clerk-authenticated,
-  token-possession handoff, and database time remains strictly before its fixed
-  expiry. Expiry before Clerk deletion terminalizes truthfully without a Clerk
-  call.
+  token-possession handoff, and the transition's single post-lock decision
+  time remains strictly before the fixed expiry. Expiry before Clerk deletion
+  terminalizes truthfully without a Clerk call.
 - OpenAPI is the public contract source of truth. Generated Zod and React files
   are never hand-edited.
 - Strict Zod generation applies only to account-deletion operations. Existing
@@ -106,6 +118,13 @@ Query, Expo SDK 54, Expo Router 6, and expo-secure-store.
 - `IsoTimestamp` is an RFC 3339 UTC string at HTTP/generated boundaries.
   Internal store records use JavaScript `Date`; PostgreSQL decisions use
   database time, never API-process time.
+- First recovery issuance fixes `issued_at` from the creating transaction's
+  database timestamp and derives the immutable 30-day `expires_at` from it.
+  Every later mutating recovery-expiry decision acquires all of its blocking
+  canonical advisory and row locks first, then evaluates exactly one
+  `clock_timestamp()` sample. `now()`, `transaction_timestamp()`,
+  `statement_timestamp()`, a pre-lock sample, and process time are forbidden
+  for rotation, handoff, or the Clerk-boundary expiry decision.
 - `Sha256Hex` is a lowercase 64-character SHA-256 hex digest.
 - `RequestId`, `ChallengeId`, `EffectId`, `ObjectInventoryAttemptId`, and
   `ReceiptId` are UUID strings.
@@ -791,7 +810,7 @@ The legal state adjacency is:
 | `object_inventory` | `object_cleanup_pending`, `retry_required` | Singleton attempt lookup/create outcome and complete attempt-ID snapshot commit atomically, or indeterminate lookup retrying that same attempt |
 | `object_cleanup_pending` | `object_cleanup_running`, `object_cleanup_complete` | All object intents committed; direct completion only for an empty inventory |
 | `object_cleanup_running` | `object_cleanup_complete`, `retry_required` | All effects committed and counts reconcile, or retry resuming to `object_cleanup_running` |
-| `object_cleanup_complete` | `clerk_deleting`, `failed` | The Clerk edge requires exact cleanup parity, confirmed current handoff, and database time before recovery expiry; the failed edge requires database time at/after expiry and atomically derives the immutable `recovery_expired_before_clerk_deletion` receipt with no Clerk intent/call |
+| `object_cleanup_complete` | `clerk_deleting`, `failed` | After every blocking canonical lock is held, sample `clock_timestamp()` exactly once. The Clerk edge requires exact cleanup parity, confirmed current handoff, and that post-lock value before recovery expiry; a value at/after expiry takes only the failed edge and atomically derives the immutable `recovery_expired_before_clerk_deletion` receipt with no Clerk intent/call |
 | `clerk_deleting` | `receipt_finalizing`, `retry_required` | Committed deleted/already-absent Clerk outcome, or retry resuming to `clerk_deleting` |
 | `receipt_finalizing` | `succeeded`, `retry_required` | Store-derived immutable success receipt committed atomically, or retry resuming to `receipt_finalizing`; no generic caller-selected failed edge exists |
 | `retry_required` | the exact stored `retryResumeState` | No caller-selected resume state; provider phases look up outcome before mutation |
@@ -1450,7 +1469,10 @@ export type StartDeletionPreflightResult =
     }
   | { kind: "conflict" };
 
-export interface RecoveryCredentialIssuer {
+export interface RecoveryCredentialAuthority {
+  authorityFingerprint(input: {
+    deploymentId: string;
+  }): Sha256Hex;
   issueAndSeal(input: {
     requestId: RequestId;
     generation: RecoveryGeneration;
@@ -1468,6 +1490,15 @@ export interface RecoveryCredentialIssuer {
   }): Sha256Hex;
 }
 
+export interface CreateRecoveryCredentialAuthorityInput {
+  recoveryPepper: Uint8Array;
+  randomBytes?(length: number): Uint8Array;
+}
+
+export declare function createRecoveryCredentialAuthority(
+  input: CreateRecoveryCredentialAuthorityInput,
+): RecoveryCredentialAuthority;
+
 export interface CommitDeletionStartInput
   extends Omit<
     CreateDeletionRequestInput,
@@ -1476,7 +1507,6 @@ export interface CommitDeletionStartInput
   authenticatedSubjectUserId: UserId;
   authoritativeIdentity: AuthoritativeIdentity;
   appleEffectId: EffectId;
-  recoveryIssuer: RecoveryCredentialIssuer;
   buildStoredResponse(created: {
     job: AccountDeletionJobRecord;
     recoveryCredential: IssuedRecoveryCredential;
@@ -1522,15 +1552,109 @@ export declare function initiateAccountDeletionRequest(
 ): Promise<CommitDeletionStartResult>;
 ```
 
-`RecoveryCredentialIssuer.issueAndSeal` is synchronous. It creates exactly 32
-cryptographically random bytes, base64url-encodes them only for the synchronous
-`seal` callback, computes an HMAC-SHA-256 digest with the configured recovery
-pepper over the length-delimited tuple
-`requestId + generation + bearer bytes` after rejecting a noncanonical request
-UUID, clears the mutable byte buffer in a
+`createRecoveryCredentialAuthority` is the only recovery-authority
+constructor. `recoveryPepper` must be a `Uint8Array` containing at least 32
+bytes produced by a cryptographically secure random source. The constructor
+rejects a non-`Uint8Array`, empty or shorter input, and an all-zero input
+synchronously before reading or capturing the optional randomness adapter,
+generating bearer bytes, checking out a pool client, or performing any
+database side effect. It copies the validated pepper immediately; the
+caller-owned buffer remains caller-owned, and mutating or filling that buffer
+with zeros after construction cannot change any authority result. Production
+captures Node's cryptographic random-byte function; `randomBytes` is a
+test-only seam that is captured once and must synchronously return a fresh,
+non-thenable `Uint8Array` of exactly the requested length.
+
+The constructor returns a frozen null-prototype
+`RecoveryCredentialAuthority`. Its methods are own immutable data properties
+whose closures use only the copied pepper and captured randomness function.
+`issueAndSeal` is synchronous. It creates exactly 32 cryptographically random
+raw bearer bytes, encodes them as canonical unpadded base64url only for the
+synchronous `seal` callback, clears every mutable temporary bearer buffer in a
 `finally`, rejects a thenable sealer result, and returns only the digest and
 encrypted stored response. A raw bearer is never a store result, row, log, or
 async value.
+
+Recovery-token digests use this byte-exact frame:
+
+```text
+field("WWAD-RECOVERY-TOKEN-v1")
+|| field(canonicalRequestId)
+|| positiveIntegerField(generation)
+|| byteField(rawBearerBytes)
+```
+
+`field` and `positiveIntegerField` are the shared four-byte unsigned
+big-endian length-framed primitives defined above. `byteField` is the same
+four-byte unsigned big-endian length followed by the exact bytes, with no
+UTF-8 conversion. `canonicalRequestId` must already pass the lowercase
+hyphenated UUID parser, and `generation` must be a positive safe integer.
+Validation accepts only an unpadded canonical base64url string that decodes to
+exactly 32 bytes and re-encodes byte-for-byte to the supplied bearer; padding,
+alternate alphabets, whitespace, noncanonical encodings, and wrong decoded
+length reject before HMAC, lookup, or pool checkout. The digest is the 32-byte
+HMAC-SHA-256 output encoded as 64 lowercase hexadecimal characters.
+
+Independent tests implement framing without importing the production helper
+and pin both token vectors:
+
+| Pepper bytes | Request ID | Generation | Canonical bearer | Expected digest |
+|---|---|---:|---|---|
+| `00 01 ... 1f` | `22222222-2222-4222-8222-222222222222` | `7` | `ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8` | `1d1986fc929f21c3b31f3875514b53a88811777d6dbdb4c9caf682feae736c67` |
+| `ff fe ... e0` | `aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa` | `42` | `AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8` | `2e0fb7af4c6b380b78f3f1dafc0a9a5bd81d5d5d1a8c401aeeb1abf31746ff87` |
+
+`authorityFingerprint` requires the canonical lowercase deployment UUID and
+returns HMAC-SHA-256 over
+`field("WWAD-RECOVERY-AUTHORITY-v1") || field(deploymentId)`. With pepper
+bytes `00 01 ... 1f` and deployment
+`11111111-1111-4111-8111-111111111111`, the expected lowercase fingerprint is
+`637d6f23c702b35bf39717f59630a230a63875ce2172488afb969338ad6c1721`.
+The fingerprint is a non-secret deployment-scoped authority identity; neither
+it nor any other API reveals the pepper.
+
+`account-deletion-recovery.ts` owns module-private, unexported provenance:
+an `officialRecoveryAuthorities: WeakSet<object>` and a parallel
+`officialRecoveryAuthorityClosures: WeakMap<object, FrozenAuthorityClosures>`.
+`createRecoveryCredentialAuthority` constructs three receiver-independent
+closure functions that never read `this` and an exact null-prototype closure
+bundle. It defines exactly the own string keys `authorityFingerprint`,
+`issueAndSeal`, and `digest` on a separate null-prototype authority object;
+neither object has symbol keys. It freezes both objects, records the authority
+identity in the WeakSet and that exact bundle in the WeakMap, and only then
+returns the authority. No exported symbol, property, type assertion,
+structural copy, proxy, or prototype relationship can add an object to those
+private collections.
+
+The production PostgreSQL store snapshots exactly one official
+`recoveryCredentialAuthority` during construction through the module-internal
+`captureOfficialRecoveryCredentialAuthority` capability. That capability is
+not part of a package barrel or public type and exposes no register/adopt/brand
+operation. Capture rejects before pool checkout unless WeakSet membership,
+WeakMap closure provenance, null prototype, frozen state, the exact
+`Reflect.ownKeys` result with no symbols, immutable data descriptors, and
+every descriptor flag/function identity all match the official constructor
+record.
+It returns the exact WeakMap-recorded frozen null-prototype bundle containing
+the original receiver-independent closures directly; it never invokes an
+accessor, binds a function to the supplied object, reads a mutable receiver
+during an async gap, or observes the authority again. A structural fake,
+copied official methods, proxy, `Object.create(officialAuthority)`,
+mutable-`this` functions, later property/prototype mutation, or substituted
+object therefore cannot alter issuance, rotation, validation, or handoff. The
+captured authority must
+remain stable across replicas, restarts, and deployments for every unexpired
+credential. Pepper rotation while any such credential exists is unsupported
+and fails closed; a future rotation design requires an additive key ID and
+keyring migration.
+
+This construction-scoped authority is the only recovery cryptographic
+authority in the protocol. No route input, request DTO,
+`commitDeletionStart`, `rotateRecovery`, `validateRecoveryBearer`,
+`confirmRecoveryHandoff`, worker input, or store method may accept or
+substitute another authority, issuer, pepper, digest callback, or randomness
+source. Task 2's in-memory test-harness constructor takes and snapshots the
+same one authority and models the same immutable fingerprint binding; it does
+not regain a method-level injection seam merely because it is not PostgreSQL.
 
 The start sequence is exact:
 
@@ -1550,10 +1674,15 @@ The start sequence is exact:
    writes the same blocked-only shape and does not consume the challenge or
    proof.
 5. On the accepted path, the same transaction consumes the challenge, claims
-   the globally unique proof, inserts the job, normalized cleanup plan,
-   tombstone, generation-1 recovery digest with
-   `expires_at = database_now + interval '30 days'`, optional Apple effect
-   intent, and byte-exact encrypted response.
+   the globally unique proof, takes the deployment-identity singleton row lock
+   through the authority assertion immediately before random-byte generation,
+   and inserts the job, normalized cleanup plan, tombstone, generation-1
+   recovery digest with the captured authority fingerprint,
+   database-generated `issued_at`, and
+   `expires_at = issued_at + interval '30 days'`, optional Apple effect intent,
+   and byte-exact encrypted response. Both recovery timestamps are fixed by
+   this first-issue transaction and no rotation may resample the base or
+   extend the expiry.
 6. No provider effect runs before commit. A race that removes the user between
    Steps 2 and 4 may have performed the one authoritative identity read, but
    it still commits only the blocked shape and consumes no proof.
@@ -1616,6 +1745,9 @@ finalization infrastructure error records `retry_required` with
 - `account_deletion_deployment_identity`: exactly one immutable singleton row
   with a database-local random `deployment_id` and the fixed schema marker
   `account-deletion-store-v1`;
+- `account_deletion_recovery_authority_identity`: an initially empty,
+  immutable zero-or-one-row singleton bound to the deployment identity, with
+  the non-secret lowercase authority fingerprint and database bind timestamp;
 - `account_deletion_cleanup_plans`: one immutable header per request with
   `request_id`, `user_id`, immutable `plan_generation`,
   `plan_digest_sha256`, and `created_at`;
@@ -1739,7 +1871,10 @@ updates that would rebind any component:
   terminal receipts carry `user_id` and reference the exact job tuple
   `(request_id, user_id)`. Recovery rows expose unique
   `(request_id, user_id, generation)` as the rotation-idempotency source
-  target, in addition to request/generation uniqueness;
+  target, in addition to request/generation uniqueness. Their nullable
+  historical `recovery_authority_fingerprint` restrictively references the
+  immutable authority singleton; the insert guard makes it non-null and exact
+  for every post-`0011` row;
 - provider actions expose unique `(id, request_id)` and reference their job.
   They are also unique by `(request_id, kind, generation)`.
   The job's nullable active-action relation is the composite foreign key
@@ -1863,6 +1998,9 @@ the provider-snapshot namespace equals both the attempt's immutable captured
 namespace and commit-only namespace copy, while provider ID/time, manifest
 digest, and object count equal the attempt's committed values. It proves
 header count equals distinct inventory count equals persisted inventory count.
+Every recovery create/load/replay/rotate/handoff path separately joins the
+token row to the one authority row and constant-time-compares the stored and
+captured fingerprints before bearer HMAC or response decryption.
 Finalization additionally proves exactly one object effect per inventory row,
 no extra effect, and derived outcome counts equal both the receipt and header.
 Any absent, duplicate, cross-request, cross-user, cross-generation,
@@ -1907,6 +2045,130 @@ to either runtime login. Instead,
 unless the singleton and schema marker are exact. `PUBLIC`, `anon`, and
 `authenticated` receive no execution right; only the app and cleanup-worker
 roles may execute it.
+
+`account_deletion_recovery_authority_identity` has this exact shape:
+
+```sql
+singleton_key text PRIMARY KEY DEFAULT 'recovery_authority'
+  CHECK (singleton_key = 'recovery_authority'),
+deployment_id uuid NOT NULL UNIQUE
+  REFERENCES account_deletion_deployment_identity(deployment_id)
+  ON DELETE RESTRICT,
+authority_fingerprint text NOT NULL UNIQUE
+  CHECK (authority_fingerprint ~ '^[0-9a-f]{64}$'),
+bound_at timestamptz NOT NULL DEFAULT transaction_timestamp()
+```
+
+It is a persistent forced-RLS relation with no policies. `PUBLIC`,
+`anon`, `authenticated`, the app, and the cleanup worker have no direct table
+or sequence privilege. The cleanup owner receives only the exact read/insert
+access required by the bind/assert functions. The statement trigger
+`account_deletion_recovery_authority_identity_no_mutation`, backed by
+`ww_reject_account_deletion_recovery_authority_mutation()`, rejects every
+update, delete, or truncate. The literal-key check, deployment foreign key,
+and absence of direct runtime insert grants permit only the bind function's
+first row. Neither the table nor any function stores or returns the raw
+recovery pepper or bearer.
+
+`0011` additively adds nullable
+`recovery_authority_fingerprint text` to
+`account_deletion_recovery_token_digests`, with a lowercase 64-hex check and
+an `ON DELETE RESTRICT` foreign key to the immutable authority fingerprint.
+The named constraints are
+`account_deletion_recovery_token_authority_fingerprint` and
+`account_deletion_recovery_token_authority_fingerprint_fkey`; the latter
+references
+`account_deletion_recovery_authority_identity(authority_fingerprint)`.
+It remains nullable only so pre-`0011` historical rows can retain their
+truthful unknown authority; no post-`0011` insert may leave it null. The
+column is immutable and included in SQL/Drizzle parity, ordered catalog
+digests, token-row load/replay joins, and the app's exact INSERT-column grant.
+Every store load of an active token row requires this persisted fingerprint to
+equal the store-captured fingerprint before digest comparison, response
+decryption, handoff, rotation, or state mutation. A null or mismatched active
+row is an invariant failure, never a legacy fallback.
+
+The exact row-level guard trigger is
+`account_deletion_recovery_token_authority_guard`, backed by
+`ww_guard_account_deletion_recovery_token_authority()`. It is installed
+`BEFORE INSERT` on `account_deletion_recovery_token_digests`; the existing
+recovery-history update/delete/truncate triggers protect every inserted
+fingerprint afterward.
+
+The exact database entry points are:
+
+```sql
+public.ww_bind_account_deletion_recovery_authority(
+  p_authority_fingerprint text
+) returns void
+
+public.ww_assert_account_deletion_recovery_authority(
+  p_authority_fingerprint text
+) returns void
+```
+
+Both functions and the token-insert guard described below are `SECURITY
+DEFINER`, owned by the cleanup owner, fixed to
+`search_path = pg_catalog, public`, marked `VOLATILE` because they acquire a
+row lock, and versioned by exact migration-owned comments and normalized
+function-body hashes. Default execution is revoked from `PUBLIC`, `anon`, and
+`authenticated`; the app is the sole explicit runtime `EXECUTE` grantee for
+the two named functions. The cleanup owner retains only its inherent
+NOLOGIN-owner authority, and no runtime role can become it. Direct execution
+of the trigger function is revoked from every runtime role.
+
+The deployment-identity singleton row is the one recovery-authority binding
+lock. Bind, assert, and every recovery-token `BEFORE INSERT` guard select that
+exact row `FOR UPDATE` and hold it until their surrounding transaction ends.
+They reject a missing, duplicate, wrong-schema-marker, or noncanonical
+deployment row before examining token state. No recovery protocol path
+acquires this lock and later attempts an account, household, job, or provider
+lock: start and rotation take their canonical account/household/job locks
+first and then take the authority lock immediately before issuance, while
+store construction takes no account/household/job lock while it holds the
+authority lock. This single order prevents an authority/account lock cycle.
+
+The bind function validates the lowercase fingerprint before locking. If the
+authority row is absent, it refuses to bind while any historical token row
+with a null fingerprint has `expires_at > clock_timestamp()`, regardless of
+consumption or handoff state. Thus a legacy unbound database with any
+unexpired credential fails closed and remains unbound; a fresh database or
+one containing only expired legacy history may bind. If the row already
+contains the same deployment UUID and fingerprint, bind is an exact no-op. A
+different fingerprint, wrong deployment relation, extra row, or malformed
+legacy token aborts without mutation. Pepper rotation while any unexpired
+credential exists is unsupported; it cannot overwrite the immutable binding.
+
+The assert function validates the lowercase fingerprint, takes the same
+singleton lock, and requires exactly one byte-identical
+deployment/fingerprint row. It performs no repair or rebind. Initial issuance
+and rotation call it inside their already-fenced transaction immediately
+before `issueAndSeal`; the lock remains held through the token-digest and
+idempotent-response inserts and commit. A failed assertion therefore occurs
+before random-byte generation, response sealing, token consumption,
+idempotency insertion, or any recovery state mutation.
+
+The migration-installed token `BEFORE INSERT` guard takes the same singleton
+lock and rejects unless `NEW.recovery_authority_fingerprint` is non-null and
+byte-identical to the bound row. Consequently, a legacy writer that omits the
+column and a mismatched writer that supplies another fingerprint both fail
+closed. The shared lock closes the construction race: if bind obtains it
+first, a concurrent legacy insert waits and then rejects; if the legacy insert
+obtains it first, it rejects the absent binding and releases the lock before
+bind can commit. No schedule can commit both an authority binding and an
+unfingerprinted or mismatched new token row.
+
+The real-PostgreSQL race uses two simultaneously held backend PIDs and no fake
+pool. In the bind-first schedule, backend A calls bind inside an uncommitted
+app-role transaction, backend B issues a raw legacy insert omitting the
+fingerprint, and the barrier proves B is blocked until A commits, after which
+B rejects. In the legacy-first schedule, the admin test backend B takes the
+exact deployment row lock in the same transaction that will issue the raw
+legacy insert (the deterministic barrier unavailable to the unprivileged app
+role), backend A calls bind and is proven blocked, then B executes the insert;
+the production guard rejects it and B rolls back, after which A binds. Both
+schedules assert exact row counts/fingerprints and zero token/job/idempotency
+drift. No production test hook or schema-only simulation satisfies this case.
 
 ```ts
 export interface SubjectRedactionValues {
@@ -2047,6 +2309,9 @@ the next state.
 `PUBLIC`, `anon`, and `authenticated`. It also removes default
 `PUBLIC EXECUTE` from `ww_lock_keys`,
 `ww_account_deletion_deployment_identity`,
+`ww_bind_account_deletion_recovery_authority`,
+`ww_assert_account_deletion_recovery_authority`, the recovery-token insert
+guard,
 `ww_account_deletion_cleanup_bypass_allowed`, every trigger function, and the
 cleanup routine. Exact grants then apply:
 
@@ -2056,7 +2321,8 @@ index, trigger, and existing care table; that principal is never supplied to
 the running application or worker. `0011` requires its direct
 `session_user = current_user` identity to equal that existing owner on rerun.
 The cleanup owner owns only the named
-`SECURITY DEFINER` cleanup/deployment/guard functions. Because it owns no
+`SECURITY DEFINER` cleanup/deployment/recovery-authority/guard functions.
+Because it owns no
 relation or schema, it has no implicit table power; all of its access is the
 enumerated grant set below. The manifest rejects a table, sequence, or schema
 owned by the app, cleanup worker, or cleanup owner and rejects a cleanup
@@ -2069,6 +2335,10 @@ function owned by any role other than the cleanup owner.
   `DELETE`/`TRUNCATE`, no execution-row
   insert/finalize privilege, no cleanup-routine execution, and no membership
   in a cleanup role;
+- on `account_deletion_recovery_token_digests`, the app's INSERT-column grant
+  includes the required `recovery_authority_fingerprint` but grants no update
+  to that column; the insert trigger accepts only the store-bound value under
+  the singleton lock;
 - on `account_deletion_object_inventory_attempts`, that means `SELECT` on all
   columns; `INSERT` only on request ID, user ID, cleanup generation, plan
   digest, evidence ID, replay key, and captured provider-snapshot namespace;
@@ -2088,6 +2358,11 @@ function owned by any role other than the cleanup owner.
   sorts the accepted keys in database byte order;
 - `woofwatcher_app` receives `EXECUTE` on
   `ww_account_deletion_deployment_identity`;
+- `woofwatcher_app` receives `EXECUTE` on the exact
+  `ww_bind_account_deletion_recovery_authority(text)` and
+  `ww_assert_account_deletion_recovery_authority(text)` signatures, but no
+  direct privilege on `account_deletion_recovery_authority_identity`; the
+  cleanup worker receives neither entry point;
 - neither the app nor cleanup worker receives direct `EXECUTE` on
   `ww_account_deletion_cleanup_bypass_allowed` or any guard trigger function;
   only the cleanup-owner trigger/routine call chain can reach the helper, and
@@ -2098,7 +2373,9 @@ function owned by any role other than the cleanup owner.
   trigger-function privilege;
 - the cleanup owner receives the exact `SELECT`/`INSERT`/`UPDATE`/`DELETE`
   table and sequence privileges each named routine/guard needs, including
-  read-only deployment-identity and plan/evidence lookups; it receives no
+  deployment-identity row locking, read/first-insert authority binding,
+  read-only recovery-token legacy checks, and plan/evidence lookups; it
+  receives no
   schema ownership, `TRUNCATE`, `REFERENCES`, `TRIGGER`, or unrelated table
   privilege. Its `BYPASSRLS` attribute is the explicit reason the
   `SECURITY DEFINER` routine can mutate existing RLS-protected care tables;
@@ -2108,6 +2385,10 @@ Tests prove the application connection can execute every non-cleanup store
 operation but cannot set role directly or transitively, insert/finalize
 execution evidence, call the cleanup routine, invoke trigger functions
 directly, invoke the bypass helper, or spoof the transaction-local setting.
+It can invoke only the exact authority bind/assert signatures and insert a
+token only with the currently bound fingerprint; it cannot read or mutate the
+authority table, bypass the singleton lock, or insert a null/mismatched token
+fingerprint.
 An app write that fires the migration-installed guard must observe false bypass
 and reject the guarded mutation. Tests also prove the cleanup connection can
 call only the routine, cannot call the bypass helper directly, cannot
@@ -2122,8 +2403,9 @@ repair.
 **Recovery access and handoff**
 
 `account_deletion_recovery_token_digests` is the only recovery-token table
-name. `0011` adds `handoff_confirmed_at`; `consumed_at` means invalidated by
-rotation. The job's `active_recovery_generation`, fixed
+name. `0011` adds `handoff_confirmed_at` and the nullable-for-history,
+mandatory-for-new-inserts `recovery_authority_fingerprint`; `consumed_at`
+means invalidated by rotation. The job's `active_recovery_generation`, fixed
 `recovery_expires_at`, and `recovery_handoff_generation` are the current
 summary. Rotation never changes the first issuance expiry.
 
@@ -2144,7 +2426,6 @@ export interface RotateRecoveryInput {
   expectedRecoveryGeneration: RecoveryGeneration;
   idempotencyKeyHash: Sha256Hex;
   requestFingerprintSha256: Sha256Hex;
-  recoveryIssuer: RecoveryCredentialIssuer;
   buildStoredResponse(created: {
     job: AccountDeletionJobRecord;
     recoveryCredential: IssuedRecoveryCredential;
@@ -2157,7 +2438,6 @@ export interface ConfirmRecoveryHandoffInput {
   expectedJobGeneration: number;
   expectedRecoveryGeneration: RecoveryGeneration;
   bearer: string;
-  recoveryIssuer: RecoveryCredentialIssuer;
 }
 
 export interface TransitionToClerkDeletingInput {
@@ -2172,7 +2452,6 @@ export interface AccountDeletionRecoveryStore {
   validateRecoveryBearer(input: {
     requestId: RequestId;
     bearer: string;
-    recoveryIssuer: RecoveryCredentialIssuer;
   }): Promise<RecoveryAccessRecord>;
   rotateRecovery(
     input: RotateRecoveryInput,
@@ -2211,43 +2490,99 @@ returns its byte-exact stored response before current state validation. On a
 miss, the locked transaction repeats that lookup,
 requires the row's request/user composite parent and
 `expectedRecoveryGeneration` to match the locked current generation, calls
-`RecoveryCredentialIssuer.issueAndSeal` exactly once, rotates N to N+1, and
-inserts the encrypted response plus operation/source-generation correlation
-atomically. `expectedJobGeneration` is an internal state CAS, not an HTTP
-fingerprint field; the canonical source recovery generation is. A replay never
-issues a new bearer, reseals a response, advances generation, or changes the
-idempotency row.
+the constructor-captured `RecoveryCredentialAuthority.issueAndSeal` exactly
+once after the same-transaction authority assertion, rotates N to N+1, and
+inserts the bound authority fingerprint, encrypted response, and
+operation/source-generation correlation atomically. `expectedJobGeneration`
+is an internal state CAS, not an HTTP fingerprint field; the canonical source
+recovery generation is. A replay never issues a new bearer, reseals a
+response, advances generation, or changes the idempotency row.
 
-Validation and handoff select the active digest using database time, recompute
-the request-and-generation-bound digest only through the supplied
-`RecoveryCredentialIssuer`, and compare it in constant time. The store and
-store factory never receive or retain the recovery pepper. Rotation and
-`transitionToClerkDeleting` acquire the same sorted `a:<user>` plus job-row
-locks before validating state or generation. Rotation consumes generation N,
-inserts N+1 with the original expiry, updates the active generation, and clears
-handoff in one transaction. Handoff requires both the owning authenticated
-subject and the current bearer; it stamps the active digest row and job
-summary. The Clerk transition validates the current handoff, committed cleanup
-receipt, reconciled inventory/effects, live lease, and state-generation CAS in
-one transaction. On the successful edge, that transaction also inserts the
-sole `clerk_delete` intent with a database-generated effect ID, binds it to the
-exact cleanup receipt tuple, derives its replay key through the store-owned
-secret, and moves the job to `clerk_deleting`; no generic
-effect-intent method accepts `kind = 'clerk_delete'`. Exact replay may load
-only that identical committed intent. A conflict or rollback leaves neither
-the intent nor the state edge. Exactly one of a concurrent rotation or Clerk
-transition can commit. It also requires database time to be strictly before
-the fixed recovery expiry. At `database_now >= recovery_expires_at`, whether or not handoff was
-previously confirmed, that same fenced transaction performs no Clerk effect or
-provider call; it writes one immutable failed account-deletion receipt and
-moves `object_cleanup_complete -> failed`, returning `recovery_expired`.
-The receipt is derived—not caller supplied—with terminal code
+Read-only validation selects the active digest and evaluates its expiry with
+database `clock_timestamp()` in that statement, recomputes the
+request-and-generation-bound digest only through the constructor-captured
+`RecoveryCredentialAuthority`, requires the row's persisted authority
+fingerprint to equal the captured fingerprint, and compares the digest in
+constant time. It accepts no per-call cryptographic authority. The store
+factory receives the already-created authority, not raw pepper bytes; the
+authority alone owns its copied pepper.
+
+Every mutating recovery-expiry transaction follows one exact order. It first
+acquires the sorted canonical `a:<user>` advisory locks, locks the exact job
+row and active recovery row, and acquires every other row lock needed by its
+idempotency, handoff, cleanup-evidence, effect-intent, or generation CAS.
+Rotation also locks and asserts the deployment authority singleton before it
+can issue bytes. While those locks are held, it completes every non-temporal
+identity, state, generation, bearer, replay, handoff, evidence, and shape
+validation and prepares the deterministic CAS inputs. Where a lease fence
+applies, this pre-clock work validates only the exact worker, lease-token, and
+lease-attempt identities; it does not decide temporal lease liveness or
+compare `lease_until`. Only then, immediately before the temporal lease and
+recovery-expiry decision/CAS, does the transaction evaluate one—and only one—
+`clock_timestamp()` sample, named `decisionNow`. A pre-lock sample,
+`now()`, `transaction_timestamp()`, `statement_timestamp()`, a second
+`clock_timestamp()`, or API-process time is forbidden. The store retains that
+single database value privately and uses it for every temporal lease/recovery
+comparison and timestamp derived by that transaction.
+
+For handoff and the Clerk transition, a one-row `MATERIALIZED` clock CTE keeps
+that sample inside the final SQL statement. Rotation must call the synchronous
+authority between its decision and write, so its post-lock clock statement
+returns both PostgreSQL's expiry comparison and an opaque canonical
+microsecond epoch scalar derived from the same sampled row; the store never
+round-trips that scalar through JavaScript `Date`. The final rotation CAS binds
+that exact scalar back as its database `issued_at`/decision value and does not
+evaluate another clock.
+
+On a rotation miss, the order is therefore locks, authority assertion,
+non-temporal state/generation/replay validation, `decisionNow`, expiry
+decision, one synchronous
+`RecoveryCredentialAuthority.issueAndSeal`, and the final CAS. If
+`decisionNow >= expires_at`, rotation issues no bytes and changes no recovery
+or idempotency row. Otherwise the same transaction consumes generation N,
+inserts N+1 with the original first-issue expiry and bound authority
+fingerprint, updates the active generation, clears handoff, and stores the
+idempotent response. Handoff confirmation likewise takes its complete lock
+set and validates both the owning authenticated subject and current bearer
+before its sole `decisionNow` sample; it may stamp the active digest row and
+job summary only when that value is strictly before expiry.
+
+`transitionToClerkDeleting` takes the same account/job/recovery lock order and
+all cleanup-receipt, inventory/effect, lease, and intent locks required by its
+CAS. While those locks are held, it validates the current handoff, committed
+cleanup receipt, reconciled inventory/effects, exact lease
+worker/token/attempt identities, and state generation, but does not yet call
+the lease live. Its final SQL uses one CAS fed by a one-row `MATERIALIZED`
+clock CTE whose sole value is `decisionNow`; that single statement evaluates
+both `lease_until > decisionNow` and the recovery-expiry branch
+simultaneously. If `lease_until <= decisionNow`, stale-lease conflict
+wins regardless of recovery expiry: the transaction makes zero mutation,
+creates no Clerk intent, permits no Clerk provider call, and writes no
+terminal receipt. It may not return `recovery_expired`.
+
+Only if `lease_until > decisionNow` and
+`decisionNow < recovery_expires_at` does that same transaction insert the sole
+`clerk_delete` intent with a database-generated effect ID, bind it to the exact
+cleanup receipt tuple, derive its replay key through the store-owned secret,
+and move the job to `clerk_deleting`; no generic effect-intent method accepts
+`kind = 'clerk_delete'`. Exact replay may load only that identical committed
+intent. A conflict or rollback leaves neither the intent nor the state edge.
+
+Only if `lease_until > decisionNow` and
+`decisionNow >= recovery_expires_at`, whether or not handoff was previously
+confirmed, does the same fenced transaction create no Clerk intent and permit
+no Clerk provider call while writing one immutable failed account-deletion
+receipt. It uses that exact `decisionNow` as database `finalizedAt`, moves
+`object_cleanup_complete -> failed`, and returns `recovery_expired`. The
+receipt is derived—not caller supplied—with terminal code
 `recovery_expired_before_clerk_deletion`, complete data/object cleanup, Clerk
-still present, Apple state proven by the committed Apple effect or
-`not_applicable`, and database `finalizedAt`. A wait/retry is forbidden because
-the fixed expiry cannot be extended. The owner-authenticated status may expose
-the failed receipt while Clerk remains; recovery GET returns expired and never
-authorizes access after the boundary.
+still present, and Apple state proven by the committed Apple effect or
+`not_applicable`. A wait/retry is forbidden because the fixed expiry cannot be
+extended. Exactly one of a concurrent rotation or Clerk transition can
+commit; the loser acquires the locks later, refetches, and takes a fresh
+post-lock sample in its own transaction. The owner-authenticated status may
+expose the failed receipt while Clerk remains; recovery GET returns expired
+and never authorizes access after the boundary.
 
 **Sealed object locators, snapshots, effects, and receipts**
 
@@ -2669,6 +3004,7 @@ export interface AccountDeletionProviderActionPayloadCodec {
 export interface CreateAccountDeletionPostgresStoreInput {
   applicationPool: Pool;
   cleanupPool: Pool;
+  recoveryCredentialAuthority: RecoveryCredentialAuthority;
   effectReplayHmacSecret: Uint8Array;
   providerSnapshotNamespace: string;
   providerActionPayloadCodec: AccountDeletionProviderActionPayloadCodec;
@@ -2735,6 +3071,16 @@ export declare function runAccountDeletionStep(
 ): Promise<AccountDeletionStepResult>;
 ```
 
+The factory requires the one constructor-scoped
+`recoveryCredentialAuthority`; it never accepts raw recovery-pepper bytes. It
+uses the module-internal official-provenance capture before any pool checkout
+and stores only its receiver-independent frozen closure bundle. After the two
+direct-role clients attest the same canonical deployment UUID, the factory
+computes one
+lowercase-hex authority fingerprint, rejects malformed output, and calls
+the captured fingerprint closure without a receiver. Every prepared store
+method thereafter uses only that closure bundle and exact fingerprint.
+
 Construction copies `effectReplayHmacSecret` into private store-owned memory
 and rejects a non-`Uint8Array`, fewer than 32 bytes, or an all-zero value. It
 is the required environment-stable dedicated secret used only for framed
@@ -2799,14 +3145,16 @@ keeps the longer-lived anchor below.
 After rollback is proven, the originally attested app client acquires a second
 fresh key with `pg_try_advisory_lock(anchor_key)`, which must return exactly
 one `true` row. The factory holds that application connection and its
-session-level advisory lock for the store lifetime; it never begins another
-transaction on the anchor and never returns the anchor client to the pool
-while the store is open. This is an idle-session anchor, not an
-idle-in-transaction anchor. Before resolving, the factory releases the
-original cleanup client and exercises the wrapper below once with a newly
-acquired non-anchor app client and once with a newly acquired cleanup client;
-the app PID must differ from the anchor PID. This proves both pool capacity
-and the post-construction checkout path.
+session-level advisory lock for the store lifetime; it never returns the
+anchor client to the pool while the store is open. This is an idle-session
+anchor, not an idle-in-transaction anchor. The factory prepares its private
+lifecycle, in-flight tracking, and checkout wrapper, then releases the original
+cleanup client and exercises that wrapper once with a newly acquired
+non-anchor app client and once with a newly acquired cleanup client; the app
+PID must differ from the anchor PID. Each successful probe is fully released
+and removed from in-flight tracking before construction continues. This proves
+both pool capacity and the post-construction checkout path before any
+authority binding can commit.
 
 Every later application or cleanup pool checkout goes through one private
 store wrapper before `BEGIN` or any protocol SQL. The wrapper reruns the exact
@@ -2822,6 +3170,41 @@ method can bypass this wrapper or issue protocol SQL on an unattested
 checkout. Thus moving both pools together to a copied database after startup
 is detected even when its name and deployment singleton were cloned.
 
+All remaining construction work that can reject is also completed before
+binding. By this point the factory has prepared the store-owned secret copies,
+captured authority closures and fingerprint, bound store methods, nonthrowing
+resolution payload, and exact frozen null-prototype store facade, and has
+performed every descriptor, shape, anchor, wrapper, role, database,
+deployment, key, secret, and allocation check. None of this prepared state is
+externally reachable.
+
+Authority binding is the final construction transaction and the only
+irreversible boundary. Using the already-held anchor client while its
+session-level advisory lock remains held, the factory begins one transaction,
+calls `ww_bind_account_deletion_recovery_authority` with the captured
+fingerprint, validates the exact result, and commits. A deterministic
+bind/query/result/commit failure before commit is confirmed runs `ROLLBACK`
+when possible, unlocks and verifies the anchor while that connection remains
+usable, otherwise destroys it so PostgreSQL releases the session lock,
+releases or destroys every other held client as appropriate, clears private
+secret copies, and rejects. The transaction therefore leaves the binding
+unchanged on every such rejection.
+
+After a successful `COMMIT` has been confirmed, construction performs no
+further pool checkout, SQL, attestation, advisory-lock proof, descriptor or
+property access, facade creation/freezing, allocation, randomness, validation,
+cleanup-client release, or other deliberately fallible operation. It
+synchronously resolves the already-prepared store while the anchor remains
+held; there is no application-level rejection path after confirmed commit.
+A process crash or connection loss after PostgreSQL has committed the correct
+fingerprint but before the caller observes the resolved store can leave that
+correct binding without a returned store. This is safe and restartable rather
+than a wrong-key orphan: no recovery token or job was issued, a same-key
+restart treats the immutable binding as an exact no-op, and a wrong-key
+restart fails before mutation. If commit acknowledgement is indeterminate,
+the factory fails closed and destroys the connection; only same-key restart
+reconciliation may determine that the correct commit occurred.
+
 `close()` is an idempotent awaited lifecycle operation: the first call rejects
 new store work, waits for all wrapper-tracked in-flight checkouts to settle,
 then calls `pg_advisory_unlock(anchor_key)` on the original anchor client and
@@ -2830,22 +3213,42 @@ It releases that client only after verification. A connection/query/result
 failure destroys the anchor client and makes the shared close promise reject;
 the close path clears the store-owned HMAC-secret copy in `finally`, and all
 later calls await that same settled promise. A partially constructed
-factory runs the same rollback/unlock/destroy cleanup before rejecting. Task 3
-composition awaits `store.close()` before either pool's `end()` during normal
-shutdown and every startup rollback path.
+factory runs the same rollback/unlock/destroy cleanup before rejecting, but
+only before the final binding commit is confirmed; after that confirmation
+the only permitted construction action is the synchronous resolution above.
+Task 3 composition awaits `store.close()` before either pool's `end()` during
+normal shutdown and every startup rollback path.
 
 The factory rejects on a missing pool, a pool unable to provide the anchor plus
 an independent operation checkout, acquisition/query/rollback/unlock failure,
 malformed or extra row, role mismatch, database mismatch,
-deployment-identity mismatch, invalid/reused key, or either lock-proof
-mismatch. It never exposes a store before all checks pass. Every call site
+deployment-identity mismatch, invalid/reused key, malformed authority method
+or fingerprint, wrong-key binding, unexpired legacy token, bind/query/commit
+failure before confirmed commit, or either lock-proof mismatch. Every
+deterministic construction rejection occurs before confirmed final commit,
+releases or destroys the attestation clients, and leaves binding/token state
+unchanged; it never exposes a store before all checks pass. The
+commit-acknowledgement ambiguity and crash-after-correct-commit case are
+handled only by the same-key restart rule above, never by accepting a
+different authority. Every call site
 must await the factory; Task 3 composition must await it before worker startup
 or HTTP listening. Tests prove fail-closed behavior for role-only
 impersonation, different databases, different deployment IDs, two independent
 fake backends that report the same copied database name and marker, both pools
 moving together after startup, a dropped anchor, pool exhaustion,
 close-during-work, repeated close, and all acquisition/query/rollback/unlock
-failures.
+failures. Real-PostgreSQL construction tests inject every formerly late
+failure—anchor acquisition, wrapper app and cleanup probes, facade creation
+and freezing, and private-state preparation—and prove the bind function is
+never called and the authority-binding row remains absent. They inject a final
+bind failure and prove rollback plus verified anchor unlock leave the row
+absent. A post-bind-boundary sentinel fails if any validation, I/O, checkout,
+allocation seam, or cleanup release is invoked after confirmed commit. A
+separate crash-at-the-boundary test commits the correct binding and terminates
+before resolution, then proves no token, job, or idempotency row exists, a
+same-pepper fresh process constructs by exact no-op, and a wrong-pepper fresh
+process fails with zero mutation. These acceptance cases use distinct real
+PostgreSQL backend PIDs rather than a fake-pool ordering model.
 
 Task 2 extends `runAccountDeletionStep` rather than creating a second worker
 entry point:
@@ -2915,17 +3318,21 @@ role, role flag, and role-membership edge. It validates every entry and hashes
 the complete definition manifest. The only accepted starting shapes are:
 
 1. the exact published `0009`/`0010` catalog plus a complete absence of every
-   `0011`-owned object, zero uncorrelated legacy challenge-idempotency rows,
-   and no legacy idempotency operation other than exactly shaped `request`
-   rows; or
+   `0011`-owned object, including the authority relation, authority functions,
+   token fingerprint column/FK/trigger, ACLs, and comments; zero uncorrelated
+   legacy challenge-idempotency rows; and no legacy idempotency operation
+   other than exactly shaped `request` rows; or
 2. one exact, fully installed `0011` catalog, including the valid immutable
-   deployment singleton, for a no-op rerun.
+   deployment singleton and an authority table that is either empty or
+   contains exactly one valid row bound to that deployment, for a no-op
+   rerun.
 
 A partial installation, unexpected object, unknown overload, mixed
 present/absent set, definition-hash mismatch, role/membership mismatch, or
-invalid singleton raises during this read-only phase. The transaction then
-leaves the catalog, data, ACLs, comments, and singleton byte-for-byte
-unchanged. No validation branch first “repairs” an object and checks it later.
+invalid deployment/authority singleton raises during this read-only phase. The
+transaction then leaves the catalog, data, ACLs, comments, and both singleton
+states byte-for-byte unchanged. No validation branch first “repairs” an object
+and checks it later.
 After a valid first-install preflight, creation uses fixed definitions; after
 creation it rebuilds the same full manifest and requires the installed form's
 exact hashes before commit. Before accepting any object, the manifest
@@ -2945,6 +3352,23 @@ validates:
 - absence of unexpected overloads, policies, user triggers, helper functions,
   or same-prefix relations.
 
+The authority manifest explicitly includes
+`account_deletion_recovery_authority_identity`; the recovery-token
+`recovery_authority_fingerprint` column, check, restrictive FK, immutability,
+and exact INSERT-column ACL; the token-insert guard; and both exact bind/assert
+function signatures. It validates the authority relation's literal key,
+deployment FK, persistent forced-RLS/no-policy state, trigger, owner, and zero
+direct runtime ACLs. It validates each function/trigger's arguments, return,
+body and version comment, `VOLATILE` row-lock semantics, security-definer
+flag, fixed search path, cleanup-owner ownership, and an explicit runtime
+execution ACL naming only the app. First install creates the empty authority
+table and never guesses or writes a fingerprint. Exact rerun accepts the
+still-unbound empty state or one exact bound row and preserves all rows
+byte-for-byte. If bound,
+every non-null token fingerprint must equal it, and every remaining null
+legacy row must already be expired by database time. Binding is runtime store
+construction, never migration repair.
+
 The migration test seeds, one at a time, a wrong table owner/column/check,
 permissive policy, unexpected trigger, wrong function body/version marker,
 unexpected overload, default `PUBLIC EXECUTE`, wrong function owner/search
@@ -2956,10 +3380,18 @@ unique, full attempt-to-evidence composite FK, state-parity check,
 provider-snapshot columns, each ordered `MATCH FULL` deferred circular FK,
 captured-namespace format/immutability and committed-copy equality,
 committed-state constant, ordinary namespace/ID unique, and exact
-attempt/snapshot/receipt column ACL one at a time. Every case must fail in the
-read-only preflight and leave the complete pre-existing fixture unchanged. A
-second run of the exact clean migration must produce one copy of every object,
-identical canonical catalog hashes, and the original deployment singleton.
+attempt/snapshot/receipt column ACL one at a time. Authority fixtures
+independently inject a wrong table owner/column/default/check/FK, disabled
+force-RLS, permissive policy, missing/wrong immutable trigger, missing/wrong
+token fingerprint column/check/FK/insert guard, wrong function
+body/version/volatility/security-definer/search path/owner, unexpected
+overload, default or worker execution, wrong-deployment or malformed bound
+row, mismatched token fingerprint, unexpired bound legacy row, and direct
+authority-table privilege. Every case must fail in the read-only preflight and
+leave the complete pre-existing fixture unchanged. A second run of the exact
+clean migration must produce one copy of every object, identical canonical
+catalog hashes, and the original deployment and empty-or-bound authority
+singleton states.
 
 PGlite remains the fast migration/catalog and deterministic service-test
 layer. It cannot satisfy concurrency or role-isolation acceptance. The command
@@ -3015,7 +3447,14 @@ Real-PostgreSQL tests run valid repeated-marker queries plus hostile skipped
 and unknown-marker probes through this helper and mutation-test production SQL
 to prove a placeholder gap cannot silently pass. The suites then prove
 advisory-lock blocking/order, OLD+NEW races in both directions,
-rotation-versus-Clerk exactly-one-commit, lease
+rotation-versus-Clerk exactly-one-commit, rotation and Clerk-transition lock
+waits that begin before recovery expiry but acquire their final lock at/after
+expiry, the singleton row-lock
+bind-versus-legacy-token-insert race in both acquisition orders on two
+simultaneously held backend PIDs, same-key replica/restart and wrong-key
+construction, pre-bind late-failure rollback, crash-after-correct-bind
+same-key reconciliation, the no-fallible-work-after-bind boundary, pre-issue
+assertion rollback, lease
 reclamation/attempt fencing, cleanup-owner versus normal-role separation, and
 trigger-verified bypass.
 PGlite separately proves rerunnable `0011`, exact Drizzle/catalog parity, RLS,
@@ -3131,7 +3570,50 @@ Expected: FAIL because cleanup/preflight modules do not exist.
 
 Before implementing recovery, prove:
 
-- issuance uses 32 random bytes and stores only a keyed digest;
+- non-`Uint8Array`, empty, shorter-than-32-byte, and all-zero recovery peppers
+  reject before the randomness adapter is read/called or any pool acquisition,
+  SQL, mutation, or response sealing; a valid caller buffer is copied, and
+  mutating or filling that original buffer with zeros after construction does
+  not change fingerprints, issuance, validation, rotation, or handoff;
+- the returned authority is a frozen null-prototype object with immutable own
+  closure methods, no symbol keys, exact descriptor flags, and function
+  identities byte-identical to the module-private WeakMap record. Store
+  construction accepts only that exact official identity and rejects before
+  pool checkout: a structurally identical object, an object containing copied
+  official functions, a proxy around an official object,
+  `Object.create(officialAuthority)`, extra/symbol keys, altered descriptors,
+  inherited/accessor functions, and mutable functions whose result depends on
+  `this`. Mutation attempts against the official object/prototype fail or
+  leave it unchanged, and no accepted closure observes caller receiver state;
+- issuance uses exactly 32 fresh random bytes and stores only a keyed digest;
+  wrong-type, wrong-length, repeated-buffer, throwing, and thenable randomness
+  fail closed, and all temporary raw-byte buffers are cleared on success and
+  every failure path;
+- recovery-token HMACs use the exact versioned UUID/generation/raw-byte frame
+  and both independent golden vectors above; null/empty, decimal
+  noncanonical generation, padded/alternate/noncanonical base64url, wrong
+  decoded length, one-field changes, and domain substitution reject or
+  produce a different digest before lookup;
+- `authorityFingerprint` uses its exact independent golden vector, canonical
+  deployment UUID, and versioned frame; the same pepper/deployment is stable
+  while a different pepper, deployment, or domain differs without exposing
+  raw key material;
+- two stores/replicas and a restarted process built from separately created
+  authorities with the same pepper bind once and validate the same existing
+  credential without rewriting authority or token rows; a different pepper
+  rejects before store exposure and leaves the catalog, binding, jobs,
+  idempotency, and token rows byte-for-byte unchanged;
+- a fresh or all-expired legacy database may bind once, while any unexpired
+  null-fingerprint legacy row blocks binding. A real two-backend barrier races
+  bind against a legacy insert that omits the fingerprint in both lock orders;
+  the legacy insert must fail, bind may commit, and no unfingerprinted live row
+  may appear. A mismatched-fingerprint insert fails identically;
+- initial issuance and every rotation call the row-locking authority assertion
+  immediately before random-byte generation and hold that lock through the
+  fingerprinted token insert and commit. A missing/mismatched assertion or an
+  injected post-issue insert/response failure rolls back the job, token,
+  generation, consumption, and idempotency changes; the pre-issue assertion
+  failure also proves zero random/seal calls;
 - rotation persists only `operation_id = 'recovery_rotate'` with the exact
   request/user/source-generation tuple and canonical framed fingerprint;
 - replaying the same rotation key/fingerprint returns the byte-identical
@@ -3145,13 +3627,46 @@ Before implementing recovery, prove:
 - nonexistent historical recovery-token source rows and cross-user,
   cross-request, or substituted-generation source tuples fail the composite FK
   or replay join before stored bytes are decrypted or returned;
-- the first database timestamp fixes the exact 30-day expiry;
+- the first issuance transaction's database `issued_at` fixes
+  `expires_at = issued_at + interval '30 days'` exactly, and no later
+  transaction changes either value;
 - rotation N to N+1 is transactional, invalidates N, and retains the original
   expiry;
-- rotation at `database_now = expires_at` fails;
-- Clerk transition at `database_now = expires_at` atomically terminalizes with
-  `recovery_expired_before_clerk_deletion`, a truthful failed receipt, and no
-  Clerk effect/provider call; the same holds for an earlier confirmed handoff;
+- rotation whose single post-lock `decisionNow = expires_at` issues no random
+  bytes, stores no response, and changes no generation, token, handoff, or
+  idempotency row;
+- Clerk transition whose single post-lock
+  `decisionNow = recovery_expires_at` atomically terminalizes with
+  `recovery_expired_before_clerk_deletion`, uses that exact value as
+  `finalizedAt`, and creates no Clerk intent/provider call; the same holds for
+  an earlier confirmed handoff;
+- a real-PostgreSQL lock-wait boundary test begins transaction B while
+  `transaction_timestamp() < recovery_expires_at`, blocks it behind
+  transaction A's exact canonical account/job/recovery/cleanup lock set,
+  fixes `lease_until` beyond the recovery deadline and keeps that lease live
+  through B's eventual post-lock decision,
+  waits until database `clock_timestamp() >= recovery_expires_at`, then
+  releases A. B must take its sole clock sample only after acquiring those
+  locks, derive `recovery_expired_before_clerk_deletion`, move to `failed`, and
+  leave zero `clerk_delete` intent, provider call, or retry. Replacing
+  `clock_timestamp()` with `transaction_timestamp()`/`now()` or moving the
+  sample before the blocking lock must make this test fail. A separate
+  query-order/count assertion requires the same single CTE value for both
+  `lease_until > decisionNow` and the recovery-expiry branch and fails if a
+  second sample is added; exact microsecond fixtures also fail if rotation
+  converts the opaque database scalar through JavaScript `Date` or changes it
+  before the final CAS;
+- a separate real-PostgreSQL stale-lease wait starts B while
+  `transaction_timestamp() < lease_until`, fixes recovery expiry beyond B's
+  eventual post-lock decision, blocks B on the same canonical locks, waits
+  until `clock_timestamp() >= lease_until`, and then releases A. B must return
+  conflict with zero state/generation mutation, zero Clerk intent/provider
+  call, and zero terminal receipt. Using stale transaction time, a pre-lock
+  sample, or a second clock read for either lease or recovery must make this
+  acceptance test fail;
+- the analogous real-PostgreSQL rotation wait crossing expiry issues zero
+  bytes and leaves generation, token history, handoff, and idempotency
+  unchanged, proving the same post-lock clock discipline on both racing paths;
 - old-token replay and generation rollback fail;
 - uppercase, braced, prefixed, unhyphenated, whitespace-padded, and mixed-case
   request UUID spellings reject before recovery HMAC calculation or lookup;
@@ -3309,9 +3824,18 @@ pre-existing table/function/policy/trigger/owner/ACL rollback, exact
 inventory-attempt column INSERT/UPDATE grants, and rejection of one missing
 required grant or one extra identity-column UPDATE, owner/worker table grant,
 DELETE, or TRUNCATE privilege, and
-the full read-only catalog preflight. Run the three-DSN, unreachable-DSN, and
-contiguous/hostile bind-placeholder cases from the real-PostgreSQL contract
-above.
+the full read-only catalog preflight. For the recovery-authority relation,
+token fingerprint column/FK/guard, and bind/assert functions, independently
+prove exact first install, empty and bound rerun byte identity, forced RLS with
+zero policies, immutable rows, exact function ownership/search
+path/volatility/body comments/ACLs, the app as sole explicit runtime grantee,
+and rollback for every hostile catalog fixture above. Run same-key
+replica/restart, wrong-key
+zero-mutation, legacy-unexpired bind rejection, pre-issue assertion rollback,
+caller-buffer/method tampering, the real two-backend bind-versus-legacy-insert
+race in both lock orders, three-DSN, unreachable-DSN, and contiguous/hostile
+bind-placeholder cases from the real-PostgreSQL contract. Fake pools and
+PGlite cannot satisfy the role, restart, or concurrency cases.
 
 Use this exact matrix as the implementation inventory:
 
@@ -3330,10 +3854,11 @@ Use this exact matrix as the implementation inventory:
 | `account_deletion_provider_effects` | request-derived `user_id` | request-derived household IDs | Immutable intent/replay key; CAS outcome | No |
 | `account_deletion_idempotency` | `user_id` | none | Immutable operation/challenge-or-request/source-generation fingerprint and stored response | No |
 | `account_deletion_reauth_proof_claims` | `user_id` | none | Immutable globally unique proof ID | No |
-| `account_deletion_recovery_token_digests` | request-derived `user_id` | none | Monotonic generation, immutable original expiry | No |
+| `account_deletion_recovery_token_digests` | request-derived `user_id` | none | Monotonic generation, immutable original expiry and authority fingerprint; insert takes singleton authority lock and rejects null/mismatch | No |
 | `account_deletion_receipts` | request-derived `user_id` | none | Immutable terminal row | No |
 | `account_deletion_tombstones` | `user_id` | cleanup-plan household IDs | Prevent JIT and durable writes for active or terminal deletion | No |
 | `account_deletion_deployment_identity` | none | none | Immutable singleton deployment UUID and schema marker | No |
+| `account_deletion_recovery_authority_identity` | none | none | Immutable zero-or-one-row deployment/fingerprint binding; forced RLS with no policies | Bind/assert functions only |
 | `account_deletion_cleanup_plans` | `user_id` | none | Immutable plan header and digest after initiation | No |
 | `account_deletion_cleanup_plan_households` | request-derived `user_id` | `household_id` | Immutable normalized plan row after initiation | No |
 | `account_deletion_cleanup_executions` | request-derived `user_id` | plan household rows | Immutable privileged transaction evidence | Owner-only insert/finalize |
@@ -3381,10 +3906,17 @@ adapter call, reconcile lookup-first by its stable replay key, and atomically
 commit the attempt-ID snapshot and state edge before creating any
 per-inventory-ID deletion effect. Hash recovery bearer bytes with a keyed
 digest, compare
-digests in constant time, and perform issuance/rotation/handoff against
-database time. Rotation and the `clerk_deleting` transition acquire the same
-sorted account/job lock set, lock the job row, and CAS the same state
-generation; neither path may validate before the lock and mutate afterward.
+digests in constant time, and perform issuance/rotation/handoff through the
+one constructor-captured authority and exact versioned token frame. Implement
+official module-private authority provenance, receiver-independent closures,
+the deployment fingerprint, singleton-lock bind/assert protocol, and
+fingerprinted token inserts before any store path can issue, rotate, validate,
+or confirm a credential. First issue fixes the immutable 30-day expiry from
+its database `issued_at`. Rotation, handoff, and the `clerk_deleting`
+transition acquire their complete sorted advisory/row-lock sets first, sample
+`clock_timestamp()` exactly once immediately before the expiry/CAS decision,
+and use that same value throughout; neither a transaction-start timestamp nor
+process time may decide those edges.
 
 - [ ] **Step 10: Implement additive `0011` and PostgreSQL store**
 
@@ -3401,11 +3933,15 @@ generation; neither path may validate before the lock and mutate afterward.
   rotation-source FK, and protocol composite keys for challenge, job, active
   provider action, effect, proof, recovery, tombstone, and terminal receipt
   without changing `0009` or `0010`;
+- add the nullable-for-legacy recovery-token authority fingerprint, its exact
+  digest check/restrictive FK/immutability/Drizzle parity, the mandatory
+  post-`0011` insert guard, and exact app INSERT-column privilege;
 - create account tombstones, cleanup plans, object inventory, recovery handoff,
   cleanup executions, database-cleanup evidence, singleton object-inventory
   attempts, object-inventory snapshot headers, cleanup receipts, the immutable
-  deployment-identity singleton and attestation function, and
-  lease/outcome columns/tables;
+  deployment-identity singleton and attestation function, the immutable
+  forced-RLS/no-policy recovery-authority singleton plus exact row-locking
+  bind/assert functions, and lease/outcome columns/tables;
 - install the exact
   plan/execution/evidence/inventory-attempt/snapshot/inventory/effect/receipt
   composite keys and locked parity checks, including the attempt truth table,
@@ -3444,27 +3980,46 @@ generation; neither path may validate before the lock and mutate afterward.
   atomic attempt/snapshot/state commit;
 - preserve immutable effects, idempotency records, proof claims, recovery
   expiry, and terminal receipts;
+- make every rotation, handoff, and Clerk-boundary expiry/CAS acquire all
+  potentially blocking canonical advisory and row locks before evaluating
+  exactly one `clock_timestamp()` as `decisionNow`; forbid transaction,
+  statement, pre-lock, repeated, and process-clock substitutes;
 - implement the request/generation/lease-only `finalizeReceipt` transaction,
   derive every success-receipt field from exact committed cleanup and provider
   companions, and remove the unsupported generic
   `receipt_finalizing -> failed` edge;
 - atomically terminalize an expired pre-Clerk request with the truthful
-  `recovery_expired_before_clerk_deletion` receipt and no Clerk effect;
+  `recovery_expired_before_clerk_deletion` receipt and no Clerk effect, using
+  the sole post-lock `clock_timestamp()` sample for the expiry edge and
+  `finalizedAt`;
 - update the history-generation trigger to use canonical locking;
 - enable RLS, revoke `PUBLIC`/`anon`/`authenticated`, and install the exact
   full role flags, zero-membership rules, app/cleanup owner/cleanup worker
   grants, helper call chain, and function ACLs defined by the binding
   clarification;
-- add `lease_attempt` and terminal provider outcome parity to PostgreSQL,
+- add `lease_attempt`, terminal provider outcome, recovery-authority
+  fingerprint, and construction-scoped authority parity to PostgreSQL,
   Drizzle, and the Task 1 in-memory harness;
 - require the stable effect-replay HMAC secret and synchronous provider-action
   payload codec, and never project `client_payload_ciphertext` as plaintext;
+- implement `createRecoveryCredentialAuthority` with pre-side-effect pepper
+  validation/copying, captured CSPRNG, module-private official provenance,
+  receiver-independent frozen closures, exact authority/token frames and
+  golden vectors; reject every structural/prototype/proxy/mutable-`this` fake
+  before pool checkout, require one constructor-scoped authority, bind its
+  fingerprint in the final construction transaction only after every other
+  fallible preparation/check, expose the already-prepared store immediately
+  after confirmed commit with no later fallible work, assert and lock the
+  fingerprint before every issuance, persist/verify it on every new token row,
+  and expose no per-call authority seam;
 - implement `createAccountDeletionObjectLocatorCodec` with copied distinct
   nonzero 32-byte keys, validated randomness, strict canonical UUID framing,
   AES-256-GCM AAD, locator HMAC verification, and captured frozen methods;
 - implement exact parameter binding, startup cross-pool proof, process-held
-  session anchor, per-checkout identity/anchor attestation, client destruction
-  on mismatch, and idempotent awaited store close;
+  session anchor, pre-bind wrapper/anchor/facade preparation, final-transaction
+  authority binding, same-key crash-after-bind reconciliation, per-checkout
+  identity/anchor attestation, client destruction on mismatch, and idempotent
+  awaited store close;
 - add the production `claimNextLease`, `renewLease`, and `releaseLease`
   methods that Task 3's worker consumes;
 - update `WoofWatcher Verify` with the PostgreSQL 17 service, exact role and
@@ -3480,8 +4035,9 @@ persists only a blocked job keyed to the authenticated subject, immutable
 tombstone, recovery token, cleanup plan, inventory, or effect. When household
 policy blocks, use the same non-mutating blocked-job/receipt/idempotency shape
 with `last_owner`. Otherwise, atomically write the request, cleanup plan,
-tombstone, first recovery-token digest, Apple effect intent when applicable,
-and idempotent response before any provider mutation. The sole provider call
+tombstone, first recovery-token digest plus bound authority fingerprint, Apple
+effect intent when applicable, and idempotent response before any provider
+mutation. The sole provider call
 permitted between preflight and this final transaction is the authoritative
 identity read defined by the start sequence. Object effects are not created
 during initiation.
@@ -3502,12 +4058,27 @@ COREPACK_HOME=/tmp/woofwatcher-corepack corepack pnpm run typecheck:libs
 git diff --check
 ```
 
+The focused and three-DSN CI run must execute—not skip—the two independent
+token HMAC vectors, authority fingerprint vector, invalid/caller-zeroed pepper
+cases, same-key replica/restart, wrong-key zero-mutation, empty/all-expired and
+unexpired-legacy binding, both real bind-versus-legacy-insert lock orders,
+null/mismatched token-fingerprint rejection, initial and rotated pre-issue
+assertion rollback, method/prototype tampering, bound/unbound exact migration
+rerun, and hostile authority catalog/ACL cases. CI must also prove the
+authority/token schema contains no raw pepper or bearer column and that
+`0009`/`0010` remain byte-identical.
+
 - [ ] **Step 12: Commit, review, and publish**
 
 Commit Task 2. Review the exact Task 2 range with concurrency, database-role,
-cleanup-boundary, object-inventory, and recovery emphasis. Fix and re-review
-every Critical/Important issue. Re-run Step 11 on the approved commit, publish
-that exact tree, fetch it, and verify remote/local tree equality. The
+cleanup-boundary, object-inventory, and recovery emphasis. The recovery review
+must trace pepper validation/copying, immutable method capture, exact HMAC
+frames/vectors, fingerprint binding, singleton lock order, token-row
+fingerprint/trigger, first-install/rerun manifest coverage, runtime ACLs,
+restart, wrong-key, legacy race, rotation, and assertion-rollback evidence end
+to end. Fix and re-review every Critical/Important issue. Re-run Step 11 on the
+approved commit, publish that exact tree, fetch it, and verify remote/local
+tree equality. The
 `WoofWatcher Verify` run triggered by that exact published SHA must finish
 successfully, including the PostgreSQL-backed tests; a skipped, stale-SHA,
 cancelled, or failed run does not approve Task 2.
@@ -4022,10 +4593,16 @@ Implement only after contract, route, and worker RED evidence exists. Mount the
 one-method recovery router where Clerk middleware cannot consume its bearer.
 Parse only selected headers. Validate every request and response with generated
 account-deletion schemas. Capture production provider functions during
-composition. Register awaited startup and shutdown hooks. Never expose mutable
-adapters or start a detached effect after returning an HTTP response. Retain
-the concrete PostgreSQL-store lifecycle handle and await its `close()` before
-ending either pool on normal shutdown or startup rollback.
+composition. Decode and compare all secret byte arrays first, create the one
+recovery credential authority before any database pool/store side effect, pass
+it once to the store constructor, zero the composition-owned decoded pepper
+buffer in `finally` after the authority has copied it, and retain no route-,
+worker-, or request-reachable reference to either. Invalid pepper
+configuration must therefore fail before database attestation. Register
+awaited startup and shutdown hooks.
+Never expose mutable adapters or start a detached effect after returning an
+HTTP response. Retain the concrete PostgreSQL-store lifecycle handle and await
+its `close()` before ending either pool on normal shutdown or startup rollback.
 
 - [ ] **Step 10: Verify Task 3**
 
