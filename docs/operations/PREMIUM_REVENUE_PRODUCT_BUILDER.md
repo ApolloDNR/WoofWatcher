@@ -4620,6 +4620,13 @@ resolution. This is source-backed contrast hardening only; real route-named
 iOS/Android dark screenshots, native accessibility traversal, sprite/gait
 review, and Apollo visual approval remain open.
 
+Dependency-complete branch CI proved implementation commit `5dadfba6` in
+`WoofWatcher Verify` run `30367371596`, job `90301991967`, completed
+successfully in `2m14s`; checkout, pinned dependency install, JSON doctor,
+focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete
+job all passed. Rerun after this proof-record commit before treating the final
+branch tip as current.
+
 ## 2026-07-27 Avatar emote icon dark-mode boundary slice
 
 Avatar Studio's fixed-light emote icon tiles now keep a constant translucent

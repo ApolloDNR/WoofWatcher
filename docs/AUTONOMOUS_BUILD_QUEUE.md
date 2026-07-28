@@ -1424,6 +1424,12 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   implementation, and require fresh dependency-complete branch CI. Real
   route-named iOS/Android dark screenshots, native accessibility traversal,
   sprite/gait review, and Apollo visual approval remain open.
+- DONE: Dependency-complete branch CI proved implementation commit `5dadfba6`
+  in `WoofWatcher Verify` run `30367371596`, job `90301991967`; checkout,
+  pinned dependency install, JSON doctor, focused behavior tests, typecheck,
+  CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating
+  dependency proof as current for the final tip.
 
 ## 2026-07-27 More profile edit dark-mode boundary
 
