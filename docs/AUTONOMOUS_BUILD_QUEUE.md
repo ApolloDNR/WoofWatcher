@@ -1501,3 +1501,9 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   dependency-complete branch CI. Real route-named iOS/Android Auth/Setup
   screenshots, device accessibility traversal, Clerk/provider proof, and
   Apollo visual approval remain open.
+- DONE: Dependency-complete branch CI proved implementation commit `04c96443`
+  in `WoofWatcher Verify` run `30395453398`, job `90397102993`; checkout,
+  pinned dependency install, JSON doctor, focused behavior tests, typecheck
+  plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating
+  dependency proof as current for the final tip.
