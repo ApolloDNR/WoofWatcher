@@ -1437,6 +1437,12 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   require fresh dependency-complete branch CI. Real route-named iOS/Android
   Avatar Studio screenshots, accessibility traversal, photo-picker review,
   sprite/gait review, and Apollo visual approval remain open.
+- DONE: Dependency-complete branch CI proved implementation commit `615f23c0`
+  in `WoofWatcher Verify` run `30407371216`, job `90435698533`; checkout,
+  pinned dependency install, JSON doctor, focused behavior tests, typecheck
+  plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating
+  dependency proof as current for the final tip.
 
 ## 2026-07-28 Living care-twin location-chip dark-mode boundary
 

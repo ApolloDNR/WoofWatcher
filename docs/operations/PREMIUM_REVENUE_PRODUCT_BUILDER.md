@@ -68,6 +68,12 @@ This protects source-level contrast only. Real route-named iOS/Android Avatar
 Studio screenshots, photo-picker behavior, accessibility traversal,
 sprite/gait review, and Apollo visual approval remain required.
 
+Dependency-complete branch CI proved implementation commit `615f23c0` in
+`WoofWatcher Verify` run `30407371216`, job `90435698533`; checkout, pinned
+dependency install, JSON doctor, focused behavior tests, typecheck plus CI-safe
+builds, post steps, and Complete job all passed. Rerun after this proof-record
+commit before treating the final branch tip as current.
+
 ## 2026-07-27 Plus recommended-plan dark-mode contrast
 
 The route-level dark-mode audit found a remaining Plus value-console defect:
