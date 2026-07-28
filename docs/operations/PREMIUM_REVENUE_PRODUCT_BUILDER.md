@@ -4736,3 +4736,16 @@ Dependency-complete branch CI proved implementation commit `e800dbe2` in
 successfully in `1m58s`; dependency install, JSON doctor, focused tests,
 typecheck plus CI-safe builds, post steps, and Complete job all passed. Rerun
 after this proof-record commit before treating the final branch tip as current.
+## 2026-07-28 Auth proof-manifest dark-mode status slice
+
+The Auth gateway's intentionally ivory proof manifest now renders ready values
+with constant brand-navy ink instead of adaptive sage. A red-first mobile
+readiness assertion failed on the adaptive token and passed `133/133` after the
+source correction. Care-domain passed `148/148`, root TypeScript passed,
+PixelLab passed `ok=149 missing=0 invalid=0`, and `git diff --check` passed.
+The broad partial-checkout suite passed `664/665` and failed only on the known
+missing `@workspace/care-domain` package link in `careCareer.test.ts`; JSON beta
+doctor remained truthfully blocked on exact pnpm/Corepack and local Expo
+resolution. This protects source-level contrast only; native iOS/Android
+screenshots, device accessibility traversal, Clerk/provider proof, and Apollo
+visual approval remain required.

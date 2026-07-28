@@ -1485,3 +1485,19 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   dependency proof as current for the final tip.
 - DONE: Dependency-complete branch CI proved implementation commit `f4059be3` in `WoofWatcher Verify` run `30301224391`, job `90094366601`, completed successfully in `2m3s`; checkout, pinned dependency setup/install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip. Real route-named iOS/Android dark screenshots and native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen proof remain open.
+## 2026-07-28 Auth proof-manifest dark-mode status contrast
+
+- DONE: Ready values inside the fixed-ivory Auth/Setup proof manifest now use
+  constant brand-navy ink instead of adaptive sage.
+- DONE: A red-first mobile-readiness contract failed on the adaptive status
+  token, then passed `133/133` after the source correction.
+- DONE: Local verification passed mobile readiness `133/133`, care-domain
+  `148/148`, root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and
+  `git diff --check`. The broad partial-checkout suite passed `664/665` and
+  failed only on the known missing `@workspace/care-domain` package link in
+  `careCareer.test.ts`; JSON beta doctor kept its source-backed guards passing
+  while remaining truthfully `BLOCKED` on local pnpm/Corepack and Expo.
+- NEXT: Push the verified implementation and require fresh
+  dependency-complete branch CI. Real route-named iOS/Android Auth/Setup
+  screenshots, device accessibility traversal, Clerk/provider proof, and
+  Apollo visual approval remain open.

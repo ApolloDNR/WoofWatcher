@@ -2788,3 +2788,12 @@ or Apollo visual approval.
   credential plate.
 - Boundary: this is source-level contrast hardening, not native Records file
   proof, device accessibility review, or Apollo visual approval.
+## 2026-07-28 - Keep fixed-light Auth proof status ink constant
+
+- Decision: keep the Auth/Setup proof manifest ivory in both themes and render
+  its ready-state values with constant `brandNavy` instead of adaptive `sage`.
+- Why: ready state remains clear from its value and manifest context, while
+  adaptive dark-theme sage can become too pale against the unchanged ivory
+  proof surface.
+- Boundary: this is source-level contrast hardening, not native Auth/Setup
+  visual proof, provider approval, accessibility review, or Apollo sign-off.

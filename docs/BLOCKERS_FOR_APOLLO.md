@@ -403,3 +403,9 @@ The fixed-light Dog ID badge now has source-protected constant dark wash and
 icon ink. Real route-named iOS/Android Records screenshots, native Care Pass
 and Dog ID share/reopen evidence, device accessibility traversal, and Apollo
 visual approval remain blocked.
+## 2026-07-28 Auth proof-manifest contrast boundary
+
+The fixed-light Auth/Setup proof manifest now has source-protected constant
+dark ready-state ink. Real route-named iOS/Android Auth/Setup screenshots,
+device accessibility review, Clerk/provider evidence, and Apollo visual
+approval remain blocked.

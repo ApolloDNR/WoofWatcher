@@ -867,10 +867,20 @@ test("keeps fixed-light Auth gateway panels bounded in dark mode", () => {
     /styles\.stageDot,\s*\{\s*backgroundColor:\s*colors\.brandNavy\s*\}/,
     "the fixed-light Auth stage HUD status dot needs constant dark ink",
   );
+  assert.match(
+    authUi,
+    /color:\s*row\.status\s*===\s*"ready"\s*\?\s*colors\.brandNavy\s*:\s*BUBBLE_INK/,
+    "the fixed-light Auth proof manifest needs constant dark status ink",
+  );
   assert.doesNotMatch(
     authUi,
     /styles\.stageDot,\s*\{\s*backgroundColor:\s*colors\.sage\s*\}/,
     "adaptive sage becomes too light against the scheme-independent ivory Auth HUD",
+  );
+  assert.doesNotMatch(
+    authUi,
+    /color:\s*row\.status\s*===\s*"ready"\s*\?\s*colors\.sage\s*:\s*BUBBLE_INK/,
+    "adaptive sage becomes too light against the scheme-independent ivory Auth proof manifest",
   );
 });
 

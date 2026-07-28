@@ -180,7 +180,7 @@ export function AuthShell({
                   numberOfLines={1}
                   style={[
                     styles.proofManifestValue,
-                    { color: row.status === "ready" ? colors.sage : BUBBLE_INK, fontFamily: "Inter_800ExtraBold" },
+                    { color: row.status === "ready" ? colors.brandNavy : BUBBLE_INK, fontFamily: "Inter_800ExtraBold" },
                   ]}
                 >
                   {row.value}
