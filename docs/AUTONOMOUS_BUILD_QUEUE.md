@@ -1,5 +1,22 @@
 # Autonomous Build Queue
 
+## 2026-07-27 Fixed-light Records Dog ID label contrast
+
+- DONE: The fixed-ivory Records credential plate now uses constant brand-navy
+  ink for its `WOOFWATCHER DOG ID` label instead of adaptive sage.
+- DONE: Red-first mobile readiness failed on the adaptive label before the
+  source correction, then passed after implementation.
+- DONE: Local verification passed mobile readiness `131/131`, care-domain
+  `148/148`, root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and `git
+  diff --check`. The broad partial-checkout suite passed `662/663` and failed
+  only on the known missing `@workspace/care-domain` package link in
+  `careCareer.test.ts`; JSON beta doctor kept 84 source-backed checks passing
+  but remained truthfully `BLOCKED` on local pnpm/Corepack and Expo resolution.
+- NEXT: Push the verified implementation and require fresh branch CI before
+  treating dependency-complete proof as current. Real route-named iOS/Android
+  dark screenshots, Records local-file proof, PDF/PNG share/reopen proof,
+  accessibility review, and Apollo visual approval remain open.
+
 ## 2026-07-25 Dark-Scheme Shell Hardening
 
 - [x] Keep the fixed-light Auth proof manifest's internal cells visibly

@@ -1,5 +1,15 @@
 # WoofWatcher Decision Log
 
+## 2026-07-27: Fixed-light Records Dog ID label uses constant ink
+
+- Decision: use `brandNavy` for the `WOOFWATCHER DOG ID` label on the
+  scheme-independent ivory credential plate.
+- Reason: adaptive sage becomes lighter in dark mode while the plate remains
+  ivory, weakening the identity label on a high-use trust surface.
+- Boundary: this source/readiness guard does not replace route-named native
+  screenshots, Records local-file proof, accessibility review, or Apollo
+  visual approval.
+
 ## 2026-07-27: Avatar production-action tiles keep dark boundaries
 
 - Decision: add a one-pixel translucent `brandNavy` outline to the fixed-light

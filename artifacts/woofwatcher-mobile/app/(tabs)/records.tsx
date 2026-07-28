@@ -1101,7 +1101,7 @@ export default function RecordsScreen() {
                   <Ionicons name="paw" size={16} color={recordsVaultTone} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[s.recordsCredentialIdLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                  <Text style={[s.recordsCredentialIdLabel, { color: colors.brandNavy, fontFamily: "Inter_700Bold" }]}>
                     WOOFWATCHER DOG ID
                   </Text>
                   <Text numberOfLines={1} style={[s.recordsCredentialIdName, { color: colors.brandNavy, fontFamily: DISPLAY }]}>

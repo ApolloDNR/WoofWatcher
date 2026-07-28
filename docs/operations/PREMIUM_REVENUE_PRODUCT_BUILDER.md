@@ -1,5 +1,23 @@
 # Premium Revenue Product Builder
 
+## 2026-07-27 Records Dog ID label dark-mode contrast
+
+The source-level dark-mode audit found that the fixed-ivory Records credential
+plate still rendered its `WOOFWATCHER DOG ID` label with adaptive sage. The
+label now uses constant `brandNavy`, protected by a red-first mobile-readiness
+contract.
+
+This is source-backed contrast hardening only. Route-named iOS/Android dark
+screenshots, native Records file share/reopen proof, accessibility traversal,
+and Apollo visual approval remain open. Local verification passed mobile
+readiness `131/131`, care-domain `148/148`, root TypeScript, PixelLab
+`ok=149 missing=0 invalid=0`, and `git diff --check`. The broad
+partial-checkout suite passed `662/663` and failed only on the known missing
+`@workspace/care-domain` package link in `careCareer.test.ts`; JSON beta doctor
+kept 84 source-backed checks passing but remained truthfully `BLOCKED` on local
+pnpm/Corepack and Expo resolution. Require dependency-complete branch CI before
+treating the final branch tip as current.
+
 ## 2026-07-27 Avatar production-action dark-mode boundary
 
 The source-level dark-mode audit found that Avatar Studio's fixed-light

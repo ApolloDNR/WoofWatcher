@@ -738,6 +738,11 @@ test("keeps fixed-light Quick Care and Records HUD labels readable in dark mode"
     /s\.recordsCredentialHudLabel,\s*\{\s*color:\s*colors\.brandNavy/,
     "the fixed-light Records HUD needs constant dark label ink",
   );
+  assert.match(
+    records,
+    /s\.recordsCredentialIdLabel,\s*\{\s*color:\s*colors\.brandNavy/,
+    "the fixed-light Records Dog ID label needs constant dark ink",
+  );
   assert.doesNotMatch(
     quickCare,
     /s\.logCommandHudLabel,\s*\{\s*color:\s*colors\.sage/,
@@ -747,6 +752,11 @@ test("keeps fixed-light Quick Care and Records HUD labels readable in dark mode"
     records,
     /s\.recordsCredentialHudLabel,\s*\{\s*color:\s*colors\.sage/,
     "adaptive sage becomes too light against the scheme-independent cream HUD cell",
+  );
+  assert.doesNotMatch(
+    records,
+    /s\.recordsCredentialIdLabel,\s*\{\s*color:\s*colors\.sage/,
+    "adaptive sage becomes too light against the scheme-independent ivory Dog ID plate",
   );
 });
 
