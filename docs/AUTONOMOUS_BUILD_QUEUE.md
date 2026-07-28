@@ -1432,5 +1432,11 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Require fresh dependency-complete branch CI before treating this source
   slice as current. Native Avatar Studio screenshots, accessibility traversal,
   sprite/gait review, and Apollo visual approval remain open.
+- DONE: Dependency-complete branch CI proved implementation commit `e800dbe2`
+  in `WoofWatcher Verify` run `30353928083`, job `90257603228`; dependency
+  install, JSON doctor, focused tests, typecheck, CI-safe builds, and post steps
+  all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating
+  dependency proof as current for the final tip.
 - DONE: Dependency-complete branch CI proved implementation commit `f4059be3` in `WoofWatcher Verify` run `30301224391`, job `90094366601`, completed successfully in `2m3s`; checkout, pinned dependency setup/install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip. Real route-named iOS/Android dark screenshots and native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen proof remain open.

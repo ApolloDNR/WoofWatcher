@@ -4685,3 +4685,9 @@ The JSON beta doctor kept source-backed checks passing while remaining
 truthfully `BLOCKED` on exact pnpm/Corepack and local Expo availability. Native
 iOS/Android dark screenshots, accessibility traversal, sprite/gait review, and
 Apollo approval remain open.
+
+Dependency-complete branch CI proved implementation commit `e800dbe2` in
+`WoofWatcher Verify` run `30353928083`, job `90257603228`, completed
+successfully in `1m58s`; dependency install, JSON doctor, focused tests,
+typecheck plus CI-safe builds, post steps, and Complete job all passed. Rerun
+after this proof-record commit before treating the final branch tip as current.
