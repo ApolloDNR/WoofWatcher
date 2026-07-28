@@ -2797,3 +2797,14 @@ or Apollo visual approval.
   proof surface.
 - Boundary: this is source-level contrast hardening, not native Auth/Setup
   visual proof, provider approval, accessibility review, or Apollo sign-off.
+
+## 2026-07-28 - Keep Avatar photo-reference chrome constant
+
+- Decision: keep the active Avatar Studio photo reference on its fixed-light
+  scan overlay and use `brandNavy + "33"` for its edge plus `brandNavy` for
+  the small `PHOTO REFERENCE` kicker.
+- Why: the photo card does not adapt with the theme, so adaptive dark-mode
+  border and sage tokens can become too pale against its warm ivory wash.
+- Boundary: this is source-level contrast hardening, not native photo-picker
+  proof, route-named iOS/Android screenshots, accessibility review, sprite
+  production approval, or Apollo sign-off.

@@ -56,6 +56,18 @@ proved implementation commit `9de72c87` in WoofWatcher Verify run
 `30287783222`, job `90049755104`; all steps passed. Rerun after this
 proof-record commit before treating the final branch tip as current.
 
+## 2026-07-28 Avatar photo-reference dark-mode contrast slice
+
+Avatar Studio's active photo-reference card stays intentionally warm and
+fixed-light during the scan flow. Its edge now uses translucent constant
+brand-navy and its small reference kicker uses constant brand-navy ink instead
+of adaptive border and sage tokens. A red-first mobile readiness assertion
+failed before the source correction and passed `134/134` afterward.
+
+This protects source-level contrast only. Real route-named iOS/Android Avatar
+Studio screenshots, photo-picker behavior, accessibility traversal,
+sprite/gait review, and Apollo visual approval remain required.
+
 ## 2026-07-27 Plus recommended-plan dark-mode contrast
 
 The route-level dark-mode audit found a remaining Plus value-console defect:

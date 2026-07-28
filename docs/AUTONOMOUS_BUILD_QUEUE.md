@@ -1426,6 +1426,18 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
 
+## 2026-07-28 Avatar photo-reference dark-mode contrast
+
+- DONE: Avatar Studio's fixed-light photo-reference card now uses a constant
+  translucent brand-navy boundary and brand-navy kicker ink instead of
+  adaptive border and sage tokens.
+- DONE: A red-first mobile-readiness contract failed on the adaptive tokens,
+  then passed `134/134` after the source correction.
+- NEXT: Run the strongest local verification, push the verified slice, and
+  require fresh dependency-complete branch CI. Real route-named iOS/Android
+  Avatar Studio screenshots, accessibility traversal, photo-picker review,
+  sprite/gait review, and Apollo visual approval remain open.
+
 ## 2026-07-28 Living care-twin location-chip dark-mode boundary
 
 - DONE: The living care-twin room's fixed-cream location chip now uses a

@@ -593,7 +593,7 @@ export default function PortraitScreen() {
                     s.sourceProofCard,
                     {
                       backgroundColor: "rgba(255,249,239,0.94)",
-                      borderColor: colors.border,
+                      borderColor: colors.brandNavy + "33",
                     },
                   ]}
                 >
@@ -607,7 +607,7 @@ export default function PortraitScreen() {
                     <Text
                       style={[
                         s.sourceProofKicker,
-                        { color: colors.sage, fontFamily: "Inter_700Bold" },
+                        { color: colors.brandNavy, fontFamily: "Inter_700Bold" },
                       ]}
                     >
                       PHOTO REFERENCE
