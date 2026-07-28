@@ -2617,3 +2617,9 @@ Branch CI proved implementation commit `db6f280c` in `WoofWatcher Verify` run
 doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and
 Complete job all passing. Rerun CI after the proof-record docs commit before
 dependency proof is current for the final branch tip.
+## 2026-07-28 Avatar selected-template contrast QA
+
+Source readiness now rejects a variable accent border around the selected ivory
+template preview. On native iOS and Android, verify the preview edge across all
+template tones, dark mode, phone-size artwork, touch selection, and screen
+reader traversal before approving the surface.

@@ -388,3 +388,11 @@ commit before treating dependency proof as current for the final branch tip.
 
 - Source coverage now protects the fixed-light Auth stage HUD indicator from adaptive dark-mode token drift.
 - Still blocked: real route-named iOS/Android Auth/Setup screenshots, device accessibility review, Clerk/provider approval, and Apollo visual sign-off.
+
+## 2026-07-28 Avatar selected-template contrast boundary
+
+The selected template preview now has a source-protected constant dark edge on
+its fixed-light art surface. Real iOS/Android Avatar Studio screenshots,
+phone-size proportions, sprite/gait timing, native accessibility traversal,
+and Apollo visual approval are still required; this change does not clear those
+launch gates.

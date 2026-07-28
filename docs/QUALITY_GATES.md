@@ -1281,3 +1281,8 @@ truthfully `BLOCKED` only because local pnpm is `11.7.0` versus pinned
 Clerk, approve OAuth, enable provider-backed household creation, attach real
 native screenshots, satisfy store review, launch publicly, or replace Apollo
 sign-off.
+## 2026-07-28 Avatar selected-template contrast source gate
+
+Selected fixed-light Avatar Studio template previews require a constant subtle
+dark boundary. The source gate passes; native iOS/Android dark-mode visual and
+accessibility approval remains open.

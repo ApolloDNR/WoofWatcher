@@ -223,3 +223,8 @@ No payment implementation should start until product scope, privacy terms, suppo
 - Confirm privacy/legal requirements for storing dog medical records, vet notes, receipts, and AI-assisted health summaries.
 - Confirm monetization model, store billing path, sandbox receipt evidence, restore-purchase proof, refund/support policy, and Apollo checkout sign-off before payment or subscription work.
 - Confirm whether Adventure Mode should use provider-backed photo storage, map/location services, share links, or community discovery before paid launch.
+## 2026-07-28 Avatar selected-template contrast status
+
+The source-level fixed-light preview boundary is hardened and covered. Native
+Avatar Studio screenshots, phone-size proportions, sprite/gait timing,
+accessibility traversal, and Apollo visual approval remain release gates.

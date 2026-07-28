@@ -433,3 +433,9 @@ Setup/CareContext and reach
 iOS/Android share-sheet proof, Android content URI or saved-file proof,
 fallback-copy capture, native PDF/PNG share/reopen proof, provider storage
 proof, public launch, or Apollo sign-off.
+## 2026-07-28 Avatar selected-template contrast
+
+- PASS, source: selected ivory template artwork uses a constant translucent
+  brand-navy edge and has red/green readiness coverage.
+- OPEN, native: iOS/Android dark screenshots, touch/accessibility traversal,
+  phone-size sprite review, and Apollo approval.

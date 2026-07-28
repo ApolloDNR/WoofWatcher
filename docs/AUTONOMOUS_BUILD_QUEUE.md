@@ -1418,5 +1418,19 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: Mobile readiness passed `131/131`, care-domain passed `148/148`, root TypeScript passed, PixelLab passed `ok=149 missing=0 invalid=0`, and `git diff --check` passed. JSON beta doctor kept its source-backed guards passing but remained truthfully `BLOCKED` on unavailable exact pnpm/Corepack and unresolved local Expo.
 - DONE: Dependency-complete branch CI proved implementation commit `662c0106` in `WoofWatcher Verify` run `30341311006`, job `90217308964`; install, doctor, focused tests, typecheck, and CI-safe builds all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip. Native Auth/Setup screenshots and device accessibility/Apollo review remain open.
+
+## 2026-07-28 Avatar selected-template dark-mode boundary
+
+- DONE: Selected Avatar Studio template artwork keeps its intentionally ivory
+  preview surface and now uses a constant translucent brand-navy boundary
+  instead of the template's variable accent tone.
+- DONE: A red-first mobile-readiness contract failed on the variable boundary,
+  then passed `132/132`. Care-domain passed `148/148`, root TypeScript passed,
+  PixelLab passed `ok=149 missing=0 invalid=0`, and `git diff --check` passed.
+  The JSON beta doctor kept source guards passing but remained truthfully
+  `BLOCKED` on unavailable exact pnpm/Corepack and unresolved local Expo.
+- NEXT: Require fresh dependency-complete branch CI before treating this source
+  slice as current. Native Avatar Studio screenshots, accessibility traversal,
+  sprite/gait review, and Apollo visual approval remain open.
 - DONE: Dependency-complete branch CI proved implementation commit `f4059be3` in `WoofWatcher Verify` run `30301224391`, job `90094366601`, completed successfully in `2m3s`; checkout, pinned dependency setup/install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip. Real route-named iOS/Android dark screenshots and native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen proof remain open.

@@ -1220,7 +1220,9 @@ export default function PortraitScreen() {
                             backgroundColor: active
                               ? colors.ivory
                               : tone + "12",
-                            borderColor: active ? tone : colors.border,
+                            borderColor: active
+                              ? colors.brandNavy + "22"
+                              : colors.border,
                           },
                         ]}
                       >

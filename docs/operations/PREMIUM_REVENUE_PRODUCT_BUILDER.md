@@ -4670,3 +4670,18 @@ branch tip as current.
 - Added a red-first mobile readiness contract. This proves the source boundary only; native Auth/Setup visual, accessibility, provider, store, and Apollo approval evidence remains open.
 - Local verification: mobile readiness `131/131`, care-domain `148/148`, root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and `git diff --check` passed. JSON beta doctor source guards passed while its local dependency status remained `BLOCKED`.
 - Dependency-complete proof: `WoofWatcher Verify` run `30341311006`, job `90217308964`, passed for implementation commit `662c0106`.
+
+## 2026-07-28 Avatar selected-template dark-mode boundary
+
+Avatar Studio's selected template preview stays intentionally ivory, but its
+one-pixel edge no longer depends on a variable template accent that can become
+too faint around pale artwork. The inner art boundary now uses translucent
+constant brand-navy while the outer selected card retains the template tone.
+
+A red-first readiness contract failed before the source correction and passed
+`132/132` afterward. Care-domain passed `148/148`, root TypeScript passed,
+PixelLab passed `ok=149 missing=0 invalid=0`, and `git diff --check` passed.
+The JSON beta doctor kept source-backed checks passing while remaining
+truthfully `BLOCKED` on exact pnpm/Corepack and local Expo availability. Native
+iOS/Android dark screenshots, accessibility traversal, sprite/gait review, and
+Apollo approval remain open.

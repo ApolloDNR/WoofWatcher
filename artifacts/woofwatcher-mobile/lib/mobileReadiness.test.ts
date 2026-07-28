@@ -649,6 +649,21 @@ test("keeps fixed-light Avatar Studio template badges readable in dark mode", ()
   );
 });
 
+test("keeps the selected Avatar Studio template art bounded in dark mode", () => {
+  const avatarStudio = readAppFile("portrait.tsx");
+
+  assert.match(
+    avatarStudio,
+    /backgroundColor:\s*active\s*\?\s*colors\.ivory\s*:\s*tone\s*\+\s*"12",\s*borderColor:\s*active\s*\?\s*colors\.brandNavy\s*\+\s*"22"\s*:\s*colors\.border/,
+    "the fixed-light selected template artwork needs a constant dark boundary",
+  );
+  assert.doesNotMatch(
+    avatarStudio,
+    /backgroundColor:\s*active\s*\?\s*colors\.ivory\s*:\s*tone\s*\+\s*"12",\s*borderColor:\s*active\s*\?\s*tone\s*:\s*colors\.border/,
+    "a variable template tone can become too faint around the selected ivory artwork",
+  );
+});
+
 test("keeps fixed-light Avatar Studio production action icons readable in dark mode", () => {
   const avatarStudio = readAppFile("portrait.tsx");
 

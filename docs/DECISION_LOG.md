@@ -2757,3 +2757,14 @@ or Apollo visual approval.
 
 - Decision: the Auth gateway stage HUD keeps its ivory art surface, while its status dot uses constant `brandNavy` rather than the adaptive `sage` theme token.
 - Why: native dark mode makes adaptive sage too pale against the intentionally fixed-light HUD. This is source-level contrast hardening, not native visual approval or provider-backed Auth proof.
+
+## 2026-07-28 - Bound selected Avatar template artwork with constant ink
+
+- Decision: keep selected Avatar Studio template artwork ivory, preserve the
+  template accent on the outer selected card, and use `brandNavy + "22"` for
+  the preview's one-pixel boundary.
+- Why: template tones include pale blue, gold, and sage values that can weaken
+  the edge of a fixed-light preview. A constant subtle boundary preserves the
+  preview silhouette without flattening the template identity.
+- Boundary: source coverage does not replace native dark-mode screenshots,
+  phone-size sprite review, accessibility traversal, or Apollo approval.
