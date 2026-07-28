@@ -2648,6 +2648,18 @@ accessibility review, or provide Apollo visual approval.
 
 ## Open Decisions For Apollo
 
+## 2026-07-27: Fixed-light care HUD labels use constant ink
+
+Decision: Keep the small Quick Care and Records HUD labels constant brand-navy
+on their scheme-independent cream cells.
+
+Reason: Adaptive sage becomes lighter in dark mode while these HUD cells remain
+cream, weakening the compact labels that identify real care and vault metrics.
+
+Boundary: This is source-backed contrast hardening. It does not replace
+route-named iOS/Android dark-mode screenshots, native accessibility review, or
+Apollo visual approval.
+
 - Final launch target: Expo preview, TestFlight, app store, web dashboard, or staged combination.
 - Monetization model and paid tier boundaries.
 - Production providers for auth, database, storage, AI, deployment, and mobile release.

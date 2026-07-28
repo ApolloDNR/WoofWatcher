@@ -724,6 +724,32 @@ test("keeps the fixed-light Home Avatar Studio launcher visible in dark mode", (
   );
 });
 
+test("keeps fixed-light Quick Care and Records HUD labels readable in dark mode", () => {
+  const quickCare = readAppFile("(tabs)/log.tsx");
+  const records = readAppFile("(tabs)/records.tsx");
+
+  assert.match(
+    quickCare,
+    /s\.logCommandHudLabel,\s*\{\s*color:\s*colors\.brandNavy/,
+    "the fixed-light Quick Care HUD needs constant dark label ink",
+  );
+  assert.match(
+    records,
+    /s\.recordsCredentialHudLabel,\s*\{\s*color:\s*colors\.brandNavy/,
+    "the fixed-light Records HUD needs constant dark label ink",
+  );
+  assert.doesNotMatch(
+    quickCare,
+    /s\.logCommandHudLabel,\s*\{\s*color:\s*colors\.sage/,
+    "adaptive sage becomes too light against the scheme-independent cream HUD cell",
+  );
+  assert.doesNotMatch(
+    records,
+    /s\.recordsCredentialHudLabel,\s*\{\s*color:\s*colors\.sage/,
+    "adaptive sage becomes too light against the scheme-independent cream HUD cell",
+  );
+});
+
 test("keeps the fixed-light More profile edit control visible in dark mode", () => {
   const more = readAppFile("(tabs)/more.tsx");
 

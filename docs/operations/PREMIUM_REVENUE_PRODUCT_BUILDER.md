@@ -4617,3 +4617,18 @@ successfully in `2m3s`; checkout, pinned dependency setup/install, JSON doctor,
 focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete
 job all passed. Rerun after this proof-record commit before treating the final
 branch tip as current.
+
+## 2026-07-27 Quick Care and Records HUD label contrast slice
+
+The fixed-light Quick Care and Records HUD cells now keep constant brand-navy
+label ink in both themes instead of using adaptive sage. A red-first mobile
+readiness assertion failed on both labels before the source correction. This
+protects source-level contrast only. Local verification passed mobile readiness
+`131/131`, care-domain `148/148`, root TypeScript, PixelLab
+`ok=149 missing=0 invalid=0`, and `git diff --check`. The broad partial-checkout
+suite passed `662/663` and failed only on the known missing
+`@workspace/care-domain` package link in `careCareer.test.ts`; JSON beta doctor
+remained truthfully blocked on exact pnpm/Corepack and local Expo resolution.
+Real route-named iOS/Android dark
+screenshots, device accessibility review, and Apollo visual approval remain
+required.

@@ -2511,7 +2511,7 @@ export default function LogScreen() {
                     key={metric.label}
                     style={[s.logCommandHudCell, { backgroundColor: colors.cream, borderColor: colors.brandNavy + "22" }]}
                   >
-                    <Text style={[s.logCommandHudLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    <Text style={[s.logCommandHudLabel, { color: colors.brandNavy, fontFamily: "Inter_700Bold" }]}>
                       {metric.label}
                     </Text>
                     <Text
