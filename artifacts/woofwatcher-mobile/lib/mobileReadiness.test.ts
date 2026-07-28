@@ -739,6 +739,21 @@ test("keeps the fixed-light Home Avatar Studio launcher visible in dark mode", (
   );
 });
 
+test("keeps the fixed-light living care-twin location chip bounded in dark mode", () => {
+  const room = readAppFile("../components/LivingPhoenixRoom.tsx");
+
+  assert.match(
+    room,
+    /styles\.zoneChip,\s*\{\s*backgroundColor:\s*"rgba\(255,249,239,0\.93\)",\s*borderColor:\s*colors\.brandNavy\s*\+\s*"33",?\s*\}/,
+    "the fixed-light care-twin location chip needs a constant dark boundary",
+  );
+  assert.doesNotMatch(
+    room,
+    /styles\.zoneChip,[\s\S]*?borderColor:\s*theme\.accent/,
+    "a pale mood accent can disappear around the fixed-light location chip",
+  );
+});
+
 test("keeps fixed-light Quick Care and Records HUD labels readable in dark mode", () => {
   const quickCare = readAppFile("(tabs)/log.tsx");
   const records = readAppFile("(tabs)/records.tsx");

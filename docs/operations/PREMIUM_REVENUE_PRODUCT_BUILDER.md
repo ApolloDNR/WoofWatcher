@@ -4601,6 +4601,25 @@ dependency setup/install, JSON mobile beta doctor, focused behavior tests,
 typecheck plus CI-safe builds, all post steps, and Complete job passed. Rerun
 after this proof-record commit before treating the final branch tip as current.
 
+## 2026-07-28 Living care-twin location-chip dark-mode boundary
+
+The living care-twin room's location chip stays intentionally cream in both
+themes, but its one-pixel edge no longer depends on the current mood accent,
+which can become too faint against pale room artwork. The chip now uses a
+constant translucent brand-navy boundary while mood accents remain available
+for live state cues.
+
+A red-first mobile readiness contract failed on the mood-accent boundary, then
+passed `133/133` after the source correction. Care-domain passed `148/148`,
+root TypeScript passed, PixelLab passed `ok=149 missing=0 invalid=0`, and `git
+diff --check` passed. The broad partial-checkout suite passed `664/665` and
+failed only on the known missing `@workspace/care-domain` package link in
+`careCareer.test.ts`; JSON beta doctor kept `84` source-backed checks passing
+but remained truthfully `BLOCKED` on exact pnpm/Corepack and local Expo
+resolution. This is source-backed contrast hardening only; real route-named
+iOS/Android dark screenshots, native accessibility traversal, sprite/gait
+review, and Apollo visual approval remain open.
+
 ## 2026-07-27 Avatar emote icon dark-mode boundary slice
 
 Avatar Studio's fixed-light emote icon tiles now keep a constant translucent

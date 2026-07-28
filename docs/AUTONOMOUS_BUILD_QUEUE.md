@@ -1406,6 +1406,25 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: Dependency-complete branch CI proved implementation commit `3693af17` in `WoofWatcher Verify` run `30260712876`, job `89959671913`; checkout, pinned dependency setup/install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip. Real route-named iOS/Android dark screenshots and native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen proof remain open.
 
+## 2026-07-28 Living care-twin location-chip dark-mode boundary
+
+- DONE: The living care-twin room's fixed-cream location chip now uses a
+  constant translucent brand-navy boundary instead of a variable mood accent,
+  preserving the chip edge around pale room art and in both themes.
+- DONE: A red-first mobile readiness contract failed on the mood-accent
+  boundary before the source correction, then passed `133/133`.
+- DONE: Local verification passed mobile readiness `133/133`, care-domain
+  `148/148`, root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and `git
+  diff --check`. The broad partial-checkout suite passed `664/665` and failed
+  only on the known missing `@workspace/care-domain` package link in
+  `careCareer.test.ts`; JSON beta doctor kept `84` source-backed checks passing
+  but remained truthfully `BLOCKED` on exact pnpm/Corepack and local Expo
+  resolution.
+- NEXT: Run the strongest local verification, push the verified
+  implementation, and require fresh dependency-complete branch CI. Real
+  route-named iOS/Android dark screenshots, native accessibility traversal,
+  sprite/gait review, and Apollo visual approval remain open.
+
 ## 2026-07-27 More profile edit dark-mode boundary
 
 - DONE: The fixed-ivory dog-profile edit control on More now uses a constant translucent brand-navy outline, preserving its edge over light or variable profile artwork in both themes.

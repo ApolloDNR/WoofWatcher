@@ -2768,3 +2768,13 @@ or Apollo visual approval.
   preview silhouette without flattening the template identity.
 - Boundary: source coverage does not replace native dark-mode screenshots,
   phone-size sprite review, accessibility traversal, or Apollo approval.
+
+## 2026-07-28 - Bound fixed-light care-twin location chips with constant ink
+
+- Decision: keep the living care-twin room's location chip cream in both
+  themes and use `brandNavy + "33"` for its structural boundary.
+- Why: mood accents remain useful live-state cues, but pale mood colors are not
+  reliable borders around scheme-independent cream panels over variable room
+  artwork.
+- Boundary: source coverage does not replace route-named native dark-mode
+  screenshots, accessibility traversal, sprite review, or Apollo approval.

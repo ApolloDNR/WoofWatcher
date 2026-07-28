@@ -1188,7 +1188,7 @@ export function LivingPhoenixRoom({
               styles.zoneChip,
               {
                 backgroundColor: "rgba(255,249,239,0.93)",
-                borderColor: theme.accent,
+                borderColor: colors.brandNavy + "33",
               },
               activeZoneStyle,
             ]}
