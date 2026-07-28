@@ -1406,6 +1406,20 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: Dependency-complete branch CI proved implementation commit `3693af17` in `WoofWatcher Verify` run `30260712876`, job `89959671913`; checkout, pinned dependency setup/install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip. Real route-named iOS/Android dark screenshots and native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen proof remain open.
 
+## 2026-07-28 Records Dog ID badge dark-mode contrast
+
+- DONE: The paw badge inside the fixed-ivory Records Dog ID plate now uses a
+  constant translucent brand-navy wash and constant brand-navy icon ink,
+  instead of inheriting an adaptive readiness tone.
+- DONE: A red-first mobile-readiness contract failed on the adaptive badge.
+- DONE: Mobile readiness passed `133/133`, care-domain passed `148/148`, root
+  TypeScript passed, PixelLab passed `ok=149 missing=0 invalid=0`, and
+  `git diff --check` passed. JSON beta doctor kept its source-backed guards
+  passing while remaining truthfully `BLOCKED` on local pnpm/Corepack and Expo.
+- NEXT: Complete dependency-complete branch CI. Real
+  route-named iOS/Android Records screenshots, native file/share proof,
+  accessibility traversal, and Apollo visual approval remain open.
+
 ## 2026-07-28 Living care-twin location-chip dark-mode boundary
 
 - DONE: The living care-twin room's fixed-cream location chip now uses a

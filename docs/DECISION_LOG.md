@@ -2778,3 +2778,13 @@ or Apollo visual approval.
   artwork.
 - Boundary: source coverage does not replace route-named native dark-mode
   screenshots, accessibility traversal, sprite review, or Apollo approval.
+
+## 2026-07-28 - Keep the fixed-light Records ID badge constant
+
+- Decision: keep the Dog ID badge tied to the intentionally ivory credential
+  plate and use `brandNavy + "1F"` for its wash plus `brandNavy` for its paw.
+- Why: `recordsVaultTone` remains useful on adaptive readiness surfaces, but
+  its dark-theme sage variant can become too pale against the unchanged ivory
+  credential plate.
+- Boundary: this is source-level contrast hardening, not native Records file
+  proof, device accessibility review, or Apollo visual approval.

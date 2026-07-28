@@ -4601,6 +4601,19 @@ dependency setup/install, JSON mobile beta doctor, focused behavior tests,
 typecheck plus CI-safe builds, all post steps, and Complete job passed. Rerun
 after this proof-record commit before treating the final branch tip as current.
 
+## 2026-07-28 Records Dog ID badge dark-mode contrast
+
+The fixed-ivory Dog ID plate now uses a constant translucent brand-navy badge
+wash and constant brand-navy paw instead of an adaptive readiness tone. A
+red-first mobile readiness contract failed on the old token. This remains
+source-backed contrast hardening only; native Records screenshots, file/share
+proof, accessibility traversal, and Apollo approval remain open.
+
+Local verification passed mobile readiness `133/133`, care-domain `148/148`,
+root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and
+`git diff --check`. JSON beta doctor source guards passed while its local
+dependency status remained truthfully `BLOCKED`.
+
 ## 2026-07-28 Living care-twin location-chip dark-mode boundary
 
 The living care-twin room's location chip stays intentionally cream in both

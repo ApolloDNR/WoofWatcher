@@ -396,3 +396,10 @@ its fixed-light art surface. Real iOS/Android Avatar Studio screenshots,
 phone-size proportions, sprite/gait timing, native accessibility traversal,
 and Apollo visual approval are still required; this change does not clear those
 launch gates.
+
+## 2026-07-28 Records Dog ID badge contrast boundary
+
+The fixed-light Dog ID badge now has source-protected constant dark wash and
+icon ink. Real route-named iOS/Android Records screenshots, native Care Pass
+and Dog ID share/reopen evidence, device accessibility traversal, and Apollo
+visual approval remain blocked.

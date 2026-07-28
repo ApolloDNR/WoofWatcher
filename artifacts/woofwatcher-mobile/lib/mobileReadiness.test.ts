@@ -773,6 +773,16 @@ test("keeps fixed-light Quick Care and Records HUD labels readable in dark mode"
     /s\.recordsCredentialIdLabel,\s*\{\s*color:\s*colors\.brandNavy/,
     "the fixed-light Records Dog ID label needs constant dark ink",
   );
+  assert.match(
+    records,
+    /s\.recordsCredentialIdBadge,\s*\{\s*backgroundColor:\s*colors\.brandNavy\s*\+\s*"1F"\s*\}/,
+    "the fixed-light Records Dog ID badge needs a constant dark wash",
+  );
+  assert.match(
+    records,
+    /name="paw"\s+size=\{16\}\s+color=\{colors\.brandNavy\}/,
+    "the fixed-light Records Dog ID badge needs constant dark icon ink",
+  );
   assert.doesNotMatch(
     quickCare,
     /s\.logCommandHudLabel,\s*\{\s*color:\s*colors\.sage/,
@@ -787,6 +797,11 @@ test("keeps fixed-light Quick Care and Records HUD labels readable in dark mode"
     records,
     /s\.recordsCredentialIdLabel,\s*\{\s*color:\s*colors\.sage/,
     "adaptive sage becomes too light against the scheme-independent ivory Dog ID plate",
+  );
+  assert.doesNotMatch(
+    records,
+    /s\.recordsCredentialIdBadge,\s*\{\s*backgroundColor:\s*recordsVaultTone/,
+    "adaptive readiness tones become unreliable against the scheme-independent ivory Dog ID plate",
   );
 });
 
