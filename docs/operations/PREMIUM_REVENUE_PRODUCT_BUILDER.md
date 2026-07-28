@@ -4664,3 +4664,8 @@ successfully in `2m10s`; checkout, pinned dependency install, JSON doctor,
 focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete
 job all passed. Rerun after this proof-record commit before treating the final
 branch tip as current.
+# 2026-07-28 Auth stage HUD dark-mode indicator
+
+- Changed the fixed-light Auth gateway stage HUD dot from adaptive sage to constant brand-navy.
+- Added a red-first mobile readiness contract. This proves the source boundary only; native Auth/Setup visual, accessibility, provider, store, and Apollo approval evidence remains open.
+- Local verification: mobile readiness `131/131`, care-domain `148/148`, root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and `git diff --check` passed. JSON beta doctor source guards passed while its local dependency status remained `BLOCKED`.

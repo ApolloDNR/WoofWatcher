@@ -384,3 +384,7 @@ Branch CI proved implementation commit `6c1c5e7e` in `WoofWatcher Verify` run
 `30139367465`, job `89629537631`, with dependency install, JSON doctor, focused
 tests, typecheck, and CI-safe builds passing. Rerun after this proof-record
 commit before treating dependency proof as current for the final branch tip.
+# 2026-07-28 Auth stage HUD contrast boundary
+
+- Source coverage now protects the fixed-light Auth stage HUD indicator from adaptive dark-mode token drift.
+- Still blocked: real route-named iOS/Android Auth/Setup screenshots, device accessibility review, Clerk/provider approval, and Apollo visual sign-off.

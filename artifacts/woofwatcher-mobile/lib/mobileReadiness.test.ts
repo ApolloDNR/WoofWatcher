@@ -817,6 +817,16 @@ test("keeps fixed-light Auth gateway panels bounded in dark mode", () => {
     /backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.border/,
     "the adaptive dark border becomes too faint on fixed-light Auth panels",
   );
+  assert.match(
+    authUi,
+    /styles\.stageDot,\s*\{\s*backgroundColor:\s*colors\.brandNavy\s*\}/,
+    "the fixed-light Auth stage HUD status dot needs constant dark ink",
+  );
+  assert.doesNotMatch(
+    authUi,
+    /styles\.stageDot,\s*\{\s*backgroundColor:\s*colors\.sage\s*\}/,
+    "adaptive sage becomes too light against the scheme-independent ivory Auth HUD",
+  );
 });
 
 test("keeps critical mobile actions accessible to screen readers", () => {

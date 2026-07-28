@@ -1410,5 +1410,12 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 
 - DONE: The fixed-ivory dog-profile edit control on More now uses a constant translucent brand-navy outline, preserving its edge over light or variable profile artwork in both themes.
 - DONE: Red-first mobile readiness failed on the unbounded control, then passed `130/130` after the correction. Root TypeScript, care-domain `148/148`, PixelLab `ok=149 missing=0 invalid=0`, and `git diff --check` passed. The broad partial-checkout suite failed only on the known missing `@workspace/care-domain` package link in `careCareer.test.ts`; JSON beta doctor kept source-backed guards passing but remained truthfully `BLOCKED` on exact pnpm/Corepack and local Expo resolution.
+
+## 2026-07-28 Auth stage HUD dark-mode indicator
+
+- DONE: The fixed-light Auth gateway HUD status dot now uses constant brand-navy instead of adaptive sage, preserving a crisp care-stage indicator on ivory in both themes.
+- DONE: Red-first mobile readiness failed on the adaptive token before the implementation.
+- DONE: Mobile readiness passed `131/131`, care-domain passed `148/148`, root TypeScript passed, PixelLab passed `ok=149 missing=0 invalid=0`, and `git diff --check` passed. JSON beta doctor kept its source-backed guards passing but remained truthfully `BLOCKED` on unavailable exact pnpm/Corepack and unresolved local Expo.
+- NEXT: Complete local verification, push the verified slice, and require fresh branch CI. Native Auth/Setup screenshots and device accessibility/Apollo review remain open.
 - DONE: Dependency-complete branch CI proved implementation commit `f4059be3` in `WoofWatcher Verify` run `30301224391`, job `90094366601`, completed successfully in `2m3s`; checkout, pinned dependency setup/install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip. Real route-named iOS/Android dark screenshots and native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen proof remain open.

@@ -124,7 +124,7 @@ export function AuthShell({
             style={[styles.stageDog, pixelImageStyle]}
           />
           <View style={[styles.stageHud, { backgroundColor: colors.ivory, borderColor: colors.brandNavy + "22" }]}>
-            <View style={[styles.stageDot, { backgroundColor: colors.sage }]} />
+            <View style={[styles.stageDot, { backgroundColor: colors.brandNavy }]} />
             <Text style={[styles.stageHudText, { color: BUBBLE_INK, fontFamily: "Inter_700Bold" }]}>
               Phoenix care starts here
             </Text>

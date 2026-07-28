@@ -2753,3 +2753,7 @@ art unless its edge is explicitly bounded.
 Boundary: This is source-backed contrast hardening. It does not replace
 route-named iOS/Android dark-mode screenshots, native accessibility traversal,
 or Apollo visual approval.
+# 2026-07-28 - Keep fixed-light Auth HUD indicator constant
+
+- Decision: the Auth gateway stage HUD keeps its ivory art surface, while its status dot uses constant `brandNavy` rather than the adaptive `sage` theme token.
+- Why: native dark mode makes adaptive sage too pale against the intentionally fixed-light HUD. This is source-level contrast hardening, not native visual approval or provider-backed Auth proof.
