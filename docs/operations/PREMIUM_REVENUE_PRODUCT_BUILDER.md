@@ -18,6 +18,13 @@ kept 84 source-backed checks passing but remained truthfully `BLOCKED` on local
 pnpm/Corepack and Expo resolution. Require dependency-complete branch CI before
 treating the final branch tip as current.
 
+Dependency-complete branch CI proved implementation commit `4c929ea4` in
+`WoofWatcher Verify` run `30330894604`, job `90185590849`, completed in
+`2m13s`; checkout, pinned dependency install, JSON doctor, focused behavior
+tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+Rerun after this proof-record commit before treating the final branch tip as
+current.
+
 ## 2026-07-27 Avatar production-action dark-mode boundary
 
 The source-level dark-mode audit found that Avatar Studio's fixed-light

@@ -12,8 +12,12 @@
   only on the known missing `@workspace/care-domain` package link in
   `careCareer.test.ts`; JSON beta doctor kept 84 source-backed checks passing
   but remained truthfully `BLOCKED` on local pnpm/Corepack and Expo resolution.
-- NEXT: Push the verified implementation and require fresh branch CI before
-  treating dependency-complete proof as current. Real route-named iOS/Android
+- DONE: Dependency-complete branch CI proved implementation commit `4c929ea4`
+  in `WoofWatcher Verify` run `30330894604`, job `90185590849`; checkout,
+  pinned dependency install, JSON doctor, focused behavior tests, typecheck plus
+  CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating
+  dependency proof as current for the final tip. Real route-named iOS/Android
   dark screenshots, Records local-file proof, PDF/PNG share/reopen proof,
   accessibility review, and Apollo visual approval remain open.
 
