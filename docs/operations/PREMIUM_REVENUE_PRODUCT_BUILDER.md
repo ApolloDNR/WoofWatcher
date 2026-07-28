@@ -4632,3 +4632,10 @@ remained truthfully blocked on exact pnpm/Corepack and local Expo resolution.
 Real route-named iOS/Android dark
 screenshots, device accessibility review, and Apollo visual approval remain
 required.
+
+Dependency-complete branch CI proved implementation commit `f4b319b0` in
+`WoofWatcher Verify` run `30322334790`, job `90160618387`, completed
+successfully in `2m10s`; checkout, pinned dependency install, JSON doctor,
+focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete
+job all passed. Rerun after this proof-record commit before treating the final
+branch tip as current.

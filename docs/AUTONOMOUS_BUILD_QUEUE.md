@@ -1370,6 +1370,8 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: Quick Care and Records fixed-light HUD labels now use constant brand-navy ink instead of adaptive sage, preserving small-label contrast on cream cells in dark mode.
 - DONE: Red-first mobile readiness failed on both adaptive labels before the source correction.
 - DONE: Local verification passed mobile readiness `131/131`, care-domain `148/148`, root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and `git diff --check`. The broad partial-checkout suite passed `662/663` and failed only on the known missing `@workspace/care-domain` package link in `careCareer.test.ts`; JSON beta doctor kept source-backed checks passing but remained truthfully blocked on exact pnpm/Corepack and local Expo resolution.
+- DONE: Dependency-complete branch CI proved implementation commit `f4b319b0` in `WoofWatcher Verify` run `30322334790`, job `90160618387`, completed successfully in `2m10s`; checkout, pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating dependency proof as current for the final tip.
 - NEXT: Run the strongest local verification, push the verified implementation, and require fresh branch CI before treating dependency-complete proof as current. Real route-named iOS/Android dark screenshots and native Auth/Setup, Records file, Route Visual Consistency, and PDF/PNG share/reopen proof remain open.
 ## 2026-07-25 Avatar Studio dark-mode contrast
 
