@@ -14,6 +14,12 @@ partial-checkout suite passed `695/696` and failed only on the known missing
 kept `84` source-backed checks passing while local pnpm/Expo readiness remained
 truthfully blocked.
 
+Dependency-complete branch CI proved implementation commit `c73ad8fc` in
+WoofWatcher Verify run `30460445038`, job `90604850583`, completed in `1m50s`.
+Checkout, pinned dependency install, JSON doctor, focused behavior tests,
+typecheck plus CI-safe builds, post steps, and Complete job all passed. Rerun
+after this proof-record commit before treating the final branch tip as current.
+
 This slice proves source-level contrast only. Native iOS/Android screenshots,
 screen-reader traversal, Records local-file and PDF/PNG share/reopen proof,
 provider storage, store review, public launch, and Apollo approval remain open.

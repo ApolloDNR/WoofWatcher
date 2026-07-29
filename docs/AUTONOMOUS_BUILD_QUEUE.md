@@ -11,6 +11,12 @@
   partial-checkout suite passed `695/696` and failed only on the known missing
   `@workspace/care-domain` link in `careCareer.test.ts`; the JSON doctor kept
   `84` source guards passing while local pnpm/Expo readiness remained blocked.
+- DONE: Dependency-complete branch CI proved implementation commit `c73ad8fc`
+  in WoofWatcher Verify run `30460445038`, job `90604850583`; checkout, pinned
+  dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds,
+  post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating
+  dependency proof as current for the final branch tip.
 - NEXT: Real route-named iOS/Android Records screenshots, native accessibility
   traversal, Records local-file and PDF/PNG share/reopen proof, and Apollo
   visual approval remain open.
