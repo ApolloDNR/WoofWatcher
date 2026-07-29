@@ -5135,6 +5135,21 @@ test("keeps the fixed-light premium plan boundary visible in dark mode", () => {
   );
 });
 
+test("keeps the fixed-light premium plan label readable in dark mode", () => {
+  const premium = readAppFile("premium.tsx");
+
+  assert.match(
+    premium,
+    /premiumValuePlanLabel,\s*\{\s*color:\s*colors\.brandNavy/,
+    "the fixed-light recommended plan label must keep constant dark ink in dark mode",
+  );
+  assert.doesNotMatch(
+    premium,
+    /premiumValuePlanLabel,\s*\{\s*color:\s*colors\.copper/,
+    "adaptive copper can become too pale on the fixed-light recommended plan card",
+  );
+});
+
 test("keeps fixed-light premium console docks separated from artwork in dark mode", () => {
   const premium = readAppFile("premium.tsx");
   const woofGuide = readAppFile("woofguide.tsx");

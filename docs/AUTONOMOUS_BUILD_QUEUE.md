@@ -1508,6 +1508,23 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
 
+## 2026-07-29 Plus recommended-plan label contrast
+
+- DONE: The fixed-light Plus recommended-plan card now uses constant
+  brand-navy for its compact `Recommended` label instead of adaptive copper.
+- DONE: A red-first mobile-readiness contract failed on the adaptive label
+  and passed `138/138` after the source correction.
+- DONE: Root TypeScript passed, care-domain passed, PixelLab verification
+  passed `ok=149 missing=0 invalid=0`, and `git diff --check` passed. The broad
+  partial-checkout suite failed only on the known missing local
+  `@workspace/care-domain` package link in `careCareer.test.ts`; JSON doctor
+  kept all source-backed guards passing while remaining truthfully blocked on
+  local pnpm/Corepack and Expo resolution.
+- NEXT: Push the verified slice and require dependency-complete branch CI.
+  Real route-named native Plus
+  screenshots, device accessibility review, payments/provider proof, store
+  review, and Apollo approval remain open; checkout stays gated.
+
 ## 2026-07-28 Avatar photo-reference dark-mode contrast
 
 - DONE: Avatar Studio's fixed-light photo-reference card now uses a constant

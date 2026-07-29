@@ -445,3 +445,10 @@ source-protected constant dark small-label, icon, and action-boundary contrast.
 Real route-named iOS/Android Auth/Setup screenshots, device accessibility
 review, Clerk/provider evidence, store review, and Apollo visual approval
 remain blocked.
+
+## 2026-07-29 Plus recommended-plan contrast boundary
+
+The fixed-light Plus recommended-plan label now has source-protected constant
+dark ink. Real route-named iOS/Android Plus screenshots, device accessibility
+review, payments/provider evidence, store review, and Apollo approval remain
+blocked. Checkout remains disabled.

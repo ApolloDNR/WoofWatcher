@@ -4896,3 +4896,20 @@ Dependency-complete branch CI proved implementation commit `da7c8eb8` in
 dependency setup/install, JSON mobile beta doctor, focused behavior tests,
 typecheck plus CI-safe builds, post steps, and Complete job all passed. Rerun
 after this proof-record commit before treating the final branch tip as current.
+
+## 2026-07-29 Plus recommended-plan label contrast
+
+The Plus value console keeps its recommended-plan card intentionally ivory,
+and its compact `Recommended` label now uses constant brand-navy instead of
+adaptive copper. A red-first mobile-readiness contract failed on the former
+label and passed `138/138` after the source correction. Checkout, payments,
+native screenshots, device accessibility, store review, public launch, and
+Apollo approval remain gated.
+
+Local verification passed root TypeScript, care-domain tests, PixelLab
+`ok=149 missing=0 invalid=0`, and `git diff --check`. The broad direct
+partial-checkout suite failed only on the known missing local
+`@workspace/care-domain` link in `careCareer.test.ts`. JSON mobile beta doctor
+kept every source-backed guard passing while remaining truthfully blocked on
+local pnpm/Corepack and Expo resolution. Dependency-complete branch CI is
+required before the pushed tip is treated as fully verified.

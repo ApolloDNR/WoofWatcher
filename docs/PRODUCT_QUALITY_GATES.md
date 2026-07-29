@@ -452,3 +452,10 @@ proof, public launch, or Apollo sign-off.
   brand-navy edge and has red/green readiness coverage.
 - OPEN, native: iOS/Android dark screenshots, touch/accessibility traversal,
   phone-size sprite review, and Apollo approval.
+
+## 2026-07-29 Plus recommended-plan label contrast
+
+- PASS, source: the fixed-light `Recommended` label uses constant brand-navy
+  ink and has red/green readiness coverage.
+- OPEN, native/provider: iOS/Android dark screenshots, accessibility review,
+  payments proof, store review, and Apollo approval. Checkout remains gated.

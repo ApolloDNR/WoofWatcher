@@ -2643,3 +2643,10 @@ Source readiness now rejects a variable accent border around the selected ivory
 template preview. On native iOS and Android, verify the preview edge across all
 template tones, dark mode, phone-size artwork, touch selection, and screen
 reader traversal before approving the surface.
+
+## 2026-07-29 Plus recommended-plan label contrast QA
+
+Source readiness now rejects adaptive copper on the fixed-light
+`Recommended` label. On native iOS and Android, verify the plan card in dark
+mode, Dynamic Type, screen-reader traversal, and phone-size layouts before
+approving the surface. Do not enable checkout from visual proof.

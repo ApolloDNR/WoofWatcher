@@ -249,7 +249,7 @@ function PremiumScreenBody() {
                     { backgroundColor: colors.ivory + "E8", borderColor: colors.brandNavy + "55" },
                   ]}
                 >
-                  <Text style={[s.premiumValuePlanLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                  <Text style={[s.premiumValuePlanLabel, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
                     Recommended
                   </Text>
                   <Text

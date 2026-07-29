@@ -2869,3 +2869,13 @@ or Apollo visual approval.
 - Boundary: this is source-level contrast hardening, not native Auth/Setup
   screenshots, accessibility traversal, Clerk/provider approval, store
   review, or Apollo sign-off.
+
+## 2026-07-29 - Fixed-light Plus plan labels use constant dark ink
+
+- Decision: keep the Plus recommended-plan card ivory in both themes and use
+  constant `brandNavy` for its compact status label.
+- Why: adaptive dark-theme copper can become too pale for small text on a
+  scheme-independent ivory card.
+- Boundary: checkout remains disabled; this is source-level contrast
+  hardening, not native screenshots, payments configuration, store review,
+  public launch, or Apollo approval.
