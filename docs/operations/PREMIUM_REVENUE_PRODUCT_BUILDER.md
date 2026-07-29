@@ -4825,3 +4825,19 @@ WoofWatcher Verify run `30434900256`, job `90520248036`; checkout, pinned
 dependency install, JSON mobile beta doctor, focused behavior tests, typecheck
 plus CI-safe builds, all post steps, and Complete job passed. Rerun after this
 proof-record commit before treating the final branch tip as current.
+
+## 2026-07-29 Auth fixed-light accent contrast
+
+The Auth gateway keeps its speech bubble, proof action, and proof manifest
+intentionally ivory, but their small labels, proof-action boundary, and shield
+icon now use constant brand-navy instead of adaptive copper. A red-first
+mobile-readiness contract failed on the former accents and passed `136/136`
+after the source correction. Care-domain passed `157/157`, root TypeScript
+passed, PixelLab passed `ok=149 missing=0 invalid=0`, and `git diff --check`
+passed. The broad partial-checkout suite passed `694/695` and failed only on
+the known missing local `@workspace/care-domain` package link in
+`careCareer.test.ts`; JSON doctor source guards passed while local readiness
+remained truthfully `BLOCKED` on pnpm/Corepack and Expo resolution. This
+protects source-level dark-mode contrast only; native iOS/Android Auth/Setup
+screenshots, device accessibility traversal, Clerk/provider proof, store
+review, public launch, and Apollo approval remain required.

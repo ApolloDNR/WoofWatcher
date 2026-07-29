@@ -110,7 +110,7 @@ export function AuthShell({
           style={styles.stage}
         >
           <View style={[styles.speechBubble, { backgroundColor: colors.ivory, borderColor: BUBBLE_INK }]}>
-            <Text style={[styles.speechKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+            <Text style={[styles.speechKicker, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>
               CARETWIN ACCOUNT GATEWAY
             </Text>
             <Text style={[styles.speechText, { color: BUBBLE_INK, fontFamily: "Inter_700Bold" }]}>
@@ -153,10 +153,10 @@ export function AuthShell({
           onPress={openAuthSetupProofMission}
           style={({ pressed }) => [
             styles.proofButton,
-            { backgroundColor: colors.ivory, borderColor: colors.copper, opacity: pressed ? 0.76 : 1 },
+            { backgroundColor: colors.ivory, borderColor: colors.brandNavy, opacity: pressed ? 0.76 : 1 },
           ]}
         >
-          <Ionicons name="shield-checkmark-outline" size={15} color={colors.copper} />
+          <Ionicons name="shield-checkmark-outline" size={15} color={colors.brandNavy} />
           <Text style={[styles.proofButtonText, { color: BUBBLE_INK, fontFamily: "Inter_800ExtraBold" }]}>
             Open setup proof
           </Text>
@@ -166,14 +166,14 @@ export function AuthShell({
             <Text style={[styles.proofManifestTitle, { color: BUBBLE_INK, fontFamily: "Inter_800ExtraBold" }]}>
               Auth/Setup proof manifest
             </Text>
-            <Text style={[styles.proofManifestPill, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+            <Text style={[styles.proofManifestPill, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
               Native proof blocked
             </Text>
           </View>
           <View style={styles.proofManifestGrid}>
             {authSetupProofManifest.rows.map((row) => (
               <View key={row.label} style={[styles.proofManifestCell, { borderColor: colors.brandNavy + "22" }]}>
-                <Text style={[styles.proofManifestLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                <Text style={[styles.proofManifestLabel, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
                   {row.label}
                 </Text>
                 <Text

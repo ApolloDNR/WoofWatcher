@@ -2831,3 +2831,15 @@ or Apollo visual approval.
 - Boundary: this is source-level contrast hardening, not native photo-picker
   proof, route-named iOS/Android screenshots, accessibility review, sprite
   production approval, or Apollo sign-off.
+
+## 2026-07-29 - Keep fixed-light Auth accents constant
+
+- Decision: keep the Auth gateway speech bubble, proof action, and proof
+  manifest ivory in both themes, and use constant `brandNavy` for their small
+  labels, proof-action edge, and shield icon.
+- Why: dark-theme copper is intentionally brighter for adaptive dark
+  surfaces, but becomes too light for small text and thin chrome when reused
+  on scheme-independent ivory panels.
+- Boundary: this is source-level contrast hardening, not native Auth/Setup
+  screenshots, accessibility traversal, Clerk/provider approval, store
+  review, or Apollo sign-off.

@@ -907,10 +907,40 @@ test("keeps fixed-light Auth gateway panels bounded in dark mode", () => {
     /color:\s*row\.status\s*===\s*"ready"\s*\?\s*colors\.brandNavy\s*:\s*BUBBLE_INK/,
     "the fixed-light Auth proof manifest needs constant dark status ink",
   );
+  assert.match(
+    authUi,
+    /styles\.speechKicker,\s*\{\s*color:\s*colors\.brandNavy/,
+    "the fixed-light Auth gateway kicker needs constant dark ink",
+  );
+  assert.match(
+    authUi,
+    /styles\.proofButton,[\s\S]*?backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.brandNavy/,
+    "the fixed-light Auth proof action needs a constant dark boundary",
+  );
+  assert.match(
+    authUi,
+    /name="shield-checkmark-outline"\s+size=\{15\}\s+color=\{colors\.brandNavy\}/,
+    "the fixed-light Auth proof action needs a constant dark icon",
+  );
+  assert.match(
+    authUi,
+    /styles\.proofManifestPill,\s*\{\s*color:\s*colors\.brandNavy/,
+    "the fixed-light Auth proof status label needs constant dark ink",
+  );
+  assert.match(
+    authUi,
+    /styles\.proofManifestLabel,\s*\{\s*color:\s*colors\.brandNavy/,
+    "the fixed-light Auth proof row labels need constant dark ink",
+  );
   assert.doesNotMatch(
     authUi,
     /styles\.stageDot,\s*\{\s*backgroundColor:\s*colors\.sage\s*\}/,
     "adaptive sage becomes too light against the scheme-independent ivory Auth HUD",
+  );
+  assert.doesNotMatch(
+    authUi,
+    /styles\.(?:speechKicker|proofManifestPill|proofManifestLabel),\s*\{\s*color:\s*colors\.copper/,
+    "adaptive copper becomes too light for small text on fixed-light Auth panels",
   );
   assert.doesNotMatch(
     authUi,

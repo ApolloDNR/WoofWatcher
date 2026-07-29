@@ -422,3 +422,11 @@ The fixed-light Auth/Setup proof manifest now has source-protected constant
 dark ready-state ink. Real route-named iOS/Android Auth/Setup screenshots,
 device accessibility review, Clerk/provider evidence, and Apollo visual
 approval remain blocked.
+
+## 2026-07-29 Auth fixed-light accent contrast boundary
+
+The Auth gateway's fixed-light speech and proof surfaces now have
+source-protected constant dark small-label, icon, and action-boundary contrast.
+Real route-named iOS/Android Auth/Setup screenshots, device accessibility
+review, Clerk/provider evidence, store review, and Apollo visual approval
+remain blocked.

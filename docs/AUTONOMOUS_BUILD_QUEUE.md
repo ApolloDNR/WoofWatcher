@@ -1569,3 +1569,20 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 1159. DONE 2026-07-28: Merge verification passed mobile readiness `134/134`, care-domain `157/157`, root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and every JSON doctor source-backed guard. The broad direct partial-checkout suite still fails only where local package links are absent (`express` for API route tests and `@workspace/care-domain` for mobile package-import tests); dependency-complete branch CI remains the authority for those paths.
 1160. NEXT: Prove this reconciled branch tip in `WoofWatcher Verify`, then continue real native/provider evidence: Auth/Setup, Records local-file handoff, generated PDF/PNG share/reopen, Route Visual Consistency, Avatar Studio device behavior, and the signed-in wipe product decision. Do not treat source, web, store-asset, or CI proof as native/provider/store/Apollo approval.
 1161. DONE 2026-07-28: Dependency-complete `WoofWatcher Verify` run `30416292525`, job `90463439138`, passed for reconciliation commit `deee4166`. Checkout, pinned pnpm/Node setup, dependency install, JSON mobile beta doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+
+## 2026-07-29 Auth fixed-light accent contrast
+
+- DONE: The Auth gateway's ivory speech, proof action, and proof-manifest
+  surfaces now use constant brand-navy for small labels, the proof-action
+  boundary, and its shield icon instead of adaptive dark-theme copper.
+- DONE: A red-first mobile-readiness contract failed on the adaptive Auth
+  accents, then passed `136/136` after the source correction.
+- DONE: Care-domain passed `157/157`, root TypeScript passed, PixelLab passed
+  `ok=149 missing=0 invalid=0`, and `git diff --check` passed. The broad
+  partial-checkout suite passed `694/695` and failed only on the known missing
+  local `@workspace/care-domain` package link in `careCareer.test.ts`; JSON
+  doctor source guards passed while local readiness remained truthfully
+  `BLOCKED` on pnpm/Corepack and Expo resolution.
+- NEXT: Push the verified slice and require dependency-complete branch CI.
+  Real route-named iOS/Android Auth/Setup screenshots, native accessibility
+  traversal, Clerk/provider proof, and Apollo visual approval remain open.
