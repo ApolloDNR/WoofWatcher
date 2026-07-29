@@ -1,5 +1,12 @@
 # Blockers For Apollo
 
+## 2026-07-29 Premium console dock contrast boundary
+
+The fixed-light Plus and WoofGuide console docks now have source-protected
+constant dark seams beneath their painted rooms. Still blocked: route-named
+native iOS/Android screenshots, device accessibility review, provider-backed
+WoofGuide/payment evidence, and Apollo visual approval. Payments remain gated.
+
 ## 2026-07-28 Story care-waypoint contrast boundary
 
 The fixed-light Story markers now have a source-protected constant dark

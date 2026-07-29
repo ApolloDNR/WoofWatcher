@@ -5080,6 +5080,32 @@ test("keeps the fixed-light premium plan boundary visible in dark mode", () => {
   );
 });
 
+test("keeps fixed-light premium console docks separated from artwork in dark mode", () => {
+  const premium = readAppFile("premium.tsx");
+  const woofGuide = readAppFile("woofguide.tsx");
+
+  assert.match(
+    premium,
+    /premiumValueDock,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"F4",\s*borderTopColor:\s*colors\.brandNavy\s*\+\s*"33"/,
+    "the fixed-light Plus value dock needs a constant dark artwork seam",
+  );
+  assert.match(
+    woofGuide,
+    /guideDock,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"F4",\s*borderTopColor:\s*colors\.brandNavy\s*\+\s*"33"/,
+    "the fixed-light WoofGuide dock needs a constant dark artwork seam",
+  );
+  assert.doesNotMatch(
+    premium,
+    /premiumValueDock,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"F4",\s*borderTopColor:\s*colors\.border/,
+    "the adaptive border can disappear between Plus artwork and its fixed-light dock",
+  );
+  assert.doesNotMatch(
+    woofGuide,
+    /guideDock,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"F4",\s*borderTopColor:\s*colors\.border/,
+    "the adaptive border can disappear between WoofGuide artwork and its fixed-light dock",
+  );
+});
+
 test("keeps the fixed-light Plans command-room art bounded in dark mode", () => {
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
 

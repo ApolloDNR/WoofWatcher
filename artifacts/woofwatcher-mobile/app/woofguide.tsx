@@ -421,7 +421,7 @@ export default function WoofGuideScreen() {
                       the floor so the dog read as levitating at wall height.
                       Now the scene breathes and the dog sits in the lamplit
                       floor pool. */}
-                  <View style={[s.guideDock, { backgroundColor: colors.ivory + "F4", borderTopColor: colors.border }]}>
+                  <View style={[s.guideDock, { backgroundColor: colors.ivory + "F4", borderTopColor: colors.brandNavy + "33" }]}>
                     <View style={[s.guideHud, { backgroundColor: colors.brandNavy + "DF", borderColor: colors.ivory + "44" }]}>
                       {guideHud.map((metric) => (
                         <View key={metric.label} style={s.guideHudCell}>

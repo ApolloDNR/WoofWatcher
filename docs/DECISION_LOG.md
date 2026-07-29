@@ -1,5 +1,18 @@
 # WoofWatcher Decision Log
 
+## 2026-07-29: Fixed-light console docks use constant artwork seams
+
+Decision: keep the Plus value and WoofGuide console docks ivory, but use
+`colors.brandNavy + "33"` for the structural seam beneath their painted rooms.
+
+Reason: the docks do not switch scheme with the surrounding route. An adaptive
+theme border can become too faint where fixed-light data chrome meets pale or
+variable artwork, while a constant translucent navy seam preserves the shared
+console anatomy in both themes.
+
+Boundary: this source/readiness contract does not replace native screenshots,
+device accessibility review, provider readiness, or Apollo visual approval.
+
 ## 2026-07-28: Fixed-light Story waypoints use constant boundaries
 
 Decision: keep Story Day Trail waypoint fills ivory, use

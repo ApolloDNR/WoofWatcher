@@ -204,7 +204,7 @@ function PremiumScreenBody() {
             {/* Data dock BELOW the painting (log/records/woofguide pattern):
                 the HUD and plan/CTA row used to overlay the art's floor,
                 cutting the dog's base so it floated mid-window. */}
-            <View style={[s.premiumValueDock, { backgroundColor: colors.ivory + "F4", borderTopColor: colors.border }]}>
+            <View style={[s.premiumValueDock, { backgroundColor: colors.ivory + "F4", borderTopColor: colors.brandNavy + "33" }]}>
               <View
                 style={[
                   s.premiumValueHud,

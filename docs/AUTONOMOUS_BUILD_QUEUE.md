@@ -1,5 +1,23 @@
 # Autonomous Build Queue
 
+## 2026-07-29 Fixed-light premium console dock boundaries
+
+- DONE: The Plus value console and WoofGuide guidance console keep their
+  intentionally ivory data docks while using a constant translucent
+  brand-navy seam beneath variable painted artwork.
+- DONE: Red-first mobile readiness failed against the former adaptive seams,
+  then passed after both source corrections.
+- DONE: Local verification passed mobile readiness `136/136`, care-domain
+  `157/157`, root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and
+  `git diff --check`. The broad partial-checkout suite passed `694/695` and
+  failed only on the known missing `@workspace/care-domain` package link in
+  `careCareer.test.ts`; JSON beta doctor source-backed checks passed while
+  local readiness remained truthfully `BLOCKED` on pnpm/Corepack and Expo
+  resolution.
+- NEXT: Run dependency-complete branch CI after the verified implementation
+  commit. Real route-named iOS/Android dark screenshots, device accessibility
+  review, provider evidence, and Apollo visual approval remain open.
+
 ## 2026-07-28 Story care-waypoint dark-mode boundary
 
 - DONE: Real-care waypoints on the Story Day Trail keep their intentionally
@@ -12,8 +30,10 @@
   `git diff --check`.
 - DONE: Dependency-complete branch CI proved implementation commit `177b1fe9`
   in WoofWatcher Verify run `30424562721`, job `90488066742`.
-- NEXT: Rerun branch CI after this proof-record commit. Real route-named
-  iOS/Android Story screenshots and Apollo visual approval remain open.
+- DONE: Final-tip WoofWatcher Verify run `30424705337`, job `90488518081`,
+  passed for proof-record commit `d29dc461`.
+- NEXT: Real route-named iOS/Android Story screenshots and Apollo visual
+  approval remain open.
 
 ## 2026-07-27 Fixed-light Records Dog ID label contrast
 

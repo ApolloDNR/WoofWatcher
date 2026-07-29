@@ -4802,3 +4802,20 @@ commit before treating the final branch tip as current.
 - Local proof: mobile readiness `134/134`; care-domain `157/157`; root TypeScript passed; PixelLab `ok=149 missing=0 invalid=0`; JSON doctor source-backed guards passed. The direct aggregate partial-checkout command still lacks local `express` and `@workspace/care-domain` package resolution, so final-tip dependency-complete CI is required.
 - Remaining truth boundary: native iOS/Android, provider, store-review, public-launch, signed-in wipe semantics, and Apollo approval evidence are still open.
 - Dependency-complete proof: `WoofWatcher Verify` run `30416292525`, job `90463439138`, passed at implementation merge commit `deee4166`; all workflow steps completed successfully.
+
+## 2026-07-29 Fixed-light premium console dock boundaries
+
+The Plus value console and WoofGuide guidance console retain intentionally
+ivory data docks below their variable painted rooms, but their structural top
+seams now use `colors.brandNavy + "33"` instead of the adaptive theme border.
+A red-first mobile-readiness contract failed against both former seams before
+the source correction, then passed `136/136`. Care-domain passed `157/157`,
+root TypeScript passed, PixelLab passed `ok=149 missing=0 invalid=0`, and `git
+diff --check` passed. The broad partial-checkout suite passed `694/695` and
+failed only on the known missing `@workspace/care-domain` package link in
+`careCareer.test.ts`; JSON mobile beta doctor source-backed checks passed while
+local readiness remained truthfully `BLOCKED` on pnpm/Corepack and Expo
+resolution. This is source-backed dark-mode hardening only: it does not enable
+checkout or live AI, prove provider configuration, replace route-named native
+screenshots or accessibility traversal, satisfy store review, launch publicly,
+or replace Apollo approval.
