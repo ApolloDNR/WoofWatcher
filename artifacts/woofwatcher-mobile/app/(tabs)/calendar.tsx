@@ -850,7 +850,7 @@ export default function CalendarScreen() {
     detail: responsibility.nextStep,
     icon: "heart",
     tone: responsibilityTone,
-    actionLabel: responsibilityIsCovered ? "Synced" : "Review",
+    actionLabel: responsibilityIsCovered ? "Covered" : "Review",
     onPress: () => {
       Haptics.selectionAsync();
       router.push("/more" as never);

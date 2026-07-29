@@ -2913,7 +2913,7 @@ export default function MoreScreen() {
                         )}
                       </View>
                       <Text style={[s.teamRole, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {person.role} - {person.needsInvite ? "Invite needed" : "Synced"}
+                        {person.role} - {person.needsInvite ? "Invite needed" : "Ready"}
                       </Text>
                     </View>
                     <View style={[s.logBadge, { backgroundColor: person.needsInvite ? colors.amber + "18" : colors.background }]}>
@@ -2958,7 +2958,7 @@ export default function MoreScreen() {
             </View>
             <View style={s.responsibilityMetrics}>
               {[
-                { label: "Synced", value: householdAccess.syncedMembers },
+                { label: "Ready", value: householdAccess.syncedMembers },
                 { label: "Invites", value: householdAccess.localOnlyCaregivers },
                 { label: "Routine-only", value: householdAccess.routineOnlyOwners },
               ].map((metric) => (
