@@ -11,8 +11,12 @@
   passed `695/696` and failed only on the known missing
   `@workspace/care-domain` link in `careCareer.test.ts`; the JSON doctor kept
   source guards passing while local pnpm/Expo readiness remained blocked.
-- NEXT: Run the strongest local verification and dependency-complete branch CI
-  before treating this slice as release proof.
+- DONE: Dependency-complete branch CI proved implementation/docs commit
+  `cc070cec` in WoofWatcher Verify run `30474936202`, job `90654188361`;
+  checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus
+  CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after the proof-record commit before treating
+  dependency proof as current for the final branch tip.
 - NEXT: Real route-named iOS/Android WoofGuide screenshots, device
   accessibility traversal, provider evidence, and Apollo visual approval
   remain open. Live AI remains gated and owner-reviewed.

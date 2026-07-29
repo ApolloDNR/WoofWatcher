@@ -14,6 +14,12 @@ Local verification passed care-domain `157/157`, root TypeScript, and PixelLab
 package link in `careCareer.test.ts`. The JSON doctor kept source-backed guards
 passing while local pnpm/Expo readiness remained truthfully blocked.
 
+Dependency-complete branch CI proved implementation/docs commit `cc070cec` in
+WoofWatcher Verify run `30474936202`, job `90654188361`. Checkout, pinned
+dependency install, JSON doctor, focused behavior tests, typecheck plus CI-safe
+builds, post steps, and Complete job all passed. Rerun after this proof-record
+commit before treating dependency proof as current for the final branch tip.
+
 This protects the non-diagnostic, owner-reviewed product boundary at the
 source level only. Live AI remains gated. Native iOS/Android screenshots,
 device accessibility traversal, structured provider evidence, store review,
