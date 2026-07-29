@@ -14,9 +14,14 @@
   `careCareer.test.ts`; JSON beta doctor source-backed checks passed while
   local readiness remained truthfully `BLOCKED` on pnpm/Corepack and Expo
   resolution.
+- DONE: Dependency-complete branch CI proved implementation commit `826c7b0f`
+  in WoofWatcher Verify run `30434900256`, job `90520248036`; checkout, pinned
+  dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds,
+  post steps, and Complete job all passed.
 - NEXT: Run dependency-complete branch CI after the verified implementation
-  commit. Real route-named iOS/Android dark screenshots, device accessibility
-  review, provider evidence, and Apollo visual approval remain open.
+  proof record. Real route-named iOS/Android dark screenshots, device
+  accessibility review, provider evidence, and Apollo visual approval remain
+  open.
 
 ## 2026-07-28 Story care-waypoint dark-mode boundary
 
