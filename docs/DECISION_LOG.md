@@ -1,5 +1,19 @@
 # WoofWatcher Decision Log
 
+## 2026-07-29: Fixed-light veterinary boundaries use constant dark ink
+
+Decision: keep WoofGuide's safety card intentionally ivory, but render its
+compact `Not veterinary advice` label with `colors.brandNavy` rather than the
+adaptive copper token.
+
+Reason: copper becomes pale in dark mode while the safety card remains fixed
+light. Constant navy preserves the most important non-diagnostic boundary and
+matches the existing owner-review value ink and card border.
+
+Boundary: this is source-backed contrast hardening only. It does not enable
+live AI, replace owner review, provide veterinary advice, or replace native
+screenshots, device accessibility review, provider proof, or Apollo approval.
+
 ## 2026-07-29: Fixed-light Records command-bubble labels use constant dark ink
 
 Decision: keep the Records command bubble intentionally light, but render its

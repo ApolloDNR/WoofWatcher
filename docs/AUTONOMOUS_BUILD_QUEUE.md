@@ -1,5 +1,22 @@
 # Autonomous Build Queue
 
+## 2026-07-29 WoofGuide veterinary-boundary label contrast
+
+- DONE: The fixed-light WoofGuide safety card now uses constant brand-navy ink
+  for its compact `Not veterinary advice` label instead of adaptive copper.
+- DONE: Red-first mobile readiness failed `136/137` on the former adaptive
+  token, then passed `137/137` after the minimal source correction.
+- DONE: Local verification passed care-domain `157/157`, root TypeScript, and
+  PixelLab `ok=149 missing=0 invalid=0`. The aggregate partial-checkout suite
+  passed `695/696` and failed only on the known missing
+  `@workspace/care-domain` link in `careCareer.test.ts`; the JSON doctor kept
+  source guards passing while local pnpm/Expo readiness remained blocked.
+- NEXT: Run the strongest local verification and dependency-complete branch CI
+  before treating this slice as release proof.
+- NEXT: Real route-named iOS/Android WoofGuide screenshots, device
+  accessibility traversal, provider evidence, and Apollo visual approval
+  remain open. Live AI remains gated and owner-reviewed.
+
 ## 2026-07-29 Records command-bubble kicker contrast
 
 - DONE: The fixed-light Records command bubble now uses constant brand-navy

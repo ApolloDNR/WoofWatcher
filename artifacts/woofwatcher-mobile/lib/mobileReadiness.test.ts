@@ -5100,6 +5100,16 @@ test("keeps the fixed-light WoofGuide safety boundary visible in dark mode", () 
   assert.match(woofGuide, /Drafts stay owner-reviewed/);
   assert.match(
     woofGuide,
+    /guideBoundaryLabel,\s*\{\s*color:\s*colors\.brandNavy/,
+    "the fixed-light veterinary safety label must keep constant dark ink in dark mode",
+  );
+  assert.doesNotMatch(
+    woofGuide,
+    /guideBoundaryLabel,\s*\{\s*color:\s*colors\.copper/,
+    "adaptive copper can become too pale on the fixed-light veterinary safety card",
+  );
+  assert.match(
+    woofGuide,
     /guideBoundaryCard,\s*\{\s*backgroundColor:\s*colors\.ivory\s*\+\s*"E8",\s*borderColor:\s*colors\.brandNavy\s*\+\s*"55"/,
     "the fixed-light WoofGuide safety card must keep a visible dark border in dark mode",
   );

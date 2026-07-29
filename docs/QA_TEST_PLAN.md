@@ -1,5 +1,15 @@
 # QA Test Plan
 
+## 2026-07-29 WoofGuide veterinary-boundary contrast QA
+
+- Red-first mobile readiness must reject adaptive copper for the fixed-light
+  `Not veterinary advice` label.
+- The same contract must require constant `colors.brandNavy` ink while
+  preserving the existing ivory safety card, dark boundary, and
+  `Drafts stay owner-reviewed` value.
+- Source coverage does not replace route-named native screenshots, device
+  screen-reader traversal, AI provider proof, or Apollo approval.
+
 ## 2026-07-28 Story care-waypoint contrast QA
 
 - Automated source contract: the ivory Day Trail waypoint uses

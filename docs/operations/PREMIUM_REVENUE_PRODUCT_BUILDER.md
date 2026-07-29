@@ -1,5 +1,24 @@
 # Premium Revenue Product Builder
 
+## 2026-07-29 WoofGuide veterinary-boundary label dark-mode contrast
+
+WoofGuide keeps its intentionally ivory safety card, but the compact
+`Not veterinary advice` label now uses constant brand-navy ink instead of
+adaptive copper. A red-first `mobileReadiness.test.ts` contract failed
+`136/137` against the former token and passed `137/137` after the minimal
+source correction.
+
+Local verification passed care-domain `157/157`, root TypeScript, and PixelLab
+`ok=149 missing=0 invalid=0`. The aggregate partial-checkout suite passed
+`695/696` and failed only on the known missing `@workspace/care-domain`
+package link in `careCareer.test.ts`. The JSON doctor kept source-backed guards
+passing while local pnpm/Expo readiness remained truthfully blocked.
+
+This protects the non-diagnostic, owner-reviewed product boundary at the
+source level only. Live AI remains gated. Native iOS/Android screenshots,
+device accessibility traversal, structured provider evidence, store review,
+public launch, and Apollo approval remain open.
+
 ## 2026-07-29 Records command-bubble kicker dark-mode contrast
 
 Records keeps its light speech bubble over the living credential room, but the

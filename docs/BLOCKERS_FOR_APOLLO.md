@@ -1,5 +1,13 @@
 # Blockers For Apollo
 
+## 2026-07-29 WoofGuide veterinary-boundary contrast
+
+The fixed-light WoofGuide safety card now has source-protected constant dark
+ink for its `Not veterinary advice` label. Still blocked: route-named native
+iOS/Android WoofGuide screenshots, device accessibility review, structured AI
+provider proof, store review, and Apollo visual approval. Live AI remains off,
+non-diagnostic, and owner-reviewed.
+
 ## 2026-07-29 Records command-bubble contrast boundary
 
 The fixed-light Records command bubble now has source-protected constant dark

@@ -1,5 +1,13 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-07-29 WoofGuide veterinary-boundary label contrast
+
+The fixed-light WoofGuide safety card uses constant brand-navy ink for the
+compact `Not veterinary advice` label. Mobile readiness rejects adaptive
+copper on that scheme-independent surface. Native iOS/Android visual and
+accessibility review remain open; live AI stays provider-gated, non-diagnostic,
+and owner-reviewed.
+
 ## 2026-07-28 Story Day Trail waypoint contrast
 
 The source gate now protects constant dark boundaries around the fixed-light
