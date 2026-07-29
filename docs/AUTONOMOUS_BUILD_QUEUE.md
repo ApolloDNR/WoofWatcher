@@ -1655,3 +1655,12 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
+## 2026-07-29 Avatar mood-badge contrast
+
+- DONE: inactive Avatar Studio mood badges keep their ivory surface but now
+  use constant brand-navy ink and a constant dark edge in dark mode.
+- VERIFIED: red-first mobile readiness failed on the adaptive tokens, then
+  passed `139/139` after the correction.
+- NEXT: capture route-named iOS/Android Avatar Studio proof for dark mode,
+  phone-size proportions, mood-state selection, sprite timing, accessibility
+  traversal, and Apollo visual approval.

@@ -1955,7 +1955,7 @@ export default function PortraitScreen() {
                               : colors.ivory,
                             borderColor: chipIsLive
                               ? colors.primary
-                              : colors.border,
+                              : colors.brandNavy + "22",
                           },
                         ]}
                       >
@@ -1965,7 +1965,7 @@ export default function PortraitScreen() {
                             {
                               color: chipIsLive
                                 ? colors.primaryForeground
-                                : colors.mutedForeground,
+                                : colors.brandNavy,
                               fontFamily: "Inter_700Bold",
                             },
                           ]}

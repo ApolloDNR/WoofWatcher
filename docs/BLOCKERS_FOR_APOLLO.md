@@ -452,3 +452,11 @@ The fixed-light Plus recommended-plan label now has source-protected constant
 dark ink. Real route-named iOS/Android Plus screenshots, device accessibility
 review, payments/provider evidence, store review, and Apollo approval remain
 blocked. Checkout remains disabled.
+
+## 2026-07-29 Avatar mood-badge contrast boundary
+
+Inactive Avatar Studio mood badges now have source-protected constant dark ink
+and edges on their fixed-light ivory surface. Real route-named iOS/Android
+Avatar Studio screenshots, phone-size proportions, mood selection and sprite
+timing, native accessibility traversal, and Apollo visual approval remain
+blocked.

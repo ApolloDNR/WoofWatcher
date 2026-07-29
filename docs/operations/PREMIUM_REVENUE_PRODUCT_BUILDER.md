@@ -4919,3 +4919,13 @@ passed for implementation commit `e7253714`; checkout, pinned pnpm/Node setup,
 dependency install, JSON doctor, focused behavior tests, typecheck plus
 CI-safe builds, post steps, and Complete job all passed. Rerun after this
 proof-record commit before treating the final branch tip as current.
+
+## 2026-07-29 Avatar mood-badge contrast
+
+Avatar Studio keeps inactive mood badges intentionally ivory, and their labels
+and edges now use constant brand-navy instead of adaptive muted/border tokens.
+A red-first mobile-readiness contract failed on the former tokens and passed
+`139/139` after the source correction. Native iOS/Android screenshots,
+phone-size sprite review, mood-state interaction, accessibility traversal, and
+Apollo visual approval remain gated. Dependency-complete branch CI is required
+before the pushed tip is treated as fully verified.

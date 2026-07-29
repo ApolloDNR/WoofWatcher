@@ -459,3 +459,10 @@ proof, public launch, or Apollo sign-off.
   ink and has red/green readiness coverage.
 - OPEN, native/provider: iOS/Android dark screenshots, accessibility review,
   payments proof, store review, and Apollo approval. Checkout remains gated.
+
+## 2026-07-29 Avatar mood-badge contrast
+
+- PASS, source: inactive fixed-light mood badges use constant brand-navy ink
+  and edges with red/green readiness coverage.
+- OPEN, native: iOS/Android dark screenshots, mood-state interaction,
+  accessibility traversal, phone-size sprite review, and Apollo approval.

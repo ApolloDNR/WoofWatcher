@@ -2650,3 +2650,10 @@ Source readiness now rejects adaptive copper on the fixed-light
 `Recommended` label. On native iOS and Android, verify the plan card in dark
 mode, Dynamic Type, screen-reader traversal, and phone-size layouts before
 approving the surface. Do not enable checkout from visual proof.
+
+## 2026-07-29 Avatar mood-badge contrast QA
+
+Source readiness now rejects adaptive muted ink or borders on inactive ivory
+mood badges. On native iOS and Android, verify every mood badge in dark mode,
+selected/inactive transitions, Dynamic Type, screen-reader traversal, and
+phone-size layouts before approving Avatar Studio.

@@ -724,6 +724,26 @@ test("keeps fixed-light Avatar Studio emote icons bounded in dark mode", () => {
   );
 });
 
+test("keeps fixed-light Avatar Studio mood badges readable in dark mode", () => {
+  const avatarStudio = readAppFile("portrait.tsx");
+
+  assert.match(
+    avatarStudio,
+    /s\.moodLiveBadge,[\s\S]*?backgroundColor:\s*chipIsLive\s*\?\s*colors\.primary\s*:\s*colors\.ivory,[\s\S]*?borderColor:\s*chipIsLive\s*\?\s*colors\.primary\s*:\s*colors\.brandNavy\s*\+\s*"22"/,
+    "the fixed-light inactive mood badge needs a constant dark boundary",
+  );
+  assert.match(
+    avatarStudio,
+    /s\.moodLiveBadgeText,[\s\S]*?color:\s*chipIsLive\s*\?\s*colors\.primaryForeground\s*:\s*colors\.brandNavy/,
+    "the fixed-light inactive mood badge needs constant dark ink",
+  );
+  assert.doesNotMatch(
+    avatarStudio,
+    /backgroundColor:\s*chipIsLive\s*\?\s*colors\.primary\s*:\s*colors\.ivory,[\s\S]*?borderColor:\s*chipIsLive\s*\?\s*colors\.primary\s*:\s*colors\.border/,
+    "the adaptive border becomes too faint around the fixed-light inactive mood badge",
+  );
+});
+
 test("keeps the fixed-light Avatar Studio speech bubble readable in dark mode", () => {
   const avatarStudio = readAppFile("portrait.tsx");
 

@@ -2879,3 +2879,13 @@ or Apollo visual approval.
 - Boundary: checkout remains disabled; this is source-level contrast
   hardening, not native screenshots, payments configuration, store review,
   public launch, or Apollo approval.
+
+## 2026-07-29 - Fixed-light Avatar mood badges use constant dark chrome
+
+- Decision: keep inactive Avatar Studio mood badges ivory in both themes and
+  use constant `brandNavy` for their label plus `brandNavy + "22"` for their
+  edge.
+- Why: adaptive dark-theme muted ink and borders become too pale against a
+  scheme-independent ivory badge.
+- Boundary: this is source-level contrast hardening, not native Avatar Studio
+  proof, sprite approval, accessibility review, or Apollo sign-off.
