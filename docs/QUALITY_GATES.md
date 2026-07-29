@@ -4,7 +4,9 @@
 
 The fixed-light Story Day Trail waypoint now uses a constant translucent
 brand-navy boundary instead of an adaptive event tone. Mobile readiness guards
-the contract; native visual proof remains a separate release gate.
+the contract. Dependency-complete WoofWatcher Verify run `30424562721`, job
+`90488066742`, passed for implementation commit `177b1fe9`; native visual proof
+remains a separate release gate.
 
 ## Gate 1: Dog-First Product Clarity
 

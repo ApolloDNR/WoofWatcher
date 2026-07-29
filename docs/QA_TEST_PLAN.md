@@ -4,6 +4,8 @@
 
 - Automated source contract: the ivory Day Trail waypoint uses
   `colors.brandNavy + "33"` and rejects `entryTypeColor(...)` as its border.
+- Dependency-complete proof: WoofWatcher Verify run `30424562721`, job
+  `90488066742`, passed for implementation commit `177b1fe9`.
 - Manual remainder: capture populated Story Day Trail screenshots in native
   iOS and Android dark mode and confirm markers remain distinct across the
   painted map without obscuring their care-type icons.

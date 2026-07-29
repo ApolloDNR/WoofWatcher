@@ -10,8 +10,10 @@
 - DONE: Local verification passed mobile readiness `135/135`, care-domain
   `157/157`, root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and
   `git diff --check`.
-- NEXT: Run dependency-complete branch CI. Real route-named iOS/Android Story
-  screenshots and Apollo visual approval remain open.
+- DONE: Dependency-complete branch CI proved implementation commit `177b1fe9`
+  in WoofWatcher Verify run `30424562721`, job `90488066742`.
+- NEXT: Rerun branch CI after this proof-record commit. Real route-named
+  iOS/Android Story screenshots and Apollo visual approval remain open.
 
 ## 2026-07-27 Fixed-light Records Dog ID label contrast
 
