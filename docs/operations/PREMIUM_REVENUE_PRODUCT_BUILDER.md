@@ -4780,3 +4780,4 @@ commit before treating the final branch tip as current.
 - Conflict resolution kept the mainline Dog ID portrait and Quick Care sprite-layout repair, while retaining constant fixed-light boundaries and provider-evidence inputs.
 - Local proof: mobile readiness `134/134`; care-domain `157/157`; root TypeScript passed; PixelLab `ok=149 missing=0 invalid=0`; JSON doctor source-backed guards passed. The direct aggregate partial-checkout command still lacks local `express` and `@workspace/care-domain` package resolution, so final-tip dependency-complete CI is required.
 - Remaining truth boundary: native iOS/Android, provider, store-review, public-launch, signed-in wipe semantics, and Apollo approval evidence are still open.
+- Dependency-complete proof: `WoofWatcher Verify` run `30416292525`, job `90463439138`, passed at implementation merge commit `deee4166`; all workflow steps completed successfully.
