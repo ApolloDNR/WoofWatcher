@@ -1520,8 +1520,12 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   `@workspace/care-domain` package link in `careCareer.test.ts`; JSON doctor
   kept all source-backed guards passing while remaining truthfully blocked on
   local pnpm/Corepack and Expo resolution.
-- NEXT: Push the verified slice and require dependency-complete branch CI.
-  Real route-named native Plus
+- DONE: Dependency-complete `WoofWatcher Verify` run `30488007195`, job
+  `90698451579`, passed for implementation commit `e7253714`; checkout,
+  pinned dependency setup/install, JSON doctor, focused behavior tests,
+  typecheck plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit, then continue real
+  route-named native Plus
   screenshots, device accessibility review, payments/provider proof, store
   review, and Apollo approval remain open; checkout stays gated.
 
