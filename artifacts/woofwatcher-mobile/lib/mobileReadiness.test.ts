@@ -779,6 +779,21 @@ test("keeps the fixed-light living care-twin location chip bounded in dark mode"
   );
 });
 
+test("keeps fixed-light Story care waypoints bounded in dark mode", () => {
+  const dayTrail = readAppFile("../components/DayTrailScene.tsx");
+
+  assert.match(
+    dayTrail,
+    /styles\.waypoint,[\s\S]*?backgroundColor:\s*colors\.ivory,\s*borderColor:\s*colors\.brandNavy\s*\+\s*"33"/,
+    "the fixed-light Story care waypoint needs a constant dark boundary",
+  );
+  assert.doesNotMatch(
+    dayTrail,
+    /styles\.waypoint,[\s\S]*?borderColor:\s*entryTypeColor\(stop\.type,\s*colors\)/,
+    "adaptive event tones can disappear around fixed-light Story care waypoints",
+  );
+});
+
 test("keeps fixed-light Quick Care and Records HUD labels readable in dark mode", () => {
   const quickCare = readAppFile("(tabs)/log.tsx");
   const records = readAppFile("(tabs)/records.tsx");

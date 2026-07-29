@@ -1,5 +1,11 @@
 # Quality Gates
 
+## 2026-07-28 Story care-waypoint contrast source gate
+
+The fixed-light Story Day Trail waypoint now uses a constant translucent
+brand-navy boundary instead of an adaptive event tone. Mobile readiness guards
+the contract; native visual proof remains a separate release gate.
+
 ## Gate 1: Dog-First Product Clarity
 
 Passing means WoofWatcher is clearly a dog-care operating system, not a generic pet tracker. Dog profile, routines, logs, household sync, health watch, records, reports, and WoofGuide must all connect.

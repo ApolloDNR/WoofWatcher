@@ -1,5 +1,18 @@
 # Autonomous Build Queue
 
+## 2026-07-28 Story care-waypoint dark-mode boundary
+
+- DONE: Real-care waypoints on the Story Day Trail keep their intentionally
+  ivory marker surface while using a constant translucent brand-navy boundary;
+  adaptive event tones remain represented by each care-type icon.
+- DONE: Red-first mobile readiness failed against the former adaptive waypoint
+  border, then passed after the source correction.
+- DONE: Local verification passed mobile readiness `135/135`, care-domain
+  `157/157`, root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and
+  `git diff --check`.
+- NEXT: Run dependency-complete branch CI. Real route-named iOS/Android Story
+  screenshots and Apollo visual approval remain open.
+
 ## 2026-07-27 Fixed-light Records Dog ID label contrast
 
 - DONE: The fixed-ivory Records credential plate now uses constant brand-navy

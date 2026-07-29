@@ -1,5 +1,11 @@
 # WoofWatcher Ultimate Release Plan
 
+## 2026-07-28 Story care-waypoint contrast status
+
+Source-level dark-mode hardening now keeps real-care markers visibly bounded on
+the Story Day Trail. This does not replace route-named native Story proof,
+device accessibility review, or Apollo visual approval.
+
 ## What The App Is
 
 WoofWatcher is a premium mobile-first dog care operating system for owners, households, caregivers, sitters, trainers, walkers, and vets. It coordinates a dog's daily care through shared routines, quick logging, health watch, records, handoffs, report exports, and WoofGuide AI assistance.

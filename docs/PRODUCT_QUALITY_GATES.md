@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-07-28 Story Day Trail waypoint contrast
+
+The source gate now protects constant dark boundaries around the fixed-light
+real-care waypoints. Native iOS/Android visual review remains open.
+
 ## 2026-07-25 Dark-Scheme Shared Chrome
 
 The compact shell, desktop preview frame/backdrop, and Fast Log modal now

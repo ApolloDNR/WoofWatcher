@@ -1,5 +1,15 @@
 # WoofWatcher Decision Log
 
+## 2026-07-28: Fixed-light Story waypoints use constant boundaries
+
+Decision: keep Story Day Trail waypoint fills ivory, use
+`colors.brandNavy + "33"` for their structural border, and retain the real
+care-event distinction in `EntryTypeIcon`.
+
+Reason: dark-theme event tones can become pale against the scheme-independent
+ivory marker and painted map. A constant boundary preserves legibility without
+inventing care evidence or changing waypoint behavior.
+
 ## 2026-07-27: Fixed-light Records Dog ID label uses constant ink
 
 - Decision: use `brandNavy` for the `WOOFWATCHER DOG ID` label on the

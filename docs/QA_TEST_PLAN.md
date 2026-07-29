@@ -1,5 +1,13 @@
 # QA Test Plan
 
+## 2026-07-28 Story care-waypoint contrast QA
+
+- Automated source contract: the ivory Day Trail waypoint uses
+  `colors.brandNavy + "33"` and rejects `entryTypeColor(...)` as its border.
+- Manual remainder: capture populated Story Day Trail screenshots in native
+  iOS and Android dark mode and confirm markers remain distinct across the
+  painted map without obscuring their care-type icons.
+
 ## 2026-07-25 Dark-Scheme Shell Contract
 
 - Mobile readiness now requires the compact web shell, desktop preview

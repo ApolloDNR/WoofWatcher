@@ -3,7 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View, type LayoutChangeEvent, type 
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { DayPhaseWash } from "@/components/DayPhaseWash";
-import { EntryTypeIcon, entryTypeColor } from "@/components/EntryTypeIcon";
+import { EntryTypeIcon } from "@/components/EntryTypeIcon";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { useColors } from "@/hooks/useColors";
 import { hapticSelect } from "@/lib/haptics";
@@ -162,7 +162,7 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
                   styles.waypoint,
                   {
                     backgroundColor: colors.ivory,
-                    borderColor: entryTypeColor(stop.type, colors),
+                    borderColor: colors.brandNavy + "33",
                     transform: [{ scale: pressed ? 0.9 : 1 }],
                   },
                 ]}

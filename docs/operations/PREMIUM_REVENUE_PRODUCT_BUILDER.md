@@ -1,5 +1,20 @@
 # Premium Revenue Product Builder
 
+## 2026-07-28 Story care-waypoint dark-mode boundary
+
+The Story Day Trail renders only real logged-care stops, and its fixed-light
+ivory waypoint markers now use `colors.brandNavy + "33"` for a stable boundary
+over the painted map. The care-type icon still carries the event identity.
+Red-first mobile readiness guards both the new boundary and removal of the
+adaptive event-tone border. Native route screenshots and Apollo approval remain
+open; this source gate does not claim visual certification.
+
+Local verification passed mobile readiness `135/135`, care-domain `157/157`,
+root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and `git diff --check`.
+The JSON beta doctor kept its source-backed checks passing while remaining
+truthfully blocked on exact pnpm/Corepack availability and local Expo
+resolution.
+
 ## 2026-07-27 Records Dog ID label dark-mode contrast
 
 The source-level dark-mode audit found that the fixed-ivory Records credential

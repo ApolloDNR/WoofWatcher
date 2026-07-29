@@ -1,5 +1,11 @@
 # Blockers For Apollo
 
+## 2026-07-28 Story care-waypoint contrast boundary
+
+The fixed-light Story markers now have a source-protected constant dark
+boundary. Still blocked: route-named native iOS/Android Story screenshots,
+device accessibility review, and Apollo visual approval.
+
 ## 2026-07-25 Dark-Mode Visual Proof
 
 - Shared shell backgrounds are theme-aware and protected by a red/green
