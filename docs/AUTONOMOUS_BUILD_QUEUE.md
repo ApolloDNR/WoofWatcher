@@ -1,5 +1,20 @@
 # Autonomous Build Queue
 
+## 2026-07-29 Records command-bubble kicker contrast
+
+- DONE: The fixed-light Records command bubble now uses constant brand-navy
+  kicker ink instead of adaptive sage, preserving legibility in dark mode.
+- DONE: Red-first mobile readiness failed on the former adaptive token, then
+  passed `137/137` after the minimal source correction.
+- DONE: Local verification passed care-domain `157/157`, root TypeScript,
+  PixelLab `ok=149 missing=0 invalid=0`, and `git diff --check`. The aggregate
+  partial-checkout suite passed `695/696` and failed only on the known missing
+  `@workspace/care-domain` link in `careCareer.test.ts`; the JSON doctor kept
+  `84` source guards passing while local pnpm/Expo readiness remained blocked.
+- NEXT: Real route-named iOS/Android Records screenshots, native accessibility
+  traversal, Records local-file and PDF/PNG share/reopen proof, and Apollo
+  visual approval remain open.
+
 ## 2026-07-29 Fixed-light premium console dock boundaries
 
 - DONE: The Plus value console and WoofGuide guidance console keep their

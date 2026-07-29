@@ -1,5 +1,12 @@
 # Blockers For Apollo
 
+## 2026-07-29 Records command-bubble contrast boundary
+
+The fixed-light Records command bubble now has source-protected constant dark
+kicker ink. Still blocked: route-named native iOS/Android Records screenshots,
+device accessibility review, Records local-file and PDF/PNG share/reopen proof,
+provider storage evidence, and Apollo visual approval.
+
 ## 2026-07-29 Premium console dock contrast boundary
 
 The fixed-light Plus and WoofGuide console docks now have source-protected

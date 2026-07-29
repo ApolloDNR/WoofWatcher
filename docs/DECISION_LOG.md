@@ -1,5 +1,17 @@
 # WoofWatcher Decision Log
 
+## 2026-07-29: Fixed-light Records command-bubble labels use constant dark ink
+
+Decision: keep the Records command bubble intentionally light, but render its
+small kicker with `colors.brandNavy` rather than the adaptive sage token.
+
+Reason: sage becomes pale in dark mode while the bubble remains fixed light,
+weakening a compact hierarchy label over the credential room.
+
+Boundary: this is source-backed contrast hardening only. It does not replace
+route-named native screenshots, device accessibility review, local-file or
+generated-artifact share/reopen proof, provider storage, or Apollo approval.
+
 ## 2026-07-29: Fixed-light console docks use constant artwork seams
 
 Decision: keep the Plus value and WoofGuide console docks ivory, but use

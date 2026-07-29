@@ -1,5 +1,23 @@
 # Premium Revenue Product Builder
 
+## 2026-07-29 Records command-bubble kicker dark-mode contrast
+
+Records keeps its light speech bubble over the living credential room, but the
+small `Records Command Vault` kicker now uses constant brand-navy ink instead
+of adaptive sage. A red-first `mobileReadiness.test.ts` contract failed on the
+former token and passed `137/137` after the source correction.
+
+Local proof also passed care-domain `157/157`, root TypeScript, PixelLab
+`ok=149 missing=0 invalid=0`, and `git diff --check`. The aggregate
+partial-checkout suite passed `695/696` and failed only on the known missing
+`@workspace/care-domain` package link in `careCareer.test.ts`. The JSON doctor
+kept `84` source-backed checks passing while local pnpm/Expo readiness remained
+truthfully blocked.
+
+This slice proves source-level contrast only. Native iOS/Android screenshots,
+screen-reader traversal, Records local-file and PDF/PNG share/reopen proof,
+provider storage, store review, public launch, and Apollo approval remain open.
+
 ## 2026-07-28 Story care-waypoint dark-mode boundary
 
 The Story Day Trail renders only real logged-care stops, and its fixed-light

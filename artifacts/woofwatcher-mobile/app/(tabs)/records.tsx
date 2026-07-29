@@ -1077,7 +1077,7 @@ export default function RecordsScreen() {
               <View style={s.recordsCredentialStageShade} />
               <View style={s.recordsCredentialStageTop}>
                 <View style={s.recordsCredentialBubble}>
-                  <Text style={[s.recordsCredentialKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                  <Text style={[s.recordsCredentialKicker, { color: colors.brandNavy, fontFamily: "Inter_700Bold" }]}>
                     Records Command Vault
                   </Text>
                   {/* brandNavy: constant ink for the fixed-light bubble in both themes

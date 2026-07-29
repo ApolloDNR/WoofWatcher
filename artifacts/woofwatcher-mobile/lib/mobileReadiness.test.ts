@@ -840,6 +840,21 @@ test("keeps fixed-light Quick Care and Records HUD labels readable in dark mode"
   );
 });
 
+test("keeps the fixed-light Records command bubble kicker readable in dark mode", () => {
+  const records = readAppFile("(tabs)/records.tsx");
+
+  assert.match(
+    records,
+    /s\.recordsCredentialKicker,\s*\{\s*color:\s*colors\.brandNavy/,
+    "the fixed-light Records command bubble needs constant dark kicker ink",
+  );
+  assert.doesNotMatch(
+    records,
+    /s\.recordsCredentialKicker,\s*\{\s*color:\s*colors\.sage/,
+    "adaptive sage becomes too light against the scheme-independent Records command bubble",
+  );
+});
+
 test("keeps the fixed-light More profile edit control visible in dark mode", () => {
   const more = readAppFile("(tabs)/more.tsx");
 
