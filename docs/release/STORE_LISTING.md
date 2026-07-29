@@ -88,14 +88,14 @@ dog care,pet care,dog log,puppy,dog routine,pet journal,dog health diary,potty t
 - User-generated content shared with others: No. Users write private notes on their own device; sharing happens only through the OS share sheet at the user's initiative, and the app hosts no content.
 - Ads: none.
 - In-app purchases: none in v1.
-- Location sharing: none (the app does not request location permission in v1).
+- Location: the app requests foreground ("when in use") location only when the owner starts a walk, to draw an on-device trail map of that walk. The route is saved in the local care log and is never transmitted or shared. Walk logging still works if permission is denied. Location is never shared with anyone.
 - Unrestricted internet access: the app does not browse the web or load remote content in v1.
 
 ## Apple privacy nutrition label
 
 Answer: **Data Not Collected** (all categories).
 
-Justification to keep on file for App Review: WoofWatcher v1 has no server component, no account system, no analytics/ads/crash SDKs, and makes no network transmission of user data. All care data is stored locally on the device (AsyncStorage). Photos, when attached, remain on-device. Data leaves the device only when the user explicitly invokes the OS share sheet, which is user-initiated sharing, not developer collection. Therefore no data types are "collected" as Apple defines the term (transmitted off device to the developer or third parties).
+Justification to keep on file for App Review: WoofWatcher v1 has no server component, no account system, no analytics/ads/crash SDKs, and makes no network transmission of user data. All care data is stored locally on the device (AsyncStorage). Photos, when attached, remain on-device. Walk routes recorded via foreground location are likewise saved only in the local care log and are never transmitted off the device. Data leaves the device only when the user explicitly invokes the OS share sheet, which is user-initiated sharing, not developer collection. Therefore no data types are "collected" as Apple defines the term (transmitted off device to the developer or third parties) — including location, which is used solely to render an on-device walk map and never leaves the device.
 
 - Data used to track you: none.
 - Data linked to you: none.
@@ -115,6 +115,7 @@ Justification to keep on file for App Review: WoofWatcher v1 has no server compo
 - The app requires NO login. It opens directly to the home screen with sample/local data; reviewers can use every feature immediately. There are no demo credentials because there are no accounts.
 - All data is stored locally on the device. The app makes no network calls with user data; there is no server component in this release.
 - Camera and photo library permissions are OPTIONAL and requested only when the reviewer chooses to attach a photo (avatar, care log, or record). The app is fully functional if permission is denied. Permission strings are declared in the app's Info.plist.
+- Location permission is OPTIONAL and foreground-only ("when in use"). It is requested only when the reviewer starts a walk, and is used solely to draw an on-device trail map of that walk; the route is saved in the local care log and never transmitted. Walk logging works normally if location is denied. No background location is used.
 - Health features (Health Watch / Bile Watch) record owner observations only. The app displays non-diagnostic language throughout and directs users to a veterinarian; it makes no diagnosis or treatment claims.
 - Some screens reference future provider-backed capabilities (sync, notifications, AI); in this build they are visibly gated as "setup needed" and non-functional by design, not broken. No purchase is offered anywhere.
 - To see the core flow: open Today (home), log a meal or potty break from the Log tab, then view Plan, Pack, and Story.

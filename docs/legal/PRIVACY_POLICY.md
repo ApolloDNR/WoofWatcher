@@ -49,7 +49,7 @@ You do not need an account to use WoofWatcher, and this version of the app does 
 
 If we ever introduce optional accounts, cloud sync, or any feature that sends data off your device, we will update this policy first, explain exactly what would be collected and why, and make any such feature opt-in. Your local-only use of the app will not silently change.
 
-## 5. Camera and photo library access
+## 5. Camera, photo library, and location access
 
 WoofWatcher can use your device's camera and photo library, but only when you choose to attach a photo — for example, capturing a photo for your dog's avatar, a care log, or a record. Specifically:
 
@@ -57,7 +57,13 @@ WoofWatcher can use your device's camera and photo library, but only when you ch
 - The app asks for permission only at the moment you initiate a photo action, using the standard iOS and Android permission prompts.
 - Photos you take or select stay on your device with the rest of your data. They are not uploaded anywhere by the app.
 
-You can revoke camera or photo permissions at any time in your device settings; the app will keep working without them.
+WoofWatcher can also use your device's location, but only while you are recording a walk, to draw a map of that walk's route. Specifically:
+
+- Access is optional and foreground-only ("when in use"). The app never uses your location in the background, and walk logging works normally if you decline.
+- The app asks for location permission only at the moment you start recording a walk, using the standard iOS and Android permission prompts.
+- The walk route is saved with the rest of your care data on your device. It is never transmitted to us or anyone else, and it is used only to draw the on-device walk map.
+
+You can revoke camera, photo, or location permissions at any time in your device settings; the app will keep working without them.
 
 ## 6. Sharing and exporting: always your choice
 
