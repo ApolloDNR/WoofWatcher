@@ -4841,3 +4841,9 @@ remained truthfully `BLOCKED` on pnpm/Corepack and Expo resolution. This
 protects source-level dark-mode contrast only; native iOS/Android Auth/Setup
 screenshots, device accessibility traversal, Clerk/provider proof, store
 review, public launch, and Apollo approval remain required.
+
+Dependency-complete branch CI proved implementation commit `da7c8eb8` in
+`WoofWatcher Verify` run `30446919725`, job `90559454933`; checkout, pinned
+dependency setup/install, JSON mobile beta doctor, focused behavior tests,
+typecheck plus CI-safe builds, post steps, and Complete job all passed. Rerun
+after this proof-record commit before treating the final branch tip as current.
