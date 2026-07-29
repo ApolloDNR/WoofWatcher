@@ -34,6 +34,19 @@ export function WebDialogHost() {
     action();
   }, []);
 
+  // Escape dismisses like every native web dialog: cancel when the dialog
+  // has a cancel path, otherwise acknowledge (OK).
+  useEffect(() => {
+    if (Platform.OS !== "web" || !current || typeof document === "undefined") return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeWith(current.cancelLabel != null ? current.onCancel : current.onConfirm);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [closeWith, current]);
+
   if (Platform.OS !== "web" || !current) return null;
 
   const confirmTone = current.destructive ? colors.rose : colors.primary;

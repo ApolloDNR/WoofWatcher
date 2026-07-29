@@ -17,6 +17,7 @@ import Animated, {
   cancelAnimation,
   interpolate,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withDelay,
   withRepeat,
@@ -623,6 +624,7 @@ export function LivingPhoenixRoom({
   const zoneY = useSharedValue(zone.y);
   const zoneScale = useSharedValue(zone.scale);
   const reactionProgress = useSharedValue(0);
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     zoneX.value = withSpring(zone.x, { damping: 17, stiffness: 72 });
@@ -632,6 +634,10 @@ export function LivingPhoenixRoom({
 
   useEffect(() => {
     breath.value = 0;
+    walkCycle.value = 0;
+    // Reduce Motion: hold a calm, still pose instead of the perpetual
+    // breathing / walk-cycle loops.
+    if (reduced) return;
     breath.value = withRepeat(
       withTiming(1, {
         duration: plan.paceMs,
@@ -641,7 +647,6 @@ export function LivingPhoenixRoom({
       true,
     );
 
-    walkCycle.value = 0;
     walkCycle.value = withRepeat(
       withTiming(1, {
         duration: Math.max(760, Math.round(plan.paceMs * 0.62)),
@@ -650,15 +655,18 @@ export function LivingPhoenixRoom({
       -1,
       false,
     );
-  }, [breath, plan.animation, plan.paceMs, walkCycle]);
+  }, [breath, plan.animation, plan.paceMs, walkCycle, reduced]);
 
   useEffect(() => {
+    shimmer.value = 0;
+    // Reduce Motion: no ambient light shimmer loop.
+    if (reduced) return;
     shimmer.value = withRepeat(
       withTiming(1, { duration: 3200, easing: Easing.inOut(Easing.sin) }),
       -1,
       true,
     );
-  }, [shimmer]);
+  }, [shimmer, reduced]);
 
   useEffect(() => {
     if (!reaction) return;
@@ -725,6 +733,8 @@ export function LivingPhoenixRoom({
     // the event settles so eat/drink/celebrate plays unbroken instead of
     // flip-flopping against idle strips every scheduler tick.
     if (careEventActive) return;
+    // Reduce Motion: no periodic ambient pose changes - hold the idle pose.
+    if (reduced) return;
 
     const shortestCadence = choreography.ambientCadenceMs ?? 2600;
     const id = setInterval(
@@ -757,6 +767,7 @@ export function LivingPhoenixRoom({
     choreography.ambientCadenceMs,
     plan.scenePhase,
     plan.spriteAction,
+    reduced,
   ]);
 
   const isWalking = plan.animation === "walk";
@@ -1027,7 +1038,11 @@ export function LivingPhoenixRoom({
         </View>
       ) : null}
 
-      {layeredStageReady && !roamActive ? (
+      {/* The stationary rig also covers the roam gap: if roamActive flips
+          while roamPlan/stageSize momentarily reset (a welcome-card
+          collapse re-layout does this), the roaming rig renders nothing
+          and the dog blinked out of the room entirely. */}
+      {layeredStageReady && (!roamActive || !roamPlan || !stageSize) ? (
         <Animated.View
           pointerEvents="none"
           entering={FadeIn.duration(180)}
@@ -1047,7 +1062,7 @@ export function LivingPhoenixRoom({
           <Animated.View
             style={[
               styles.spriteGroundShadow,
-              { backgroundColor: theme.glow },
+              { backgroundColor: "rgba(8,20,36,0.55)" },
               spriteShadowStyle,
             ]}
           />
@@ -1105,7 +1120,7 @@ export function LivingPhoenixRoom({
         </Animated.View>
       ) : null}
 
-      {useFallbackAvatarLayer && !roamActive ? (
+      {useFallbackAvatarLayer && (!roamActive || !roamPlan || !stageSize) ? (
         <Animated.View
           pointerEvents="none"
           entering={FadeIn.duration(180)}
@@ -1125,7 +1140,7 @@ export function LivingPhoenixRoom({
           <Animated.View
             style={[
               styles.spriteGroundShadow,
-              { backgroundColor: theme.glow },
+              { backgroundColor: "rgba(8,20,36,0.55)" },
               spriteShadowStyle,
             ]}
           />
@@ -1594,6 +1609,9 @@ function RoamingTwinRig({
   const [petBurstId, setPetBurstId] = useState<number | null>(null);
   const petBurstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const paused = Boolean(overrideAction);
+  // Reduce Motion: freeze the roam - the twin holds its anchor instead of
+  // walking the room (and the walk-bob below stays settled).
+  const reduced = useReducedMotion();
 
   useEffect(
     () => () => {
@@ -1643,7 +1661,7 @@ function RoamingTwinRig({
   }, [depth, plan, stageHeight, stageWidth, xPx, yPx]);
 
   useEffect(() => {
-    if (paused) {
+    if (paused || reduced) {
       cancelAnimation(xPx);
       cancelAnimation(yPx);
       cancelAnimation(depth);
@@ -1682,10 +1700,10 @@ function RoamingTwinRig({
       setLegIndex((index) => (index + 1) % plan.legs.length);
     }, leg.durationMs);
     return () => clearTimeout(timer);
-  }, [depth, legIndex, paused, plan, stageHeight, stageWidth, xPx, yPx]);
+  }, [depth, legIndex, paused, plan, reduced, stageHeight, stageWidth, xPx, yPx]);
 
   useEffect(() => {
-    if (moving && !paused) {
+    if (moving && !paused && !reduced) {
       walkBob.value = 0;
       walkBob.value = withRepeat(
         withTiming(1, {
@@ -1699,7 +1717,7 @@ function RoamingTwinRig({
     }
     cancelAnimation(walkBob);
     walkBob.value = withTiming(0, { duration: 220 });
-  }, [moving, paused, walkBob]);
+  }, [moving, paused, reduced, walkBob]);
 
   const activeAction: CareTwinSpriteAction =
     overrideAction ?? (moving ? "walk-loop" : dwellAction);
@@ -1780,7 +1798,7 @@ function RoamingTwinRig({
         pointerEvents="none"
         style={[
           styles.spriteGroundShadow,
-          { backgroundColor: glowColor },
+          { backgroundColor: "rgba(8,20,36,0.55)" },
           shadowStyle,
         ]}
       />

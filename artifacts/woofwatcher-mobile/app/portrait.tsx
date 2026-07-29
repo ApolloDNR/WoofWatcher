@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReducedMotion } from "react-native-reanimated";
 
 import {
   BoardCard,
@@ -214,6 +215,7 @@ export default function PortraitScreen() {
   const scanAnim = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(0)).current;
   const templateLife = useRef(new Animated.Value(0)).current;
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     setDraft(avatarConfig);
@@ -250,8 +252,12 @@ export default function PortraitScreen() {
         }),
       ]),
     );
-    scanLoop.start();
-    pulseLoop.start();
+    // Reduce Motion: skip the scan/pulse loops; the working phase still
+    // completes on its own timer below.
+    if (!reduced) {
+      scanLoop.start();
+      pulseLoop.start();
+    }
     const lineTimer = setInterval(
       () => setScanLine((idx) => (idx + 1) % SCAN_LINES.length),
       900,
@@ -273,9 +279,10 @@ export default function PortraitScreen() {
       scanAnim.setValue(0);
       pulse.setValue(0);
     };
-  }, [phase, pulse, scanAnim, scanSuggestion.suggestedConfig]);
+  }, [phase, pulse, reduced, scanAnim, scanSuggestion.suggestedConfig]);
 
   useEffect(() => {
+    if (reduced) return; // Reduce Motion: template preview holds still
     const lifeLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(templateLife, {
@@ -298,7 +305,7 @@ export default function PortraitScreen() {
       lifeLoop.stop();
       templateLife.setValue(0);
     };
-  }, [templateLife]);
+  }, [reduced, templateLife]);
 
   const selectedTemplate = getAvatarTemplate(draft.templateId);
   const faceMarkingLabel =
@@ -747,7 +754,12 @@ export default function PortraitScreen() {
                           source={selectedTemplateStillSource}
                           style={[s.templateHeroDog, pixelImageStyle]}
                           contentFit="contain"
-                          transition={180}
+                          // Hard cut, not a cross-dissolve: fading a shepherd
+                          // into a dachshund (very different bodies) morphed
+                          // one dog into another - "two different dogs, legs
+                          // grow." Swapping cleanly reads as a new dog, not a
+                          // creature mutating.
+                          transition={0}
                         />
                         {previewAccessoryLayers.map((layer) => {
                           if (layer.kind !== "bed" && layer.source) {
@@ -957,7 +969,7 @@ export default function PortraitScreen() {
               <PressScale
                 key={key}
                 accessibilityRole="button"
-                accessibilityState={{ selected: active }}
+                aria-selected={active}
                 accessibilityLabel={`Avatar Studio ${label}`}
                 hitSlop={MOBILE_INLINE_HIT_SLOP}
                 onPress={() => selectStudioTab(key as StudioTab)}
@@ -990,7 +1002,7 @@ export default function PortraitScreen() {
         {phase === "result" ? (
           <BoardCard style={s.avatarBoard}>
             <BoardSectionHeader
-              title="Generated mood set"
+              title="Suggested starting traits"
               accessory={<BoardPill label="Owner review" tone={colors.amber} />}
             />
             <Text
@@ -1197,7 +1209,7 @@ export default function PortraitScreen() {
                     <PressScale
                       key={template.id}
                       accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
+                      aria-selected={active}
                       accessibilityLabel={`Choose ${template.label} avatar template`}
                       onPress={() => selectTemplate(template.id)}
                       haptic="none"
@@ -1601,7 +1613,7 @@ export default function PortraitScreen() {
                     <PressScale
                       key={swatch}
                       accessibilityRole="button"
-                      accessibilityState={{ selected: primary || secondary }}
+                      aria-selected={primary || secondary}
                       accessibilityLabel={`Set coat color ${swatch}`}
                       accessibilityHint={
                         primary
@@ -1639,8 +1651,9 @@ export default function PortraitScreen() {
                   },
                 ]}
               >
-                Tap a swatch to set the primary coat, then tap it again to set
-                the secondary.
+                Tap a swatch for the primary coat, then tap it again for the
+                secondary. Saved to your dog's identity - the painted twin
+                recolors once this template's sprite pack lands.
               </Text>
             </BoardCard>
 
@@ -1658,7 +1671,7 @@ export default function PortraitScreen() {
                     <PressScale
                       key={marking.id}
                       accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
+                      aria-selected={active}
                       accessibilityLabel={`Set ${marking.label} face marking`}
                       accessibilityHint="Double tap to apply this marking to the pixel twin."
                       hitSlop={MOBILE_INLINE_HIT_SLOP}
@@ -1691,6 +1704,18 @@ export default function PortraitScreen() {
                   );
                 })}
               </View>
+              <Text
+                style={[
+                  s.swatchLegend,
+                  {
+                    color: colors.mutedForeground,
+                    fontFamily: "Inter_600SemiBold",
+                  },
+                ]}
+              >
+                Saved to your dog's identity. Markings paint onto the pixel twin
+                when this template's sprite pack lands.
+              </Text>
             </BoardCard>
 
             <BoardCard style={s.avatarBoard}>
@@ -1740,7 +1765,7 @@ export default function PortraitScreen() {
                     <PressScale
                       key={item.id}
                       accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
+                      aria-selected={active}
                       accessibilityLabel={`Set ${item.label} ${item.slot} accessory`}
                       onPress={() => setAccessory(item)}
                       haptic="none"
@@ -1829,6 +1854,16 @@ export default function PortraitScreen() {
                 />
               }
             />
+            <Text
+              style={[
+                s.copy,
+                { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+              ]}
+            >
+              Every mood swaps the preview. "Live" moods animate in the room
+              today; "Still" moods show a hand-drawn pose until this template's
+              animation pack lands.
+            </Text>
             <View style={s.moodGrid}>
               {AVATAR_EMOTE_STATES.map((emote) => {
                 const active = previewEmote === emote;
@@ -1837,11 +1872,19 @@ export default function PortraitScreen() {
                   draft.templateId,
                   emote,
                 );
+                // Honest live/still: only moods that resolve to a real sprite
+                // rig animate. The rest show a still pose - badge it so a
+                // still mood never reads as a broken one.
+                const chipIsLive = Boolean(
+                  getAvatarTemplateSpritePreview(draft.templateId, emote) ||
+                    deriveAvatarPreviewMotion(draft.templateId, emote)
+                      .spriteAction,
+                );
                 return (
                   <PressScale
                     key={emote}
                     accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
+                    aria-selected={active}
                     accessibilityLabel={`Preview ${emoteLabel(emote)} mood`}
                     accessibilityHint="Double tap to update the live care-twin preview mood."
                     hitSlop={MOBILE_INLINE_HIT_SLOP}
@@ -1891,6 +1934,33 @@ export default function PortraitScreen() {
                         style={[s.emoteIcon, { backgroundColor: colors.ivory }]}
                       >
                         <PixelIcon name={EMOTE_ICON[emote]} size={18} />
+                      </View>
+                      <View
+                        style={[
+                          s.moodLiveBadge,
+                          {
+                            backgroundColor: chipIsLive
+                              ? colors.primary
+                              : colors.ivory,
+                            borderColor: chipIsLive
+                              ? colors.primary
+                              : colors.border,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.moodLiveBadgeText,
+                            {
+                              color: chipIsLive
+                                ? colors.primaryForeground
+                                : colors.mutedForeground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {chipIsLive ? "Live" : "Still"}
+                        </Text>
                       </View>
                     </View>
                     <Text
@@ -2616,6 +2686,20 @@ const s = StyleSheet.create({
     borderRadius: 7,
     alignItems: "center",
     justifyContent: "center",
+  },
+  moodLiveBadge: {
+    position: "absolute",
+    top: 5,
+    left: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  moodLiveBadgeText: {
+    fontSize: 8.5,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
   },
   moodChipLabel: { fontSize: 10.5, textAlign: "center" },
   tipBoard: { marginTop: 2 },

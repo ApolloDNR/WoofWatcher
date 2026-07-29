@@ -217,7 +217,10 @@ function HealthSummaryRow({
           {label}
         </Text>
         {detail ? (
-          <Text numberOfLines={1} style={[s.summaryRowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+          // 2 lines: the empty-state instructions ("Add a vet visit record to
+          // the vault") are squeezed by the right-aligned value and clipped
+          // the destination word off on one line. Short details stay 1 line.
+          <Text numberOfLines={2} style={[s.summaryRowDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             {detail}
           </Text>
         ) : null}
@@ -638,7 +641,8 @@ export default function HealthScreen() {
           kicker="Health"
           title="Health Watch"
           subtitle="Owner notes. No diagnosis."
-          icon="heart-outline"
+          back
+          onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
           actionIcon="folder-open-outline"
           actionLabel="Open Records from Health Watch"
           onAction={() => router.push("/records")}
@@ -657,7 +661,7 @@ export default function HealthScreen() {
                 key={tab.key}
                 accessibilityRole="button"
                 accessibilityLabel={`Open ${tab.label}`}
-                accessibilityState={{ selected: active }}
+                aria-selected={active}
                 onPress={() => setActiveTab(tab.key)}
                 style={[
                   s.tabPill,
@@ -928,7 +932,7 @@ export default function HealthScreen() {
                 { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
               ]}
             >
-              <Text style={[s.heroActionPrimaryText, { fontFamily: "Inter_700Bold" }]}>Log health note</Text>
+              <Text style={[s.heroActionPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Log health note</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"

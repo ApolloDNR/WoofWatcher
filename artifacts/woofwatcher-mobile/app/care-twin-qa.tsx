@@ -1837,7 +1837,7 @@ function CareTwinQaScreenBody() {
                 <View style={s.betaRunMissionReviewRow}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityState={{ selected: focusedQaTarget.target.status === "pass" }}
+                    aria-selected={focusedQaTarget.target.status === "pass"}
                     accessibilityLabel={`Mark focused QA target pass: ${focusedQaTarget.target.title}`}
                     onPress={() => markSurface(focusedQaTarget.target.surfaceId, "pass")}
                     style={({ pressed }) => [
@@ -1855,7 +1855,7 @@ function CareTwinQaScreenBody() {
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityState={{ selected: focusedQaTarget.target.status === "needs-review" }}
+                    aria-selected={focusedQaTarget.target.status === "needs-review"}
                     accessibilityLabel={`Mark focused QA target needs tune: ${focusedQaTarget.target.title}`}
                     onPress={() => markSurface(focusedQaTarget.target.surfaceId, "needs-review")}
                     style={({ pressed }) => [
@@ -2119,7 +2119,7 @@ function CareTwinQaScreenBody() {
                 <View style={s.betaRunMissionReviewRow}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityState={{ selected: nextBetaTarget.status === "pass" }}
+                    aria-selected={nextBetaTarget.status === "pass"}
                     accessibilityLabel={`Mark next beta mission pass: ${nextBetaTarget.title}`}
                     onPress={() => markSurface(nextBetaTarget.surfaceId, "pass")}
                     style={({ pressed }) => [
@@ -2137,7 +2137,7 @@ function CareTwinQaScreenBody() {
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityState={{ selected: nextBetaTarget.status === "needs-review" }}
+                    aria-selected={nextBetaTarget.status === "needs-review"}
                     accessibilityLabel={`Mark next beta mission needs tune: ${nextBetaTarget.title}`}
                     onPress={() => markSurface(nextBetaTarget.surfaceId, "needs-review")}
                     style={({ pressed }) => [
@@ -2201,7 +2201,7 @@ function CareTwinQaScreenBody() {
                   <Pressable
                     key={option.value}
                     accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
+                    aria-selected={active}
                     accessibilityLabel={`Tag QA screenshots as ${option.label}`}
                     onPress={() => setSelectedEvidencePlatform(option.value)}
                     style={({ pressed }) => [
@@ -3008,7 +3008,7 @@ function ReviewButton({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ selected: active }}
+      aria-selected={active}
       onPress={onPress}
       style={({ pressed }) => [
         s.reviewButton,

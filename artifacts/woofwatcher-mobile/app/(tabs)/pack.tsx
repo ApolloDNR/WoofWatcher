@@ -18,6 +18,7 @@ import Animated, {
   cancelAnimation,
   Easing,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -54,6 +55,7 @@ import {
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
   MIN_MOBILE_TOUCH_TARGET,
+  MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import {
   addItem,
@@ -67,6 +69,18 @@ import {
   type SupplyItem,
   type SupplyStatus,
 } from "@/lib/packSupplies";
+import {
+  activateTravelBag,
+  completeTravelBag,
+  defaultTravelBag,
+  parseTravelBag,
+  redoTravelBag,
+  renameTravelBag,
+  reopenTravelBag,
+  resetTravelItems,
+  serializeTravelBag,
+  type TravelBagSession,
+} from "@/lib/travelBag";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { resolvePetName } from "@/lib/petIdentity";
 import { relativeTime } from "@/lib/time";
@@ -96,6 +110,7 @@ const PACK_SEGMENTS: readonly { key: PackSegment; label: string }[] = [
 // Travel Bag boards). Keeps the "woofwatcher" key prefix so the privacy
 // erase-all-data flow removes it with every other WoofWatcher key.
 const PACK_SUPPLIES_KEY = "woofwatcher.packSupplies.v1";
+const TRAVEL_BAG_KEY = "woofwatcher.travelBag.v1";
 
 /** Mockup icon language for the starter items; custom items stay neutral. */
 const SUPPLY_ICONS: Record<string, PixelIconName> = {
@@ -383,8 +398,8 @@ function PackInfoTile({
 /**
  * Idle breathe for the pet-card hero sprite: a slow ~3.5s scale pulse
  * (1.0 -> 1.012), mirroring the LivingPhoenixRoom breath pattern. The
- * amplitude stays tiny so the portrait reads alive without pulling focus
- * (there is no app-wide reduced-motion setting yet, so subtle is the rule).
+ * amplitude stays tiny so the portrait reads alive without pulling focus, and
+ * it holds completely still when the OS Reduce Motion setting is on.
  */
 function BreathingPetSprite({
   source,
@@ -393,16 +408,18 @@ function BreathingPetSprite({
   source: ImageSourcePropType;
   accessibilityLabel: string;
 }) {
+  const reduced = useReducedMotion();
   const breath = useSharedValue(0);
 
   useEffect(() => {
+    if (reduced) return; // Reduce Motion: hold the portrait still, no breathing loop
     breath.value = withRepeat(
       withTiming(1, { duration: 1750, easing: Easing.inOut(Easing.sin) }),
       -1,
       true,
     );
     return () => cancelAnimation(breath);
-  }, [breath]);
+  }, [breath, reduced]);
 
   const breathStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 1 + breath.value * 0.012 }],
@@ -437,6 +454,9 @@ export default function PackScreen() {
   const [addSupplyOpen, setAddSupplyOpen] = useState(false);
   const [addSupplyName, setAddSupplyName] = useState("");
   const [addSupplyGroup, setAddSupplyGroup] = useState<SupplyGroup>("essentials");
+  const [travelBag, setTravelBag] = useState<TravelBagSession>(defaultTravelBag);
+  const [editingBagLabel, setEditingBagLabel] = useState(false);
+  const [bagLabelDraft, setBagLabelDraft] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -446,6 +466,13 @@ export default function PackScreen() {
       })
       .catch(() => {
         if (!cancelled) setSupplies(parseSupplies(null));
+      });
+    AsyncStorage.getItem(TRAVEL_BAG_KEY)
+      .then((raw) => {
+        if (!cancelled) setTravelBag(parseTravelBag(raw));
+      })
+      .catch(() => {
+        if (!cancelled) setTravelBag(defaultTravelBag());
       });
     return () => {
       cancelled = true;
@@ -584,10 +611,96 @@ export default function PackScreen() {
   const packedCount = travelSupplies.filter((item) => item.status === "packed").length;
   const suppliesUntouched = supplies ? isDefaultUntouched(supplies) : false;
 
+  // Phase-driven travel-bag chrome (packing -> active -> complete). Every
+  // signal is real: the packed count is the checklist truth, "Active since"
+  // and "Trip wrapped" read from the owner's own Activate/Complete taps.
+  const travelAllPacked = travelSupplies.length > 0 && packedCount === travelSupplies.length;
+  const travelPill: { label: string; tone: string; icon?: "checkmark" } =
+    travelBag.phase === "active"
+      ? { label: "Active", tone: colors.sage, icon: "checkmark" }
+      : travelBag.phase === "complete"
+        ? { label: "Trip done", tone: colors.mutedForeground }
+        : travelSupplies.length === 0
+          ? { label: "Empty", tone: colors.mutedForeground }
+          : {
+              label: `${packedCount}/${travelSupplies.length} packed`,
+              tone: travelAllPacked ? colors.sage : colors.mutedForeground,
+              ...(travelAllPacked ? { icon: "checkmark" as const } : {}),
+            };
+  const travelCaption =
+    travelBag.phase === "active"
+      ? travelBag.activatedAt
+        ? `Packed and out the door - active since ${relativeTime(travelBag.activatedAt, now)}.`
+        : "Packed and out the door."
+      : travelBag.phase === "complete"
+        ? travelBag.completedAt
+          ? `Trip wrapped ${relativeTime(travelBag.completedAt, now)} - redo to pack the next one.`
+          : "Trip wrapped - redo to pack the next one."
+        : packedCount === 0
+          ? "Check your gear off, then activate the bag."
+          : "Gear checked. Activate the bag when you're ready to go.";
+
   /** Save on every change, fire-and-forget like the Home welcome flag. */
   const commitSupplies = (next: SupplyItem[]) => {
     setSupplies(next);
     AsyncStorage.setItem(PACK_SUPPLIES_KEY, serializeSupplies(next)).catch(() => {});
+  };
+
+  const commitTravelBag = (next: TravelBagSession) => {
+    setTravelBag(next);
+    AsyncStorage.setItem(TRAVEL_BAG_KEY, serializeTravelBag(next)).catch(() => {});
+  };
+
+  const activateBag = () => {
+    const next = activateTravelBag(travelBag, packedCount, new Date().toISOString());
+    if (!next) {
+      notifyDialog(
+        "Pack something first",
+        "Check at least one item off before you activate the bag - an empty bag isn't ready to go.",
+      );
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    commitTravelBag(next);
+  };
+
+  const completeBag = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    commitTravelBag(completeTravelBag(travelBag, new Date().toISOString()));
+  };
+
+  const reopenBag = () => {
+    Haptics.selectionAsync().catch(() => {});
+    commitTravelBag(reopenTravelBag(travelBag));
+  };
+
+  const redoBag = () => {
+    confirmThroughSteps(
+      [
+        {
+          title: "Redo the bag?",
+          message: "This unpacks every travel item so you can pack fresh for the next trip.",
+          confirmLabel: "Redo bag",
+        },
+      ],
+      () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+        if (supplies) commitSupplies(resetTravelItems(supplies));
+        commitTravelBag(redoTravelBag(travelBag));
+      },
+    );
+  };
+
+  const openBagLabelEditor = () => {
+    Haptics.selectionAsync().catch(() => {});
+    setBagLabelDraft(travelBag.label);
+    setEditingBagLabel(true);
+  };
+
+  const saveBagLabel = () => {
+    commitTravelBag(renameTravelBag(travelBag, bagLabelDraft));
+    setEditingBagLabel(false);
+    setBagLabelDraft("");
   };
 
   const cycleSupply = (item: SupplyItem) => {
@@ -798,27 +911,59 @@ export default function PackScreen() {
 
             <BoardCard style={s.sectionCard} enter={1}>
               <BoardSectionHeader
-                title="Travel bag"
+                title={travelBag.label}
                 accessory={
-                  <BoardPill
-                    label={
-                      travelSupplies.length === 0
-                        ? "Empty"
-                        : `${packedCount}/${travelSupplies.length} packed`
-                    }
-                    icon={
-                      travelSupplies.length > 0 && packedCount === travelSupplies.length
-                        ? "checkmark"
-                        : undefined
-                    }
-                    tone={
-                      travelSupplies.length > 0 && packedCount === travelSupplies.length
-                        ? colors.sage
-                        : colors.mutedForeground
-                    }
-                  />
+                  <BoardPill label={travelPill.label} icon={travelPill.icon} tone={travelPill.tone} />
                 }
               />
+
+              {editingBagLabel ? (
+                <View style={s.supplyEditActions}>
+                  <TextInput
+                    value={bagLabelDraft}
+                    onChangeText={setBagLabelDraft}
+                    placeholder="Name this trip (Weekend, Vet visit...)"
+                    placeholderTextColor={colors.mutedForeground}
+                    autoFocus
+                    maxLength={32}
+                    returnKeyType="done"
+                    onSubmitEditing={saveBagLabel}
+                    accessibilityLabel="Name for this travel bag"
+                    style={[
+                      s.supplyInput,
+                      {
+                        flex: 1,
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        color: colors.foreground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  />
+                  <BoardActionButton
+                    label="Save"
+                    icon="checkmark"
+                    variant="primary"
+                    compact
+                    onPress={saveBagLabel}
+                    accessibilityLabel="Save the travel bag name"
+                  />
+                </View>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Rename the travel bag. Currently ${travelBag.label}.`}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  onPress={openBagLabelEditor}
+                  style={s.travelCaptionRow}
+                >
+                  <Text style={[s.emptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium", flex: 1 }]}>
+                    {travelCaption}
+                  </Text>
+                  <Ionicons name="pencil" size={13} color={colors.mutedForeground} />
+                </Pressable>
+              )}
+
               {travelSupplies.length === 0 ? (
                 <Text style={[s.emptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                   Nothing tracked here yet. Add an item below.
@@ -847,6 +992,46 @@ export default function PackScreen() {
                   ),
                 )
               )}
+
+              {travelSupplies.length > 0 || travelBag.phase !== "packing" ? (
+                <View style={s.travelBagActions}>
+                  {travelBag.phase === "packing" ? (
+                    <BoardActionButton
+                      label="Activate travel bag"
+                      icon="bag-check-outline"
+                      variant="primary"
+                      onPress={activateBag}
+                      disabled={packedCount === 0}
+                      accessibilityLabel="Activate the travel bag for this trip"
+                    />
+                  ) : travelBag.phase === "active" ? (
+                    <>
+                      <BoardActionButton
+                        label="Trip complete"
+                        icon="checkmark-done-outline"
+                        variant="primary"
+                        onPress={completeBag}
+                        accessibilityLabel="Mark this trip complete"
+                      />
+                      <BoardActionButton
+                        label="Back to packing"
+                        variant="soft"
+                        compact
+                        onPress={reopenBag}
+                        accessibilityLabel="Reopen the travel bag back to packing"
+                      />
+                    </>
+                  ) : (
+                    <BoardActionButton
+                      label="Redo travel bag"
+                      icon="refresh-outline"
+                      variant="primary"
+                      onPress={redoBag}
+                      accessibilityLabel="Redo the travel bag and unpack every item for the next trip"
+                    />
+                  )}
+                </View>
+              ) : null}
             </BoardCard>
 
             {addSupplyOpen ? (
@@ -868,7 +1053,7 @@ export default function PackScreen() {
                         key={option.key}
                         accessibilityRole="button"
                         accessibilityLabel={`Add to ${option.label}`}
-                        accessibilityState={{ selected: active }}
+                        aria-selected={active}
                         onPress={() => {
                           Haptics.selectionAsync();
                           setAddSupplyGroup(option.key);
@@ -1158,6 +1343,11 @@ export default function PackScreen() {
               })
             )}
 
+            {/* Own heading: without it these care-hub links visually caption
+                under "People in the Pack", which reads as a labeling error. */}
+            <Text style={[s.peoplePreviewTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI, marginTop: 16 }]}>
+              {petName}'s care spaces
+            </Text>
             <View style={[s.linkList, { borderTopColor: colors.border }]}>
               <PackLinkRow
                 icon="health"
@@ -1651,6 +1841,16 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     marginTop: 10,
+  },
+  travelCaptionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
+  },
+  travelBagActions: {
+    gap: 8,
+    marginTop: 12,
   },
   supplyRemoveLayout: {
     marginLeft: "auto",

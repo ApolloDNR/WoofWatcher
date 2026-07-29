@@ -36,6 +36,7 @@ import {
   type StickyNoteColor,
 } from "@workspace/care-domain";
 import { useCare, Entry } from "@/context/CareContext";
+import { announce } from "@/lib/announce";
 import { isClerkConfigured } from "@/lib/auth";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { resolvePetName } from "@/lib/petIdentity";
@@ -102,7 +103,7 @@ import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
-import { BoardActionButton, BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { BoardActionButton, BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader, BoardSegmentTabs } from "@/components/board/BoardPrimitives";
 import { PressScale } from "@/components/motion/GameFeel";
 import { homeImmersiveRoomIsNight } from "./index";
 
@@ -376,7 +377,7 @@ const LOG_TYPES: LogType[] = [
         ],
       },
     ],
-    noteField: { placeholder: "Sticky note: barking, pacing, damage, recovery, or what helped..." },
+    noteField: { placeholder: "Sticky note: what happened and what helped..." },
   },
   {
     type: "medication",
@@ -466,7 +467,7 @@ const LOG_TYPES: LogType[] = [
         ],
       },
     ],
-    noteField: { placeholder: "Sticky note: factual timeline, body language, handler response, injury check, or what helped..." },
+    noteField: { placeholder: "Sticky note: timeline, response, injury check..." },
   },
   {
     type: "grooming",
@@ -611,6 +612,12 @@ function CareTypeIcon({
   if (isPottyType(type)) {
     return <PixelIcon name="pee" size={size} />;
   }
+  if (icon === "bowl") {
+    // The SVG bowl reads as a flat featureless oval next to the pixel set;
+    // meal is the most common log type, so it gets the same rich pixel
+    // food-bowl sprite the rest of the app uses.
+    return <PixelIcon name="meal" size={size} />;
+  }
   return <PulseIcon name={icon} size={size} color={color} />;
 }
 
@@ -754,6 +761,15 @@ function humanizeKey(key: string): string {
   return DETAIL_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+// Humanize only slug-like enum ids ("dog-conflict" -> "Dog Conflict").
+// Free-text prose must render verbatim: title-casing a user's own words
+// corrupts their record ("Neighbor's collie" -> "Neighbor'S Collie").
+const SLUG_VALUE_PATTERN = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
+
+function humanizeDetailValue(text: string): string {
+  return SLUG_VALUE_PATTERN.test(text) ? humanizeKey(text) : text;
+}
+
 function detailValue(value: unknown): string | null {
   if (value == null) return null;
   if (typeof value === "string") return value.trim() || null;
@@ -817,7 +833,7 @@ function buildEntryDetailRows(entry: Entry): { label: string; value: string }[] 
     const text = detailValue(value);
     if (!text) return;
     const timestamp = formatDetailTimestamp(text);
-    rows.push({ label: humanizeKey(key), value: timestamp ?? humanizeKey(text) });
+    rows.push({ label: humanizeKey(key), value: timestamp ?? humanizeDetailValue(text) });
   });
 
   return rows;
@@ -983,6 +999,7 @@ export default function LogScreen() {
     detail?: string | string[];
     intent?: string | string[];
     entry?: string | string[];
+    walk?: string | string[];
   }>();
   const routeSelectedType = useMemo(() => {
     const rawType = Array.isArray(routeParams.type) ? routeParams.type[0] : routeParams.type;
@@ -998,9 +1015,12 @@ export default function LogScreen() {
       ? `${routeSelectedType}:${routeIntentParam ?? routeDetailParam ?? "detail"}`
       : null;
   const routeEntryParam = Array.isArray(routeParams.entry) ? routeParams.entry[0] : routeParams.entry;
+  const routeWalkParam = Array.isArray(routeParams.walk) ? routeParams.walk[0] : routeParams.walk;
   const lastRouteSelectedType = useRef<string | null>(null);
   const lastRouteDetailIntentKey = useRef<string | null>(null);
   const lastRouteEntryParam = useRef<string | null>(null);
+  const lastRouteWalkParam = useRef<string | null>(null);
+  const walkCardYRef = useRef(0);
 
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
@@ -1114,7 +1134,9 @@ export default function LogScreen() {
     setSelectedLauncherKey(launcherActionKey(routeDetailAction));
     setSelectedType(routeDetailAction.type);
     // Detail intents land straight in the pre-focused composer - no
-    // interstitial between "add details" and the real form.
+    // interstitial between "add details" and the real form. The composer
+    // lives in the Log view, so make sure we're on it.
+    setLogView("log");
     setTimeout(() => scrollToComposer(), 350);
     lastRouteDetailIntentKey.current = routeDetailIntentKey;
   }, [routeDetailIntentKey, routeSelectedType, routeWantsDetailSheet]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1181,6 +1203,11 @@ export default function LogScreen() {
   // the Quick Log fallback always land on the composer instead of a guess.
   const composerSectionY = useRef<number | null>(null);
   const [lastQuickLog, setLastQuickLog] = useState<{ id: string; title: string } | null>(null);
+  // Screen readers can't see the feedback card and its Undo vanishes on a
+  // timer - every quick log announces, whichever of the five paths set it.
+  useEffect(() => {
+    if (lastQuickLog) announce(`${lastQuickLog.title} logged. Undo available.`);
+  }, [lastQuickLog]);
 
   // Entry editor
   const [detailEntryId, setDetailEntryId] = useState<string | null>(null);
@@ -1194,6 +1221,7 @@ export default function LogScreen() {
     setDetailEntryId(routeEntryParam);
     lastRouteEntryParam.current = routeEntryParam;
   }, [routeEntryParam, state.entries]);
+
 
   const stickyColor = (color: StickyNoteColor) => {
     if (color === "sun") return colors.amber;
@@ -1297,6 +1325,17 @@ export default function LogScreen() {
   // settles. Rendering everything at once blocked the switch-to-Log frame
   // for ~80-100ms.
   const [belowFoldReady, setBelowFoldReady] = useState(false);
+  // Two clear places instead of one long scroll: "Log" is the quick-log menu
+  // + composer wizard; "History" is the day snapshot + search + timeline,
+  // reachable in one tap at the top instead of below the whole logging stack.
+  const [view, setLogView] = useState<"log" | "history">("log");
+  const logViewSegments = useMemo(
+    () => [
+      { key: "log" as const, label: "Log" },
+      { key: "history" as const, label: "History" },
+    ],
+    [],
+  );
   useEffect(() => {
     let cancelled = false;
     const interaction = InteractionManager.runAfterInteractions(() => {
@@ -1737,7 +1776,12 @@ export default function LogScreen() {
             notifyDialog("Delete failed", "WoofWatcher kept the log because the household sync rejected the delete. Try again after refresh.");
             return;
           }
-          if (entry) {
+          // Shared-household accountability only: the deletion audit note
+          // says "from the shared care log", so it is truthful and useful
+          // only when more than one caregiver exists. For a solo owner it
+          // would leave a "Deleted log - ..." row in their own timeline and
+          // read as if the delete failed - so a solo delete just deletes.
+          if (entry && state.caregivers.length > 1) {
             addEntry(
               buildCareLogDeletionAuditEntry({
                 id: auditId(),
@@ -1751,7 +1795,7 @@ export default function LogScreen() {
         },
       );
     },
-    [addEntry, caregiver, deleteEntry, state.entries],
+    [addEntry, caregiver, deleteEntry, state.caregivers.length, state.entries],
   );
 
   const openEditEntry = useCallback((e: Entry) => {
@@ -1863,6 +1907,23 @@ export default function LogScreen() {
     if (!Number.isFinite(startedAt)) return 0;
     return Math.max(0, Math.round((now - startedAt) / 60000));
   }, [now, openWalkStartedAt]);
+  // "Finish walk" deep-link (Adventure's CTA): land the user ON the finish
+  // form, not in the read-only record sheet - that sheet says "In progress"
+  // and offers no way to end the walk, a dead end for the quest loop.
+  useEffect(() => {
+    if (routeWalkParam !== "finish" || routeWalkParam === lastRouteWalkParam.current) return;
+    if (!openWalkSession) return;
+    lastRouteWalkParam.current = routeWalkParam;
+    setDetailEntryId(null);
+    // The WALK ACTIVE finish panel lives in the Log view.
+    setLogView("log");
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, walkCardYRef.current - 84), animated: true });
+      announce("Finish details are ready.");
+    }, 380);
+    return () => clearTimeout(timer);
+  }, [routeWalkParam, openWalkSession]);
+
   // Honest route-recorder state: only ever says "recording" while location
   // fixes are actually landing; otherwise it explains what would enable it.
   const walkRouteCapture = useWalkRouteCaptureStatus();
@@ -1980,32 +2041,10 @@ export default function LogScreen() {
   }, [state.entries]);
   const todaySignalCards = useMemo(
     () => [
-      {
-        label: "Care IQ",
-        // Zero-log day: "--" instead of a fabricated percentage, matching
-        // Home - the score starts with the first real log.
-        value: careIntelligence.visibleLogCount === 0 ? "--" : `${careIntelligence.score}%`,
-        detail:
-          careIntelligence.visibleLogCount === 0
-            ? "starts with first log"
-            : careIntelligence.status === "needs-attention"
-              ? "review loops"
-              : "day rhythm",
-        icon: "sparkles-outline" as const,
-        tone:
-          careIntelligence.status === "needs-attention"
-            ? colors.amber
-            : careIntelligence.status === "excellent"
-              ? colors.sage
-              : colors.primary,
-      },
-      {
-        label: "Today",
-        value: String(todaySnapshot.total),
-        detail: "care logs",
-        icon: "reader-outline" as const,
-        tone: colors.copper,
-      },
+      // Care IQ and Today already live in the console HUD above (single source
+      // of truth). This support rail carries only the signals the HUD does not
+      // show - portion progress and where the data is saved - so nothing is
+      // repeated down the page.
       {
         label: "Food",
         value: dietProgress.targetAmount == null ? "Set" : `${dietProgress.percent}%`,
@@ -2446,6 +2485,15 @@ export default function LogScreen() {
             }}
           />
 
+          <BoardSegmentTabs
+            segments={logViewSegments}
+            active={view}
+            onChange={setLogView}
+            style={s.logViewTabs}
+          />
+
+          {view === "log" ? (
+            <>
           <BoardCard padded={false} style={s.logCommandStageCard}>
             <ImageBackground
               source={LOG_COMMAND_STAGE_ROOM}
@@ -2465,24 +2513,31 @@ export default function LogScreen() {
               />
               <View style={s.logCommandStageTop}>
                 <View style={s.logCommandBubble}>
-                  <Text style={[s.logCommandKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                  {/* The bubble is a fixed ivory painted-stage overlay, so its
+                      ink is fixed too - theme foreground goes near-white in
+                      dark mode and vanished against the bubble. Matches
+                      LivingPhoenixRoom's OVERLAY_INK treatment. */}
+                  <Text style={[s.logCommandKicker, { color: "#4F7B57", fontFamily: "Inter_700Bold" }]}>
                     Quick Care Console
                   </Text>
                   <Text
                     numberOfLines={2}
-                    style={[s.logCommandSpeech, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+                    style={[s.logCommandSpeech, { color: "#26221C", fontFamily: DISPLAY_SEMI }]}
                   >
                     {logCommandSpeech}
                   </Text>
                   <View style={s.logCommandBubbleTail} />
                 </View>
-                <View style={[s.logCommandChip, { backgroundColor: colors.ivory + "F2", borderColor: colors.border }]}>
+                {/* Ivory stays cream in BOTH themes, so the chip ink is fixed
+                    to the light-board forest/amber - the dark-palette tokens
+                    lighten and washed out against the cream chip. */}
+                <View style={[s.logCommandChip, { backgroundColor: colors.ivory + "F2", borderColor: "#08142433" }]}>
                   <PixelIcon name={selectedLauncherAction?.icon ?? "heart"} size={17} />
                   <Text
                     style={[
                       s.logCommandChipText,
                       {
-                        color: selectedLauncherRequiresDetail ? colors.amber : colors.forest,
+                        color: selectedLauncherRequiresDetail ? "#8A5A0C" : "#33582F",
                         fontFamily: "Inter_700Bold",
                       },
                     ]}
@@ -2511,7 +2566,10 @@ export default function LogScreen() {
                     key={metric.label}
                     style={[s.logCommandHudCell, { backgroundColor: colors.cream, borderColor: colors.border }]}
                   >
-                    <Text style={[s.logCommandHudLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    {/* Cream cells stay cream in dark mode; the dark-palette
+                        sage lightens and drops below AA there, so the label
+                        ink is fixed to the light-board sage. */}
+                    <Text style={[s.logCommandHudLabel, { color: "#4D8A56", fontFamily: "Inter_700Bold" }]}>
                       {metric.label}
                     </Text>
                     <Text
@@ -2583,7 +2641,7 @@ export default function LogScreen() {
                     key={tab.key}
                     accessibilityRole="button"
                     accessibilityLabel={`Show ${tab.label} quick log actions`}
-                    accessibilityState={{ selected: active }}
+                    aria-selected={active}
                     onPress={() => {
                       Haptics.selectionAsync();
                       setLauncherTab(tab.key);
@@ -2622,7 +2680,7 @@ export default function LogScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={launcherPresentation.accessibilityLabel}
                     accessibilityHint={launcherPresentation.feedbackHint}
-                    accessibilityState={{ selected: active }}
+                    aria-selected={active}
                     onPress={() => handleQuickLauncherAction(action)}
                     onLongPress={() => focusFullComposerForLauncherAction(action)}
                     scaleTo={0.94}
@@ -2771,7 +2829,12 @@ export default function LogScreen() {
             ) : null}
 
             {openWalkSession ? (
-              <View style={[s.aloneActivePanel, { backgroundColor: colors.card, borderColor: colors.sage + "55" }]}>
+              <View
+                onLayout={(event) => {
+                  walkCardYRef.current = event.nativeEvent.layout.y;
+                }}
+                style={[s.aloneActivePanel, { backgroundColor: colors.card, borderColor: colors.sage + "55" }]}
+              >
                 <View style={s.aloneActiveTop}>
                   <View style={[s.aloneActiveIcon, { backgroundColor: colors.sageSoft, borderColor: colors.sage + "55" }]}>
                     <PixelIcon name="walk" size={34} />
@@ -2800,7 +2863,7 @@ export default function LogScreen() {
                     onChangeText={setWalkFinishRouteName}
                     placeholder="Route or place"
                     placeholderTextColor={colors.mutedForeground}
-                    style={[s.returnInput, s.returnInputNote, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
                     value={walkFinishDistanceMiles}
@@ -2808,7 +2871,7 @@ export default function LogScreen() {
                     placeholder="Miles"
                     placeholderTextColor={colors.mutedForeground}
                     keyboardType="decimal-pad"
-                    style={[s.returnInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
                 <View style={s.returnDetailRow}>
@@ -2818,14 +2881,14 @@ export default function LogScreen() {
                     placeholder="Dogs met"
                     placeholderTextColor={colors.mutedForeground}
                     keyboardType="number-pad"
-                    style={[s.returnInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
                     value={walkFinishSocialOutcome}
                     onChangeText={setWalkFinishSocialOutcome}
                     placeholder="Social outcome"
                     placeholderTextColor={colors.mutedForeground}
-                    style={[s.returnInput, s.returnInputNote, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
                 <TextInput
@@ -2904,14 +2967,14 @@ export default function LogScreen() {
                     placeholder="Recovery min"
                     placeholderTextColor={colors.mutedForeground}
                     keyboardType="number-pad"
-                    style={[s.returnInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
                     value={returnNote}
                     onChangeText={setReturnNote}
                     placeholder="What helped?"
                     placeholderTextColor={colors.mutedForeground}
-                    style={[s.returnInput, s.returnInputNote, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                    style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                 </View>
               </View>
@@ -2929,7 +2992,7 @@ export default function LogScreen() {
                       key={mood.label}
                       accessibilityRole="button"
                       accessibilityLabel={`${petDisplayName} feels ${mood.label}`}
-                      accessibilityState={{ selected: active }}
+                      aria-selected={active}
                       onPress={() => selectMoodLauncher(mood)}
                       style={({ pressed }) => [
                         s.moodOption,
@@ -3087,7 +3150,7 @@ export default function LogScreen() {
                     style={[
                       s.outboxButtonText,
                       {
-                        color: syncOutbox.retryable > 0 ? "#FFFFFF" : colors.mutedForeground,
+                        color: syncOutbox.retryable > 0 ? colors.primaryForeground : colors.mutedForeground,
                         fontFamily: "Inter_700Bold",
                       },
                     ]}
@@ -3123,9 +3186,12 @@ export default function LogScreen() {
               composerSectionY.current = event.nativeEvent.layout.y + topPadding;
             }}
           />
-          {/* Everything from the composer down is below the fold and mounts
-              one frame after the tab switch (two-phase render). */}
-          {belowFoldReady ? (
+            </>
+          ) : null}
+          {/* The composer (Log view) and the history sections (History view)
+              are both below the fold and mount one frame after the tab switch
+              (two-phase render), then split by the Log|History segment. */}
+          {belowFoldReady && view === "log" ? (
             <>
           <BoardCard style={s.composerHero}>
             <View style={s.quickLogDetailDock}>
@@ -3193,6 +3259,9 @@ export default function LogScreen() {
                 return (
                   <Pressable
                     key={q.type}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Log ${q.label}`}
+                    aria-selected={active}
                     onPress={() => {
                       Haptics.selectionAsync();
                       setSelectedLauncherKey(null);
@@ -3287,6 +3356,9 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3411,6 +3483,9 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3460,6 +3535,9 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3521,6 +3599,9 @@ export default function LogScreen() {
                   </View>
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3602,6 +3683,9 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3662,6 +3746,9 @@ export default function LogScreen() {
                   </View>
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3742,6 +3829,9 @@ export default function LogScreen() {
                   </View>
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3796,6 +3886,9 @@ export default function LogScreen() {
                   />
                 </View>
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityLabel="Share this log with the household"
+                  aria-checked={householdVisible}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
@@ -3877,6 +3970,9 @@ export default function LogScreen() {
               style={s.logSaveAction}
             />
           </BoardCard>
+            </>
+          ) : belowFoldReady && view === "history" ? (
+            <>
 
           {/* Today at a glance */}
           {todaySnapshot.total > 0 && (
@@ -3950,6 +4046,9 @@ export default function LogScreen() {
                 style={s.filterScroll}
               >
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Show all log types"
+                aria-selected={filter === null}
                 onPress={() => {
                   Haptics.selectionAsync();
                   setFilter(null);
@@ -3963,6 +4062,9 @@ export default function LogScreen() {
                   return (
                     <Pressable
                       key={q.type}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Filter by ${q.label}`}
+                      aria-selected={active}
                       onPress={() => {
                         Haptics.selectionAsync();
                         setFilter(active ? null : q.type);
@@ -4154,8 +4256,10 @@ export default function LogScreen() {
         animationType="slide"
         onRequestClose={() => setLauncherDetailAction(null)}
       >
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setLauncherDetailAction(null)}>
+        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setLauncherDetailAction(null)}>
           <Pressable
+            accessible={false}
+            accessibilityViewIsModal
             style={[s.launcherDetailSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
             onPress={(e) => e.stopPropagation()}
           >
@@ -4297,8 +4401,8 @@ export default function LogScreen() {
 
       {/* Entry detail modal */}
       <Modal visible={detailEntry !== null} transparent animationType="slide" onRequestClose={() => setDetailEntryId(null)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDetailEntryId(null)}>
-          <Pressable style={[s.detailSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDetailEntryId(null)}>
+          <Pressable accessible={false} accessibilityViewIsModal style={[s.detailSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.editHandle} />
             {detailEntry ? (
               <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
@@ -4503,7 +4607,7 @@ export default function LogScreen() {
                             key={outcome.id}
                             accessibilityRole="button"
                             accessibilityLabel={`Update meal outcome: ${outcome.label}`}
-                            accessibilityState={{ selected: active }}
+                            aria-selected={active}
                             onPress={() => updateMealOutcomeFromDetail(detailEntry, outcome.id)}
                             style={({ pressed }) => [
                               s.mealOutcomeButton,
@@ -4966,8 +5070,8 @@ export default function LogScreen() {
 
       {/* Entry editor modal */}
       <Modal visible={editEntry !== null} transparent animationType="slide" onRequestClose={() => setEditEntry(null)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setEditEntry(null)}>
-          <Pressable style={[s.editSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setEditEntry(null)}>
+          <Pressable accessible={false} accessibilityViewIsModal style={[s.editSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.editHandle} />
             <Text style={[s.editSheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Edit entry</Text>
             <Text style={[s.editFieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Title</Text>
@@ -4999,9 +5103,9 @@ export default function LogScreen() {
 
       {/* Post-log quick-note prompt */}
       <Modal visible={promptId !== null} transparent animationType="fade" onRequestClose={() => setPromptId(null)}>
-        <Pressable style={[s.modalBackdrop, centeredModalPadding]} onPress={saveQuickNote}>
+        <Pressable accessible={false} style={[s.modalBackdrop, centeredModalPadding]} onPress={saveQuickNote}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalCenter}>
-            <Pressable style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
+            <Pressable accessible={false} accessibilityViewIsModal style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
               <View style={[s.modalIcon, { backgroundColor: colors.sage + "1A" }]}>
                 <Ionicons name="checkmark" size={22} color={colors.sage} />
               </View>
@@ -5037,7 +5141,7 @@ export default function LogScreen() {
                   onPress={saveQuickNote}
                   style={({ pressed }) => [s.modalSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                 >
-                  <Text style={[s.modalSaveText, { fontFamily: "Inter_700Bold" }]}>Save sticky</Text>
+                  <Text style={[s.modalSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save sticky</Text>
                 </Pressable>
               </View>
             </Pressable>
@@ -5135,8 +5239,11 @@ const s = StyleSheet.create({
     lineHeight: 13,
   },
   logCommandSprite: {
+    // Out of the Ready/Details chip's column: the ear-perk frames draw a
+    // heart emote above the dog's head, and at right:12 both heart and ear
+    // collided with the chrome chip in the banner's top-right corner.
     position: "absolute",
-    right: 12,
+    right: 96,
     bottom: -2,
     width: 68,
     height: 68,
@@ -5540,8 +5647,12 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
     fontSize: 12.5,
   },
-  returnInputNote: {
+  // Every input in a two-column returnDetailRow must flex: a bare
+  // TextInput keeps its ~217px intrinsic width on web and shoves the row
+  // off the right edge of the screen.
+  returnInputHalf: {
     flex: 1,
+    minWidth: 0,
   },
   walkFinishButton: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
@@ -5692,6 +5803,7 @@ const s = StyleSheet.create({
   requiredChoiceHint: { fontSize: 12, lineHeight: 16, marginTop: 14, textAlign: "center" },
 
   logBoardCard: { marginTop: 12 },
+  logViewTabs: { marginBottom: 12 },
   searchPanel: {
     flexDirection: "row",
     alignItems: "center",
@@ -6141,5 +6253,5 @@ const s = StyleSheet.create({
   modalSkip: { flex: 1, height: 48, alignItems: "center", justifyContent: "center" },
   modalSkipText: { fontSize: 15 },
   modalSave: { flex: 2, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  modalSaveText: { color: "#fff", fontSize: 15 },
+  modalSaveText: { fontSize: 15 },
 });

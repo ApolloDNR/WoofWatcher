@@ -176,3 +176,64 @@ The in-app pass/needs-tune controls are an evidence-capture aid only. They do
 not replace the screenshots and human review listed above, and local screenshot
 attachments do not replace provider-backed QA storage when that becomes a
 production requirement.
+
+## Native File & Share Behaviors (2026-07-20 code audit)
+
+Every file/share path is platform-guarded so the web export stays safe, but the
+native branches only execute on a real device. The paths below were read-audited
+and confirmed correct in source; these checks confirm them on hardware — this is
+the one part of the app the web sweeps cannot reach.
+
+### What the code does (audited correct on read)
+
+- **Record attachment** (Records → Add record → attach photo): on native the
+  image the picker returns from the OS cache is copied into
+  `documentDirectory/woofwatcher-attachments/` under a unique filename, and that
+  durable URI is saved (falls back to the cache URI only if the copy throws).
+  Uses `expo-file-system/legacy` — the correct classic API on SDK 54.
+- **Report printable source** (Care Pass / Report History "Printable HTML"):
+  writes the HTML to `documentDirectory/WoofWatcherReports/` as UTF-8, then
+  shares. On Android the file is converted to a `content://` URI via
+  `getContentUriAsync` before sharing.
+- **Generated binary** (Care Pass PDF / Dog ID PNG): same pattern, Base64 write.
+- **Owner wipe** (Privacy → delete all data): removes every `woofwatcher*`
+  AsyncStorage key AND deletes the `WoofWatcherReports/` and
+  `woofwatcher-attachments/` directories.
+
+### Known platform limitation (verify + remedy)
+
+React Native's `Share.share` attaches the `url` file **only on iOS**; on Android
+it shares the message text and drops `url`. Therefore:
+
+- **iOS:** the report/PDF/PNG file is attached to the share sheet.
+- **Android:** the file is written to the device (findable in Files, re-openable
+  from its saved URI) and the share sheet carries the summary text — but the file
+  is not attached to that particular share.
+- Share copy reads **"saved to your device"**, not "attached", so it is true on
+  both platforms (the local file write always succeeds; only the iOS share adds
+  an attachment on top).
+- **Remedy for true Android file attachment (post-launch):** add `expo-sharing`
+  and route native file shares through
+  `Sharing.shareAsync(fileUri, { mimeType, dialogTitle })`, which attaches on
+  both platforms. Deferred here because it needs a native rebuild and on-device
+  verification, not a web-testable change.
+
+### Device checklist
+
+| Flow | iOS expected | Android expected |
+| --- | --- | --- |
+| Records → Add record → attach photo → save | thumbnail shows on the saved record | same |
+| Kill app, relaunch, reopen that record | attachment still loads (durable copy survived cache purge) | same |
+| Care Pass → share printable HTML | share sheet opens with the HTML file attached | file saved; share carries summary; saved file opens from Files |
+| Dog ID → share PNG | PNG attached to the share sheet | PNG saved to device; opens from Files |
+| Care Pass → share PDF | PDF attached | PDF saved; opens from Files |
+| Privacy → delete all data | reports + attachments directories gone; app resets to a fresh household | same |
+
+### Evidence to capture
+
+- iOS + Android screenshot of a record showing a persisted photo attachment
+  **after an app relaunch** (proves the durable copy, not the cache URI).
+- iOS share-sheet screenshot with the report file attached.
+- Android Files screenshot showing the saved report / PDF / PNG.
+- Post-wipe screenshot of the fresh household, plus a Files check that the two
+  directories are gone.

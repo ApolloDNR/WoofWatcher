@@ -429,7 +429,10 @@ export function buildGeneratedBinaryArtifactFilePlan(
     ? null
     : "Local file export is unavailable because this runtime does not expose a document directory.";
   const format = source.mimeType === "application/pdf" ? "PDF" : "PNG";
-  const baseMessage = `WoofWatcher local generated ${format} is attached as ${source.fileName} (${source.mimeType}, ${formatBytes(source.byteSize)}). ${source.boundary}`;
+  // "Saved to your device", not "attached": RN Share.share attaches the
+  // url file only on iOS; on Android it shares text, so the honest claim is
+  // the local file write (which always succeeds on native).
+  const baseMessage = `WoofWatcher local generated ${format} is saved to your device as ${source.fileName} (${source.mimeType}, ${formatBytes(source.byteSize)}). ${source.boundary}`;
 
   return {
     directoryUri,

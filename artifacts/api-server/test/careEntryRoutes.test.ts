@@ -79,6 +79,11 @@ const fakeQueryOps = {
   desc: (column: unknown) => ({ op: "desc", column }),
   eq: (left: unknown, right: unknown) => ({ op: "eq", left, right }),
   gte: (left: unknown, right: unknown) => ({ op: "gte", left, right }),
+  sql: (strings: TemplateStringsArray, ...values: unknown[]) => ({
+    op: "sql",
+    strings: [...strings],
+    values,
+  }),
 };
 
 async function withApi(
@@ -86,6 +91,7 @@ async function withApi(
   fn: (baseUrl: string, calls: { auth: string[]; households: string[] }) => Promise<void>,
 ): Promise<void> {
   const app = express();
+  app.use(express.json());
   const calls = { auth: [] as string[], households: [] as string[] };
 
   app.use(
@@ -229,5 +235,119 @@ test("care-entry tombstone route rejects invalid update cursors before querying"
       error: "Invalid updatedSince query. Use an ISO date-time string.",
     });
     assert.equal(db.selectCalls.length, 0);
+  });
+});
+
+/**
+ * Fake db for the idempotent-create path: select().from().where().limit()
+ * results are served from a queue, and inserts append rows (or throw a
+ * queued error) so the dedupe + unique-violation flows can be driven
+ * through the real Express handler.
+ */
+function createIdempotentCreateDb() {
+  const insertedRows: Array<Record<string, unknown>> = [];
+  const selectQueue: unknown[][] = [];
+  const db = {
+    insertedRows,
+    selectQueue,
+    failNextInsertWith: null as unknown,
+    select() {
+      return {
+        from() {
+          return {
+            where() {
+              return {
+                async limit() {
+                  return selectQueue.shift() ?? [];
+                },
+                orderBy() {
+                  return {
+                    async limit() {
+                      return selectQueue.shift() ?? [];
+                    },
+                  };
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+    insert() {
+      return {
+        values(values: Record<string, unknown>) {
+          return {
+            async returning() {
+              if (db.failNextInsertWith) {
+                const err = db.failNextInsertWith;
+                db.failNextInsertWith = null;
+                throw err;
+              }
+              const row = {
+                ...careEntryRow,
+                id: `44444444-4444-4444-8444-44444444444${insertedRows.length + 1}`,
+                details: (values.details as Record<string, unknown>) ?? {},
+              };
+              insertedRows.push(row);
+              return [row];
+            },
+          };
+        },
+      };
+    },
+  };
+  return db;
+}
+
+test("care-entry create is idempotent: a retry with the same clientKey returns the existing row", async () => {
+  const db = createIdempotentCreateDb();
+  // First create: no existing row -> insert. Second create (retry after a
+  // lost response): the dedupe lookup finds the first row -> 200, no insert.
+  db.selectQueue.push([]);
+  await withApi(db as unknown as FakeDb, async (baseUrl) => {
+    const first = await fetch(`${baseUrl}/care-entries`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ type: "meal", details: { clientKey: "temp_retry_1" } }),
+    });
+    assert.equal(first.status, 201);
+    const firstBody = (await first.json()) as { id: string };
+    assert.equal(db.insertedRows.length, 1);
+    assert.equal(
+      (db.insertedRows[0].details as Record<string, unknown>).clientKey,
+      "temp_retry_1",
+    );
+
+    db.selectQueue.push([db.insertedRows[0]]);
+    const retry = await fetch(`${baseUrl}/care-entries`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ type: "meal", details: { clientKey: "temp_retry_1" } }),
+    });
+    assert.equal(retry.status, 200);
+    const retryBody = (await retry.json()) as { id: string };
+    assert.equal(retryBody.id, firstBody.id);
+    assert.equal(db.insertedRows.length, 1);
+  });
+});
+
+test("care-entry create returns the winning row when the unique index rejects a concurrent duplicate", async () => {
+  const db = createIdempotentCreateDb();
+  const winner = { ...careEntryRow, details: { clientKey: "temp_race_1" } };
+  // Dedupe lookup misses (the race), the insert hits the partial unique
+  // index (23505), and the recovery lookup returns the winner.
+  db.selectQueue.push([]);
+  db.failNextInsertWith = Object.assign(new Error("duplicate key"), { code: "23505" });
+  await withApi(db as unknown as FakeDb, async (baseUrl) => {
+    db.selectQueue.push([winner]);
+    const res = await fetch(`${baseUrl}/care-entries`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ type: "meal", details: { clientKey: "temp_race_1" } }),
+    });
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { id: string };
+    assert.equal(body.id, careEntryRow.id);
+    assert.equal(db.insertedRows.length, 0);
   });
 });

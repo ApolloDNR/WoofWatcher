@@ -1,5 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient } from "@tanstack/react-query";
+import { Platform } from "react-native";
+import * as FileSystem from "expo-file-system/legacy";
 import React, {
   createContext,
   useCallback,
@@ -39,6 +41,13 @@ import {
   type ReminderNotificationPreferences,
 } from "@/lib/reminderNotificationPreferences";
 import { normalizeLaunchProviderProfile, type LaunchStorageProviderEvidence } from "@/lib/launchProviderSetup";
+import {
+  convertLegacyState,
+  parseLegacyState,
+  LEGACY_IMPORT_FLAG_KEY,
+  LEGACY_STATE_KEY,
+  type LegacyImportResult,
+} from "@/lib/legacyImport";
 import type { SupportLegalReadinessProofEvidence } from "@/lib/supportRunbook";
 
 const STORAGE_KEY = "woofwatcher.v2.state";
@@ -240,7 +249,12 @@ function getDefaultDoc(): CareDoc {
   const now = new Date().toISOString();
   return {
     createdAt: now,
-    updatedAt: now,
+    // Epoch, deliberately: a pristine, never-edited doc must never win
+    // wall-clock reconciliation. Stamping install time here made a fresh
+    // device look "newer" than the household's real server doc on first
+    // sign-in - and push its empty defaults over everyone's data. Real edits
+    // stamp a real updatedAt.
+    updatedAt: new Date(0).toISOString(),
     activePetId: "primary",
     profile: {
       name: "My Dog",
@@ -372,13 +386,17 @@ function toEntry(c: ApiCareEntry): Entry {
   };
 }
 
-function toCreateInput(e: Omit<Entry, "id">): CareEntryInput {
+function toCreateInput(e: Omit<Entry, "id">, clientKey?: string): CareEntryInput {
   const details: { [key: string]: unknown } = { ...(e.details ?? {}) };
   if (e.title) details.title = e.title;
   if (e.durationMinutes != null) details.durationMinutes = e.durationMinutes;
   if (e.amount != null) details.amount = e.amount;
   if (e.dogInteractions != null) details.dogInteractions = e.dogInteractions;
   if (e.food != null) details.food = e.food;
+  // Idempotency key: the entry's temp id, stable across retries, so a create
+  // whose response was lost can be re-sent without duplicating the row (the
+  // server dedupes on details.clientKey).
+  if (clientKey) details.clientKey = clientKey;
   return {
     type: e.type,
     occurredAt: e.occurredAt,
@@ -432,6 +450,23 @@ interface CareContextValue {
   syncOutbox: CareSyncOutbox;
   isLoaded: boolean;
   isSyncing: boolean;
+  /**
+   * Local-storage health. Local-first means a failing device store IS a data
+   * risk, so it must be visible ("sync failures visible" applies doubly to
+   * the primary store): "save-failed" = writes are erroring, recent logs may
+   * not survive a restart; "read-failed" = stored data could not be read, so
+   * persistence is paused to protect it; "reset" = the cache was corrupt and
+   * was reset, with the raw blob kept under a recovery key.
+   */
+  storageWarning: "save-failed" | "read-failed" | "reset" | null;
+  /**
+   * Set (for this session only) when boot found and adopted care data from
+   * the legacy web PWA's localStorage. Home shows a one-time welcome-back
+   * notice from it. The import runs only into a pristine v2 store, never
+   * merges into established data, and never deletes the legacy key - the
+   * original stays as its own backup until an owner wipe removes both.
+   */
+  legacyImport: LegacyImportResult["summary"] | null;
 }
 
 const CareContext = createContext<CareContextValue | null>(null);
@@ -445,6 +480,12 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const [serverVersion, setServerVersion] = useState(0);
   const [hydrated, setHydrated] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [storageWarning, setStorageWarning] = useState<
+    "save-failed" | "read-failed" | "reset" | null
+  >(null);
+  const [legacyImport, setLegacyImport] = useState<
+    LegacyImportResult["summary"] | null
+  >(null);
 
   // Refs mirror state so async callbacks read fresh values without re-binding.
   const docRef = useRef(doc);
@@ -473,59 +514,170 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   }, [isSignedIn]);
 
   // Hydrate instantly from the offline cache so the UI never flashes empty.
+  // Failure handling is data-safety-critical: `hydrated` gates the persist
+  // effect below, so it must only flip true after a read that actually
+  // completed - otherwise the persist effect overwrites intact stored data
+  // with in-memory defaults.
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => {
-        if (raw) {
-          try {
-            const parsed = JSON.parse(raw);
-            if (parsed?.doc) setDoc(mergeDoc(parsed.doc));
-            if (Array.isArray(parsed?.entries)) setEntries(parsed.entries);
-            if (typeof parsed?.serverVersion === "number") {
-              setServerVersion(parsed.serverVersion);
-            }
-          } catch {
-            // Ignore corrupt cache; fall back to defaults.
-          }
+    // Returns whether the store is pristine (no cache, or a cache holding
+    // zero entries and a never-edited doc) - the only state the legacy web
+    // import below is allowed to write into.
+    const applyRaw = (raw: string | null): boolean => {
+      if (!raw) return true;
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed?.doc) setDoc(mergeDoc(parsed.doc));
+        let cachedEntries: Entry[] = [];
+        if (Array.isArray(parsed?.entries)) {
+          // Drop malformed rows (an id-less entry crashes outbox derivation
+          // on every launch - an unrecoverable boot loop, since the persist
+          // effect never gets a chance to repair the cache).
+          cachedEntries = parsed.entries.filter(
+            (entry: unknown): entry is Entry =>
+              !!entry && typeof (entry as Entry).id === "string",
+          );
+          setEntries(cachedEntries);
         }
+        if (typeof parsed?.serverVersion === "number") {
+          setServerVersion(parsed.serverVersion);
+        }
+        const docUpdatedAt = typeof parsed?.doc?.updatedAt === "string" ? parsed.doc.updatedAt : "";
+        return (
+          cachedEntries.length === 0 &&
+          (!docUpdatedAt || docUpdatedAt === new Date(0).toISOString())
+        );
+      } catch {
+        // Corrupt cache: preserve the evidence under a recovery key BEFORE
+        // the persist effect overwrites the primary key with defaults, and
+        // tell the owner instead of silently resetting.
+        AsyncStorage.setItem(`${STORAGE_KEY}.recovery`, raw).catch(() => {});
+        setStorageWarning("reset");
+        return false;
+      }
+    };
+    // One-time adoption of the legacy web PWA's data (see lib/legacyImport).
+    // Runs only into a pristine store; the legacy key is left in place as
+    // its own backup (the owner wipe removes every woofwatcher* key).
+    const maybeImportLegacyState = async () => {
+      try {
+        const [flag, legacyRaw] = await Promise.all([
+          AsyncStorage.getItem(LEGACY_IMPORT_FLAG_KEY),
+          AsyncStorage.getItem(LEGACY_STATE_KEY),
+        ]);
+        if (flag || !legacyRaw) return;
+        const stamp = (payload: object) =>
+          AsyncStorage.setItem(
+            LEGACY_IMPORT_FLAG_KEY,
+            JSON.stringify({ at: new Date().toISOString(), ...payload }),
+          ).catch(() => {});
+        const result = convertLegacyState(parseLegacyState(legacyRaw));
+        if (!result) {
+          await stamp({ status: "nothing-to-import" });
+          return;
+        }
+        if (Object.keys(result.docPatch).length) {
+          const importedAt = new Date().toISOString();
+          setDoc((prev) => ({
+            ...prev,
+            ...result.docPatch,
+            profile: result.docPatch.profile
+              ? {
+                  ...prev.profile,
+                  ...result.docPatch.profile,
+                  weight: { ...prev.profile.weight, ...result.docPatch.profile.weight },
+                }
+              : prev.profile,
+            dietProfile: result.docPatch.dietProfile
+              ? { ...prev.dietProfile, ...result.docPatch.dietProfile }
+              : prev.dietProfile,
+            // A real import is a real edit: the doc must not stay pristine
+            // or reconciliation could discard the adopted data.
+            updatedAt: importedAt,
+          }));
+        }
+        if (result.entries.length) {
+          setEntries((prev) => [...prev, ...result.entries]);
+        }
+        setLegacyImport(result.summary);
+        await stamp({ status: "imported", summary: result.summary });
+      } catch {
+        // A legacy read must never break boot; the store stays as hydrated.
+      }
+    };
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then(async (raw) => {
+        if (applyRaw(raw)) await maybeImportLegacyState();
+        setHydrated(true);
       })
-      .finally(() => setHydrated(true));
+      .catch(() => {
+        // The read itself failed (transient storage error). Retry once;
+        // if it still fails, stay un-hydrated so persistence is paused for
+        // the session - in-memory care still works, but we never clobber
+        // the stored data we couldn't read.
+        setTimeout(() => {
+          AsyncStorage.getItem(STORAGE_KEY)
+            .then(async (raw) => {
+              if (applyRaw(raw)) await maybeImportLegacyState();
+              setHydrated(true);
+            })
+            .catch(() => setStorageWarning("read-failed"));
+        }, 1500);
+      });
   }, []);
 
-  // Persist the offline cache whenever synced state changes.
+  // Persist the offline cache whenever synced state changes. A failing
+  // device store is a data risk in a local-first app, so surface it instead
+  // of swallowing it - and clear the warning when writes recover.
   useEffect(() => {
     if (!hydrated) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({ doc, entries, serverVersion }),
-    ).catch(() => {});
+    )
+      .then(() => {
+        setStorageWarning((current) =>
+          current === "save-failed" ? null : current,
+        );
+      })
+      .catch(() => setStorageWarning("save-failed"));
   }, [doc, entries, serverVersion, hydrated]);
 
   const pushDoc = useCallback(async (next: CareDoc) => {
+    // Guard every post-await state write against an owner wipe: a push (or
+    // its conflict-retry) that resolves after "All data deleted" must not
+    // write the pre-wipe doc back into memory, disk, or the server.
+    const eraseGenerationAtStart = eraseGenerationRef.current;
     try {
       const res = await putCareState({
         version: versionRef.current,
         doc: next as unknown as CareStateEnvelope["doc"],
       });
+      if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
       setServerVersion(res.version);
     } catch (err) {
       if (!isConflict(err)) return;
+      if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
       // Another device wrote first. Adopt their doc + version, replay our
-      // change on top (last-writer-wins per field), and retry once.
+      // side on top (last-writer-wins per field), and retry once. Replay the
+      // LATEST local doc, not the snapshot this push captured - by conflict
+      // time the owner may have made further edits, and overlaying the stale
+      // snapshot erased them locally and then pushed the erasure.
       const envelope = err.data as CareStateEnvelope | null;
       if (!envelope) return;
       const merged: CareDoc = {
         ...mergeDoc(envelope.doc as Partial<CareDoc>),
-        ...next,
+        ...docRef.current,
         updatedAt: new Date().toISOString(),
       };
       setServerVersion(envelope.version);
+      docRef.current = merged;
       setDoc(merged);
       try {
         const res = await putCareState({
           version: envelope.version,
           doc: merged as unknown as CareStateEnvelope["doc"],
         });
+        if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
         setServerVersion(res.version);
       } catch {
         // Give up; the next full refresh reconciles.
@@ -542,7 +694,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             : e,
         ),
       );
-      createCareEntry(toCreateInput(entry))
+      createCareEntry(toCreateInput(entry, tempId))
         .then((created) => {
           const real = toEntry(created);
           realIdByTemp.current.set(tempId, real.id);
@@ -644,6 +796,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           version: plan.version,
           doc: plan.doc as unknown as CareStateEnvelope["doc"],
         });
+        // Re-check after the await: a wipe during the PUT must not have its
+        // pre-wipe doc restored into memory (and re-persisted) here.
+        if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
         setDoc(mergeDoc(res.doc as Partial<CareDoc>));
         setServerVersion(res.version);
       } else {
@@ -710,11 +865,16 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       // its temp id for the server id; resolve through the mapping so the
       // right row is removed locally AND on the server.
       const realId = realIdByTemp.current.get(id) ?? id;
-      let removed: Entry | undefined;
-      setEntries((prev) => {
-        removed = prev.find((e) => e.id === realId || e.id === id);
-        return prev.filter((e) => e.id !== realId && e.id !== id);
-      });
+      const eraseGenerationAtStart = eraseGenerationRef.current;
+      // Computed outside the updater (see updateEntry): a deferred updater
+      // left `removed` undefined, silently losing the failure-restore.
+      const removed = entriesRef.current.find(
+        (e) => e.id === realId || e.id === id,
+      );
+      entriesRef.current = entriesRef.current.filter(
+        (e) => e.id !== realId && e.id !== id,
+      );
+      setEntries((prev) => prev.filter((e) => e.id !== realId && e.id !== id));
       if (!signedInRef.current || realId.startsWith("temp_")) return true;
       try {
         await deleteCareEntry(realId);
@@ -723,7 +883,10 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         });
         return true;
       } catch {
-        if (removed) {
+        // Never restore across an owner wipe: a slow delete that fails after
+        // "All data deleted" must not resurrect the entry into the freshly
+        // wiped store.
+        if (removed && eraseGenerationRef.current === eraseGenerationAtStart) {
           const restored = removed;
           setEntries((prev) => [restored, ...prev]);
         }
@@ -736,28 +899,33 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const updateEntry = useCallback(
     (id: string, patch: Partial<Omit<Entry, "id">>) => {
       const realId = realIdByTemp.current.get(id) ?? id;
-      let merged: Entry | undefined;
-      setEntries((prev) =>
-        prev.map((e) => {
-          if (e.id !== realId) return e;
-          merged = {
-            ...e,
-            ...patch,
-            syncStatus: signedInRef.current
-              ? "pending"
-              : realId.startsWith("temp_")
-                ? e.syncStatus
-                : "local",
-            syncError: signedInRef.current
-              ? undefined
-              : realId.startsWith("temp_")
-                ? e.syncError
-                : "Saved offline. Sign in or refresh to sync.",
-          };
-          return merged;
-        }),
+      // Compute the merge OUTSIDE the setState updater. The old pattern
+      // (assign inside the updater, read synchronously after) silently
+      // skipped the server patch whenever React deferred the updater - the
+      // entry stayed "pending" forever with nothing in flight. entriesRef is
+      // committed-fresh and updated eagerly below so sequential same-tick
+      // updates compose.
+      const current = entriesRef.current.find((e) => e.id === realId);
+      if (!current) return;
+      const merged: Entry = {
+        ...current,
+        ...patch,
+        syncStatus: signedInRef.current
+          ? "pending"
+          : realId.startsWith("temp_")
+            ? current.syncStatus
+            : "local",
+        syncError: signedInRef.current
+          ? undefined
+          : realId.startsWith("temp_")
+            ? current.syncError
+            : "Saved offline. Sign in or refresh to sync.",
+      };
+      entriesRef.current = entriesRef.current.map((e) =>
+        e.id === realId ? merged : e,
       );
-      if (!signedInRef.current || !merged) return;
+      setEntries((prev) => prev.map((e) => (e.id === realId ? merged : e)));
+      if (!signedInRef.current) return;
       // Create still in flight; remember the patch and apply it on resolve.
       if (realId.startsWith("temp_")) {
         pendingPatch.current.set(realId, {
@@ -795,14 +963,18 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const updateCareDoc = useCallback(
     (updater: (doc: CareDoc) => CareDoc) => {
-      setDoc((prev) => {
-        const next: CareDoc = {
-          ...updater(prev),
-          updatedAt: new Date().toISOString(),
-        };
-        if (signedInRef.current) void pushDoc(next);
-        return next;
-      });
+      // Compute OUTSIDE the setState updater: calling pushDoc from inside it
+      // was a render-phase side effect (duplicate PUTs under StrictMode /
+      // replayed concurrent renders). docRef is updated eagerly so two
+      // synchronous back-to-back updates compose instead of the second one
+      // reading a stale base.
+      const next: CareDoc = {
+        ...updater(docRef.current),
+        updatedAt: new Date().toISOString(),
+      };
+      docRef.current = next;
+      setDoc(next);
+      if (signedInRef.current) void pushDoc(next);
     },
     [pushDoc],
   );
@@ -855,6 +1027,18 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       // Best effort: the in-memory reset above already cleared the live
       // document, and the persist effect overwrites the primary cache key.
     }
+    // "All data deleted" must include the files WoofWatcher wrote, not just
+    // its key-value store: exported report artifacts and durable record
+    // attachments both live under documentDirectory on native.
+    if (Platform.OS !== "web" && FileSystem.documentDirectory) {
+      await Promise.all(
+        ["WoofWatcherReports", "woofwatcher-attachments"].map((dir) =>
+          FileSystem.deleteAsync(`${FileSystem.documentDirectory}${dir}/`, {
+            idempotent: true,
+          }).catch(() => {}),
+        ),
+      );
+    }
   }, []);
 
   const value = useMemo<CareContextValue>(
@@ -869,6 +1053,8 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       syncOutbox,
       isLoaded: hydrated,
       isSyncing,
+      storageWarning,
+      legacyImport,
     }),
     [
       state,
@@ -881,6 +1067,8 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       syncOutbox,
       hydrated,
       isSyncing,
+      storageWarning,
+      legacyImport,
     ],
   );
 

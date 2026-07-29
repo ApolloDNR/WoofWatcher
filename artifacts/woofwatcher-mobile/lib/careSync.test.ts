@@ -329,3 +329,27 @@ test("seeds an empty server care document from the local cache", () => {
     profile: { name: "Phoenix" },
   });
 });
+
+test("merge supersedes a temp entry once its server row arrives via clientKey", () => {
+  const local = [
+    { id: "temp_123_abc", title: "Breakfast", occurredAt: "2026-07-18T07:00:00.000Z", syncStatus: "failed" as const },
+    { id: "temp_456_def", title: "Walk", occurredAt: "2026-07-18T08:00:00.000Z", syncStatus: "failed" as const },
+  ];
+  const server = [
+    {
+      id: "srv_1",
+      title: "Breakfast",
+      occurredAt: "2026-07-18T07:00:00.000Z",
+      details: { clientKey: "temp_123_abc" },
+    },
+  ];
+
+  const merged = mergeServerAndLocalEntries(local, server);
+
+  // The meal's server row carries the temp entry's clientKey, so the temp
+  // duplicate is superseded; the walk (never acknowledged) is kept for retry.
+  assert.deepEqual(
+    merged.map((entry) => entry.id).sort(),
+    ["srv_1", "temp_456_def"],
+  );
+});

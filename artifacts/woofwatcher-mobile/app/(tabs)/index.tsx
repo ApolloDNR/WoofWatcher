@@ -25,7 +25,15 @@ import {
   type CareEventType,
 } from "@workspace/care-domain";
 
-import Reanimated from "react-native-reanimated";
+import Reanimated, {
+  Easing as ReanimatedEasing,
+  runOnJS,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 import {
   BoardCard,
@@ -42,10 +50,12 @@ import {
   type PhoenixRoomReaction,
   type PhoenixRoomStat,
 } from "@/components/LivingPhoenixRoom";
+import { PetPortrait } from "@/components/PetPortrait";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type Entry } from "@/context/CareContext";
+import { announce } from "@/lib/announce";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import {
@@ -334,7 +344,17 @@ export default function HomeScreen() {
   const { width: viewportWidth, height: viewportHeight } =
     useWindowDimensions();
   const router = useRouter();
-  const { state, addEntry, deleteEntry, updateEntry, refresh } = useCare();
+  const { state, addEntry, deleteEntry, updateEntry, refresh, storageWarning, legacyImport } = useCare();
+  // The data-loss warning must reach screen-reader users on every platform.
+  useEffect(() => {
+    if (storageWarning === "save-failed") {
+      announce("Device storage is failing. Recent care logs may not be saved.");
+    } else if (storageWarning === "read-failed") {
+      announce("Could not read saved care data. Saving is paused this session.");
+    } else if (storageWarning === "reset") {
+      announce("Saved care data could not be read and was reset. A recovery copy was kept.");
+    }
+  }, [storageWarning]);
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
 
   const topPadding = getRouteTopPadding({
@@ -511,7 +531,20 @@ export default function HomeScreen() {
   const welcomeShouldShow = isFreshStart && welcomeDismissed === false;
   const [welcomeCollapsed, setWelcomeCollapsed] = useState(false);
   const welcomeWasShown = useRef(false);
-  const welcomeCollapse = useRef(new Animated.Value(1)).current;
+  // Reanimated shared value so the fold runs on the UI thread - RN Animated
+  // could only tween maxHeight on the JS thread, a drop-frame risk right
+  // after the first quick log. Reduce Motion collapses instantly.
+  const reducedMotion = useReducedMotion();
+  // Scroll position for the hero parallax; heroExitStart is measured from
+  // the hero wrapper's layout (a huge default keeps parallax off until then).
+  const scrollY = useSharedValue(0);
+  const heroExitStart = useSharedValue(1_000_000);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+  const welcomeCollapse = useSharedValue(1);
   const [welcomeCardHeight, setWelcomeCardHeight] = useState(0);
   useEffect(() => {
     if (welcomeShouldShow) {
@@ -519,16 +552,25 @@ export default function HomeScreen() {
       return;
     }
     if (!welcomeWasShown.current || welcomeCollapsed) return;
-    Animated.timing(welcomeCollapse, {
-      toValue: 0,
-      duration: 250,
-      easing: Easing.out(Easing.cubic),
-      // Height cannot animate on the native driver; this is a one-off exit.
-      useNativeDriver: false,
-    }).start(({ finished }) => {
-      if (finished) setWelcomeCollapsed(true);
-    });
-  }, [welcomeCollapse, welcomeCollapsed, welcomeShouldShow]);
+    if (reducedMotion) {
+      welcomeCollapse.value = 0;
+      setWelcomeCollapsed(true);
+      return;
+    }
+    welcomeCollapse.value = withTiming(
+      0,
+      { duration: 250, easing: ReanimatedEasing.out(ReanimatedEasing.cubic) },
+      (finished) => {
+        if (finished) runOnJS(setWelcomeCollapsed)(true);
+      },
+    );
+  }, [reducedMotion, welcomeCollapse, welcomeCollapsed, welcomeShouldShow]);
+  const welcomeCardAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: welcomeCollapse.value,
+    ...(welcomeCardHeight > 0
+      ? { maxHeight: welcomeCollapse.value * welcomeCardHeight }
+      : {}),
+  }));
   const welcomeVisible =
     welcomeShouldShow || (welcomeWasShown.current && !welcomeCollapsed);
   const timeLabel = useMemo(
@@ -1204,21 +1246,32 @@ export default function HomeScreen() {
       pendingMeal &&
       quickFeedback.id === pendingMeal.id,
   );
-  const mealChipReveal = useRef(new Animated.Value(0)).current;
+  const mealChipReveal = useSharedValue(0);
   useEffect(() => {
-    Animated.timing(mealChipReveal, {
-      toValue: pendingMealChipSuppressed ? 0 : 1,
+    const target = pendingMealChipSuppressed ? 0 : 1;
+    if (reducedMotion) {
+      mealChipReveal.value = target;
+      return;
+    }
+    mealChipReveal.value = withTiming(target, {
       duration: 220,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [mealChipReveal, pendingMealChipSuppressed]);
+      easing: ReanimatedEasing.out(ReanimatedEasing.cubic),
+    });
+  }, [mealChipReveal, pendingMealChipSuppressed, reducedMotion]);
+  const mealChipAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: mealChipReveal.value,
+    maxHeight: 88 * mealChipReveal.value,
+  }));
   const showToast = (
     msg: string,
     feedback?: { id: string; title: string; type: CareEventType },
+    holdMs?: number,
   ) => {
     setToast(msg);
     setQuickFeedback(feedback ?? null);
+    // The toast is invisible to screen readers and its Undo button vanishes
+    // on a timer - announce so the core loop is not silent under VoiceOver.
+    announce(feedback ? `${msg}. Undo available.` : msg);
     Animated.timing(toastOpacity, {
       toValue: 1,
       duration: 160,
@@ -1236,7 +1289,7 @@ export default function HomeScreen() {
           setQuickFeedback(null);
         });
       },
-      feedback ? 5200 : 1400,
+      holdMs ?? (feedback ? 5200 : 1400),
     );
   };
   useEffect(
@@ -1245,6 +1298,27 @@ export default function HomeScreen() {
     },
     [],
   );
+
+  // Welcome-back notice when boot adopted the legacy web app's saved data
+  // (one session only; see CareContext.legacyImport). Held longer than a
+  // quick-log toast - a returning owner should actually catch it.
+  const legacyImportShown = useRef(false);
+  useEffect(() => {
+    if (!legacyImport || legacyImportShown.current) return;
+    legacyImportShown.current = true;
+    const logs =
+      legacyImport.entries === 1 ? "1 care log" : `${legacyImport.entries} care logs`;
+    showToast(
+      legacyImport.entries
+        ? `Welcome back. Brought over ${logs} from the earlier WoofWatcher.`
+        : "Welcome back. Brought over your care plan from the earlier WoofWatcher.",
+      undefined,
+      6500,
+    );
+    // showToast is stable in practice (state setters + refs); the ref guard
+    // above makes this effect one-shot regardless.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legacyImport]);
 
   const undoQuickFeedback = () => {
     if (!quickFeedback) return;
@@ -1505,6 +1579,30 @@ export default function HomeScreen() {
   // stage cannot both fit above the tab pill, so the room stays folded
   // behind the welcome card and grows in as the card folds away.
   const heroDeferredForWelcome = isShortViewport && welcomeVisible;
+  // Mirror of the welcome fold for the deferred hero: grows in on the UI
+  // thread as the card folds away.
+  const welcomeHeroAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: 1 - welcomeCollapse.value,
+    maxHeight: heroStageHeight * (1 - welcomeCollapse.value),
+  }));
+  // Storybook depth: once the room's top edge passes the viewport top, the
+  // scene drifts down inside its clipped frame (scrolling away ~16% slower)
+  // and dims a touch - the page recedes instead of just leaving. Gap-free by
+  // construction: the translation only starts after the frame's top is
+  // offscreen, so the seam it opens is never visible. Reduce Motion keeps
+  // the room fixed.
+  const heroParallaxStyle = useAnimatedStyle(() => {
+    if (reducedMotion) return { transform: [{ translateY: 0 }], opacity: 1 };
+    const height = Math.max(1, heroStageHeight);
+    const progress = Math.min(
+      Math.max((scrollY.value - heroExitStart.value) / height, 0),
+      1,
+    );
+    return {
+      transform: [{ translateY: progress * height * 0.16 }],
+      opacity: 1 - progress * 0.18,
+    };
+  });
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
   useEffect(() => {
     if (isWebRoutePreview) return;
@@ -1551,7 +1649,7 @@ export default function HomeScreen() {
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
-      <ScrollView
+      <Reanimated.ScrollView
         style={s.container}
         contentContainerStyle={{
           paddingTop: topPadding,
@@ -1559,6 +1657,8 @@ export default function HomeScreen() {
           paddingHorizontal: routeHorizontalPadding,
         }}
         showsVerticalScrollIndicator={false}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
       >
         <Animated.View style={{ opacity: fade }}>
           <View style={[s.header, { backgroundColor: colors.card }]}>
@@ -1570,10 +1670,7 @@ export default function HomeScreen() {
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={({ pressed }) => [s.identityWrap, { opacity: pressed ? 0.75 : 1 }]}
             >
-              <Image
-                source={require("@/assets/images/phoenix-avatar.png")}
-                style={[s.identityAvatar, { borderColor: colors.border, backgroundColor: colors.secondary }]}
-              />
+              <PetPortrait size={42} />
               <View style={s.identityCopy}>
                 <View style={s.identityNameRow}>
                   <Text
@@ -1643,7 +1740,7 @@ export default function HomeScreen() {
           </View>
 
           {welcomeVisible ? (
-            <Animated.View
+            <Reanimated.View
               pointerEvents={welcomeShouldShow ? "auto" : "none"}
               onLayout={(event) => {
                 const measured = Math.round(event.nativeEvent.layout.height);
@@ -1651,18 +1748,7 @@ export default function HomeScreen() {
                   setWelcomeCardHeight((prev) => Math.max(prev, measured));
                 }
               }}
-              style={{
-                opacity: welcomeCollapse,
-                overflow: "hidden",
-                ...(welcomeCardHeight > 0
-                  ? {
-                      maxHeight: welcomeCollapse.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, welcomeCardHeight],
-                      }),
-                    }
-                  : {}),
-              }}
+              style={[{ overflow: "hidden" }, welcomeCardAnimatedStyle]}
             >
             <View style={[s.welcomeCard, s.softShadow, { backgroundColor: colors.forest }]}>
               <Pressable
@@ -1713,7 +1799,7 @@ export default function HomeScreen() {
                 </Pressable>
               </View>
             </View>
-            </Animated.View>
+            </Reanimated.View>
           ) : null}
 
           {/* The room is a framed storybook card: day/night art fills the
@@ -1721,21 +1807,17 @@ export default function HomeScreen() {
               storybook mockup Home. On short phones the stage height is
               clamped (uniform scale) and it stays folded while the first-run
               welcome card is up, growing in as the card folds away. */}
-          <Animated.View
+          <Reanimated.View
             pointerEvents={heroDeferredForWelcome ? "none" : "auto"}
+            onLayout={(event) => {
+              // Where the hero's top crosses the viewport top: its offset in
+              // the scroll content (the fade wrapper starts at the content
+              // top) plus the container's top padding.
+              heroExitStart.value = topPadding + event.nativeEvent.layout.y;
+            }}
             style={
               heroDeferredForWelcome
-                ? {
-                    overflow: "hidden",
-                    opacity: welcomeCollapse.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [1, 0],
-                    }),
-                    maxHeight: welcomeCollapse.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [heroStageHeight, 0],
-                    }),
-                  }
+                ? [{ overflow: "hidden" }, welcomeHeroAnimatedStyle]
                 : null
             }
           >
@@ -1748,6 +1830,7 @@ export default function HomeScreen() {
                 { height: heroStageHeight, overflow: "hidden" },
               ]}
             >
+             <Reanimated.View style={heroParallaxStyle}>
              <View
                style={
                  heroStageScale < 1
@@ -1789,6 +1872,7 @@ export default function HomeScreen() {
                 accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
               />
             </View>
+            </Reanimated.View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
@@ -1808,7 +1892,31 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           </View>
-          </Animated.View>
+          </Reanimated.View>
+
+          {/* Local-first means a failing device store IS a data risk - never
+              hide it. Shown only when storage reads/writes actually fail. */}
+          {storageWarning ? (
+            <View
+              accessibilityRole="alert"
+              // role="alert" only maps to a live region on web; Android needs
+              // the explicit live region and iOS the announcement effect below.
+              aria-live="assertive"
+              style={[
+                s.storageWarningCard,
+                { backgroundColor: colors.amberSoft, borderColor: colors.amber + "66" },
+              ]}
+            >
+              <Ionicons name="warning-outline" size={17} color={colors.amber} />
+              <Text style={[s.storageWarningText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {storageWarning === "save-failed"
+                  ? "Device storage is failing - new care logs may not survive an app restart."
+                  : storageWarning === "read-failed"
+                    ? "Couldn't read saved care data. Saving is paused this session to protect what's stored."
+                    : "Saved care data couldn't be read and was reset. A recovery copy was kept on this device."}
+              </Text>
+            </View>
+          ) : null}
 
           {/* Mock-board Care Sense card: mood, energy, hunger, and alone
               time as chunky pip meters. Every fill derives from real logged
@@ -2112,16 +2220,9 @@ export default function HomeScreen() {
                 }
               />
               {pendingMealOpenLoop ? (
-                <Animated.View
+                <Reanimated.View
                   pointerEvents={pendingMealChipSuppressed ? "none" : "auto"}
-                  style={{
-                    opacity: mealChipReveal,
-                    overflow: "hidden",
-                    maxHeight: mealChipReveal.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, 88],
-                    }),
-                  }}
+                  style={[{ overflow: "hidden" }, mealChipAnimatedStyle]}
                 >
                 <Pressable
                   accessibilityRole="button"
@@ -2181,16 +2282,11 @@ export default function HomeScreen() {
                     </Text>
                   </View>
                 </Pressable>
-                </Animated.View>
+                </Reanimated.View>
               ) : null}
               {nextPrimary ? (
                 <View style={s.nextPrimaryRow}>
-                  <Image
-                    source={require("@/assets/images/phoenix-avatar.png")}
-                    style={[s.nextThumb, { borderColor: colors.border, backgroundColor: colors.secondary }]}
-                    resizeMode="cover"
-                    accessibilityLabel={`${petName} thumbnail`}
-                  />
+                  <PetPortrait size={56} />
                   <View style={s.nextPrimaryCopy}>
                     <Text
                       numberOfLines={1}
@@ -3174,7 +3270,7 @@ export default function HomeScreen() {
             </Pressable>
           </BoardCard>
         </Animated.View>
-      </ScrollView>
+      </Reanimated.ScrollView>
 
       {toast && (
         <Animated.View
@@ -3294,12 +3390,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  identityAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    borderWidth: 1,
-  },
   identityCopy: {
     flex: 1,
     minWidth: 0,
@@ -3409,6 +3499,10 @@ const s = StyleSheet.create({
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
+    // The card's text stack renders after this absolute button, so without
+    // an explicit z-order the full-width kicker Text sits on top and eats
+    // every tap - the X looked tappable but was dead.
+    zIndex: 5,
     backgroundColor: "rgba(255,255,255,0.14)",
   },
   welcomeKicker: {
@@ -3453,6 +3547,21 @@ const s = StyleSheet.create({
 
   // Mock-board Care Sense card: quiet kicker, big honest headline, four
   // chunky pip meters (mood / energy / hunger / alone time).
+  storageWarningCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  storageWarningText: {
+    flex: 1,
+    fontSize: 12.5,
+    lineHeight: 17,
+  },
   careSenseCard: {
     marginTop: 12,
     marginBottom: 4,
@@ -3933,12 +4042,6 @@ const s = StyleSheet.create({
     alignItems: "flex-start",
     gap: 12,
     paddingTop: 2,
-  },
-  nextThumb: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    borderWidth: 1,
   },
   nextPrimaryCopy: {
     flex: 1,
