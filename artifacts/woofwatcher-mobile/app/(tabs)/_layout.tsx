@@ -1,7 +1,7 @@
 import { Tabs, usePathname, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,7 +28,21 @@ function TabIcon({
   ionFilled: IoniconName;
   size?: number;
 }) {
-  return <Ionicons name={focused ? ionFilled : ion} size={size} color={color} />;
+  // Becoming the active tab pops the icon with the shared bounce - the same
+  // game-feel the paw button has, so navigation answers back visually, not
+  // just with the selection haptic. Reduce Motion keeps it still (useBounce
+  // is already gated).
+  const { style, bounce } = useBounce();
+  const wasFocused = useRef(focused);
+  useEffect(() => {
+    if (focused && !wasFocused.current) bounce();
+    wasFocused.current = focused;
+  }, [bounce, focused]);
+  return (
+    <Animated.View style={style}>
+      <Ionicons name={focused ? ionFilled : ion} size={size} color={color} />
+    </Animated.View>
+  );
 }
 
 /* Today is the elevated center tab: the paw button drops the owner into
@@ -50,6 +64,7 @@ function CenterToday() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={onToday ? "Quick log" : "Today"}
+        aria-selected={onToday}
         accessibilityHint={
           onToday
             ? "Opens the fast log sheet"
@@ -84,7 +99,12 @@ function CenterToday() {
           <Ionicons name="paw" size={26} color={colors.primaryForeground} />
         </Animated.View>
       </Pressable>
-      <Text style={[s.fabLabel, { color: colors.forest }]}>Today</Text>
+      {/* Visual caption only - the paw button already carries the accessible
+          label, so this Text would read as a stray duplicate "Today".
+          aria-hidden is the one alias RN maps on native AND web. */}
+      <Text aria-hidden style={[s.fabLabel, { color: colors.forest }]}>
+        Today
+      </Text>
     </View>
   );
 }
@@ -100,6 +120,23 @@ export default function TabLayout() {
   return (
     <View style={{ flex: 1 }}>
       <Tabs
+        // history back behavior: when the user opens a deep-linked screen
+        // (Records/Health/More reached from Pack, Story, etc.) the hardware /
+        // router back returns to the tab they actually came from, instead of
+        // the default "firstRoute" jump to Today that used to strand them.
+        backBehavior="history"
+        screenListeners={{
+          // The standard nav tabs used the default expo-router buttons, which
+          // fire no haptic - the app's most frequent interaction had the least
+          // feedback. A selection tick on every tab press matches the toggle /
+          // segment feel used elsewhere. (The center paw keeps its own Medium
+          // impact via CenterToday.)
+          tabPress: () => {
+            if (Platform.OS !== "web") {
+              Haptics.selectionAsync();
+            }
+          },
+        }}
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: colors.forest,

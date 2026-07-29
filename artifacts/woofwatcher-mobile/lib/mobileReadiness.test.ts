@@ -800,13 +800,8 @@ test("keeps fixed-light Quick Care and Records HUD labels readable in dark mode"
   );
   assert.match(
     records,
-    /s\.recordsCredentialIdBadge,\s*\{\s*backgroundColor:\s*colors\.brandNavy\s*\+\s*"1F"\s*\}/,
-    "the fixed-light Records Dog ID badge needs a constant dark wash",
-  );
-  assert.match(
-    records,
-    /name="paw"\s+size=\{16\}\s+color=\{colors\.brandNavy\}/,
-    "the fixed-light Records Dog ID badge needs constant dark icon ink",
+    /<PetPortrait\s+size=\{38\}\s+ringColor=\{colors\.brandNavy\s*\+\s*"55"\}\s*\/>/,
+    "the fixed-light Records Dog ID portrait needs a constant dark ring",
   );
   assert.doesNotMatch(
     quickCare,
@@ -825,8 +820,8 @@ test("keeps fixed-light Quick Care and Records HUD labels readable in dark mode"
   );
   assert.doesNotMatch(
     records,
-    /s\.recordsCredentialIdBadge,\s*\{\s*backgroundColor:\s*recordsVaultTone/,
-    "adaptive readiness tones become unreliable against the scheme-independent ivory Dog ID plate",
+    /<PetPortrait\s+size=\{38\}\s+ringColor=\{recordsVaultTone/,
+    "adaptive readiness tones become unreliable around the scheme-independent ivory Dog ID portrait",
   );
 });
 
@@ -1502,6 +1497,7 @@ test("shows premium entitlement policy before checkout is enabled", () => {
     /buildPaymentsProviderProofManifest\(\s*state\.launchProviderProfile\.paymentsProviderEvidence \?\? undefined,\s*\)/,
   );
   assert.match(premium, /Payments proof manifest/);
+  assert.match(premium, /Payments proof/);
   assert.match(premium, /paymentsProofManifest\.rows\.map/);
   assert.match(premium, /paymentsProofManifest\.blockers\.map/);
   assert.match(premium, /Checkout disabled/);
@@ -2029,7 +2025,7 @@ test("keeps Home Quick Log header action as a real route target", () => {
   );
   assert.match(
     log,
-    /useLocalSearchParams<\{\s*type\?: string \| string\[\];\s*detail\?: string \| string\[\];\s*intent\?: string \| string\[\];\s*entry\?: string \| string\[\];\s*\}>/,
+    /useLocalSearchParams<\{\s*type\?: string \| string\[\];\s*detail\?: string \| string\[\];\s*intent\?: string \| string\[\];\s*entry\?: string \| string\[\];\s*walk\?: string \| string\[\];\s*\}>/,
   );
   assert.match(log, /const routeWantsDetailSheet =/);
   assert.match(log, /const routeDetailIntentKey =/);
@@ -2311,15 +2307,16 @@ test("keeps care intelligence wired across Home, Log, More, and the shared domai
   assert.match(log, /deriveCareIntelligence/);
   assert.match(log, /Care IQ/);
   assert.match(log, /careIntelligence\.status/);
-  // /log tells the same zero-state story as Home: the console HUD, the
-  // signal card, and the composer trust rail all read "--" with the
-  // first-log promise instead of a fabricated "0%".
+  // /log tells the same zero-state story as Home: the console HUD and the
+  // composer trust rail both read "--" with the first-log promise instead of
+  // a fabricated "0%". (Care IQ lives once, in the console HUD - the support
+  // rail no longer repeats it, so the zero-state is pinned via the HUD value
+  // and the composer rail's "-- Care IQ".)
   assert.match(
     log,
     /careIntelligence\.visibleLogCount === 0 \? "--" : `\$\{careIntelligence\.score\}%`/,
   );
   assert.match(log, /"-- Care IQ"/);
-  assert.match(log, /starts with first log/);
   assert.match(more, /deriveCareIntelligence/);
   assert.match(more, /Care Intelligence/);
   assert.match(more, /careIntelligence\.metrics/);
@@ -2528,7 +2525,7 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
     health,
     /accessibilityLabel=\{`\$\{row\.label\}\. \$\{row\.status\}\. \$\{row\.detail\}\. \$\{row\.actionLabel\}`\}/,
   );
-  assert.match(health, /accessibilityState=\{\{ selected: active \}\}/);
+  assert.match(health, /aria-selected=\{active\}/);
   assert.match(health, /Not veterinary advice/);
 });
 
@@ -2890,7 +2887,7 @@ test("keeps Quick Log polished for exact tap selection and mobile scanability", 
   assert.match(log, /router\.push\("\/health\?tab=health" as never\)/);
   assert.match(log, /launcherActionKey/);
   assert.match(log, /selectedLauncherKey === launcherActionKey\(action\)/);
-  assert.match(log, /accessibilityState=\{\{ selected: active \}\}/);
+  assert.match(log, /aria-selected=\{active\}/);
   assert.match(log, /width: "31\.5%"/);
   assert.match(log, /composerTrustRail/);
   assert.match(log, /Care IQ/);
@@ -3004,7 +3001,8 @@ test("keeps Quick Log aligned to the mobile design-system recovery recipe", () =
     /logCommandSpeech,\s*\{\s*color:\s*colors\.foreground/,
     "adaptive foreground becomes near-white and loses contrast on the fixed-light bubble",
   );
-  assert.match(log, /logCommandSprite:[\s\S]*right: 12/);
+  // Sprite moved out of the Ready/Details chip's column (heart-emote collision).
+  assert.match(log, /logCommandSprite:[\s\S]*right: 96/);
   assert.match(log, /logCommandDock/);
   assert.doesNotMatch(log, /logCommandMission/);
   assert.doesNotMatch(log, />\s*Selected\s*</);
@@ -3100,14 +3098,14 @@ test("keeps Quick Log search and timeline on shared board card anatomy", () => {
 test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
   const guide = readAppFile("woofguide.tsx");
 
-  assert.match(guide, /<BoardCard style=\{s\.guideIntroCard\}/);
+  assert.match(guide, /<BoardCard(?: enter=\{\d+\})? style=\{s\.guideIntroCard\}/);
   assert.match(
     guide,
     /<BoardCard style=\{s\.quickQuestionBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Quick questions"/,
   );
   assert.match(
     guide,
-    /<BoardCard style=\{s\.actionBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Suggested actions"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.actionBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Suggested actions"/,
   );
   assert.match(
     guide,
@@ -3144,7 +3142,12 @@ test("keeps WoofGuide rooted in a live pixel guidance stage", () => {
   assert.match(guide, /woofguide-stage\.png/);
   assert.match(guide, /SpriteSheetPlayer/);
   assert.match(guide, /testID="woofguide-pixel-guidance-stage"/);
-  assert.match(guide, /guideStage:\s*\{[\s\S]*minHeight:\s*294/);
+  // Stage height dropped 294 -> 260 when the HUD moved into the dock below
+  // the painting (the scene no longer hosts overlaid chrome).
+  assert.match(guide, /guideStage:\s*\{[\s\S]*minHeight:\s*260/);
+  // The dock pattern itself is load-bearing: HUD + boundary/action row sit
+  // BELOW the art so the dog keeps its floor contact.
+  assert.match(guide, /guideDock/);
   assert.match(guide, /getCareTwinSpriteAsset\("idle-breathe"\)/);
   assert.match(guide, /CARE_TWIN_SPRITE_MANIFEST\["idle-breathe"\]/);
   assert.match(guide, /pixelImageStyle/);
@@ -3211,7 +3214,7 @@ test("keeps Premium value, plan, and entitlement surfaces on shared board anatom
   assert.match(premium, /@\/components\/board\/BoardPrimitives/);
   assert.match(
     premium,
-    /<BoardCard style=\{s\.premiumBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Why upgrade"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.premiumBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Why upgrade"/,
   );
   assert.match(
     premium,
@@ -3228,11 +3231,11 @@ test("keeps Premium value, plan, and entitlement surfaces on shared board anatom
   );
   assert.match(
     premium,
-    /<BoardCard style=\{s\.entitlementCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch entitlements"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.entitlementCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch entitlements"/,
   );
   assert.match(
     premium,
-    /<BoardCard style=\{s\.paymentsProofCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Payments proof manifest"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.paymentsProofCard\}[\s\S]*BoardSectionHeader[\s\S]*title="Payments proof"/,
   );
   assert.match(
     premium,
@@ -3272,7 +3275,7 @@ test("keeps Privacy export and launch safety surfaces on shared board anatomy", 
   assert.doesNotMatch(privacy, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(
     privacy,
-    /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Export summary"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Export summary"/,
   );
   assert.match(
     privacy,
@@ -3284,7 +3287,7 @@ test("keeps Privacy export and launch safety surfaces on shared board anatomy", 
   );
   assert.match(
     privacy,
-    /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Support runbook"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Support runbook"/,
   );
   assert.match(
     privacy,
@@ -3292,13 +3295,13 @@ test("keeps Privacy export and launch safety surfaces on shared board anatomy", 
   );
   assert.match(
     privacy,
-    /<BoardCard style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch safety gates"/,
+    /<BoardCard(?: enter=\{\d+\})? style=\{s\.privacyBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Launch safety gates"/,
   );
   assert.match(
     privacy,
     /BoardSectionHeader\s+title="Launch safety gates"[\s\S]*<BoardPill\s+label=\{`\$\{sections\.length\} gates`\}/,
   );
-  assert.match(privacy, /<BoardCard style=\{\[s\.noticeBoard/);
+  assert.match(privacy, /<BoardCard(?: enter=\{\d+\})? style=\{\[s\.noticeBoard/);
   assert.match(privacy, /Export care data/);
   assert.match(privacy, /Deletion request/);
   assert.match(privacy, /Before public launch/);
@@ -3445,7 +3448,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   );
   assert.match(
     avatarStudio,
-    /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Generated mood set"/,
+    /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Suggested starting traits"/,
   );
   assert.match(
     avatarStudio,
@@ -3454,7 +3457,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.doesNotMatch(avatarStudio, /<BoardSectionHeader[\s\S]*?\saction=/);
   assert.match(
     avatarStudio,
-    /BoardSectionHeader\s+title="Generated mood set"[\s\S]*<BoardPill\s+label="Owner review"/,
+    /BoardSectionHeader\s+title="Suggested starting traits"[\s\S]*<BoardPill\s+label="Owner review"/,
   );
   assert.match(
     avatarStudio,

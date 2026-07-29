@@ -1410,7 +1410,7 @@ export default function MoreScreen() {
   const nativeQaCaptureHasProofPending = nativeQaCapturePlan.nextTargets.some(
     (target) => mobileLaunchQaCaptureTargetStatusLabel(target) === "Pass pending proof",
   ) || ownerPreviewProofHasPending || storeScreenshotProofStatus.statusLabel === "Pass pending proof";
-  const nativeQaCaptureCockpitActionLabel = nativeQaCaptureHasProofPending ? "Finish Proof" : "Open QA Cockpit";
+  const nativeQaCaptureCockpitActionLabel = nativeQaCaptureHasProofPending ? "Finish Proof" : "QA Cockpit";
   const moreCommandOpenGates = launchReadinessPlan.tiles.filter((tile) => tile.status !== "ready").length;
   const moreCommandProviderOpen = launchProviderSetupPlan.rows.filter((row) => row.status !== "ready").length;
   const moreCommandStatusLabel =
@@ -1556,7 +1556,8 @@ export default function MoreScreen() {
             kicker="WOOFWATCHER"
             title="More"
             subtitle={`${petName}'s care tools, records, household, and settings.`}
-            centered
+            back
+            onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
             plain
             style={s.moreRouteHeader}
           />
@@ -1738,7 +1739,11 @@ export default function MoreScreen() {
                     <Text style={[s.moreDirectoryEyebrow, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
                       {item.eyebrow}
                     </Text>
-                    <Text numberOfLines={1} style={[s.moreDirectoryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {/* Wraps to a 2nd line rather than clipping mid-word: the
+                        action chip squeezes this column, and the longest title
+                        ("Owner Preview Core Loop") overran ~7px on one line.
+                        Short titles still render on a single line. */}
+                    <Text numberOfLines={2} style={[s.moreDirectoryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                       {item.label}
                     </Text>
                     <Text numberOfLines={2} style={[s.moreDirectoryDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
@@ -2019,10 +2024,10 @@ export default function MoreScreen() {
                 { backgroundColor: intelligenceTone, opacity: pressed ? 0.82 : 1 },
               ]}
             >
-              <Text style={[s.intelligenceActionText, { fontFamily: "Inter_700Bold" }]}>
+              <Text style={[s.intelligenceActionText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
                 {careIntelligence.nextAction.label}
               </Text>
-              <Ionicons name="chevron-forward" size={17} color="#FFFFFF" />
+              <Ionicons name="chevron-forward" size={17} color={colors.primaryForeground} />
             </Pressable>
           </BoardCard>
 
@@ -2710,7 +2715,7 @@ export default function MoreScreen() {
                       color="#FFFFFF"
                     />
                     <Text style={[s.betaNextActionButtonText, { fontFamily: "Inter_800ExtraBold" }]}>
-                      {launchReleasePacket.betaShipStatus === "qa-first" ? "Open QA Cockpit" : "Share Beta Packet"}
+                      {launchReleasePacket.betaShipStatus === "qa-first" ? "QA Cockpit" : "Share Beta Packet"}
                     </Text>
                   </Pressable>
                   <Pressable
@@ -2872,8 +2877,8 @@ export default function MoreScreen() {
                 accessibilityLabel="Share household invite"
                 style={({ pressed }) => [s.shareBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
-                <Ionicons name="share-outline" size={16} color="#fff" />
-                <Text style={[s.shareBtnText, { fontFamily: "Inter_700Bold" }]}>Invite</Text>
+                <Ionicons name="share-outline" size={16} color={colors.primaryForeground} />
+                <Text style={[s.shareBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Invite</Text>
               </Pressable>
             </View>
 
@@ -3056,8 +3061,8 @@ export default function MoreScreen() {
                 { backgroundColor: colors.primary, opacity: pressed ? 0.78 : 1 },
               ]}
             >
-              <Ionicons name="share-outline" size={16} color="#FFFFFF" />
-              <Text style={[s.passActionText, { fontFamily: "Inter_700Bold" }]}>Share Draft Summary</Text>
+              <Ionicons name="share-outline" size={16} color={colors.primaryForeground} />
+              <Text style={[s.passActionText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Share Draft Summary</Text>
             </Pressable>
           </BoardCard>
 
@@ -3372,8 +3377,14 @@ export default function MoreScreen() {
                 <PulseIcon name="bowl" size={22} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.dietTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{dietProfile.primaryFood}</Text>
-                <Text style={[s.dietSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{dietProfile.mealSchedule}</Text>
+                {/* Honest empty state (matches the Records screen's diet
+                    card) - an unset diet rendered a completely blank body. */}
+                <Text style={[s.dietTitle, { color: dietProfile.primaryFood ? colors.foreground : colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>
+                  {dietProfile.primaryFood || "No diet set yet"}
+                </Text>
+                <Text style={[s.dietSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {dietProfile.mealSchedule || "Add food and portions with Edit."}
+                </Text>
               </View>
             </View>
             {dietOpen && (
@@ -3384,7 +3395,7 @@ export default function MoreScreen() {
                       <PulseIcon name={d.icon} size={14} />
                     </View>
                     <Text style={[s.dietLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{d.label}</Text>
-                    <Text style={[s.dietValue, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{d.value}</Text>
+                    <Text style={[s.dietValue, { color: d.value ? colors.foreground : colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{d.value || "Not set"}</Text>
                   </View>
                 ))}
                 {dietProfile.vetNotes ? (
@@ -3433,7 +3444,7 @@ export default function MoreScreen() {
               contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
               bounces={false}
             >
-              <View style={s.modalHandle} />
+              <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Diet Profile</Text>
 
               {[
@@ -3465,7 +3476,7 @@ export default function MoreScreen() {
                 onPress={saveDiet}
                 style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
-                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save diet profile</Text>
+                <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save diet profile</Text>
               </Pressable>
             </ScrollView>
           </Pressable>
@@ -3525,7 +3536,7 @@ export default function MoreScreen() {
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setPetRosterOpen(false)}>
           <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
             <View style={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}>
-              <View style={s.modalHandle} />
+              <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Add future dog</Text>
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 This saves a planned slot for a future dog. Multi-dog logs, routines, and records are coming soon - everything stays on this device for now.
@@ -3555,7 +3566,7 @@ export default function MoreScreen() {
                 accessibilityLabel="Save future dog to CareTwin roster"
                 style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
-                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save planned slot</Text>
+                <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save planned slot</Text>
               </Pressable>
             </View>
           </Pressable>
@@ -3566,7 +3577,7 @@ export default function MoreScreen() {
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setAccessPassOpen(false)}>
           <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
             <View style={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}>
-              <View style={s.modalHandle} />
+              <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Create Access Pass</Text>
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 Save helper permissions as a local draft. Remote sharing is coming soon - passes stay on this device for now.
@@ -3618,7 +3629,7 @@ export default function MoreScreen() {
                 accessibilityLabel="Save Access Pass draft"
                 style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
-                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save Local Draft</Text>
+                <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save Local Draft</Text>
               </Pressable>
             </View>
           </Pressable>
@@ -3633,7 +3644,7 @@ export default function MoreScreen() {
               contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
               bounces={false}
             >
-              <View style={s.modalHandle} />
+              <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Provider Launch Setup</Text>
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 Mark only production providers you have actually configured. This updates Launch Readiness but does not approve App Store or Play Store submission.
@@ -3680,7 +3691,7 @@ export default function MoreScreen() {
                       key={field.key}
                       onPress={() => toggleProviderDraft(field.key)}
                       accessibilityRole="checkbox"
-                      accessibilityState={{ checked }}
+                      aria-checked={checked}
                       accessibilityLabel={`${field.label}. ${field.detail}`}
                       style={({ pressed }) => [
                         s.providerChecklistRow,
@@ -3730,7 +3741,7 @@ export default function MoreScreen() {
                 accessibilityLabel="Save provider launch setup"
                 style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
               >
-                <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save provider setup</Text>
+                <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save provider setup</Text>
               </Pressable>
             </ScrollView>
           </Pressable>
@@ -3749,7 +3760,7 @@ export default function MoreScreen() {
               contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
               bounces={false}
             >
-            <View style={s.modalHandle} />
+            <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
             <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Dog Profile</Text>
 
             <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NAME</Text>
@@ -3865,7 +3876,7 @@ export default function MoreScreen() {
               onPress={saveProfile}
               style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
             >
-              <Text style={[s.profSaveBtnText, { fontFamily: "Inter_700Bold" }]}>Save profile</Text>
+              <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save profile</Text>
             </Pressable>
             </ScrollView>
           </Pressable>
@@ -3933,7 +3944,7 @@ function PromptModal({
               disabled={loading}
               style={({ pressed }) => [s.modalConfirm, { backgroundColor: colors.primary, opacity: pressed || loading ? 0.7 : 1 }]}
             >
-              <Text style={[s.modalConfirmText, { fontFamily: "Inter_700Bold" }]}>{loading ? "…" : confirmLabel}</Text>
+              <Text style={[s.modalConfirmText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{loading ? "…" : confirmLabel}</Text>
             </Pressable>
           </View>
         </Pressable>
@@ -4633,7 +4644,7 @@ const s = StyleSheet.create({
   codeLabel: { fontSize: 10.5, letterSpacing: 0.6 },
   codeValue: { fontSize: 21, letterSpacing: 1, marginTop: 3 },
   shareBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 13 },
-  shareBtnText: { color: "#fff", fontSize: 14 },
+  shareBtnText: { fontSize: 14 },
 
   signOut: {
     flexDirection: "row",
@@ -4665,7 +4676,7 @@ const s = StyleSheet.create({
   modalCancel: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   modalCancelText: { fontSize: 15 },
   modalConfirm: { flex: 2, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  modalConfirmText: { color: "#fff", fontSize: 15 },
+  modalConfirmText: { fontSize: 15 },
 
   linkRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 15 },
   linkIconWrap: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
@@ -4724,7 +4735,7 @@ const s = StyleSheet.create({
     elevation: 2,
   },
   profileModal: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "90%", paddingTop: 14 },
-  modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
+  modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, marginBottom: 16 },
   sheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
   sheetSubtitle: { fontSize: 12.5, lineHeight: 18, marginBottom: 2 },
   providerStatusGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 2 },
@@ -4756,5 +4767,5 @@ const s = StyleSheet.create({
   unitPill: { minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 16, paddingVertical: 11, borderRadius: 13, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   unitText: { fontSize: 14 },
   profSaveBtn: { marginTop: 24, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, paddingVertical: 15, alignItems: "center", justifyContent: "center" },
-  profSaveBtnText: { color: "#fff", fontSize: 15.5 },
+  profSaveBtnText: { fontSize: 15.5 },
 });

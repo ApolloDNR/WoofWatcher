@@ -325,7 +325,7 @@ export default function SetupScreen() {
                 <Pressable
                   accessibilityRole="switch"
                   accessibilityLabel="Match twin to breed on save"
-                  accessibilityState={{ checked: matchTwinToBreed }}
+                  aria-checked={matchTwinToBreed}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setMatchTwinToBreed((value) => !value);
@@ -379,7 +379,7 @@ export default function SetupScreen() {
                     key={item.value}
                     accessibilityRole="button"
                     accessibilityLabel={`Routine type ${item.label}`}
-                    accessibilityState={{ selected }}
+                    aria-selected={selected}
                     onPress={() => {
                       Haptics.selectionAsync();
                       setField("routineType", item.value);
@@ -412,7 +412,7 @@ export default function SetupScreen() {
                   <Pressable
                     key={item.value}
                     accessibilityRole="button"
-                    accessibilityState={{ selected }}
+                    aria-selected={selected}
                     accessibilityLabel={`${item.label}. ${item.detail}`}
                     onPress={() => {
                       Haptics.selectionAsync();
@@ -530,20 +530,20 @@ export default function SetupScreen() {
               accessibilityRole="button"
               accessibilityLabel={householdReady ? "Save foundation" : "Add invite code"}
               accessibilityHint={canSave ? undefined : saveBlockedMessage}
-              accessibilityState={{ disabled: !canSave }}
+              aria-disabled={!canSave}
               style={({ pressed }) => [
                 s.saveBtn,
                 { backgroundColor: canSave ? colors.primary : colors.border, opacity: pressed ? 0.82 : 1 },
               ]}
             >
-              <Ionicons name="checkmark-circle" size={18} color="#fff" />
-              <Text style={[s.saveText, { fontFamily: "Inter_700Bold" }]}>
+              <Ionicons name="checkmark-circle" size={18} color={canSave ? colors.primaryForeground : colors.mutedForeground} />
+              <Text style={[s.saveText, { color: canSave ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                 {householdReady ? "Save foundation" : "Add invite code"}
               </Text>
             </Pressable>
             {!canSave && saveBlockedMessage ? (
               <Text
-                accessibilityLiveRegion="polite"
+                aria-live="polite"
                 style={[s.saveHint, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
               >
                 {saveBlockedMessage}
@@ -620,8 +620,8 @@ export default function SetupScreen() {
                   { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
                 ]}
               >
-                <Ionicons name="paw" size={17} color="#fff" />
-                <Text style={[s.saveText, { fontFamily: "Inter_700Bold" }]}>
+                <Ionicons name="paw" size={17} color={colors.primaryForeground} />
+                <Text style={[s.saveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
                   Meet {successMoment?.dogName ?? "your dog"}
                 </Text>
               </Pressable>
@@ -782,7 +782,7 @@ const s = StyleSheet.create({
   authSetupProofBlocker: { fontSize: 10.5, lineHeight: 15, marginTop: 8 },
   actions: { gap: 12, marginTop: 8 },
   saveBtn: { height: 54, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
-  saveText: { color: "#fff", fontSize: 15.5 },
+  saveText: { fontSize: 15.5 },
   saveHint: { fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: -4, paddingHorizontal: 8 },
   laterBtn: { height: 42, alignItems: "center", justifyContent: "center" },
   laterText: { fontSize: 14 },

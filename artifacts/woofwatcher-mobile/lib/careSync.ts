@@ -6,6 +6,7 @@ export interface SyncableEntry {
   occurredAt?: string;
   syncStatus?: EntrySyncStatus;
   syncError?: string;
+  details?: Record<string, unknown> | null;
 }
 
 export type CareSyncOutboxStatus = "idle" | "syncing" | "needs-retry";
@@ -409,7 +410,18 @@ export function mergeServerAndLocalEntries<T extends SyncableEntry>(
   localEntries: readonly T[],
   serverEntries: readonly T[],
 ): T[] {
-  const unsyncedLocal = localEntries.filter(isUnsyncedEntry);
+  // A server row carrying details.clientKey is the server-side identity of a
+  // local temp entry (the client stamps its temp id as the idempotency key on
+  // create). When that row arrives, the temp entry is superseded - keeping it
+  // showed the same care moment twice whenever a create's response was lost.
+  const serverClientKeys = new Set(
+    serverEntries
+      .map((entry) => entry.details?.clientKey)
+      .filter((key): key is string => typeof key === "string" && key.length > 0),
+  );
+  const unsyncedLocal = localEntries.filter(
+    (entry) => isUnsyncedEntry(entry) && !serverClientKeys.has(entry.id),
+  );
   const localIds = new Set(unsyncedLocal.map((entry) => entry.id));
   const serverSynced = withSyncedStatus(
     serverEntries.filter((entry) => !localIds.has(entry.id)),

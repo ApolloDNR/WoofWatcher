@@ -19,6 +19,7 @@ import { BoardCard } from "@/components/board/BoardPrimitives";
 import { PressScale } from "@/components/motion/GameFeel";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useCare, type Entry } from "@/context/CareContext";
+import { announce } from "@/lib/announce";
 import { careXpForEntry } from "@/lib/careCareer";
 import { useColors } from "@/hooks/useColors";
 import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
@@ -180,10 +181,12 @@ export default function FastLogScreen() {
     }).start(() => navigateBack());
   };
 
-  const flashLogged = (key: string) => {
+  const flashLogged = (key: string, message: string) => {
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     }
+    // The badge and haptic are invisible to screen readers; say what saved.
+    announce(message);
     setJustLogged(key);
     if (loggedTimer.current) clearTimeout(loggedTimer.current);
     loggedTimer.current = setTimeout(() => setJustLogged(null), 1600);
@@ -232,7 +235,7 @@ export default function FastLogScreen() {
       if (isDuplicateQuickTap("walk")) return;
       recentQuickSave.current = { type: "walk", at: Date.now() };
       addEntry(buildWalkSessionStartEntry({ caregiver, now: Date.now() }) as Omit<Entry, "id">);
-      flashLogged(tile.key);
+      flashLogged(tile.key, "Walk started");
       return;
     }
     const now = Date.now();
@@ -250,7 +253,7 @@ export default function FastLogScreen() {
       { caregiver, caregiverRole: role, now },
     );
     addEntry(entry);
-    flashLogged(tile.key);
+    flashLogged(tile.key, `${tile.title} logged`);
   };
 
   return (

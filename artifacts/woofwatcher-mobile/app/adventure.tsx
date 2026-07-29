@@ -22,6 +22,7 @@ import {
   type AdventureQuest,
 } from "@workspace/care-domain";
 import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { DayPhaseWash } from "@/components/DayPhaseWash";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
@@ -226,7 +227,9 @@ export default function AdventureScreen() {
     if (quest.action === "start-walk") {
       if (openWalkSession?.id) {
         setQuestFeedback({ id: openWalkSession.id, title: "Walk already active" });
-        router.push(`/log?entry=${encodeURIComponent(openWalkSession.id)}` as never);
+        // Land on the FINISH form, not the read-only record sheet: the
+        // sheet says "In progress" with no way to end the walk.
+        router.push("/log?walk=finish" as never);
         return;
       }
       // A rapid second tap lands before the open session exists in state;
@@ -333,6 +336,9 @@ export default function AdventureScreen() {
           style={s.hero}
         >
           <View style={s.heroShade} />
+          {/* Shared painted-stage atmosphere: the park follows the real clock,
+              matching the Story Day Trail it links from. */}
+          <DayPhaseWash now={now} />
           <View style={s.heroTop}>
             <Pressable
               accessibilityRole="button"
@@ -405,7 +411,7 @@ export default function AdventureScreen() {
           {petName}'s lifetime care level lives on Pack and More.
         </Text>
 
-        <BoardCard style={s.board}>
+        <BoardCard enter={0} style={s.board}>
           <BoardSectionHeader
             title="Next quest"
             accessory={<BoardPill label={adventure.status === "needs-outing" ? "Start simple" : "Ready"} tone={colors.amber} />}
@@ -436,8 +442,8 @@ export default function AdventureScreen() {
                 },
               ]}
             >
-              <Ionicons name={questIcon(availableQuest.id)} size={16} color="#FFFFFF" />
-              <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>
+              <Ionicons name={questIcon(availableQuest.id)} size={16} color={colors.primaryForeground} />
+              <Text style={[s.primaryBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
                 {primaryQuestActionLabel}
               </Text>
             </Pressable>
@@ -452,7 +458,7 @@ export default function AdventureScreen() {
           </View>
         </BoardCard>
 
-        <BoardCard style={s.board}>
+        <BoardCard enter={1} style={s.board}>
           <BoardSectionHeader
             title="Quest board"
             accessory={<BoardPill label={`${adventure.quests.length} quests`} tone={colors.primary} />}
@@ -514,7 +520,7 @@ export default function AdventureScreen() {
           ) : null}
         </BoardCard>
 
-        <BoardCard style={s.board}>
+        <BoardCard enter={2} style={s.board}>
           <BoardSectionHeader
             title="Adventure Trail"
             accessory={
@@ -589,7 +595,7 @@ export default function AdventureScreen() {
           )}
         </BoardCard>
 
-        <BoardCard style={s.board}>
+        <BoardCard enter={3} style={s.board}>
           <BoardSectionHeader
             title="Care proof"
             accessory={<BoardPill label={`${adventure.completedProof.length} today`} tone={colors.sage} />}
@@ -627,7 +633,7 @@ export default function AdventureScreen() {
           )}
         </BoardCard>
 
-        <BoardCard style={s.board}>
+        <BoardCard enter={4} style={s.board}>
           <BoardSectionHeader
             title="Memory shelf"
             accessory={<BoardPill label={adventure.memories.length ? "Private" : "Empty"} tone={colors.copperBright} />}
@@ -801,12 +807,15 @@ const s = StyleSheet.create({
     justifyContent: "flex-end",
   },
   heroSpriteShadow: {
+    // At the feet line and strong enough to read over the busy path art -
+    // at bottom:15/0.34 it hid behind the stat band and the trot looked
+    // ungrounded.
     position: "absolute",
-    bottom: 15,
-    width: 126,
+    bottom: 7,
+    width: 132,
     height: 18,
     borderRadius: 999,
-    backgroundColor: "rgba(8,26,42,0.34)",
+    backgroundColor: "rgba(8,26,42,0.45)",
   },
   // Dark scrim panel behind the hero text stack so the eyebrow/title/copy stay
   // readable over bright pixel art; matches the Level/XP chip treatment below.

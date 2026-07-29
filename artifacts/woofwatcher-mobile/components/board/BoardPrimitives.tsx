@@ -1,19 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { type ReactNode } from "react";
+import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Pressable,
   StyleSheet,
   Text,
   View,
+  type LayoutChangeEvent,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
 } from "react-native";
 
-import Reanimated from "react-native-reanimated";
+import Reanimated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 
-import { enterUp, MeterPip, PressScale } from "@/components/motion/GameFeel";
+import { enterUp, MeterPip, PressScale, SPRING } from "@/components/motion/GameFeel";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useColors } from "@/hooks/useColors";
 import { hapticSelect } from "@/lib/haptics";
@@ -81,7 +87,10 @@ export function BoardRouteHeader({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Back"
-            onPress={onBack}
+            onPress={() => {
+              hapticSelect();
+              onBack?.();
+            }}
             style={({ pressed }) => [
               styles.routeIconButton,
               plain && styles.routeIconButtonPlain,
@@ -111,7 +120,10 @@ export function BoardRouteHeader({
           {kicker ? (
             <Text style={[styles.routeKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{kicker}</Text>
           ) : null}
-          <Text style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: TITLE_SERIF }]}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.routeTitle, centered && styles.routeTitleCentered, { color: colors.foreground, fontFamily: TITLE_SERIF }]}
+          >
             {title}
           </Text>
           {subtitle ? (
@@ -124,7 +136,10 @@ export function BoardRouteHeader({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={actionLabel ?? title}
-            onPress={onAction}
+            onPress={() => {
+              hapticSelect();
+              onAction();
+            }}
             disabled={actionDisabled}
             style={({ pressed }) => [
               styles.routeIconButton,
@@ -217,16 +232,63 @@ export function BoardSegmentTabs<T extends string>({
   style?: StyleProp<ViewStyle>;
 }) {
   const colors = useColors();
+  const reduced = useReducedMotion();
+  // The active fill is a single pill that glides between chips on the shared
+  // spring instead of teleporting. Chips are measured on layout; until the
+  // active chip has a rect the pill stays hidden and the chip paints its own
+  // fill, so the control never flashes unstyled.
+  const [rects, setRects] = useState<Record<string, { x: number; width: number; height: number }>>({});
+  const pillPlaced = useRef(false);
+  const pillX = useSharedValue(0);
+  const pillWidth = useSharedValue(0);
+  const pillHeight = useSharedValue(0);
+
+  const activeRect = rects[active];
+  useEffect(() => {
+    if (!activeRect) return;
+    pillHeight.value = activeRect.height;
+    if (reduced || !pillPlaced.current) {
+      pillX.value = activeRect.x;
+      pillWidth.value = activeRect.width;
+      pillPlaced.current = true;
+      return;
+    }
+    pillX.value = withSpring(activeRect.x, SPRING.default);
+    pillWidth.value = withSpring(activeRect.width, SPRING.default);
+  }, [activeRect, pillHeight, pillWidth, pillX, reduced]);
+
+  const pillStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: pillX.value }],
+    width: pillWidth.value,
+    height: pillHeight.value,
+    opacity: pillWidth.value > 0 ? 1 : 0,
+  }));
+
   return (
     <View style={[styles.segmentRow, style]}>
+      <Reanimated.View
+        pointerEvents="none"
+        style={[styles.segmentPill, { backgroundColor: colors.primary }, pillStyle]}
+      />
       {segments.map((segment) => {
         const isActive = segment.key === active;
+        const measured = Boolean(rects[segment.key]);
         return (
           <Pressable
             key={segment.key}
             accessibilityRole="button"
             accessibilityLabel={segment.label}
-            accessibilityState={{ selected: isActive }}
+            aria-selected={isActive}
+            onLayout={(event: LayoutChangeEvent) => {
+              const { x, width, height } = event.nativeEvent.layout;
+              setRects((prev) => {
+                const existing = prev[segment.key];
+                if (existing && existing.x === x && existing.width === width && existing.height === height) {
+                  return prev;
+                }
+                return { ...prev, [segment.key]: { x, width, height } };
+              });
+            }}
             onPress={() => {
               if (!isActive) hapticSelect();
               onChange(segment.key);
@@ -235,11 +297,17 @@ export function BoardSegmentTabs<T extends string>({
               styles.segmentChip,
               {
                 backgroundColor: isActive
-                  ? colors.primary
+                  ? measured
+                    ? "transparent"
+                    : colors.primary
                   : pressed
                     ? colors.secondary
                     : colors.card,
-                borderColor: isActive ? colors.primary : colors.border,
+                borderColor: isActive
+                  ? measured
+                    ? "transparent"
+                    : colors.primary
+                  : colors.border,
               },
             ]}
           >
@@ -454,6 +522,7 @@ export function BoardSectionHeader({
   return (
     <View style={[styles.sectionHeader, { borderBottomColor: colors.border }, style]}>
       <Text
+        accessibilityRole="header"
         numberOfLines={1}
         style={[styles.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }, textStyle]}
       >
@@ -542,7 +611,10 @@ export function StatusMeter({
         accessibilityLabel={accessibilityLabel ?? `${label} ${valueLabel ?? `${Math.round(pct * 100)} percent`}`}
         accessibilityHint={accessibilityHint}
         hitSlop={MOBILE_INLINE_HIT_SLOP}
-        onPress={onPress}
+        onPress={() => {
+          hapticSelect();
+          onPress();
+        }}
         style={({ pressed }) => [
           styles.meterRow,
           styles.meterPressable,
@@ -672,8 +744,14 @@ export function CareRow({
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel ?? `${title}. ${detail ?? ""}`}
-        onPress={onPress}
+        accessibilityLabel={
+          accessibilityLabel ??
+          [title, detail, meta].filter(Boolean).join(". ")
+        }
+        onPress={() => {
+          hapticSelect();
+          onPress();
+        }}
         style={({ pressed }) => [styles.careRow, { opacity: pressed ? 0.72 : 1 }]}
       >
         {content}
@@ -779,6 +857,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     marginBottom: 14,
+    position: "relative",
+  },
+  segmentPill: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    borderRadius: 999,
   },
   segmentChip: {
     flexShrink: 1,

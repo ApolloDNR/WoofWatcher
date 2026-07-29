@@ -6,6 +6,7 @@ node_modules/
 # Expo
 .expo/
 .expo-smoke/
+.expo-dark/
 dist/
 web-build/
 expo-env.d.ts

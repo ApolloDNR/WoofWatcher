@@ -23,6 +23,7 @@ import {
   type PremiumValueSignal,
 } from "@workspace/care-domain";
 import { useCare } from "@/context/CareContext";
+import { homeImmersiveRoomIsNight } from "./(tabs)/index";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
@@ -95,15 +96,19 @@ function PremiumScreenBody() {
     lockedEntitlements[0]
       ? `${recommendedPlan.name} unlocks ${lockedEntitlements[0].label.toLowerCase()} when checkout is approved.`
       : `${recommendedPlan.name} is ready to review once launch gates close.`;
+  // The HUD strip is fixed dark navy in BOTH themes, so its value inks are
+  // fixed bright tones (the dark-palette variants) - the light-theme
+  // primary/amber/sage are dark pigments that vanish on navy.
   const premiumStageHud = [
-    { label: "Plan", value: recommendedPlan.name, tone: colors.primary },
-    { label: "Price", value: recommendedPlan.monthlyPrice, tone: colors.amber },
-    { label: "Signals", value: String(preview.valueSignals.length), tone: colors.sage },
-    { label: "Gate", value: "Checkout", tone: colors.amber },
+    { label: "Plan", value: recommendedPlan.name, tone: "#FBF6E7" },
+    { label: "Price", value: recommendedPlan.monthlyPrice, tone: "#D8A852" },
+    { label: "Signals", value: String(preview.valueSignals.length), tone: "#6DA36F" },
+    { label: "Gate", value: "Checkout", tone: "#D8A852" },
   ];
   const paymentsProofManifest = buildPaymentsProviderProofManifest(
     state.launchProviderProfile.paymentsProviderEvidence ?? undefined,
   );
+  const premiumStageIsNight = colors.isDark || homeImmersiveRoomIsNight(new Date().getHours());
 
   const isWebRoutePreview = (Platform.OS as string) === "web";
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
@@ -141,7 +146,7 @@ function PremiumScreenBody() {
         contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 20, paddingBottom: bottomPadding }}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
-          <BoardCard padded={false} style={s.premiumValueStageCard}>
+          <BoardCard padded={false} enter={0} style={s.premiumValueStageCard}>
             <ImageBackground
               source={PREMIUM_VALUE_STAGE_ROOM}
               resizeMode="stretch"
@@ -149,7 +154,15 @@ function PremiumScreenBody() {
               style={s.premiumValueStage}
               testID="premium-value-pixel-stage"
             >
-              <View style={s.premiumValueStageShade} />
+              <View
+                style={[
+                  s.premiumValueStageShade,
+                  // Evening/dark parity with the other stages: Home and
+                  // Records swap to night art, so the always-daylight Plus
+                  // room gets a night wash instead of glowing at midnight.
+                  premiumStageIsNight ? { backgroundColor: "rgba(9,17,32,0.38)" } : null,
+                ]}
+              />
 
               <View style={s.premiumValueStageTop}>
                 <View style={s.premiumValueBubble}>
@@ -187,7 +200,11 @@ function PremiumScreenBody() {
                   testID="premium-value-pixel-sprite"
                 />
               </View>
-
+            </ImageBackground>
+            {/* Data dock BELOW the painting (log/records/woofguide pattern):
+                the HUD and plan/CTA row used to overlay the art's floor,
+                cutting the dog's base so it floated mid-window. */}
+            <View style={[s.premiumValueDock, { backgroundColor: colors.ivory + "F4", borderTopColor: colors.border }]}>
               <View
                 style={[
                   s.premiumValueHud,
@@ -257,7 +274,7 @@ function PremiumScreenBody() {
                   <Ionicons name="arrow-forward" size={15} color={colors.ivory} />
                 </Pressable>
               </View>
-            </ImageBackground>
+            </View>
           </BoardCard>
 
           <View style={[s.notice, { backgroundColor: colors.amber + "14", borderColor: colors.amber + "45" }]}>
@@ -267,9 +284,11 @@ function PremiumScreenBody() {
             </Text>
           </View>
 
-          <BoardCard style={s.paymentsProofCard}>
+          <BoardCard enter={1} style={s.paymentsProofCard}>
+            {/* Short title: "Payments proof manifest" truncated to "manife..."
+                beside the accessory pill on phone widths. */}
             <BoardSectionHeader
-              title="Payments proof manifest"
+              title="Payments proof"
               accessory={<BoardPill label="Checkout disabled" tone={colors.amber} />}
             />
             <Text style={[s.paymentsProofIntro, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -310,13 +329,15 @@ function PremiumScreenBody() {
             ))}
           </BoardCard>
 
-          <BoardCard style={s.premiumBoard}>
+          <BoardCard enter={2} style={s.premiumBoard}>
             <BoardSectionHeader
               title="Why upgrade"
               accessory={<BoardPill label={`${preview.valueSignals.length} signals`} tone={colors.sage} />}
             />
             <View style={s.signalGrid}>
-              {preview.valueSignals.slice(0, 4).map((signal) => (
+              {/* All signals render - the badge says "5 signals", so five
+                  cards appear; slice(0,4) made the count read as a bug. */}
+              {preview.valueSignals.map((signal) => (
                 <View key={signal.key} style={[s.signalTile, { backgroundColor: colors.background, borderColor: colors.border }]}>
                   <View style={[s.signalIcon, { backgroundColor: colors.sage + "16" }]}>
                     <Ionicons name={signalIcon(signal.key)} size={18} color={colors.sage} />
@@ -346,7 +367,7 @@ function PremiumScreenBody() {
             ))}
           </View>
 
-          <BoardCard style={s.entitlementCard}>
+          <BoardCard enter={3} style={s.entitlementCard}>
             <BoardSectionHeader title="Launch entitlements" accessory={<BoardPill label="Current: Free" tone={colors.primary} />} />
             <Text style={[s.entitlementSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               Current plan: Free
@@ -378,7 +399,7 @@ function PremiumScreenBody() {
               style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
             >
               <Ionicons name="clipboard-outline" size={18} color="#FFFFFF" />
-              <Text style={[s.primaryText, { fontFamily: "Inter_700Bold" }]}>Launch checklist</Text>
+              <Text style={[s.primaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Launch checklist</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -496,9 +517,14 @@ const s = StyleSheet.create({
     borderRadius: 8,
   },
   premiumValueStage: {
-    minHeight: 372,
+    minHeight: 292,
     overflow: "hidden",
-    justifyContent: "space-between",
+  },
+  premiumValueDock: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 10,
+    borderTopWidth: 1,
   },
   premiumValueStageImage: {
     borderRadius: 8,
@@ -567,9 +593,11 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
   },
   premiumValueSprite: {
+    // Seated on the rug at the room's floor, base and shadow fully
+    // visible - was bottom:134 with its lower body cut by the overlaid HUD.
     position: "absolute",
-    right: 20,
-    bottom: 134,
+    right: 26,
+    bottom: 18,
     width: 146,
     height: 146,
     alignItems: "center",
@@ -584,10 +612,6 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(8, 20, 36, 0.24)",
   },
   premiumValueHud: {
-    position: "absolute",
-    left: 14,
-    right: 14,
-    bottom: 86,
     borderWidth: 1,
     borderRadius: 8,
     padding: 10,
@@ -620,10 +644,6 @@ const s = StyleSheet.create({
     borderRadius: 2,
   },
   premiumValueFooter: {
-    position: "absolute",
-    left: 14,
-    right: 14,
-    bottom: 14,
     flexDirection: "row",
     gap: 10,
     alignItems: "stretch",
@@ -676,7 +696,10 @@ const s = StyleSheet.create({
   paymentsProofBlocker: { fontSize: 10.5, lineHeight: 15, marginTop: 8 },
   premiumBoard: { marginTop: 18 },
   signalGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  signalTile: { width: "48.5%", borderWidth: 1, borderRadius: 16, padding: 14 },
+  // flexBasis + grow, not a fixed 48.5% width: 48.5% + 48.5% + 10px gap
+  // exceeded 100%, so every second tile wrapped and the section rendered
+  // as a single left-hand column with dead space beside it.
+  signalTile: { flexGrow: 1, flexBasis: "44%", borderWidth: 1, borderRadius: 16, padding: 14 },
   signalIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 12 },
   signalLabel: { fontSize: 14 },
   signalDetail: { fontSize: 12.5, lineHeight: 18, marginTop: 5 },

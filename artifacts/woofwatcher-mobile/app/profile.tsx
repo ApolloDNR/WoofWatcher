@@ -34,8 +34,12 @@ const SERIF = "Fraunces_700Bold";
 // Same full-bleed park scene the Home walk view uses, reused here as the
 // Profile hero so the "park scene + circular avatar" mock reads 1:1 without
 // generating any new art.
-const HERO_PARK_DAY = require("@/assets/avatar/rooms/home-fullbleed-park-day.png");
-const HERO_PARK_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-park-night.png");
+// Purpose-cropped hero bands, not the tall full-bleed scenes: cover-fitting
+// the 9:16 art into this short wide hero showed only its empty sky, washing
+// the skyline into a gray smear under the scrims. The day band frames
+// skyline + tree + bench + flowers; the night band keeps moon + lamp glow.
+const HERO_PARK_DAY = require("@/assets/avatar/rooms/profile-hero-park-day.png");
+const HERO_PARK_NIGHT = require("@/assets/avatar/rooms/profile-hero-park-night.png");
 
 const AVATAR_SIZE = 112;
 const HERO_CONTENT_HEIGHT = 188;
@@ -301,7 +305,14 @@ export default function ProfileScreen() {
         {/* Full-bleed park hero: scene, floating back + edit chips, and the
             name over a soft scrim. The portrait straddles its lower edge. */}
         <View style={[s.hero, { height: insets.top + HERO_CONTENT_HEIGHT, backgroundColor: colors.secondary }]}>
-          <Image source={colors.isDark ? HERO_PARK_NIGHT : HERO_PARK_DAY} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} />
+          {/* Explicit 100% size: RN-web renders an absolute-fill Image at its
+              natural size without it, showing a zoomed corner of the band. */}
+          <Image
+            source={colors.isDark ? HERO_PARK_NIGHT : HERO_PARK_DAY}
+            style={[StyleSheet.absoluteFill, { width: "100%", height: "100%" }]}
+            resizeMode="cover"
+            fadeDuration={0}
+          />
           {/* Top scrim seats the cream chips + name; bottom scrim melts the
               scene into the parchment so the avatar seam feels intentional.
               The day scene is pale (bright sky + pale skyline), so a lighter top
@@ -313,9 +324,9 @@ export default function ProfileScreen() {
             colors={
               colors.isDark
                 ? ["rgba(26,23,20,0.46)", "rgba(26,23,20,0.08)", "transparent"]
-                : ["rgba(26,23,20,0.34)", "rgba(26,23,20,0.06)", "transparent"]
+                : ["rgba(26,23,20,0.52)", "rgba(26,23,20,0.12)", "transparent"]
             }
-            locations={[0, 0.4, 0.7]}
+            locations={[0, 0.42, 0.72]}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />

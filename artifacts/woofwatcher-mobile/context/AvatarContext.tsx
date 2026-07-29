@@ -38,7 +38,11 @@ async function uriExists(uri: string): Promise<boolean> {
     const info = await FileSystem.getInfoAsync(uri);
     return info.exists;
   } catch {
-    return false;
+    // A transient filesystem error is not proof the file is gone. Treat it
+    // as present so a flaky check can never permanently prune a custom
+    // avatar reference - a genuinely missing file is confirmed (exists:
+    // false resolves, not throws) on a later launch.
+    return true;
   }
 }
 

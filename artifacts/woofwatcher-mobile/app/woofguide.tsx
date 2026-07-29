@@ -375,7 +375,7 @@ export default function WoofGuideScreen() {
           ListEmptyComponent={
             !loading ? (
               <View style={s.emptyArea}>
-                <BoardCard padded={false} style={s.guideStageCard}>
+                <BoardCard padded={false} enter={0} style={s.guideStageCard}>
                   <ImageBackground
                     source={WOOFGUIDE_STAGE_ROOM}
                     resizeMode="cover"
@@ -415,7 +415,13 @@ export default function WoofGuideScreen() {
                         testID="woofguide-pixel-guidance-sprite"
                       />
                     </View>
-
+                  </ImageBackground>
+                  {/* Data dock BELOW the painting (the log/records pattern):
+                      the HUD and actions used to overlay the art, covering
+                      the floor so the dog read as levitating at wall height.
+                      Now the scene breathes and the dog sits in the lamplit
+                      floor pool. */}
+                  <View style={[s.guideDock, { backgroundColor: colors.ivory + "F4", borderTopColor: colors.border }]}>
                     <View style={[s.guideHud, { backgroundColor: colors.brandNavy + "DF", borderColor: colors.ivory + "44" }]}>
                       {guideHud.map((metric) => (
                         <View key={metric.label} style={s.guideHudCell}>
@@ -496,9 +502,9 @@ export default function WoofGuideScreen() {
                         </Pressable>
                       )}
                     </View>
-                  </ImageBackground>
+                  </View>
                 </BoardCard>
-                <BoardCard style={s.guideIntroCard}>
+                <BoardCard enter={1} style={s.guideIntroCard}>
                   <View style={s.guideIntroRow}>
                     <View style={[s.guideIntroIcon, { backgroundColor: colors.sage + "18", borderColor: colors.sage + "44" }]}>
                       <Ionicons name="chatbubbles-outline" size={21} color={colors.brandNavy} />
@@ -586,7 +592,7 @@ export default function WoofGuideScreen() {
                     </View>
                   </BoardCard>
                 )}
-                <BoardCard style={s.actionBoard}>
+                <BoardCard enter={2} style={s.actionBoard}>
                   <BoardSectionHeader
                     title="Suggested actions"
                     accessory={<BoardPill label="Owner reviewed" tone={colors.amber} />}
@@ -670,8 +676,8 @@ export default function WoofGuideScreen() {
               style={[s.sendBtn, { backgroundColor: input.trim() && !loading ? colors.primary : colors.card, borderColor: colors.border }]}
             >
               {loading
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Ionicons name="arrow-up" size={20} color={input.trim() ? "#fff" : colors.mutedForeground} />
+                ? <ActivityIndicator size="small" color={colors.primaryForeground} />
+                : <Ionicons name="arrow-up" size={20} color={input.trim() ? colors.primaryForeground : colors.mutedForeground} />
               }
             </Pressable>
           </View>
@@ -695,7 +701,7 @@ export default function WoofGuideScreen() {
                 { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
               ]}
             >
-              <Text style={[s.gateComposerLinkText, { fontFamily: "Inter_700Bold" }]}>Health</Text>
+              <Text style={[s.gateComposerLinkText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Health</Text>
             </Pressable>
           </View>
         )}
@@ -755,7 +761,7 @@ export default function WoofGuideScreen() {
                     accessibilityLabel="Apply reviewed WoofGuide draft"
                     style={[s.reviewApply, { backgroundColor: colors.primary }]}
                   >
-                    <Text style={[s.reviewApplyText, { fontFamily: "Inter_700Bold" }]}>{reviewAction.draft.cta}</Text>
+                    <Text style={[s.reviewApplyText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{reviewAction.draft.cta}</Text>
                   </Pressable>
                 </View>
               </>
@@ -774,7 +780,7 @@ const s = StyleSheet.create({
   // cards keep no extra side margin - they used to stack margin 12 on top of
   // the padding and sit at a 28px gutter no other screen uses.
   guideStageCard: { alignSelf: "stretch", marginTop: 4, overflow: "hidden" },
-  guideStage: { minHeight: 294, overflow: "hidden", justifyContent: "space-between" },
+  guideStage: { minHeight: 260, overflow: "hidden" },
   guideStageImage: { borderRadius: 8 },
   guideStageShade: {
     ...StyleSheet.absoluteFillObject,
@@ -827,9 +833,12 @@ const s = StyleSheet.create({
   },
   guideReviewChipText: { flexShrink: 1, fontSize: 10, lineHeight: 12 },
   guideSprite: {
+    // Seated in the art's lamplit floor pool, right of the armchair, feet
+    // on the floor line with the shadow visible - the scene is unobstructed
+    // now that the HUD lives in the dock below.
     position: "absolute",
-    right: 18,
-    bottom: 98,
+    right: 52,
+    bottom: 44,
     width: 112,
     height: 112,
     zIndex: 2,
@@ -844,16 +853,11 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(8,20,36,0.24)",
   },
   guideHud: {
-    position: "absolute",
-    left: 14,
-    right: 14,
-    bottom: 70,
     borderRadius: 8,
     borderWidth: 1,
     padding: 8,
     flexDirection: "row",
     gap: 8,
-    zIndex: 3,
   },
   guideHudCell: { flex: 1, minWidth: 0 },
   guideHudLabel: { fontSize: 6.5, lineHeight: 10, textTransform: "uppercase" },
@@ -867,14 +871,15 @@ const s = StyleSheet.create({
   },
   guideSignalBar: { width: 5, borderRadius: 2 },
   guideStageFooter: {
-    position: "absolute",
-    left: 14,
-    right: 14,
-    bottom: 10,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    zIndex: 4,
+  },
+  guideDock: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 10,
+    borderTopWidth: 1,
   },
   guideBoundaryCard: {
     flex: 1,
@@ -922,7 +927,7 @@ const s = StyleSheet.create({
   gateComposerNotice: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 18, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 14, paddingVertical: 10 },
   gateComposerText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
   gateComposerLink: { minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
-  gateComposerLinkText: { color: "#fff", fontSize: 13 },
+  gateComposerLinkText: { fontSize: 13 },
   actionBoard: { alignSelf: "stretch", marginTop: 8 },
   guideActionList: { gap: 10 },
   actionRow: { flexDirection: "row", alignItems: "center", gap: 11, borderRadius: 16, borderWidth: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, padding: 13 },
@@ -952,5 +957,5 @@ const s = StyleSheet.create({
   reviewCancel: { flex: 1, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", minHeight: MIN_MOBILE_TOUCH_TARGET },
   reviewCancelText: { fontSize: 14 },
   reviewApply: { flex: 1.4, borderRadius: 16, alignItems: "center", justifyContent: "center", minHeight: MIN_MOBILE_TOUCH_TARGET },
-  reviewApplyText: { color: "#fff", fontSize: 14 },
+  reviewApplyText: { fontSize: 14 },
 });

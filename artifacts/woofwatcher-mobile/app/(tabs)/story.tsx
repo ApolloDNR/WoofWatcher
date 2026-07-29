@@ -13,14 +13,7 @@ import {
   View,
   type ViewStyle,
 } from "react-native";
-import Animated, {
-  cancelAnimation,
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   deriveAdventureMode,
@@ -40,7 +33,8 @@ import {
   CareRow,
 } from "@/components/board/BoardPrimitives";
 import { enterUp, PressScale, ProgressFill } from "@/components/motion/GameFeel";
-import { PixelIcon } from "@/components/PixelIcon";
+import { type DayTrailStop } from "@/components/DayTrailScene";
+import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { TrailMap } from "@/components/TrailMap";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
@@ -52,6 +46,7 @@ import {
   deriveCareStreak,
 } from "@/lib/careCareer";
 import {
+  MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
@@ -74,10 +69,31 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 type StorySegment = "adventures" | "memories" | "badges";
 
 const STORY_SEGMENTS: readonly { key: StorySegment; label: string }[] = [
-  { key: "adventures", label: "Adventures" },
+  { key: "adventures", label: "Today" },
   { key: "memories", label: "Memories" },
-  { key: "badges", label: "Badges" },
+  { key: "badges", label: "Progress" },
 ];
+
+/** Care-log type -> pixel glyph for the real day timeline. Falls back to a
+ *  neutral note glyph so an unmapped type never renders blank. */
+const STORY_STOP_ICON: Record<string, PixelIconName> = {
+  meal: "meal",
+  walk: "walk",
+  potty: "pee",
+  medication: "medication",
+  treat: "treat",
+  play: "play",
+  training: "training",
+  note: "note",
+  symptom: "health",
+  incident: "health",
+  grooming: "heart",
+  hydration: "note",
+  alone: "clock",
+  weight: "energy",
+  mood: "happy",
+  bile: "bile",
+};
 
 /** How far up the level curve to scan for distinct badge titles. The top
  *  title lands at Lv 20 today; scanning past it keeps the ladder complete if
@@ -87,7 +103,6 @@ const MAX_BADGE_LADDER_LEVEL = 40;
 // Mock-board pixel art: the adventure map hero and its trail thumbnails are
 // decorative game art; every name, date, and count layered on top comes from
 // real logged walks only.
-const ADVENTURE_MAP_ART = require("@/assets/story/adventure-map.png");
 const TRAIL_THUMBS = [
   require("@/assets/story/trail-thumb-1.png"),
   require("@/assets/story/trail-thumb-2.png"),
@@ -161,38 +176,6 @@ type WalkJournalStory = {
   photoUri?: string;
 };
 
-/**
- * Gentle idle pulse for the adventure map's quest-marker card: a 2.5s
- * opacity/scale breathe (1.0 -> 1.01, opacity dips to 0.96) in the
- * LivingPhoenixRoom reanimated style. Only the marker moves - the map art
- * itself stays perfectly still - and the amplitude stays tiny because the
- * app has no reduced-motion setting yet.
- */
-function QuestMarkerPulse({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
-}) {
-  const pulse = useSharedValue(0);
-
-  useEffect(() => {
-    pulse.value = withRepeat(
-      withTiming(1, { duration: 1250, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    );
-    return () => cancelAnimation(pulse);
-  }, [pulse]);
-
-  const pulseStyle = useAnimatedStyle(() => ({
-    opacity: 1 - pulse.value * 0.04,
-    transform: [{ scale: 1 + pulse.value * 0.01 }],
-  }));
-
-  return <Animated.View style={[style, pulseStyle]}>{children}</Animated.View>;
-}
 
 export default function StoryScreen() {
   const colors = useColors();
@@ -341,6 +324,45 @@ export default function StoryScreen() {
     return routed[0] ?? null;
   }, [state.entries]);
 
+  /* Day Trail: today's real, household-visible care logs in the order they
+     happened - the waypoints of the empty-state hero. The scene draws only
+     what was actually logged; it never invents stops. */
+  const dayTrailStops = useMemo<DayTrailStop[]>(() => {
+    const today = new Date(now);
+    const stops: { at: number; stop: DayTrailStop }[] = [];
+    for (const entry of state.entries) {
+      if (entry.details?.householdVisible === false) continue;
+      const occurred = Date.parse(entry.occurredAt);
+      if (!Number.isFinite(occurred) || occurred > now) continue;
+      const when = new Date(occurred);
+      if (
+        when.getFullYear() !== today.getFullYear() ||
+        when.getMonth() !== today.getMonth() ||
+        when.getDate() !== today.getDate()
+      ) {
+        continue;
+      }
+      stops.push({
+        at: occurred,
+        stop: {
+          id: entry.id,
+          type: normalizeCareEventType(entry.type, entry.details),
+          label: entry.title || "Care log",
+          timeLabel: when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+        },
+      });
+    }
+    stops.sort((a, b) => a.at - b.at);
+    return stops.map((item) => item.stop);
+  }, [state.entries, now]);
+
+  /* One-line recap that pays off Home's "Today's Story" promise - the same
+     real logs, summarized. Empty state is honest, never a fake highlight. */
+  const latestTodayStop = dayTrailStops.length > 0 ? dayTrailStops[dayTrailStops.length - 1] : null;
+  const todayRecap = latestTodayStop
+    ? `${dayTrailStops.length} care moment${dayTrailStops.length === 1 ? "" : "s"} today - latest: ${latestTodayStop.label}.`
+    : `${petName}'s story is ready for its first care moment today.`;
+
   const routedWalkChip = useMemo(() => {
     if (!routedWalk) return "";
     const details = routedWalk.entry.details ?? {};
@@ -459,6 +481,39 @@ export default function StoryScreen() {
 
         {segment === "adventures" ? (
           <>
+            {/* Today: the real recap + progress, paying off Home's "Today's
+                Story" promise with the same real logs instead of a painting. */}
+            <BoardCard style={s.board} enter={0}>
+              <Text style={[s.todayRecap, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                {todayRecap}
+              </Text>
+              <View style={s.levelStrip}>
+                <View style={[s.levelBadge, { backgroundColor: colors.sageSoft, borderColor: colors.sage + "55" }]}>
+                  <Text style={[s.levelBadgeValue, { color: colors.forest, fontFamily: TITLE_SERIF }]}>
+                    {career.level}
+                  </Text>
+                  <Text style={[s.levelBadgeLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    Level
+                  </Text>
+                </View>
+                <View style={s.levelCopy}>
+                  <Text style={[s.levelTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {career.title}
+                  </Text>
+                  <ProgressFill
+                    ratio={Math.max(0.02, career.levelProgress)}
+                    color={colors.forest}
+                    trackColor={colors.muted}
+                    height={10}
+                    style={s.xpTrack}
+                  />
+                  <Text style={[s.levelMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                    +{career.todayXp} XP today - {careStreak > 0 ? `${careStreak}-day streak` : "start your streak"}
+                  </Text>
+                </View>
+              </View>
+            </BoardCard>
+
             {routedWalk ? (
               /* Real trail map hero: OSM tiles + the recorded route of the
                  most recent routed walk. Tapping opens that walk's log. */
@@ -529,78 +584,57 @@ export default function StoryScreen() {
                 </TrailMap>
               </Pressable>
             ) : (
-            /* Adventure map hero (empty state until a walk records a route):
-                mock-board pixel map with the latest real trail stop layered
-                on top. */
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={
-                trailStops.length > 0
-                  ? `Adventure map. Latest discovery: ${trailStops[0].name}, ${formatMemoryDate(trailStops[0].latestAt)}. Open Adventure Mode.`
-                  : "Adventure map. No places discovered yet. Open Adventure Mode."
-              }
-              onPress={openAdventure}
-              style={({ pressed }) => [
-                s.mapCard,
-                { borderColor: colors.border, opacity: pressed ? 0.92 : 1 },
-              ]}
-            >
-              <Image
-                source={ADVENTURE_MAP_ART}
-                style={s.mapArt}
-                resizeMode="cover"
-                fadeDuration={0}
-              />
-              <QuestMarkerPulse
-                style={[s.mapOverlayCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              >
-                {trailStops.length > 0 ? (
-                  <>
-                    <View style={s.mapOverlayCopy}>
-                      <Text
-                        numberOfLines={1}
-                        style={[s.mapOverlayTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
+              /* Real day timeline: today's actual care logs in the order they
+                 happened - the honest record, not a painted fantasy trail.
+                 Each row opens that log. */
+              <BoardCard style={s.board} enter={1}>
+                <BoardSectionHeader
+                  title="Today's timeline"
+                  accessory={
+                    dayTrailStops.length > 0 ? (
+                      <BoardPill label={`${dayTrailStops.length} logged`} tone={colors.sage} />
+                    ) : undefined
+                  }
+                />
+                {dayTrailStops.length > 0 ? (
+                  <View style={s.todayTimeline}>
+                    {dayTrailStops.map((stop, index) => (
+                      <Pressable
+                        key={stop.id}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${stop.label} at ${stop.timeLabel}. Open this log.`}
+                        onPress={() => router.push(`/log?entry=${encodeURIComponent(stop.id)}` as never)}
+                        style={({ pressed }) => [
+                          s.todayStopRow,
+                          {
+                            borderBottomColor: colors.border,
+                            borderBottomWidth: index === dayTrailStops.length - 1 ? 0 : 1,
+                            opacity: pressed ? 0.6 : 1,
+                          },
+                        ]}
                       >
-                        {trailStops[0].name}
-                      </Text>
-                      <Text
-                        numberOfLines={1}
-                        style={[s.mapOverlayMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-                      >
-                        {formatMemoryDate(trailStops[0].latestAt)}
-                      </Text>
-                      <Text
-                        numberOfLines={1}
-                        style={[s.mapOverlayState, { color: colors.forest, fontFamily: "Inter_600SemiBold" }]}
-                      >
-                        Discovered
-                      </Text>
-                    </View>
-                    <Image
-                      source={TRAIL_THUMBS[0]}
-                      style={[s.mapOverlayThumb, { borderColor: colors.border }]}
-                      resizeMode="cover"
-                    />
-                    <Ionicons name="chevron-forward" size={14} color={colors.mutedForeground} />
-                  </>
-                ) : (
-                  <View style={s.mapOverlayCopy}>
-                    <Text
-                      numberOfLines={1}
-                      style={[s.mapOverlayTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
-                    >
-                      The trail is waiting
-                    </Text>
-                    <Text
-                      numberOfLines={2}
-                      style={[s.mapOverlayMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-                    >
-                      Log a walk with a place name to discover your first spot.
-                    </Text>
+                        <View style={[s.todayStopIcon, { backgroundColor: colors.sageSoft }]}>
+                          <PixelIcon name={STORY_STOP_ICON[stop.type] ?? "note"} size={18} />
+                        </View>
+                        <Text
+                          numberOfLines={1}
+                          style={[s.todayStopLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
+                        >
+                          {stop.label}
+                        </Text>
+                        <Text style={[s.todayStopTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                          {stop.timeLabel}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
+                      </Pressable>
+                    ))}
                   </View>
+                ) : (
+                  <Text style={[s.todayEmpty, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    Nothing logged yet today. Log a meal, walk, or potty and it shows up here as it happens.
+                  </Text>
                 )}
-              </QuestMarkerPulse>
-            </Pressable>
+              </BoardCard>
             )}
 
             {/* Recent adventures: real visited places from logged walks. */}
@@ -900,9 +934,35 @@ export default function StoryScreen() {
               </BoardCard>
             </>
           ) : (
-            /* Honest empty state: no saved memories or proof photos yet. */
+            /* Honest empty state: no saved memories or proof photos yet. The
+                dashed tiles preview the real grid shape (same size and radius
+                as filled memory tiles) so the promise is visual, not just
+                copy - nothing in them pretends to be data. */
             <BoardCard style={s.board} enter={0}>
               <BoardSectionHeader title="Memories" />
+              <View style={s.memoryEmptyRow}>
+                {(["walk", "heart", "note"] as const).map((icon) => (
+                  <View
+                    key={icon}
+                    style={[
+                      s.memoryEmptyTile,
+                      {
+                        // Grid tiles are sized for the full-bleed grid; inside
+                        // the padded card, size to its inner width instead so
+                        // the third tile never clips.
+                        width: Math.floor((windowWidth - 32 - 32 - 16) / 3),
+                        height: Math.round(((windowWidth - 32 - 32 - 16) / 3) * (4 / 3)),
+                        borderColor: colors.border,
+                        backgroundColor: colors.accent,
+                      },
+                    ]}
+                  >
+                    <View style={s.memoryEmptyIcon}>
+                      <PixelIcon name={icon} size={24} />
+                    </View>
+                  </View>
+                ))}
+              </View>
               <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 Photos from walks and stories land here.
               </Text>
@@ -1126,6 +1186,25 @@ export default function StoryScreen() {
 const s = StyleSheet.create({
   root: { flex: 1 },
   board: { marginBottom: 12 },
+  todayRecap: { fontSize: 16, lineHeight: 22, marginBottom: 14 },
+  todayTimeline: { marginTop: 2 },
+  todayStopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 11,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+  },
+  todayStopIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  todayStopLabel: { flex: 1, fontSize: 14 },
+  todayStopTime: { fontSize: 12.5 },
+  todayEmpty: { fontSize: 13.5, lineHeight: 19, paddingVertical: 4 },
   sectionCopy: { fontSize: 13, lineHeight: 19, marginBottom: 12 },
   emptyText: { fontSize: 12.5, lineHeight: 18, marginBottom: 6 },
   footnote: { fontSize: 11.5, lineHeight: 16, marginTop: 2 },
@@ -1143,13 +1222,6 @@ const s = StyleSheet.create({
   statPairValue: { fontSize: 16, marginTop: 3 },
   statPairLabel: { fontSize: 10, textTransform: "uppercase", letterSpacing: 0 },
   statPairDetail: { fontSize: 10.5, lineHeight: 14 },
-  mapCard: {
-    borderRadius: 22,
-    borderWidth: 1,
-    overflow: "hidden",
-    marginBottom: 12,
-    aspectRatio: 5 / 4,
-  },
   trailHeroPress: { marginBottom: 12 },
   trailHeroMap: { borderRadius: 22 },
   trailHeroChip: {
@@ -1184,34 +1256,6 @@ const s = StyleSheet.create({
     paddingVertical: 6,
   },
   trailStyleToggleText: { fontSize: 11.5 },
-  mapArt: {
-    ...StyleSheet.absoluteFillObject,
-    width: "100%",
-    height: "100%",
-  },
-  mapOverlayCard: {
-    position: "absolute",
-    right: 12,
-    bottom: 12,
-    maxWidth: "78%",
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  mapOverlayCopy: { flexShrink: 1, minWidth: 0 },
-  mapOverlayTitle: { fontSize: 13.5 },
-  mapOverlayMeta: { fontSize: 11, marginTop: 1 },
-  mapOverlayState: { fontSize: 11, marginTop: 3 },
-  mapOverlayThumb: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
   trailList: { gap: 4, marginBottom: 2 },
   trailRow: { flexDirection: "row", alignItems: "center", gap: 11, minHeight: 56, paddingVertical: 6 },
   trailThumb: { width: 48, height: 48, borderRadius: 12, borderWidth: 1 },
@@ -1232,6 +1276,21 @@ const s = StyleSheet.create({
   quietLabel: { fontSize: 14, marginBottom: 8, marginLeft: 2, marginTop: 2 },
   memoryMonth: { marginBottom: 14 },
   memoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  memoryEmptyRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 14,
+  },
+  memoryEmptyTile: {
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  memoryEmptyIcon: {
+    opacity: 0.5,
+  },
   memoryPhoto: { borderRadius: 14 },
   memoryNoteTile: {
     borderRadius: 14,

@@ -4773,3 +4773,10 @@ Dependency-complete branch CI proved implementation commit `04c96443` in
 dependency install, JSON doctor, focused behavior tests, typecheck plus CI-safe
 builds, post steps, and Complete job all passed. Rerun after this proof-record
 commit before treating the final branch tip as current.
+## 2026-07-28 mainline launch-readiness reconciliation
+
+- Merged `origin/main` through `284f2b96` into the automation branch without rewriting either history.
+- Preserved the automation branch's saved Auth/Setup, payments, push, store, Records file, report binary, route visual, AI, deletion, and support/legal proof propagation while accepting mainline's data-safety, accessibility, navigation, Travel Bag, living-story, offline-PWA, store-asset, and pre-launch QA work.
+- Conflict resolution kept the mainline Dog ID portrait and Quick Care sprite-layout repair, while retaining constant fixed-light boundaries and provider-evidence inputs.
+- Local proof: mobile readiness `134/134`; care-domain `157/157`; root TypeScript passed; PixelLab `ok=149 missing=0 invalid=0`; JSON doctor source-backed guards passed. The direct aggregate partial-checkout command still lacks local `express` and `@workspace/care-domain` package resolution, so final-tip dependency-complete CI is required.
+- Remaining truth boundary: native iOS/Android, provider, store-review, public-launch, signed-in wipe semantics, and Apollo approval evidence are still open.

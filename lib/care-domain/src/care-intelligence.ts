@@ -241,6 +241,11 @@ function firstOpenRoutineLabel(open: { label: string; minutesFromNow: number; st
   if (!open) return "No open routines";
   if (open.status === "overdue") return `${open.label} is overdue`;
   if (open.status === "due") return `${open.label} is due now`;
+  // A routine whose care already happened but awaits its outcome (a served
+  // meal) is in the past - "in 0m" claimed it was upcoming right now.
+  if (open.status === "pending" || open.minutesFromNow < 0) {
+    return `${open.label} outcome pending`;
+  }
   const minutes = Math.max(0, open.minutesFromNow);
   if (minutes < 60) return `${open.label} in ${minutes}m`;
   return `${open.label} later today`;
@@ -386,7 +391,7 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
       id: `failed-sync:${entry.id ?? entry.occurredAt}`,
       kind: "failed-sync",
       label: "Sync needs retry",
-      detail: entry.syncError ? clean(entry.syncError) : `${entry.title ?? "A care log"} has not reached the household yet.`,
+      detail: entry.syncError ? clean(entry.syncError) : `${clean(entry.title) || "A care log"} has not reached the household yet.`,
       priority: "high",
       targetEntryId: entry.id,
     });
@@ -402,7 +407,7 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
       // before midnight owns the rollover honestly in its copy.
       detail: servedEarlierDay
         ? `Last night's ${clean(entry.title) || "meal"} - how did it go?`
-        : `${entry.title ?? "Meal"} served. Confirm how much ${petName} ate.`,
+        : `${clean(entry.title) || "Meal"} served. Confirm how much ${petName} ate.`,
       priority: "medium",
       targetEntryId: entry.id,
     });

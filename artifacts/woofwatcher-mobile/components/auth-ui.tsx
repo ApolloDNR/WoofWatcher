@@ -293,9 +293,9 @@ export function PrimaryButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color="#FFFFFF" />
+        <ActivityIndicator color={colors.primaryForeground} />
       ) : (
-        <Text style={[styles.buttonText, { fontFamily: "Inter_600SemiBold" }]}>
+        <Text style={[styles.buttonText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>
           {label}
         </Text>
       )}

@@ -74,6 +74,7 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
+import { PetPortrait } from "@/components/PetPortrait";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { PressScale } from "@/components/motion/GameFeel";
@@ -501,7 +502,27 @@ export default function RecordsScreen() {
         allowsEditing: false,
       });
       if (!result.canceled && result.assets[0]?.uri) {
-        setRecordAttachmentUri(result.assets[0].uri);
+        const pickedUri = result.assets[0].uri;
+        if (Platform.OS === "web") {
+          setRecordAttachmentUri(pickedUri);
+          return;
+        }
+        // ImagePicker hands back a cache-directory URI the OS may purge at
+        // any time - a vault attachment must not silently vanish. Copy it to
+        // durable app storage and store that URI instead; if the copy fails,
+        // the cache URI still beats nothing.
+        try {
+          const durableDir = `${FileSystem.documentDirectory}woofwatcher-attachments/`;
+          await FileSystem.makeDirectoryAsync(durableDir, { intermediates: true }).catch(() => {});
+          const extension = pickedUri.split(".").pop()?.split("?")[0] || "jpg";
+          const durableUri = `${durableDir}attachment_${Date.now()}_${Math.random()
+            .toString(36)
+            .slice(2, 8)}.${extension}`;
+          await FileSystem.copyAsync({ from: pickedUri, to: durableUri });
+          setRecordAttachmentUri(durableUri);
+        } catch {
+          setRecordAttachmentUri(pickedUri);
+        }
       }
     } catch {
       notifyDialog("Attachment unavailable", "Choose the file details manually for now.");
@@ -1037,7 +1058,8 @@ export default function RecordsScreen() {
             kicker="Records"
             title="Records"
             subtitle={`${resolvePetName(state.profile.name)}'s file cabinet - trends, incidents & reports`}
-            icon="folder-open-outline"
+            back
+            onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
           />
 
           <BoardCard padded={false} style={s.recordsCredentialStageCard} enter={0}>
@@ -1097,9 +1119,9 @@ export default function RecordsScreen() {
             </ImageBackground>
             <View style={[s.recordsCredentialDock, { backgroundColor: colors.ivory + "F4", borderColor: colors.brandNavy + "33" }]}>
               <View style={[s.recordsCredentialIdPlate, { backgroundColor: colors.ivory, borderColor: colors.brandNavy + "22" }]}>
-                <View style={[s.recordsCredentialIdBadge, { backgroundColor: colors.brandNavy + "1F" }]}>
-                  <Ionicons name="paw" size={16} color={colors.brandNavy} />
-                </View>
+                {/* A real ID card carries a photo, not a glyph: the canonical
+                    portrait makes the credential read as a document. */}
+                <PetPortrait size={38} ringColor={colors.brandNavy + "55"} />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[s.recordsCredentialIdLabel, { color: colors.brandNavy, fontFamily: "Inter_700Bold" }]}>
                     WOOFWATCHER DOG ID
@@ -2987,7 +3009,7 @@ export default function RecordsScreen() {
                       onPress={() => shareCarePass(carePassPreview)}
                       style={({ pressed }) => [s.sheetSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                     >
-                      <Text style={[s.sheetSaveText, { fontFamily: "Inter_700Bold" }]}>Save & share</Text>
+                      <Text style={[s.sheetSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save & share</Text>
                     </Pressable>
                   </View>
                 </>
@@ -3082,7 +3104,7 @@ export default function RecordsScreen() {
                   onPress={saveRecord}
                   style={({ pressed }) => [s.sheetSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                 >
-                  <Text style={[s.sheetSaveText, { fontFamily: "Inter_700Bold" }]}>Save record</Text>
+                  <Text style={[s.sheetSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save record</Text>
                 </Pressable>
               </View>
             </Pressable>
@@ -3241,13 +3263,6 @@ const s = StyleSheet.create({
     shadowOpacity: 0.14,
     shadowRadius: 16,
     elevation: 5,
-  },
-  recordsCredentialIdBadge: {
-    width: 38,
-    height: 38,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
   },
   recordsCredentialIdLabel: {
     fontSize: 9,

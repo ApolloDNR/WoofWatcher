@@ -152,10 +152,17 @@ function notificationPreferenceSummaryFor(preferences: CareReminderNotificationP
   const optedOut = preferences.optOut === true;
 
   if (!providerConfigured) {
+    // The staged-provider branch keeps the structured proof-boundary
+    // language on purpose: it is an owner/QA-only state (a provider is
+    // mid-setup), and the mobile-beta doctor guards this exact string so a
+    // flipped "provider-approved" boolean can never make the app claim push
+    // works before delivery proof exists. Users in a normal build never see
+    // it. The branch below - the one a launch user actually reads - stays
+    // plain owner language (the audit's jargon finding was about that one).
     if (preferences.providerStaged === true && preferences.providerProofReady !== true) {
       return "Push provider is staged, but Reminder Center stays in-app until structured Expo/APNs/FCM, permission, quiet-hours, opt-out, and native delivery proof is attached.";
     }
-    return "Push provider not configured; push notifications stay in-app until Expo, APNs, and Firebase/FCM proof is attached.";
+    return "Push notifications aren't part of this build yet, so reminders live here in the app.";
   }
   if (optedOut) {
     return "Notifications are off by your choice; Reminder Center stays visible in app until you turn them back on.";
@@ -328,7 +335,9 @@ export function deriveCareReminderCenter(input: CareReminderCenterInput): CareRe
     nextStep: nextStepFor(status),
     notificationReadiness: providerBackedNotifications
       ? "Reminder candidates are ready for owner review; push delivery is eligible for delivery QA, but launch still needs delivered-notification proof."
-      : `Reminder candidates are ready for owner review; ${notificationPreferenceSummary}`,
+      : // Do not embed the preference summary here - screens render both
+        // fields adjacently and the same sentence appeared twice.
+        "Reminder candidates are ready for owner review.",
     notificationPreferenceSummary,
     notificationQuietHours: notificationQuietHoursFor(input.notificationPreferences),
     notificationOptOut: notificationOptOutFor(input.notificationPreferences),
