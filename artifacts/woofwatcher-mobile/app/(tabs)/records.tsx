@@ -1129,7 +1129,7 @@ export default function RecordsScreen() {
                   <Text numberOfLines={1} style={[s.recordsCredentialIdName, { color: colors.brandNavy, fontFamily: DISPLAY }]}>
                     {resolvePetName(credential.name)}
                   </Text>
-                  <Text numberOfLines={1} style={[s.recordsCredentialIdMeta, { color: colors.brandNavy + "99", fontFamily: "Inter_600SemiBold" }]}>
+                  <Text numberOfLines={1} style={[s.recordsCredentialIdMeta, { color: colors.brandNavy, fontFamily: "Inter_600SemiBold" }]}>
                     {credential.breed} - {credential.weight}
                   </Text>
                 </View>

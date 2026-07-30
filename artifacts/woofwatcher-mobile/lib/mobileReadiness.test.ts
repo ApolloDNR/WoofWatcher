@@ -609,6 +609,21 @@ test("keeps the fixed-light Records credential dock bounded in dark mode", () =>
   );
 });
 
+test("keeps the fixed-light Records Dog ID metadata readable in dark mode", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+
+  assert.match(
+    records,
+    /s\.recordsCredentialIdMeta,\s*\{\s*color:\s*colors\.brandNavy,\s*fontFamily:\s*"Inter_600SemiBold"\s*\}/,
+    "breed and weight are handoff-critical Dog ID data and need full-strength fixed dark ink",
+  );
+  assert.doesNotMatch(
+    records,
+    /s\.recordsCredentialIdMeta,\s*\{\s*color:\s*colors\.brandNavy\s*\+\s*"99"/,
+    "translucent metadata ink can become too faint on the fixed-light Dog ID",
+  );
+});
+
 test("keeps selected Avatar Studio mood labels readable in dark mode", () => {
   const avatarStudio = readAppFile("portrait.tsx");
 

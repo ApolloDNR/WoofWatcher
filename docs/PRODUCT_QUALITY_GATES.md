@@ -466,3 +466,10 @@ proof, public launch, or Apollo sign-off.
   and edges with red/green readiness coverage.
 - OPEN, native: iOS/Android dark screenshots, mood-state interaction,
   accessibility traversal, phone-size sprite review, and Apollo approval.
+
+## 2026-07-29 Records Dog ID metadata contrast
+
+- PASS, source: fixed-light breed and weight metadata uses full-strength
+  constant brand-navy ink with red/green readiness coverage.
+- OPEN, native: iOS/Android dark screenshots, local-file and generated
+  PNG/share proof, accessibility traversal, and Apollo approval.

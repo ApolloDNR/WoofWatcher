@@ -1666,3 +1666,14 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   traversal, and Apollo visual approval.
 - CI: `WoofWatcher Verify` run `30499164227`, job `90734748891`, passed for
   implementation commit `5cde1061`.
+
+## 2026-07-29 Records Dog ID metadata contrast
+
+- DONE: The fixed-light Records Dog ID now uses full-strength constant
+  brand-navy for its breed and weight line instead of translucent ink.
+- VERIFIED: Red-first mobile readiness failed on the translucent metadata,
+  then passed `140/140` after the correction.
+- NEXT: Run the strongest local verification and require fresh
+  dependency-complete branch CI. Real route-named iOS/Android Records
+  screenshots, local-file and PDF/PNG share/reopen proof, native
+  accessibility traversal, and Apollo visual approval remain open.

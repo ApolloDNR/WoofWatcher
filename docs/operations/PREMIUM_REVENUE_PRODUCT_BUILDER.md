@@ -4935,3 +4935,15 @@ passed for implementation commit `5cde1061`; checkout, pinned pnpm/Node setup,
 dependency install, JSON doctor, focused behavior tests, typecheck plus
 CI-safe builds, post steps, and Complete job all passed. Rerun after this
 proof-record commit before treating the final branch tip as current.
+
+## 2026-07-29 Records Dog ID metadata contrast
+
+The Records credential keeps its Dog ID intentionally ivory, and its breed
+and weight line now uses full-strength constant brand-navy instead of
+translucent ink. A red-first mobile-readiness contract failed on the former
+metadata and passed `140/140` after the source correction.
+
+Real route-named native Records screenshots, local-file and generated PDF/PNG
+share/reopen proof, accessibility traversal, provider/store proof, and Apollo
+visual approval remain gated. Dependency-complete branch CI is required
+before the pushed tip is treated as fully verified.

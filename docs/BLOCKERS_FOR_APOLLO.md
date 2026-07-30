@@ -460,3 +460,10 @@ and edges on their fixed-light ivory surface. Real route-named iOS/Android
 Avatar Studio screenshots, phone-size proportions, mood selection and sprite
 timing, native accessibility traversal, and Apollo visual approval remain
 blocked.
+
+## 2026-07-29 Records Dog ID metadata contrast boundary
+
+The fixed-light Dog ID breed and weight line now has source-protected
+full-strength dark ink. Real route-named iOS/Android Records screenshots,
+native local-file and PDF/PNG share/reopen evidence, device accessibility
+review, and Apollo visual approval remain blocked.

@@ -2889,3 +2889,12 @@ or Apollo visual approval.
   scheme-independent ivory badge.
 - Boundary: this is source-level contrast hardening, not native Avatar Studio
   proof, sprite approval, accessibility review, or Apollo sign-off.
+
+## 2026-07-29 - Keep Dog ID metadata at full-strength ink
+
+- Decision: keep the Records Dog ID ivory in both themes and render its breed
+  and weight line with full-strength constant `brandNavy`.
+- Why: breed and weight are handoff-critical credential data; translucent ink
+  unnecessarily weakens that small line on a fixed-light surface.
+- Boundary: this is source-level contrast hardening, not native Records
+  screenshots, file/share proof, accessibility review, or Apollo sign-off.

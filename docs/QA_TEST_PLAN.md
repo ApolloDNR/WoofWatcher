@@ -2657,3 +2657,10 @@ Source readiness now rejects adaptive muted ink or borders on inactive ivory
 mood badges. On native iOS and Android, verify every mood badge in dark mode,
 selected/inactive transitions, Dynamic Type, screen-reader traversal, and
 phone-size layouts before approving Avatar Studio.
+
+## 2026-07-29 Records Dog ID metadata contrast QA
+
+Source readiness now rejects translucent ink for breed and weight on the
+fixed-light Dog ID. On native iOS and Android, verify that line in dark mode,
+Dynamic Type, screen-reader traversal, compact phone layouts, and generated
+Dog ID PNG/share flows before approving Records.
