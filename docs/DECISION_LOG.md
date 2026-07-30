@@ -1,5 +1,17 @@
 # WoofWatcher Decision Log
 
+## 2026-07-30: Fixed-navy trust chips use constant bright icons
+
+Decision: render the Plus checkout lock and WoofGuide owner-review check with
+the established bright gold instead of adaptive `colors.amber`.
+
+Reason: both chips stay navy in either color scheme, while light-theme amber
+is a dark pigment tuned for light surfaces and loses contrast on navy.
+
+Boundary: this is source-backed contrast hardening only. It does not enable
+checkout or live AI, replace owner review, or replace native screenshots,
+device accessibility review, provider proof, or Apollo approval.
+
 ## 2026-07-30: Fixed-light console kickers use constant dark ink
 
 Decision: render the compact Plus and WoofGuide console-bubble kickers with

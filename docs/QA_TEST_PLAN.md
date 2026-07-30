@@ -1,5 +1,13 @@
 # QA Test Plan
 
+## 2026-07-30 Plus and WoofGuide fixed-dark trust-icon contrast QA
+
+- Red-first mobile readiness must require `FIXED_DARK_GOLD` for the lock and
+  owner-review icons rendered on the two fixed-navy chips.
+- The same contract must reject adaptive `colors.amber` on those chips.
+- Manual remainder: capture both routes in native iOS and Android light mode
+  and verify the icons alongside their labels with VoiceOver and TalkBack.
+
 ## 2026-07-30 Plus and WoofGuide console-kicker contrast QA
 
 - Red-first mobile readiness must require constant `colors.brandNavy` for the

@@ -5239,6 +5239,32 @@ test("keeps fixed-light Plus and WoofGuide console kickers readable in dark mode
   );
 });
 
+test("keeps fixed-dark Plus and WoofGuide trust icons readable in light mode", () => {
+  const premium = readAppFile("premium.tsx");
+  const woofGuide = readAppFile("woofguide.tsx");
+
+  assert.match(
+    premium,
+    /lock-closed-outline"\s+size=\{15\}\s+color=\{FIXED_DARK_GOLD\}/,
+    "the fixed-navy checkout gate needs a constant bright lock icon",
+  );
+  assert.match(
+    woofGuide,
+    /checkmark-done-circle-outline"\s+size=\{15\}\s+color=\{FIXED_DARK_GOLD\}/,
+    "the fixed-navy owner-review gate needs a constant bright check icon",
+  );
+  assert.doesNotMatch(
+    premium,
+    /lock-closed-outline"\s+size=\{15\}\s+color=\{colors\.amber\}/,
+    "adaptive light-theme amber becomes too dark on the fixed-navy checkout gate",
+  );
+  assert.doesNotMatch(
+    woofGuide,
+    /checkmark-done-circle-outline"\s+size=\{15\}\s+color=\{colors\.amber\}/,
+    "adaptive light-theme amber becomes too dark on the fixed-navy owner-review gate",
+  );
+});
+
 test("keeps fixed-light premium console docks separated from artwork in dark mode", () => {
   const premium = readAppFile("premium.tsx");
   const woofGuide = readAppFile("woofguide.tsx");

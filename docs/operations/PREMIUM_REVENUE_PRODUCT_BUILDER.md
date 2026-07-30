@@ -1,5 +1,22 @@
 # Premium Revenue Product Builder
 
+## 2026-07-30 Plus and WoofGuide fixed-dark trust-icon contrast
+
+The Plus `Checkout gated` lock and WoofGuide `Owner review` check sit on
+fixed-navy chips in both color schemes. They now use the established bright
+gold instead of adaptive light-theme amber, which is tuned for light surfaces
+and becomes too dark on navy. A red-first mobile-readiness contract failed
+`142/143` before the two minimal source corrections. Local verification passed
+mobile readiness `143/143`, care-domain `157/157`, root TypeScript, PixelLab
+`ok=149 missing=0 invalid=0`, and `git diff --check`. The broad
+partial-checkout suite passed `701/702` and failed only on the known missing
+local `@workspace/care-domain` link in `careCareer.test.ts`. The JSON doctor
+kept `84/88` source-backed checks passing while remaining truthfully blocked
+on local pnpm/Corepack and Expo resolution. Dependency-complete branch CI
+remains to be recorded. This source gate does not enable checkout or live AI
+and does not claim native screenshots, VoiceOver/TalkBack traversal, provider
+readiness, store/public launch, or Apollo approval.
+
 ## 2026-07-30 Plus and WoofGuide console-kicker dark-mode contrast
 
 The fixed-light Plus and WoofGuide speech bubbles now render their compact

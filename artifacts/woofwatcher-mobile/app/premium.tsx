@@ -37,6 +37,7 @@ import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 const PIXEL_DISPLAY = "Fredoka_600SemiBold";
+const FIXED_DARK_GOLD = "#D8A852";
 const PREMIUM_VALUE_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-pixellab-400x300.png");
 const PREMIUM_VALUE_STAGE_SPRITE = getCareTwinSpriteAsset("celebrate-hop");
 const PREMIUM_VALUE_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["celebrate-hop"];
@@ -183,7 +184,7 @@ function PremiumScreenBody() {
                     { backgroundColor: colors.brandNavy + "E8", borderColor: colors.ivory + "55" },
                   ]}
                 >
-                  <Ionicons name="lock-closed-outline" size={15} color={colors.amber} />
+                  <Ionicons name="lock-closed-outline" size={15} color={FIXED_DARK_GOLD} />
                   <Text style={[s.premiumValueChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
                     Checkout gated
                   </Text>

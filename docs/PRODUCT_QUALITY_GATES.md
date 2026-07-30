@@ -1,5 +1,12 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-07-30 Fixed-dark Plus and WoofGuide trust icons
+
+The fixed-navy checkout and owner-review chips use constant bright-gold icons.
+Mobile readiness rejects adaptive light-theme amber on those dark surfaces.
+Native visual and screen-reader evidence remains open; checkout and live AI
+remain provider-gated and owner-reviewed.
+
 ## 2026-07-30 Plus and WoofGuide console-kicker contrast
 
 The fixed-light console bubbles use constant brand-navy ink for their compact

@@ -1,5 +1,25 @@
 # Autonomous Build Queue
 
+## 2026-07-30 Plus and WoofGuide fixed-dark trust-icon contrast
+
+- DONE: The fixed-navy `Checkout gated` and `Owner review` chips now use the
+  established bright gold for their lock/check icons instead of adaptive
+  light-theme amber.
+- VERIFIED RED: Mobile readiness failed `142/143` while both trust-state icons
+  still used adaptive `colors.amber`.
+- VERIFIED GREEN: Mobile readiness passed `143/143`, care-domain passed
+  `157/157`, root TypeScript passed, PixelLab passed
+  `ok=149 missing=0 invalid=0`, and `git diff --check` passed. The broad
+  partial-checkout suite passed `701/702` and failed only on the known missing
+  local `@workspace/care-domain` link in `careCareer.test.ts`. The JSON doctor
+  kept `84/88` source-backed checks passing while remaining truthfully blocked
+  on local pnpm/Corepack and Expo resolution.
+- NEXT: Commit/push and run dependency-complete branch CI before treating the
+  slice as release proof.
+- BLOCKED EXTERNALLY: Route-named native iOS/Android screenshots,
+  VoiceOver/TalkBack traversal, provider evidence, and Apollo visual approval
+  remain open. Checkout and live AI remain gated.
+
 ## 2026-07-30 Plus and WoofGuide console-kicker contrast
 
 - DONE: The fixed-light Plus and WoofGuide console bubbles now use constant

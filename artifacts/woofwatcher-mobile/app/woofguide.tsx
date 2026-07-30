@@ -61,6 +61,7 @@ const ACTION_ICON: Record<WoofGuideActionIcon, IoniconName> = {
 };
 
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+const FIXED_DARK_GOLD = "#D8A852";
 const WOOFGUIDE_STAGE_ROOM = require("@/assets/avatar/rooms/woofguide-stage.png");
 const WOOFGUIDE_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
 const WOOFGUIDE_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
@@ -398,7 +399,7 @@ export default function WoofGuideScreen() {
                         <View style={s.guideBubbleTail} />
                       </View>
                       <View style={[s.guideReviewChip, { backgroundColor: colors.brandNavy + "E8", borderColor: colors.ivory + "55" }]}>
-                        <Ionicons name="checkmark-done-circle-outline" size={15} color={colors.amber} />
+                        <Ionicons name="checkmark-done-circle-outline" size={15} color={FIXED_DARK_GOLD} />
                         <Text style={[s.guideReviewChipText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
                           Owner review
                         </Text>
