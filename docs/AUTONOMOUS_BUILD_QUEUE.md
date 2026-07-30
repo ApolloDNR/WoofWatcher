@@ -13,7 +13,12 @@
   `ok=149 missing=0 invalid=0`, and `git diff --check` passed. The JSON doctor
   kept source-backed checks passing while remaining truthfully blocked on
   local pnpm/Corepack and Expo resolution.
-- NEXT: Run dependency-complete branch CI after the implementation commit.
+- DONE: Dependency-complete WoofWatcher Verify run `30551708148`, job
+  `90901753239`, passed implementation/docs commit `10159f53`, including
+  checkout, pinned dependency setup/install, JSON doctor, focused tests,
+  typecheck plus CI-safe builds, post steps, and Complete job.
+- NEXT: Rerun branch CI after this proof-record commit before treating
+  dependency proof as current for the final branch tip.
 - BLOCKED EXTERNALLY: Route-named native iOS/Android screenshots,
   VoiceOver/TalkBack traversal, provider evidence, and Apollo visual approval
   remain open. Checkout and live AI remain gated.

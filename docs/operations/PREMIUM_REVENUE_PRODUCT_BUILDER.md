@@ -11,10 +11,14 @@ excluding only the known missing local `@workspace/care-domain` link in
 `careCareer.test.ts`, root TypeScript, PixelLab
 `ok=149 missing=0 invalid=0`, and `git diff --check`. The JSON doctor kept
 source-backed checks passing while remaining truthfully blocked on local
-pnpm/Corepack and Expo resolution. Dependency-complete CI proof follows after
-the implementation commit. This source gate does not claim native screenshots,
-VoiceOver/TalkBack traversal, provider readiness, store/public launch, or
-Apollo approval; checkout and live AI remain gated.
+pnpm/Corepack and Expo resolution. Dependency-complete WoofWatcher Verify run
+`30551708148`, job `90901753239`, passed implementation/docs commit
+`10159f53`: checkout, pinned dependency setup/install, JSON doctor, focused
+tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+Rerun CI after this proof-record commit before treating dependency proof as
+current for the final branch tip. This source gate does not claim native
+screenshots, VoiceOver/TalkBack traversal, provider readiness, store/public
+launch, or Apollo approval; checkout and live AI remain gated.
 
 ## 2026-07-30 Avatar photo-reference explanation dark-mode contrast
 
