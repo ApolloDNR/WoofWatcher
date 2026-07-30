@@ -1,5 +1,13 @@
 # QA Test Plan
 
+## 2026-07-30 Avatar photo-reference explanation contrast QA
+
+- Red-first mobile readiness must require constant `colors.brandNavy` for both
+  the `PHOTO REFERENCE` kicker and its explanatory sentence.
+- The same contract must reject adaptive `colors.ink` on the fixed cream card.
+- Manual remainder: capture the scan proof card in native iOS and Android dark
+  mode and verify it with VoiceOver and TalkBack.
+
 ## 2026-07-30 Shared pixel-icon accessibility QA
 
 - Automated source coverage requires the shared `PixelIcon` image to set

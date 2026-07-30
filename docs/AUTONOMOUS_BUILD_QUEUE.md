@@ -1,5 +1,22 @@
 # Autonomous Build Queue
 
+## 2026-07-30 Avatar photo-reference explanation contrast
+
+- DONE: The fixed-light Avatar Studio photo-reference explanation now uses
+  constant brand-navy ink instead of adaptive `colors.ink`.
+- VERIFIED RED: Mobile readiness failed `140/141` because the explanatory copy
+  still flipped to pale dark-theme ink on the cream proof card.
+- VERIFIED: Mobile readiness passed `141/141`, care-domain passed `157/157`,
+  the dependency-light aggregate passed `699/699` after excluding only the
+  known missing local `@workspace/care-domain` link in `careCareer.test.ts`,
+  root TypeScript passed, PixelLab passed `ok=149 missing=0 invalid=0`, and
+  `git diff --check` passed. The JSON doctor kept source-backed checks passing
+  while remaining truthfully blocked on local pnpm/Corepack and Expo
+  resolution.
+- PUSH NEXT: Commit, push, and prove the branch tip in dependency-complete CI.
+- BLOCKED EXTERNALLY: Route-named native iOS/Android Avatar Studio screenshots,
+  VoiceOver/TalkBack traversal, and Apollo visual approval remain open.
+
 ## 2026-07-29 Quick Care detail-status contrast
 
 - DONE: The fixed-light Quick Care status chip keeps its warm detail meaning

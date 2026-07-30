@@ -622,7 +622,7 @@ export default function PortraitScreen() {
                     <Text
                       style={[
                         s.sourceProofText,
-                        { color: colors.ink, fontFamily: "Inter_700Bold" },
+                        { color: colors.brandNavy, fontFamily: "Inter_700Bold" },
                       ]}
                     >
                       Building a pixel twin, not using the photo as the avatar.

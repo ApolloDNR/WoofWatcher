@@ -710,6 +710,11 @@ test("keeps the fixed-light Avatar Studio photo reference readable in dark mode"
     /s\.sourceProofKicker,\s*\{\s*color:\s*colors\.brandNavy/,
     "the fixed-light photo reference kicker needs constant dark ink",
   );
+  assert.match(
+    avatarStudio,
+    /s\.sourceProofText,\s*\{\s*color:\s*colors\.brandNavy/,
+    "the fixed-light photo reference explanation needs constant dark ink",
+  );
   assert.doesNotMatch(
     avatarStudio,
     /s\.sourceProofCard,[\s\S]*?backgroundColor:\s*"rgba\(255,249,239,0\.94\)",\s*borderColor:\s*colors\.border/,
@@ -719,6 +724,11 @@ test("keeps the fixed-light Avatar Studio photo reference readable in dark mode"
     avatarStudio,
     /s\.sourceProofKicker,\s*\{\s*color:\s*colors\.sage/,
     "adaptive sage becomes too pale against the fixed-light photo reference card",
+  );
+  assert.doesNotMatch(
+    avatarStudio,
+    /s\.sourceProofText,\s*\{\s*color:\s*colors\.ink/,
+    "adaptive dark-mode ink becomes too pale against the fixed-light photo reference card",
   );
 });
 

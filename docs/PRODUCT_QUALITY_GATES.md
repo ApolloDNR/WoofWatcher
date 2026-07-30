@@ -1,5 +1,12 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-07-30 Avatar photo-reference explanation contrast
+
+The fixed-light Avatar Studio photo-reference card now keeps both its compact
+kicker and its owner-trust explanation in constant brand-navy ink. Mobile
+readiness rejects adaptive dark-theme ink on that cream surface. Native visual
+and screen-reader evidence remains open.
+
 ## 2026-07-30 Decorative pixel-icon semantics
 
 The shared pixel-art icon primitive is hidden from the accessibility tree when

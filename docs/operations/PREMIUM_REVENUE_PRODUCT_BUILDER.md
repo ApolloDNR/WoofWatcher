@@ -1,5 +1,22 @@
 # Premium Revenue Product Builder
 
+## 2026-07-30 Avatar photo-reference explanation dark-mode contrast
+
+Avatar Studio's fixed-light photo-reference card now renders its explanatory
+owner-trust sentence with constant brand-navy ink instead of adaptive
+`colors.ink`. The sentence clarifies that the real photo is only a reference
+for building the pixel twin, so it must remain legible in both schemes.
+
+A red-first mobile-readiness contract failed `140/141` before the source
+correction. Local verification passed mobile readiness `141/141`, care-domain
+`157/157`, the dependency-light aggregate `699/699` after excluding only the
+known missing local `@workspace/care-domain` link in `careCareer.test.ts`,
+root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and
+`git diff --check`. The JSON doctor kept source-backed checks passing while
+remaining truthfully blocked on local pnpm/Corepack and Expo resolution.
+Commit/push and final-tip CI proof follow in this run. Native iOS/Android
+screenshots, VoiceOver/TalkBack traversal, and Apollo approval remain open.
+
 ## 2026-07-30 Shared pixel-icon screen-reader hygiene
 
 The shared `PixelIcon` primitive now marks its baked care artwork decorative.

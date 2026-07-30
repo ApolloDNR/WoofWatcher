@@ -1,5 +1,12 @@
 # Blockers For Apollo
 
+## 2026-07-30 Avatar photo-reference contrast boundary
+
+The fixed-light Avatar Studio photo-reference explanation now has
+source-protected constant dark ink. Still blocked: route-named native
+iOS/Android Avatar Studio screenshots, VoiceOver/TalkBack traversal, and
+Apollo visual approval.
+
 ## 2026-07-30 Shared pixel-icon accessibility boundary
 
 Shared pixel art no longer creates redundant image stops beside labeled care

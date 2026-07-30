@@ -1,5 +1,17 @@
 # WoofWatcher Decision Log
 
+## 2026-07-30: Fixed-light photo-reference copy uses constant dark ink
+
+Decision: render Avatar Studio's entire fixed-light photo-reference message
+with `colors.brandNavy`, including the explanatory owner-trust sentence.
+
+Reason: `colors.ink` becomes pale in dark mode while the cream proof card does
+not change schemes. The sentence explains that the real photo is only a
+reference and must remain as legible as its kicker.
+
+Boundary: this is source-backed contrast hardening only; native screenshots,
+VoiceOver/TalkBack traversal, and Apollo approval remain required.
+
 ## 2026-07-30: Shared pixel icons are decorative
 
 Decision: mark the shared `PixelIcon` image inaccessible while leaving the
