@@ -506,3 +506,8 @@ proof, public launch, or Apollo sign-off.
   contrast pair for its launch-checklist action.
 - OPEN (native): device contrast, screen-reader traversal, store proof, and
   Apollo visual approval.
+# 2026-07-30 shared dog-portrait accessibility gate
+
+The canonical Phoenix portrait must not create an unlabeled duplicate image
+stop beside already-labeled Home or Records content. Source coverage is not
+native VoiceOver/TalkBack proof.

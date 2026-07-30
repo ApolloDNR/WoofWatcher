@@ -507,3 +507,9 @@ review, and Apollo visual approval remain blocked.
   launch-checklist CTA uses constant brand-navy behind fixed ivory content.
 - Still blocked: route-named native screenshots, VoiceOver/TalkBack traversal,
   payments/provider setup, store review, checkout approval, and Apollo sign-off.
+# 2026-07-30 shared dog-portrait accessibility boundary
+
+- Source guard complete: the shared Phoenix portrait no longer creates a
+  duplicate unlabeled image stop beside labeled Home and Dog ID content.
+- Still blocked: native VoiceOver/TalkBack traversal and route-named
+  iOS/Android evidence.

@@ -2702,3 +2702,10 @@ Dog ID PNG/share flows before approving Records.
   ivory label/icon in light and dark themes.
 - Confirm the checklist still opens and checkout remains disabled.
 - Native VoiceOver/TalkBack and route-named iOS/Android evidence remain open.
+# 2026-07-30 shared dog-portrait accessibility boundary
+
+- Verify `PetPortrait` keeps its internal Phoenix image
+  `accessible={false}` because the Home and Dog ID placements already expose
+  labeled care content.
+- Still required: native VoiceOver/TalkBack traversal on Home and Records with
+  route-named iOS/Android evidence.

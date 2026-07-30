@@ -627,6 +627,19 @@ test("keeps shared pixel icons decorative for screen readers", () => {
   );
 });
 
+test("keeps the shared dog portrait decorative beside labeled care content", () => {
+  const petPortrait = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "PetPortrait.tsx"),
+    "utf8",
+  );
+
+  assert.match(
+    petPortrait,
+    /<Image[\s\S]*?accessible=\{false\}/,
+    "Phoenix's portrait accompanies labeled Home and Dog ID content and should not create an unlabeled duplicate image stop",
+  );
+});
+
 test("keeps the fixed-light Records Dog ID metadata readable in dark mode", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 

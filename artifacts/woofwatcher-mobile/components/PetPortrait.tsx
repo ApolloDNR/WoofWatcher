@@ -62,6 +62,7 @@ export function PetPortrait({
         style={{ width: size - ringWidth * 2, height: size - ringWidth * 2, borderRadius: (size - ringWidth * 2) / 2 }}
         resizeMode="cover"
         fadeDuration={0}
+        accessible={false}
       />
     </View>
   );

@@ -2967,3 +2967,9 @@ or Apollo visual approval.
   semantic success signal.
 - Boundary: this improves source-level contrast only. It does not enable
   checkout, configure payments, prove native accessibility, or approve launch.
+# 2026-07-30 - Shared Phoenix portraits are decorative
+
+Decision: keep the canonical `PetPortrait` image out of the accessibility tree.
+Its current placements accompany explicit dog identity and care copy, so a
+second raw image stop adds noise without new meaning. Person portraits retain
+their named avatar labels.

@@ -1803,3 +1803,13 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Run the strongest local verification and fresh dependency-complete
   branch CI. Checkout, payments, native screenshots, store review, and Apollo
   approval remain gated.
+
+## 2026-07-30 Shared dog-portrait accessibility
+
+- DONE: The shared Phoenix `PetPortrait` image is explicitly decorative where
+  Home and Records already provide the dog identity and care context, avoiding
+  a duplicate unlabeled screen-reader stop.
+- VERIFIED: Red-first mobile readiness failed `144/145` before the shared
+  component correction, then passed `145/145`.
+- NEXT: Capture native VoiceOver/TalkBack traversal and route-named iOS/Android
+  evidence. This source guard does not replace device accessibility approval.

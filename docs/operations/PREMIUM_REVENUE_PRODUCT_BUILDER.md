@@ -5054,6 +5054,15 @@ builds, post steps, and Complete job all passed. Rerun after this proof-record
 commit before treating the final branch tip as current.
 # 2026-07-30 Premium launch-checklist action contrast
 
+## 2026-07-30 Shared dog-portrait accessibility
+
+The canonical Phoenix `PetPortrait` now marks its internal image decorative,
+preventing Home and Records identity surfaces from adding a duplicate unlabeled
+screen-reader stop beside their existing care labels. A red-first mobile
+readiness contract failed `144/145` before the correction and passed `145/145`
+afterward. Native VoiceOver/TalkBack traversal and route-named iOS/Android
+evidence remain required.
+
 - Hardened the Plus value console's primary launch-trust action to constant
   brand-navy with ivory content across themes.
 - Added a red-first `mobileReadiness.test.ts` regression contract.
