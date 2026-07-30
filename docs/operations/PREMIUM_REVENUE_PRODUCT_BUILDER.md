@@ -14,9 +14,14 @@ root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and
 excluding only the known missing local `express` and
 `@workspace/care-domain` package-link tests. The JSON doctor kept `84/88`
 source-backed checks passing while remaining truthfully blocked on local
-pnpm/Corepack and Expo resolution. Dependency-complete branch CI is pending.
-This source gate does not claim native screenshots, device accessibility
-review, store approval, public launch, or Apollo visual approval.
+pnpm/Corepack and Expo resolution. Dependency-complete WoofWatcher Verify run
+`30516673649`, job `90787986328`, passed for implementation/docs commit
+`888b7a7d`, including checkout, pinned dependency install, JSON doctor,
+focused tests, typecheck plus CI-safe builds, post steps, and Complete job.
+Rerun CI after the proof-record commit before treating proof as current for
+the final tip. This source gate does not claim native screenshots, device
+accessibility review, store approval, public launch, or Apollo visual
+approval.
 
 ## 2026-07-29 WoofGuide veterinary-boundary label dark-mode contrast
 

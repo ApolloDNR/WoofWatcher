@@ -14,8 +14,12 @@
   `@workspace/care-domain` package-link tests. The JSON doctor kept `84/88`
   source-backed checks passing while remaining truthfully blocked on local
   pnpm/Corepack and Expo resolution.
-- NEXT: Push the verified slice and require fresh dependency-complete branch
-  CI before treating proof as current.
+- DONE: Dependency-complete branch CI proved implementation/docs commit
+  `888b7a7d` in WoofWatcher Verify run `30516673649`, job `90787986328`;
+  checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus
+  CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating
+  dependency proof as current for the final tip.
 - BLOCKED EXTERNALLY: Route-named iOS/Android Quick Care screenshots, native
   accessibility review, and Apollo visual approval remain open.
 
