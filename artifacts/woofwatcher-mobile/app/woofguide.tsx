@@ -386,7 +386,7 @@ export default function WoofGuideScreen() {
                     <View style={s.guideStageShade} />
                     <View style={s.guideStageTop}>
                       <View style={s.guideBubble}>
-                        <Text style={[s.guideKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                        <Text style={[s.guideKicker, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>
                           WoofGuide Console
                         </Text>
                         <Text

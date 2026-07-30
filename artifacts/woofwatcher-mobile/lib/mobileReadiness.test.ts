@@ -5213,6 +5213,32 @@ test("keeps the fixed-light premium plan label readable in dark mode", () => {
   );
 });
 
+test("keeps fixed-light Plus and WoofGuide console kickers readable in dark mode", () => {
+  const premium = readAppFile("premium.tsx");
+  const woofGuide = readAppFile("woofguide.tsx");
+
+  assert.match(
+    premium,
+    /premiumValueKicker,\s*\{\s*color:\s*colors\.brandNavy/,
+    "the fixed-light Plus console kicker needs constant dark ink",
+  );
+  assert.match(
+    woofGuide,
+    /guideKicker,\s*\{\s*color:\s*colors\.brandNavy/,
+    "the fixed-light WoofGuide console kicker needs constant dark ink",
+  );
+  assert.doesNotMatch(
+    premium,
+    /premiumValueKicker,\s*\{\s*color:\s*colors\.copper/,
+    "adaptive copper can become too pale on the fixed-light Plus console bubble",
+  );
+  assert.doesNotMatch(
+    woofGuide,
+    /guideKicker,\s*\{\s*color:\s*colors\.copper/,
+    "adaptive copper can become too pale on the fixed-light WoofGuide console bubble",
+  );
+});
+
 test("keeps fixed-light premium console docks separated from artwork in dark mode", () => {
   const premium = readAppFile("premium.tsx");
   const woofGuide = readAppFile("woofguide.tsx");

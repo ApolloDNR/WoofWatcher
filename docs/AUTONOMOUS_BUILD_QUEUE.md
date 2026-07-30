@@ -1,5 +1,23 @@
 # Autonomous Build Queue
 
+## 2026-07-30 Plus and WoofGuide console-kicker contrast
+
+- DONE: The fixed-light Plus and WoofGuide console bubbles now use constant
+  brand-navy ink for their compact kickers instead of adaptive copper.
+- VERIFIED RED: Mobile readiness failed `141/142` while both kickers still
+  flipped to pale dark-theme copper on cream.
+- VERIFIED GREEN: Mobile readiness passed `142/142`, care-domain passed
+  `157/157`, the dependency-light aggregate passed `718/718` after excluding
+  only the known missing local `@workspace/care-domain` link in
+  `careCareer.test.ts`, root TypeScript passed, PixelLab passed
+  `ok=149 missing=0 invalid=0`, and `git diff --check` passed. The JSON doctor
+  kept source-backed checks passing while remaining truthfully blocked on
+  local pnpm/Corepack and Expo resolution.
+- NEXT: Run dependency-complete branch CI after the implementation commit.
+- BLOCKED EXTERNALLY: Route-named native iOS/Android screenshots,
+  VoiceOver/TalkBack traversal, provider evidence, and Apollo visual approval
+  remain open. Checkout and live AI remain gated.
+
 ## 2026-07-30 Avatar photo-reference explanation contrast
 
 - DONE: The fixed-light Avatar Studio photo-reference explanation now uses

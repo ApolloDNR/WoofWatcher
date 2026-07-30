@@ -1,5 +1,12 @@
 # Blockers For Apollo
 
+## 2026-07-30 Plus and WoofGuide console-kicker contrast boundary
+
+The fixed-light console bubbles now have source-protected constant dark kicker
+ink. Still blocked: route-named native iOS/Android screenshots, device
+accessibility review, provider-backed payment/AI evidence, and Apollo visual
+approval. Checkout and live AI remain gated and owner-reviewed.
+
 ## 2026-07-30 Avatar photo-reference contrast boundary
 
 The fixed-light Avatar Studio photo-reference explanation now has

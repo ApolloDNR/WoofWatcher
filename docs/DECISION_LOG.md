@@ -1,5 +1,17 @@
 # WoofWatcher Decision Log
 
+## 2026-07-30: Fixed-light console kickers use constant dark ink
+
+Decision: render the compact Plus and WoofGuide console-bubble kickers with
+`colors.brandNavy` instead of adaptive `colors.copper`.
+
+Reason: both bubbles stay cream in either color scheme, while dark-theme
+copper is tuned for navy surfaces and becomes too pale at this small size.
+
+Boundary: this is source-backed contrast hardening only. It does not enable
+checkout or live AI, replace owner review, or replace native screenshots,
+device accessibility review, provider proof, or Apollo approval.
+
 ## 2026-07-30: Fixed-light photo-reference copy uses constant dark ink
 
 Decision: render Avatar Studio's entire fixed-light photo-reference message

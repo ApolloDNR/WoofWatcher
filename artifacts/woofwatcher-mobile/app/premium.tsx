@@ -166,7 +166,7 @@ function PremiumScreenBody() {
 
               <View style={s.premiumValueStageTop}>
                 <View style={s.premiumValueBubble}>
-                  <Text style={[s.premiumValueKicker, { color: colors.copper, fontFamily: PIXEL_DISPLAY }]}>
+                  <Text style={[s.premiumValueKicker, { color: colors.brandNavy, fontFamily: PIXEL_DISPLAY }]}>
                     Plus Value Console
                   </Text>
                   <Text

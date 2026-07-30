@@ -1,5 +1,13 @@
 # QA Test Plan
 
+## 2026-07-30 Plus and WoofGuide console-kicker contrast QA
+
+- Red-first mobile readiness must require constant `colors.brandNavy` for the
+  compact kickers inside both fixed-light console bubbles.
+- The same contract must reject adaptive `colors.copper`.
+- Manual remainder: capture both routes in native iOS and Android dark mode
+  and verify the kickers with VoiceOver and TalkBack.
+
 ## 2026-07-30 Avatar photo-reference explanation contrast QA
 
 - Red-first mobile readiness must require constant `colors.brandNavy` for both

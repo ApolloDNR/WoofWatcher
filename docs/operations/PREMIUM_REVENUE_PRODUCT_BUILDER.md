@@ -1,5 +1,21 @@
 # Premium Revenue Product Builder
 
+## 2026-07-30 Plus and WoofGuide console-kicker dark-mode contrast
+
+The fixed-light Plus and WoofGuide speech bubbles now render their compact
+console kickers with constant brand-navy ink instead of adaptive copper. A
+red-first mobile-readiness contract failed `141/142` before the two minimal
+source corrections and passed `142/142` afterward. Local verification also
+passed care-domain `157/157`, the dependency-light aggregate `718/718` after
+excluding only the known missing local `@workspace/care-domain` link in
+`careCareer.test.ts`, root TypeScript, PixelLab
+`ok=149 missing=0 invalid=0`, and `git diff --check`. The JSON doctor kept
+source-backed checks passing while remaining truthfully blocked on local
+pnpm/Corepack and Expo resolution. Dependency-complete CI proof follows after
+the implementation commit. This source gate does not claim native screenshots,
+VoiceOver/TalkBack traversal, provider readiness, store/public launch, or
+Apollo approval; checkout and live AI remain gated.
+
 ## 2026-07-30 Avatar photo-reference explanation dark-mode contrast
 
 Avatar Studio's fixed-light photo-reference card now renders its explanatory
