@@ -1454,7 +1454,7 @@ export default function PackScreen() {
                         numberOfLines={1}
                         style={[s.personMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
                       >
-                        {person.role} - {person.needsInvite ? "Invite needed" : "Synced"}
+                        {person.role} - {person.needsInvite ? "Invite needed" : "Ready"}
                       </Text>
                       {routineLine ? (
                         <Text
@@ -1479,7 +1479,7 @@ export default function PackScreen() {
                       </Text>
                       <View
                         accessibilityLabel={
-                          person.needsInvite ? `${person.name} needs an invite` : `${person.name} is synced`
+                          person.needsInvite ? `${person.name} needs an invite` : `${person.name} is ready`
                         }
                         style={[
                           s.presenceDot,
@@ -1533,7 +1533,7 @@ export default function PackScreen() {
 
             <View style={s.accessMetrics}>
               {[
-                { label: "Synced", value: householdAccess.syncedMembers },
+                { label: "Ready", value: householdAccess.syncedMembers },
                 { label: "Invites", value: householdAccess.localOnlyCaregivers },
                 { label: "Routine-only", value: householdAccess.routineOnlyOwners },
               ].map((metric) => (
