@@ -614,6 +614,19 @@ test("keeps the fixed-light Records credential dock bounded in dark mode", () =>
   );
 });
 
+test("keeps shared pixel icons decorative for screen readers", () => {
+  const pixelIcon = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "PixelIcon.tsx"),
+    "utf8",
+  );
+
+  assert.match(
+    pixelIcon,
+    /<Image[\s\S]*?accessible=\{false\}/,
+    "pixel art that accompanies labeled care controls should not create a duplicate unlabeled image stop",
+  );
+});
+
 test("keeps the fixed-light Records Dog ID metadata readable in dark mode", () => {
   const records = readAppFile(join("(tabs)", "records.tsx"));
 

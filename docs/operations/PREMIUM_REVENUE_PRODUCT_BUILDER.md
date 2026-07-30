@@ -1,5 +1,14 @@
 # Premium Revenue Product Builder
 
+## 2026-07-30 Shared pixel-icon screen-reader hygiene
+
+The shared `PixelIcon` primitive now marks its baked care artwork decorative.
+The icons accompany visible labels and labeled controls throughout Quick Care,
+Fast Log, Records, and other care workflows; removing the extra image node
+prevents redundant or unlabeled screen-reader stops without hiding the action
+label. A red-first mobile-readiness contract failed `140/141` before the
+primitive correction. Native VoiceOver and TalkBack traversal remain required.
+
 ## 2026-07-29 Quick Care detail-status dark-mode contrast
 
 Quick Care keeps its status chip intentionally ivory, but its `Details` state

@@ -1706,3 +1706,13 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
+
+## 2026-07-30 Shared pixel-icon accessibility
+
+- DONE: The shared `PixelIcon` image is explicitly decorative so labeled care
+  actions do not create duplicate or unlabeled screen-reader stops.
+- VERIFIED: Red-first mobile readiness failed `140/141` before the primitive
+  correction.
+- NEXT: Run the strongest local verification and fresh dependency-complete
+  branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android
+  evidence remain open.

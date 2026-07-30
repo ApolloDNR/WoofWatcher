@@ -1,5 +1,16 @@
 # WoofWatcher Decision Log
 
+## 2026-07-30: Shared pixel icons are decorative
+
+Decision: mark the shared `PixelIcon` image inaccessible while leaving the
+containing care control and visible label accessible.
+
+Reason: the baked artwork communicates the same care type as its adjacent
+label. Exposing both creates redundant or unlabeled screen-reader stops.
+
+Boundary: native VoiceOver and TalkBack traversal is still required before
+release approval.
+
 ## 2026-07-29: Fixed-light detail status uses constant deep amber
 
 Decision: keep Quick Care's `Details` status semantically amber, but render it

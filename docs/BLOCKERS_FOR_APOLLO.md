@@ -1,5 +1,11 @@
 # Blockers For Apollo
 
+## 2026-07-30 Shared pixel-icon accessibility boundary
+
+Shared pixel art no longer creates redundant image stops beside labeled care
+controls. Still blocked: native VoiceOver and TalkBack traversal, route-named
+iOS/Android screenshots, and Apollo accessibility approval.
+
 ## 2026-07-29 Quick Care detail-status contrast boundary
 
 The fixed-light Quick Care status chip now has source-protected constant deep

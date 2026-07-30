@@ -51,6 +51,7 @@ export function PixelIcon({
       style={[{ width: size, height: size }, style]}
       resizeMode="contain"
       fadeDuration={0}
+      accessible={false}
     />
   );
 }

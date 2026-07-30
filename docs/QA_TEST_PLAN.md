@@ -1,5 +1,13 @@
 # QA Test Plan
 
+## 2026-07-30 Shared pixel-icon accessibility QA
+
+- Automated source coverage requires the shared `PixelIcon` image to set
+  `accessible={false}`.
+- Manual remainder: traverse Quick Care, Fast Log, Plans, Records, and Avatar
+  Studio with native VoiceOver and TalkBack; confirm each labeled action is
+  announced once and remains operable.
+
 ## 2026-07-29 WoofGuide veterinary-boundary contrast QA
 
 - Red-first mobile readiness must reject adaptive copper for the fixed-light

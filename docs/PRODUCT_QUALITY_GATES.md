@@ -1,5 +1,11 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-07-30 Decorative pixel-icon semantics
+
+The shared pixel-art icon primitive is hidden from the accessibility tree when
+it accompanies labeled care controls. Native VoiceOver and TalkBack traversal
+remain open release evidence.
+
 ## 2026-07-29 WoofGuide veterinary-boundary label contrast
 
 The fixed-light WoofGuide safety card uses constant brand-navy ink for the
