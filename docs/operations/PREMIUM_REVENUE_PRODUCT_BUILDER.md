@@ -14,8 +14,13 @@ known missing local `@workspace/care-domain` link in `careCareer.test.ts`,
 root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and
 `git diff --check`. The JSON doctor kept source-backed checks passing while
 remaining truthfully blocked on local pnpm/Corepack and Expo resolution.
-Commit/push and final-tip CI proof follow in this run. Native iOS/Android
-screenshots, VoiceOver/TalkBack traversal, and Apollo approval remain open.
+Dependency-complete WoofWatcher Verify run `30538711882`, job `90858131528`,
+passed implementation/docs commit `5bac50c2`: checkout, pinned dependency
+setup/install, JSON doctor, focused tests, typecheck plus CI-safe builds, post
+steps, and Complete job all passed. Rerun CI after this proof-record commit
+before treating dependency proof as current for the final branch tip. Native
+iOS/Android screenshots, VoiceOver/TalkBack traversal, and Apollo approval
+remain open.
 
 ## 2026-07-30 Shared pixel-icon screen-reader hygiene
 

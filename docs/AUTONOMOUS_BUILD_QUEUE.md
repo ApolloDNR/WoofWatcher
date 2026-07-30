@@ -13,7 +13,12 @@
   `git diff --check` passed. The JSON doctor kept source-backed checks passing
   while remaining truthfully blocked on local pnpm/Corepack and Expo
   resolution.
-- PUSH NEXT: Commit, push, and prove the branch tip in dependency-complete CI.
+- DONE: Dependency-complete WoofWatcher Verify run `30538711882`, job
+  `90858131528`, passed implementation/docs commit `5bac50c2`, including
+  checkout, pinned dependency setup/install, JSON doctor, focused tests,
+  typecheck plus CI-safe builds, post steps, and Complete job.
+- NEXT: Rerun CI after this proof-record commit before treating dependency
+  proof as current for the final branch tip.
 - BLOCKED EXTERNALLY: Route-named native iOS/Android Avatar Studio screenshots,
   VoiceOver/TalkBack traversal, and Apollo visual approval remain open.
 
