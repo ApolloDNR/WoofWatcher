@@ -7,7 +7,11 @@ The icons accompany visible labels and labeled controls throughout Quick Care,
 Fast Log, Records, and other care workflows; removing the extra image node
 prevents redundant or unlabeled screen-reader stops without hiding the action
 label. A red-first mobile-readiness contract failed `140/141` before the
-primitive correction. Native VoiceOver and TalkBack traversal remain required.
+primitive correction. Dependency-complete WoofWatcher Verify run
+`30526522532`, job `90818616225`, passed for implementation/docs commit
+`37c76544`, including dependency install, JSON doctor, focused tests,
+typecheck, CI-safe builds, and post steps. Native VoiceOver and TalkBack
+traversal remain required.
 
 ## 2026-07-29 Quick Care detail-status dark-mode contrast
 
