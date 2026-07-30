@@ -12,10 +12,14 @@ mobile readiness `143/143`, care-domain `157/157`, root TypeScript, PixelLab
 partial-checkout suite passed `701/702` and failed only on the known missing
 local `@workspace/care-domain` link in `careCareer.test.ts`. The JSON doctor
 kept `84/88` source-backed checks passing while remaining truthfully blocked
-on local pnpm/Corepack and Expo resolution. Dependency-complete branch CI
-remains to be recorded. This source gate does not enable checkout or live AI
-and does not claim native screenshots, VoiceOver/TalkBack traversal, provider
-readiness, store/public launch, or Apollo approval.
+on local pnpm/Corepack and Expo resolution. Dependency-complete WoofWatcher
+Verify run `30566143723`, job `90951027781`, passed implementation/docs commit
+`5f6a2fad`: checkout, pinned dependency setup/install, JSON doctor, focused
+tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+Rerun CI after this proof-record commit before treating dependency proof as
+current for the final branch tip. This source gate does not enable checkout or
+live AI and does not claim native screenshots, VoiceOver/TalkBack traversal,
+provider readiness, store/public launch, or Apollo approval.
 
 ## 2026-07-30 Plus and WoofGuide console-kicker dark-mode contrast
 
