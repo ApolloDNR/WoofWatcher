@@ -1,5 +1,23 @@
 # Premium Revenue Product Builder
 
+## 2026-07-29 Quick Care detail-status dark-mode contrast
+
+Quick Care keeps its status chip intentionally ivory, but its `Details` state
+now uses the light-board WCAG-tuned deep amber instead of adaptive dark-theme
+amber. This preserves the warm detail identity while keeping small status text
+legible on the fixed-light surface. A red-first mobile-readiness contract
+failed `139/140` before the source correction.
+
+Local verification passed mobile readiness `140/140`, care-domain `157/157`,
+root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and
+`git diff --check`. The dependency-light aggregate passed `727/727` after
+excluding only the known missing local `express` and
+`@workspace/care-domain` package-link tests. The JSON doctor kept `84/88`
+source-backed checks passing while remaining truthfully blocked on local
+pnpm/Corepack and Expo resolution. Dependency-complete branch CI is pending.
+This source gate does not claim native screenshots, device accessibility
+review, store approval, public launch, or Apollo visual approval.
+
 ## 2026-07-29 WoofGuide veterinary-boundary label dark-mode contrast
 
 WoofGuide keeps its intentionally ivory safety card, but the compact

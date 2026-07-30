@@ -1,5 +1,24 @@
 # Autonomous Build Queue
 
+## 2026-07-29 Quick Care detail-status contrast
+
+- DONE: The fixed-light Quick Care status chip keeps its warm detail meaning
+  but now uses the light-board WCAG-tuned deep amber instead of adaptive
+  dark-theme amber on ivory.
+- VERIFIED: A red-first mobile-readiness contract failed `139/140` on the
+  adaptive token before the source correction.
+- DONE: Local verification passed mobile readiness `140/140`, care-domain
+  `157/157`, root TypeScript, PixelLab `ok=149 missing=0 invalid=0`, and
+  `git diff --check`. The dependency-light aggregate passed `727/727` after
+  excluding only the known missing local `express` and
+  `@workspace/care-domain` package-link tests. The JSON doctor kept `84/88`
+  source-backed checks passing while remaining truthfully blocked on local
+  pnpm/Corepack and Expo resolution.
+- NEXT: Push the verified slice and require fresh dependency-complete branch
+  CI before treating proof as current.
+- BLOCKED EXTERNALLY: Route-named iOS/Android Quick Care screenshots, native
+  accessibility review, and Apollo visual approval remain open.
+
 ## 2026-07-29 WoofGuide veterinary-boundary label contrast
 
 - DONE: The fixed-light WoofGuide safety card now uses constant brand-navy ink

@@ -1,5 +1,18 @@
 # WoofWatcher Decision Log
 
+## 2026-07-29: Fixed-light detail status uses constant deep amber
+
+Decision: keep Quick Care's `Details` status semantically amber, but render it
+with the light-board `#8A5A0C` on the fixed-ivory chip instead of the adaptive
+dark-theme amber.
+
+Reason: dark-theme amber is tuned to lift off navy surfaces and becomes too
+pale on ivory. The constant deep amber preserves both the detail signal and
+small-text contrast without turning the status into generic navy.
+
+Boundary: this is source-backed contrast hardening only. It does not replace
+native screenshots, device accessibility review, or Apollo visual approval.
+
 ## 2026-07-29: Fixed-light veterinary boundaries use constant dark ink
 
 Decision: keep WoofGuide's safety card intentionally ivory, but render its

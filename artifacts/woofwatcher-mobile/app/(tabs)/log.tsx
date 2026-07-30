@@ -109,6 +109,9 @@ import { homeImmersiveRoomIsNight } from "./index";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+// The status chip stays ivory in both schemes. Keep the warm detail signal,
+// but use the light-board amber that is tuned for small text on cream.
+const FIXED_LIGHT_AMBER = "#8A5A0C";
 // Wide banner composed for the ~4:1 console stage; the square day-room
 // painting stretched into a squashed wall band here.
 const LOG_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
@@ -2537,7 +2540,7 @@ export default function LogScreen() {
                     style={[
                       s.logCommandChipText,
                       {
-                        color: selectedLauncherRequiresDetail ? colors.amber : colors.brandNavy,
+                        color: selectedLauncherRequiresDetail ? FIXED_LIGHT_AMBER : colors.brandNavy,
                         fontFamily: "Inter_700Bold",
                       },
                     ]}

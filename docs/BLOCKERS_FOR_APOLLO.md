@@ -1,5 +1,12 @@
 # Blockers For Apollo
 
+## 2026-07-29 Quick Care detail-status contrast boundary
+
+The fixed-light Quick Care status chip now has source-protected constant deep
+amber for its `Details` state. Still blocked: route-named native iOS/Android
+Quick Care screenshots, device accessibility review, and Apollo visual
+approval.
+
 ## 2026-07-29 WoofGuide veterinary-boundary contrast
 
 The fixed-light WoofGuide safety card now has source-protected constant dark

@@ -569,8 +569,13 @@ test("keeps the fixed-light Quick Care status and HUD bounded in dark mode", () 
   );
   assert.match(
     log,
+    /selectedLauncherRequiresDetail\s*\?\s*FIXED_LIGHT_AMBER\s*:\s*colors\.brandNavy/,
+    "the fixed-light Quick Care status needs constant dark ink while preserving amber detail identity",
+  );
+  assert.doesNotMatch(
+    log,
     /selectedLauncherRequiresDetail\s*\?\s*colors\.amber\s*:\s*colors\.brandNavy/,
-    "the fixed-light Ready status needs constant dark ink",
+    "adaptive dark-theme amber becomes too pale on the fixed-light Quick Care status chip",
   );
   assert.match(
     log,
