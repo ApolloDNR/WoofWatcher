@@ -5213,6 +5213,21 @@ test("keeps the fixed-light premium plan label readable in dark mode", () => {
   );
 });
 
+test("keeps the premium launch-checklist action readable in dark mode", () => {
+  const premium = readAppFile("premium.tsx");
+
+  assert.match(
+    premium,
+    /s\.premiumValueAction,\s*\{\s*backgroundColor:\s*colors\.brandNavy/,
+    "the premium launch-checklist action needs a constant dark background behind ivory text",
+  );
+  assert.doesNotMatch(
+    premium,
+    /s\.premiumValueAction,\s*\{\s*backgroundColor:\s*colors\.sage/,
+    "adaptive dark-mode sage becomes too pale behind the fixed ivory action label",
+  );
+});
+
 test("keeps fixed-light Plus and WoofGuide console kickers readable in dark mode", () => {
   const premium = readAppFile("premium.tsx");
   const woofGuide = readAppFile("woofguide.tsx");

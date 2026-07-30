@@ -266,7 +266,7 @@ function PremiumScreenBody() {
                   onPress={showLaunchChecklist}
                   style={({ pressed }) => [
                     s.premiumValueAction,
-                    { backgroundColor: colors.sage, opacity: pressed ? 0.82 : 1 },
+                    { backgroundColor: colors.brandNavy, opacity: pressed ? 0.82 : 1 },
                   ]}
                 >
                   <Text style={[s.premiumValueActionText, { fontFamily: "Inter_800ExtraBold" }]}>

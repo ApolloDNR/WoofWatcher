@@ -501,3 +501,9 @@ The fixed-light Dog ID breed and weight line now has source-protected
 full-strength dark ink. Real route-named iOS/Android Records screenshots,
 native local-file and PDF/PNG share/reopen evidence, device accessibility
 review, and Apollo visual approval remain blocked.
+# 2026-07-30 Plus launch-checklist contrast boundary
+
+- Source-level contrast is corrected and guarded: the fixed-ivory Plus console
+  launch-checklist CTA uses constant brand-navy behind fixed ivory content.
+- Still blocked: route-named native screenshots, VoiceOver/TalkBack traversal,
+  payments/provider setup, store review, checkout approval, and Apollo sign-off.

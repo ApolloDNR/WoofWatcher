@@ -2696,3 +2696,9 @@ Source readiness now rejects translucent ink for breed and weight on the
 fixed-light Dog ID. On native iOS and Android, verify that line in dark mode,
 Dynamic Type, screen-reader traversal, compact phone layouts, and generated
 Dog ID PNG/share flows before approving Records.
+# 2026-07-30 Plus launch-checklist contrast
+
+- Confirm the Plus value console launch-checklist CTA remains brand-navy with
+  ivory label/icon in light and dark themes.
+- Confirm the checklist still opens and checkout remains disabled.
+- Native VoiceOver/TalkBack and route-named iOS/Android evidence remain open.

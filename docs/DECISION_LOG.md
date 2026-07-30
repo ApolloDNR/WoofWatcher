@@ -2958,3 +2958,12 @@ or Apollo visual approval.
   unnecessarily weakens that small line on a fixed-light surface.
 - Boundary: this is source-level contrast hardening, not native Records
   screenshots, file/share proof, accessibility review, or Apollo sign-off.
+# 2026-07-30 - Keep the Plus launch-checklist CTA on a fixed contrast pair
+
+- Decision: render the fixed-ivory Plus console's launch-checklist action with
+  constant brand-navy and ivory, independent of the active theme.
+- Why: dark-theme sage is tuned for dark surfaces and becomes too pale behind
+  the CTA's fixed ivory label; the action is a launch-trust control, not a live
+  semantic success signal.
+- Boundary: this improves source-level contrast only. It does not enable
+  checkout, configure payments, prove native accessibility, or approve launch.

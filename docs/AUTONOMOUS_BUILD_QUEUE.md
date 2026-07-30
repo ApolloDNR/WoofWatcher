@@ -1789,3 +1789,13 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Run the strongest local verification and fresh dependency-complete
   branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android
   evidence remain open.
+
+## 2026-07-30 Premium launch-checklist action contrast
+
+- DONE: The Plus value console launch-checklist action now uses constant
+  brand-navy behind its fixed ivory label and arrow instead of adaptive sage.
+- VERIFIED: Red-first mobile readiness failed on the adaptive background before
+  the source correction.
+- NEXT: Run the strongest local verification and fresh dependency-complete
+  branch CI. Checkout, payments, native screenshots, store review, and Apollo
+  approval remain gated.

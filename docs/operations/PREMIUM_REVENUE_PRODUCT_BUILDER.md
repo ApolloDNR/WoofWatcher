@@ -5052,3 +5052,10 @@ passed for implementation commit `af671bf2`; checkout, pinned dependency
 setup/install, JSON doctor, focused behavior tests, typecheck plus CI-safe
 builds, post steps, and Complete job all passed. Rerun after this proof-record
 commit before treating the final branch tip as current.
+# 2026-07-30 Premium launch-checklist action contrast
+
+- Hardened the Plus value console's primary launch-trust action to constant
+  brand-navy with ivory content across themes.
+- Added a red-first `mobileReadiness.test.ts` regression contract.
+- Kept checkout, provider configuration, store approval, and native evidence
+  explicitly gated.

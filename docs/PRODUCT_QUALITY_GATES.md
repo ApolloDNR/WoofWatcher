@@ -500,3 +500,9 @@ proof, public launch, or Apollo sign-off.
   constant brand-navy ink with red/green readiness coverage.
 - OPEN, native: iOS/Android dark screenshots, local-file and generated
   PNG/share proof, accessibility traversal, and Apollo approval.
+# 2026-07-30 Plus launch-checklist action
+
+- PASS (source): the fixed-ivory Plus console uses a constant brand-navy/ivory
+  contrast pair for its launch-checklist action.
+- OPEN (native): device contrast, screen-reader traversal, store proof, and
+  Apollo visual approval.
