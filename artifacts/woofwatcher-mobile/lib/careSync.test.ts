@@ -5,18 +5,24 @@ import {
   addDiscardedServerEntryId,
   adoptServerEntry,
   applyQueuedPatchToAcknowledgedEntry,
+  CARE_ENTRY_PENDING_DELETE,
+  CareEntryConflictRetryError,
   CareSyncMutationTimeoutError,
   cleanupDiscardedServerEntryRows,
   createSerializedCareSyncWriter,
   createSerializedCareEntryMutationQueue,
+  decideCareEntryEditSyncDisposition,
   deriveCareSyncOutbox,
   deriveCareSyncDashboard,
+  diffCareEntryPendingDetails,
   filterDiscardedServerEntries,
   findCreatedCareEntryLocalSnapshot,
   reconcileCareDocFromServer,
   isUnsyncedEntry,
   migrateAcknowledgedTempEntryForRetry,
+  mergeCareEntryPendingSyncPatch,
   prepareCareEntryForOfflineEdit,
+  rebaseCareEntryAfterConflict,
   recoverInterruptedCareEntryMutations,
   shouldRetryCreate,
   shouldRetryUpdate,
@@ -26,6 +32,8 @@ import {
   reconcileCreatedCareEntryAcknowledgement,
   removeDiscardedServerEntryId,
   restoreEntryAfterDeleteFailure,
+  retryCareEntryMutationAfterConflict,
+  requiresCareEntrySyncReview,
   sanitizeCareEntryDetailsForSync,
   selectWoofWatcherKeysForOwnerWipe,
   withSyncedStatus,
@@ -156,12 +164,24 @@ test("separates create retries from update retries", () => {
   );
 
   assert.equal(
-    shouldRetryUpdate({ id: "server_1", syncStatus: "failed" }),
+    shouldRetryUpdate({
+      id: "server_1",
+      syncStatus: "failed",
+      pendingSyncPatch: { note: "Retry me" },
+    }),
     true,
   );
   assert.equal(
-    shouldRetryUpdate({ id: "server_1", syncStatus: "local" }),
+    shouldRetryUpdate({
+      id: "server_1",
+      syncStatus: "local",
+      pendingSyncPatch: { mood: "great" },
+    }),
     true,
+  );
+  assert.equal(
+    shouldRetryUpdate({ id: "server_legacy", syncStatus: "failed" }),
+    false,
   );
   assert.equal(
     shouldRetryUpdate({ id: "temp_1", syncStatus: "failed" }),
@@ -199,6 +219,7 @@ test("derives a durable outbox from unsynced care entries", () => {
       title: "Medication note",
       occurredAt: "2026-06-06T10:00:00.000Z",
       syncStatus: "failed",
+      pendingSyncPatch: { note: "Given with food" },
     },
     {
       id: "temp_pending",
@@ -581,6 +602,376 @@ test("create acknowledgement adopts the server id and fields while retaining the
   });
 });
 
+test("conflict rebase preserves only pending local fields over the newest server row", () => {
+  const pendingPatch = mergeCareEntryPendingSyncPatch(
+    { note: "Local note" },
+    { severity: "watch" },
+  );
+  const rebased = rebaseCareEntryAfterConflict(
+    {
+      id: "server_1",
+      note: "Local note",
+      mood: "okay",
+      caregiver: "Apollo",
+      details: {
+        clientSyncRevision: 3,
+        route: [{ latitude: 33.4, longitude: -112.1 }],
+      },
+      syncStatus: "failed" as const,
+      pendingSyncPatch: pendingPatch,
+    },
+    {
+      id: "server_1",
+      note: "Newer household note",
+      mood: "great",
+      caregiver: "Melissa",
+      details: {
+        clientSyncRevision: 20,
+        routeName: "Creek loop",
+      },
+      syncStatus: "synced" as const,
+    },
+    pendingPatch,
+  );
+
+  assert.equal(rebased.note, "Local note");
+  assert.equal(rebased.severity, "watch");
+  assert.equal(rebased.mood, "great");
+  assert.equal(rebased.caregiver, "Melissa");
+  assert.deepEqual(rebased.details, {
+    clientSyncRevision: 20,
+    routeName: "Creek loop",
+    route: [{ latitude: 33.4, longitude: -112.1 }],
+  });
+  assert.equal(rebased.syncStatus, "pending");
+  assert.equal(rebased.syncError, undefined);
+});
+
+test("conflict rebase preserves newer server detail keys beside local detail edits", () => {
+  const rebased = rebaseCareEntryAfterConflict(
+    {
+      id: "server_1",
+      details: { clientSyncRevision: 3, localField: "edited" },
+    },
+    {
+      id: "server_1",
+      details: { clientSyncRevision: 20, serverField: "newer" },
+    },
+    {
+      details: { localField: "edited" },
+    },
+  );
+
+  assert.deepEqual(rebased.details, {
+    clientSyncRevision: 20,
+    serverField: "newer",
+    localField: "edited",
+  });
+});
+
+test("detail journaling records only owner changes and merges repeated edits", () => {
+  const detailPatch = diffCareEntryPendingDetails(
+    {
+      clientSyncRevision: 7,
+      routeName: "Creek loop",
+      socialOutcome: "Calm hello",
+    },
+    {
+      clientSyncRevision: 8,
+      routeName: "Creek loop",
+      socialOutcome: "Played gently",
+      noteContext: "Met Luna",
+    },
+  );
+
+  assert.deepEqual(detailPatch, {
+    socialOutcome: "Played gently",
+    noteContext: "Met Luna",
+  });
+  assert.deepEqual(
+    mergeCareEntryPendingSyncPatch(
+      { details: { routeName: "Local route" } },
+      { details: detailPatch },
+    ),
+    {
+      details: {
+        routeName: "Local route",
+        socialOutcome: "Played gently",
+        noteContext: "Met Luna",
+      },
+    },
+  );
+});
+
+test("signed-out edits retain and extend the durable conflict-rebase journal", () => {
+  type OfflineEntry = {
+    id: string;
+    note?: string;
+    mood?: string;
+    caregiver?: string;
+    details?: Record<string, unknown>;
+    syncStatus?: "local" | "pending" | "synced" | "failed";
+    syncError?: string;
+    pendingSyncPatch?: {
+      note?: string;
+      mood?: string;
+    };
+  };
+  const current: OfflineEntry = {
+    id: "server_1",
+    note: "Older local note",
+    mood: "okay",
+    caregiver: "Apollo",
+    details: { clientSyncRevision: 7 },
+    syncStatus: "failed",
+    pendingSyncPatch: { note: "Older local note" },
+  };
+  const newPatch = { mood: "great" };
+  const pendingSyncPatch = mergeCareEntryPendingSyncPatch(
+    current.pendingSyncPatch,
+    newPatch,
+  );
+  const offline = prepareCareEntryForOfflineEdit(
+    current,
+    newPatch,
+    pendingSyncPatch,
+  );
+
+  assert.equal(offline.syncStatus, "local");
+  assert.deepEqual(offline.pendingSyncPatch, {
+    note: "Older local note",
+    mood: "great",
+  });
+
+  const rebased = rebaseCareEntryAfterConflict(
+    offline,
+    {
+      id: "server_1",
+      note: "Newer household note",
+      mood: "tired",
+      caregiver: "Melissa",
+      details: { clientSyncRevision: 20 },
+      syncStatus: "synced",
+    },
+    offline.pendingSyncPatch ?? {},
+  );
+
+  assert.equal(rebased.note, "Older local note");
+  assert.equal(rebased.mood, "great");
+  assert.equal(rebased.caregiver, "Melissa");
+  assert.equal(rebased.details?.clientSyncRevision, 20);
+});
+
+test("the first signed-out edit creates a durable conflict-rebase journal", () => {
+  const firstPatch = { note: "First offline correction" };
+  const pendingSyncPatch = mergeCareEntryPendingSyncPatch(
+    undefined,
+    firstPatch,
+  );
+  const offline = prepareCareEntryForOfflineEdit(
+    {
+      id: "server_1",
+      note: "Older note",
+      mood: "okay",
+      details: { clientSyncRevision: 7 },
+      syncStatus: "synced" as const,
+    },
+    firstPatch,
+    pendingSyncPatch,
+  );
+
+  assert.deepEqual(offline.pendingSyncPatch, firstPatch);
+  const rebased = rebaseCareEntryAfterConflict(
+    offline,
+    {
+      id: "server_1",
+      note: "Newer household note",
+      mood: "great",
+      details: { clientSyncRevision: 20 },
+      syncStatus: "synced" as const,
+    },
+    offline.pendingSyncPatch ?? {},
+  );
+  assert.equal(rebased.note, "First offline correction");
+  assert.equal(rebased.mood, "great");
+  assert.equal(rebased.details?.clientSyncRevision, 20);
+});
+
+test("a signed-out edit cannot create a partial journal for a legacy row", () => {
+  const legacyEntry = {
+    id: "server_legacy",
+    note: "Older local note that predates field journaling",
+    mood: "okay",
+    details: { clientSyncRevision: 9 },
+    syncStatus: "failed" as const,
+  };
+
+  assert.equal(
+    decideCareEntryEditSyncDisposition(legacyEntry, false),
+    "review-required",
+  );
+  assert.equal(
+    decideCareEntryEditSyncDisposition(legacyEntry, true),
+    "review-required",
+  );
+  const preserved = prepareCareEntryForOfflineEdit(
+    legacyEntry,
+    { mood: "great" },
+  );
+
+  assert.equal(preserved.mood, "great");
+  assert.equal(preserved.note, legacyEntry.note);
+  assert.equal(preserved.pendingSyncPatch, undefined);
+  assert.equal(requiresCareEntrySyncReview(preserved), true);
+});
+
+test("a cleared top-level field survives JSON persistence and conflict rebase", () => {
+  const pendingSyncPatch = mergeCareEntryPendingSyncPatch(
+    undefined,
+    { note: undefined },
+  );
+  assert.deepEqual(pendingSyncPatch.note, CARE_ENTRY_PENDING_DELETE);
+
+  const persistedPatch = JSON.parse(
+    JSON.stringify(pendingSyncPatch),
+  ) as typeof pendingSyncPatch;
+  const rebased = rebaseCareEntryAfterConflict(
+    {
+      id: "server_1",
+      note: undefined,
+      mood: "okay",
+      details: { clientSyncRevision: 7 },
+      syncStatus: "local" as const,
+      pendingSyncPatch: persistedPatch,
+    },
+    {
+      id: "server_1",
+      note: "Newer household note",
+      mood: "great",
+      details: { clientSyncRevision: 20 },
+      syncStatus: "synced" as const,
+    },
+    persistedPatch,
+  );
+
+  assert.equal(Object.hasOwn(rebased, "note"), false);
+  assert.equal(rebased.note, undefined);
+  assert.equal(rebased.mood, "great");
+  assert.equal(rebased.details?.clientSyncRevision, 20);
+});
+
+test("pre-protocol cached updates without a field journal require review", () => {
+  const legacyEntry = {
+    id: "server_legacy",
+    title: "Older cached edit",
+    occurredAt: "2026-07-30T18:00:00.000Z",
+    syncStatus: "failed" as const,
+    syncError:
+      "This change predates conflict-safe field journaling.",
+    details: { clientSyncRevision: 9 },
+  };
+
+  assert.equal(shouldRetryUpdate(legacyEntry), false);
+  assert.equal(requiresCareEntrySyncReview(legacyEntry), true);
+  const outbox = deriveCareSyncOutbox([legacyEntry]);
+  assert.equal(outbox.status, "needs-retry");
+  assert.equal(outbox.retryable, 0);
+  assert.equal(outbox.actionLabel, "View saved changes");
+  assert.deepEqual(outbox.reviewRequiredIds, ["server_legacy"]);
+  assert.match(outbox.message, /preserved on this device/i);
+});
+
+test("a 409 fetches the winning row and retries one rebased local patch", async () => {
+  type ConflictEntry = {
+    id: string;
+    note?: string;
+    mood?: string;
+    details?: Record<string, unknown>;
+    syncStatus?: "pending" | "failed" | "synced";
+    pendingSyncPatch?: {
+      note?: string;
+    };
+  };
+  const input: ConflictEntry = {
+    id: "server_1",
+    note: "Local note",
+    mood: "okay",
+    details: { clientSyncRevision: 3 },
+    syncStatus: "failed",
+    pendingSyncPatch: { note: "Local note" },
+  };
+  const server: ConflictEntry = {
+    id: "server_1",
+    note: "Newer household note",
+    mood: "great",
+    details: { clientSyncRevision: 20 },
+    syncStatus: "synced",
+  };
+  const attempts: ConflictEntry[] = [];
+
+  const result = await retryCareEntryMutationAfterConflict({
+    error: { status: 409 },
+    input,
+    isConflict: (error) =>
+      (error as { status?: number }).status === 409,
+    fetchCurrent: async () => server,
+    rebase: (local, current) => {
+      const rebased = rebaseCareEntryAfterConflict(
+        local,
+        current,
+        local.pendingSyncPatch ?? {},
+      );
+      return {
+        ...rebased,
+        details: {
+          ...(rebased.details ?? {}),
+          clientSyncRevision: 21,
+        },
+      };
+    },
+    mutate: async (rebased) => {
+      attempts.push(rebased);
+      return rebased;
+    },
+  });
+
+  assert.equal(attempts.length, 1);
+  assert.equal(result.note, "Local note");
+  assert.equal(result.mood, "great");
+  assert.equal(result.details?.clientSyncRevision, 21);
+});
+
+test("a failed conflict retry carries the rebased revision into the next attempt", async () => {
+  const rebasedInput = {
+    id: "server_1",
+    note: "Local note",
+    details: { clientSyncRevision: 21 },
+  };
+
+  await assert.rejects(
+    retryCareEntryMutationAfterConflict({
+      error: { status: 409 },
+      input: {
+        id: "server_1",
+        note: "Local note",
+        details: { clientSyncRevision: 3 },
+      },
+      isConflict: () => true,
+      fetchCurrent: async () => ({
+        id: "server_1",
+        details: { clientSyncRevision: 20 },
+      }),
+      rebase: () => rebasedInput,
+      mutate: async () => {
+        throw new Error("offline");
+      },
+    }),
+    (error: unknown) =>
+      error instanceof CareEntryConflictRetryError &&
+      error.rebasedInput.details?.clientSyncRevision === 21,
+  );
+});
+
 test("update acknowledgement replaces local fields and clears retry state", () => {
   const route = [{ lat: 37.8, lon: -122.1, t: 1 }];
 
@@ -937,6 +1328,7 @@ test("an edit queued during create keeps the server id and remains pending", () 
       title: "Edited while saving",
       syncStatus: "synced",
       syncError: "stale error",
+      pendingSyncPatch: { title: "Edited while saving" },
     },
   );
 
@@ -946,6 +1338,7 @@ test("an edit queued during create keeps the server id and remains pending", () 
     occurredAt: "2026-07-30T18:00:00.000Z",
     syncStatus: "pending",
     syncError: undefined,
+    pendingSyncPatch: { title: "Edited while saving" },
     details: { clientKey: "temp_walk" },
   });
 });
@@ -963,6 +1356,10 @@ test("an edit queued during create stays local when sign-out happens before ackn
     {
       title: "Edited after sign-out",
       note: "Keep this exact note",
+      pendingSyncPatch: {
+        title: "Edited after sign-out",
+        note: "Keep this exact note",
+      },
     },
     false,
   );
@@ -974,6 +1371,10 @@ test("an edit queued during create stays local when sign-out happens before ackn
     occurredAt: "2026-07-30T18:00:00.000Z",
     syncStatus: "local",
     syncError: "Saved on this device.",
+    pendingSyncPatch: {
+      title: "Edited after sign-out",
+      note: "Keep this exact note",
+    },
     details: { clientKey: "temp_walk" },
   });
 });
@@ -990,6 +1391,10 @@ test("offline edits remain local and preserve the newest patch", () => {
       title: "Newest offline title",
       note: "Do not let the stale acknowledgement replace this",
     },
+    {
+      title: "Newest offline title",
+      note: "Do not let the stale acknowledgement replace this",
+    },
   );
 
   assert.deepEqual(edited, {
@@ -999,6 +1404,10 @@ test("offline edits remain local and preserve the newest patch", () => {
     occurredAt: "2026-07-30T18:00:00.000Z",
     syncStatus: "local",
     syncError: "Saved on this device.",
+    pendingSyncPatch: {
+      title: "Newest offline title",
+      note: "Do not let the stale acknowledgement replace this",
+    },
   });
 });
 
@@ -1013,6 +1422,7 @@ test("hydration makes interrupted create and update mutations retryable", () => 
       id: "server_meal",
       title: "Updating breakfast",
       syncStatus: "pending" as const,
+      pendingSyncPatch: { title: "Updating breakfast" },
     },
     {
       id: "server_note",
@@ -1051,6 +1461,10 @@ test("lost create response migrates the newest temp snapshot onto the real serve
       note: "Edited while the first create response was lost",
       occurredAt: "2026-07-30T18:05:00.000Z",
       syncStatus: "failed" as const,
+      pendingSyncPatch: {
+        title: "Newest edited title",
+        note: "Edited while the first create response was lost",
+      },
       details: {
         routeName: "Newest route",
         route: [{ lat: 37.8, lon: -122.1, t: 1 }],
@@ -1076,6 +1490,10 @@ test("lost create response migrates the newest temp snapshot onto the real serve
     syncStatus: "failed",
     syncError:
       "The server saved the first version. Ready to sync your latest changes.",
+    pendingSyncPatch: {
+      title: "Newest edited title",
+      note: "Edited while the first create response was lost",
+    },
     details: {
       clientKey: "temp_walk",
       routeName: "Newest route",
@@ -1094,6 +1512,10 @@ test("refresh migration keeps the edited temp snapshot retryable instead of acce
         note: "Latest note",
         occurredAt: "2026-07-30T18:05:00.000Z",
         syncStatus: "failed" as const,
+        pendingSyncPatch: {
+          title: "Newest edited title",
+          note: "Latest note",
+        },
       },
     ],
     [
@@ -1212,6 +1634,10 @@ test("idempotent response to a recovered create keeps the edited temp snapshot r
       note: "This edit survived restart",
       occurredAt: "2026-07-30T18:05:00.000Z",
       syncStatus: "failed" as const,
+      pendingSyncPatch: {
+        title: "Newest recovered title",
+        note: "This edit survived restart",
+      },
       details: { routeName: "Newest route" },
     },
     serverEntry: {
@@ -1332,7 +1758,6 @@ test("duplicate cleanup keeps the shared client key when any row deletion fails"
   const deleted: string[] = [];
 
   const allRemoved = await cleanupDiscardedServerEntryRows({
-    clientKey: "temp_cancelled",
     rows: [{ id: "server_first" }, { id: "server_second" }],
     markDiscarded: async (id) => {
       marked.push(id);
@@ -1352,11 +1777,10 @@ test("duplicate cleanup keeps the shared client key when any row deletion fails"
   assert.deepEqual(cleared, ["server_first"]);
 });
 
-test("duplicate cleanup clears the shared client key only after every row is removed", async () => {
+test("duplicate cleanup removes observed rows but retains the shared client key", async () => {
   const cleared: string[] = [];
 
   const allRemoved = await cleanupDiscardedServerEntryRows({
-    clientKey: "temp_cancelled",
     rows: [{ id: "server_first" }, { id: "server_second" }],
     markDiscarded: async () => {},
     deleteEntry: async () => {},
@@ -1366,11 +1790,7 @@ test("duplicate cleanup clears the shared client key only after every row is rem
   });
 
   assert.equal(allRemoved, true);
-  assert.deepEqual(cleared, [
-    "server_first",
-    "server_second",
-    "temp_cancelled",
-  ]);
+  assert.deepEqual(cleared, ["server_first", "server_second"]);
 });
 
 test("refresh filtering includes tombstones added while deletion retries are in flight", () => {
@@ -1433,11 +1853,13 @@ test("delete failure restoration makes a cancelled pending edit retryable", () =
       title: "Edited walk",
       syncStatus: "pending" as const,
       syncError: undefined,
+      pendingSyncPatch: { title: "Edited walk" },
     },
   );
 
   assert.equal(restored.syncStatus, "failed");
   assert.match(restored.syncError ?? "", /retry/i);
+  assert.equal(shouldRetryUpdate(restored), true);
 });
 
 test("serializes durable tombstone writes so a later clear cannot be overtaken", async () => {

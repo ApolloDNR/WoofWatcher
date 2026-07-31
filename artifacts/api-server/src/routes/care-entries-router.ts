@@ -1,5 +1,12 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { normalizeCareEventType } from "@workspace/care-domain";
+import {
+  CARE_ENTRY_SYNC_PROTOCOL,
+  CARE_ENTRY_SYNC_REVISION_KEY,
+  isNextCareEntrySyncRevision,
+  normalizeCareEventType,
+  readCareEntrySyncRevision,
+  resolveLegacyCareEntrySyncWriteRevision,
+} from "@workspace/care-domain";
 import {
   ListCareEntriesResponse,
   ListCareEntriesResponseItem,
@@ -30,8 +37,8 @@ export interface CareEntriesRouterDependencies {
     desc: QueryOperator;
     eq: QueryOperator;
     gte: QueryOperator;
-    /** drizzle sql tag, used for the jsonb clientKey idempotency lookup. */
-    sql?: (strings: TemplateStringsArray, ...values: unknown[]) => unknown;
+    /** Drizzle SQL tag used for JSONB idempotency and revision guards. */
+    sql: (strings: TemplateStringsArray, ...values: unknown[]) => unknown;
   };
   requireAuth: (req: Request, res: Response, next: NextFunction) => void;
   getUserId: (req: Request) => string;
@@ -55,7 +62,7 @@ export function createCareEntriesRouter(dependencies: CareEntriesRouterDependenc
     getHouseholdMemberAuthz,
     now,
   } = dependencies;
-  const { and, desc, eq, gte } = queryOps;
+  const { and, desc, eq, gte, sql } = queryOps;
 
   router.get("/care-entries", requireAuth, async (req, res): Promise<void> => {
     const userId = getUserId(req);
@@ -145,9 +152,8 @@ export function createCareEntriesRouter(dependencies: CareEntriesRouterDependenc
     // race; on that conflict we return the winning row.
     const clientKeyValue = (policy.details as Record<string, unknown> | null | undefined)?.clientKey;
     const clientKey = typeof clientKeyValue === "string" && clientKeyValue.length > 0 ? clientKeyValue : null;
-    const { sql } = queryOps;
     const findByClientKey = async (): Promise<unknown | undefined> => {
-      if (!clientKey || !sql) return undefined;
+      if (!clientKey) return undefined;
       const [existing] = await db
         .select()
         .from(careEntriesTable)
@@ -242,6 +248,46 @@ export function createCareEntriesRouter(dependencies: CareEntriesRouterDependenc
       return;
     }
 
+    // Marked clients establish exactly the next revision. The early check
+    // gives them an immediate conflict envelope; the matching SQL predicate
+    // below closes the select/update race. Unmarked clients retain the
+    // pre-protocol advancement behavior for backwards compatibility.
+    const usesRevisionProtocol =
+      parsed.data.clientSyncProtocol === CARE_ENTRY_SYNC_PROTOCOL;
+    if (
+      usesRevisionProtocol &&
+      readCareEntrySyncRevision(policy.details) == null
+    ) {
+      res.status(400).json({
+        error:
+          "revision-v1 care entry updates require clientSyncRevision.",
+      });
+      return;
+    }
+    if (
+      usesRevisionProtocol &&
+      !isNextCareEntrySyncRevision(existing.details, policy.details)
+    ) {
+      res.status(409).json({
+        error:
+          "A newer care entry update already exists. Refresh before retrying.",
+        entry: UpdateCareEntryResponse.parse(existing),
+      });
+      return;
+    }
+    const incomingRevision = usesRevisionProtocol
+      ? readCareEntrySyncRevision(policy.details)!
+      : resolveLegacyCareEntrySyncWriteRevision({
+          storedDetails: existing.details,
+          requestedDetails: policy.details,
+          detailsWereSupplied: parsed.data.details !== undefined,
+        });
+    policy.details[CARE_ENTRY_SYNC_REVISION_KEY] = incomingRevision;
+    const storedRevision =
+      sql`CASE WHEN jsonb_typeof(${careEntriesTable.details} -> ${CARE_ENTRY_SYNC_REVISION_KEY}) = 'number' THEN CASE WHEN (${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::numeric >= 0 AND (${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::numeric <= 9007199254740991 AND trunc((${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::numeric) = (${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::numeric THEN (${careEntriesTable.details} ->> ${CARE_ENTRY_SYNC_REVISION_KEY})::bigint ELSE 0 END ELSE 0 END`;
+    const revisionGuard = usesRevisionProtocol
+      ? sql`${storedRevision} = ${incomingRevision - 1}`
+      : sql`${storedRevision} < ${incomingRevision}`;
     const [updated] = await db
       .update(careEntriesTable)
       .set({
@@ -263,9 +309,33 @@ export function createCareEntriesRouter(dependencies: CareEntriesRouterDependenc
         and(
           eq(careEntriesTable.id, params.data.id),
           eq(careEntriesTable.householdId, householdId),
+          revisionGuard,
         ),
       )
       .returning();
+
+    if (!updated) {
+      const [current] = await db
+        .select()
+        .from(careEntriesTable)
+        .where(
+          and(
+            eq(careEntriesTable.id, params.data.id),
+            eq(careEntriesTable.householdId, householdId),
+          ),
+        )
+        .limit(1);
+      if (!current) {
+        res.status(404).json({ error: "Entry not found" });
+        return;
+      }
+      res.status(409).json({
+        error:
+          "A newer care entry update already exists. Refresh before retrying.",
+        entry: UpdateCareEntryResponse.parse(current),
+      });
+      return;
+    }
 
     res.json(UpdateCareEntryResponse.parse(updated));
   });

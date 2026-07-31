@@ -351,3 +351,356 @@ test("care-entry create returns the winning row when the unique index rejects a 
     assert.equal(db.insertedRows.length, 0);
   });
 });
+
+test("care-entry update returns 409 when the atomic revision guard rejects a stale write", async () => {
+  const updateCalls: Array<{
+    values?: Record<string, unknown>;
+    where?: unknown;
+  }> = [];
+  const currentRow = {
+    ...careEntryRow,
+    details: { clientSyncRevision: 2 },
+  };
+  const db = {
+    selectCalls: [],
+    select() {
+      return {
+        from() {
+          return {
+            where() {
+              return {
+                async limit() {
+                  return [currentRow];
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+    update() {
+      const call: {
+        values?: Record<string, unknown>;
+        where?: unknown;
+      } = {};
+      updateCalls.push(call);
+      return {
+        set(values: Record<string, unknown>) {
+          call.values = values;
+          return {
+            where(where: unknown) {
+              call.where = where;
+              return {
+                async returning() {
+                  return [];
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+  };
+
+  await withApi(db as unknown as FakeDb, async (baseUrl) => {
+    const response = await fetch(
+      `${baseUrl}/care-entries/${careEntryRow.id}`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          note: "Stale local note",
+          details: { clientSyncRevision: 1 },
+        }),
+      },
+    );
+    const body = await response.json();
+
+    assert.equal(response.status, 409);
+    assert.equal(
+      body.error,
+      "A newer care entry update already exists. Refresh before retrying.",
+    );
+    assert.equal(body.entry.id, careEntryRow.id);
+    assert.equal(body.entry.details.clientSyncRevision, 2);
+    assert.equal(updateCalls.length, 1);
+    assert.ok(
+      updateCalls[0]?.where,
+      "stale writes must be rejected by the update where-clause",
+    );
+  });
+});
+
+test("revision-v1 rejects delayed equal and skipped revisions before update", async () => {
+  for (const clientSyncRevision of [8, 10]) {
+    let updateCallCount = 0;
+    const currentRow = {
+      ...careEntryRow,
+      details: { clientSyncRevision: 8 },
+    };
+    const db = {
+      selectCalls: [],
+      select() {
+        return {
+          from() {
+            return {
+              where() {
+                return {
+                  async limit() {
+                    return [currentRow];
+                  },
+                };
+              },
+            };
+          },
+        };
+      },
+      update() {
+        updateCallCount += 1;
+        throw new Error("revision mismatch must not reach UPDATE");
+      },
+    };
+
+    await withApi(db as unknown as FakeDb, async (baseUrl) => {
+      const response = await fetch(
+        `${baseUrl}/care-entries/${careEntryRow.id}`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            clientSyncProtocol: "revision-v1",
+            note: "Delayed local note",
+            details: { clientSyncRevision },
+          }),
+        },
+      );
+      const body = await response.json();
+
+      assert.equal(response.status, 409);
+      assert.equal(body.entry.details.clientSyncRevision, 8);
+      assert.equal(updateCallCount, 0);
+    });
+  }
+});
+
+test("revision-v1 requires a valid revision before update", async () => {
+  let updateCallCount = 0;
+  const currentRow = {
+    ...careEntryRow,
+    details: { clientSyncRevision: 8 },
+  };
+  const db = {
+    selectCalls: [],
+    select() {
+      return {
+        from() {
+          return {
+            where() {
+              return {
+                async limit() {
+                  return [currentRow];
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+    update() {
+      updateCallCount += 1;
+      throw new Error("invalid revision must not reach UPDATE");
+    },
+  };
+
+  await withApi(db as unknown as FakeDb, async (baseUrl) => {
+    const response = await fetch(
+      `${baseUrl}/care-entries/${careEntryRow.id}`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          clientSyncProtocol: "revision-v1",
+          note: "Missing revision",
+          details: { routeName: "Creek loop" },
+        }),
+      },
+    );
+    const body = await response.json();
+
+    assert.equal(response.status, 400);
+    assert.equal(
+      body.error,
+      "revision-v1 care entry updates require clientSyncRevision.",
+    );
+    assert.equal(updateCallCount, 0);
+  });
+});
+
+test("two revision-v1 writes built from the same row cannot both commit", async () => {
+  let currentRow = {
+    ...careEntryRow,
+    details: { clientSyncRevision: 7 },
+  };
+  let updateCallCount = 0;
+  const db = {
+    selectCalls: [],
+    select() {
+      return {
+        from() {
+          return {
+            where() {
+              return {
+                async limit() {
+                  return [currentRow];
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+    update() {
+      return {
+        set(values: Record<string, unknown>) {
+          return {
+            where() {
+              return {
+                async returning() {
+                  updateCallCount += 1;
+                  currentRow = { ...currentRow, ...values };
+                  return [currentRow];
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+  };
+
+  await withApi(db as unknown as FakeDb, async (baseUrl) => {
+    const request = (note: string) =>
+      fetch(`${baseUrl}/care-entries/${careEntryRow.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          clientSyncProtocol: "revision-v1",
+          note,
+          details: { clientSyncRevision: 8 },
+        }),
+      });
+
+    const first = await request("First caregiver");
+    const delayed = await request("Delayed caregiver");
+    const delayedBody = await delayed.json();
+
+    assert.equal(first.status, 200);
+    assert.equal(delayed.status, 409);
+    assert.equal(delayedBody.entry.details.clientSyncRevision, 8);
+    assert.equal(delayedBody.entry.note, "First caregiver");
+    assert.equal(updateCallCount, 1);
+  });
+});
+
+test("care-entry update advances partial and legacy echoed revisions", async () => {
+  const cases = [
+    {
+      name: "partial",
+      body: { note: "Partial note update" },
+    },
+    {
+      name: "legacy echoed revision",
+      body: {
+        note: "Legacy full-details update",
+        details: {
+          clientSyncRevision: 2,
+          routeName: "Creek loop",
+        },
+      },
+    },
+  ] as const;
+
+  for (const scenario of cases) {
+    const updateCalls: Array<{
+      values?: Record<string, unknown>;
+      where?: unknown;
+    }> = [];
+    const currentRow = {
+      ...careEntryRow,
+      details: {
+        clientSyncRevision: 2,
+        routeName: "Creek loop",
+      },
+    };
+    const db = {
+      selectCalls: [],
+      select() {
+        return {
+          from() {
+            return {
+              where() {
+                return {
+                  async limit() {
+                    return [currentRow];
+                  },
+                };
+              },
+            };
+          },
+        };
+      },
+      update() {
+        const call: {
+          values?: Record<string, unknown>;
+          where?: unknown;
+        } = {};
+        updateCalls.push(call);
+        return {
+          set(values: Record<string, unknown>) {
+            call.values = values;
+            return {
+              where(where: unknown) {
+                call.where = where;
+                return {
+                  async returning() {
+                    return [{ ...currentRow, ...values }];
+                  },
+                };
+              },
+            };
+          },
+        };
+      },
+    };
+
+    await withApi(db as unknown as FakeDb, async (baseUrl) => {
+      const response = await fetch(
+        `${baseUrl}/care-entries/${careEntryRow.id}`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(scenario.body),
+        },
+      );
+      const body = await response.json();
+
+      assert.equal(response.status, 200, scenario.name);
+      assert.equal(
+        body.details.clientSyncRevision,
+        3,
+        scenario.name,
+      );
+      assert.equal(updateCalls.length, 1, scenario.name);
+      assert.equal(
+        (
+          updateCalls[0]?.values?.details as
+            | Record<string, unknown>
+            | undefined
+        )?.clientSyncRevision,
+        3,
+        scenario.name,
+      );
+      assert.ok(updateCalls[0]?.where, scenario.name);
+    });
+  }
+});

@@ -1046,6 +1046,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: A newer care entry update already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareEntryConflict"
     delete:
       operationId: deleteCareEntry
       tags: [care-entries]
@@ -1831,6 +1837,16 @@ components:
         - occurredAt
         - createdAt
         - updatedAt
+    CareEntryConflict:
+      type: object
+      properties:
+        error:
+          type: string
+        entry:
+          $ref: "#/components/schemas/CareEntry"
+      required:
+        - error
+        - entry
     CareEntryTombstone:
       type: object
       properties:
@@ -1885,6 +1901,9 @@ components:
     CareEntryUpdate:
       type: object
       properties:
+        clientSyncProtocol:
+          type: string
+          enum: [revision-v1]
         type:
           type: string
           minLength: 1

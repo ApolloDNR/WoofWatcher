@@ -536,6 +536,7 @@ export const UpdateCareEntryParams = zod.object({
 
 
 export const UpdateCareEntryBody = zod.object({
+  "clientSyncProtocol": zod.enum(["revision-v1"]).optional(),
   "type": zod.string().min(1).optional(),
   "occurredAt": zod.coerce.date().optional(),
   "mood": zod.string().nullish(),

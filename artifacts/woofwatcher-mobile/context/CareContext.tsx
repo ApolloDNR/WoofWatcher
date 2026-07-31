@@ -29,30 +29,45 @@ import {
   adoptServerEntry,
   applyQueuedPatchToAcknowledgedEntry,
   buildCareEntryRefreshPlan,
+  CareEntryConflictRetryError,
   cleanupDiscardedServerEntryRows,
   createSerializedCareSyncWriter,
   createSerializedCareEntryMutationQueue,
+  decideCareEntryEditSyncDisposition,
   deriveCareSyncOutbox,
+  diffCareEntryPendingDetails,
   filterDiscardedServerEntries,
   findCreatedCareEntryLocalSnapshot,
+  mergeCareEntryPendingSyncPatch,
   mergeServerAndLocalEntries,
   normalizeDiscardedServerEntryIds,
   prepareCareEntryForOfflineEdit,
   recoverInterruptedCareEntryMutations,
+  rebaseCareEntryAfterConflict,
   reconcileCreatedCareEntryAcknowledgement,
   reconcileCareDocFromServer,
   removeDiscardedServerEntryId,
   restoreEntryAfterDeleteFailure,
+  retryCareEntryMutationAfterConflict,
   sanitizeCareEntryDetailsForSync,
   selectWoofWatcherKeysForOwnerWipe,
   shouldRetryCreate,
   shouldRetryUpdate,
+  type CareEntryPendingDelete,
   type CareSyncOutbox,
   type EntrySyncStatus,
   type SerializedCareSyncWriter,
   type SerializedCareEntryMutationQueue,
 } from "@/lib/careSync";
-import type { AccessPass, AdventureMemory, CarePassArtifact } from "@workspace/care-domain";
+import {
+  CARE_ENTRY_SYNC_PROTOCOL,
+  CARE_ENTRY_SYNC_REVISION_KEY,
+  nextCareEntrySyncRevision,
+  readCareEntrySyncRevision,
+  type AccessPass,
+  type AdventureMemory,
+  type CarePassArtifact,
+} from "@workspace/care-domain";
 import { useWoofAuth } from "@/lib/auth";
 import {
   normalizeReminderNotificationPreferences,
@@ -196,8 +211,7 @@ export interface CalendarEvent {
 
 export type ReportArtifact = CarePassArtifact;
 
-export interface Entry {
-  id: string;
+export interface CareEntryMutableFields {
   type: string;
   title: string;
   caregiver: string;
@@ -210,8 +224,19 @@ export interface Entry {
   dogInteractions?: number;
   food?: string;
   details?: { [key: string]: unknown };
+}
+
+type CareEntryPendingSyncPatch = {
+  [K in keyof CareEntryMutableFields]?: K extends "details"
+    ? CareEntryMutableFields[K]
+    : CareEntryMutableFields[K] | CareEntryPendingDelete;
+};
+
+export interface Entry extends CareEntryMutableFields {
+  id: string;
   syncStatus?: EntrySyncStatus;
   syncError?: string;
+  pendingSyncPatch?: CareEntryPendingSyncPatch;
 }
 
 export interface DietProfile {
@@ -406,6 +431,89 @@ function toEntry(c: ApiCareEntry): Entry {
   };
 }
 
+function ensureCareEntrySyncRevision(entry: Entry): Entry {
+  if (readCareEntrySyncRevision(entry.details) != null) return entry;
+  return {
+    ...entry,
+    details: {
+      ...(entry.details ?? {}),
+      [CARE_ENTRY_SYNC_REVISION_KEY]: 1,
+    },
+  };
+}
+
+function advanceCareEntrySyncRevision(
+  entry: Entry,
+  details: { [key: string]: unknown } | null | undefined = entry.details,
+): Entry {
+  return {
+    ...entry,
+    details: {
+      ...(details ?? {}),
+      [CARE_ENTRY_SYNC_REVISION_KEY]:
+        nextCareEntrySyncRevision(entry.details),
+    },
+  };
+}
+
+function toCareEntryMutablePatch(
+  patch: Partial<Omit<Entry, "id">>,
+): Partial<CareEntryMutableFields> {
+  const {
+    syncStatus: _syncStatus,
+    syncError: _syncError,
+    pendingSyncPatch: _pendingSyncPatch,
+    ...mutablePatch
+  } = patch;
+  return mutablePatch;
+}
+
+function toPendingCareEntrySyncPatch(
+  current: Entry,
+  mutablePatch: Partial<CareEntryMutableFields>,
+): CareEntryPendingSyncPatch {
+  if (!Object.prototype.hasOwnProperty.call(mutablePatch, "details")) {
+    return mutablePatch;
+  }
+  const detailPatch = diffCareEntryPendingDetails(
+    current.details,
+    mutablePatch.details,
+  );
+  const {
+    details: _details,
+    ...topLevelPatch
+  } = mutablePatch;
+  return {
+    ...topLevelPatch,
+    ...(Object.keys(detailPatch).length > 0
+      ? { details: detailPatch }
+      : {}),
+  };
+}
+
+function rebasePendingCareEntryAfterConflict(
+  localEntry: Entry,
+  serverEntry: Entry,
+): Entry | null {
+  const pendingPatch = localEntry.pendingSyncPatch;
+  if (!pendingPatch || Object.keys(pendingPatch).length === 0) {
+    return null;
+  }
+  const rebased = rebaseCareEntryAfterConflict(
+    localEntry,
+    serverEntry,
+    pendingPatch,
+  );
+  return {
+    ...rebased,
+    details: {
+      ...(rebased.details ?? {}),
+      [CARE_ENTRY_SYNC_REVISION_KEY]:
+        nextCareEntrySyncRevision(serverEntry.details),
+    },
+  };
+}
+
 function toCreateInput(e: Omit<Entry, "id">, clientKey?: string): CareEntryInput {
   const details = sanitizeCareEntryDetailsForSync(e.details);
   if (e.title) details.title = e.title;
@@ -431,12 +539,16 @@ function toCreateInput(e: Omit<Entry, "id">, clientKey?: string): CareEntryInput
 // clobbers server-side details (PATCH replaces the details object wholesale).
 function toUpdateInput(e: Entry): CareEntryUpdate {
   const details = sanitizeCareEntryDetailsForSync(e.details);
+  if (readCareEntrySyncRevision(details) == null) {
+    details[CARE_ENTRY_SYNC_REVISION_KEY] = 1;
+  }
   if (e.title) details.title = e.title;
   if (e.durationMinutes != null) details.durationMinutes = e.durationMinutes;
   if (e.amount != null) details.amount = e.amount;
   if (e.dogInteractions != null) details.dogInteractions = e.dogInteractions;
   if (e.food != null) details.food = e.food;
   return {
+    clientSyncProtocol: CARE_ENTRY_SYNC_PROTOCOL,
     type: e.type,
     occurredAt: e.occurredAt,
     mood: e.mood ?? null,
@@ -452,6 +564,28 @@ function isConflict(err: unknown): err is { status: number; data: unknown } {
     typeof err === "object" &&
     (err as { status?: unknown }).status === 409
   );
+}
+
+function getCareEntryConflictEntry(
+  error: unknown,
+  entryId: string,
+): Entry | null {
+  if (!isConflict(error) || !error.data || typeof error.data !== "object") {
+    return null;
+  }
+  const candidate = (error.data as { entry?: unknown }).entry;
+  if (!candidate || typeof candidate !== "object") return null;
+  const row = candidate as Partial<ApiCareEntry>;
+  if (
+    row.id !== entryId ||
+    typeof row.type !== "string" ||
+    typeof row.occurredAt !== "string" ||
+    typeof row.createdAt !== "string" ||
+    typeof row.updatedAt !== "string"
+  ) {
+    return null;
+  }
+  return toEntry(row as ApiCareEntry);
 }
 
 function isNotFound(err: unknown): boolean {
@@ -597,10 +731,49 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   if (!entryUpdateQueueRef.current) {
     entryUpdateQueueRef.current =
       createSerializedCareEntryMutationQueue<Entry, ApiCareEntry>({
-        mutate: (entryId, entry, signal) =>
-          updateCareEntry(entryId, toUpdateInput(entry), { signal }),
+        mutate: async (entryId, entry, signal) => {
+          try {
+            return await updateCareEntry(
+              entryId,
+              toUpdateInput(entry),
+              { signal },
+            );
+          } catch (error) {
+            return retryCareEntryMutationAfterConflict({
+              error,
+              input: entry,
+              isConflict,
+              fetchCurrent: async () => {
+                const conflictEntry = getCareEntryConflictEntry(
+                  error,
+                  entryId,
+                );
+                if (conflictEntry) return conflictEntry;
+                const rows = await listCareEntries(undefined, {
+                  signal,
+                });
+                const currentServerEntry = rows.find(
+                  (row) => row.id === entryId,
+                );
+                return currentServerEntry
+                  ? toEntry(currentServerEntry)
+                  : null;
+              },
+              rebase: rebasePendingCareEntryAfterConflict,
+              mutate: (rebasedEntry) =>
+                updateCareEntry(
+                  entryId,
+                  toUpdateInput(rebasedEntry),
+                  { signal },
+                ),
+            });
+          }
+        },
         onSuccess: (entryId, localEntry, updated) => {
-          const synced = adoptServerEntry(localEntry, toEntry(updated));
+          const synced = {
+            ...adoptServerEntry(localEntry, toEntry(updated)),
+            pendingSyncPatch: undefined,
+          };
           entriesRef.current = entriesRef.current.map((entry) =>
             entry.id === entryId ? synced : entry,
           );
@@ -613,25 +786,22 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             queryKey: getListCareEntriesQueryKey(),
           });
         },
-        onFailure: (entryId) => {
+        onFailure: (entryId, localEntry, error) => {
+          const retryBase =
+            error instanceof CareEntryConflictRetryError
+              ? error.rebasedInput
+              : localEntry;
+          const failedEntry = advanceCareEntrySyncRevision({
+            ...retryBase,
+            syncStatus: "failed",
+            syncError: "Saved locally. Refresh to retry sync.",
+          });
           entriesRef.current = entriesRef.current.map((entry) =>
-            entry.id === entryId
-              ? {
-                  ...entry,
-                  syncStatus: "failed",
-                  syncError: "Saved locally. Refresh to retry sync.",
-                }
-              : entry,
+            entry.id === entryId ? failedEntry : entry,
           );
           setEntries((previous) =>
             previous.map((entry) =>
-              entry.id === entryId
-                ? {
-                    ...entry,
-                    syncStatus: "failed",
-                    syncError: "Saved locally. Refresh to retry sync.",
-                  }
-                : entry,
+              entry.id === entryId ? failedEntry : entry,
             ),
           );
         },
@@ -986,7 +1156,6 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
               await clearDiscardedServerEntry(
                 acknowledgement.serverEntryId,
               );
-              await clearDiscardedServerEntry(tempId);
             } else {
               await markServerEntryDiscarded(
                 acknowledgement.serverEntryId,
@@ -1020,13 +1189,19 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           const queued = pendingPatch.current.get(tempId);
           pendingPatch.current.delete(tempId);
           cancelledTempEntries.current.delete(tempId);
-          const merged: Entry = queued
+          const acknowledged: Entry = queued
             ? applyQueuedPatchToAcknowledgedEntry<Entry>(
                 real,
                 queued,
                 signedInRef.current,
               )
             : real;
+          const needsUpdate =
+            signedInRef.current &&
+            (Boolean(queued) || shouldRetryUpdate(acknowledged));
+          const merged = needsUpdate
+            ? ensureCareEntrySyncRevision(acknowledged)
+            : acknowledged;
           const replaceAcknowledgedEntry = (currentEntries: Entry[]) => {
             let inserted = false;
             const next: Entry[] = [];
@@ -1055,10 +1230,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           queryClient.invalidateQueries({
             queryKey: getListCareEntriesQueryKey(),
           });
-          if (
-            signedInRef.current &&
-            (queued || shouldRetryUpdate(merged))
-          ) {
+          if (needsUpdate) {
             entryUpdateQueue.enqueue(real.id, merged);
           }
         })
@@ -1109,7 +1281,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const pendingEntry: Entry = {
-        ...entry,
+        ...ensureCareEntrySyncRevision(entry),
         syncStatus: "pending",
         syncError: undefined,
       };
@@ -1208,12 +1380,12 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           if (matchingRows.length === 0) {
             // One empty list is not proof that a cancelled CREATE cannot
             // commit later (especially after process death, when the in-memory
-            // request set is gone). Retain the opaque clientKey until a
-            // matching row is observed and deleted.
+            // request set is gone). The opaque clientKey stays in the local
+            // deletion ledger permanently; later matching rows are deleted
+            // without reopening a path for an even later retry to reappear.
             continue;
           }
           await cleanupDiscardedServerEntryRows({
-            clientKey: discardedId,
             rows: matchingRows,
             markDiscarded: markServerEntryDiscarded,
             deleteEntry: async (entryId) => {
@@ -1387,7 +1559,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           if (!isNotFound(error)) throw error;
         }
         for (const discardedId of deletionLedgerIds) {
-          await clearDiscardedServerEntry(discardedId);
+          if (!discardedId.startsWith("temp_")) {
+            await clearDiscardedServerEntry(discardedId);
+          }
         }
         queryClient.invalidateQueries({
           queryKey: getListCareEntriesQueryKey(),
@@ -1436,14 +1610,56 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       // updates compose.
       const current = entriesRef.current.find((e) => e.id === realId);
       if (!current) return;
-      const merged: Entry = signedInRef.current
-        ? {
-            ...current,
-            ...patch,
-            syncStatus: "pending",
-            syncError: undefined,
-          }
-        : prepareCareEntryForOfflineEdit<Entry>(current, patch);
+      const mutablePatch = toCareEntryMutablePatch(patch);
+      const syncDisposition = decideCareEntryEditSyncDisposition(
+        current,
+        signedInRef.current,
+      );
+      if (syncDisposition === "review-required") {
+        const preserved: Entry = {
+          ...prepareCareEntryForOfflineEdit<Entry>(
+            current,
+            mutablePatch,
+          ),
+          syncError:
+            "Older saved change preserved on this device. Contact support before household sync.",
+        };
+        entryUpdateQueue.cancel(realId);
+        entriesRef.current = entriesRef.current.map((entry) =>
+          entry.id === realId ? preserved : entry,
+        );
+        setEntries((previous) =>
+          previous.map((entry) =>
+            entry.id === realId ? preserved : entry,
+          ),
+        );
+        return;
+      }
+      const pendingPatchDelta = toPendingCareEntrySyncPatch(
+        current,
+        mutablePatch,
+      );
+      const pendingSyncPatch =
+        mergeCareEntryPendingSyncPatch<Entry>(
+          current.pendingSyncPatch,
+          pendingPatchDelta,
+        );
+      const merged: Entry = syncDisposition === "queue"
+        ? advanceCareEntrySyncRevision(
+            {
+              ...current,
+              ...mutablePatch,
+              pendingSyncPatch,
+              syncStatus: "pending",
+              syncError: undefined,
+            },
+            mutablePatch.details ?? current.details,
+          )
+        : prepareCareEntryForOfflineEdit<Entry>(
+            current,
+            mutablePatch,
+            pendingSyncPatch,
+          );
       entriesRef.current = entriesRef.current.map((e) =>
         e.id === realId ? merged : e,
       );
@@ -1452,14 +1668,16 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       if (realId.startsWith("temp_")) {
         pendingPatch.current.set(realId, {
           ...(pendingPatch.current.get(realId) ?? {}),
-          ...patch,
+          ...mutablePatch,
+          details: merged.details,
+          pendingSyncPatch: merged.pendingSyncPatch,
         });
-        if (!signedInRef.current) {
+        if (syncDisposition === "local") {
           entryUpdateQueue.cancel(realId);
         }
         return;
       }
-      if (!signedInRef.current) {
+      if (syncDisposition === "local") {
         // Invalidate an older in-flight PATCH generation before returning.
         // Its eventual acknowledgement must not replace this offline edit.
         entryUpdateQueue.cancel(realId);

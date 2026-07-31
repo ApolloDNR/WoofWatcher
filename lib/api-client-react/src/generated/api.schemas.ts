@@ -419,6 +419,11 @@ export interface CareEntry {
   updatedAt: string;
 }
 
+export interface CareEntryConflict {
+  error: string;
+  entry: CareEntry;
+}
+
 export interface CareEntryTombstone {
   id: string;
   householdId: string;
@@ -445,12 +450,20 @@ export interface CareEntryInput {
   details?: CareEntryInputDetails;
 }
 
+export type CareEntryUpdateClientSyncProtocol = typeof CareEntryUpdateClientSyncProtocol[keyof typeof CareEntryUpdateClientSyncProtocol];
+
+
+export const CareEntryUpdateClientSyncProtocol = {
+  'revision-v1': 'revision-v1',
+} as const;
+
 /**
  * @nullable
  */
 export type CareEntryUpdateDetails = { [key: string]: unknown } | null;
 
 export interface CareEntryUpdate {
+  clientSyncProtocol?: CareEntryUpdateClientSyncProtocol;
   /** @minLength 1 */
   type?: string;
   occurredAt?: string;
@@ -474,4 +487,3 @@ export interface ListCareEntryTombstonesParams {
   updatedSince?: string;
   limit?: number;
 }
-

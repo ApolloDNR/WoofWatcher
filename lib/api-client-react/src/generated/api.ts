@@ -28,6 +28,7 @@ import type {
   AccessPassActivationInput,
   AccessPassRevocationInput,
   CareEntry,
+  CareEntryConflict,
   CareEntryTombstone,
   CareEntryInput,
   CareEntryUpdate,
@@ -1955,7 +1956,7 @@ export const updateCareEntry = async (id: string,
 
 
 
-export const getUpdateCareEntryMutationOptions = <TError = ErrorType<ApiError>,
+export const getUpdateCareEntryMutationOptions = <TError = ErrorType<ApiError | CareEntryConflict>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCareEntry>>, TError,{id: string;data: BodyType<CareEntryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateCareEntry>>, TError,{id: string;data: BodyType<CareEntryUpdate>}, TContext> => {
 
@@ -1984,12 +1985,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateCareEntryMutationResult = NonNullable<Awaited<ReturnType<typeof updateCareEntry>>>
     export type UpdateCareEntryMutationBody = BodyType<CareEntryUpdate>
-    export type UpdateCareEntryMutationError = ErrorType<ApiError>
+    export type UpdateCareEntryMutationError = ErrorType<ApiError | CareEntryConflict>
 
     /**
  * @summary Update a care log entry (e.g. add a quick note)
  */
-export const useUpdateCareEntry = <TError = ErrorType<ApiError>,
+export const useUpdateCareEntry = <TError = ErrorType<ApiError | CareEntryConflict>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCareEntry>>, TError,{id: string;data: BodyType<CareEntryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateCareEntry>>,
@@ -2069,4 +2070,3 @@ export const useDeleteCareEntry = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getDeleteCareEntryMutationOptions(options));
     }
-

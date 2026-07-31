@@ -3157,18 +3157,41 @@ export default function LogScreen() {
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Retry sync outbox"
+                  accessibilityLabel={
+                    syncOutbox.retryable > 0
+                      ? "Retry sync outbox"
+                      : "Review older saved care changes"
+                  }
                   onPress={() => {
                     Haptics.selectionAsync();
-                    refresh();
+                    if (syncOutbox.retryable > 0) {
+                      refresh();
+                      return;
+                    }
+                    setLogView("history");
+                    const firstReviewId =
+                      syncOutbox.reviewRequiredIds[0];
+                    if (firstReviewId) {
+                      setDetailEntryId(firstReviewId);
+                    }
+                    scrollRef.current?.scrollTo({ y: 0, animated: true });
                   }}
-                  disabled={isSyncing || syncOutbox.retryable === 0}
+                  disabled={
+                    isSyncing || syncOutbox.status !== "needs-retry"
+                  }
                   style={({ pressed }) => [
                     s.outboxButton,
                     {
                       backgroundColor:
-                        syncOutbox.retryable > 0 ? colors.primary : colors.background,
-                      opacity: pressed || isSyncing || syncOutbox.retryable === 0 ? 0.66 : 1,
+                        syncOutbox.status === "needs-retry"
+                          ? colors.primary
+                          : colors.background,
+                      opacity:
+                        pressed ||
+                        isSyncing ||
+                        syncOutbox.status !== "needs-retry"
+                          ? 0.66
+                          : 1,
                     },
                   ]}
                 >
@@ -3176,12 +3199,15 @@ export default function LogScreen() {
                     style={[
                       s.outboxButtonText,
                       {
-                        color: syncOutbox.retryable > 0 ? colors.primaryForeground : colors.mutedForeground,
+                        color:
+                          syncOutbox.status === "needs-retry"
+                            ? colors.primaryForeground
+                            : colors.mutedForeground,
                         fontFamily: "Inter_700Bold",
                       },
                     ]}
                   >
-                    {isSyncing ? "Syncing" : "Retry"}
+                    {isSyncing ? "Syncing" : syncOutbox.actionLabel}
                   </Text>
                 </Pressable>
               </View>
@@ -3198,7 +3224,9 @@ export default function LogScreen() {
                 </View>
                 <View style={[s.outboxMetric, { backgroundColor: colors.background }]}>
                   <Text style={[s.outboxMetricText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                    {syncOutbox.pending} syncing
+                    {syncOutbox.reviewRequiredIds.length > 0
+                      ? `${syncOutbox.reviewRequiredIds.length} preserved`
+                      : `${syncOutbox.pending} syncing`}
                   </Text>
                 </View>
               </View>

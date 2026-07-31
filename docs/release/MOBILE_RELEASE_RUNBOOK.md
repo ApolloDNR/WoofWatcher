@@ -168,8 +168,9 @@ Before relying on the web surface:
 
 ## Codex Native Release Checkpoint - 2026-07-30
 
-- `pnpm run test:focused` passed **797/797** on Node 24.14.0 with pnpm 10.24.0.
-- `pnpm run build:ci` passed all workspace typechecks/builds, a 274-file Expo web export, all 13 runtime routes, and live-preview proof.
+- `pnpm run test:focused` passed **819/819** on Node 24.14.0 with pnpm 10.24.0.
+- `pnpm run build:ci` passed all workspace typechecks/builds, a 267-file Expo web export, all 13 runtime routes, and live-preview proof.
+- Provider-enabled internal builds deploy the API before the marked mobile client; `revision-v1` PATCHes then require the exact next server revision, while unmarked legacy requests retain backwards-compatible advancement.
 - The store-material validator passed the full iPhone/Play pack while preserving the 10 real owner/native blockers.
 - Pinned pnpm 10.24.0 accepted the updated frozen lockfile; Darwin arm64/x64 native packages are present for EAS macOS.
 - Disposable iOS/Android prebuild inspection confirmed iOS 15.1, no Clerk native linkage, foreground-only location, no microphone usage key, and Android removal of unused audio permission while retaining Expo ImagePicker's legacy photo permissions for older-OS compatibility.
