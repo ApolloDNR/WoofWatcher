@@ -5354,6 +5354,16 @@ test("keeps the living Story trail map out of accessibility traversal", () => {
   );
 });
 
+test("keeps the Auth gateway stage dog out of accessibility traversal", () => {
+  const authUi = readAppFile("../components/auth-ui.tsx");
+
+  assert.match(
+    authUi,
+    /<Image\s+accessible=\{false\}\s+source=\{PIXEL_DOG_SOURCE\}/,
+    "the decorative Auth stage dog must not create an unlabeled stop beside the labeled account gateway and care-start copy",
+  );
+});
+
 test("keeps More rooted in a live pixel launch command stage", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

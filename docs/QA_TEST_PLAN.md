@@ -2717,3 +2717,10 @@ Dog ID PNG/share flows before approving Records.
   the care-action label.
 - Still required: native VoiceOver/TalkBack traversal on medallion-bearing
   Home, Quick Log, Plans, Health, and Records surfaces.
+## 2026-07-31 Auth stage-dog accessibility QA
+
+- Source readiness requires the Auth gateway's decorative Phoenix image to use
+  `accessible={false}` while the gateway and care-start text retain the
+  meaningful account/setup narration.
+- Still required: native VoiceOver/TalkBack traversal and route-named
+  iOS/Android Auth/Setup evidence.

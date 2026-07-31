@@ -527,3 +527,9 @@ review, and Apollo visual approval remain blocked.
   care waypoints.
 - Still blocked: native VoiceOver/TalkBack traversal, route-named iOS/Android
   Story screenshots, and Apollo accessibility approval.
+## 2026-07-31 Auth stage-dog accessibility boundary
+
+- Source now excludes the decorative Phoenix Auth stage image from assistive
+  traversal while preserving the labeled gateway and care-start content.
+- Still blocked: native VoiceOver/TalkBack traversal, route-named iOS/Android
+  Auth/Setup screenshots, Clerk/provider evidence, and Apollo approval.

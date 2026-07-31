@@ -1,5 +1,19 @@
 # Autonomous Build Queue
 
+## 2026-07-31 Auth stage-dog accessibility boundary
+
+- DONE: The decorative Phoenix sprite in the labeled Auth/Setup gateway is
+  hidden from accessibility traversal so it cannot add an unlabeled duplicate
+  stop beside the account-gateway and care-start copy.
+- VERIFIED RED: Mobile readiness failed `147/148` before the image boundary.
+- VERIFIED GREEN: Mobile readiness passed `148/148`, care-domain passed
+  `157/157`, root TypeScript passed, and PixelLab passed
+  `ok=149 missing=0 invalid=0`. The JSON doctor retained its source-backed
+  passes while remaining truthfully blocked on local pnpm/Corepack and Expo
+  resolution.
+- NEXT: Run branch CI. Native VoiceOver/TalkBack traversal and route-named
+  iOS/Android Auth/Setup evidence remain open.
+
 ## 2026-07-30 Plus and WoofGuide fixed-dark trust-icon contrast
 
 - DONE: The fixed-navy `Checkout gated` and `Owner review` chips now use the

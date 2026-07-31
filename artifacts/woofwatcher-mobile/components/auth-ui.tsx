@@ -118,6 +118,7 @@ export function AuthShell({
             </Text>
           </View>
           <Image
+            accessible={false}
             source={PIXEL_DOG_SOURCE}
             resizeMode="contain"
             fadeDuration={0}

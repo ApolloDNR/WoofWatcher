@@ -517,3 +517,9 @@ native VoiceOver/TalkBack proof.
 Shared crafted care medallions must stay decorative when their parent control
 or card already exposes the action or metric label. Source coverage is not
 native VoiceOver/TalkBack proof.
+## 2026-07-31 Auth stage-dog accessibility gate
+
+The decorative Phoenix image in the labeled Auth/Setup gateway is excluded
+from the accessibility tree. This is source-level protection only; native
+VoiceOver/TalkBack traversal, Clerk/provider proof, and route-named iOS/Android
+Auth/Setup evidence remain open.

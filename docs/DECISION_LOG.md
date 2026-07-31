@@ -2980,3 +2980,10 @@ Decision: keep `BoardMedallion` images out of the accessibility tree. These
 crafted care icons appear within controls and cards whose surrounding content
 already names the action or metric, so a second raw image stop adds noise
 without meaning. The parent remains responsible for the accessible label.
+## 2026-07-31 - Keep the Auth stage dog decorative
+
+Decision: mark the Auth gateway's Phoenix stage image `accessible={false}`.
+The surrounding gateway, speech bubble, care-start copy, proof action, and
+form already carry the meaningful account/setup experience; exposing the raw
+sprite risks an unlabeled duplicate stop. Native traversal and provider
+readiness are not inferred from this source guard.

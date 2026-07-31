@@ -5101,3 +5101,10 @@ route-named iOS/Android Story evidence remain open. Dependency-complete
 WoofWatcher Verify run `30606870230`, job `91080857807`, passed
 implementation/docs commit `8acdb169`, including pinned dependency install,
 doctor, focused tests, typecheck, CI-safe builds, and post steps.
+## 2026-07-31 Auth stage-dog accessibility slice
+
+The Auth/Setup account gateway now marks its internal Phoenix stage sprite
+decorative. A red-first mobile-readiness contract failed `147/148` before the
+change. This prevents an unlabeled duplicate image stop beside the already
+labeled gateway and care-start copy; it does not replace native
+VoiceOver/TalkBack traversal, route-named screenshots, or provider approval.
