@@ -5090,3 +5090,11 @@ steps, and Complete job all passed.
   builds, post steps, and Complete job.
 - Native VoiceOver/TalkBack traversal and route-named iOS/Android evidence
   remain open and must not be inferred from source coverage.
+## 2026-07-30 Living Story trail accessibility slice
+
+The painted map inside `DayTrailScene` is atmosphere behind an already
+summarized scene and individually labeled real-care waypoint controls. Its raw
+image is now `accessible={false}`, preventing an unlabeled duplicate stop while
+keeping the meaningful Story content traversable. A red-first mobile readiness
+contract protects the boundary. Native VoiceOver/TalkBack traversal and
+route-named iOS/Android Story evidence remain open.

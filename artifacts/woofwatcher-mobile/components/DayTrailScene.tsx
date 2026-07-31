@@ -134,7 +134,7 @@ export function DayTrailScene({ stops, petName, now, onPressStop, style }: Props
       }}
     >
       {/* The hand-painted world - the same stagecraft as the living room. */}
-      <Image source={MAP_ART} style={styles.mapArt} resizeMode="cover" fadeDuration={0} />
+      <Image accessible={false} source={MAP_ART} style={styles.mapArt} resizeMode="cover" fadeDuration={0} />
 
       {/* Real care stops pinned along the painted trail, in the order they
           happened. A nested Pressable claims the touch, so tapping a stop

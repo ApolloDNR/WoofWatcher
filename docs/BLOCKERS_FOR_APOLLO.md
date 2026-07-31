@@ -520,3 +520,10 @@ review, and Apollo visual approval remain blocked.
   duplicate or unlabeled image stops inside already-labeled controls/cards.
 - Still blocked: native VoiceOver/TalkBack traversal and route-named
   iOS/Android evidence across medallion-bearing core routes.
+## 2026-07-30 Living Story trail accessibility boundary
+
+- Source-level proof now keeps the decorative painted trail map out of
+  accessibility traversal while preserving the scene summary and labeled real
+  care waypoints.
+- Still blocked: native VoiceOver/TalkBack traversal, route-named iOS/Android
+  Story screenshots, and Apollo accessibility approval.

@@ -5344,6 +5344,16 @@ test("keeps shared board medallion artwork out of accessibility traversal", () =
   );
 });
 
+test("keeps the living Story trail map out of accessibility traversal", () => {
+  const dayTrail = readAppFile("../components/DayTrailScene.tsx");
+
+  assert.match(
+    dayTrail,
+    /<Image\s+accessible=\{false\}\s+source=\{MAP_ART\}/,
+    "the decorative trail map must not create an unlabeled stop beside the scene summary and labeled care waypoints",
+  );
+});
+
 test("keeps More rooted in a live pixel launch command stage", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

@@ -1831,3 +1831,11 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   builds, post steps, and Complete job all passed.
 - NEXT: Capture native VoiceOver/TalkBack traversal across medallion-bearing
   core routes. Source coverage does not replace device accessibility approval.
+## 2026-07-30 Living Story trail accessibility
+
+- DONE: Marked the painted `DayTrailScene` map as decorative so the scene
+  summary and real care waypoint buttons remain the meaningful assistive
+  technology stops.
+- VERIFIED: Added a red-first mobile readiness contract.
+- NEXT: Native VoiceOver/TalkBack traversal and route-named iOS/Android Story
+  evidence remain required.
