@@ -4,6 +4,7 @@
 
 - PASS: The decorative park hero uses `accessible={false}` while profile controls and dog identity retain their labels.
 - RED/GREEN: Mobile readiness failed `150/151`, then passed `151/151`.
+- CI: Run `30651392273`, job `91225245672`, passed dependency install, JSON doctor, focused tests, typecheck, CI-safe builds, and post steps for `a7697cb9`.
 - OPEN: Native VoiceOver/TalkBack traversal and route-named iOS/Android Dog Profile evidence remain due.
 
 ## 2026-07-31 TrailMap raster-tile accessibility QA

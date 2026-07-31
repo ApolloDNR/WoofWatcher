@@ -4,6 +4,8 @@
 
 The decorative full-bleed park hero is excluded from assistive traversal so the labeled profile controls and dog identity remain the meaningful stops. Native screen-reader and route-named iOS/Android proof remain open.
 
+Dependency-complete branch CI passed in run `30651392273`, job `91225245672`, for implementation commit `a7697cb9`.
+
 ## 2026-07-31 TrailMap raster-tile accessibility gate
 
 The labeled TrailMap remains the single meaningful map image; its internal OpenStreetMap raster tiles are excluded from assistive traversal. Native screen-reader and route-named iOS/Android proof remain open.
