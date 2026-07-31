@@ -1837,5 +1837,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   summary and real care waypoint buttons remain the meaningful assistive
   technology stops.
 - VERIFIED: Added a red-first mobile readiness contract.
+- VERIFIED: Dependency-complete WoofWatcher Verify run `30606870230`, job
+  `91080857807`, passed implementation/docs commit `8acdb169`.
 - NEXT: Native VoiceOver/TalkBack traversal and route-named iOS/Android Story
   evidence remain required.

@@ -5097,4 +5097,7 @@ summarized scene and individually labeled real-care waypoint controls. Its raw
 image is now `accessible={false}`, preventing an unlabeled duplicate stop while
 keeping the meaningful Story content traversable. A red-first mobile readiness
 contract protects the boundary. Native VoiceOver/TalkBack traversal and
-route-named iOS/Android Story evidence remain open.
+route-named iOS/Android Story evidence remain open. Dependency-complete
+WoofWatcher Verify run `30606870230`, job `91080857807`, passed
+implementation/docs commit `8acdb169`, including pinned dependency install,
+doctor, focused tests, typecheck, CI-safe builds, and post steps.
