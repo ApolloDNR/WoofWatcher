@@ -247,6 +247,7 @@ export function TrailMap({
           tiles.map((tile) => (
             <Image
               key={tile.key}
+              accessible={false}
               source={{ uri: tile.uri }}
               fadeDuration={0}
               onError={() =>

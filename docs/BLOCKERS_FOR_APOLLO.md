@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-07-31 TrailMap raster-tile accessibility boundary
+
+Source keeps internal map tiles out of accessibility traversal while the map container announces the recorded route. Real VoiceOver/TalkBack traversal and route-named iOS/Android walk-map evidence remain blocked on native review.
+
 ## 2026-07-30 Plus and WoofGuide fixed-dark trust-icon boundary
 
 The fixed-navy checkout and owner-review chips now have source-protected

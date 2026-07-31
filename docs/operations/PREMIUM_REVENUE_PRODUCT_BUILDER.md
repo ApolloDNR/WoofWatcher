@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-07-31 TrailMap raster-tile accessibility slice
+
+The TrailMap container remains the meaningful accessible map image, and its internal OpenStreetMap raster tiles are now decorative. Red-first readiness failed `149/150` before the correction and passed `150/150` after. Native VoiceOver/TalkBack and route-named iOS/Android walk-map proof remain open.
+
 ## 2026-07-30 Plus and WoofGuide fixed-dark trust-icon contrast
 
 The Plus `Checkout gated` lock and WoofGuide `Owner review` check sit on

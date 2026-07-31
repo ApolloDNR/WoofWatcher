@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-07-31 TrailMap raster-tile accessibility QA
+
+- PASS: The TrailMap container keeps its meaningful image role and route summary while each internal raster tile uses `accessible={false}`.
+- RED/GREEN: Mobile readiness failed `149/150`, then passed `150/150`.
+- OPEN: Native VoiceOver/TalkBack and route-named device evidence remain due.
+
 ## 2026-07-30 Plus and WoofGuide fixed-dark trust-icon contrast QA
 
 - Red-first mobile readiness must require `FIXED_DARK_GOLD` for the lock and

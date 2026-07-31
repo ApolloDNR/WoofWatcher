@@ -5374,6 +5374,21 @@ test("keeps the Home room backdrop out of accessibility traversal", () => {
   );
 });
 
+test("keeps TrailMap raster tiles decorative inside the labeled map image", () => {
+  const trailMap = readAppFile("../components/TrailMap.tsx");
+
+  assert.match(
+    trailMap,
+    /<View[\s\S]*?accessibilityRole="image"[\s\S]*?accessibilityLabel=\{accessibilityLabel \?\? "Map of the recorded walk route"\}/,
+    "the map container must provide the meaningful route summary",
+  );
+  assert.match(
+    trailMap,
+    /<Image[\s\S]*?key=\{tile\.key\}[\s\S]*?accessible=\{false\}[\s\S]*?source=\{\{ uri: tile\.uri \}\}/,
+    "individual raster tiles must not create duplicate unlabeled stops inside the labeled map",
+  );
+});
+
 test("keeps More rooted in a live pixel launch command stage", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

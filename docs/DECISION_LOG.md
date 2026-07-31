@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-07-31: TrailMap raster tiles are decorative children
+
+- The TrailMap container owns the meaningful accessible map summary.
+- Individual raster tiles must not create duplicate unlabeled image stops.
+- Native screen-reader traversal remains a separate launch gate.
+
 ## 2026-07-30: Fixed-navy trust chips use constant bright icons
 
 Decision: render the Plus checkout lock and WoofGuide owner-review check with
