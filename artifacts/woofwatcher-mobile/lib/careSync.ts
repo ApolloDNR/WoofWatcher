@@ -1,3 +1,5 @@
+import { CARE_ENTRY_SYNC_REVISION_KEY } from "@workspace/care-domain";
+
 export type EntrySyncStatus = "local" | "pending" | "synced" | "failed";
 
 export interface SyncableEntry {
@@ -7,6 +9,28 @@ export interface SyncableEntry {
   syncStatus?: EntrySyncStatus;
   syncError?: string;
   details?: Record<string, unknown> | null;
+  pendingSyncPatch?: object;
+}
+
+export interface CareEntryPendingDelete {
+  readonly __woofWatcherPendingDelete: "delete-v1";
+}
+
+export const CARE_ENTRY_PENDING_DELETE: CareEntryPendingDelete =
+  Object.freeze({
+    __woofWatcherPendingDelete: "delete-v1",
+  });
+
+export function isCareEntryPendingDelete(
+  value: unknown,
+): value is CareEntryPendingDelete {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    (value as Partial<CareEntryPendingDelete>)
+      .__woofWatcherPendingDelete === "delete-v1"
+  );
 }
 
 export type CareSyncOutboxStatus = "idle" | "syncing" | "needs-retry";
@@ -33,6 +57,7 @@ export interface CareSyncOutbox {
   retryable: number;
   retryableCreateIds: string[];
   retryableUpdateIds: string[];
+  reviewRequiredIds: string[];
   message: string;
   actionLabel: string;
 }
@@ -167,6 +192,144 @@ export function adoptServerEntry<T extends SyncableEntry>(
   };
 }
 
+type CareEntryPendingFields<T extends SyncableEntry> = Omit<
+  T,
+  "id" | "syncStatus" | "syncError" | "pendingSyncPatch"
+>;
+
+export type CareEntryPendingSyncPatch<T extends SyncableEntry> = {
+  [K in keyof CareEntryPendingFields<T>]?: K extends "details"
+    ? CareEntryPendingFields<T>[K]
+    :
+        | CareEntryPendingFields<T>[K]
+        | CareEntryPendingDelete;
+};
+
+function careEntryDetailValuesEqual(
+  left: unknown,
+  right: unknown,
+): boolean {
+  if (Object.is(left, right)) return true;
+  try {
+    return JSON.stringify(left) === JSON.stringify(right);
+  } catch {
+    return false;
+  }
+}
+
+export function diffCareEntryPendingDetails(
+  previous: Record<string, unknown> | null | undefined,
+  next: Record<string, unknown> | null | undefined,
+): Record<string, unknown> {
+  const before = previous ?? {};
+  const after = next ?? {};
+  const patch: Record<string, unknown> = {};
+  for (const key of new Set([
+    ...Object.keys(before),
+    ...Object.keys(after),
+  ])) {
+    // Revision is transport state, not an owner edit. Conflict recovery
+    // always derives it from the winning server row.
+    if (key === CARE_ENTRY_SYNC_REVISION_KEY) continue;
+    if (!Object.prototype.hasOwnProperty.call(after, key)) {
+      patch[key] = null;
+      continue;
+    }
+    if (!careEntryDetailValuesEqual(before[key], after[key])) {
+      patch[key] = after[key];
+    }
+  }
+  return patch;
+}
+
+export function mergeCareEntryPendingSyncPatch<
+  T extends SyncableEntry,
+>(
+  previous: CareEntryPendingSyncPatch<T> | null | undefined,
+  next: CareEntryPendingSyncPatch<T>,
+): CareEntryPendingSyncPatch<T> {
+  const merged = {
+    ...(previous ?? {}),
+  } as CareEntryPendingSyncPatch<T>;
+  const mergedRecord = merged as Record<string, unknown>;
+  for (const [key, value] of Object.entries(next)) {
+    // AsyncStorage serializes state as JSON, which drops properties whose
+    // value is undefined. Encode explicit top-level clears so they survive a
+    // restart and can still win during a later conflict rebase.
+    mergedRecord[key] =
+      key !== "details" && value === undefined
+        ? CARE_ENTRY_PENDING_DELETE
+        : value;
+  }
+  const previousDetails = previous?.details;
+  const nextHasDetails = Object.prototype.hasOwnProperty.call(
+    next,
+    "details",
+  );
+  if (
+    nextHasDetails &&
+    next.details &&
+    typeof next.details === "object" &&
+    !Array.isArray(next.details)
+  ) {
+    (
+      merged as {
+        details?: Record<string, unknown> | null;
+      }
+    ).details = {
+      ...(previousDetails &&
+      typeof previousDetails === "object" &&
+      !Array.isArray(previousDetails)
+        ? previousDetails
+        : {}),
+      ...(next.details as Record<string, unknown>),
+    };
+  }
+  return merged;
+}
+
+/**
+ * Replays only fields edited locally over the newest server row. This avoids
+ * resolving a 409 by writing an entire stale local snapshot over another
+ * caregiver's newer fields.
+ */
+export function rebaseCareEntryAfterConflict<
+  T extends SyncableEntry,
+>(
+  localEntry: T,
+  serverEntry: T,
+  pendingPatch: CareEntryPendingSyncPatch<T>,
+): T {
+  const adopted = adoptServerEntry(localEntry, serverEntry);
+  const pendingDetails =
+    pendingPatch.details &&
+    typeof pendingPatch.details === "object" &&
+    !Array.isArray(pendingPatch.details)
+      ? (pendingPatch.details as Record<string, unknown>)
+      : null;
+  const replayed = {
+    ...adopted,
+  } as unknown as Record<string, unknown>;
+  for (const [key, value] of Object.entries(pendingPatch)) {
+    if (key === "details") continue;
+    if (isCareEntryPendingDelete(value)) {
+      delete replayed[key];
+    } else {
+      replayed[key] = value;
+    }
+  }
+  replayed.id = serverEntry.id;
+  replayed.details = pendingDetails
+    ? {
+        ...(adopted.details ?? {}),
+        ...pendingDetails,
+      }
+    : adopted.details;
+  replayed.syncStatus = "pending";
+  replayed.syncError = undefined;
+  return replayed as unknown as T;
+}
+
 export function applyQueuedPatchToAcknowledgedEntry<
   T extends SyncableEntry,
 >(
@@ -186,14 +349,16 @@ export function applyQueuedPatchToAcknowledgedEntry<
 export function prepareCareEntryForOfflineEdit<T extends SyncableEntry>(
   entry: T,
   patch: Partial<T>,
+  pendingSyncPatch?: CareEntryPendingSyncPatch<T>,
 ): T {
   return {
     ...entry,
     ...patch,
+    ...(pendingSyncPatch ? { pendingSyncPatch } : {}),
     id: entry.id,
     syncStatus: "local",
     syncError: "Saved on this device.",
-  };
+  } as T;
 }
 
 export function recoverInterruptedCareEntryMutations<
@@ -277,6 +442,67 @@ export class CareSyncMutationTimeoutError extends Error {
     super(`Care entry sync timed out after ${timeoutMs}ms.`);
     this.name = "CareSyncMutationTimeoutError";
     this.timeoutMs = timeoutMs;
+  }
+}
+
+export class CareEntryConflictRetryError<TInput> extends Error {
+  readonly rebasedInput: TInput;
+  readonly originalError: unknown;
+
+  constructor(rebasedInput: TInput, originalError: unknown) {
+    super("Care entry conflict rebase retry failed.");
+    this.name = "CareEntryConflictRetryError";
+    this.rebasedInput = rebasedInput;
+    this.originalError = originalError;
+  }
+}
+
+export interface RetryCareEntryMutationAfterConflictInput<
+  TInput,
+  TServer,
+  TResult,
+> {
+  error: unknown;
+  input: TInput;
+  isConflict: (error: unknown) => boolean;
+  fetchCurrent: () => Promise<TServer | null | undefined>;
+  rebase: (input: TInput, server: TServer) => TInput | null;
+  mutate: (rebasedInput: TInput) => Promise<TResult>;
+}
+
+/**
+ * Fetches the winning server row after a 409, replays the durable local patch
+ * once, and preserves that rebased input if the retry itself fails.
+ */
+export async function retryCareEntryMutationAfterConflict<
+  TInput,
+  TServer,
+  TResult,
+>({
+  error,
+  input,
+  isConflict,
+  fetchCurrent,
+  rebase,
+  mutate,
+}: RetryCareEntryMutationAfterConflictInput<
+  TInput,
+  TServer,
+  TResult
+>): Promise<TResult> {
+  if (!isConflict(error)) throw error;
+  const current = await fetchCurrent();
+  if (!current) throw error;
+  const rebasedInput = rebase(input, current);
+  if (!rebasedInput) throw error;
+
+  try {
+    return await mutate(rebasedInput);
+  } catch (retryError) {
+    throw new CareEntryConflictRetryError(
+      rebasedInput,
+      retryError,
+    );
   }
 }
 
@@ -560,7 +786,6 @@ export function filterDiscardedServerEntries<
 export interface DiscardedServerEntryCleanupInput<
   T extends { id: string },
 > {
-  clientKey: string;
   rows: readonly T[];
   markDiscarded: (entryId: string) => Promise<void>;
   deleteEntry: (entryId: string) => Promise<void>;
@@ -571,7 +796,6 @@ export interface DiscardedServerEntryCleanupInput<
 export async function cleanupDiscardedServerEntryRows<
   T extends { id: string },
 >({
-  clientKey,
   rows,
   markDiscarded,
   deleteEntry,
@@ -592,9 +816,7 @@ export async function cleanupDiscardedServerEntryRows<
     }
   }
 
-  if (!allRemoved || !shouldContinue()) return false;
-  await clearDiscarded(clientKey);
-  return true;
+  return allRemoved && shouldContinue();
 }
 
 export function restoreEntryAfterDeleteFailure<T extends SyncableEntry>(
@@ -685,12 +907,53 @@ export function shouldRetryCreate(
 }
 
 export function shouldRetryUpdate(
-  entry: Pick<SyncableEntry, "id" | "syncStatus">,
+  entry: Pick<
+    SyncableEntry,
+    "id" | "syncStatus" | "pendingSyncPatch"
+  >,
 ): boolean {
   return (
     (entry.syncStatus === "failed" || entry.syncStatus === "local") &&
-    !shouldRetryCreate(entry)
+    !shouldRetryCreate(entry) &&
+    !!entry.pendingSyncPatch &&
+    Object.keys(entry.pendingSyncPatch).length > 0
   );
+}
+
+export function requiresCareEntrySyncReview(
+  entry: Pick<
+    SyncableEntry,
+    "id" | "syncStatus" | "pendingSyncPatch"
+  >,
+): boolean {
+  return (
+    (entry.syncStatus === "failed" || entry.syncStatus === "local") &&
+    !shouldRetryCreate(entry) &&
+    (!entry.pendingSyncPatch ||
+      Object.keys(entry.pendingSyncPatch).length === 0)
+  );
+}
+
+export type CareEntryEditSyncDisposition =
+  | "review-required"
+  | "queue"
+  | "local";
+
+/**
+ * Decides the persistence path before an owner edit is journaled. A legacy
+ * row without a complete field journal stays quarantined for review in both
+ * auth states; sign-out must never turn a partial edit into the row's entire
+ * conflict-recovery history.
+ */
+export function decideCareEntryEditSyncDisposition(
+  entry: Pick<
+    SyncableEntry,
+    "id" | "syncStatus" | "pendingSyncPatch"
+  >,
+  signedIn: boolean,
+): CareEntryEditSyncDisposition {
+  if (requiresCareEntrySyncReview(entry)) return "review-required";
+  return signedIn ? "queue" : "local";
 }
 
 function timeValue(entry: SyncableEntry): number {
@@ -702,7 +965,21 @@ function plural(value: number, singular: string, pluralValue = `${singular}s`) {
   return value === 1 ? singular : pluralValue;
 }
 
-function outboxMessage(retryable: number, pending: number): string {
+function outboxMessage(
+  retryable: number,
+  pending: number,
+  reviewRequired: number,
+): string {
+  if (reviewRequired > 0) {
+    const reviewMessage = `${reviewRequired} older care ${plural(
+      reviewRequired,
+      "change",
+    )} ${reviewRequired === 1 ? "is" : "are"} preserved on this device for support review.`;
+    if (retryable > 0 || pending > 0) {
+      return `${reviewMessage} ${retryable} can retry; ${pending} still syncing.`;
+    }
+    return reviewMessage;
+  }
   if (retryable > 0 && pending > 0) {
     return `${retryable} care ${plural(
       retryable,
@@ -722,7 +999,7 @@ function outboxItemMessage(entry: SyncableEntry, retryable: boolean): string {
   if (entry.syncStatus === "pending") return "Still syncing to the household.";
   if (entry.syncError) return entry.syncError;
   if (retryable) return "Ready to retry.";
-  return "Waiting for sync.";
+  return "Preserved on this device for support review before household sync.";
 }
 
 function formatCareSyncTime(value?: string): string | null {
@@ -854,12 +1131,25 @@ export function deriveCareSyncOutbox<T extends SyncableEntry>(
   const retryableUpdateIds = items
     .filter((item) => item.operation === "update" && item.retryable)
     .map((item) => item.id);
+  const reviewRequiredIds = items
+    .filter(
+      (item) =>
+        !item.retryable &&
+        item.status !== "pending" &&
+        item.operation === "update",
+    )
+    .map((item) => item.id);
   const retryable = retryableCreateIds.length + retryableUpdateIds.length;
   const pending = items.filter((item) => item.status === "pending").length;
   const failed = items.filter((item) => item.status === "failed").length;
   const local = items.filter((item) => item.status === "local").length;
+  const reviewRequired = reviewRequiredIds.length;
   const status: CareSyncOutboxStatus =
-    items.length === 0 ? "idle" : retryable > 0 ? "needs-retry" : "syncing";
+    items.length === 0
+      ? "idle"
+      : retryable > 0 || reviewRequired > 0
+        ? "needs-retry"
+        : "syncing";
 
   return {
     status,
@@ -871,9 +1161,16 @@ export function deriveCareSyncOutbox<T extends SyncableEntry>(
     retryable,
     retryableCreateIds,
     retryableUpdateIds,
-    message: outboxMessage(retryable, pending),
+    reviewRequiredIds,
+    message: outboxMessage(retryable, pending, reviewRequired),
     actionLabel:
-      status === "idle" ? "Synced" : retryable > 0 ? "Retry sync" : "Syncing",
+      status === "idle"
+        ? "Synced"
+        : retryable > 0
+          ? "Retry sync"
+          : reviewRequired > 0
+            ? "View saved changes"
+            : "Syncing",
   };
 }
 
@@ -918,13 +1215,16 @@ export function deriveCareSyncDashboard({
     };
   }
 
-  if (outbox.retryable > 0) {
+  if (outbox.status === "needs-retry") {
+    const canRetry = outbox.retryable > 0;
     return {
       status: "attention",
-      title: "Sync needs attention",
+      title: canRetry ? "Sync needs attention" : "Review saved changes",
       message: outbox.message,
-      nextStep: "Retry sync so every caregiver sees the latest care.",
-      actionLabel: "Retry sync",
+      nextStep: canRetry
+        ? "Retry sync so every caregiver sees the latest care."
+        : "Open the preserved entries to identify them. Contact support before enabling household sync for those older changes.",
+      actionLabel: canRetry ? "Retry sync" : "View saved changes",
       metrics,
     };
   }

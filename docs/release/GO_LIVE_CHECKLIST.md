@@ -11,7 +11,7 @@ Execution order across sections: A is done → C1-C5 (accounts must exist first)
 - [x] A3. v1 launch posture: local-first storage, no login required, no enabled cloud sync/push/live AI/payments/cloud storage, non-diagnostic health language, and Privacy & Safety export/deletion flows.
 - [x] A4. Legal documents drafted under **Pegasus Dreamscapes Corp** with monitored contact **apollo@pegasusdreamscapes.com**: `docs/legal/PRIVACY_POLICY.md` and `docs/legal/TERMS_OF_SERVICE.md`. Public privacy, support, and terms sections are live without login. Apollo still must ratify the launch effective date and governing-law choice (C1).
 - [x] A5. Store listing package drafted: `docs/release/STORE_LISTING.md` with name/subtitle/descriptions, keywords, category recommendation (Lifestyle), content-rating answers, Apple privacy label answers (Data Not Collected), Play Data safety answers, App Review notes, and the screenshot plan.
-- [x] A6. Verification infrastructure: 797-test focused suite, full workspace typecheck/build, 13-route runtime smoke, native QA matrices, a deterministic store-pack generator, and `docs/release/tools/validate-store-materials.mjs`. The root frozen lockfile also retains the Darwin binaries EAS needs for a reproducible macOS iOS build.
+- [x] A6. Verification infrastructure: 819-test focused suite, full workspace typecheck/build, 13-route runtime smoke, native QA matrices, a deterministic store-pack generator, and `docs/release/tools/validate-store-materials.mjs`. The root frozen lockfile also retains the Darwin binaries EAS needs for a reproducible macOS iOS build.
 
 ## B. Automated steps (run by anyone with the credentials, once C1-C6 exist)
 
