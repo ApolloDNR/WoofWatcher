@@ -533,3 +533,6 @@ review, and Apollo visual approval remain blocked.
   traversal while preserving the labeled gateway and care-start content.
 - Still blocked: native VoiceOver/TalkBack traversal, route-named iOS/Android
   Auth/Setup screenshots, Clerk/provider evidence, and Apollo approval.
+# 2026-07-31 Home backdrop accessibility boundary
+
+Source now excludes the decorative Home room/park backdrop from accessibility traversal. Apollo/native helpers still need to capture real VoiceOver/TalkBack traversal and route-named iOS/Android proof; source and CI do not satisfy that launch gate.

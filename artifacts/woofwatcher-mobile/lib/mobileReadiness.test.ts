@@ -5364,6 +5364,16 @@ test("keeps the Auth gateway stage dog out of accessibility traversal", () => {
   );
 });
 
+test("keeps the Home room backdrop out of accessibility traversal", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+
+  assert.match(
+    home,
+    /<Image\s+accessible=\{false\}\s+source=\{[\s\S]*?HOME_IMMERSIVE_ROOM_DAY[\s\S]*?style=\{s\.fullBleedArt\}/,
+    "the decorative Home room backdrop must not create an unlabeled stop before the labeled care console and care-twin controls",
+  );
+});
+
 test("keeps More rooted in a live pixel launch command stage", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

@@ -523,3 +523,7 @@ The decorative Phoenix image in the labeled Auth/Setup gateway is excluded
 from the accessibility tree. This is source-level protection only; native
 VoiceOver/TalkBack traversal, Clerk/provider proof, and route-named iOS/Android
 Auth/Setup evidence remain open.
+# 2026-07-31 Home backdrop accessibility gate
+
+- PASS (source): the decorative Home room/park backdrop is excluded from accessibility traversal and the labeled care controls retain responsibility for meaning.
+- OPEN (native): VoiceOver/TalkBack traversal and route-named iOS/Android evidence.

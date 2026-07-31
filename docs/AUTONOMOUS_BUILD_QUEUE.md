@@ -1860,3 +1860,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   `91080857807`, passed implementation/docs commit `8acdb169`.
 - NEXT: Native VoiceOver/TalkBack traversal and route-named iOS/Android Story
   evidence remain required.
+# 2026-07-31 Home room accessibility hardening
+
+- Marked the full-bleed Home room/park backdrop decorative so VoiceOver and TalkBack do not encounter an unlabeled image before the labeled care console and care-twin controls.
+- Added a red-first mobile readiness contract. Source coverage does not replace native screen-reader traversal or route-named iOS/Android proof.

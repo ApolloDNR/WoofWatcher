@@ -2987,3 +2987,6 @@ The surrounding gateway, speech bubble, care-start copy, proof action, and
 form already carry the meaningful account/setup experience; exposing the raw
 sprite risks an unlabeled duplicate stop. Native traversal and provider
 readiness are not inferred from this source guard.
+# 2026-07-31 - Treat the Home room backdrop as decorative
+
+The full-bleed room/park art establishes atmosphere but does not add care information beyond the labeled Home console and care-twin controls. Its Image is excluded from accessibility traversal to avoid an unlabeled duplicate stop; native traversal remains required before release approval.

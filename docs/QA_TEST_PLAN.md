@@ -2724,3 +2724,6 @@ Dog ID PNG/share flows before approving Records.
   meaningful account/setup narration.
 - Still required: native VoiceOver/TalkBack traversal and route-named
   iOS/Android Auth/Setup evidence.
+# 2026-07-31 Home room accessibility source check
+
+- Static readiness coverage requires the Home full-bleed room/park Image to remain `accessible={false}`. Native VoiceOver/TalkBack traversal remains open.

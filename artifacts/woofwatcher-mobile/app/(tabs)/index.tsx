@@ -1620,6 +1620,7 @@ export default function HomeScreen() {
           band; a soft scrim quiets the lower floor so the floating console
           stays legible while the background still peeks through. */}
       <Image
+        accessible={false}
         source={
           openWalkSession
             ? colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours())
