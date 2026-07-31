@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWoofAuth } from "@/lib/auth";
-import { isOwnerOpsBuild } from "@/lib/buildChannel";
+import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 import {
   deriveCareReminderCenter,
   deriveHouseholdResponsibility,
@@ -280,7 +280,8 @@ export default function CalendarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const ownerOps = isOwnerOpsBuild();
+  const consumerSurfacePolicy = getConsumerSurfacePolicy();
+  const ownerOps = consumerSurfacePolicy.ownerOps;
   const { state, updateCareDoc, addEntry, deleteEntry } = useCare();
 
   const { getToken } = useWoofAuth();
@@ -1443,93 +1444,98 @@ export default function CalendarScreen() {
             </View>
           </BoardCard>
 
-          {/* WoofGuide discovery banner */}
-          <Pressable
-            accessibilityRole="button"
-            aria-expanded={discoverOpen}
-            onPress={() => { Haptics.selectionAsync(); setDiscoverOpen((v) => !v); }}
-            style={[s.discoverCard, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
-          >
-            <View style={s.discoverIcon}>
-              <Ionicons name="sparkles" size={20} color={colors.primaryForeground} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.discoverTitle, { color: colors.primaryForeground, fontFamily: DISPLAY_SEMI }]}>Discover nearby dog events</Text>
-              <Text style={[s.discoverSub, { color: colors.primaryForeground, opacity: 0.85, fontFamily: "Inter_400Regular" }]}>WoofGuide curates outings for {resolvePetName(profile.name)}</Text>
-            </View>
-            <Ionicons name={discoverOpen ? "chevron-up" : "chevron-down"} size={20} color={colors.primaryForeground} />
-          </Pressable>
+          {consumerSurfacePolicy.discoverEvents ? (
+            <>
+              {/* Server-backed discovery stays available for internal QA but
+                  is not a promise in the free, local-first store build. */}
+              <Pressable
+                accessibilityRole="button"
+                aria-expanded={discoverOpen}
+                onPress={() => { Haptics.selectionAsync(); setDiscoverOpen((v) => !v); }}
+                style={[s.discoverCard, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+              >
+                <View style={s.discoverIcon}>
+                  <Ionicons name="sparkles" size={20} color={colors.primaryForeground} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.discoverTitle, { color: colors.primaryForeground, fontFamily: DISPLAY_SEMI }]}>Discover nearby dog events</Text>
+                  <Text style={[s.discoverSub, { color: colors.primaryForeground, opacity: 0.85, fontFamily: "Inter_400Regular" }]}>WoofGuide curates outings for {resolvePetName(profile.name)}</Text>
+                </View>
+                <Ionicons name={discoverOpen ? "chevron-up" : "chevron-down"} size={20} color={colors.primaryForeground} />
+              </Pressable>
 
-          {discoverOpen && (
-            <View style={[s.discoverPanel, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
-              <View style={s.discoverInputRow}>
-                <Ionicons name="location-outline" size={18} color={colors.mutedForeground} />
-                <TextInput
-                  value={location}
-                  onChangeText={setLocation}
-                  placeholder="Your city or area"
-                  placeholderTextColor={colors.mutedForeground}
-                  style={[s.discoverInput, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
-                  returnKeyType="search"
-                  onSubmitEditing={discover}
-                />
-                <Pressable onPress={discover} disabled={loadingEvents} style={[s.discoverGo, { backgroundColor: colors.copper }]}>
-                  {loadingEvents ? <ActivityIndicator size="small" color="#fff" /> : <Text style={[s.discoverGoText, { fontFamily: "Inter_700Bold" }]}>Find</Text>}
-                </Pressable>
-              </View>
+              {discoverOpen && (
+                <View style={[s.discoverPanel, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
+                  <View style={s.discoverInputRow}>
+                    <Ionicons name="location-outline" size={18} color={colors.mutedForeground} />
+                    <TextInput
+                      value={location}
+                      onChangeText={setLocation}
+                      placeholder="Your city or area"
+                      placeholderTextColor={colors.mutedForeground}
+                      style={[s.discoverInput, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+                      returnKeyType="search"
+                      onSubmitEditing={discover}
+                    />
+                    <Pressable onPress={discover} disabled={loadingEvents} style={[s.discoverGo, { backgroundColor: colors.copper }]}>
+                      {loadingEvents ? <ActivityIndicator size="small" color="#fff" /> : <Text style={[s.discoverGoText, { fontFamily: "Inter_700Bold" }]}>Find</Text>}
+                    </Pressable>
+                  </View>
 
-              {suggestions.length === 0 && discoverStatus !== "idle" && (
-                <Text
-                  aria-live="polite"
-                  style={[s.discoverHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium", marginTop: 6 }]}
-                >
-                  {discoverStatus === "empty"
-                    ? `No dog events found near "${location.trim() || "your area"}" yet - try a nearby city, or plan your own outing below.`
-                    : "Couldn't reach event search - check your connection and try again."}
-                </Text>
-              )}
-
-              {suggestions.length > 0 && (
-                <View style={{ marginTop: 4 }}>
-                  {discoverMode === "local" && (
-                    <Text style={[s.discoverHint, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                      Curated ideas to inspire outings - confirm details before you go.
+                  {suggestions.length === 0 && discoverStatus !== "idle" && (
+                    <Text
+                      aria-live="polite"
+                      style={[s.discoverHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium", marginTop: 6 }]}
+                    >
+                      {discoverStatus === "empty"
+                        ? `No dog events found near "${location.trim() || "your area"}" yet - try a nearby city, or plan your own outing below.`
+                        : "Couldn't reach event search - check your connection and try again."}
                     </Text>
                   )}
-                  {suggestions.map((sug, i) => {
-                    const icon = EVENT_ICON[sug.type] ?? "calendar";
-                    const added = isAdded(sug);
-                    return (
-                      <View key={`${sug.title}-${i}`} style={[s.sugRow, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                        <View style={[s.sugIcon, { backgroundColor: colors.sage + "16" }]}>
-                          <Ionicons name={icon} size={18} color={colors.sage} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={[s.sugTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{sug.title}</Text>
-                          <Text style={[s.sugMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                            {dayLabel(sug.date)}{sug.time ? ` - ${sug.time}` : ""}
-                          </Text>
-                          {sug.note ? (
-                            <Text numberOfLines={2} style={[s.sugNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{sug.note}</Text>
-                          ) : null}
-                        </View>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={added ? `${sug.title} added` : `Add ${sug.title}`}
-                          aria-disabled={added}
-                          onPress={() => !added && addSuggestion(sug)}
-                          hitSlop={MOBILE_INLINE_HIT_SLOP}
-                          style={[s.sugAdd, { backgroundColor: added ? colors.sage + "22" : colors.primary }]}
-                        >
-                          <Ionicons name={added ? "checkmark" : "add"} size={18} color={added ? colors.sage : colors.primaryForeground} />
-                        </Pressable>
-                      </View>
-                    );
-                  })}
+
+                  {suggestions.length > 0 && (
+                    <View style={{ marginTop: 4 }}>
+                      {discoverMode === "local" && (
+                        <Text style={[s.discoverHint, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                          Curated ideas to inspire outings - confirm details before you go.
+                        </Text>
+                      )}
+                      {suggestions.map((sug, i) => {
+                        const icon = EVENT_ICON[sug.type] ?? "calendar";
+                        const added = isAdded(sug);
+                        return (
+                          <View key={`${sug.title}-${i}`} style={[s.sugRow, i < suggestions.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+                            <View style={[s.sugIcon, { backgroundColor: colors.sage + "16" }]}>
+                              <Ionicons name={icon} size={18} color={colors.sage} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={[s.sugTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{sug.title}</Text>
+                              <Text style={[s.sugMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                                {dayLabel(sug.date)}{sug.time ? ` - ${sug.time}` : ""}
+                              </Text>
+                              {sug.note ? (
+                                <Text numberOfLines={2} style={[s.sugNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{sug.note}</Text>
+                              ) : null}
+                            </View>
+                            <Pressable
+                              accessibilityRole="button"
+                              accessibilityLabel={added ? `${sug.title} added` : `Add ${sug.title}`}
+                              aria-disabled={added}
+                              onPress={() => !added && addSuggestion(sug)}
+                              hitSlop={MOBILE_INLINE_HIT_SLOP}
+                              style={[s.sugAdd, { backgroundColor: added ? colors.sage + "22" : colors.primary }]}
+                            >
+                              <Ionicons name={added ? "checkmark" : "add"} size={18} color={added ? colors.sage : colors.primaryForeground} />
+                            </Pressable>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
                 </View>
               )}
-            </View>
-          )}
+            </>
+          ) : null}
 
           {/* Upcoming one-off events */}
           <BoardCard enter={3} style={s.upcomingBoardCard}>
@@ -1541,7 +1547,9 @@ export default function CalendarScreen() {
               <View style={[s.emptyPanel, { backgroundColor: colors.background }]}>
                 <Ionicons name="calendar-outline" size={30} color={colors.mutedForeground} />
                 <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  No events planned. Add one or discover nearby outings above.
+                  {consumerSurfacePolicy.discoverEvents
+                    ? "No events planned. Add one or discover nearby outings above."
+                    : "No outings planned. Add one to keep walks, appointments, and adventures in one place."}
                 </Text>
               </View>
             ) : (

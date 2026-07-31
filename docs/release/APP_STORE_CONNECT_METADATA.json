@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "submissionState": "BLOCKED_PENDING_OWNER_AND_NATIVE_PROOF",
+  "canonicalCopySource": "docs/release/STORE_LISTING.md",
+  "appRecord": {
+    "platform": "IOS",
+    "name": "WoofWatcher",
+    "primaryLanguage": "en-US",
+    "bundleId": "com.pegasusdreamscapes.woofwatcher",
+    "sku": "woofwatcher-ios-v1",
+    "primaryCategory": "LIFESTYLE",
+    "secondaryCategory": null,
+    "price": "FREE",
+    "publisher": "Pegasus Dreamscapes Corp",
+    "copyright": "2026 Pegasus Dreamscapes Corp"
+  },
+  "version": {
+    "versionString": "1.0.0",
+    "initialBuildNumber": "1",
+    "buildNumberManagement": "EAS_REMOTE_AUTO_INCREMENT",
+    "subtitle": "Real care. Pixel heart.",
+    "keywords": "dog,pet,puppy,tracker,log,routine,journal,health,potty,feeding,walk,medication,sitter,vet,companion",
+    "descriptionSource": "docs/release/STORE_LISTING.md#full-description-app-store-and-play-shared-base",
+    "promotionalText": null,
+    "whatsNew": null,
+    "releaseOption": "MANUAL"
+  },
+  "urls": {
+    "privacyPolicy": "https://woofwatcher-support.paoloaduran.chatgpt.site/#privacy",
+    "support": "https://woofwatcher-support.paoloaduran.chatgpt.site/#support",
+    "terms": "https://woofwatcher-support.paoloaduran.chatgpt.site/#terms",
+    "marketing": null,
+    "verifiedPublic": true
+  },
+  "review": {
+    "firstName": "Paolo",
+    "lastName": "Duran",
+    "email": "apollo@pegasusdreamscapes.com",
+    "phone": null,
+    "demoAccountRequired": false,
+    "notesSource": "docs/release/STORE_LISTING.md#app-review-notes-paste-into-app-store-connect-notes-and-play-app-access"
+  },
+  "privacy": {
+    "nutritionLabel": "DATA_NOT_COLLECTED",
+    "tracking": false,
+    "privacyManifestCollectedDataTypes": [],
+    "condition": "Valid only while the release has no remote map requests, analytics, crash SDK, ads, accounts, sync, live AI, or payments."
+  },
+  "ageRating": {
+    "expectedGlobalRating": "13+",
+    "healthOrWellnessTopics": true,
+    "medicalOrTreatmentInformation": "INFREQUENT",
+    "unrestrictedWebAccess": false,
+    "socialMedia": false,
+    "socialMediaDisabledForUsersUnder13": false,
+    "userGeneratedContent": false,
+    "messagingOrChat": false,
+    "advertising": false,
+    "gambling": false,
+    "contests": "NONE",
+    "note": "Use App Store Connect's calculated rating; do not override downward."
+  },
+  "exportCompliance": {
+    "usesNonExemptEncryption": false
+  },
+  "ownerInputs": {
+    "appStoreConnectAppleId": null,
+    "appleTeamId": null,
+    "easProjectId": null,
+    "reviewPhone": null,
+    "legalEffectiveDateConfirmed": false,
+    "governingLawConfirmed": false,
+    "contentRightsConfirmed": false
+  },
+  "nativeProof": {
+    "signedTestFlightBuildInstalled": false,
+    "physicalIPhoneMatrixPassed": false,
+    "apolloApprovedExactBuild": false
+  }
+}

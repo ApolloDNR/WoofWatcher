@@ -38,14 +38,14 @@ import { useColors } from "@/hooks/useColors";
 import {
   clerkProxyUrl,
   clerkPublishableKey,
-  isClerkConfigured,
+  isClerkEnabledForBuild,
   useWoofAuth,
 } from "@/lib/auth";
 
 SplashScreen.preventAutoHideAsync();
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
-if (domain) setBaseUrl(`https://${domain}`);
+if (isClerkEnabledForBuild && domain) setBaseUrl(`https://${domain}`);
 
 const queryClient = new QueryClient();
 
@@ -68,7 +68,7 @@ function RootLayoutNav() {
   // in the web preview / simulator without logging in on every reload. Real
   // production builds (where __DEV__ is false) always enforce authentication.
   useEffect(() => {
-    if (!isClerkConfigured) {
+    if (!isClerkEnabledForBuild) {
       if (segments[0] === "(auth)") router.replace("/(tabs)");
       return;
     }
@@ -361,7 +361,7 @@ export default function RootLayout() {
     </LinkPreviewContextProvider>
   );
 
-  if (!isClerkConfigured || !clerkPublishableKey) return app;
+  if (!isClerkEnabledForBuild || !clerkPublishableKey) return app;
 
   return (
     <ClerkProvider

@@ -110,6 +110,37 @@ export interface CareEntryRefreshPlanInput {
   latestSyncedAt?: string;
 }
 
+const DEVICE_ONLY_CARE_DETAIL_KEYS = ["route", "routeDistanceM"] as const;
+
+/**
+ * The exact GPS trace and its GPS-derived distance stay in the device cache.
+ * Care-entry sync may still carry non-location walk context such as the
+ * owner-entered route name, duration, social outcome, and notes.
+ */
+export function sanitizeCareEntryDetailsForSync(
+  details: Record<string, unknown> | null | undefined,
+): Record<string, unknown> {
+  const shareable = { ...(details ?? {}) };
+  for (const key of DEVICE_ONLY_CARE_DETAIL_KEYS) {
+    delete shareable[key];
+  }
+  return shareable;
+}
+
+function preserveDeviceOnlyCareDetails(
+  local: Record<string, unknown> | null | undefined,
+  server: Record<string, unknown> | null | undefined,
+): Record<string, unknown> | null | undefined {
+  const merged = server == null ? server : { ...server };
+  let next = merged;
+  for (const key of DEVICE_ONLY_CARE_DETAIL_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(local ?? {}, key)) continue;
+    if (next == null) next = {};
+    next[key] = local![key];
+  }
+  return next;
+}
+
 export function withSyncedStatus<T extends SyncableEntry>(
   entries: readonly T[],
 ): Array<T & { syncStatus: "synced"; syncError: undefined }> {
@@ -297,7 +328,8 @@ export function deriveCareSyncOutbox<T extends SyncableEntry>(
         title: entry.title?.trim() || "Care change",
         occurredAt: entry.occurredAt ?? "",
         status: entry.syncStatus ?? "unknown",
-        operation: retryableCreate || entry.id.startsWith("temp_") ? "create" : "update",
+        operation:
+          retryableCreate || entry.id.startsWith("temp_") ? "create" : "update",
         retryable,
         message: outboxItemMessage(entry, retryable),
         syncError: entry.syncError,
@@ -327,7 +359,8 @@ export function deriveCareSyncOutbox<T extends SyncableEntry>(
     retryableCreateIds,
     retryableUpdateIds,
     message: outboxMessage(retryable, pending),
-    actionLabel: status === "idle" ? "Synced" : retryable > 0 ? "Retry sync" : "Syncing",
+    actionLabel:
+      status === "idle" ? "Synced" : retryable > 0 ? "Retry sync" : "Syncing",
   };
 }
 
@@ -365,7 +398,8 @@ export function deriveCareSyncDashboard({
       status: "loading",
       title: "Opening care cache",
       message: "Checking saved care before household sync starts.",
-      nextStep: "WoofWatcher will show retry options if anything needs attention.",
+      nextStep:
+        "WoofWatcher will show retry options if anything needs attention.",
       actionLabel: "Refresh",
       metrics,
     };
@@ -387,7 +421,8 @@ export function deriveCareSyncDashboard({
       status: "syncing",
       title: "Syncing household care",
       message: outbox.message,
-      nextStep: "Keep WoofWatcher open while the latest care reaches the household.",
+      nextStep:
+        "Keep WoofWatcher open while the latest care reaches the household.",
       actionLabel: "Syncing",
       metrics,
     };
@@ -417,14 +452,31 @@ export function mergeServerAndLocalEntries<T extends SyncableEntry>(
   const serverClientKeys = new Set(
     serverEntries
       .map((entry) => entry.details?.clientKey)
-      .filter((key): key is string => typeof key === "string" && key.length > 0),
+      .filter(
+        (key): key is string => typeof key === "string" && key.length > 0,
+      ),
   );
   const unsyncedLocal = localEntries.filter(
     (entry) => isUnsyncedEntry(entry) && !serverClientKeys.has(entry.id),
   );
   const localIds = new Set(unsyncedLocal.map((entry) => entry.id));
+  const localById = new Map(localEntries.map((entry) => [entry.id, entry]));
   const serverSynced = withSyncedStatus(
-    serverEntries.filter((entry) => !localIds.has(entry.id)),
+    serverEntries
+      .filter((entry) => !localIds.has(entry.id))
+      .map((entry) => {
+        const clientKey = entry.details?.clientKey;
+        const local =
+          localById.get(entry.id) ??
+          (typeof clientKey === "string"
+            ? localById.get(clientKey)
+            : undefined);
+        if (!local) return entry;
+        return {
+          ...entry,
+          details: preserveDeviceOnlyCareDetails(local.details, entry.details),
+        };
+      }),
   );
 
   return [...unsyncedLocal, ...serverSynced].sort(

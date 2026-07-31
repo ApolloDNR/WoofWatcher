@@ -196,6 +196,7 @@ test("keeps a zero-log day at an honest 0 Care IQ instead of sync filler", () =>
 test("penalizes sparse, private, failed, and overdue care records", () => {
   const intelligence = deriveCareIntelligence({
     now: NOW,
+    providerSyncEnabled: true,
     routines: [
       { id: "breakfast", label: "Breakfast", type: "meal", time: "8:00 AM", owner: "Emma" },
       { id: "walk-am", label: "Morning Walk", type: "walk", time: "9:00 AM", owner: "Apollo" },
@@ -228,4 +229,43 @@ test("penalizes sparse, private, failed, and overdue care records", () => {
   assert.ok(intelligence.score < 60);
   assert.ok(intelligence.openLoops.some((loop) => loop.kind === "failed-sync"));
   assert.ok(intelligence.openLoops.some((loop) => loop.kind === "overdue-routine"));
+});
+
+test("treats local and stale failed statuses as complete saves without a provider", () => {
+  const intelligence = deriveCareIntelligence({
+    now: NOW,
+    providerSyncEnabled: false,
+    entries: [
+      {
+        id: "local-meal",
+        type: "meal",
+        title: "Breakfast",
+        caregiver: "Emma",
+        occurredAt: "2026-06-06T17:30:00.000Z",
+        syncStatus: "local",
+        details: {
+          mealCompletion: "complete",
+          servingAmount: "1 cup",
+          householdVisible: true,
+        },
+      },
+      {
+        id: "stale-failed-note",
+        type: "note",
+        title: "Care note",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-06T17:35:00.000Z",
+        syncStatus: "failed",
+        syncError: "Network unavailable",
+        details: { householdVisible: true },
+      },
+    ],
+  });
+
+  assert.equal(intelligence.syncScore, 100);
+  assert.notEqual(intelligence.nextAction.kind, "retry-sync");
+  assert.equal(
+    intelligence.openLoops.some((loop) => loop.kind === "failed-sync"),
+    false,
+  );
 });

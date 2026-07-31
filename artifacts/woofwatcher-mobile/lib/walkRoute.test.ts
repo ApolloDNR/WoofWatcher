@@ -4,7 +4,6 @@ import { test } from "node:test";
 import {
   WALK_ROUTE_MAX_POINTS,
   cancelWalkRouteCapture,
-  computeTrailTiles,
   finishWalkRouteCapture,
   fitRouteViewport,
   formatRouteDistanceMiles,
@@ -96,7 +95,10 @@ test("simplifyRoute collapses collinear points but keeps real corners", () => {
   }
   const simplifiedLine = simplifyRoute(line);
   assert.equal(simplifiedLine[0], line[0]);
-  assert.equal(simplifiedLine[simplifiedLine.length - 1], line[line.length - 1]);
+  assert.equal(
+    simplifiedLine[simplifiedLine.length - 1],
+    line[line.length - 1],
+  );
   assert.ok(
     simplifiedLine.length <= 3,
     `straight line should collapse, got ${simplifiedLine.length} points`,
@@ -137,10 +139,16 @@ test("simplifyRoute caps long zigzag walks at 200 points, endpoints intact", () 
   );
   assert.ok(simplified.length >= 2);
   assert.deepEqual(simplified[0], zigzag[0]);
-  assert.deepEqual(simplified[simplified.length - 1], zigzag[zigzag.length - 1]);
+  assert.deepEqual(
+    simplified[simplified.length - 1],
+    zigzag[zigzag.length - 1],
+  );
 
   // Short routes pass through untouched apart from collinear cleanup.
-  const short = [point(SF.lat, SF.lon, 0), point(SF.lat + 0.001, SF.lon + 0.001, 60_000)];
+  const short = [
+    point(SF.lat, SF.lon, 0),
+    point(SF.lat + 0.001, SF.lon + 0.001, 60_000),
+  ];
   assert.deepEqual(simplifyRoute(short), short);
 });
 
@@ -199,45 +207,32 @@ test("fitRouteViewport clamps zoom to 14-17 and centers on the route", () => {
   assert.equal(fitRouteViewport(tiny, 0, 0), null);
 });
 
-test("computeTrailTiles covers the viewport with correctly placed OSM tiles", () => {
+test("private route projection keeps the GPS shape inside the local canvas", () => {
   const route = [
     point(SF.lat, SF.lon, 0),
+    point(SF.lat + latDegrees(180), SF.lon + 0.001, 300_000),
     point(SF.lat + latDegrees(400), SF.lon + 0.004, 600_000),
   ];
   const width = 358;
   const height = 286;
   const viewport = fitRouteViewport(route, width, height);
   assert.ok(viewport);
-  const tiles = computeTrailTiles(viewport, width, height);
-  assert.ok(tiles.length >= 4 && tiles.length <= 12, `got ${tiles.length} tiles`);
 
-  for (const tile of tiles) {
-    assert.match(
-      tile.uri,
-      new RegExp(`^https://tile\\.openstreetmap\\.org/${viewport.zoom}/\\d+/\\d+\\.png$`),
-    );
-    // Every tile must overlap the view.
-    assert.ok(tile.left < width && tile.left + 256 > 0);
-    assert.ok(tile.top < height && tile.top + 256 > 0);
-    // Tile offsets are exact multiples of 256 apart from the shared origin.
-    assert.ok(Math.abs((tile.left - tiles[0].left) % 256) < 1e-6);
-    assert.ok(Math.abs((tile.top - tiles[0].top) % 256) < 1e-6);
+  const projected = route.map((point) =>
+    projectRoutePoint(point, viewport, width, height),
+  );
+  for (const point of projected) {
+    assert.ok(point.x >= 28 && point.x <= width - 28);
+    assert.ok(point.y >= 28 && point.y <= height - 28);
   }
 
-  // The full view area is covered by the tile grid.
-  const minLeft = Math.min(...tiles.map((tile) => tile.left));
-  const maxRight = Math.max(...tiles.map((tile) => tile.left + 256));
-  const minTop = Math.min(...tiles.map((tile) => tile.top));
-  const maxBottom = Math.max(...tiles.map((tile) => tile.top + 256));
-  assert.ok(minLeft <= 0 && maxRight >= width);
-  assert.ok(minTop <= 0 && maxBottom >= height);
-
-  // Route points project inside the padded view.
-  for (const p of route) {
-    const projected = projectRoutePoint(p, viewport, width, height);
-    assert.ok(projected.x >= 0 && projected.x <= width);
-    assert.ok(projected.y >= 0 && projected.y <= height);
-  }
+  // The canvas preserves travel direction and each real corner instead of
+  // replacing the route with a generic decorative line.
+  assert.ok(projected[0].x < projected[1].x);
+  assert.ok(projected[1].x < projected[2].x);
+  assert.ok(projected[0].y > projected[1].y);
+  assert.ok(projected[1].y > projected[2].y);
+  assert.notDeepEqual(projected[0], projected[projected.length - 1]);
 });
 
 test("recorder degrades to a no-op outside web/native runtimes", async () => {

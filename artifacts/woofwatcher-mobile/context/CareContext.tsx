@@ -29,6 +29,7 @@ import {
   deriveCareSyncOutbox,
   mergeServerAndLocalEntries,
   reconcileCareDocFromServer,
+  sanitizeCareEntryDetailsForSync,
   shouldRetryCreate,
   shouldRetryUpdate,
   type CareSyncOutbox,
@@ -387,7 +388,7 @@ function toEntry(c: ApiCareEntry): Entry {
 }
 
 function toCreateInput(e: Omit<Entry, "id">, clientKey?: string): CareEntryInput {
-  const details: { [key: string]: unknown } = { ...(e.details ?? {}) };
+  const details = sanitizeCareEntryDetailsForSync(e.details);
   if (e.title) details.title = e.title;
   if (e.durationMinutes != null) details.durationMinutes = e.durationMinutes;
   if (e.amount != null) details.amount = e.amount;
@@ -410,7 +411,7 @@ function toCreateInput(e: Omit<Entry, "id">, clientKey?: string): CareEntryInput
 // Build a full update payload from a merged entry so a partial patch never
 // clobbers server-side details (PATCH replaces the details object wholesale).
 function toUpdateInput(e: Entry): CareEntryUpdate {
-  const details: { [key: string]: unknown } = { ...(e.details ?? {}) };
+  const details = sanitizeCareEntryDetailsForSync(e.details);
   if (e.title) details.title = e.title;
   if (e.durationMinutes != null) details.durationMinutes = e.durationMinutes;
   if (e.amount != null) details.amount = e.amount;
@@ -696,7 +697,10 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       );
       createCareEntry(toCreateInput(entry, tempId))
         .then((created) => {
-          const real = toEntry(created);
+          const [real] = mergeServerAndLocalEntries(
+            [{ id: tempId, ...entry, syncStatus: "pending" }],
+            [toEntry(created)],
+          );
           realIdByTemp.current.set(tempId, real.id);
           // Apply any patch that landed while the create was in flight.
           const queued = pendingPatch.current.get(tempId);
@@ -750,7 +754,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       );
       updateCareEntry(id, toUpdateInput(entry))
         .then((updated) => {
-          const synced = toEntry(updated);
+          const [synced] = mergeServerAndLocalEntries([entry], [toEntry(updated)]);
           setEntries((prev) => prev.map((e) => (e.id === id ? synced : e)));
           queryClient.invalidateQueries({
             queryKey: getListCareEntriesQueryKey(),
@@ -919,7 +923,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           ? undefined
           : realId.startsWith("temp_")
             ? current.syncError
-            : "Saved offline. Sign in or refresh to sync.",
+            : "Saved on this device.",
       };
       entriesRef.current = entriesRef.current.map((e) =>
         e.id === realId ? merged : e,
@@ -936,7 +940,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       }
       updateCareEntry(realId, toUpdateInput(merged))
         .then((updated) => {
-          const synced = toEntry(updated);
+          const [synced] = mergeServerAndLocalEntries([merged], [toEntry(updated)]);
           setEntries((prev) =>
             prev.map((e) => (e.id === realId ? synced : e)),
           );

@@ -12,6 +12,7 @@ import {
   mergeServerAndLocalEntries,
   withSyncedStatus,
 } from "./careSync.ts";
+import * as careSyncModule from "./careSync.ts";
 
 test("marks server entries as synced", () => {
   const [entry] = withSyncedStatus([
@@ -25,7 +26,10 @@ test("recognizes local, pending, failed, and temp entries as unsynced", () => {
   assert.equal(isUnsyncedEntry({ id: "temp_1", syncStatus: "pending" }), true);
   assert.equal(isUnsyncedEntry({ id: "local_1", syncStatus: "local" }), true);
   assert.equal(isUnsyncedEntry({ id: "failed_1", syncStatus: "failed" }), true);
-  assert.equal(isUnsyncedEntry({ id: "server_1", syncStatus: "synced" }), false);
+  assert.equal(
+    isUnsyncedEntry({ id: "server_1", syncStatus: "synced" }),
+    false,
+  );
 });
 
 test("keeps unsynced local entries when server rows refresh", () => {
@@ -61,7 +65,13 @@ test("keeps unsynced local entries when server rows refresh", () => {
 
 test("sorts merged entries newest first", () => {
   const merged = mergeServerAndLocalEntries(
-    [{ id: "temp_old", occurredAt: "2026-06-06T08:00:00.000Z", syncStatus: "local" }],
+    [
+      {
+        id: "temp_old",
+        occurredAt: "2026-06-06T08:00:00.000Z",
+        syncStatus: "local",
+      },
+    ],
     [{ id: "server_new", occurredAt: "2026-06-06T12:00:00.000Z" }],
   );
 
@@ -119,13 +129,31 @@ test("keeps care-entry refresh full until the API has a real update cursor", () 
 test("separates create retries from update retries", () => {
   assert.equal(shouldRetryCreate({ id: "temp_1", syncStatus: "failed" }), true);
   assert.equal(shouldRetryCreate({ id: "local_1", syncStatus: "local" }), true);
-  assert.equal(shouldRetryCreate({ id: "server_1", syncStatus: "failed" }), false);
-  assert.equal(shouldRetryCreate({ id: "server_1", syncStatus: "local" }), false);
+  assert.equal(
+    shouldRetryCreate({ id: "server_1", syncStatus: "failed" }),
+    false,
+  );
+  assert.equal(
+    shouldRetryCreate({ id: "server_1", syncStatus: "local" }),
+    false,
+  );
 
-  assert.equal(shouldRetryUpdate({ id: "server_1", syncStatus: "failed" }), true);
-  assert.equal(shouldRetryUpdate({ id: "server_1", syncStatus: "local" }), true);
-  assert.equal(shouldRetryUpdate({ id: "temp_1", syncStatus: "failed" }), false);
-  assert.equal(shouldRetryUpdate({ id: "server_2", syncStatus: "synced" }), false);
+  assert.equal(
+    shouldRetryUpdate({ id: "server_1", syncStatus: "failed" }),
+    true,
+  );
+  assert.equal(
+    shouldRetryUpdate({ id: "server_1", syncStatus: "local" }),
+    true,
+  );
+  assert.equal(
+    shouldRetryUpdate({ id: "temp_1", syncStatus: "failed" }),
+    false,
+  );
+  assert.equal(
+    shouldRetryUpdate({ id: "server_2", syncStatus: "synced" }),
+    false,
+  );
 });
 
 test("derives a durable outbox from unsynced care entries", () => {
@@ -179,7 +207,10 @@ test("derives a durable outbox from unsynced care entries", () => {
       ["temp_pending", "create", false],
     ],
   );
-  assert.equal(outbox.message, "3 care changes need retry. 1 is still syncing.");
+  assert.equal(
+    outbox.message,
+    "3 care changes need retry. 1 is still syncing.",
+  );
   assert.equal(outbox.actionLabel, "Retry sync");
 });
 
@@ -255,7 +286,10 @@ test("derives a household sync dashboard with retry guidance", () => {
   assert.equal(dashboard.title, "Sync needs attention");
   assert.equal(dashboard.actionLabel, "Retry sync");
   assert.equal(dashboard.metrics[2].value, "2 waiting");
-  assert.equal(dashboard.nextStep, "Retry sync so every caregiver sees the latest care.");
+  assert.equal(
+    dashboard.nextStep,
+    "Retry sync so every caregiver sees the latest care.",
+  );
 });
 
 test("keeps a newer local care document when a stale server refresh arrives", () => {
@@ -332,8 +366,18 @@ test("seeds an empty server care document from the local cache", () => {
 
 test("merge supersedes a temp entry once its server row arrives via clientKey", () => {
   const local = [
-    { id: "temp_123_abc", title: "Breakfast", occurredAt: "2026-07-18T07:00:00.000Z", syncStatus: "failed" as const },
-    { id: "temp_456_def", title: "Walk", occurredAt: "2026-07-18T08:00:00.000Z", syncStatus: "failed" as const },
+    {
+      id: "temp_123_abc",
+      title: "Breakfast",
+      occurredAt: "2026-07-18T07:00:00.000Z",
+      syncStatus: "failed" as const,
+    },
+    {
+      id: "temp_456_def",
+      title: "Walk",
+      occurredAt: "2026-07-18T08:00:00.000Z",
+      syncStatus: "failed" as const,
+    },
   ];
   const server = [
     {
@@ -348,8 +392,98 @@ test("merge supersedes a temp entry once its server row arrives via clientKey", 
 
   // The meal's server row carries the temp entry's clientKey, so the temp
   // duplicate is superseded; the walk (never acknowledged) is kept for retry.
-  assert.deepEqual(
-    merged.map((entry) => entry.id).sort(),
-    ["srv_1", "temp_456_def"],
+  assert.deepEqual(merged.map((entry) => entry.id).sort(), [
+    "srv_1",
+    "temp_456_def",
+  ]);
+});
+
+test("care-entry sync strips device-only GPS route fields without mutating local care", () => {
+  const sanitize = (
+    careSyncModule as unknown as {
+      sanitizeCareEntryDetailsForSync?: (
+        details: Record<string, unknown> | null | undefined,
+      ) => Record<string, unknown>;
+    }
+  ).sanitizeCareEntryDetailsForSync;
+  assert.equal(typeof sanitize, "function");
+
+  const localDetails = {
+    route: [
+      { lat: 37.8, lon: -122.1, t: 1 },
+      { lat: 37.81, lon: -122.09, t: 2 },
+    ],
+    routeDistanceM: 940,
+    routeName: "Creek loop",
+    walkLifecycle: "completed",
+  };
+
+  assert.deepEqual(sanitize!(localDetails), {
+    routeName: "Creek loop",
+    walkLifecycle: "completed",
+  });
+  assert.equal(localDetails.route.length, 2);
+  assert.equal(localDetails.routeDistanceM, 940);
+});
+
+test("server refresh preserves a synced entry's device-only route visualization", () => {
+  const route = [
+    { lat: 37.8, lon: -122.1, t: 1 },
+    { lat: 37.81, lon: -122.09, t: 2 },
+  ];
+  const [merged] = mergeServerAndLocalEntries(
+    [
+      {
+        id: "server_walk",
+        occurredAt: "2026-07-30T18:00:00.000Z",
+        syncStatus: "synced",
+        details: { route, routeDistanceM: 940, localDraft: "not synced" },
+      },
+    ],
+    [
+      {
+        id: "server_walk",
+        occurredAt: "2026-07-30T18:00:00.000Z",
+        details: { routeName: "Creek loop" },
+      },
+    ],
   );
+
+  assert.deepEqual(merged.details, {
+    routeName: "Creek loop",
+    route,
+    routeDistanceM: 940,
+  });
+});
+
+test("server acknowledgement carries a temp walk's device-only route to the real id", () => {
+  const route = [
+    { lat: 37.8, lon: -122.1, t: 1 },
+    { lat: 37.81, lon: -122.09, t: 2 },
+  ];
+  const [merged] = mergeServerAndLocalEntries(
+    [
+      {
+        id: "temp_walk",
+        occurredAt: "2026-07-30T18:00:00.000Z",
+        syncStatus: "failed",
+        details: { route, routeDistanceM: 940 },
+      },
+    ],
+    [
+      {
+        id: "server_walk",
+        occurredAt: "2026-07-30T18:00:00.000Z",
+        details: { clientKey: "temp_walk", routeName: "Creek loop" },
+      },
+    ],
+  );
+
+  assert.equal(merged.id, "server_walk");
+  assert.deepEqual(merged.details, {
+    clientKey: "temp_walk",
+    routeName: "Creek loop",
+    route,
+    routeDistanceM: 940,
+  });
 });

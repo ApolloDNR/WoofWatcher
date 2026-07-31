@@ -2,7 +2,7 @@
 
 Effective: July 9, 2026
 
-WoofWatcher is published by Pegasus Dreamscapes ("we," "us"). This policy explains what information the WoofWatcher app for iOS and Android handles, where it lives, and the choices you have. It is written to match how the app actually works at version 1.0.
+WoofWatcher is published by Pegasus Dreamscapes Corp ("we," "us"). This policy explains what information the WoofWatcher app for iOS and Android handles, where it lives, and the choices you have. It is written to match how the app actually works at version 1.0.
 
 ## The short version
 
@@ -16,8 +16,8 @@ WoofWatcher is published by Pegasus Dreamscapes ("we," "us"). This policy explai
 
 WoofWatcher is a dog-care app that lets you log your dog's real daily care — meals, walks, potty breaks, medications, and observations — and see that care reflected in a pixel companion. It is published by:
 
-Pegasus Dreamscapes
-Support: reach us through the app's App Store or Google Play listing
+Pegasus Dreamscapes Corp
+Support: apollo@pegasusdreamscapes.com
 
 ## 2. What we collect: nothing
 
@@ -61,7 +61,7 @@ WoofWatcher can also use your device's location, but only while you are recordin
 
 - Access is optional and foreground-only ("when in use"). The app never uses your location in the background, and walk logging works normally if you decline.
 - The app asks for location permission only at the moment you start recording a walk, using the standard iOS and Android permission prompts.
-- The walk route is saved with the rest of your care data on your device. It is never transmitted to us or anyone else, and it is used only to draw the on-device walk map.
+- The walk route is saved with the rest of your care data on your device. Route visualization uses artwork and geometry bundled with the app. The route and its coordinates are not sent to us, a map provider, or anyone else.
 
 You can revoke camera, photo, or location permissions at any time in your device settings; the app will keep working without them.
 
@@ -107,5 +107,5 @@ If we change this policy, we will update the effective date above and publish th
 
 Questions or requests about privacy:
 
-Support: reach us through the app's App Store or Google Play listing
-Publisher: Pegasus Dreamscapes
+Email: apollo@pegasusdreamscapes.com
+Publisher: Pegasus Dreamscapes Corp

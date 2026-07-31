@@ -439,7 +439,11 @@ test("keeps local Clerk placeholders from blanking the web preview", () => {
   assert.match(auth, /!isPlaceholderPublishableKey/);
   assert.match(
     auth,
-    /useWoofAuth = isClerkConfigured \? useClerkAuth : useLocalAuth/,
+    /isClerkEnabledForBuild\s*=\s*[\s\S]*isClerkConfigured && isOwnerOpsBuild\(\)/,
+  );
+  assert.match(
+    auth,
+    /useWoofAuth = isClerkEnabledForBuild[\s\S]*\?\s*useClerkAuth[\s\S]*:\s*useLocalAuth/,
   );
 });
 
@@ -759,7 +763,7 @@ test("registers the care twin native QA route for device review", () => {
     more,
     /buildCareTwinQaFocusRoute\(nativeQaPrimaryMissionTarget\)/,
   );
-  assert.match(more, /isOwnerOpsBuild/);
+  assert.match(more, /getConsumerSurfacePolicy/);
   assert.match(qaRoute, /listCareTwinRuntimeQaScenarios/);
   assert.match(qaRoute, /evaluateCareTwinRuntimeQaScenario/);
   assert.match(qaRoute, /deriveCareTwinChoreography/);
@@ -1088,6 +1092,43 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /surfaceStatusById/);
   assert.match(qaRoute, /Pass/);
   assert.match(qaRoute, /Needs tune/);
+});
+
+test("free production routes deferred provider flows through the shared consumer policy", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+  const pack = readAppFile(join("(tabs)", "pack.tsx"));
+  const setup = readAppFile("setup.tsx");
+
+  assert.match(calendar, /consumerSurfacePolicy\.discoverEvents \? \(/);
+  assert.match(more, /consumerSurfacePolicy\.futureDogPlanning \? \(/);
+  assert.match(
+    more,
+    /consumerSurfacePolicy\.householdProviderActions \? \(/,
+  );
+  assert.match(more, /consumerSurfacePolicy\.providerSyncControls/);
+  assert.match(more, /if \(!providerSyncEnabled\)/);
+  assert.match(
+    more,
+    /enabled:\s*consumerSurfacePolicy\.householdProviderActions[\s\S]*isClerkConfigured/,
+  );
+  assert.match(
+    pack,
+    /PACK_SEGMENTS\.filter\(\(item\) => item\.key !== "access"\)/,
+  );
+  assert.match(
+    pack,
+    /enabled:\s*consumerSurfacePolicy\.householdProviderActions[\s\S]*isClerkConfigured/,
+  );
+  assert.match(setup, /makeSetupWizardDraftDeviceOnly/);
+  assert.match(setup, /consumerSurfacePolicy\.householdSetupModes/);
+  assert.match(
+    log,
+    /isClerkConfigured && getConsumerSurfacePolicy\(\)\.providerSyncControls/,
+  );
+  assert.match(home, /providerSyncEnabled: HOME_PROVIDER_SYNC_ENABLED/);
 });
 
 test("shows premium entitlement policy before checkout is enabled", () => {
@@ -1756,8 +1797,12 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   );
   assert.match(more, /if \(sectionParam === "diet"\) setDietOpen\(true\)/);
   assert.match(more, /const householdFocus = sectionParam === "household"/);
-  assert.match(more, /title="Household focus"/);
+  assert.match(
+    more,
+    /consumerSurfacePolicy\.householdProviderActions[\s\S]*"Household focus"[\s\S]*"Care team focus"/,
+  );
   assert.match(more, /Presence route/);
+  assert.match(more, /On this device/);
   assertStyleUsesSharedTouchTarget(home, "homeHeaderAction");
 });
 
@@ -1950,12 +1995,15 @@ test("keeps Health Watch and the Quick Care Console honest at zero data and at n
   const health = readAppFile(join("(tabs)", "health.tsx"));
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
-  // A fresh profile must never read "94 / Stable right now / You're on a
-  // roll": with no entries in the scoring window the score is "--" and the
-  // copy makes the first-log promise (non-diagnostic, no fabricated result).
+  // Health Watch must not imply clinical precision with a made-up 0-100
+  // score. It shows factual 7-day logging coverage beside the bounded,
+  // qualitative status and keeps the first-log promise at zero data.
   assert.match(health, /const hasHealthSignalData = state\.entries\.some/);
-  assert.match(health, /const scoreDisplay = hasHealthSignalData \? String\(score\) : "--";/);
-  assert.match(health, /\{scoreDisplay\}/);
+  assert.match(health, /const loggedDays7 = healthRhythm\.filter\(\(day\) => day\.hasData\)\.length;/);
+  assert.match(health, /\{loggedDays7\}\/7/);
+  assert.match(health, /Days logged/);
+  assert.doesNotMatch(health, /Health score/);
+  assert.doesNotMatch(health, /function healthScore/);
   assert.match(health, /Health Watch starts with your first log\./);
   // The signal rows ("Active daily", "Eating well") are observations, so
   // they also fall back to the first-log promise before any log exists.
@@ -2063,7 +2111,8 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /deriveHealthReviewPacket/);
   assert.match(health, /Health Watch/);
   assert.match(health, /Bile Watch/);
-  assert.match(health, /Health score/);
+  assert.match(health, /Days logged/);
+  assert.doesNotMatch(health, /Health score/);
   assert.match(health, /Health Snapshot/);
   assert.match(health, /Pattern Board/);
   assert.match(health, /Review packet/);
@@ -4963,7 +5012,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(
     more,
-    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Sync Health"/,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*consumerSurfacePolicy\.providerSyncControls[\s\S]*"Sync Health"[\s\S]*"Device Storage"/,
   );
   assert.match(
     more,

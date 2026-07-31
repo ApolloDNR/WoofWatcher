@@ -101,7 +101,7 @@ import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/car
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { BoardActionButton, BoardCard, BoardMetricTile, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import { ProgressFill } from "@/components/motion/GameFeel";
-import { isOwnerOpsBuild } from "@/lib/buildChannel";
+import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 import {
   deriveCareCareer,
   deriveCareerWeek,
@@ -351,8 +351,11 @@ export default function MoreScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   // Owner launch tooling renders in development/internal builds only; store
-  // production builds keep More to household care surfaces.
-  const ownerOps = isOwnerOpsBuild();
+  // production builds keep More to complete device-local care surfaces.
+  const consumerSurfacePolicy = getConsumerSurfacePolicy();
+  const ownerOps = consumerSurfacePolicy.ownerOps;
+  const providerSyncEnabled =
+    consumerSurfacePolicy.providerSyncControls && isClerkConfigured;
   const routeParams = useLocalSearchParams<{
     section?: string | string[];
   }>();
@@ -369,7 +372,15 @@ export default function MoreScreen() {
 
   const { signOut, isSignedIn } = useWoofAuth();
   const queryClient = useQueryClient();
-  const me = useGetMe();
+  const me = useGetMe({
+    query: {
+      queryKey: getGetMeQueryKey(),
+      enabled:
+        consumerSurfacePolicy.householdProviderActions &&
+        isClerkConfigured &&
+        Boolean(isSignedIn),
+    },
+  });
   const updateHousehold = useUpdateHousehold();
   const joinHousehold = useJoinHousehold();
   const updateMe = useUpdateMe();
@@ -400,8 +411,9 @@ export default function MoreScreen() {
         routines,
         caregivers,
         now,
+        providerSyncEnabled,
       }),
-    [entries, routines, caregivers, now],
+    [entries, routines, caregivers, now, providerSyncEnabled],
   );
   const petName =
     profile.name && profile.name !== "My Dog"
@@ -446,15 +458,17 @@ export default function MoreScreen() {
   );
 
   const syncDashboard = useMemo<CareSyncDashboard>(() => {
-    if (!isClerkConfigured) {
-      // Local-first build: device storage is the success state, so Sync
-      // Health reports the honest on-device record instead of implying a
-      // cloud outbox or retries that no provider can service.
+    if (!providerSyncEnabled) {
+      // Local-first build: device storage is the success state, so this card
+      // reports the honest on-device record instead of implying a cloud
+      // outbox or retries that no provider can service.
       return {
         status: "healthy",
         title: "Saved on this device",
         message: "Every care log is stored in this device's local care record. Nothing is waiting.",
-        nextStep: "Household sync is coming soon - every care log stays on this device for now.",
+        nextStep: consumerSurfacePolicy.providerSyncControls
+          ? "Household sync is not connected - every care log stays on this device for now."
+          : "Export a backup from Privacy & Safety before changing or resetting this device.",
         actionLabel: "Refresh",
         metrics: [
           {
@@ -465,7 +479,7 @@ export default function MoreScreen() {
           {
             label: "Care team",
             value: `${caregivers.length} ${caregivers.length === 1 ? "member" : "members"}`,
-            detail: "Household roster",
+            detail: "Caregivers on device",
           },
           {
             label: "Waiting",
@@ -493,6 +507,8 @@ export default function MoreScreen() {
     household,
     entries.length,
     caregivers.length,
+    consumerSurfacePolicy.providerSyncControls,
+    providerSyncEnabled,
   ]);
   const launchProviderSetupPlan = useMemo(
     () => deriveLaunchProviderSetup(state.launchProviderProfile),
@@ -542,7 +558,7 @@ export default function MoreScreen() {
       : syncDashboard.status === "syncing" || syncDashboard.status === "loading"
         ? colors.primary
         : colors.sage;
-  const syncIcon: keyof typeof Ionicons.glyphMap = !isClerkConfigured
+  const syncIcon: keyof typeof Ionicons.glyphMap = !providerSyncEnabled
     ? "phone-portrait-outline"
     : syncDashboard.status === "attention"
       ? "cloud-offline-outline"
@@ -582,6 +598,12 @@ export default function MoreScreen() {
       }),
     [household, members, caregivers, routines],
   );
+  const careTeamName = consumerSurfacePolicy.householdProviderActions
+    ? householdAccess.householdName
+    : `${petName}'s Care Team`;
+  const careTeamSummary = consumerSurfacePolicy.householdProviderActions
+    ? householdAccess.summary
+    : "Caregivers, assigned routines, and care logs organized on this device.";
   const accessPassPlan = useMemo(
     () =>
       deriveAccessPassPlan({
@@ -1483,7 +1505,9 @@ export default function MoreScreen() {
     {
       id: "household",
       iconName: "people-outline",
-      eyebrow: "Household",
+      eyebrow: consumerSurfacePolicy.householdProviderActions
+        ? "Household"
+        : "Care team",
       label: householdResponsibility.title,
       detail: householdResponsibility.nextStep,
       actionLabel: "Review",
@@ -1768,11 +1792,26 @@ export default function MoreScreen() {
           {householdFocus && (
             <BoardCard style={[s.moreBoardCard, { borderColor: colors.sage + "66", backgroundColor: colors.sage + "10" }]}>
               <BoardSectionHeader
-                title="Household focus"
-                accessory={<BoardPill label="Presence route" tone={colors.sage} />}
+                title={
+                  consumerSurfacePolicy.householdProviderActions
+                    ? "Household focus"
+                    : "Care team focus"
+                }
+                accessory={
+                  <BoardPill
+                    label={
+                      consumerSurfacePolicy.householdProviderActions
+                        ? "Presence route"
+                        : "On this device"
+                    }
+                    tone={colors.sage}
+                  />
+                }
               />
               <Text style={[s.responsibilitySummary, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                Review Care Team, Household Access, and Household Pulse below for who is with {petName}, what is open, and who can help next.
+                {consumerSurfacePolicy.householdProviderActions
+                  ? `Review Care Team, Household Access, and Household Pulse below for who is with ${petName}, what is open, and who can help next.`
+                  : `Review ${petName}'s Care Team and Responsibility Center below for assigned routines and today's care.`}
               </Text>
             </BoardCard>
           )}
@@ -1857,6 +1896,7 @@ export default function MoreScreen() {
             </View>
           </View>
 
+          {consumerSurfacePolicy.futureDogPlanning ? (
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader
               title="CareTwin Roster"
@@ -1967,6 +2007,7 @@ export default function MoreScreen() {
               })}
             </View>
           </BoardCard>
+          ) : null}
 
           <BoardCard style={[s.moreBoardCard, { borderColor: intelligenceTone + "44" }]}>
             <BoardSectionHeader
@@ -2837,17 +2878,21 @@ export default function MoreScreen() {
             <BoardSectionHeader
               title="Care Team"
               accessory={
-                <Pressable
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setRenameValue(household?.name ?? "");
-                    setRenameOpen(true);
-                  }}
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                  disabled={!household}
-                >
-                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Rename</Text>
-                </Pressable>
+                consumerSurfacePolicy.householdProviderActions ? (
+                  <Pressable
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setRenameValue(household?.name ?? "");
+                      setRenameOpen(true);
+                    }}
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                    disabled={!household}
+                  >
+                    <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Rename</Text>
+                  </Pressable>
+                ) : (
+                  <BoardPill label="On this device" tone={colors.sage} />
+                )
               }
             />
             <View style={s.inviteTop}>
@@ -2856,37 +2901,39 @@ export default function MoreScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.inviteHousehold, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {householdAccess.householdName}
+                  {careTeamName}
                 </Text>
                 <Text style={[s.inviteSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {householdAccess.summary}
+                  {careTeamSummary}
                 </Text>
               </View>
             </View>
-            <View style={[s.codeBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <View>
-                <Text style={[s.codeLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>INVITE CODE</Text>
-                <Text style={[s.codeValue, { color: colors.foreground, fontFamily: DISPLAY }]}>
-                  {householdAccess.inviteCode || "—"}
-                </Text>
+            {consumerSurfacePolicy.householdProviderActions ? (
+              <View style={[s.codeBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <View>
+                  <Text style={[s.codeLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>INVITE CODE</Text>
+                  <Text style={[s.codeValue, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                    {householdAccess.inviteCode || "—"}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={shareInvite}
+                  disabled={!householdAccess.canShareInvite}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share household invite"
+                  style={({ pressed }) => [s.shareBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                >
+                  <Ionicons name="share-outline" size={16} color={colors.primaryForeground} />
+                  <Text style={[s.shareBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Invite</Text>
+                </Pressable>
               </View>
-              <Pressable
-                onPress={shareInvite}
-                disabled={!householdAccess.canShareInvite}
-                accessibilityRole="button"
-                accessibilityLabel="Share household invite"
-                style={({ pressed }) => [s.shareBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
-              >
-                <Ionicons name="share-outline" size={16} color={colors.primaryForeground} />
-                <Text style={[s.shareBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Invite</Text>
-              </Pressable>
-            </View>
+            ) : null}
 
             <View style={[s.boardDivider, { borderTopColor: colors.border }]} />
             {householdAccess.people.length === 0 ? (
               <View style={s.teamRow}>
                 <Text style={[s.teamRole, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Add the first caregiver to build household access.
+                  Complete setup to add the first caregiver to this device.
                 </Text>
               </View>
             ) : (
@@ -2913,12 +2960,16 @@ export default function MoreScreen() {
                         )}
                       </View>
                       <Text style={[s.teamRole, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {person.role} - {person.needsInvite ? "Invite needed" : "Ready"}
+                        {person.role} - {consumerSurfacePolicy.householdProviderActions
+                          ? person.needsInvite
+                            ? "Invite needed"
+                            : "Ready"
+                          : "On this device"}
                       </Text>
                     </View>
-                    <View style={[s.logBadge, { backgroundColor: person.needsInvite ? colors.amber + "18" : colors.background }]}>
-                      <Text style={[s.logBadgeText, { color: person.needsInvite ? colors.amber : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                        {person.needsInvite ? "Invite" : `${logCount} logs`}
+                    <View style={[s.logBadge, { backgroundColor: consumerSurfacePolicy.householdProviderActions && person.needsInvite ? colors.amber + "18" : colors.background }]}>
+                      <Text style={[s.logBadgeText, { color: consumerSurfacePolicy.householdProviderActions && person.needsInvite ? colors.amber : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        {consumerSurfacePolicy.householdProviderActions && person.needsInvite ? "Invite" : `${logCount} logs`}
                       </Text>
                     </View>
                   </View>
@@ -2927,6 +2978,8 @@ export default function MoreScreen() {
             )}
           </BoardCard>
 
+          {consumerSurfacePolicy.householdProviderActions ? (
+          <>
           <View collapsable={false} onLayout={registerSectionAnchor("access")} />
           <BoardCard style={[s.moreBoardCard, { borderColor: accessTone + "44" }]}>
             <BoardSectionHeader
@@ -3065,6 +3118,8 @@ export default function MoreScreen() {
               <Text style={[s.passActionText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Share Draft Summary</Text>
             </Pressable>
           </BoardCard>
+          </>
+          ) : null}
 
           <BoardCard style={[s.moreBoardCard, { borderColor: responsibilityTone + "44" }]}>
             <BoardSectionHeader
@@ -3211,36 +3266,44 @@ export default function MoreScreen() {
           {/* Sync health */}
           <BoardCard style={[s.moreBoardCard, { borderColor: syncTone + "44" }]}>
             <BoardSectionHeader
-              title="Sync Health"
+              title={
+                consumerSurfacePolicy.providerSyncControls
+                  ? "Sync Health"
+                  : "Device Storage"
+              }
               accessory={
-                <Pressable
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    if (!isClerkConfigured) {
-                      notifyDialog(
-                        "Saved on this device",
-                        "Everything is saved on this device. Household sync is coming soon - nothing is waiting to upload.",
-                      );
-                      return;
-                    }
-                    if (!isSignedIn) {
-                      notifyDialog(
-                        "Sign in to sync",
-                        "Care logs stay saved on this device until you sign in to the household account.",
-                      );
-                      return;
-                    }
-                    refresh();
-                  }}
-                  disabled={isSyncing}
-                  accessibilityRole="button"
-                  accessibilityLabel="Refresh household sync"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                >
-                  <Text style={[s.sectionLink, { color: syncTone, fontFamily: "Inter_600SemiBold", opacity: isSyncing ? 0.65 : 1 }]}>
-                    {syncDashboard.actionLabel}
-                  </Text>
-                </Pressable>
+                consumerSurfacePolicy.providerSyncControls ? (
+                  <Pressable
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      if (!isClerkConfigured) {
+                        notifyDialog(
+                          "Saved on this device",
+                          "Everything is saved on this device. Nothing is waiting to upload.",
+                        );
+                        return;
+                      }
+                      if (!isSignedIn) {
+                        notifyDialog(
+                          "Sign in to sync",
+                          "Care logs stay saved on this device until you sign in to the household account.",
+                        );
+                        return;
+                      }
+                      refresh();
+                    }}
+                    disabled={isSyncing}
+                    accessibilityRole="button"
+                    accessibilityLabel="Refresh household sync"
+                    hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  >
+                    <Text style={[s.sectionLink, { color: syncTone, fontFamily: "Inter_600SemiBold", opacity: isSyncing ? 0.65 : 1 }]}>
+                      {syncDashboard.actionLabel}
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <BoardPill label="Local" tone={colors.sage} />
+                )
               }
             />
             <View style={s.syncTop}>
@@ -3290,7 +3353,9 @@ export default function MoreScreen() {
             ) : null}
           </BoardCard>
 
-          {/* Household actions */}
+          {/* Provider-backed household actions remain available for internal QA
+              but stay out of the free local-first store build. */}
+          {consumerSurfacePolicy.householdProviderActions ? (
           <View style={[s.listCard, { backgroundColor: colors.card, shadowColor: colors.primary, marginTop: 12 }]}>
             <Pressable
               onPress={() => {
@@ -3331,6 +3396,7 @@ export default function MoreScreen() {
               <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
             </Pressable>
           </View>
+          ) : null}
 
           {/* Links (holds the Care Pass build-and-share row) */}
           <View collapsable={false} onLayout={registerSectionAnchor("care-pass")} />
@@ -3417,7 +3483,7 @@ export default function MoreScreen() {
           {/* Sign out renders only when a real account provider is configured
               and someone is actually signed in; the local-first build has no
               sign-in, so a sign-out row would be a dead cloud-sync promise. */}
-          {isClerkConfigured && isSignedIn ? (
+          {providerSyncEnabled && isSignedIn ? (
             <Pressable
               onPress={confirmSignOut}
               accessibilityRole="button"
@@ -3483,55 +3549,60 @@ export default function MoreScreen() {
         </Pressable>
       </Modal>
 
-      {/* Join household modal */}
-      <PromptModal
-        visible={joinOpen}
-        colors={colors}
-        icon="enter-outline"
-        title="Join a household"
-        subtitle="Enter the invite code shared by a family member."
-        placeholder="e.g. PHX-7QK2"
-        value={joinCode}
-        onChangeText={setJoinCode}
-        autoCapitalize="characters"
-        confirmLabel="Join"
-        loading={joinHousehold.isPending}
-        onCancel={() => setJoinOpen(false)}
-        onConfirm={submitJoin}
-      />
+      {consumerSurfacePolicy.householdProviderActions ? (
+        <>
+          {/* Join household modal */}
+          <PromptModal
+            visible={joinOpen}
+            colors={colors}
+            icon="enter-outline"
+            title="Join a household"
+            subtitle="Enter the invite code shared by a family member."
+            placeholder="e.g. PHX-7QK2"
+            value={joinCode}
+            onChangeText={setJoinCode}
+            autoCapitalize="characters"
+            confirmLabel="Join"
+            loading={joinHousehold.isPending}
+            onCancel={() => setJoinOpen(false)}
+            onConfirm={submitJoin}
+          />
 
-      {/* Rename household modal */}
-      <PromptModal
-        visible={renameOpen}
-        colors={colors}
-        icon="home-outline"
-        title="Rename household"
-        subtitle="Give your care team a name everyone recognizes."
-        placeholder="The Phoenix Pack"
-        value={renameValue}
-        onChangeText={setRenameValue}
-        confirmLabel="Save"
-        loading={updateHousehold.isPending}
-        onCancel={() => setRenameOpen(false)}
-        onConfirm={submitRename}
-      />
+          {/* Rename household modal */}
+          <PromptModal
+            visible={renameOpen}
+            colors={colors}
+            icon="home-outline"
+            title="Rename household"
+            subtitle="Give your care team a name everyone recognizes."
+            placeholder="The Phoenix Pack"
+            value={renameValue}
+            onChangeText={setRenameValue}
+            confirmLabel="Save"
+            loading={updateHousehold.isPending}
+            onCancel={() => setRenameOpen(false)}
+            onConfirm={submitRename}
+          />
 
-      {/* Display name modal */}
-      <PromptModal
-        visible={nameOpen}
-        colors={colors}
-        icon="person-circle-outline"
-        title="Your display name"
-        subtitle="This is how you'll appear on every care log."
-        placeholder="Alex"
-        value={nameValue}
-        onChangeText={setNameValue}
-        confirmLabel="Save"
-        loading={updateMe.isPending}
-        onCancel={() => setNameOpen(false)}
-        onConfirm={submitName}
-      />
+          {/* Display name modal */}
+          <PromptModal
+            visible={nameOpen}
+            colors={colors}
+            icon="person-circle-outline"
+            title="Your display name"
+            subtitle="This is how you'll appear on every care log."
+            placeholder="Alex"
+            value={nameValue}
+            onChangeText={setNameValue}
+            confirmLabel="Save"
+            loading={updateMe.isPending}
+            onCancel={() => setNameOpen(false)}
+            onConfirm={submitName}
+          />
+        </>
+      ) : null}
 
+      {consumerSurfacePolicy.futureDogPlanning ? (
       <Modal visible={petRosterOpen} transparent animationType="slide" onRequestClose={() => setPetRosterOpen(false)}>
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setPetRosterOpen(false)}>
           <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
@@ -3572,7 +3643,9 @@ export default function MoreScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+      ) : null}
 
+      {consumerSurfacePolicy.householdProviderActions ? (
       <Modal visible={accessPassOpen} transparent animationType="slide" onRequestClose={() => setAccessPassOpen(false)}>
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setAccessPassOpen(false)}>
           <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
@@ -3635,6 +3708,7 @@ export default function MoreScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+      ) : null}
 
       <Modal visible={providerSetupOpen} transparent animationType="slide" onRequestClose={() => setProviderSetupOpen(false)}>
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProviderSetupOpen(false)}>

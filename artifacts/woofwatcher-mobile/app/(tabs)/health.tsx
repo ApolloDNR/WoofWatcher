@@ -125,28 +125,6 @@ function sameCalendarDay(iso: string, date: Date): boolean {
   );
 }
 
-function clampScore(value: number): number {
-  return Math.max(52, Math.min(98, Math.round(value)));
-}
-
-function healthScore(input: {
-  status: "good" | "watch" | "alert";
-  vomit7: number;
-  appetiteWatch7: number;
-  stoolWatch7: number;
-  anxiety7: number;
-  redFlags: number;
-}): number {
-  const base = input.status === "good" ? 94 : input.status === "watch" ? 84 : 72;
-  const penalty =
-    input.vomit7 * 5 +
-    input.appetiteWatch7 * 4 +
-    input.stoolWatch7 * 5 +
-    input.anxiety7 * 3 +
-    input.redFlags * 10;
-  return clampScore(base - penalty);
-}
-
 function statusActionLabel(type: string): string {
   if (type === "walk") return "Log activity";
   if (type === "meal") return "Log appetite";
@@ -422,29 +400,21 @@ export default function HealthScreen() {
         : "Low Risk";
   const bileTone =
     bileStatus === "Review" ? colors.rose : bileStatus === "Watch" ? colors.amber : colors.sage;
-  // A fresh profile has no scoring evidence: deriving "94 - Stable right now -
-  // You're on a roll" from zero logs fabricates a result (same dishonesty
-  // class as Care IQ's zero-state). With no entries inside the 30-day scoring
-  // window the score reads "--" and the copy makes the first-log promise
-  // instead of claiming stability that was never observed.
+  // Health Watch is intentionally qualitative. A made-up 0-100 "health
+  // score" would imply clinical precision the owner-entered logs cannot
+  // support. The snapshot instead shows the factual number of days with care
+  // evidence in the current 7-day window alongside the bounded status.
   const hasHealthSignalData = state.entries.some((entry) => {
     const age = daysBetween(entry.occurredAt, now);
     return age >= 0 && age <= 30;
   });
-  const score = healthScore({
-    status: healthWatch.status,
-    vomit7: healthWatch.counts.vomit7,
-    appetiteWatch7: healthWatch.counts.appetiteWatch7,
-    stoolWatch7: healthWatch.counts.stoolWatch7,
-    anxiety7: healthWatch.counts.anxiety7,
-    redFlags: healthWatch.redFlags.length,
-  });
-  const scoreDisplay = hasHealthSignalData ? String(score) : "--";
-  const scoreTone = !hasHealthSignalData
+  const loggedDays7 = healthRhythm.filter((day) => day.hasData).length;
+  const logCoveragePercent = Math.round((loggedDays7 / 7) * 100);
+  const statusTone = !hasHealthSignalData
     ? colors.mutedForeground
-    : score >= 88
+    : healthWatch.status === "good"
       ? colors.sage
-      : score >= 76
+      : healthWatch.status === "watch"
         ? colors.amber
         : colors.rose;
   const heroTitle = !hasHealthSignalData
@@ -461,9 +431,9 @@ export default function HealthScreen() {
       : healthWatch.summary;
   const statusMedallionLabel = !hasHealthSignalData
     ? "READY"
-    : score >= 88
+    : healthWatch.status === "good"
       ? "GOOD"
-      : score >= 76
+      : healthWatch.status === "watch"
         ? "WATCH"
         : "REVIEW";
   const statusSupportCopy = !hasHealthSignalData
@@ -823,10 +793,10 @@ export default function HealthScreen() {
               }
             />
             <View style={s.healthHeroStatusRow}>
-              <View style={[s.healthScoreToken, { backgroundColor: scoreTone + "14", borderColor: scoreTone + "66" }]}>
-                <Text style={[s.healthScoreValue, { color: scoreTone, fontFamily: DISPLAY }]}>{scoreDisplay}</Text>
+              <View style={[s.healthScoreToken, { backgroundColor: statusTone + "14", borderColor: statusTone + "66" }]}>
+                <Text style={[s.healthScoreValue, { color: statusTone, fontFamily: DISPLAY }]}>{loggedDays7}/7</Text>
                 <Text style={[s.healthScoreLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                  Health score
+                  Days logged
                 </Text>
               </View>
 
@@ -837,7 +807,7 @@ export default function HealthScreen() {
                   {heroPanelCopy}
                 </Text>
                 <View style={[s.statusScoreTrack, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                  <View style={[s.statusScoreFill, { width: `${hasHealthSignalData ? score : 0}%`, backgroundColor: scoreTone }]} />
+                  <View style={[s.statusScoreFill, { width: `${logCoveragePercent}%`, backgroundColor: statusTone }]} />
                 </View>
                 <Text style={[s.statusSupportCopy, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                   {statusSupportCopy}
@@ -1186,7 +1156,7 @@ export default function HealthScreen() {
           <View style={s.reviewPacketTop}>
             <View style={s.reviewPacketTitleStack}>
               <BoardSectionHeader title="Review packet" style={s.boardSectionTop} />
-              <Text style={[s.reviewPacketStatus, { color: scoreTone, fontFamily: DISPLAY_SEMI }]}>
+              <Text style={[s.reviewPacketStatus, { color: statusTone, fontFamily: DISPLAY_SEMI }]}>
                 {healthReviewPacket.statusLabel}
               </Text>
             </View>

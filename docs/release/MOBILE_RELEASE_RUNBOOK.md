@@ -6,6 +6,10 @@ WoofWatcher is mobile-first. The canonical product surface is the Expo app in `a
 
 Fable should polish mobile first, then keep the web dashboard/PWA visually consistent. Do not let web polish override mobile navigation, logging speed, safe-area behavior, native sharing, or iOS/Android release constraints.
 
+Version 1.0 ships **free and local-first**. It does not require Clerk, Supabase,
+cloud storage, live AI, push, or payments. Those provider-backed systems remain
+future-release work and must not be configured into the v1 store build.
+
 ## Current Mobile App Identity
 
 - Expo app name: `WoofWatcher`
@@ -23,7 +27,7 @@ The mobile app now has committed EAS profiles in `artifacts/woofwatcher-mobile/e
 - `development`: internal development-client builds. iOS targets simulator; Android emits an APK.
 - `preview`: internal device testing. Use for Apollo/Fable review, household workflow QA, and pre-TestFlight/Play internal checks.
 - `production`: store-ready build path. iOS uses default production archive behavior; Android emits an App Bundle for Google Play.
-- `submit.production`: placeholder submit profile. Store submission must wait for Apple Developer, Google Play, privacy/legal, and Apollo approval.
+- `submit.production`: credential-free submit profile. Store identifiers and credentials stay in App Store Connect / EAS credential storage, never in git. Upload must wait for Apple Developer, Google Play, privacy/legal, and Apollo approval.
 
 ## Required Accounts And Secrets
 
@@ -32,12 +36,12 @@ Do not commit secrets. Configure them in Expo/EAS, deployment providers, or loca
 - Expo account and EAS project access.
 - Apple Developer account for iOS/TestFlight/App Store.
 - Google Play Console account for Android internal testing/production.
-- Clerk production publishable key and secret.
-- API production URL and allowed origins.
-- Database/Supabase production credentials.
-- Storage provider for records, receipts, and generated reports.
-- AI provider key and model policy before live WoofGuide generation.
-- Privacy policy, terms, support/refund policy, and veterinary boundary copy.
+- Public privacy, terms, and support sections matching `docs/legal/*` are live at
+  `https://woofwatcher-support.paoloaduran.chatgpt.site/`.
+- Monitored support contact: `apollo@pegasusdreamscapes.com`.
+
+Not required for free v1: Clerk keys, API/database credentials, provider storage,
+AI keys, push credentials, or payment credentials.
 
 ## Local And CI Verification Before Any Mobile Build
 
@@ -65,9 +69,9 @@ GitHub Actions `WoofWatcher Verify` must pass on `main` before sending a build t
 4. Confirm app icon, splash screen, and Fable screenshots are final.
 5. Run an internal preview build first.
 6. Test on at least one iPhone small screen and one modern large iPhone.
-7. Verify sign-in, setup, Home, Quick Log, meal lifecycle, potty flow, Health/Bile Watch, Records, Care Pass, WoofGuide, Privacy, and Settings.
-8. Promote to TestFlight only after Apollo approves the build.
-9. Do not submit to App Store review until privacy/legal/support/subscription obligations are approved.
+7. Verify first-run Explore, Home, Fast Log, meal lifecycle, potty flow, GPS walk recording, Plan, Story, Pack, Health/Bile Watch, Records, Care Pass, local guidance, Privacy, export, and deletion.
+8. Upload to internal TestFlight, install that signed binary, and repeat the native matrix on a physical iPhone.
+9. Do not submit to App Store review until privacy/legal/support obligations are approved and Apollo approves the exact TestFlight build.
 
 Suggested commands once EAS is authenticated:
 
@@ -86,7 +90,7 @@ pnpm exec eas submit --platform ios --profile production
 4. Confirm adaptive icon, splash screen, and Fable screenshots are final.
 5. Run an internal preview APK first.
 6. Test on at least one compact Android phone and one larger Android phone.
-7. Verify sign-in, setup, Home, Quick Log, meal lifecycle, potty flow, Health/Bile Watch, Records, Care Pass, WoofGuide, Privacy, and Settings.
+7. Verify first-run Explore, Home, Fast Log, meal lifecycle, potty flow, GPS walk recording, Plan, Story, Pack, Health/Bile Watch, Records, Care Pass, local guidance, Privacy, export, and deletion.
 8. Use production App Bundle for Google Play internal testing.
 9. Do not submit publicly until privacy/legal/support/subscription obligations are approved.
 
@@ -139,10 +143,11 @@ Before relying on the web surface:
 ## Release Blockers
 
 - No production Apple/Google/Expo account access in this repo.
-- No provider-backed document storage yet.
-- No live payments yet.
-- No live push notifications yet.
-- No provider-backed WoofGuide generation yet.
+- Public privacy, support, and terms anchor URLs are verified and recorded in
+  `STORE_LISTING.md` and `APP_STORE_CONNECT_METADATA.json`.
+- Signed TestFlight / physical-iPhone evidence does not yet exist.
+- App Store Connect app ID, review phone, and EAS project ID are not yet recorded.
+- Provider-backed storage, payments, push, sync, and live AI are intentionally out of scope for free v1.
 - No native simulator/device screenshots from Codex in this environment.
 - The internal `/care-twin-qa` route can now collect local screenshot evidence from the device photo library and tags it by platform. A release QA packet is not complete until the iOS and Android evidence counts are both satisfied in the cockpit/share report.
 - App Store or Play Store submission requires Apollo approval.

@@ -1,7 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { applySetupWizardDraft, buildSetupWizardConfirmation, createSetupWizardDraft } from "./setupWizard.ts";
+import {
+  applySetupWizardDraft,
+  buildSetupWizardConfirmation,
+  createSetupWizardDraft,
+  makeSetupWizardDraftDeviceOnly,
+} from "./setupWizard.ts";
 
 const NOW = "2026-06-08T06:00:00.000Z";
 
@@ -193,4 +198,38 @@ test("describes local preview setup as device-only until account sync is configu
   assert.match(confirmation.title, /local/i);
   assert.match(confirmation.syncLabel, /Local preview/);
   assert.match(confirmation.nextActions.join(" "), /backup\/export/i);
+});
+
+test("normalizes production setup to a polished device-only care record", () => {
+  const internalDraft = createSetupWizardDraft({
+    ...defaultDoc(),
+    householdSetup: {
+      mode: "join",
+      householdName: "Emma's Home",
+      inviteCode: "WW-42",
+      providerStatus: "pending-provider",
+    },
+  });
+
+  const productionDraft = makeSetupWizardDraftDeviceOnly(internalDraft);
+  assert.equal(productionDraft.householdMode, "local");
+  assert.equal(productionDraft.inviteCode, "");
+  assert.equal(productionDraft.householdName, "Emma's Home");
+
+  const preview = applySetupWizardDraft(defaultDoc(), productionDraft, NOW);
+  const confirmation = buildSetupWizardConfirmation(preview, {
+    consumerRelease: true,
+    isClerkConfigured: false,
+    isSignedIn: false,
+  });
+
+  assert.equal(preview.householdSetup?.providerStatus, "local-only");
+  assert.equal(confirmation.title, "Ready to care");
+  assert.equal(confirmation.householdLabel, "Private care record");
+  assert.match(confirmation.syncLabel, /Saved on this device/);
+  assert.match(confirmation.providerBoundary, /does not create an account/i);
+  assert.doesNotMatch(
+    Object.values(confirmation).flat().join(" "),
+    /preview|coming soon|join invite/i,
+  );
 });
