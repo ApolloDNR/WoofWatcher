@@ -20,7 +20,7 @@ store promise.
 Regenerate (one command, no extra dependencies - panels are composed in the
 browser, so the pack uses the real brand fonts):
 
-```
+```shell
 EXPO_PUBLIC_BUILD_PROFILE=production pnpm --filter @workspace/woofwatcher-mobile run smoke:web
 node docs/release/tools/store-pack.mjs
 ```
@@ -31,7 +31,7 @@ Outputs land in `$STORE_PACK_TMP` (default `/tmp/store-pack`) under
 The generator fails if the capture makes a remote HTTP request. Review every
 panel, copy approved files over this directory, then run:
 
-```
+```shell
 node docs/release/tools/validate-store-materials.mjs
 ```
 

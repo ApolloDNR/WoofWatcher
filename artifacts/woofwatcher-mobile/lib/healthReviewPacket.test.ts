@@ -2,9 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   buildHealthReviewPacketShareText,
+  deriveBileWatchStatus,
   deriveHealthReviewPacket,
   type HealthReviewPacketInput,
 } from "./healthReviewPacket.ts";
+import { deriveHealthWatch } from "../../../lib/care-domain/src/index.ts";
 
 const baseInput: HealthReviewPacketInput = {
   dogName: "Phoenix",
@@ -22,6 +24,71 @@ const baseInput: HealthReviewPacketInput = {
   longestFoodGapLabel: "Needs more meal logs",
   bedtimeSnackLabel: "1 small bedtime snack",
 };
+
+test("keeps a non-urgent 14-day yellow-bile pattern at Watch", () => {
+  const now = Date.parse("2026-07-30T18:00:00.000Z");
+  const healthWatch = deriveHealthWatch({
+    entries: [
+      {
+        id: "older_bile",
+        type: "vomit",
+        title: "Yellow bile vomit",
+        note: "Yellow bile noted",
+        occurredAt: new Date(now - 14 * 86_400_000).toISOString(),
+      },
+    ],
+    routines: [],
+    now,
+    petName: "Phoenix",
+  });
+
+  assert.equal(healthWatch.status, "watch");
+  assert.equal(healthWatch.counts.vomit7, 0);
+  assert.ok(
+    healthWatch.signals.some((signal) => signal.kind === "vomit-pattern"),
+  );
+  assert.equal(
+    deriveBileWatchStatus({
+      healthStatus: healthWatch.status,
+      vomit7: healthWatch.counts.vomit7,
+      recentYellowBileCount: 0,
+      signals: healthWatch.signals,
+    }),
+    "Watch",
+  );
+});
+
+test("keeps an urgent 14-day yellow-bile event at Review", () => {
+  const now = Date.parse("2026-07-30T18:00:00.000Z");
+  const healthWatch = deriveHealthWatch({
+    entries: [
+      {
+        id: "older_urgent_bile",
+        type: "vomit",
+        title: "Yellow bile vomit",
+        note: "Yellow bile noted",
+        severity: "urgent",
+        occurredAt: new Date(now - 14 * 86_400_000).toISOString(),
+      },
+    ],
+    routines: [],
+    now,
+    petName: "Phoenix",
+  });
+
+  assert.equal(healthWatch.status, "alert");
+  assert.equal(healthWatch.counts.vomit7, 0);
+  assert.equal(healthWatch.redFlags.length, 1);
+  assert.equal(
+    deriveBileWatchStatus({
+      healthStatus: healthWatch.status,
+      vomit7: healthWatch.counts.vomit7,
+      recentYellowBileCount: 0,
+      signals: healthWatch.signals,
+    }),
+    "Review",
+  );
+});
 
 test("builds a steady non-diagnostic Health Review Packet", () => {
   const packet = deriveHealthReviewPacket(baseInput);

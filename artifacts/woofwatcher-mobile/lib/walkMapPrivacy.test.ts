@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
-const MOBILE_ROOT = join(process.cwd(), "artifacts", "woofwatcher-mobile");
+const MOBILE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const RUNTIME_ROOTS = ["app", "components", "context", "hooks", "lib"] as const;
 
 function runtimeSourceFiles(directory: string): string[] {
@@ -18,6 +19,23 @@ function runtimeSourceFiles(directory: string): string[] {
     }
     return [path];
   });
+}
+
+function namedFunctionSource(source: string, name: string): string {
+  const declarationStart = source.indexOf(`function ${name}(`);
+  assert.notEqual(declarationStart, -1, `expected function ${name} to exist`);
+  const bodyStart = source.indexOf("{", declarationStart);
+  assert.notEqual(bodyStart, -1, `expected function ${name} to have a body`);
+
+  let depth = 0;
+  for (let index = bodyStart; index < source.length; index += 1) {
+    if (source[index] === "{") depth += 1;
+    if (source[index] === "}") {
+      depth -= 1;
+      if (depth === 0) return source.slice(declarationStart, index + 1);
+    }
+  }
+  assert.fail(`expected function ${name} to have a closing brace`);
 }
 
 test("recorded-route runtime has no remote map or location-derived request path", () => {
@@ -67,6 +85,11 @@ test("the private route canvas keeps the recorded shape and endpoint markers", (
   assert.match(trailMap, /projected\.start/);
   assert.match(trailMap, /projected\.end/);
   assert.match(trailMap, /Device-only route/);
+  assert.match(
+    trailMap,
+    /<View\s+aria-hidden\s+pointerEvents="none"[\s\S]*?s\.compass/,
+    "the decorative compass must stay out of the accessibility tree",
+  );
 });
 
 test("care-entry create and update payloads pass through the GPS privacy boundary", () => {
@@ -75,12 +98,9 @@ test("care-entry create and update payloads pass through the GPS privacy boundar
     "utf8",
   );
 
-  assert.match(
-    careContext,
-    /function toCreateInput[\s\S]*?sanitizeCareEntryDetailsForSync\(e\.details\)[\s\S]*?return \{/,
-  );
-  assert.match(
-    careContext,
-    /function toUpdateInput[\s\S]*?sanitizeCareEntryDetailsForSync\(e\.details\)[\s\S]*?return \{/,
-  );
+  const createInput = namedFunctionSource(careContext, "toCreateInput");
+  const updateInput = namedFunctionSource(careContext, "toUpdateInput");
+
+  assert.match(createInput, /sanitizeCareEntryDetailsForSync\(e\.details\)/);
+  assert.match(updateInput, /sanitizeCareEntryDetailsForSync\(e\.details\)/);
 });

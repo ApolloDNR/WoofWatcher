@@ -83,7 +83,7 @@ dog,pet,puppy,tracker,log,routine,journal,health,potty,feeding,walk,medication,s
 
 ## Content rating answers
 
-- Apple age-rating questionnaire: declare **Health or Wellness Topics** and **infrequent Medical or Treatment Information** because the app organizes medication logs, symptoms, and urgent vet follow-up guidance even though it is non-diagnostic. On Apple platforms using the current rating system, expect a **13+** global rating; use the rating App Store Connect calculates rather than overriding it downward.
+- Apple age-rating questionnaire: declare **Health or Wellness Topics** and **infrequent Medical or Treatment Information** because the app organizes medication logs, symptoms, and urgent vet follow-up guidance even though it is non-diagnostic. Under Apple's current definitions, those answers map to 13+ on OS 26 and later and 12+ on earlier OS versions. Use the OS- and region-specific ratings App Store Connect actually calculates rather than enforcing one rating or overriding a result downward.
 - Google Play: complete the IARC questionnaire as a general-audience dog-care journal and use the calculated rating. Do not enroll in the Designed for Families program.
 - Violence: none. Sexual content: none. Profanity: none. Drugs/alcohol/tobacco: none. Gambling: none (no simulated gambling; progression is earned by care logging only, no chance mechanics).
 - User-generated content shared with others: No. Users write private notes on their own device; sharing happens only through the OS share sheet at the user's initiative, and the app hosts no content.
@@ -95,7 +95,7 @@ dog,pet,puppy,tracker,log,routine,journal,health,potty,feeding,walk,medication,s
 
 ## Apple privacy nutrition label
 
-Answer: **Data Not Collected** (all categories), provided the release build passes the no-remote-map regression check and contains no enabled analytics, crash-reporting, account, sync, AI, or advertising SDK.
+Answer: **Data Not Collected** (all categories), provided the release build passes the no-remote-map regression check and contains no enabled analytics, crash-reporting, account, sync, AI, advertising, payment, provider-backed push-notification, or cloud-document-storage SDK or service. The machine-readable production flags in `artifacts/woofwatcher-mobile/eas.json` are the store-build capability source, and validation fails if push-token registration or cloud document upload is enabled or undeclared while this answer remains selected. Enabling provider-backed push requires reviewing any retained device token, user identifier, and provider data before re-answering the label; enabling cloud document storage likewise requires a fresh collection and sharing review.
 
 Justification to keep on file for App Review: WoofWatcher v1 has no backend, account system, analytics/ads/crash SDKs, or network transmission of user data. All care data is stored locally on the device. Photos remain on-device. Foreground walk routes are saved only in the local care log and rendered without remote map tiles, remote geometry, or a map SDK. Data leaves the device only when the user explicitly invokes the OS share sheet, which is user-initiated sharing rather than developer collection. Therefore no data types are collected as Apple defines the term, including location.
 

@@ -48,7 +48,7 @@ import { PressScale } from "@/components/motion/GameFeel";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { isClerkConfigured } from "@/lib/auth";
+import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
@@ -443,13 +443,15 @@ export default function PackScreen() {
   const insets = useSafeAreaInsets();
   const { state } = useCare();
   const { avatarConfig, getAvatarSource } = useAvatar();
+  const { isSignedIn } = useWoofAuth();
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
   const me = useGetMe({
     query: {
       queryKey: getGetMeQueryKey(),
       enabled:
         consumerSurfacePolicy.householdProviderActions &&
-        isClerkConfigured,
+        isClerkEnabledForBuild &&
+        Boolean(isSignedIn),
     },
   });
   const now = Date.now();

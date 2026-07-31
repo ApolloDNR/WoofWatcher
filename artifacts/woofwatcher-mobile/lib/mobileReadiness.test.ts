@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, relative } from "node:path";
+import { deriveHealthWatch } from "../../../lib/care-domain/src/index.ts";
 import { describeQuickLogDetailSheet } from "./quickLogEntry.ts";
+import { buildTrendWindow } from "./trendsChart.ts";
 
 const APP_DIR = join(process.cwd(), "artifacts", "woofwatcher-mobile", "app");
 const MOBILE_LIB_DIR = join(
@@ -1137,7 +1139,7 @@ test("free production routes deferred provider flows through the shared consumer
   assert.match(more, /if \(!providerSyncEnabled\)/);
   assert.match(
     more,
-    /enabled:\s*consumerSurfacePolicy\.householdProviderActions[\s\S]*isClerkConfigured/,
+    /enabled:\s*consumerSurfacePolicy\.householdProviderActions[\s\S]*isClerkEnabledForBuild[\s\S]*Boolean\(isSignedIn\)/,
   );
   assert.match(
     pack,
@@ -1145,8 +1147,12 @@ test("free production routes deferred provider flows through the shared consumer
   );
   assert.match(
     pack,
-    /enabled:\s*consumerSurfacePolicy\.householdProviderActions[\s\S]*isClerkConfigured/,
+    /enabled:\s*consumerSurfacePolicy\.householdProviderActions[\s\S]*isClerkEnabledForBuild[\s\S]*Boolean\(isSignedIn\)/,
   );
+  assert.match(home, /isClerkEnabledForBuild/);
+  assert.doesNotMatch(home, /\bisClerkConfigured\b/);
+  assert.doesNotMatch(more, /\bisClerkConfigured\b/);
+  assert.doesNotMatch(pack, /\bisClerkConfigured\b/);
   assert.match(setup, /makeSetupWizardDraftDeviceOnly/);
   assert.match(setup, /consumerSurfacePolicy\.householdSetupModes/);
   assert.match(
@@ -2067,12 +2073,22 @@ test("keeps Health Watch and the Quick Care Console honest at zero data and at n
   // Health Watch must not imply clinical precision with a made-up 0-100
   // score. It shows factual 7-day logging coverage beside the bounded,
   // qualitative status and keeps the first-log promise at zero data.
-  assert.match(health, /const hasHealthSignalData = state\.entries\.some/);
+  assert.match(
+    health,
+    /const hasHealthSignalData =\s*recentHealthEntries\.length > 0 \|\|\s*healthWatch\.signals\.length > 0 \|\|\s*healthWatch\.redFlags\.length > 0/,
+  );
   assert.match(health, /const loggedDays7 = healthRhythm\.filter\(\(day\) => day\.hasData\)\.length;/);
   assert.match(health, /\{loggedDays7\}\/7/);
   assert.match(health, /Days logged/);
   assert.doesNotMatch(health, /Health score/);
   assert.doesNotMatch(health, /function healthScore/);
+  assert.doesNotMatch(health, /No score yet/);
+  assert.match(health, /buildTrendWindow\("week", now\)/);
+  assert.match(health, /const recentHealthEntries = useMemo/);
+  assert.match(
+    health,
+    /eventTime >= healthWeek\.start[\s\S]*eventTime <= now/,
+  );
   assert.match(health, /Health Watch starts with your first log\./);
   // The signal rows ("Active daily", "Eating well") are observations, so
   // they also fall back to the first-log promise before any log exists.
@@ -2087,6 +2103,49 @@ test("keeps Health Watch and the Quick Care Console honest at zero data and at n
   assert.match(log, /const logCommandStageIsNight =/);
   assert.match(log, /homeImmersiveRoomIsNight\(new Date\(now\)\.getHours\(\)\)/);
   assert.match(log, /logCommandStageIsNight \? \{ backgroundColor: "rgba\(9,17,32,0\.35\)" \} : null/);
+});
+
+test("keeps 8-30-day Health Watch evidence visible outside the seven-day rhythm", () => {
+  const now = Date.parse("2026-07-30T18:00:00.000Z");
+  const occurredAt = new Date(now - 14 * 86_400_000).toISOString();
+  const entries = [
+    {
+      id: "older_urgent_bile",
+      type: "vomit",
+      title: "Yellow bile vomit",
+      occurredAt,
+      severity: "urgent",
+      note: "Yellow bile noted",
+    },
+  ];
+  const healthWeek = buildTrendWindow("week", now);
+  const recentHealthEntries = entries.filter((entry) => {
+    const eventTime = Date.parse(entry.occurredAt);
+    return eventTime >= healthWeek.start && eventTime <= now;
+  });
+  const healthWatch = deriveHealthWatch({
+    entries,
+    routines: [],
+    now,
+    petName: "Phoenix",
+  });
+
+  assert.equal(recentHealthEntries.length, 0);
+  assert.equal(healthWatch.status, "alert");
+  assert.ok(healthWatch.signals.length > 0);
+  assert.equal(healthWatch.redFlags.length, 1);
+
+  const health = readAppFile(join("(tabs)", "health.tsx"));
+  assert.match(
+    health,
+    /deriveBileWatchStatus\(\{[\s\S]*healthStatus:\s*healthWatch\.status,[\s\S]*vomit7:\s*healthWatch\.counts\.vomit7,[\s\S]*recentYellowBileCount:\s*bileEntries\.length,[\s\S]*signals:\s*healthWatch\.signals/,
+    "Bile Watch must retain 8-30-day vomit-pattern signals without widening the seven-day chart",
+  );
+  assert.match(
+    health,
+    /const hasHealthSignalData =\s*recentHealthEntries\.length > 0 \|\|\s*healthWatch\.signals\.length > 0 \|\|\s*healthWatch\.redFlags\.length > 0/,
+    "older Health Watch signals and red flags must keep the warning presentation out of the no-logs branch",
+  );
 });
 
 test("web notices and confirms use the themed dialog host, not raw window.alert chrome", () => {

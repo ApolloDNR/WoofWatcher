@@ -30,6 +30,7 @@ import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import {
   buildHealthReviewPacketShareText,
+  deriveBileWatchStatus,
   deriveHealthReviewPacket,
   type HealthReviewPacketAction,
 } from "@/lib/healthReviewPacket";
@@ -42,6 +43,7 @@ import {
 import { resolvePetName } from "@/lib/petIdentity";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
+import { buildTrendWindow } from "@/lib/trendsChart";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -98,10 +100,6 @@ function isYellowBile(entry: { type: string; title?: string; note?: string; deta
   return type === "vomit" && (text.includes("bile") || (text.includes("yellow") && text.includes("vomit")));
 }
 
-function daysBetween(iso: string, now: number): number {
-  return (now - new Date(iso).getTime()) / 86400000;
-}
-
 function hoursBetween(a: string, b: string): number {
   return Math.abs(new Date(a).getTime() - new Date(b).getTime()) / 3600000;
 }
@@ -114,15 +112,6 @@ function formatDateTime(iso?: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
-}
-
-function sameCalendarDay(iso: string, date: Date): boolean {
-  const event = new Date(iso);
-  return (
-    event.getFullYear() === date.getFullYear() &&
-    event.getMonth() === date.getMonth() &&
-    event.getDate() === date.getDate()
-  );
 }
 
 function statusActionLabel(type: string): string {
@@ -219,6 +208,19 @@ export default function HealthScreen() {
   const insets = useSafeAreaInsets();
   const { state } = useCare();
   const now = Date.now();
+  const healthWeek = useMemo(() => buildTrendWindow("week", now), [now]);
+  const recentHealthEntries = useMemo(
+    () =>
+      state.entries.filter((entry) => {
+        const eventTime = new Date(entry.occurredAt).getTime();
+        return (
+          Number.isFinite(eventTime) &&
+          eventTime >= healthWeek.start &&
+          eventTime <= now
+        );
+      }),
+    [healthWeek.start, now, state.entries],
+  );
   const scrollRef = useRef<ScrollView>(null);
   const tabParam = Array.isArray(params.tab) ? params.tab[0] : params.tab;
   const requestedTab: HealthTab = tabParam === "bile" ? "bile" : "health";
@@ -248,10 +250,10 @@ export default function HealthScreen() {
 
   const bileEntries = useMemo(
     () =>
-      state.entries
-        .filter((entry) => daysBetween(entry.occurredAt, now) <= 7 && isYellowBile(entry))
+      recentHealthEntries
+        .filter(isYellowBile)
         .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()),
-    [state.entries, now],
+    [recentHealthEntries],
   );
 
   // Mockup-board Overview data: every value below is derived from persisted
@@ -345,27 +347,24 @@ export default function HealthScreen() {
   }, [state.entries]);
 
   const bileTrend = useMemo(() => {
-    const formatter = new Intl.DateTimeFormat("en-US", { weekday: "short" });
-    return Array.from({ length: 7 }).map((_, index) => {
-      const date = new Date(now);
-      date.setHours(0, 0, 0, 0);
-      date.setDate(date.getDate() - (6 - index));
-      const count = bileEntries.filter((entry) => sameCalendarDay(entry.occurredAt, date)).length;
+    return healthWeek.buckets.map((bucket) => {
+      const count = bileEntries.filter((entry) => {
+        const eventTime = new Date(entry.occurredAt).getTime();
+        return eventTime >= bucket.start && eventTime < bucket.end;
+      }).length;
       return {
-        label: formatter.format(date).slice(0, 1),
+        label: bucket.label.slice(0, 1),
         count,
       };
     });
-  }, [bileEntries, now]);
+  }, [bileEntries, healthWeek.buckets]);
 
   const healthRhythm = useMemo(() => {
-    const formatter = new Intl.DateTimeFormat("en-US", { weekday: "short" });
-    return Array.from({ length: 7 }).map((_, index) => {
-      const date = new Date(now);
-      date.setHours(0, 0, 0, 0);
-      date.setDate(date.getDate() - (6 - index));
-
-      const dayEntries = state.entries.filter((entry) => sameCalendarDay(entry.occurredAt, date));
+    return healthWeek.buckets.map((bucket) => {
+      const dayEntries = recentHealthEntries.filter((entry) => {
+        const eventTime = new Date(entry.occurredAt).getTime();
+        return eventTime >= bucket.start && eventTime < bucket.end;
+      });
       const careLogs = dayEntries.filter((entry) =>
         ["meal", "walk", "potty", "water", "medication", "training"].includes(
           normalizeCareEventType(entry.type, entry.details),
@@ -380,7 +379,7 @@ export default function HealthScreen() {
       const value = hasData ? Math.max(0.18, Math.min(1, 0.34 + careLogs * 0.1 - watchSignals * 0.18)) : 0;
 
       return {
-        label: formatter.format(date).slice(0, 1),
+        label: bucket.label.slice(0, 1),
         value,
         hasData,
         tone: !hasData
@@ -390,24 +389,31 @@ export default function HealthScreen() {
             : colors.sage,
       };
     });
-  }, [colors.amber, colors.muted, colors.rose, colors.sage, now, state.entries]);
+  }, [
+    colors.amber,
+    colors.muted,
+    colors.rose,
+    colors.sage,
+    healthWeek.buckets,
+    recentHealthEntries,
+  ]);
 
-  const bileStatus =
-    healthWatch.status === "alert"
-      ? "Review"
-      : bileEntries.length || healthWatch.counts.vomit7
-        ? "Watch"
-        : "Low Risk";
+  const bileStatus = deriveBileWatchStatus({
+    healthStatus: healthWatch.status,
+    vomit7: healthWatch.counts.vomit7,
+    recentYellowBileCount: bileEntries.length,
+    signals: healthWatch.signals,
+  });
   const bileTone =
     bileStatus === "Review" ? colors.rose : bileStatus === "Watch" ? colors.amber : colors.sage;
   // Health Watch is intentionally qualitative. A made-up 0-100 "health
   // score" would imply clinical precision the owner-entered logs cannot
   // support. The snapshot instead shows the factual number of days with care
   // evidence in the current 7-day window alongside the bounded status.
-  const hasHealthSignalData = state.entries.some((entry) => {
-    const age = daysBetween(entry.occurredAt, now);
-    return age >= 0 && age <= 30;
-  });
+  const hasHealthSignalData =
+    recentHealthEntries.length > 0 ||
+    healthWatch.signals.length > 0 ||
+    healthWatch.redFlags.length > 0;
   const loggedDays7 = healthRhythm.filter((day) => day.hasData).length;
   const logCoveragePercent = Math.round((loggedDays7 / 7) * 100);
   const statusTone = !hasHealthSignalData
@@ -425,7 +431,7 @@ export default function HealthScreen() {
         ? "Review needed"
         : "Worth watching";
   const heroCopy = !hasHealthSignalData
-    ? "No score yet - meals, potty, energy, and notes build the picture from your first log."
+    ? "No logs yet - meals, potty, energy, and notes build the picture from your first log."
     : healthWatch.status === "good"
       ? "No active Health Watch signals are showing in the current window."
       : healthWatch.summary;

@@ -32,7 +32,9 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_BUILD_PROFILE": "production"
+        "EXPO_PUBLIC_BUILD_PROFILE": "production",
+        "EXPO_PUBLIC_STORE_PUSH_TOKEN_REGISTRATION": "disabled",
+        "EXPO_PUBLIC_STORE_CLOUD_DOCUMENT_UPLOAD": "disabled"
       },
       "ios": {},
       "android": {

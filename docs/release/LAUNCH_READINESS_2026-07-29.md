@@ -1,4 +1,6 @@
-# WoofWatcher — Launch Readiness Scorecard (updated 2026-07-30)
+# WoofWatcher — Launch Readiness Scorecard (2026-07-29)
+
+Last verified: 2026-07-30.
 
 The single, honest, production-standard answer to: *"Is this a solid, monetizable
 product ready for the App Store, and what exactly is left?"*
@@ -35,9 +37,9 @@ date/jurisdiction confirmation, and Apollo's approval of the exact binary.
 | Check | Result |
 |---|---|
 | Workspace typecheck (all 5 packages) | **Clean** — 0 errors |
-| Focused test suite | **755 / 755 pass** on Node 24.14.0 with pnpm 10.24.0 |
+| Focused test suite | **789 / 789 pass** on Node 24.14.0 with pnpm 10.24.0 |
 | Full CI build | **Passed** — all workspace typechecks/builds, Expo export, runtime smoke, and live-preview proof |
-| Web export smoke | **Passed** — 270 files exported |
+| Web export smoke | **Passed** — 273 files exported |
 | Runtime route smoke | **Passed** — all 13 user routes |
 | Production routes / dead ends | **Passed** — production policy hides provider-only household, event, future-dog, sync, account, push, AI, and payment controls while preserving internal QA surfaces |
 | Store-material validation | **Passed** — six 1290×2796 iPhone shots, six 1080×1920 Play shots, 1024×500 feature graphic, and 512×512 Play icon |
@@ -101,7 +103,7 @@ Two defects where the app's behavior didn't match its words. Both fixed:
 |---|---|---|
 | Store listing copy (name, subtitle, short + full description, keywords, category) | ✅ Complete, within all character limits | — |
 | Apple privacy label (Data Not Collected) + Play Data safety | ✅ Complete & accurate | — |
-| Content rating answers | ✅ Corrected: current Apple questionnaire declares Health/Wellness + infrequent Medical/Treatment information; expect calculated 13+ | — |
+| Content rating answers | ✅ Corrected: current Apple questionnaire declares Health/Wellness + infrequent Medical/Treatment information; App Store Connect determines OS- and region-specific ratings (13+ on OS 26+, 12+ on earlier OS versions under Apple's current definitions) | — |
 | App Review notes | ✅ Complete (now includes location) | — |
 | Privacy Policy + Terms | ✅ Publisher/contact resolved and public no-login privacy/support/terms sections are live | **Apollo:** confirm effective date + jurisdiction |
 | `app.json` (version, bundle id, permissions, icons) | ✅ Production-correct; generated native projects confirm the minimal permission footprint | **Apollo:** `eas init` writes the EAS projectId |

@@ -2,17 +2,32 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  addDiscardedServerEntryId,
+  adoptServerEntry,
+  applyQueuedPatchToAcknowledgedEntry,
+  createSerializedCareSyncWriter,
+  createSerializedCareEntryMutationQueue,
   deriveCareSyncOutbox,
   deriveCareSyncDashboard,
+  filterDiscardedServerEntries,
+  findCreatedCareEntryLocalSnapshot,
   reconcileCareDocFromServer,
   isUnsyncedEntry,
+  migrateAcknowledgedTempEntryForRetry,
+  prepareCareEntryForOfflineEdit,
+  recoverInterruptedCareEntryMutations,
   shouldRetryCreate,
   shouldRetryUpdate,
   buildCareEntryRefreshPlan,
   mergeServerAndLocalEntries,
+  normalizeDiscardedServerEntryIds,
+  reconcileCreatedCareEntryAcknowledgement,
+  removeDiscardedServerEntryId,
+  restoreEntryAfterDeleteFailure,
+  sanitizeCareEntryDetailsForSync,
+  selectWoofWatcherKeysForOwnerWipe,
   withSyncedStatus,
 } from "./careSync.ts";
-import * as careSyncModule from "./careSync.ts";
 
 test("marks server entries as synced", () => {
   const [entry] = withSyncedStatus([
@@ -399,15 +414,6 @@ test("merge supersedes a temp entry once its server row arrives via clientKey", 
 });
 
 test("care-entry sync strips device-only GPS route fields without mutating local care", () => {
-  const sanitize = (
-    careSyncModule as unknown as {
-      sanitizeCareEntryDetailsForSync?: (
-        details: Record<string, unknown> | null | undefined,
-      ) => Record<string, unknown>;
-    }
-  ).sanitizeCareEntryDetailsForSync;
-  assert.equal(typeof sanitize, "function");
-
   const localDetails = {
     route: [
       { lat: 37.8, lon: -122.1, t: 1 },
@@ -418,7 +424,7 @@ test("care-entry sync strips device-only GPS route fields without mutating local
     walkLifecycle: "completed",
   };
 
-  assert.deepEqual(sanitize!(localDetails), {
+  assert.deepEqual(sanitizeCareEntryDetailsForSync(localDetails), {
     routeName: "Creek loop",
     walkLifecycle: "completed",
   });
@@ -486,4 +492,799 @@ test("server acknowledgement carries a temp walk's device-only route to the real
     route,
     routeDistanceM: 940,
   });
+});
+
+test("create acknowledgement adopts the server id and fields while retaining the device route", () => {
+  const route = [
+    { lat: 37.8, lon: -122.1, t: 1 },
+    { lat: 37.81, lon: -122.09, t: 2 },
+  ];
+
+  const acknowledged = adoptServerEntry(
+    {
+      id: "temp_walk",
+      title: "Local draft",
+      occurredAt: "2026-07-30T18:00:00.000Z",
+      syncStatus: "failed" as const,
+      syncError: "Saved locally. Refresh to retry sync.",
+      details: {
+        route,
+        routeDistanceM: 940,
+        routeName: "Local route name",
+        localDraft: "must not reach the server view",
+      },
+    },
+    {
+      id: "server_walk",
+      title: "Evening walk",
+      occurredAt: "2026-07-30T18:01:00.000Z",
+      details: {
+        clientKey: "temp_walk",
+        routeName: "Creek loop",
+      },
+    },
+  );
+
+  assert.deepEqual(acknowledged, {
+    id: "server_walk",
+    title: "Evening walk",
+    occurredAt: "2026-07-30T18:01:00.000Z",
+    syncStatus: "synced",
+    syncError: undefined,
+    details: {
+      clientKey: "temp_walk",
+      routeName: "Creek loop",
+      route,
+      routeDistanceM: 940,
+    },
+  });
+});
+
+test("update acknowledgement replaces local fields and clears retry state", () => {
+  const route = [{ lat: 37.8, lon: -122.1, t: 1 }];
+
+  const acknowledged = adoptServerEntry(
+    {
+      id: "server_walk",
+      title: "Pending title",
+      occurredAt: "2026-07-30T18:00:00.000Z",
+      syncStatus: "failed" as const,
+      syncError: "Saved locally. Refresh to retry sync.",
+      details: {
+        route,
+        routeDistanceM: 410,
+        routeName: "Pending route name",
+      },
+    },
+    {
+      id: "server_walk",
+      title: "Saved title",
+      occurredAt: "2026-07-30T18:02:00.000Z",
+      details: {
+        routeName: "Saved route name",
+        walkLifecycle: "completed",
+      },
+    },
+  );
+
+  assert.deepEqual(acknowledged, {
+    id: "server_walk",
+    title: "Saved title",
+    occurredAt: "2026-07-30T18:02:00.000Z",
+    syncStatus: "synced",
+    syncError: undefined,
+    details: {
+      routeName: "Saved route name",
+      walkLifecycle: "completed",
+      route,
+      routeDistanceM: 410,
+    },
+  });
+});
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+async function flushMutationQueue() {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+test("serializes entry updates and only applies the newest acknowledgement", async () => {
+  const first = deferred<string>();
+  const second = deferred<string>();
+  const calls: string[] = [];
+  const successes: Array<[string, string]> = [];
+  const failures: string[] = [];
+  const queue = createSerializedCareEntryMutationQueue<string, string>({
+    mutate: (_id, value) => {
+      calls.push(value);
+      return value === "first" ? first.promise : second.promise;
+    },
+    onSuccess: (_id, value, result) => {
+      successes.push([value, result]);
+    },
+    onFailure: (_id, value) => {
+      failures.push(value);
+    },
+  });
+
+  queue.enqueue("server_walk", "first");
+  queue.enqueue("server_walk", "second");
+  assert.deepEqual(calls, ["first"]);
+
+  first.resolve("server-first");
+  await flushMutationQueue();
+  assert.deepEqual(calls, ["first", "second"]);
+  assert.deepEqual(successes, []);
+
+  second.resolve("server-second");
+  await flushMutationQueue();
+  assert.deepEqual(successes, [["second", "server-second"]]);
+  assert.deepEqual(failures, []);
+});
+
+test("ignores an older failure while a newer serialized update is waiting", async () => {
+  const first = deferred<string>();
+  const second = deferred<string>();
+  const calls: string[] = [];
+  const failures: string[] = [];
+  const successes: string[] = [];
+  const queue = createSerializedCareEntryMutationQueue<string, string>({
+    mutate: (_id, value) => {
+      calls.push(value);
+      return value === "first" ? first.promise : second.promise;
+    },
+    onSuccess: (_id, value) => {
+      successes.push(value);
+    },
+    onFailure: (_id, value) => {
+      failures.push(value);
+    },
+  });
+
+  queue.enqueue("server_walk", "first");
+  queue.enqueue("server_walk", "second");
+  first.reject(new Error("old request failed"));
+  await flushMutationQueue();
+  assert.deepEqual(calls, ["first", "second"]);
+  assert.deepEqual(failures, []);
+
+  second.reject(new Error("latest request failed"));
+  await flushMutationQueue();
+  assert.deepEqual(failures, ["second"]);
+  assert.deepEqual(successes, []);
+});
+
+test("cancelling an entry mutation suppresses its result and queued update", async () => {
+  const first = deferred<string>();
+  const calls: string[] = [];
+  const outcomes: string[] = [];
+  const queue = createSerializedCareEntryMutationQueue<string, string>({
+    mutate: (_id, value) => {
+      calls.push(value);
+      return first.promise;
+    },
+    onSuccess: () => outcomes.push("success"),
+    onFailure: () => outcomes.push("failure"),
+  });
+
+  queue.enqueue("server_walk", "first");
+  queue.enqueue("server_walk", "second");
+  queue.cancel("server_walk");
+  first.resolve("server-first");
+  await flushMutationQueue();
+
+  assert.deepEqual(calls, ["first"]);
+  assert.deepEqual(outcomes, []);
+});
+
+test("a cancelled or erased temp create deletes its acknowledged server row", async () => {
+  const deleted: string[] = [];
+  const serverEntry = {
+    id: "server_walk",
+    title: "Walk",
+    occurredAt: "2026-07-30T18:00:00.000Z",
+  };
+
+  const cancelled = await reconcileCreatedCareEntryAcknowledgement({
+    localEntry: {
+      id: "temp_walk",
+      title: "Walk",
+      occurredAt: "2026-07-30T18:00:00.000Z",
+    },
+    serverEntry,
+    tempWasCancelled: true,
+    eraseGenerationAtStart: 3,
+    currentEraseGeneration: 3,
+    deleteServerEntry: async (id) => {
+      deleted.push(id);
+    },
+  });
+  const erased = await reconcileCreatedCareEntryAcknowledgement({
+    localEntry: undefined,
+    serverEntry,
+    tempWasCancelled: false,
+    eraseGenerationAtStart: 3,
+    currentEraseGeneration: 4,
+    deleteServerEntry: async (id) => {
+      deleted.push(id);
+    },
+  });
+  const offlineDelete = await reconcileCreatedCareEntryAcknowledgement({
+    localEntry: undefined,
+    serverEntry,
+    tempWasCancelled: true,
+    eraseGenerationAtStart: 3,
+    currentEraseGeneration: 3,
+    deleteServerEntry: async () => {
+      throw new Error("offline");
+    },
+  });
+
+  assert.deepEqual(cancelled, {
+    status: "discarded",
+    serverEntryId: "server_walk",
+    deleteSucceeded: true,
+  });
+  assert.deepEqual(erased, {
+    status: "discarded",
+    serverEntryId: "server_walk",
+    deleteSucceeded: true,
+  });
+  assert.deepEqual(offlineDelete, {
+    status: "discarded",
+    serverEntryId: "server_walk",
+    deleteSucceeded: false,
+  });
+  assert.deepEqual(deleted, ["server_walk", "server_walk"]);
+});
+
+test("a live temp create adopts the server identity without deleting it", async () => {
+  const deleted: string[] = [];
+  const route = [{ lat: 37.8, lon: -122.1, t: 1 }];
+
+  const result = await reconcileCreatedCareEntryAcknowledgement({
+    localEntry: {
+      id: "temp_walk",
+      title: "Local walk",
+      occurredAt: "2026-07-30T18:00:00.000Z",
+      syncStatus: "pending" as const,
+      details: { route, routeDistanceM: 410 },
+    },
+    serverEntry: {
+      id: "server_walk",
+      title: "Saved walk",
+      occurredAt: "2026-07-30T18:01:00.000Z",
+      details: { clientKey: "temp_walk" },
+    },
+    tempWasCancelled: false,
+    eraseGenerationAtStart: 3,
+    currentEraseGeneration: 3,
+    deleteServerEntry: async (id) => {
+      deleted.push(id);
+    },
+  });
+
+  assert.equal(result.status, "adopted");
+  if (result.status !== "adopted") assert.fail("expected adopted entry");
+  assert.deepEqual(result.entry, {
+    id: "server_walk",
+    title: "Saved walk",
+    occurredAt: "2026-07-30T18:01:00.000Z",
+    syncStatus: "synced",
+    syncError: undefined,
+    details: {
+      clientKey: "temp_walk",
+      route,
+      routeDistanceM: 410,
+    },
+  });
+  assert.deepEqual(deleted, []);
+});
+
+test("an edit queued during create keeps the server id and remains pending", () => {
+  const prepared = applyQueuedPatchToAcknowledgedEntry(
+    {
+      id: "server_walk",
+      title: "Initial walk",
+      occurredAt: "2026-07-30T18:00:00.000Z",
+      syncStatus: "synced" as const,
+      syncError: undefined,
+      details: { clientKey: "temp_walk" },
+    },
+    {
+      id: "temp_walk",
+      title: "Edited while saving",
+      syncStatus: "synced",
+      syncError: "stale error",
+    },
+  );
+
+  assert.deepEqual(prepared, {
+    id: "server_walk",
+    title: "Edited while saving",
+    occurredAt: "2026-07-30T18:00:00.000Z",
+    syncStatus: "pending",
+    syncError: undefined,
+    details: { clientKey: "temp_walk" },
+  });
+});
+
+test("an edit queued during create stays local when sign-out happens before acknowledgement", () => {
+  const prepared = applyQueuedPatchToAcknowledgedEntry(
+    {
+      id: "server_walk",
+      title: "Initial walk",
+      occurredAt: "2026-07-30T18:00:00.000Z",
+      syncStatus: "synced" as const,
+      syncError: undefined,
+      details: { clientKey: "temp_walk" },
+    },
+    {
+      title: "Edited after sign-out",
+      note: "Keep this exact note",
+    },
+    false,
+  );
+
+  assert.deepEqual(prepared, {
+    id: "server_walk",
+    title: "Edited after sign-out",
+    note: "Keep this exact note",
+    occurredAt: "2026-07-30T18:00:00.000Z",
+    syncStatus: "local",
+    syncError: "Saved on this device.",
+    details: { clientKey: "temp_walk" },
+  });
+});
+
+test("offline edits remain local and preserve the newest patch", () => {
+  const edited = prepareCareEntryForOfflineEdit(
+    {
+      id: "server_walk",
+      title: "Older server title",
+      occurredAt: "2026-07-30T18:00:00.000Z",
+      syncStatus: "pending" as const,
+    },
+    {
+      title: "Newest offline title",
+      note: "Do not let the stale acknowledgement replace this",
+    },
+  );
+
+  assert.deepEqual(edited, {
+    id: "server_walk",
+    title: "Newest offline title",
+    note: "Do not let the stale acknowledgement replace this",
+    occurredAt: "2026-07-30T18:00:00.000Z",
+    syncStatus: "local",
+    syncError: "Saved on this device.",
+  });
+});
+
+test("hydration makes interrupted create and update mutations retryable", () => {
+  const recovered = recoverInterruptedCareEntryMutations([
+    {
+      id: "temp_walk",
+      title: "Creating walk",
+      syncStatus: "pending" as const,
+    },
+    {
+      id: "server_meal",
+      title: "Updating breakfast",
+      syncStatus: "pending" as const,
+    },
+    {
+      id: "server_note",
+      title: "Already synced",
+      syncStatus: "synced" as const,
+    },
+  ]);
+
+  assert.deepEqual(
+    recovered.map((entry) => [
+      entry.id,
+      entry.syncStatus,
+      entry.syncError,
+    ]),
+    [
+      [
+        "temp_walk",
+        "failed",
+        "Previous sync was interrupted. Ready to retry.",
+      ],
+      [
+        "server_meal",
+        "failed",
+        "Previous sync was interrupted. Ready to retry.",
+      ],
+      ["server_note", "synced", undefined],
+    ],
+  );
+});
+
+test("lost create response migrates the newest temp snapshot onto the real server id", () => {
+  const migrated = migrateAcknowledgedTempEntryForRetry(
+    {
+      id: "temp_walk",
+      title: "Newest edited title",
+      note: "Edited while the first create response was lost",
+      occurredAt: "2026-07-30T18:05:00.000Z",
+      syncStatus: "failed" as const,
+      details: {
+        routeName: "Newest route",
+        route: [{ lat: 37.8, lon: -122.1, t: 1 }],
+      },
+    },
+    {
+      id: "server_walk",
+      title: "Original create title",
+      occurredAt: "2026-07-30T18:00:00.000Z",
+      details: {
+        clientKey: "temp_walk",
+        routeName: "Original route",
+        walkLifecycle: "completed",
+      },
+    },
+  );
+
+  assert.deepEqual(migrated, {
+    id: "server_walk",
+    title: "Newest edited title",
+    note: "Edited while the first create response was lost",
+    occurredAt: "2026-07-30T18:05:00.000Z",
+    syncStatus: "failed",
+    syncError:
+      "The server saved the first version. Ready to sync your latest changes.",
+    details: {
+      clientKey: "temp_walk",
+      routeName: "Newest route",
+      walkLifecycle: "completed",
+      route: [{ lat: 37.8, lon: -122.1, t: 1 }],
+    },
+  });
+});
+
+test("refresh migration keeps the edited temp snapshot retryable instead of accepting stale create fields", () => {
+  const [merged] = mergeServerAndLocalEntries(
+    [
+      {
+        id: "temp_walk",
+        title: "Newest edited title",
+        note: "Latest note",
+        occurredAt: "2026-07-30T18:05:00.000Z",
+        syncStatus: "failed" as const,
+      },
+    ],
+    [
+      {
+        id: "server_walk",
+        title: "Original create title",
+        occurredAt: "2026-07-30T18:00:00.000Z",
+        details: { clientKey: "temp_walk" },
+      },
+    ],
+  );
+
+  assert.equal(merged.id, "server_walk");
+  assert.equal(merged.title, "Newest edited title");
+  assert.equal(merged.note, "Latest note");
+  assert.equal(merged.syncStatus, "failed");
+  assert.equal(shouldRetryUpdate(merged), true);
+});
+
+test("create acknowledgement finds a row that refresh already migrated to the server id", async () => {
+  const entries = [
+    {
+      id: "server_walk",
+      title: "Newest edited title",
+      occurredAt: "2026-07-30T18:05:00.000Z",
+      syncStatus: "failed" as const,
+      details: { clientKey: "temp_walk" },
+    },
+  ];
+  const existing = findCreatedCareEntryLocalSnapshot(
+    entries,
+    "temp_walk",
+    "server_walk",
+  );
+  const deleted: string[] = [];
+  const result = await reconcileCreatedCareEntryAcknowledgement({
+    localEntry: existing,
+    serverEntry: {
+      id: "server_walk",
+      title: "Original create title",
+      occurredAt: "2026-07-30T18:00:00.000Z",
+      details: { clientKey: "temp_walk" },
+    },
+    tempWasCancelled: false,
+    eraseGenerationAtStart: 1,
+    currentEraseGeneration: 1,
+    deleteServerEntry: async (id) => {
+      deleted.push(id);
+    },
+  });
+
+  assert.equal(existing?.id, "server_walk");
+  assert.equal(result.status, "adopted");
+  if (result.status !== "adopted") assert.fail("expected adopted entry");
+  assert.equal(result.entry.title, "Newest edited title");
+  assert.equal(result.entry.syncStatus, "failed");
+  assert.deepEqual(deleted, []);
+});
+
+test("missing temp snapshot alone does not delete an acknowledged create", async () => {
+  const deleted: string[] = [];
+  const result = await reconcileCreatedCareEntryAcknowledgement({
+    localEntry: undefined,
+    serverEntry: {
+      id: "server_walk",
+      title: "Walk",
+      occurredAt: "2026-07-30T18:00:00.000Z",
+      details: { clientKey: "temp_walk" },
+    },
+    tempWasCancelled: false,
+    eraseGenerationAtStart: 1,
+    currentEraseGeneration: 1,
+    deleteServerEntry: async (id) => {
+      deleted.push(id);
+    },
+  });
+
+  assert.equal(result.status, "adopted");
+  assert.deepEqual(deleted, []);
+});
+
+test("idempotent response to a recovered create keeps the edited temp snapshot retryable", async () => {
+  const result = await reconcileCreatedCareEntryAcknowledgement({
+    localEntry: {
+      id: "temp_walk",
+      title: "Newest recovered title",
+      note: "This edit survived restart",
+      occurredAt: "2026-07-30T18:05:00.000Z",
+      syncStatus: "failed" as const,
+      details: { routeName: "Newest route" },
+    },
+    serverEntry: {
+      id: "server_walk",
+      title: "Stale original title",
+      note: "Original note",
+      occurredAt: "2026-07-30T18:00:00.000Z",
+      details: {
+        clientKey: "temp_walk",
+        routeName: "Original route",
+      },
+    },
+    createWasRetried: true,
+    tempWasCancelled: false,
+    eraseGenerationAtStart: 1,
+    currentEraseGeneration: 1,
+    deleteServerEntry: async () => {},
+  });
+
+  assert.equal(result.status, "adopted");
+  if (result.status !== "adopted") assert.fail("expected adopted entry");
+  assert.equal(result.entry.id, "server_walk");
+  assert.equal(result.entry.title, "Newest recovered title");
+  assert.equal(result.entry.note, "This edit survived restart");
+  assert.equal(result.entry.syncStatus, "failed");
+  assert.equal(shouldRetryUpdate(result.entry), true);
+  assert.deepEqual(result.entry.details, {
+    clientKey: "temp_walk",
+    routeName: "Newest route",
+  });
+});
+
+test("the dedicated deletion ledger survives hydration and prevents restart resurrection", () => {
+  const raw = JSON.stringify([
+    "server_cancelled",
+    "server_cancelled",
+    "",
+    42,
+  ]);
+  const hydratedIds = normalizeDiscardedServerEntryIds(JSON.parse(raw));
+
+  assert.deepEqual(hydratedIds, ["server_cancelled"]);
+  assert.deepEqual(
+    filterDiscardedServerEntries(
+      [
+        { id: "server_cancelled", title: "Deleted walk" },
+        { id: "server_safe", title: "Breakfast" },
+      ],
+      hydratedIds,
+      hydratedIds,
+    ),
+    [{ id: "server_safe", title: "Breakfast" }],
+  );
+});
+
+test("ledger hydration unions a cancellation recorded while storage is being read", () => {
+  const cachedIds = normalizeDiscardedServerEntryIds(["server_old"]);
+  const cancelledDuringRead = addDiscardedServerEntryId(
+    [],
+    "server_new",
+  );
+
+  assert.deepEqual(
+    normalizeDiscardedServerEntryIds([
+      ...cachedIds,
+      ...cancelledDuringRead,
+    ]),
+    ["server_old", "server_new"],
+  );
+});
+
+test("a durable cancelled client key suppresses its server row after process death", () => {
+  assert.deepEqual(
+    filterDiscardedServerEntries(
+      [
+        {
+          id: "server_cancelled",
+          details: { clientKey: "temp_cancelled" },
+        },
+        { id: "server_safe", details: { clientKey: "temp_safe" } },
+      ],
+      ["temp_cancelled"],
+    ),
+    [{ id: "server_safe", details: { clientKey: "temp_safe" } }],
+  );
+});
+
+test("one empty refresh does not make a late cancelled create eligible to reappear", () => {
+  const durableLedger = ["temp_cancelled"];
+  const firstRefresh: Array<{
+    id: string;
+    details?: Record<string, unknown>;
+  }> = [];
+
+  assert.deepEqual(
+    filterDiscardedServerEntries(firstRefresh, durableLedger),
+    [],
+  );
+  // The CREATE commits after that empty full-list response. Keeping the
+  // clientKey ledger still suppresses it on the next refresh.
+  assert.deepEqual(
+    filterDiscardedServerEntries(
+      [
+        {
+          id: "server_late",
+          details: { clientKey: "temp_cancelled" },
+        },
+      ],
+      durableLedger,
+    ),
+    [],
+  );
+});
+
+test("refresh filtering includes tombstones added while deletion retries are in flight", () => {
+  const snapshotAtRefreshStart = ["server_old"];
+  const currentAfterAwait: string[] = [];
+  const addedAndSuccessfullyDeletedDuringAwait = ["server_new"];
+
+  assert.deepEqual(
+    filterDiscardedServerEntries(
+      [
+        { id: "server_old" },
+        { id: "server_new" },
+        { id: "server_safe" },
+      ],
+      snapshotAtRefreshStart,
+      currentAfterAwait,
+      addedAndSuccessfullyDeletedDuringAwait,
+    ),
+    [{ id: "server_safe" }],
+  );
+});
+
+test("successful server deletion removes only its durable tombstone", () => {
+  const withTwo = addDiscardedServerEntryId(
+    addDiscardedServerEntryId([], "server_old"),
+    "server_new",
+  );
+
+  assert.deepEqual(withTwo, ["server_old", "server_new"]);
+  assert.deepEqual(
+    removeDiscardedServerEntryId(withTwo, "server_old"),
+    ["server_new"],
+  );
+});
+
+test("delete failure restoration replaces an existing row instead of duplicating it", () => {
+  const restored = restoreEntryAfterDeleteFailure(
+    [
+      { id: "server_walk", title: "Server refresh copy" },
+      { id: "server_meal", title: "Breakfast" },
+    ],
+    { id: "server_walk", title: "Owner's local walk" },
+  );
+
+  assert.deepEqual(restored, [
+    { id: "server_walk", title: "Owner's local walk" },
+    { id: "server_meal", title: "Breakfast" },
+  ]);
+  assert.equal(
+    restored.filter((entry) => entry.id === "server_walk").length,
+    1,
+  );
+});
+
+test("delete failure restoration makes a cancelled pending edit retryable", () => {
+  const [restored] = restoreEntryAfterDeleteFailure(
+    [],
+    {
+      id: "server_walk",
+      title: "Edited walk",
+      syncStatus: "pending" as const,
+      syncError: undefined,
+    },
+  );
+
+  assert.equal(restored.syncStatus, "failed");
+  assert.match(restored.syncError ?? "", /retry/i);
+});
+
+test("serializes durable tombstone writes so a later clear cannot be overtaken", async () => {
+  const firstWrite = deferred<void>();
+  const writes: string[][] = [];
+  const writer = createSerializedCareSyncWriter<string[]>(async (value) => {
+    writes.push(value);
+    if (writes.length === 1) await firstWrite.promise;
+  });
+
+  const addWrite = writer.enqueue(["server_cancelled"]);
+  const clearWrite = writer.enqueue([]);
+  assert.deepEqual(writes, [["server_cancelled"]]);
+
+  firstWrite.resolve();
+  await addWrite;
+  await clearWrite;
+  assert.deepEqual(writes, [["server_cancelled"], []]);
+});
+
+test("owner wipe preserves opaque cleanup ids until final remote deletion removes the ledger", async () => {
+  const writes: Array<string[] | null> = [];
+  const writer = createSerializedCareSyncWriter<string[] | null>(
+    async (value) => {
+      writes.push(value);
+    },
+  );
+  const cleanupLedger = normalizeDiscardedServerEntryIds([
+    "server_orphan",
+    "temp_cancelled",
+  ]);
+
+  // A local-data wipe re-persists only the opaque deletion ledger.
+  await writer.enqueue(cleanupLedger);
+  // Remote absence/delete confirmation is the only event that removes it.
+  await writer.enqueue(null);
+
+  assert.deepEqual(writes, [
+    ["server_orphan", "temp_cancelled"],
+    null,
+  ]);
+});
+
+test("owner wipe removes every WoofWatcher key except the remote cleanup ledger", () => {
+  assert.deepEqual(
+    selectWoofWatcherKeysForOwnerWipe(
+      [
+        "woofwatcher.v2.state",
+        "woofwatcher.avatar",
+        "woofwatcher.v2.discarded-server-entry-ids",
+        "unrelated.app.state",
+      ],
+      "woofwatcher.v2.discarded-server-entry-ids",
+    ),
+    ["woofwatcher.v2.state", "woofwatcher.avatar"],
+  );
 });

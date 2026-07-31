@@ -19,7 +19,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { isClerkConfigured, useWoofAuth } from "@/lib/auth";
+import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetMe,
@@ -355,7 +355,7 @@ export default function MoreScreen() {
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
   const ownerOps = consumerSurfacePolicy.ownerOps;
   const providerSyncEnabled =
-    consumerSurfacePolicy.providerSyncControls && isClerkConfigured;
+    consumerSurfacePolicy.providerSyncControls && isClerkEnabledForBuild;
   const routeParams = useLocalSearchParams<{
     section?: string | string[];
   }>();
@@ -377,7 +377,7 @@ export default function MoreScreen() {
       queryKey: getGetMeQueryKey(),
       enabled:
         consumerSurfacePolicy.householdProviderActions &&
-        isClerkConfigured &&
+        isClerkEnabledForBuild &&
         Boolean(isSignedIn),
     },
   });
@@ -3276,7 +3276,7 @@ export default function MoreScreen() {
                   <Pressable
                     onPress={() => {
                       Haptics.selectionAsync();
-                      if (!isClerkConfigured) {
+                      if (!isClerkEnabledForBuild) {
                         notifyDialog(
                           "Saved on this device",
                           "Everything is saved on this device. Nothing is waiting to upload.",

@@ -2,6 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  STORE_CAPABILITY_ENV,
+  validateProductionPrivacyCapabilities,
+} from "./release-capability-policy.mjs";
+
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const strictSubmission = process.argv.includes("--submission");
 const errors = [];
@@ -150,7 +155,37 @@ check(metadata.appRecord.price === "FREE", "v1 store price must be FREE");
 check(metadata.version.releaseOption === "MANUAL", "First public release must be manual");
 check(metadata.review.demoAccountRequired === false, "Free local v1 must not require demo credentials");
 check(metadata.privacy.nutritionLabel === "DATA_NOT_COLLECTED", "Privacy label drifted");
-check(metadata.ageRating.expectedGlobalRating === "13+", "Expected current Apple rating must be 13+");
+for (const issue of validateProductionPrivacyCapabilities({ eas, metadata })) {
+  errors.push(issue);
+}
+check(
+  /provider-backed push notifications/i.test(metadata.privacy.condition) &&
+    /cloud document storage/i.test(metadata.privacy.condition),
+  "Data Not Collected condition must fail closed for provider-backed push and cloud document storage",
+);
+check(
+  metadata.ageRating.calculationPolicy === "USE_APP_STORE_CONNECT_CALCULATED_RATINGS",
+  "Apple age ratings must use App Store Connect's OS- and region-specific calculation",
+);
+check(
+  metadata.ageRating.healthOrWellnessTopics === true &&
+    metadata.ageRating.medicalOrTreatmentInformation === "INFREQUENT",
+  "Apple medical/wellness questionnaire answers drifted",
+);
+check(
+  metadata.ageRating.unrestrictedWebAccess === false &&
+    metadata.ageRating.socialMedia === false &&
+    metadata.ageRating.userGeneratedContent === false &&
+    metadata.ageRating.messagingOrChat === false &&
+    metadata.ageRating.advertising === false &&
+    metadata.ageRating.gambling === false &&
+    metadata.ageRating.contests === "NONE",
+  "Apple capability/content questionnaire answers drifted",
+);
+check(
+  !Object.hasOwn(metadata.ageRating, "expectedGlobalRating"),
+  "Do not enforce one Apple age rating across OS versions and regions",
+);
 
 const subtitle = metadata.version.subtitle;
 const keywords = metadata.version.keywords;
@@ -166,6 +201,7 @@ const fullDescription = markdownSection(
 const playShortDescription = firstContentLine(
   markdownSection(listing, "Google Play short description (80 characters max)"),
 );
+const applePrivacyLabel = markdownSection(listing, "Apple privacy nutrition label");
 check(fullDescription.length > 0, "Full store description section is missing");
 check(fullDescription.length <= 4000, `Full description is ${fullDescription.length} characters; max is 4000`);
 check(Boolean(playShortDescription), "Google Play short description is missing");
@@ -175,6 +211,11 @@ check(
 );
 check(listing.includes(keywords), "Machine-readable keywords and STORE_LISTING.md differ");
 check(!/claude\.ai\/code\/artifact/i.test(listing), "Private Claude artifact URL remains in listing");
+check(
+  /provider-backed push/i.test(applePrivacyLabel) &&
+    /cloud document storage/i.test(applePrivacyLabel),
+  "Apple privacy-label guidance must fail closed for provider-backed push and cloud document storage",
+);
 check(!/Routines the whole|pack can follow/i.test(generator), "Screenshot generator still implies shared sync");
 check(!/06-health/i.test(generator), "Screenshot generator still captures the unexplained Health Score");
 check(/externalRequests/.test(generator), "Screenshot generator no longer audits remote requests");
@@ -185,6 +226,15 @@ check(
 check(
   /owner-only Pack Access is visible/.test(generator),
   "Screenshot generator must reject internal/owner-ops bundles",
+);
+check(
+  /server\.listen\(0,\s*"127\.0\.0\.1"/.test(generator),
+  "Screenshot capture server must bind to loopback",
+);
+check(
+  /path\.resolve\(ROOT,\s*relativeUrlPath\)/.test(generator) &&
+    /fp\.startsWith\(`\$\{ROOT\}\$\{path\.sep\}`\)/.test(generator),
+  "Screenshot capture server must contain decoded request paths beneath ROOT",
 );
 
 for (const legal of [
@@ -258,6 +308,9 @@ console.log(`- iPhone screenshots: ${screenshots.length} at 1290x2796, opaque`);
 console.log(`- Play screenshots: ${screenshots.length} at 1080x1920, opaque`);
 console.log("- Feature graphic: 1024x500, opaque");
 console.log("- Play icon: 512x512, RGBA");
+console.log(
+  `- Store privacy capabilities: push-token registration ${eas.build.production.env[STORE_CAPABILITY_ENV.pushTokenRegistration]}; cloud document upload ${eas.build.production.env[STORE_CAPABILITY_ENV.cloudDocumentUpload]}`,
+);
 
 if (blockers.length > 0) {
   console.log(`OWNER/NATIVE BLOCKERS (${blockers.length})`);

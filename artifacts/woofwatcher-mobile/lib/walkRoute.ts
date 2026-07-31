@@ -236,6 +236,7 @@ export function parseWalkRoute(value: unknown): WalkRoutePoint[] | null {
 /** "0.4 mi", "1.2 mi", or feet for very short recorded loops. */
 export function formatRouteDistanceMiles(meters: number): string {
   if (!Number.isFinite(meters) || meters < 0) return "";
+  if (meters === 0) return "0 ft";
   const miles = meters / 1609.344;
   if (miles < 0.1)
     return `${Math.max(10, Math.round((meters * 3.28084) / 10) * 10)} ft`;
@@ -268,6 +269,12 @@ export interface TrailViewport {
   /** World-pixel coordinates (at `zoom`) of the view center. */
   centerX: number;
   centerY: number;
+  /**
+   * Additional fit applied when even the minimum zoom cannot contain the
+   * complete route. This preserves the configured walk-map zoom range while
+   * ensuring long recorded routes are never clipped by the local canvas.
+   */
+  fitScale: number;
 }
 
 /**
@@ -307,10 +314,18 @@ export function fitRouteViewport(
       break;
     }
   }
+  const spanX = lonToWorldX(maxLon, zoom) - lonToWorldX(minLon, zoom);
+  const spanY = latToWorldY(minLat, zoom) - latToWorldY(maxLat, zoom);
+  const fitScale = Math.min(
+    1,
+    spanX > 0 ? availableWidth / spanX : 1,
+    spanY > 0 ? availableHeight / spanY : 1,
+  );
   return {
     zoom,
     centerX: (lonToWorldX(minLon, zoom) + lonToWorldX(maxLon, zoom)) / 2,
     centerY: (latToWorldY(minLat, zoom) + latToWorldY(maxLat, zoom)) / 2,
+    fitScale,
   };
 }
 
@@ -322,8 +337,14 @@ export function projectRoutePoint(
   height: number,
 ): { x: number; y: number } {
   return {
-    x: lonToWorldX(point.lon, viewport.zoom) - viewport.centerX + width / 2,
-    y: latToWorldY(point.lat, viewport.zoom) - viewport.centerY + height / 2,
+    x:
+      (lonToWorldX(point.lon, viewport.zoom) - viewport.centerX) *
+        viewport.fitScale +
+      width / 2,
+    y:
+      (latToWorldY(point.lat, viewport.zoom) - viewport.centerY) *
+        viewport.fitScale +
+      height / 2,
   };
 }
 

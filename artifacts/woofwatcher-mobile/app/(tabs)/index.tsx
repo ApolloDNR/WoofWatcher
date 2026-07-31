@@ -56,7 +56,7 @@ import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type Entry } from "@/context/CareContext";
 import { announce } from "@/lib/announce";
-import { isClerkConfigured } from "@/lib/auth";
+import { isClerkEnabledForBuild } from "@/lib/auth";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import {
@@ -100,7 +100,7 @@ import { deriveTodayCommand, findPendingMealOutcome } from "@/lib/todayCommand";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 
 const HOME_PROVIDER_SYNC_ENABLED =
-  isClerkConfigured && getConsumerSurfacePolicy().providerSyncControls;
+  isClerkEnabledForBuild && getConsumerSurfacePolicy().providerSyncControls;
 
 interface QuickItem {
   key: string;

@@ -216,7 +216,7 @@ test("penalizes sparse, private, failed, and overdue care records", () => {
         type: "note",
         title: "Saw something",
         caregiver: "Apollo",
-        occurredAt: "2026-06-06T17:30:00.000Z",
+        occurredAt: "2026-06-06T18:00:00.000Z",
         syncStatus: "failed",
         syncError: "Network unavailable",
       },
@@ -254,7 +254,7 @@ test("treats local and stale failed statuses as complete saves without a provide
         type: "note",
         title: "Care note",
         caregiver: "Apollo",
-        occurredAt: "2026-06-06T17:35:00.000Z",
+        occurredAt: "2026-06-06T18:00:00.000Z",
         syncStatus: "failed",
         syncError: "Network unavailable",
         details: { householdVisible: true },
@@ -262,6 +262,7 @@ test("treats local and stale failed statuses as complete saves without a provide
     ],
   });
 
+  assert.equal(intelligence.visibleLogCount, 2);
   assert.equal(intelligence.syncScore, 100);
   assert.notEqual(intelligence.nextAction.kind, "retry-sync");
   assert.equal(

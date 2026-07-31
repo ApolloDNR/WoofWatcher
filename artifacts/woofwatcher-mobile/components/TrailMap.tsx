@@ -286,6 +286,7 @@ export function TrailMap({
       ) : null}
 
       <View
+        aria-hidden
         pointerEvents="none"
         style={[
           s.compass,

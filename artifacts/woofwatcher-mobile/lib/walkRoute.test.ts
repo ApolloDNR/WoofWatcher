@@ -168,6 +168,7 @@ test("parseWalkRoute accepts only plausible stored routes", () => {
 });
 
 test("formatRouteDistanceMiles renders walkable distances honestly", () => {
+  assert.equal(formatRouteDistanceMiles(0), "0 ft");
   assert.equal(formatRouteDistanceMiles(1609.344), "1.0 mi");
   assert.equal(formatRouteDistanceMiles(644), "0.4 mi");
   assert.equal(formatRouteDistanceMiles(60), "200 ft");
@@ -194,6 +195,19 @@ test("fitRouteViewport clamps zoom to 14-17 and centers on the route", () => {
   const longViewport = fitRouteViewport(long, 358, 286);
   assert.ok(longViewport);
   assert.equal(longViewport.zoom, 14);
+  const longProjected = long.map((routePoint) =>
+    projectRoutePoint(routePoint, longViewport, 358, 286),
+  );
+  for (const routePoint of longProjected) {
+    assert.ok(
+      routePoint.x >= 28 && routePoint.x <= 358 - 28,
+      `expected x=${routePoint.x} inside the padded viewport`,
+    );
+    assert.ok(
+      routePoint.y >= 28 && routePoint.y <= 286 - 28,
+      `expected y=${routePoint.y} inside the padded viewport`,
+    );
+  }
 
   // Center is the bbox midpoint in world pixels.
   const mid = {

@@ -44,10 +44,11 @@
     "nutritionLabel": "DATA_NOT_COLLECTED",
     "tracking": false,
     "privacyManifestCollectedDataTypes": [],
-    "condition": "Valid only while the release has no remote map requests, analytics, crash SDK, ads, accounts, sync, live AI, or payments."
+    "productionCapabilitySource": "artifacts/woofwatcher-mobile/eas.json#build.production.env",
+    "condition": "Valid only while the release has no remote map requests, analytics, crash SDK, ads, accounts, sync, live AI, payments, provider-backed push notifications, or cloud document storage."
   },
   "ageRating": {
-    "expectedGlobalRating": "13+",
+    "calculationPolicy": "USE_APP_STORE_CONNECT_CALCULATED_RATINGS",
     "healthOrWellnessTopics": true,
     "medicalOrTreatmentInformation": "INFREQUENT",
     "unrestrictedWebAccess": false,
@@ -58,7 +59,7 @@
     "advertising": false,
     "gambling": false,
     "contests": "NONE",
-    "note": "Use App Store Connect's calculated rating; do not override downward."
+    "note": "Keep these questionnaire answers accurate and use App Store Connect's calculated OS- and region-specific ratings; do not override them downward."
   },
   "exportCompliance": {
     "usesNonExemptEncryption": false

@@ -38,8 +38,21 @@ for (const dir of [RAW_IOS, RAW_PLAY, OUT_IOS, OUT_PLAY]) {
 }
 
 const server = http.createServer((req, res) => {
-  const urlPath = decodeURIComponent(req.url.split("?")[0]);
-  let fp = path.join(ROOT, urlPath);
+  let urlPath;
+  try {
+    urlPath = decodeURIComponent((req.url ?? "/").split("?")[0]);
+  } catch {
+    res.writeHead(400);
+    res.end();
+    return;
+  }
+  const relativeUrlPath = urlPath.replace(/^[/\\]+/, "");
+  let fp = path.resolve(ROOT, relativeUrlPath);
+  if (fp !== ROOT && !fp.startsWith(`${ROOT}${path.sep}`)) {
+    res.writeHead(403);
+    res.end();
+    return;
+  }
   let ok = false; try { ok = fs.statSync(fp).isFile(); } catch {}
   if (!ok) fp = path.join(ROOT, "index.html");
   fs.readFile(fp, (e, d) => {
@@ -51,7 +64,7 @@ const server = http.createServer((req, res) => {
     res.end(d);
   });
 });
-await new Promise((r) => server.listen(0, r));
+await new Promise((r) => server.listen(0, "127.0.0.1", r));
 const base = `http://127.0.0.1:${server.address().port}`;
 
 const FRAUNCES = `${base}/assets/__node_modules/.pnpm/@expo-google-fonts+fraunces@0.4.1/node_modules/@expo-google-fonts/fraunces/700Bold/Fraunces_700Bold.0c859ce19af0584bccfc6941addedf34.ttf`;
