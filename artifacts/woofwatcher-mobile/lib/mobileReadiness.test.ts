@@ -2138,7 +2138,7 @@ test("keeps 8-30-day Health Watch evidence visible outside the seven-day rhythm"
   const health = readAppFile(join("(tabs)", "health.tsx"));
   assert.match(
     health,
-    /deriveBileWatchStatus\(\{[\s\S]*healthStatus:\s*healthWatch\.status,[\s\S]*vomit7:\s*healthWatch\.counts\.vomit7,[\s\S]*recentYellowBileCount:\s*bileEntries\.length,[\s\S]*signals:\s*healthWatch\.signals/,
+    /deriveBileWatchStatus\(\{[\s\S]*vomit7:\s*healthWatch\.counts\.vomit7,[\s\S]*recentYellowBileCount:\s*bileEntries\.length,[\s\S]*signals:\s*healthWatch\.signals/,
     "Bile Watch must retain 8-30-day vomit-pattern signals without widening the seven-day chart",
   );
   assert.match(

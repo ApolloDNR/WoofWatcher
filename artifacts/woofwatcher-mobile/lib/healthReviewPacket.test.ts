@@ -49,7 +49,6 @@ test("keeps a non-urgent 14-day yellow-bile pattern at Watch", () => {
   );
   assert.equal(
     deriveBileWatchStatus({
-      healthStatus: healthWatch.status,
       vomit7: healthWatch.counts.vomit7,
       recentYellowBileCount: 0,
       signals: healthWatch.signals,
@@ -81,12 +80,60 @@ test("keeps an urgent 14-day yellow-bile event at Review", () => {
   assert.equal(healthWatch.redFlags.length, 1);
   assert.equal(
     deriveBileWatchStatus({
-      healthStatus: healthWatch.status,
       vomit7: healthWatch.counts.vomit7,
       recentYellowBileCount: 0,
       signals: healthWatch.signals,
     }),
     "Review",
+  );
+});
+
+test("keeps an unrelated urgent stool event out of Bile Watch", () => {
+  const now = Date.parse("2026-07-30T18:00:00.000Z");
+  const healthWatch = deriveHealthWatch({
+    entries: [
+      {
+        id: "older_bile",
+        type: "vomit",
+        title: "Yellow bile vomit",
+        note: "Yellow bile noted",
+        occurredAt: new Date(now - 14 * 86_400_000).toISOString(),
+      },
+      {
+        id: "urgent_stool",
+        type: "potty",
+        title: "Urgent loose stool",
+        note: "Loose stool needs prompt review",
+        severity: "urgent",
+        occurredAt: new Date(now - 60_000).toISOString(),
+        details: { condition: "loose" },
+      },
+    ],
+    routines: [],
+    now,
+    petName: "Phoenix",
+  });
+
+  assert.equal(healthWatch.status, "alert");
+  assert.ok(
+    healthWatch.signals.some(
+      (signal) =>
+        signal.kind === "vomit-pattern" && signal.urgency === "watch",
+    ),
+  );
+  assert.ok(
+    healthWatch.signals.some(
+      (signal) =>
+        signal.kind === "stool-watch" && signal.urgency === "alert",
+    ),
+  );
+  assert.equal(
+    deriveBileWatchStatus({
+      vomit7: healthWatch.counts.vomit7,
+      recentYellowBileCount: 0,
+      signals: healthWatch.signals,
+    }),
+    "Watch",
   );
 });
 

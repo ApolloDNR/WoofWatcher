@@ -5,6 +5,8 @@ import {
   addDiscardedServerEntryId,
   adoptServerEntry,
   applyQueuedPatchToAcknowledgedEntry,
+  CareSyncMutationTimeoutError,
+  cleanupDiscardedServerEntryRows,
   createSerializedCareSyncWriter,
   createSerializedCareEntryMutationQueue,
   deriveCareSyncOutbox,
@@ -413,6 +415,45 @@ test("merge supersedes a temp entry once its server row arrives via clientKey", 
   ]);
 });
 
+test("merge migrates only the first duplicate server row for one temp client key", () => {
+  const merged = mergeServerAndLocalEntries(
+    [
+      {
+        id: "temp_walk",
+        title: "Newest local walk",
+        occurredAt: "2026-07-18T08:00:00.000Z",
+        syncStatus: "failed" as const,
+      },
+    ],
+    [
+      {
+        id: "server_first",
+        title: "First server copy",
+        occurredAt: "2026-07-18T08:00:00.000Z",
+        details: { clientKey: "temp_walk" },
+      },
+      {
+        id: "server_duplicate",
+        title: "Duplicate server copy",
+        occurredAt: "2026-07-18T07:59:00.000Z",
+        details: { clientKey: "temp_walk" },
+      },
+    ],
+  );
+
+  assert.deepEqual(
+    merged.map((entry) => [
+      entry.id,
+      entry.title,
+      entry.syncStatus,
+    ]),
+    [
+      ["server_first", "Newest local walk", "failed"],
+      ["server_duplicate", "Duplicate server copy", "synced"],
+    ],
+  );
+});
+
 test("care-entry sync strips device-only GPS route fields without mutating local care", () => {
   const localDetails = {
     route: [
@@ -593,9 +634,7 @@ function deferred<T>() {
 }
 
 async function flushMutationQueue() {
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
+  await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 test("serializes entry updates and only applies the newest acknowledgement", async () => {
@@ -685,6 +724,98 @@ test("cancelling an entry mutation suppresses its result and queued update", asy
 
   assert.deepEqual(calls, ["first"]);
   assert.deepEqual(outcomes, []);
+});
+
+test("a timed-out mutation aborts its request and releases the queued update", async () => {
+  const first = deferred<string>();
+  const calls: string[] = [];
+  const signals: AbortSignal[] = [];
+  const successes: string[] = [];
+  const timers = new Map<number, () => void>();
+  let nextTimerId = 0;
+  const queue = createSerializedCareEntryMutationQueue<string, string>({
+    timeoutMs: 5,
+    timeoutScheduler: {
+      schedule: (callback) => {
+        nextTimerId += 1;
+        timers.set(nextTimerId, callback);
+        return nextTimerId;
+      },
+      cancel: (handle) => {
+        timers.delete(handle as number);
+      },
+    },
+    mutate: (_id, value, signal) => {
+      calls.push(value);
+      signals.push(signal);
+      return value === "first"
+        ? first.promise
+        : Promise.resolve("server-second");
+    },
+    onSuccess: (_id, value) => successes.push(value),
+    onFailure: () => {},
+  });
+
+  queue.enqueue("server_walk", "first");
+  queue.enqueue("server_walk", "second");
+  const firstTimeout = timers.get(1);
+  timers.delete(1);
+  firstTimeout?.();
+  await flushMutationQueue();
+
+  assert.equal(signals[0]?.aborted, true);
+  assert.equal(signals[1]?.aborted, false);
+  assert.deepEqual(calls, ["first", "second"]);
+  assert.deepEqual(successes, ["second"]);
+  assert.equal(timers.size, 0);
+});
+
+test("the latest timed-out mutation reports a stable retryable failure", async () => {
+  const timers = new Map<number, () => void>();
+  const failures: unknown[] = [];
+  const calls: string[] = [];
+  let nextTimerId = 0;
+  const queue = createSerializedCareEntryMutationQueue<string, string>({
+    timeoutMs: 7,
+    timeoutScheduler: {
+      schedule: (callback) => {
+        nextTimerId += 1;
+        timers.set(nextTimerId, callback);
+        return nextTimerId;
+      },
+      cancel: (handle) => {
+        timers.delete(handle as number);
+      },
+    },
+    mutate: (_id, value) => {
+      calls.push(value);
+      return value === "hung"
+        ? new Promise<string>(() => {})
+        : Promise.resolve("saved");
+    },
+    onSuccess: () => {},
+    onFailure: (_id, _value, error) => failures.push(error),
+  });
+
+  queue.enqueue("server_walk", "hung");
+  const timeout = timers.get(1);
+  timers.delete(1);
+  timeout?.();
+  await flushMutationQueue();
+
+  assert.equal(failures.length, 1);
+  assert.equal(
+    failures[0] instanceof CareSyncMutationTimeoutError,
+    true,
+  );
+  assert.equal(
+    (failures[0] as CareSyncMutationTimeoutError).timeoutMs,
+    7,
+  );
+
+  queue.enqueue("server_walk", "retry");
+  await flushMutationQueue();
+  assert.deepEqual(calls, ["hung", "retry"]);
 });
 
 test("a cancelled or erased temp create deletes its acknowledged server row", async () => {
@@ -1022,6 +1153,35 @@ test("create acknowledgement finds a row that refresh already migrated to the se
   assert.deepEqual(deleted, []);
 });
 
+test("create acknowledgement owns the same-id synced retry decision", async () => {
+  const result = await reconcileCreatedCareEntryAcknowledgement({
+    localEntry: {
+      id: "server_walk",
+      title: "Fresh same-id snapshot",
+      occurredAt: "2026-07-30T18:05:00.000Z",
+      syncStatus: "synced" as const,
+      details: { clientKey: "temp_walk" },
+    },
+    serverEntry: {
+      id: "server_walk",
+      title: "Acknowledged server snapshot",
+      occurredAt: "2026-07-30T18:00:00.000Z",
+      details: { clientKey: "temp_walk" },
+    },
+    createWasRetried: true,
+    tempWasCancelled: false,
+    eraseGenerationAtStart: 1,
+    currentEraseGeneration: 1,
+    deleteServerEntry: async () => {},
+  });
+
+  assert.equal(result.status, "adopted");
+  if (result.status !== "adopted") assert.fail("expected adopted entry");
+  assert.equal(result.entry.id, "server_walk");
+  assert.equal(result.entry.title, "Fresh same-id snapshot");
+  assert.equal(result.entry.syncStatus, "failed");
+});
+
 test("missing temp snapshot alone does not delete an acknowledged create", async () => {
   const deleted: string[] = [];
   const result = await reconcileCreatedCareEntryAcknowledgement({
@@ -1166,6 +1326,53 @@ test("one empty refresh does not make a late cancelled create eligible to reappe
   );
 });
 
+test("duplicate cleanup keeps the shared client key when any row deletion fails", async () => {
+  const marked: string[] = [];
+  const cleared: string[] = [];
+  const deleted: string[] = [];
+
+  const allRemoved = await cleanupDiscardedServerEntryRows({
+    clientKey: "temp_cancelled",
+    rows: [{ id: "server_first" }, { id: "server_second" }],
+    markDiscarded: async (id) => {
+      marked.push(id);
+    },
+    deleteEntry: async (id) => {
+      deleted.push(id);
+      if (id === "server_second") throw new Error("offline");
+    },
+    clearDiscarded: async (id) => {
+      cleared.push(id);
+    },
+  });
+
+  assert.equal(allRemoved, false);
+  assert.deepEqual(marked, ["server_first", "server_second"]);
+  assert.deepEqual(deleted, ["server_first", "server_second"]);
+  assert.deepEqual(cleared, ["server_first"]);
+});
+
+test("duplicate cleanup clears the shared client key only after every row is removed", async () => {
+  const cleared: string[] = [];
+
+  const allRemoved = await cleanupDiscardedServerEntryRows({
+    clientKey: "temp_cancelled",
+    rows: [{ id: "server_first" }, { id: "server_second" }],
+    markDiscarded: async () => {},
+    deleteEntry: async () => {},
+    clearDiscarded: async (id) => {
+      cleared.push(id);
+    },
+  });
+
+  assert.equal(allRemoved, true);
+  assert.deepEqual(cleared, [
+    "server_first",
+    "server_second",
+    "temp_cancelled",
+  ]);
+});
+
 test("refresh filtering includes tombstones added while deletion retries are in flight", () => {
   const snapshotAtRefreshStart = ["server_old"];
   const currentAfterAwait: string[] = [];
@@ -1249,6 +1456,31 @@ test("serializes durable tombstone writes so a later clear cannot be overtaken",
   await addWrite;
   await clearWrite;
   assert.deepEqual(writes, [["server_cancelled"], []]);
+});
+
+test("a rejected durable write does not stall the next queued write", async () => {
+  const firstGate = deferred<void>();
+  const writes: string[] = [];
+  const writer = createSerializedCareSyncWriter<string>(
+    async (value) => {
+      writes.push(value);
+      if (value === "first") {
+        await firstGate.promise;
+        throw new Error("storage failed");
+      }
+    },
+  );
+
+  const firstResult = assert.rejects(
+    writer.enqueue("first"),
+    /storage failed/,
+  );
+  const secondResult = writer.enqueue("second");
+  firstGate.resolve();
+
+  await firstResult;
+  await secondResult;
+  assert.deepEqual(writes, ["first", "second"]);
 });
 
 test("owner wipe preserves opaque cleanup ids until final remote deletion removes the ledger", async () => {

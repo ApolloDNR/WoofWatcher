@@ -250,15 +250,34 @@ export function findCreatedCareEntryLocalSnapshot<
 }
 
 export interface SerializedCareEntryMutationQueueOptions<TInput, TResult> {
-  mutate: (entryId: string, input: TInput) => Promise<TResult>;
+  mutate: (
+    entryId: string,
+    input: TInput,
+    signal: AbortSignal,
+  ) => Promise<TResult>;
   onSuccess: (entryId: string, input: TInput, result: TResult) => void;
   onFailure: (entryId: string, input: TInput, error: unknown) => void;
+  timeoutMs?: number;
+  timeoutScheduler?: {
+    schedule: (callback: () => void, delayMs: number) => unknown;
+    cancel: (handle: unknown) => void;
+  };
 }
 
 export interface SerializedCareEntryMutationQueue<TInput> {
   enqueue: (entryId: string, input: TInput) => number;
   cancel: (entryId: string) => void;
   cancelAll: () => void;
+}
+
+export class CareSyncMutationTimeoutError extends Error {
+  readonly timeoutMs: number;
+
+  constructor(timeoutMs: number) {
+    super(`Care entry sync timed out after ${timeoutMs}ms.`);
+    this.name = "CareSyncMutationTimeoutError";
+    this.timeoutMs = timeoutMs;
+  }
 }
 
 /**
@@ -270,6 +289,12 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
   mutate,
   onSuccess,
   onFailure,
+  timeoutMs = 30_000,
+  timeoutScheduler = {
+    schedule: (callback, delayMs) => setTimeout(callback, delayMs),
+    cancel: (handle) =>
+      clearTimeout(handle as ReturnType<typeof setTimeout>),
+  },
 }: SerializedCareEntryMutationQueueOptions<
   TInput,
   TResult
@@ -283,6 +308,9 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
   const latestGeneration = new Map<string, number>();
   const queued = new Map<string, PendingMutation>();
   const inFlight = new Set<string>();
+  const abortControllers = new Map<string, AbortController>();
+  const effectiveTimeoutMs =
+    Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 30_000;
   let epoch = 0;
 
   const pump = (entryId: string) => {
@@ -291,15 +319,44 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
     if (!pending) return;
     queued.delete(entryId);
     inFlight.add(entryId);
+    const abortController = new AbortController();
+    abortControllers.set(entryId, abortController);
 
     let mutation: Promise<TResult>;
     try {
-      mutation = Promise.resolve(mutate(entryId, pending.input));
+      mutation = Promise.resolve(
+        mutate(entryId, pending.input, abortController.signal),
+      );
     } catch (error) {
       mutation = Promise.reject(error);
     }
 
-    void mutation
+    const boundedMutation = new Promise<TResult>((resolve, reject) => {
+      let settled = false;
+      const timer = timeoutScheduler.schedule(() => {
+        if (settled) return;
+        settled = true;
+        abortController.abort();
+        reject(new CareSyncMutationTimeoutError(effectiveTimeoutMs));
+      }, effectiveTimeoutMs);
+
+      mutation.then(
+        (result) => {
+          if (settled) return;
+          settled = true;
+          timeoutScheduler.cancel(timer);
+          resolve(result);
+        },
+        (error) => {
+          if (settled) return;
+          settled = true;
+          timeoutScheduler.cancel(timer);
+          reject(error);
+        },
+      );
+    });
+
+    void boundedMutation
       .then(
         (result) => {
           if (
@@ -320,11 +377,17 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
       )
       .then(
         () => {
+          if (abortControllers.get(entryId) === abortController) {
+            abortControllers.delete(entryId);
+          }
           inFlight.delete(entryId);
           pump(entryId);
         },
         () => {
           // A state callback must never strand a newer queued mutation.
+          if (abortControllers.get(entryId) === abortController) {
+            abortControllers.delete(entryId);
+          }
           inFlight.delete(entryId);
           pump(entryId);
         },
@@ -340,6 +403,7 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
       return generation;
     },
     cancel(entryId) {
+      abortControllers.get(entryId)?.abort();
       latestGeneration.set(
         entryId,
         (latestGeneration.get(entryId) ?? 0) + 1,
@@ -347,6 +411,10 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
       queued.delete(entryId);
     },
     cancelAll() {
+      for (const controller of abortControllers.values()) {
+        controller.abort();
+      }
+      abortControllers.clear();
       epoch += 1;
       latestGeneration.clear();
       queued.clear();
@@ -394,18 +462,25 @@ export async function reconcileCreatedCareEntryAcknowledgement<
     tempWasCancelled ||
     eraseGenerationAtStart !== currentEraseGeneration;
   if (!shouldDiscard) {
+    let entry: T;
+    if (!localEntry) {
+      entry = adoptServerEntry(serverEntry, serverEntry);
+    } else if (
+      localEntry.id === serverEntry.id &&
+      isUnsyncedEntry(localEntry)
+    ) {
+      entry = localEntry;
+    } else if (createWasRetried) {
+      entry = migrateAcknowledgedTempEntryForRetry(
+        localEntry,
+        serverEntry,
+      );
+    } else {
+      entry = adoptServerEntry(localEntry, serverEntry);
+    }
     return {
       status: "adopted",
-      entry: localEntry
-        ? localEntry.id === serverEntry.id && isUnsyncedEntry(localEntry)
-          ? localEntry
-          : createWasRetried
-            ? migrateAcknowledgedTempEntryForRetry(
-                localEntry,
-                serverEntry,
-              )
-          : adoptServerEntry(localEntry, serverEntry)
-        : adoptServerEntry(serverEntry, serverEntry),
+      entry,
     };
   }
 
@@ -480,6 +555,46 @@ export function filterDiscardedServerEntries<
       !(typeof clientKey === "string" && discarded.has(clientKey))
     );
   });
+}
+
+export interface DiscardedServerEntryCleanupInput<
+  T extends { id: string },
+> {
+  clientKey: string;
+  rows: readonly T[];
+  markDiscarded: (entryId: string) => Promise<void>;
+  deleteEntry: (entryId: string) => Promise<void>;
+  clearDiscarded: (entryId: string) => Promise<void>;
+  shouldContinue?: () => boolean;
+}
+
+export async function cleanupDiscardedServerEntryRows<
+  T extends { id: string },
+>({
+  clientKey,
+  rows,
+  markDiscarded,
+  deleteEntry,
+  clearDiscarded,
+  shouldContinue = () => true,
+}: DiscardedServerEntryCleanupInput<T>): Promise<boolean> {
+  if (rows.length === 0) return false;
+  let allRemoved = true;
+
+  for (const row of rows) {
+    if (!shouldContinue()) return false;
+    try {
+      await markDiscarded(row.id);
+      await deleteEntry(row.id);
+      await clearDiscarded(row.id);
+    } catch {
+      allRemoved = false;
+    }
+  }
+
+  if (!allRemoved || !shouldContinue()) return false;
+  await clearDiscarded(clientKey);
+  return true;
 }
 
 export function restoreEntryAfterDeleteFailure<T extends SyncableEntry>(
@@ -864,6 +979,7 @@ export function mergeServerAndLocalEntries<T extends SyncableEntry>(
       typeof clientKey === "string" ? localById.get(clientKey) : undefined;
     if (
       tempLocal &&
+      !migratedTempIds.has(tempLocal.id) &&
       tempLocal.id.startsWith("temp_") &&
       isUnsyncedEntry(tempLocal)
     ) {

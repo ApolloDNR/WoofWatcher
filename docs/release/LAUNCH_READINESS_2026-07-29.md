@@ -37,9 +37,9 @@ date/jurisdiction confirmation, and Apollo's approval of the exact binary.
 | Check | Result |
 |---|---|
 | Workspace typecheck (all 5 packages) | **Clean** — 0 errors |
-| Focused test suite | **789 / 789 pass** on Node 24.14.0 with pnpm 10.24.0 |
+| Focused test suite | **797 / 797 pass** on Node 24.14.0 with pnpm 10.24.0 |
 | Full CI build | **Passed** — all workspace typechecks/builds, Expo export, runtime smoke, and live-preview proof |
-| Web export smoke | **Passed** — 273 files exported |
+| Web export smoke | **Passed** — 274 files exported |
 | Runtime route smoke | **Passed** — all 13 user routes |
 | Production routes / dead ends | **Passed** — production policy hides provider-only household, event, future-dog, sync, account, push, AI, and payment controls while preserving internal QA surfaces |
 | Store-material validation | **Passed** — six 1290×2796 iPhone shots, six 1080×1920 Play shots, 1024×500 feature graphic, and 512×512 Play icon |

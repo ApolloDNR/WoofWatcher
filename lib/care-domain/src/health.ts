@@ -241,7 +241,7 @@ export function deriveHealthWatch(input: CareHealthInput): CareHealthWatch {
         yellowBile.length > 0
           ? `${vomitDetail}, with yellow bile noted.`
           : `${vomitDetail}.`,
-      urgency: redFlags.length > 0 ? "alert" : "watch",
+      urgency: vomit30.some(isHealthUrgent) ? "alert" : "watch",
       entryIds: vomit7.map(entryId),
     });
   }

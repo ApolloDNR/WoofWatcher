@@ -6,23 +6,24 @@ import type {
 export type BileWatchStatus = "Low Risk" | "Watch" | "Review";
 
 export interface BileWatchStatusInput {
-  healthStatus: CareHealthStatus;
   vomit7: number;
   recentYellowBileCount: number;
-  signals: readonly Pick<CareHealthSignal, "kind">[];
+  signals: readonly Pick<CareHealthSignal, "kind" | "urgency">[];
 }
 
 export function deriveBileWatchStatus({
-  healthStatus,
   vomit7,
   recentYellowBileCount,
   signals,
 }: BileWatchStatusInput): BileWatchStatus {
-  if (healthStatus === "alert") return "Review";
+  const vomitSignal = signals.find(
+    (signal) => signal.kind === "vomit-pattern",
+  );
+  if (vomitSignal?.urgency === "alert") return "Review";
   if (
     vomit7 > 0 ||
     recentYellowBileCount > 0 ||
-    signals.some((signal) => signal.kind === "vomit-pattern")
+    vomitSignal
   ) {
     return "Watch";
   }

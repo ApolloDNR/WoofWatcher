@@ -399,7 +399,6 @@ export default function HealthScreen() {
   ]);
 
   const bileStatus = deriveBileWatchStatus({
-    healthStatus: healthWatch.status,
     vomit7: healthWatch.counts.vomit7,
     recentYellowBileCount: bileEntries.length,
     signals: healthWatch.signals,

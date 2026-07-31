@@ -29,13 +29,13 @@ import {
   adoptServerEntry,
   applyQueuedPatchToAcknowledgedEntry,
   buildCareEntryRefreshPlan,
+  cleanupDiscardedServerEntryRows,
   createSerializedCareSyncWriter,
   createSerializedCareEntryMutationQueue,
   deriveCareSyncOutbox,
   filterDiscardedServerEntries,
   findCreatedCareEntryLocalSnapshot,
   mergeServerAndLocalEntries,
-  migrateAcknowledgedTempEntryForRetry,
   normalizeDiscardedServerEntryIds,
   prepareCareEntryForOfflineEdit,
   recoverInterruptedCareEntryMutations,
@@ -597,8 +597,8 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   if (!entryUpdateQueueRef.current) {
     entryUpdateQueueRef.current =
       createSerializedCareEntryMutationQueue<Entry, ApiCareEntry>({
-        mutate: (entryId, entry) =>
-          updateCareEntry(entryId, toUpdateInput(entry)),
+        mutate: (entryId, entry, signal) =>
+          updateCareEntry(entryId, toUpdateInput(entry), { signal }),
         onSuccess: (entryId, localEntry, updated) => {
           const synced = adoptServerEntry(localEntry, toEntry(updated));
           entriesRef.current = entriesRef.current.map((entry) =>
@@ -916,6 +916,15 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       createCareEntry(toCreateInput(entry, tempId))
         .then(async (created) => {
           const serverEntry = toEntry(created);
+          const deleteAcknowledgedServerEntry = async (
+            entryId: string,
+          ) => {
+            try {
+              await deleteCareEntry(entryId);
+            } catch (error) {
+              if (!isNotFound(error)) throw error;
+            }
+          };
           let localEntry = findCreatedCareEntryLocalSnapshot(
             entriesRef.current,
             tempId,
@@ -939,44 +948,36 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
               tempWasCancelled: cancelledTempEntries.current.has(tempId),
               eraseGenerationAtStart,
               currentEraseGeneration: eraseGenerationRef.current,
-              deleteServerEntry: async (entryId) => {
-                try {
-                  await deleteCareEntry(entryId);
-                } catch (error) {
-                  if (!isNotFound(error)) throw error;
-                }
-              },
+              deleteServerEntry: deleteAcknowledgedServerEntry,
             });
 
-          // The live acknowledgement path resolves immediately, but it still
-          // crosses an await boundary. Re-read the cache before adopting so a
-          // delete or owner wipe that landed in that gap wins.
-          localEntry = findCreatedCareEntryLocalSnapshot(
-            entriesRef.current,
-            tempId,
-            serverEntry.id,
-          );
-          if (
-            acknowledgement.status === "adopted" &&
-            (cancelledTempEntries.current.has(tempId) ||
-              eraseGenerationRef.current !== eraseGenerationAtStart)
-          ) {
-            await markServerEntryDiscarded(tempId);
-            await markServerEntryDiscarded(serverEntry.id);
+          if (acknowledgement.status === "adopted") {
+            // The first helper call crosses an await boundary even on an
+            // adoption. Re-read the live cache, then let the same helper own
+            // the final decision for a refreshed real-id row, a queued edit,
+            // a missing-snapshot fallback, or a cancellation/owner wipe.
+            localEntry = findCreatedCareEntryLocalSnapshot(
+              entriesRef.current,
+              tempId,
+              serverEntry.id,
+            );
+            const mustDiscard =
+              cancelledTempEntries.current.has(tempId) ||
+              eraseGenerationRef.current !== eraseGenerationAtStart;
+            if (mustDiscard) {
+              await markServerEntryDiscarded(tempId);
+              await markServerEntryDiscarded(serverEntry.id);
+            }
             acknowledgement =
               await reconcileCreatedCareEntryAcknowledgement<Entry>({
-                localEntry: undefined,
+                localEntry,
                 serverEntry,
-                tempWasCancelled: true,
+                createWasRetried,
+                tempWasCancelled:
+                  cancelledTempEntries.current.has(tempId),
                 eraseGenerationAtStart,
                 currentEraseGeneration: eraseGenerationRef.current,
-                deleteServerEntry: async (entryId) => {
-                  try {
-                    await deleteCareEntry(entryId);
-                  } catch (error) {
-                    if (!isNotFound(error)) throw error;
-                  }
-                },
+                deleteServerEntry: deleteAcknowledgedServerEntry,
               });
           }
 
@@ -1013,18 +1014,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
-          // Use the latest local snapshot for device-only details even if a
-          // same-tick edit landed after the first acknowledgement decision.
-          const real: Entry = localEntry
-            ? localEntry.id === serverEntry.id
-              ? localEntry
-              : createWasRetried
-                ? migrateAcknowledgedTempEntryForRetry<Entry>(
-                    localEntry,
-                    serverEntry,
-                  )
-                : adoptServerEntry<Entry>(localEntry, serverEntry)
-            : acknowledgement.entry;
+          const real = acknowledgement.entry;
           realIdByTemp.current.set(tempId, real.id);
           // Apply any patch that landed while the create was in flight.
           const queued = pendingPatch.current.get(tempId);
@@ -1222,21 +1212,20 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             // matching row is observed and deleted.
             continue;
           }
-          for (const row of matchingRows) {
-            if (!signedInRef.current) return;
-            try {
-              await markServerEntryDiscarded(row.id);
+          await cleanupDiscardedServerEntryRows({
+            clientKey: discardedId,
+            rows: matchingRows,
+            markDiscarded: markServerEntryDiscarded,
+            deleteEntry: async (entryId) => {
               try {
-                await deleteCareEntry(row.id);
+                await deleteCareEntry(entryId);
               } catch (error) {
                 if (!isNotFound(error)) throw error;
               }
-              await clearDiscardedServerEntry(row.id);
-              await clearDiscardedServerEntry(discardedId);
-            } catch {
-              // Keep both identities suppressed and retry next refresh.
-            }
-          }
+            },
+            clearDiscarded: clearDiscardedServerEntry,
+            shouldContinue: () => signedInRef.current,
+          });
           continue;
         }
         if (!rowsById.has(discardedId)) {
