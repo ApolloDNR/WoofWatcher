@@ -4,6 +4,7 @@
 
 - DONE: The Phoenix crest inside the shared WoofWatcher logo is excluded from accessibility traversal; the adjacent readable wordmark remains the meaningful brand identity.
 - VERIFIED: Red-first mobile readiness failed `152/153`, then passed after the minimal shared-component correction.
+- CI: `WoofWatcher Verify` run `30673093155`, job `91294737029`, passed for implementation commit `30ee2729`.
 - NEXT: Native VoiceOver/TalkBack traversal and route-named Auth/Setup evidence remain required.
 
 ## 2026-07-31 core-route pixel-stage accessibility

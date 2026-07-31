@@ -4,6 +4,8 @@
 
 The Phoenix crest inside the shared WoofWatcher logo is decorative beside the readable wordmark and is excluded from assistive traversal. Native VoiceOver/TalkBack proof remains open.
 
+Dependency-complete branch CI passed in run `30673093155`, job `91294737029`, for implementation commit `30ee2729`.
+
 ## 2026-07-31 core-route pixel-stage accessibility gate
 
 Decorative stage backgrounds on Plans, Health, Quick Log, More, Records, WoofGuide, Plus, and Adventure are excluded from assistive traversal so labeled care content and controls remain the meaningful stops. Native screen-reader and route-named iOS/Android proof remain open.

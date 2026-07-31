@@ -3,7 +3,8 @@
 ## 2026-07-31 shared brand-crest accessibility QA
 
 - PASS: The shared Phoenix crest uses `accessible={false}` while the visible WoofWatcher wordmark remains readable.
-- RED/GREEN: Mobile readiness failed `152/153` before the source correction and must pass afterward.
+- RED/GREEN: Mobile readiness failed `152/153` before the source correction, then passed `153/153` afterward.
+- CI: Run `30673093155`, job `91294737029`, passed dependency install, JSON doctor, focused tests, typecheck, CI-safe builds, and post steps for `30ee2729`.
 - OPEN: Confirm the account gateway announces the brand once with native VoiceOver and TalkBack.
 
 ## 2026-07-31 core-route pixel-stage accessibility QA

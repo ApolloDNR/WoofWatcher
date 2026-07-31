@@ -2,7 +2,9 @@
 
 ## 2026-07-31 shared brand-crest accessibility slice
 
-The Phoenix crest inside the shared WoofWatcher logo is decorative beside the readable wordmark and now stays out of accessibility traversal. Red-first readiness failed `152/153` before the correction. Native VoiceOver/TalkBack and route-named Auth/Setup proof remain open.
+The Phoenix crest inside the shared WoofWatcher logo is decorative beside the readable wordmark and now stays out of accessibility traversal. Red-first readiness failed `152/153` before the correction and passed `153/153` afterward. Native VoiceOver/TalkBack and route-named Auth/Setup proof remain open.
+
+`WoofWatcher Verify` run `30673093155`, job `91294737029`, passed checkout, pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job for implementation commit `30ee2729`.
 
 ## 2026-07-31 core-route pixel-stage accessibility slice
 
