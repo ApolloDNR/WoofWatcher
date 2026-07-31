@@ -4,6 +4,7 @@
 
 - DONE: Internal OpenStreetMap raster tiles are decorative inside the single labeled TrailMap image.
 - VERIFIED: Red-first mobile readiness failed `149/150`, then passed `150/150`.
+- CI: `WoofWatcher Verify` run `30638894339`, job `91183485851`, passed for implementation commit `08d20c0f`.
 - NEXT: Native VoiceOver/TalkBack and route-named iOS/Android walk-map evidence remain required.
 
 ## 2026-07-31 Auth stage-dog accessibility boundary

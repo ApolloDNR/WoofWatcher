@@ -4,6 +4,7 @@
 
 - PASS: The TrailMap container keeps its meaningful image role and route summary while each internal raster tile uses `accessible={false}`.
 - RED/GREEN: Mobile readiness failed `149/150`, then passed `150/150`.
+- CI: Run `30638894339`, job `91183485851`, passed dependency install, JSON doctor, focused tests, typecheck, CI-safe builds, and post steps for `08d20c0f`.
 - OPEN: Native VoiceOver/TalkBack and route-named device evidence remain due.
 
 ## 2026-07-30 Plus and WoofGuide fixed-dark trust-icon contrast QA
