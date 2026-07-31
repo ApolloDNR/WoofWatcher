@@ -11,8 +11,13 @@
   `ok=149 missing=0 invalid=0`. The JSON doctor retained its source-backed
   passes while remaining truthfully blocked on local pnpm/Corepack and Expo
   resolution.
-- NEXT: Run branch CI. Native VoiceOver/TalkBack traversal and route-named
-  iOS/Android Auth/Setup evidence remain open.
+- DONE: Dependency-complete WoofWatcher Verify run `30616476457`, job
+  `91110739674`, passed implementation/docs commit `8ca9076f`, including
+  checkout, pinned dependency install, JSON doctor, focused tests, typecheck
+  plus CI-safe builds, post steps, and Complete job.
+- NEXT: Rerun branch CI after this proof-record commit. Native
+  VoiceOver/TalkBack traversal and route-named iOS/Android Auth/Setup evidence
+  remain open.
 
 ## 2026-07-30 Plus and WoofGuide fixed-dark trust-icon contrast
 

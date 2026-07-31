@@ -5108,3 +5108,6 @@ decorative. A red-first mobile-readiness contract failed `147/148` before the
 change. This prevents an unlabeled duplicate image stop beside the already
 labeled gateway and care-start copy; it does not replace native
 VoiceOver/TalkBack traversal, route-named screenshots, or provider approval.
+Dependency-complete WoofWatcher Verify run `30616476457`, job `91110739674`,
+passed implementation/docs commit `8ca9076f`, including dependency install,
+JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps.
