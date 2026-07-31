@@ -5114,3 +5114,5 @@ JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps.
 ## 2026-07-31 Home room accessibility hardening
 
 The full-bleed Home room/park backdrop now uses `accessible={false}` so the decorative Image does not create an unlabeled screen-reader stop before the labeled care console and care-twin controls. A red-first mobile readiness contract protects the source boundary. This does not replace native VoiceOver/TalkBack traversal, route-named device screenshots, provider/store evidence, or Apollo approval.
+
+Dependency-complete WoofWatcher Verify run `30627115480`, job `91144838944`, passed implementation/docs commit `b4d185af`, including dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps.
