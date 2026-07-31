@@ -1,5 +1,8 @@
 import { useAuth } from "@clerk/expo";
 
+import { getBuildChannel } from "./buildChannel.ts";
+import { deriveProviderRuntimePolicy } from "./consumerSurfacePolicy.ts";
+
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 const normalizedPublishableKey = publishableKey?.toLowerCase() ?? "";
 const isPlaceholderPublishableKey =
@@ -13,6 +16,21 @@ export const isClerkConfigured =
   typeof publishableKey === "string" &&
   /^pk_(test|live)_[A-Za-z0-9_-]{20,}$/.test(publishableKey) &&
   !isPlaceholderPublishableKey;
+
+const providerRuntimePolicy = deriveProviderRuntimePolicy({
+  channel: getBuildChannel(),
+  clerkConfigured: isClerkConfigured,
+  apiDomain: process.env.EXPO_PUBLIC_DOMAIN,
+});
+
+/**
+ * The free store build is intentionally local-only. A stray secret in the
+ * EAS environment must not silently re-enable accounts, auth traffic, or
+ * household sync. Provider QA remains available in development/internal
+ * builds where those surfaces are visible.
+ */
+export const isClerkEnabledForBuild = providerRuntimePolicy.clerkEnabled;
+export const providerApiBaseUrl = providerRuntimePolicy.apiBaseUrl;
 
 const localAuth = {
   isLoaded: true,
@@ -29,4 +47,6 @@ function useClerkAuth() {
   return useAuth();
 }
 
-export const useWoofAuth = isClerkConfigured ? useClerkAuth : useLocalAuth;
+export const useWoofAuth = isClerkEnabledForBuild
+  ? useClerkAuth
+  : useLocalAuth;

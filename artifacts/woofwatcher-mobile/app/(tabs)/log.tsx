@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -19,7 +20,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useGetMe } from "@workspace/api-client-react";
+import { getGetMeQueryKey, useGetMe } from "@workspace/api-client-react";
 import {
   appendCareAuditEvent,
   appendStickyNote,
@@ -38,6 +39,7 @@ import {
 import { useCare, Entry } from "@/context/CareContext";
 import { announce } from "@/lib/announce";
 import { isClerkConfigured } from "@/lib/auth";
+import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { resolvePetName } from "@/lib/petIdentity";
 import { useColors } from "@/hooks/useColors";
@@ -96,6 +98,7 @@ import {
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
+import { persistPickedMedia } from "@/lib/durablePickedMedia";
 import { TrailMap } from "@/components/TrailMap";
 import { useWalkRouteCaptureStatus } from "@/components/WalkRouteRecorder";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
@@ -644,7 +647,8 @@ const LOG_GUIDANCE: Record<string, string> = {
 // Care data is local-first: without a configured account provider (same gate
 // as auth), device storage IS the success state, so sync/retry affordances and
 // "offline" framing stay hidden instead of implying a cloud that isn't there.
-const SYNC_PROVIDER_CONFIGURED = isClerkConfigured;
+const SYNC_PROVIDER_CONFIGURED =
+  isClerkConfigured && getConsumerSurfacePolicy().providerSyncControls;
 
 function syncLabel(status: Entry["syncStatus"]): string | null {
   if (status === "pending") return "Pending sync";
@@ -993,7 +997,12 @@ export default function LogScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, addEntry, deleteEntry, updateEntry, updateCareDoc, refresh, syncOutbox, isSyncing } = useCare();
-  const me = useGetMe();
+  const me = useGetMe({
+    query: {
+      queryKey: getGetMeQueryKey(),
+      enabled: SYNC_PROVIDER_CONFIGURED,
+    },
+  });
   const routeParams = useLocalSearchParams<{
     type?: string | string[];
     detail?: string | string[];
@@ -1247,6 +1256,7 @@ export default function LogScreen() {
         routines: state.routines,
         caregivers: state.caregivers,
         now,
+        providerSyncEnabled: SYNC_PROVIDER_CONFIGURED,
       }),
     [state.entries, state.routines, state.caregivers, now],
   );
@@ -1291,7 +1301,8 @@ export default function LogScreen() {
   const detailType = detailEntry ? normalizeCareEventType(detailEntry.type, detailEntry.details) : null;
   const detailIcon = detailType ? TYPE_ICON[detailType] ?? "paw" : "paw";
   const detailTypeText = detailType ? entryTypeLabel(detailType) : "";
-  // Recorded walk route (if this walk captured one): shown as a real map.
+  // Recorded walk route (if this walk captured one): shown on the private
+  // bundled canvas without sending its shape to a mapping provider.
   const detailRoute = useMemo(
     () => (detailType === "walk" ? parseWalkRoute(detailEntry?.details?.route) : null),
     [detailEntry, detailType],
@@ -1976,9 +1987,24 @@ export default function LogScreen() {
         typeof (asset as { fileName?: unknown }).fileName === "string"
           ? (asset as { fileName: string }).fileName
           : "Medication proof photo";
+      const persistedPhoto = await persistPickedMedia({
+        platform: Platform.OS,
+        sourceUri: asset.uri,
+        fileName,
+        mimeType: asset.mimeType,
+        filePrefix: "medication-proof",
+        fileSystem: FileSystem,
+      });
+      if (!persistedPhoto.ok) {
+        notifyDialog(
+          "Photo not saved",
+          "WoofWatcher could not copy that photo into durable app storage. The medication log was not changed. Try again or choose another photo.",
+        );
+        return;
+      }
       const patch = buildCareLogPhotoProofAttachmentPatch(detailEntry, {
         caregiver,
-        uri: asset.uri,
+        uri: persistedPhoto.uri,
         fileName,
         source: "library",
         now,
@@ -4880,7 +4906,7 @@ export default function LogScreen() {
                     <TrailMap
                       route={detailRoute}
                       height={160}
-                      accessibilityLabel="Map of this walk's recorded route"
+                      accessibilityLabel="Private device-only view of this walk's recorded route"
                     />
                     <Text style={[s.detailTrailCaption, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       {[

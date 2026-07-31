@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, relative } from "node:path";
+import { deriveHealthWatch } from "../../../lib/care-domain/src/index.ts";
 import { describeQuickLogDetailSheet } from "./quickLogEntry.ts";
+import { buildTrendWindow } from "./trendsChart.ts";
 
 const APP_DIR = join(process.cwd(), "artifacts", "woofwatcher-mobile", "app");
 const MOBILE_LIB_DIR = join(
@@ -439,8 +441,30 @@ test("keeps local Clerk placeholders from blanking the web preview", () => {
   assert.match(auth, /!isPlaceholderPublishableKey/);
   assert.match(
     auth,
-    /useWoofAuth = isClerkConfigured \? useClerkAuth : useLocalAuth/,
+    /providerRuntimePolicy\s*=\s*deriveProviderRuntimePolicy/,
   );
+  assert.match(
+    auth,
+    /isClerkEnabledForBuild\s*=\s*providerRuntimePolicy\.clerkEnabled/,
+  );
+  assert.match(
+    auth,
+    /useWoofAuth = isClerkEnabledForBuild[\s\S]*\?\s*useClerkAuth[\s\S]*:\s*useLocalAuth/,
+  );
+});
+
+test("keeps auth deep links local-only when Clerk is disabled for the build", () => {
+  const signIn = readAppFile(join("(auth)", "sign-in.tsx"));
+  const signUp = readAppFile(join("(auth)", "sign-up.tsx"));
+
+  for (const authScreen of [signIn, signUp]) {
+    assert.match(
+      authScreen,
+      /import \{ isClerkEnabledForBuild \} from "@\/lib\/auth"/,
+    );
+    assert.match(authScreen, /if \(!isClerkEnabledForBuild\)/);
+    assert.doesNotMatch(authScreen, /if \(!isClerkConfigured\)/);
+  }
 });
 
 test("keeps the web preview frame inside compact mobile screenshots", () => {
@@ -502,7 +526,14 @@ test("keeps auth entry styled as the truthful CareTwin gateway", () => {
   assert.match(authUi, /Provider account/);
   assert.match(authUi, /Local-first care/);
   assert.match(authUi, /CareTwin ready/);
-  assert.match(authUi, /isClerkConfigured \? "Account ready" : "Local preview"/);
+  assert.match(
+    authUi,
+    /isClerkEnabledForBuild \? "Account ready" : "Local preview"/,
+  );
+  assert.match(
+    authUi,
+    /isClerkEnabledForBuild \? "Provider enabled" : "Local-only mode"/,
+  );
   assert.match(authUi, /openAuthSetupProofMission/);
   assert.match(authUi, /\/care-twin-qa\?qaSurface=auth-setup-onboarding-proof/);
   assert.match(authUi, /Open setup proof/);
@@ -759,7 +790,7 @@ test("registers the care twin native QA route for device review", () => {
     more,
     /buildCareTwinQaFocusRoute\(nativeQaPrimaryMissionTarget\)/,
   );
-  assert.match(more, /isOwnerOpsBuild/);
+  assert.match(more, /getConsumerSurfacePolicy/);
   assert.match(qaRoute, /listCareTwinRuntimeQaScenarios/);
   assert.match(qaRoute, /evaluateCareTwinRuntimeQaScenario/);
   assert.match(qaRoute, /deriveCareTwinChoreography/);
@@ -1090,6 +1121,47 @@ test("registers the care twin native QA route for device review", () => {
   assert.match(qaRoute, /Needs tune/);
 });
 
+test("free production routes deferred provider flows through the shared consumer policy", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+  const pack = readAppFile(join("(tabs)", "pack.tsx"));
+  const setup = readAppFile("setup.tsx");
+
+  assert.match(calendar, /consumerSurfacePolicy\.discoverEvents \? \(/);
+  assert.match(more, /consumerSurfacePolicy\.futureDogPlanning \? \(/);
+  assert.match(
+    more,
+    /consumerSurfacePolicy\.householdProviderActions \? \(/,
+  );
+  assert.match(more, /consumerSurfacePolicy\.providerSyncControls/);
+  assert.match(more, /if \(!providerSyncEnabled\)/);
+  assert.match(
+    more,
+    /enabled:\s*consumerSurfacePolicy\.householdProviderActions[\s\S]*isClerkEnabledForBuild[\s\S]*Boolean\(isSignedIn\)/,
+  );
+  assert.match(
+    pack,
+    /PACK_SEGMENTS\.filter\(\(item\) => item\.key !== "access"\)/,
+  );
+  assert.match(
+    pack,
+    /enabled:\s*consumerSurfacePolicy\.householdProviderActions[\s\S]*isClerkEnabledForBuild[\s\S]*Boolean\(isSignedIn\)/,
+  );
+  assert.match(home, /isClerkEnabledForBuild/);
+  assert.doesNotMatch(home, /\bisClerkConfigured\b/);
+  assert.doesNotMatch(more, /\bisClerkConfigured\b/);
+  assert.doesNotMatch(pack, /\bisClerkConfigured\b/);
+  assert.match(setup, /makeSetupWizardDraftDeviceOnly/);
+  assert.match(setup, /consumerSurfacePolicy\.householdSetupModes/);
+  assert.match(
+    log,
+    /isClerkConfigured && getConsumerSurfacePolicy\(\)\.providerSyncControls/,
+  );
+  assert.match(home, /providerSyncEnabled: HOME_PROVIDER_SYNC_ENABLED/);
+});
+
 test("shows premium entitlement policy before checkout is enabled", () => {
   const premium = readAppFile("premium.tsx");
 
@@ -1112,6 +1184,12 @@ test("keeps Expo app identity release-grade", () => {
       "utf8",
     ),
   );
+  const mobilePackage = JSON.parse(
+    readFileSync(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "package.json"),
+      "utf8",
+    ),
+  );
   const expo = appConfig.expo;
 
   assert.equal(expo.name, "WoofWatcher");
@@ -1120,6 +1198,44 @@ test("keeps Expo app identity release-grade", () => {
   assert.equal(expo.userInterfaceStyle, "automatic");
   assert.equal(expo.ios.bundleIdentifier, "com.pegasusdreamscapes.woofwatcher");
   assert.equal(expo.android.package, "com.pegasusdreamscapes.woofwatcher");
+  const imagePickerPlugin = expo.plugins.find(
+    (plugin: unknown) =>
+      Array.isArray(plugin) && plugin[0] === "expo-image-picker",
+  );
+  const locationPlugin = expo.plugins.find(
+    (plugin: unknown) =>
+      Array.isArray(plugin) && plugin[0] === "expo-location",
+  );
+  assert.ok(imagePickerPlugin, "expo-image-picker should be configured");
+  assert.equal(
+    imagePickerPlugin[1].microphonePermission,
+    false,
+    "photo/camera picking must not add an unused microphone permission",
+  );
+  assert.ok(locationPlugin, "expo-location should be configured");
+  assert.equal(locationPlugin[1].locationAlwaysAndWhenInUsePermission, false);
+  assert.equal(locationPlugin[1].locationAlwaysPermission, false);
+  assert.equal(locationPlugin[1].isIosBackgroundLocationEnabled, false);
+  assert.equal(locationPlugin[1].isAndroidBackgroundLocationEnabled, false);
+  assert.equal(locationPlugin[1].isAndroidForegroundServiceEnabled, false);
+  assert.deepEqual(expo.android.blockedPermissions, [
+    "android.permission.RECORD_AUDIO",
+  ]);
+  assert.equal(
+    expo.android.blockedPermissions.includes(
+      "android.permission.READ_EXTERNAL_STORAGE",
+    ),
+    false,
+    "Expo ImagePicker still needs legacy read access on Android 12 and lower",
+  );
+  assert.equal(
+    expo.android.blockedPermissions.includes(
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+    ),
+    false,
+    "Expo ImagePicker still needs legacy camera storage access on Android 9 and lower",
+  );
+  assert.deepEqual(mobilePackage.expo?.autolinking?.exclude, ["@clerk/expo"]);
   assert.doesNotMatch(JSON.stringify(expo), /replit/i);
 });
 
@@ -1756,8 +1872,12 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   );
   assert.match(more, /if \(sectionParam === "diet"\) setDietOpen\(true\)/);
   assert.match(more, /const householdFocus = sectionParam === "household"/);
-  assert.match(more, /title="Household focus"/);
+  assert.match(
+    more,
+    /consumerSurfacePolicy\.householdProviderActions[\s\S]*"Household focus"[\s\S]*"Care team focus"/,
+  );
   assert.match(more, /Presence route/);
+  assert.match(more, /On this device/);
   assertStyleUsesSharedTouchTarget(home, "homeHeaderAction");
 });
 
@@ -1950,12 +2070,25 @@ test("keeps Health Watch and the Quick Care Console honest at zero data and at n
   const health = readAppFile(join("(tabs)", "health.tsx"));
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
-  // A fresh profile must never read "94 / Stable right now / You're on a
-  // roll": with no entries in the scoring window the score is "--" and the
-  // copy makes the first-log promise (non-diagnostic, no fabricated result).
-  assert.match(health, /const hasHealthSignalData = state\.entries\.some/);
-  assert.match(health, /const scoreDisplay = hasHealthSignalData \? String\(score\) : "--";/);
-  assert.match(health, /\{scoreDisplay\}/);
+  // Health Watch must not imply clinical precision with a made-up 0-100
+  // score. It shows factual 7-day logging coverage beside the bounded,
+  // qualitative status and keeps the first-log promise at zero data.
+  assert.match(
+    health,
+    /const hasHealthSignalData =\s*recentHealthEntries\.length > 0 \|\|\s*healthWatch\.signals\.length > 0 \|\|\s*healthWatch\.redFlags\.length > 0/,
+  );
+  assert.match(health, /const loggedDays7 = healthRhythm\.filter\(\(day\) => day\.hasData\)\.length;/);
+  assert.match(health, /\{loggedDays7\}\/7/);
+  assert.match(health, /Days logged/);
+  assert.doesNotMatch(health, /Health score/);
+  assert.doesNotMatch(health, /function healthScore/);
+  assert.doesNotMatch(health, /No score yet/);
+  assert.match(health, /buildTrendWindow\("week", now\)/);
+  assert.match(health, /const recentHealthEntries = useMemo/);
+  assert.match(
+    health,
+    /eventTime >= healthWeek\.start[\s\S]*eventTime <= now/,
+  );
   assert.match(health, /Health Watch starts with your first log\./);
   // The signal rows ("Active daily", "Eating well") are observations, so
   // they also fall back to the first-log promise before any log exists.
@@ -1970,6 +2103,49 @@ test("keeps Health Watch and the Quick Care Console honest at zero data and at n
   assert.match(log, /const logCommandStageIsNight =/);
   assert.match(log, /homeImmersiveRoomIsNight\(new Date\(now\)\.getHours\(\)\)/);
   assert.match(log, /logCommandStageIsNight \? \{ backgroundColor: "rgba\(9,17,32,0\.35\)" \} : null/);
+});
+
+test("keeps 8-30-day Health Watch evidence visible outside the seven-day rhythm", () => {
+  const now = Date.parse("2026-07-30T18:00:00.000Z");
+  const occurredAt = new Date(now - 14 * 86_400_000).toISOString();
+  const entries = [
+    {
+      id: "older_urgent_bile",
+      type: "vomit",
+      title: "Yellow bile vomit",
+      occurredAt,
+      severity: "urgent",
+      note: "Yellow bile noted",
+    },
+  ];
+  const healthWeek = buildTrendWindow("week", now);
+  const recentHealthEntries = entries.filter((entry) => {
+    const eventTime = Date.parse(entry.occurredAt);
+    return eventTime >= healthWeek.start && eventTime <= now;
+  });
+  const healthWatch = deriveHealthWatch({
+    entries,
+    routines: [],
+    now,
+    petName: "Phoenix",
+  });
+
+  assert.equal(recentHealthEntries.length, 0);
+  assert.equal(healthWatch.status, "alert");
+  assert.ok(healthWatch.signals.length > 0);
+  assert.equal(healthWatch.redFlags.length, 1);
+
+  const health = readAppFile(join("(tabs)", "health.tsx"));
+  assert.match(
+    health,
+    /deriveBileWatchStatus\(\{[\s\S]*vomit7:\s*healthWatch\.counts\.vomit7,[\s\S]*recentYellowBileCount:\s*bileEntries\.length,[\s\S]*signals:\s*healthWatch\.signals/,
+    "Bile Watch must retain 8-30-day vomit-pattern signals without widening the seven-day chart",
+  );
+  assert.match(
+    health,
+    /const hasHealthSignalData =\s*recentHealthEntries\.length > 0 \|\|\s*healthWatch\.signals\.length > 0 \|\|\s*healthWatch\.redFlags\.length > 0/,
+    "older Health Watch signals and red flags must keep the warning presentation out of the no-logs branch",
+  );
 });
 
 test("web notices and confirms use the themed dialog host, not raw window.alert chrome", () => {
@@ -2063,7 +2239,8 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /deriveHealthReviewPacket/);
   assert.match(health, /Health Watch/);
   assert.match(health, /Bile Watch/);
-  assert.match(health, /Health score/);
+  assert.match(health, /Days logged/);
+  assert.doesNotMatch(health, /Health score/);
   assert.match(health, /Health Snapshot/);
   assert.match(health, /Pattern Board/);
   assert.match(health, /Review packet/);
@@ -4390,6 +4567,10 @@ test("keeps care log trust review wired into Log detail flows", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
   assert.match(log, /ImagePicker/);
+  assert.match(log, /persistPickedMedia/);
+  assert.match(log, /filePrefix:\s*"medication-proof"/);
+  assert.match(log, /if \(!persistedPhoto\.ok\)/);
+  assert.match(log, /uri:\s*persistedPhoto\.uri/);
   assert.match(log, /buildCareLogPhotoProofAttachmentPatch/);
   assert.match(log, /buildCareLogTrustReviewPatch/);
   assert.match(log, /buildCareLogTrustDefaults/);
@@ -4409,6 +4590,20 @@ test("keeps care log trust review wired into Log detail flows", () => {
   assert.match(log, /Proof needed/);
   assert.match(log, /Proof attached/);
   assert.match(log, /Needs review/);
+});
+
+test("copies picked care files into durable storage before persisting native URIs", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const durableMedia = readMobileLibFile("durablePickedMedia.ts");
+
+  assert.match(records, /persistPickedMedia/);
+  assert.match(records, /filePrefix:\s*"record-attachment"/);
+  assert.match(records, /if \(!persistedAttachment\.ok\)/);
+  assert.match(records, /setRecordAttachmentUri\(persistedAttachment\.uri\)/);
+  assert.doesNotMatch(records, /setRecordAttachmentUri\(pickedUri\)/);
+  assert.match(durableMedia, /woofwatcher-attachments/);
+  assert.match(durableMedia, /await options\.fileSystem\.copyAsync/);
+  assert.match(durableMedia, /return \{ ok: false, reason: "durable-copy-failed" \}/);
 });
 
 test("keeps household sync health visible from More", () => {
@@ -4439,8 +4634,9 @@ test("keeps household responsibility visible in Calendar and More", () => {
   assert.match(more, /Open routine board/);
 });
 
-test("keeps Reminder Center visible in Calendar before push notifications are enabled", () => {
+test("keeps Reminder Center visible while gating future push controls from production", () => {
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+  const reminders = readAppFile("reminders.tsx");
 
   assert.match(calendar, /deriveCareReminderCenter/);
   assert.match(calendar, /careReminderCenter/);
@@ -4460,6 +4656,13 @@ test("keeps Reminder Center visible in Calendar before push notifications are en
   assert.match(calendar, /Open push proof/);
   assert.match(calendar, /accessibilityLabel="Open push notifications proof mission"/);
   assert.match(calendar, /reminderCount/);
+  assert.match(
+    calendar,
+    /\{consumerSurfacePolicy\.pushNotificationControls \? \(\s*<View style=\{\[s\.reminderNotificationPanel/,
+  );
+  assert.match(reminders, /getConsumerSurfacePolicy/);
+  assert.match(reminders, /showNotificationControls/);
+  assert.match(reminders, /\{showNotificationControls \? \(/);
 });
 
 test("routes Reminder Center rows to concrete care workflows", () => {
@@ -4963,7 +5166,7 @@ test("keeps More household, tools, and diet sections on shared board card anatom
   );
   assert.match(
     more,
-    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Sync Health"/,
+    /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*consumerSurfacePolicy\.providerSyncControls[\s\S]*"Sync Health"[\s\S]*"Device Storage"/,
   );
   assert.match(
     more,
@@ -5401,6 +5604,35 @@ test("keeps the root install guard cross-platform for deadline beta exports", ()
   assert.match(guardSource, /package-lock\.json/);
   assert.match(guardSource, /yarn\.lock/);
   assert.doesNotMatch(guardSource, /\bsh\b|-c/);
+});
+
+test("keeps Darwin native tooling available to frozen EAS iOS installs", () => {
+  const workspace = readFileSync(
+    join(process.cwd(), "pnpm-workspace.yaml"),
+    "utf8",
+  );
+  const lockfile = readFileSync(
+    join(process.cwd(), "pnpm-lock.yaml"),
+    "utf8",
+  );
+  const darwinPackages = [
+    "@esbuild/darwin-arm64@0.27.3",
+    "@esbuild/darwin-x64@0.27.3",
+    "lightningcss-darwin-arm64@1.32.0",
+    "lightningcss-darwin-x64@1.32.0",
+    "@tailwindcss/oxide-darwin-arm64@4.3.0",
+    "@tailwindcss/oxide-darwin-x64@4.3.0",
+    "@rollup/rollup-darwin-arm64@4.60.3",
+    "@rollup/rollup-darwin-x64@4.60.3",
+    "@expo/ngrok-bin-darwin-arm64@2.3.41",
+    "@expo/ngrok-bin-darwin-x64@2.3.41",
+  ];
+
+  assert.doesNotMatch(workspace, /darwin-(?:arm64|x64)["']?:\s*["']-["']/);
+  assert.doesNotMatch(lockfile, /darwin-(?:arm64|x64):\s*'-'/);
+  for (const packageId of darwinPackages) {
+    assert.match(lockfile, new RegExp(packageId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
 });
 
 test("keeps a deadline beta doctor command for mobile export handoff", () => {

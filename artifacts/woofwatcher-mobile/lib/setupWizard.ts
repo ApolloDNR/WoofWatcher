@@ -131,6 +131,21 @@ export function createSetupWizardDraft(doc: SetupWizardCareDoc): SetupWizardDraf
   };
 }
 
+/**
+ * Store-production setup is intentionally device-only for free v1. Normalize
+ * stale internal create/join plans before previewing or saving so a previous
+ * QA choice cannot leak invite/account promises into the consumer build.
+ */
+export function makeSetupWizardDraftDeviceOnly(
+  draft: SetupWizardDraft,
+): SetupWizardDraft {
+  return {
+    ...draft,
+    householdMode: "local",
+    inviteCode: "",
+  };
+}
+
 export function applySetupWizardDraft<TDoc extends SetupWizardCareDoc>(
   doc: TDoc,
   draft: SetupWizardDraft,
@@ -204,6 +219,7 @@ export function applySetupWizardDraft<TDoc extends SetupWizardCareDoc>(
 export interface SetupWizardConfirmationOptions {
   isSignedIn?: boolean;
   isClerkConfigured?: boolean;
+  consumerRelease?: boolean;
 }
 
 export interface SetupWizardConfirmation {
@@ -224,6 +240,21 @@ export function buildSetupWizardConfirmation(
   const mode = normalizeHouseholdMode(setup?.mode);
   const householdName = clean(setup?.householdName) || defaultHouseholdName(dogName);
   const inviteCode = normalizeInviteCode(setup?.inviteCode);
+  if (options.consumerRelease) {
+    return {
+      title: "Ready to care",
+      detail: `${dogName}'s profile, routines, and care history will be saved on this device.`,
+      householdLabel: "Private care record",
+      syncLabel: "Saved on this device.",
+      providerBoundary:
+        "This version does not create an account, send invites, or share care data with other people.",
+      nextActions: [
+        "Save the dog profile, diet baseline, starter routine, and caregiver.",
+        "Open Today to start logging real care.",
+        "Export a backup before changing or resetting this device.",
+      ],
+    };
+  }
   const syncLabel = !options.isClerkConfigured
     ? "Local preview: account sync is not configured in this build."
     : options.isSignedIn

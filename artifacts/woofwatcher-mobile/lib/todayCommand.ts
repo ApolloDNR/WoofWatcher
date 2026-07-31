@@ -92,6 +92,11 @@ export interface TodayCommandState {
   entries: TodayCommandEntry[];
   routines: TodayCommandRoutine[];
   caregivers?: TodayCommandCaregiver[];
+  /**
+   * Explicit provider capability. Local storage is the completed save state
+   * when this is false, so local/temp entries must never become sync debt.
+   */
+  providerSyncEnabled?: boolean;
 }
 
 export interface TodayCommandHealth {
@@ -345,6 +350,7 @@ export function deriveTodayCommand(
 ): TodayCommandModel {
   const entries = state.entries ?? [];
   const routines = state.routines ?? [];
+  const providerSyncEnabled = state.providerSyncEnabled === true;
   const todays = entries.filter((entry) => isSameLocalDay(entry.occurredAt, now));
   const sortedEntries = sortNewestFirst(entries);
   const dayStatus = deriveCareDayStatus(entries, routines, now);
@@ -355,24 +361,31 @@ export function deriveTodayCommand(
     now,
   });
 
-  const sync = {
-    pending: entries.filter((entry) => entry.syncStatus === "pending").length,
-    failed: entries.filter((entry) => entry.syncStatus === "failed").length,
-    local: entries.filter(
+  const rawPending = entries.filter((entry) => entry.syncStatus === "pending").length;
+  const rawFailed = entries.filter((entry) => entry.syncStatus === "failed").length;
+  const rawLocal = entries.filter(
       (entry) =>
         entry.syncStatus === "local" ||
         (!entry.syncStatus && entry.id.startsWith("temp_")),
-    ).length,
-    label: "Synced",
+    ).length;
+  const sync = {
+    pending: providerSyncEnabled ? rawPending : 0,
+    failed: providerSyncEnabled ? rawFailed : 0,
+    // Failed/pending entries are still safely present in local storage when
+    // no provider exists; expose that truth instead of an impossible retry.
+    local: providerSyncEnabled ? rawLocal : rawLocal + rawPending + rawFailed,
+    label: providerSyncEnabled ? "Synced" : "Saved on this device",
   };
-  sync.label =
-    sync.failed > 0
-      ? `${sync.failed} sync failed`
-      : sync.local > 0
-        ? `${sync.local} saved offline`
-        : sync.pending > 0
-          ? `${sync.pending} syncing`
-          : "Synced";
+  if (providerSyncEnabled) {
+    sync.label =
+      sync.failed > 0
+        ? `${sync.failed} sync failed`
+        : sync.local > 0
+          ? `${sync.local} saved offline`
+          : sync.pending > 0
+            ? `${sync.pending} syncing`
+            : "Synced";
+  }
 
   const healthSignalEntries = todays.filter(isHealthSignalEntry);
   const vomitEntries = healthSignalEntries.filter(
@@ -403,7 +416,7 @@ export function deriveTodayCommand(
     route: lastEntry ? entryRoute(lastEntry.id) : "/more",
   };
 
-  if (sync.failed > 0 || sync.local > 0) {
+  if (providerSyncEnabled && (sync.failed > 0 || sync.local > 0)) {
     return {
       primaryAction: {
         kind: "sync",

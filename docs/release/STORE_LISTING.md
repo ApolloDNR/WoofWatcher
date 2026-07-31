@@ -1,6 +1,6 @@
 # WoofWatcher store listing (v1)
 
-Canonical listing copy and store-form answers for the v1 submission of the Expo mobile app (`artifacts/woofwatcher-mobile`, bundle id `com.pegasusdreamscapes.woofwatcher`). Every claim below is held to the v1 truth: local-first, no account, no cloud features.
+Canonical listing copy and store-form answers for the free v1 submission of the Expo mobile app (`artifacts/woofwatcher-mobile`, bundle id `com.pegasusdreamscapes.woofwatcher`). Every claim below is held to the v1 truth: local-first, no account, no cloud features.
 
 ## Honesty rule (read before editing any copy)
 
@@ -10,23 +10,24 @@ The v1 listing must NOT claim: cloud sync, backups, accounts/sign-in, push notif
 
 WoofWatcher
 
+## Publisher and support
+
+- Publisher / copyright owner: **Pegasus Dreamscapes Corp**
+- Support email: **apollo@pegasusdreamscapes.com**
+- Copyright: **2026 Pegasus Dreamscapes Corp**
+
 ## Store URLs and required links
 
-Both stores require a publicly reachable Privacy Policy URL before submission. WoofWatcher's policy and terms are hosted on one page with in-page anchors, so the same base URL satisfies every field:
+Both stores require a publicly reachable privacy policy before submission, and Apple requires a Support URL that leads to real contact information. The old private Claude artifact URL is retired and **must not be submitted**.
 
-- **Privacy Policy URL** (App Store Connect · Play Data safety): `https://claude.ai/code/artifact/623bc970-911f-4a50-952e-709f33e348f9#privacy`
-- **Terms of Service URL** (App Store "License Agreement" / EULA link, optional): `https://claude.ai/code/artifact/623bc970-911f-4a50-952e-709f33e348f9#terms`
-- Base page (both, no anchor): `https://claude.ai/code/artifact/623bc970-911f-4a50-952e-709f33e348f9`
+Use the published first-party WoofWatcher support site:
 
-The page content is transcribed verbatim from `docs/legal/PRIVACY_POLICY.md` and `docs/legal/TERMS_OF_SERVICE.md` (Pegasus Dreamscapes, effective 2026-07-09, v1.0).
+- **Privacy Policy URL** (required): `https://woofwatcher-support.paoloaduran.chatgpt.site/#privacy`
+- **Support URL** (required by Apple): `https://woofwatcher-support.paoloaduran.chatgpt.site/#support`
+- **Terms of Service URL** (recommended): `https://woofwatcher-support.paoloaduran.chatgpt.site/#terms`
+- **Marketing URL** (optional): leave blank for v1.
 
-Before pasting these into the store forms:
-1. The hosted page is private by default — open it and use the page's **Share** menu to make it public, or the store reviewer's crawler will 404.
-2. Optional but recommended for a polished listing: republish this same content on your own domain (e.g. `pegasusdreamscapes.com/woofwatcher/privacy`) and swap the URLs above. The claude.ai link is a valid, functional interim host.
-
-Still needed from the publisher (not fabricated here):
-- **Support URL or email** (Apple requires one of the two; Play requires an email). Provide a real contact you monitor — do not reuse the privacy page.
-- **Marketing URL** (optional on both stores; leave blank if there is no product site).
+The site was published publicly on July 30, 2026. Its support section visibly includes `apollo@pegasusdreamscapes.com`, and its privacy and terms sections faithfully reflect the reviewed source documents in `docs/legal/`.
 
 ## iOS subtitle (30 characters max)
 
@@ -36,9 +37,9 @@ Real care. Pixel heart.
 
 ## Google Play short description (80 characters max)
 
-Log real care for your dog and watch a pixel companion bring their day to life.
+Log real dog care and watch a pixel companion bring each day to life
 
-(79 characters.)
+(68 characters.)
 
 ## Full description (App Store and Play, shared base)
 
@@ -51,7 +52,7 @@ Real care. Pixel heart.
 WHAT YOU CAN DO
 
 - Fast care logging: meals (served through outcome), walks, potty breaks, meds, and notes — built for one-handed, ten-second entries.
-- Routines that hold the day together: see what's next, keep the household on the same page, and never wonder whether the dog was fed.
+- Routines that hold the day together: build a clear care plan and see what is done or still due.
 - Health Watch: jot down appetite and tummy observations over time so patterns are easy to show your vet. WoofWatcher records your observations — it never diagnoses and is not veterinary advice.
 - Records and Care Pass: keep your dog's important details in one place and share a clean, owner-maintained care summary with a sitter, walker, or vet whenever you choose.
 - A living pixel companion: a hand-crafted pixel dog who earns XP and levels only from care you actually logged, in a room that shifts from day to night on the real clock.
@@ -60,7 +61,7 @@ WHAT YOU CAN DO
 PRIVATE BY DESIGN
 
 - No account needed. Open the app and start caring.
-- Everything stays on your device. WoofWatcher has no servers, no ads, no trackers, and no analytics. Your dog's data is yours.
+- Everything you enter stays on your device. WoofWatcher has no backend, ads, trackers, or analytics. Recorded walk routes use a bundled map view and are not sent to a map provider.
 - Export anytime. Send a full text export of your care data wherever you like, straight from the share sheet.
 - Photos are optional and stay on your device.
 
@@ -70,9 +71,9 @@ WoofWatcher is a care journal and companion, not a medical device. If your dog s
 
 ## Keywords (iOS, 100 characters max, comma-separated)
 
-dog care,pet care,dog log,puppy,dog routine,pet journal,dog health diary,potty training,virtual pet
+dog,pet,puppy,tracker,log,routine,journal,health,potty,feeding,walk,medication,sitter,vet,companion
 
-(99 characters.)
+(99 ASCII bytes, comma-separated with no spaces.)
 
 ## Category
 
@@ -82,20 +83,21 @@ dog care,pet care,dog log,puppy,dog routine,pet journal,dog health diary,potty t
 
 ## Content rating answers
 
-- Apple age rating: 4+ (no objectionable content).
-- Google Play (IARC questionnaire): Everyone.
+- Apple age-rating questionnaire: declare **Health or Wellness Topics** and **infrequent Medical or Treatment Information** because the app organizes medication logs, symptoms, and urgent vet follow-up guidance even though it is non-diagnostic. Under Apple's current definitions, those answers map to 13+ on OS 26 and later and 12+ on earlier OS versions. Use the OS- and region-specific ratings App Store Connect actually calculates rather than enforcing one rating or overriding a result downward.
+- Google Play: complete the IARC questionnaire as a general-audience dog-care journal and use the calculated rating. Do not enroll in the Designed for Families program.
 - Violence: none. Sexual content: none. Profanity: none. Drugs/alcohol/tobacco: none. Gambling: none (no simulated gambling; progression is earned by care logging only, no chance mechanics).
 - User-generated content shared with others: No. Users write private notes on their own device; sharing happens only through the OS share sheet at the user's initiative, and the app hosts no content.
+- Social media capability: none. WoofWatcher has no social feed, public profiles, redistribution, amplification, or interaction with hosted user-generated content.
 - Ads: none.
 - In-app purchases: none in v1.
-- Location: the app requests foreground ("when in use") location only when the owner starts a walk, to draw an on-device trail map of that walk. The route is saved in the local care log and is never transmitted or shared. Walk logging still works if permission is denied. Location is never shared with anyone.
+- Location: the app requests foreground ("when in use") location only when the owner starts a walk, to draw an on-device trail map of that walk. The route is saved in the local care log. Its visualization uses bundled artwork and geometry, so route coordinates are not sent to WoofWatcher, a map provider, or anyone else. Walk logging still works if permission is denied.
 - Unrestricted internet access: the app does not browse the web or load remote content in v1.
 
 ## Apple privacy nutrition label
 
-Answer: **Data Not Collected** (all categories).
+Answer: **Data Not Collected** (all categories), provided the release build passes the no-remote-map regression check and contains no enabled analytics, crash-reporting, account, sync, AI, advertising, payment, provider-backed push-notification, or cloud-document-storage SDK or service. The machine-readable production flags in `artifacts/woofwatcher-mobile/eas.json` are the store-build capability source, and validation fails if push-token registration or cloud document upload is enabled or undeclared while this answer remains selected. Enabling provider-backed push requires reviewing any retained device token, user identifier, and provider data before re-answering the label; enabling cloud document storage likewise requires a fresh collection and sharing review.
 
-Justification to keep on file for App Review: WoofWatcher v1 has no server component, no account system, no analytics/ads/crash SDKs, and makes no network transmission of user data. All care data is stored locally on the device (AsyncStorage). Photos, when attached, remain on-device. Walk routes recorded via foreground location are likewise saved only in the local care log and are never transmitted off the device. Data leaves the device only when the user explicitly invokes the OS share sheet, which is user-initiated sharing, not developer collection. Therefore no data types are "collected" as Apple defines the term (transmitted off device to the developer or third parties) — including location, which is used solely to render an on-device walk map and never leaves the device.
+Justification to keep on file for App Review: WoofWatcher v1 has no backend, account system, analytics/ads/crash SDKs, or network transmission of user data. All care data is stored locally on the device. Photos remain on-device. Foreground walk routes are saved only in the local care log and rendered without remote map tiles, remote geometry, or a map SDK. Data leaves the device only when the user explicitly invokes the OS share sheet, which is user-initiated sharing rather than developer collection. Therefore no data types are collected as Apple defines the term, including location.
 
 - Data used to track you: none.
 - Data linked to you: none.
@@ -112,32 +114,30 @@ Justification to keep on file for App Review: WoofWatcher v1 has no server compo
 
 ## App Review notes (paste into App Store Connect "Notes" and Play "App access")
 
-- The app requires NO login. It opens directly to the home screen with sample/local data; reviewers can use every feature immediately. There are no demo credentials because there are no accounts.
-- All data is stored locally on the device. The app makes no network calls with user data; there is no server component in this release.
+- The app requires no login. On first launch, choose **Explore first** to enter the on-device experience. There are no demo credentials because there are no accounts.
+- All care data is stored locally on the device. There is no WoofWatcher backend in this release.
 - Camera and photo library permissions are OPTIONAL and requested only when the reviewer chooses to attach a photo (avatar, care log, or record). The app is fully functional if permission is denied. Permission strings are declared in the app's Info.plist.
-- Location permission is OPTIONAL and foreground-only ("when in use"). It is requested only when the reviewer starts a walk, and is used solely to draw an on-device trail map of that walk; the route is saved in the local care log and never transmitted. Walk logging works normally if location is denied. No background location is used.
+- Location permission is optional and foreground-only ("when in use"). It is requested only when the reviewer starts a walk. The recorded route is saved in the local care log and rendered with bundled map artwork; no route coordinates are sent to WoofWatcher or a map provider. Walk logging works if location is denied. No background location is used.
 - Health features (Health Watch / Bile Watch) record owner observations only. The app displays non-diagnostic language throughout and directs users to a veterinarian; it makes no diagnosis or treatment claims.
-- Some screens reference future provider-backed capabilities (sync, notifications, AI); in this build they are visibly gated as "setup needed" and non-functional by design, not broken. No purchase is offered anywhere.
-- To see the core flow: open Today (home), log a meal or potty break from the Log tab, then view Plan, Pack, and Story.
+- This free v1 does not include accounts, cross-device sync, push notifications, live AI, purchases, ads, or subscriptions.
+- To see the core flow: open Today, log a meal or potty break from Fast Log, then view Plan, Story, Pack, and Records → Care Pass.
 
 ## Screenshot plan
 
-Capture the same five screens per device class, in this order (matches the app's bottom navigation):
+Capture these six screens from one internally consistent care state, in this upload order:
 
-1. Today — full-screen living room with the pixel dog, level strip, and care status (the hero shot).
-2. Plan — routines/calendar view showing the day's care schedule.
-3. Log — Quick Log with meal/potty flows (mid-log state, showing how fast entry is).
-4. Pack — Supplies checklist (Essentials + Travel bag), showing the household keeps the dog stocked. (The People/caregivers tab is intentionally empty in the sample data, so Supplies is the richer hero for this slot.)
-5. Story — memories, streaks, and achievements.
-
-Optional 6th: Records/Care Pass (the shareable care summary), which supports the "serious enough for a vet" positioning.
+1. Today — Phoenix in the daylight room, real care state, level strip, and Quick Log.
+2. Fast Log — completed meal, potty, water, and walk rows from the same capture session.
+3. Plan — real saved routines only; no “sample day” or placeholder metrics.
+4. Story — the same four care moments as real timeline waypoints.
+5. Pack — supplies checklist with no cross-device or household-sync claim.
+6. Care Pass — sitter preview generated from the same local data. It makes a stronger handoff-focused store story than the factual Days Logged coverage on Health.
 
 Required sets:
 
-- iOS 6.7" (1290 x 2796, e.g. iPhone 15 Pro Max simulator) — primary required set.
-- iOS 5.5" (1242 x 2208, e.g. iPhone 8 Plus simulator) — legacy size; App Store Connect can scale from 6.7" but a native 5.5" set avoids layout surprises.
-- Google Play phone (1080 x 2400 or similar 9:16; minimum 2 screenshots, we ship all 5).
-- Google Play 7" and 10" tablet sets (Play requires tablet screenshots for full listing quality; the app is phone-first, so capture the phone layout on a tablet-sized window and confirm it renders acceptably — `supportsTablet` is false on iOS, so no iPad set is needed there).
+- iPhone 6.9" accepted portrait set: **1290 x 2796**. Apple lists this as an accepted 6.9" size and scales it for smaller iPhone classes. No 5.5" set is required.
+- Google Play phone: **1080 x 1920**, true 9:16. The old 1080 x 2340 assets exceeded Play's 2:1 max-dimension rule and are retired.
+- Do not upload tablet screenshots until native tablet layout is explicitly supported and tested. `supportsTablet` is false on iOS v1.
 - Play feature graphic: 1024 x 500 (pixel-dog-in-room key art with the wordmark; no device frames, no claims text).
 
-Capture rules: day-mode room for at least the first shot, real (non-lorem) sample data, no debug UI, status bar clean, and captions overlaid only if they restate true v1 features.
+Capture rules: daylight room for the first shot; one dog and one timestamp-consistent state across every shot; real routines and logs only; no sample-day banner, placeholder metrics, debug UI, sync/cloud language, or unexplained health score. Keep the full app viewport and bottom navigation visible. Overlay captions may occupy no more than 20% of the Play image. Run `node docs/release/tools/validate-store-materials.mjs` before upload.

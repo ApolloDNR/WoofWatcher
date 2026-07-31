@@ -1,4 +1,34 @@
-import type { CareHealthStatus } from "@workspace/care-domain";
+import type {
+  CareHealthSignal,
+  CareHealthStatus,
+} from "@workspace/care-domain";
+
+export type BileWatchStatus = "Low Risk" | "Watch" | "Review";
+
+export interface BileWatchStatusInput {
+  vomit7: number;
+  recentYellowBileCount: number;
+  signals: readonly Pick<CareHealthSignal, "kind" | "urgency">[];
+}
+
+export function deriveBileWatchStatus({
+  vomit7,
+  recentYellowBileCount,
+  signals,
+}: BileWatchStatusInput): BileWatchStatus {
+  const vomitSignal = signals.find(
+    (signal) => signal.kind === "vomit-pattern",
+  );
+  if (vomitSignal?.urgency === "alert") return "Review";
+  if (
+    vomit7 > 0 ||
+    recentYellowBileCount > 0 ||
+    vomitSignal
+  ) {
+    return "Watch";
+  }
+  return "Low Risk";
+}
 
 export type HealthReviewPacketRoute = `/log?type=${string}&detail=1&intent=${string}` | "/woofguide" | "/records";
 
@@ -19,7 +49,7 @@ export interface HealthReviewPacketInput {
     anxiety7: number;
   };
   redFlagCount: number;
-  bileStatus: "Low Risk" | "Watch" | "Review";
+  bileStatus: BileWatchStatus;
   lastYellowBileLabel: string;
   longestFoodGapLabel: string;
   bedtimeSnackLabel: string;

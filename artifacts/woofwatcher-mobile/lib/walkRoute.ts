@@ -69,7 +69,10 @@ export function haversineMeters(
   const sinLon = Math.sin(dLon / 2);
   const h =
     sinLat * sinLat +
-    Math.cos(a.lat * DEG_TO_RAD) * Math.cos(b.lat * DEG_TO_RAD) * sinLon * sinLon;
+    Math.cos(a.lat * DEG_TO_RAD) *
+      Math.cos(b.lat * DEG_TO_RAD) *
+      sinLon *
+      sinLon;
   return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
@@ -106,7 +109,7 @@ export function routeDistanceMeters(points: readonly WalkRoutePoint[]): number {
   return total;
 }
 
-/** Any lat/lon vertex — walk routes and storybook map geometry both qualify. */
+/** Any valid lat/lon vertex used by route simplification. */
 interface GeoVertex {
   lat: number;
   lon: number;
@@ -188,7 +191,8 @@ export function simplifyRoute(
     }
     return [...clean];
   }
-  const midLat = clean.reduce((sum, point) => sum + point.lat, 0) / clean.length;
+  const midLat =
+    clean.reduce((sum, point) => sum + point.lat, 0) / clean.length;
   const lonScale = METERS_PER_DEGREE * Math.cos(midLat * DEG_TO_RAD);
   let tolerance = 2;
   let simplified = douglasPeucker(clean, tolerance, lonScale);
@@ -206,29 +210,6 @@ export function simplifyRoute(
     simplified = sampled;
   }
   return simplified;
-}
-
-/**
- * Simplify an arbitrary lat/lon path (storybook map geometry — road, shore,
- * building outline) with the same Douglas-Peucker core the walk route uses.
- * Pure addition for the drawn map; the walk-route pipeline is unchanged.
- * Keeps input point identity, so closed rings stay closed.
- */
-export function simplifyGeoPath<T extends GeoVertex>(
-  points: readonly T[],
-  toleranceM: number,
-): T[] {
-  const clean = points.filter(
-    (point) =>
-      Number.isFinite(point.lat) &&
-      Math.abs(point.lat) <= 90 &&
-      Number.isFinite(point.lon) &&
-      Math.abs(point.lon) <= 180,
-  );
-  if (clean.length <= 2 || !(toleranceM > 0)) return clean;
-  const midLat = clean.reduce((sum, point) => sum + point.lat, 0) / clean.length;
-  const lonScale = METERS_PER_DEGREE * Math.cos(midLat * DEG_TO_RAD);
-  return douglasPeucker(clean, toleranceM, lonScale);
 }
 
 /**
@@ -255,22 +236,24 @@ export function parseWalkRoute(value: unknown): WalkRoutePoint[] | null {
 /** "0.4 mi", "1.2 mi", or feet for very short recorded loops. */
 export function formatRouteDistanceMiles(meters: number): string {
   if (!Number.isFinite(meters) || meters < 0) return "";
+  if (meters === 0) return "0 ft";
   const miles = meters / 1609.344;
-  if (miles < 0.1) return `${Math.max(10, Math.round((meters * 3.28084) / 10) * 10)} ft`;
+  if (miles < 0.1)
+    return `${Math.max(10, Math.round((meters * 3.28084) / 10) * 10)} ft`;
   return `${miles.toFixed(1)} mi`;
 }
 
 /* ------------------------------------------------------------------ */
-/* Slippy-map (Web Mercator) math for the TrailMap component           */
+/* Local Web Mercator projection for the private TrailMap canvas       */
 /* ------------------------------------------------------------------ */
 
-export const TRAIL_TILE_SIZE = 256;
 export const TRAIL_MIN_ZOOM = 14;
 export const TRAIL_MAX_ZOOM = 17;
 const MERCATOR_MAX_LAT = 85.05112878;
+const TRAIL_WORLD_SCALE = 256;
 
 export function lonToWorldX(lon: number, zoom: number): number {
-  return ((lon + 180) / 360) * TRAIL_TILE_SIZE * 2 ** zoom;
+  return ((lon + 180) / 360) * TRAIL_WORLD_SCALE * 2 ** zoom;
 }
 
 export function latToWorldY(lat: number, zoom: number): number {
@@ -278,7 +261,7 @@ export function latToWorldY(lat: number, zoom: number): number {
   const rad = clamped * DEG_TO_RAD;
   const normalized =
     (1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2;
-  return normalized * TRAIL_TILE_SIZE * 2 ** zoom;
+  return normalized * TRAIL_WORLD_SCALE * 2 ** zoom;
 }
 
 export interface TrailViewport {
@@ -286,6 +269,12 @@ export interface TrailViewport {
   /** World-pixel coordinates (at `zoom`) of the view center. */
   centerX: number;
   centerY: number;
+  /**
+   * Additional fit applied when even the minimum zoom cannot contain the
+   * complete route. This preserves the configured walk-map zoom range while
+   * ensuring long recorded routes are never clipped by the local canvas.
+   */
+  fitScale: number;
 }
 
 /**
@@ -316,59 +305,28 @@ export function fitRouteViewport(
   const availableHeight = Math.max(24, height - padding * 2);
   let zoom = minZoom;
   for (let candidate = maxZoom; candidate >= minZoom; candidate -= 1) {
-    const spanX = lonToWorldX(maxLon, candidate) - lonToWorldX(minLon, candidate);
-    const spanY = latToWorldY(minLat, candidate) - latToWorldY(maxLat, candidate);
+    const spanX =
+      lonToWorldX(maxLon, candidate) - lonToWorldX(minLon, candidate);
+    const spanY =
+      latToWorldY(minLat, candidate) - latToWorldY(maxLat, candidate);
     if (spanX <= availableWidth && spanY <= availableHeight) {
       zoom = candidate;
       break;
     }
   }
+  const spanX = lonToWorldX(maxLon, zoom) - lonToWorldX(minLon, zoom);
+  const spanY = latToWorldY(minLat, zoom) - latToWorldY(maxLat, zoom);
+  const fitScale = Math.min(
+    1,
+    spanX > 0 ? availableWidth / spanX : 1,
+    spanY > 0 ? availableHeight / spanY : 1,
+  );
   return {
     zoom,
     centerX: (lonToWorldX(minLon, zoom) + lonToWorldX(maxLon, zoom)) / 2,
     centerY: (latToWorldY(minLat, zoom) + latToWorldY(maxLat, zoom)) / 2,
+    fitScale,
   };
-}
-
-export interface TrailTile {
-  key: string;
-  uri: string;
-  left: number;
-  top: number;
-}
-
-/**
- * The OSM raster tiles covering a viewport, positioned in view-local
- * pixels. Tile indices wrap horizontally and clamp vertically.
- */
-export function computeTrailTiles(
-  viewport: TrailViewport,
-  width: number,
-  height: number,
-): TrailTile[] {
-  if (!(width > 0) || !(height > 0)) return [];
-  const tileCount = 2 ** viewport.zoom;
-  const viewLeft = viewport.centerX - width / 2;
-  const viewTop = viewport.centerY - height / 2;
-  const firstX = Math.floor(viewLeft / TRAIL_TILE_SIZE);
-  const lastX = Math.floor((viewLeft + width) / TRAIL_TILE_SIZE);
-  const firstY = Math.floor(viewTop / TRAIL_TILE_SIZE);
-  const lastY = Math.floor((viewTop + height) / TRAIL_TILE_SIZE);
-  const tiles: TrailTile[] = [];
-  for (let x = firstX; x <= lastX; x += 1) {
-    for (let y = firstY; y <= lastY; y += 1) {
-      if (y < 0 || y >= tileCount) continue;
-      const wrappedX = ((x % tileCount) + tileCount) % tileCount;
-      tiles.push({
-        key: `${viewport.zoom}/${x}/${y}`,
-        uri: `https://tile.openstreetmap.org/${viewport.zoom}/${wrappedX}/${y}.png`,
-        left: x * TRAIL_TILE_SIZE - viewLeft,
-        top: y * TRAIL_TILE_SIZE - viewTop,
-      });
-      if (tiles.length >= 32) return tiles;
-    }
-  }
-  return tiles;
 }
 
 /** Project a route point into view-local pixels for the SVG overlay. */
@@ -379,8 +337,14 @@ export function projectRoutePoint(
   height: number,
 ): { x: number; y: number } {
   return {
-    x: lonToWorldX(point.lon, viewport.zoom) - viewport.centerX + width / 2,
-    y: latToWorldY(point.lat, viewport.zoom) - viewport.centerY + height / 2,
+    x:
+      (lonToWorldX(point.lon, viewport.zoom) - viewport.centerX) *
+        viewport.fitScale +
+      width / 2,
+    y:
+      (latToWorldY(point.lat, viewport.zoom) - viewport.centerY) *
+        viewport.fitScale +
+      height / 2,
   };
 }
 
@@ -473,13 +437,18 @@ interface WebGeolocation {
   watchPosition: (
     onSuccess: (position: WebGeoPosition) => void,
     onError?: (error: { code?: number }) => void,
-    options?: { enableHighAccuracy?: boolean; maximumAge?: number; timeout?: number },
+    options?: {
+      enableHighAccuracy?: boolean;
+      maximumAge?: number;
+      timeout?: number;
+    },
   ) => number;
   clearWatch: (watchId: number) => void;
 }
 
 function getWebGeolocation(): WebGeolocation | null {
-  const nav = (globalThis as { navigator?: { geolocation?: unknown } }).navigator;
+  const nav = (globalThis as { navigator?: { geolocation?: unknown } })
+    .navigator;
   const geo = nav?.geolocation as WebGeolocation | undefined;
   if (
     geo &&
@@ -508,7 +477,10 @@ function startWebWatch(
         onPoint({
           lat: position.coords.latitude,
           lon: position.coords.longitude,
-          t: typeof position.timestamp === "number" ? position.timestamp : Date.now(),
+          t:
+            typeof position.timestamp === "number"
+              ? position.timestamp
+              : Date.now(),
         });
       },
       (error) => {
@@ -548,7 +520,10 @@ async function startNativeWatch(
         onPoint({
           lat: position.coords.latitude,
           lon: position.coords.longitude,
-          t: typeof position.timestamp === "number" ? position.timestamp : Date.now(),
+          t:
+            typeof position.timestamp === "number"
+              ? position.timestamp
+              : Date.now(),
         });
       },
     );

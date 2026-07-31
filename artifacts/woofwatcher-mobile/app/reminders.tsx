@@ -27,6 +27,7 @@ import {
   getStandaloneRouteBottomPadding,
   MIN_MOBILE_TOUCH_TARGET,
 } from "@/lib/mobileLayout";
+import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 import { buildReminderNotificationPreferencesForCenter } from "@/lib/reminderNotificationPreferences";
 
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -123,6 +124,8 @@ export default function RemindersScreen() {
   const insets = useSafeAreaInsets();
   const { state } = useCare();
   const now = Date.now();
+  const showNotificationControls =
+    getConsumerSurfacePolicy().pushNotificationControls;
 
   const [activeTab, setActiveTab] = useState<ReminderTab>("upcoming");
 
@@ -290,17 +293,19 @@ export default function RemindersScreen() {
                 style={s.newButton}
               />
 
-              <View style={[s.noticeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={s.noticeHead}>
-                  <Ionicons name="notifications-off-outline" size={14} color={colors.sage} />
-                  <Text style={[s.noticeKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                    NOTIFICATIONS
+              {showNotificationControls ? (
+                <View style={[s.noticeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={s.noticeHead}>
+                    <Ionicons name="notifications-off-outline" size={14} color={colors.sage} />
+                    <Text style={[s.noticeKicker, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                      NOTIFICATIONS
+                    </Text>
+                  </View>
+                  <Text style={[s.noticeCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {reminderCenter.notificationReadiness}
                   </Text>
                 </View>
-                <Text style={[s.noticeCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {reminderCenter.notificationReadiness}
-                </Text>
-              </View>
+              ) : null}
             </>
           ) : (
             <BoardCard enter={0} style={s.emptyCard}>

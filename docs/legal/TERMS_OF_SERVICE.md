@@ -2,7 +2,7 @@
 
 Effective: July 9, 2026
 
-These terms are an agreement between you and Pegasus Dreamscapes ("we," "us"), the publisher of the WoofWatcher app for iOS and Android. By downloading or using WoofWatcher, you agree to these terms. If you do not agree, do not use the app.
+These terms are an agreement between you and Pegasus Dreamscapes Corp ("we," "us"), the publisher of the WoofWatcher app for iOS and Android. By downloading or using WoofWatcher, you agree to these terms. If you do not agree, do not use the app.
 
 ## 1. What WoofWatcher is
 
@@ -54,11 +54,11 @@ This version of WoofWatcher does not charge fees, does not offer in-app purchase
 
 ## 9. Features not in this version
 
-This version of the app does not include cloud sync, online accounts, push notifications, live AI assistance, payments, or cloud document storage. Where the app mentions such capabilities, they are shown as gated or "setup needed" and are not active. Do not rely on any capability the app has not actually made available to you.
+This free version of the app does not include cloud sync, online accounts, push notifications, live AI assistance, payments, subscriptions, or cloud document storage. Those capabilities are not part of the service described by these terms.
 
 ## 10. Intellectual property
 
-The WoofWatcher name, logo, pixel art, characters (including the pixel dog companion), design, and software are owned by Pegasus Dreamscapes or its licensors and are protected by intellectual-property laws. These terms do not grant you any rights in our trademarks or branding.
+The WoofWatcher name, logo, pixel art, characters (including the pixel dog companion), design, and software are owned by Pegasus Dreamscapes Corp or its licensors and are protected by intellectual-property laws. These terms do not grant you any rights in our trademarks or branding.
 
 ## 11. Disclaimer of warranties
 
@@ -92,5 +92,5 @@ We may update these terms from time to time. We will update the effective date a
 
 ## 17. Contact
 
-Support: reach us through the app's App Store or Google Play listing
-Publisher: Pegasus Dreamscapes
+Email: apollo@pegasusdreamscapes.com
+Publisher: Pegasus Dreamscapes Corp
