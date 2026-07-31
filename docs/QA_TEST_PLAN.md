@@ -2709,3 +2709,11 @@ Dog ID PNG/share flows before approving Records.
   labeled care content.
 - Still required: native VoiceOver/TalkBack traversal on Home and Records with
   route-named iOS/Android evidence.
+
+# 2026-07-30 shared board-medallion accessibility boundary
+
+- Verify `BoardMedallion` keeps its internal crafted care icon
+  `accessible={false}` when the surrounding control or card already provides
+  the care-action label.
+- Still required: native VoiceOver/TalkBack traversal on medallion-bearing
+  Home, Quick Log, Plans, Health, and Records surfaces.

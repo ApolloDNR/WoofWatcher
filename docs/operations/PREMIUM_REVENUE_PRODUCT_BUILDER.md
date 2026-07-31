@@ -5077,3 +5077,12 @@ steps, and Complete job all passed.
   `90994627458`, passed for implementation commit `a4df3f42`, including pinned
   dependency install, JSON doctor, focused tests, typecheck, CI-safe builds,
   and all post steps.
+
+## 2026-07-30 shared board-medallion accessibility slice
+
+- Marked the internal `BoardMedallion` care-icon image decorative so its many
+  labeled parent controls/cards remain the single screen-reader stop.
+- Added a red-first `mobileReadiness.test.ts` regression contract; it failed
+  `145/146` before the fix and passed `146/146` afterward.
+- Native VoiceOver/TalkBack traversal and route-named iOS/Android evidence
+  remain open and must not be inferred from source coverage.

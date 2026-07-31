@@ -2973,3 +2973,10 @@ Decision: keep the canonical `PetPortrait` image out of the accessibility tree.
 Its current placements accompany explicit dog identity and care copy, so a
 second raw image stop adds noise without new meaning. Person portraits retain
 their named avatar labels.
+
+# 2026-07-30 - Shared board medallions are decorative
+
+Decision: keep `BoardMedallion` images out of the accessibility tree. These
+crafted care icons appear within controls and cards whose surrounding content
+already names the action or metric, so a second raw image stop adds noise
+without meaning. The parent remains responsible for the accessible label.

@@ -511,3 +511,9 @@ proof, public launch, or Apollo sign-off.
 The canonical Phoenix portrait must not create an unlabeled duplicate image
 stop beside already-labeled Home or Records content. Source coverage is not
 native VoiceOver/TalkBack proof.
+
+# 2026-07-30 shared board-medallion accessibility gate
+
+Shared crafted care medallions must stay decorative when their parent control
+or card already exposes the action or metric label. Source coverage is not
+native VoiceOver/TalkBack proof.

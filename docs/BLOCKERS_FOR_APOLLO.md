@@ -513,3 +513,10 @@ review, and Apollo visual approval remain blocked.
   duplicate unlabeled image stop beside labeled Home and Dog ID content.
 - Still blocked: native VoiceOver/TalkBack traversal and route-named
   iOS/Android evidence.
+
+# 2026-07-30 shared board-medallion accessibility boundary
+
+- Source guard complete: shared crafted care medallions no longer create
+  duplicate or unlabeled image stops inside already-labeled controls/cards.
+- Still blocked: native VoiceOver/TalkBack traversal and route-named
+  iOS/Android evidence across medallion-bearing core routes.

@@ -5334,6 +5334,16 @@ test("keeps the fixed-light Plans command-room art bounded in dark mode", () => 
   );
 });
 
+test("keeps shared board medallion artwork out of accessibility traversal", () => {
+  const medallion = readAppFile("../components/BoardMedallion.tsx");
+
+  assert.match(
+    medallion,
+    /<Image[\s\S]*?accessible=\{false\}[\s\S]*?source=\{SOURCES\[name\]\}/,
+    "decorative board medallions beside labeled care controls must not create duplicate screen-reader stops",
+  );
+});
+
 test("keeps More rooted in a live pixel launch command stage", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

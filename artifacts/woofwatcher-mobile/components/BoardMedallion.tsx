@@ -41,6 +41,7 @@ export function BoardMedallion({
 }) {
   return (
     <Image
+      accessible={false}
       source={SOURCES[name]}
       style={[{ width: size, height: size }, style]}
       resizeMode="contain"

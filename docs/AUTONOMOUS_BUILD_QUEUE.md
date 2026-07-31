@@ -1817,3 +1817,13 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   steps, and Complete job all passed.
 - NEXT: Capture native VoiceOver/TalkBack traversal and route-named iOS/Android
   evidence. This source guard does not replace device accessibility approval.
+
+## 2026-07-30 shared board-medallion accessibility boundary
+
+- DONE: `BoardMedallion` now marks its internal care-icon image
+  `accessible={false}` so crafted icons inside already-labeled controls and
+  cards do not add duplicate or unlabeled screen-reader stops.
+- VERIFIED: Red-first mobile readiness failed `145/146` before the shared
+  component correction, then passed `146/146`.
+- NEXT: Capture native VoiceOver/TalkBack traversal across medallion-bearing
+  core routes. Source coverage does not replace device accessibility approval.
