@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-07-31: Dog Profile park art is decorative
+
+- The profile controls and dog identity own the meaningful accessible content.
+- The full-bleed park hero must not create a duplicate unlabeled image stop.
+- Native VoiceOver/TalkBack traversal remains a separate launch gate.
+
 ## 2026-07-31: TrailMap raster tiles are decorative children
 
 - The TrailMap container owns the meaningful accessible map summary.

@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-07-31 Dog Profile hero accessibility slice
+
+The full-bleed park hero behind Dog Profile is decorative and now stays out of accessibility traversal while the real profile controls and dog identity remain meaningful. Red-first readiness failed `150/151` before the correction and passed `151/151` after. Native VoiceOver/TalkBack and route-named iOS/Android Dog Profile proof remain open.
+
 ## 2026-07-31 TrailMap raster-tile accessibility slice
 
 The TrailMap container remains the meaningful accessible map image, and its internal OpenStreetMap raster tiles are now decorative. Red-first readiness failed `149/150` before the correction and passed `150/150` after. Native VoiceOver/TalkBack and route-named iOS/Android walk-map proof remain open.

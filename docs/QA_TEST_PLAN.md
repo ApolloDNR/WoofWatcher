@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-07-31 Dog Profile hero accessibility QA
+
+- PASS: The decorative park hero uses `accessible={false}` while profile controls and dog identity retain their labels.
+- RED/GREEN: Mobile readiness failed `150/151`, then passed `151/151`.
+- OPEN: Native VoiceOver/TalkBack traversal and route-named iOS/Android Dog Profile evidence remain due.
+
 ## 2026-07-31 TrailMap raster-tile accessibility QA
 
 - PASS: The TrailMap container keeps its meaningful image role and route summary while each internal raster tile uses `accessible={false}`.

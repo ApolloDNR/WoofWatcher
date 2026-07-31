@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-07-31 Dog Profile hero accessibility boundary
+
+Source excludes the decorative park hero from accessibility traversal while preserving labeled profile controls and dog identity. Real VoiceOver/TalkBack traversal and route-named iOS/Android Dog Profile evidence remain blocked on native review.
+
 ## 2026-07-31 TrailMap raster-tile accessibility boundary
 
 Source keeps internal map tiles out of accessibility traversal while the map container announces the recorded route. Real VoiceOver/TalkBack traversal and route-named iOS/Android walk-map evidence remain blocked on native review.

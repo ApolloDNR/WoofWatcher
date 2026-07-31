@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-07-31 Dog Profile hero accessibility
+
+- DONE: The decorative full-bleed park artwork is excluded from accessibility traversal while the labeled profile controls and dog identity remain available.
+- VERIFIED: Red-first mobile readiness failed `150/151`, then passed `151/151` after the minimal source correction.
+- NEXT: Run the strongest local verification and dependency-complete branch CI. Native VoiceOver/TalkBack and route-named iOS/Android Dog Profile evidence remain required.
+
 ## 2026-07-31 TrailMap raster-tile accessibility
 
 - DONE: Internal OpenStreetMap raster tiles are decorative inside the single labeled TrailMap image.

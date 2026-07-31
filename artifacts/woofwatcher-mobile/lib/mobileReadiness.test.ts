@@ -5374,6 +5374,16 @@ test("keeps the Home room backdrop out of accessibility traversal", () => {
   );
 });
 
+test("keeps the Dog Profile park backdrop out of accessibility traversal", () => {
+  const profile = readAppFile("profile.tsx");
+
+  assert.match(
+    profile,
+    /<Image\s+accessible=\{false\}\s+source=\{colors\.isDark \? HERO_PARK_NIGHT : HERO_PARK_DAY\}/,
+    "the decorative Dog Profile park backdrop must not create an unlabeled stop before the labeled profile controls and dog identity",
+  );
+});
+
 test("keeps TrailMap raster tiles decorative inside the labeled map image", () => {
   const trailMap = readAppFile("../components/TrailMap.tsx");
 

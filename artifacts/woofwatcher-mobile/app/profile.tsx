@@ -308,6 +308,7 @@ export default function ProfileScreen() {
           {/* Explicit 100% size: RN-web renders an absolute-fill Image at its
               natural size without it, showing a zoomed corner of the band. */}
           <Image
+            accessible={false}
             source={colors.isDark ? HERO_PARK_NIGHT : HERO_PARK_DAY}
             style={[StyleSheet.absoluteFill, { width: "100%", height: "100%" }]}
             resizeMode="cover"
