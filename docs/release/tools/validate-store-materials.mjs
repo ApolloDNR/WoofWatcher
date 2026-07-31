@@ -72,6 +72,7 @@ function validateOpaquePng(relativePath, width, height) {
 }
 
 const app = readJson("artifacts/woofwatcher-mobile/app.json").expo;
+const mobilePackage = readJson("artifacts/woofwatcher-mobile/package.json");
 const eas = readJson("artifacts/woofwatcher-mobile/eas.json");
 const metadata = readJson("docs/release/APP_STORE_CONNECT_METADATA.json");
 const listing = read("docs/release/STORE_LISTING.md");
@@ -92,9 +93,21 @@ check(
     app.ios.privacyManifests.NSPrivacyCollectedDataTypes.length === 0,
   "Privacy manifest must declare no collected data types",
 );
+check(
+  mobilePackage.expo?.autolinking?.exclude?.includes("@clerk/expo"),
+  "Free local-first v1 must not autolink the dormant Clerk native SDK",
+);
 
 const locationPlugin = app.plugins.find(
   (plugin) => Array.isArray(plugin) && plugin[0] === "expo-location",
+);
+const imagePickerPlugin = app.plugins.find(
+  (plugin) => Array.isArray(plugin) && plugin[0] === "expo-image-picker",
+);
+check(Boolean(imagePickerPlugin), "expo-image-picker permission configuration is missing");
+check(
+  imagePickerPlugin?.[1]?.microphonePermission === false,
+  "Photo/camera picking must not add an unused microphone permission",
 );
 check(Boolean(locationPlugin), "expo-location permission configuration is missing");
 check(
@@ -104,8 +117,28 @@ check(
   "Foreground-location prompt must say where the route stays",
 );
 check(
+  locationPlugin?.[1]?.locationAlwaysAndWhenInUsePermission === false &&
+    locationPlugin?.[1]?.locationAlwaysPermission === false &&
+    locationPlugin?.[1]?.isIosBackgroundLocationEnabled === false,
+  "iOS always/background location permissions must stay disabled",
+);
+check(
+  locationPlugin?.[1]?.isAndroidForegroundServiceEnabled === false &&
   locationPlugin?.[1]?.isAndroidBackgroundLocationEnabled === false,
-  "Background location must stay disabled",
+  "Android background and location foreground-service permissions must stay disabled",
+);
+check(
+  app.android?.blockedPermissions?.includes("android.permission.RECORD_AUDIO"),
+  "Android must block the unused microphone permission",
+);
+check(
+  !app.android?.blockedPermissions?.includes(
+    "android.permission.READ_EXTERNAL_STORAGE",
+  ) &&
+    !app.android?.blockedPermissions?.includes(
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+    ),
+  "Android must retain Expo ImagePicker's legacy photo permissions for older-OS compatibility",
 );
 
 check(eas.cli?.version === ">= 16.0.1", "EAS CLI floor must be >= 16.0.1");

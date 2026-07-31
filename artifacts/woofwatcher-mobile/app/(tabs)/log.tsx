@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -97,6 +98,7 @@ import {
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
+import { persistPickedMedia } from "@/lib/durablePickedMedia";
 import { TrailMap } from "@/components/TrailMap";
 import { useWalkRouteCaptureStatus } from "@/components/WalkRouteRecorder";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
@@ -1985,9 +1987,24 @@ export default function LogScreen() {
         typeof (asset as { fileName?: unknown }).fileName === "string"
           ? (asset as { fileName: string }).fileName
           : "Medication proof photo";
+      const persistedPhoto = await persistPickedMedia({
+        platform: Platform.OS,
+        sourceUri: asset.uri,
+        fileName,
+        mimeType: asset.mimeType,
+        filePrefix: "medication-proof",
+        fileSystem: FileSystem,
+      });
+      if (!persistedPhoto.ok) {
+        notifyDialog(
+          "Photo not saved",
+          "WoofWatcher could not copy that photo into durable app storage. The medication log was not changed. Try again or choose another photo.",
+        );
+        return;
+      }
       const patch = buildCareLogPhotoProofAttachmentPatch(detailEntry, {
         caregiver,
-        uri: asset.uri,
+        uri: persistedPhoto.uri,
         fileName,
         source: "library",
         now,

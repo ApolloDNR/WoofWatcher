@@ -35,14 +35,16 @@ date/jurisdiction confirmation, and Apollo's approval of the exact binary.
 | Check | Result |
 |---|---|
 | Workspace typecheck (all 5 packages) | **Clean** — 0 errors |
-| Focused test suite | **743 / 743 pass** on Node 24.14.0 with pnpm 10.24.0 |
+| Focused test suite | **755 / 755 pass** on Node 24.14.0 with pnpm 10.24.0 |
 | Full CI build | **Passed** — all workspace typechecks/builds, Expo export, runtime smoke, and live-preview proof |
-| Web export smoke | **Passed** — 267 files exported |
+| Web export smoke | **Passed** — 270 files exported |
 | Runtime route smoke | **Passed** — all 13 user routes |
 | Production routes / dead ends | **Passed** — production policy hides provider-only household, event, future-dog, sync, account, push, AI, and payment controls while preserving internal QA surfaces |
 | Store-material validation | **Passed** — six 1290×2796 iPhone shots, six 1080×1920 Play shots, 1024×500 feature graphic, and 512×512 Play icon |
 | Honesty of unavailable features | **Store rule locked** — no positive cloud sync, account, push, live AI, or purchase claim is allowed in free v1 |
-| Data-safety laws | **Held** — erase-generation guard, optimistic+reconciled writes, storage-health warnings surfaced, idempotent creates |
+| Data-safety laws | **Held** — erase-generation guard, optimistic+reconciled writes, storage-health warnings surfaced, idempotent creates, and picked care photos copied to durable app storage before persistence |
+| Generated native config | **Passed** — iOS 15.1 target, foreground location only, no microphone/always/background location usage key, no Clerk native linkage; Android unused audio permission removed and ImagePicker's legacy photo permissions retained for older-OS compatibility |
+| EAS macOS install lock | **Passed** — pinned pnpm 10.24.0 accepts the frozen lockfile with Darwin arm64/x64 native tooling retained |
 
 This is the quality bar of a real product, not a demo.
 
@@ -102,7 +104,7 @@ Two defects where the app's behavior didn't match its words. Both fixed:
 | Content rating answers | ✅ Corrected: current Apple questionnaire declares Health/Wellness + infrequent Medical/Treatment information; expect calculated 13+ | — |
 | App Review notes | ✅ Complete (now includes location) | — |
 | Privacy Policy + Terms | ✅ Publisher/contact resolved and public no-login privacy/support/terms sections are live | **Apollo:** confirm effective date + jurisdiction |
-| `app.json` (version, bundle id, permissions, icons) | ✅ Production-correct | **Apollo:** `eas init` writes the EAS projectId |
+| `app.json` (version, bundle id, permissions, icons) | ✅ Production-correct; generated native projects confirm the minimal permission footprint | **Apollo:** `eas init` writes the EAS projectId |
 | `eas.json` (production build + submit profiles) | ✅ Build profile ready | **Apollo:** submit credentials (ASC API key / Play service account) |
 | **Store screenshots** | ✅ Generator hardened for coherent real routines/logs, full viewport, 9:16 Play art, and Care Pass instead of the unexplained Health Score | **Apollo:** upload only after final visual review |
 | Play feature graphic (1024×500) | ✅ **Generated this session** | **Apollo:** upload |
@@ -212,8 +214,8 @@ Apple review ≈ 1–2 days (budget a week for a first app); Google up to 7.
   owner identifiers remain blocked.
 - **Screenshots:** regenerated from one coherent local care state and require
   final visual review.
-- **To submit (free v1):** finish the production hardening pass, confirm the
-  remaining legal choices, create/link store accounts, and pass signed TestFlight
+- **To submit (free v1):** merge the verified hardening PR, confirm the remaining
+  legal choices, create/link store accounts, and pass signed TestFlight
   physical-device QA.
 - **To monetize:** a deliberate v1.1 — I can build the IAP integration on your
   word once you've made the pricing/packaging decisions and done the Apple/Google

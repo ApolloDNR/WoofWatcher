@@ -451,6 +451,20 @@ test("keeps local Clerk placeholders from blanking the web preview", () => {
   );
 });
 
+test("keeps auth deep links local-only when Clerk is disabled for the build", () => {
+  const signIn = readAppFile(join("(auth)", "sign-in.tsx"));
+  const signUp = readAppFile(join("(auth)", "sign-up.tsx"));
+
+  for (const authScreen of [signIn, signUp]) {
+    assert.match(
+      authScreen,
+      /import \{ isClerkEnabledForBuild \} from "@\/lib\/auth"/,
+    );
+    assert.match(authScreen, /if \(!isClerkEnabledForBuild\)/);
+    assert.doesNotMatch(authScreen, /if \(!isClerkConfigured\)/);
+  }
+});
+
 test("keeps the web preview frame inside compact mobile screenshots", () => {
   const layout = readAppFile("_layout.tsx");
   const backdropBlock = getStyleBlock(layout, "webBackdrop");
@@ -510,7 +524,14 @@ test("keeps auth entry styled as the truthful CareTwin gateway", () => {
   assert.match(authUi, /Provider account/);
   assert.match(authUi, /Local-first care/);
   assert.match(authUi, /CareTwin ready/);
-  assert.match(authUi, /isClerkConfigured \? "Account ready" : "Local preview"/);
+  assert.match(
+    authUi,
+    /isClerkEnabledForBuild \? "Account ready" : "Local preview"/,
+  );
+  assert.match(
+    authUi,
+    /isClerkEnabledForBuild \? "Provider enabled" : "Local-only mode"/,
+  );
   assert.match(authUi, /openAuthSetupProofMission/);
   assert.match(authUi, /\/care-twin-qa\?qaSurface=auth-setup-onboarding-proof/);
   assert.match(authUi, /Open setup proof/);
@@ -1157,6 +1178,12 @@ test("keeps Expo app identity release-grade", () => {
       "utf8",
     ),
   );
+  const mobilePackage = JSON.parse(
+    readFileSync(
+      join(process.cwd(), "artifacts", "woofwatcher-mobile", "package.json"),
+      "utf8",
+    ),
+  );
   const expo = appConfig.expo;
 
   assert.equal(expo.name, "WoofWatcher");
@@ -1165,6 +1192,44 @@ test("keeps Expo app identity release-grade", () => {
   assert.equal(expo.userInterfaceStyle, "automatic");
   assert.equal(expo.ios.bundleIdentifier, "com.pegasusdreamscapes.woofwatcher");
   assert.equal(expo.android.package, "com.pegasusdreamscapes.woofwatcher");
+  const imagePickerPlugin = expo.plugins.find(
+    (plugin: unknown) =>
+      Array.isArray(plugin) && plugin[0] === "expo-image-picker",
+  );
+  const locationPlugin = expo.plugins.find(
+    (plugin: unknown) =>
+      Array.isArray(plugin) && plugin[0] === "expo-location",
+  );
+  assert.ok(imagePickerPlugin, "expo-image-picker should be configured");
+  assert.equal(
+    imagePickerPlugin[1].microphonePermission,
+    false,
+    "photo/camera picking must not add an unused microphone permission",
+  );
+  assert.ok(locationPlugin, "expo-location should be configured");
+  assert.equal(locationPlugin[1].locationAlwaysAndWhenInUsePermission, false);
+  assert.equal(locationPlugin[1].locationAlwaysPermission, false);
+  assert.equal(locationPlugin[1].isIosBackgroundLocationEnabled, false);
+  assert.equal(locationPlugin[1].isAndroidBackgroundLocationEnabled, false);
+  assert.equal(locationPlugin[1].isAndroidForegroundServiceEnabled, false);
+  assert.deepEqual(expo.android.blockedPermissions, [
+    "android.permission.RECORD_AUDIO",
+  ]);
+  assert.equal(
+    expo.android.blockedPermissions.includes(
+      "android.permission.READ_EXTERNAL_STORAGE",
+    ),
+    false,
+    "Expo ImagePicker still needs legacy read access on Android 12 and lower",
+  );
+  assert.equal(
+    expo.android.blockedPermissions.includes(
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+    ),
+    false,
+    "Expo ImagePicker still needs legacy camera storage access on Android 9 and lower",
+  );
+  assert.deepEqual(mobilePackage.expo?.autolinking?.exclude, ["@clerk/expo"]);
   assert.doesNotMatch(JSON.stringify(expo), /replit/i);
 });
 
@@ -4443,6 +4508,10 @@ test("keeps care log trust review wired into Log detail flows", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
   assert.match(log, /ImagePicker/);
+  assert.match(log, /persistPickedMedia/);
+  assert.match(log, /filePrefix:\s*"medication-proof"/);
+  assert.match(log, /if \(!persistedPhoto\.ok\)/);
+  assert.match(log, /uri:\s*persistedPhoto\.uri/);
   assert.match(log, /buildCareLogPhotoProofAttachmentPatch/);
   assert.match(log, /buildCareLogTrustReviewPatch/);
   assert.match(log, /buildCareLogTrustDefaults/);
@@ -4462,6 +4531,20 @@ test("keeps care log trust review wired into Log detail flows", () => {
   assert.match(log, /Proof needed/);
   assert.match(log, /Proof attached/);
   assert.match(log, /Needs review/);
+});
+
+test("copies picked care files into durable storage before persisting native URIs", () => {
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const durableMedia = readMobileLibFile("durablePickedMedia.ts");
+
+  assert.match(records, /persistPickedMedia/);
+  assert.match(records, /filePrefix:\s*"record-attachment"/);
+  assert.match(records, /if \(!persistedAttachment\.ok\)/);
+  assert.match(records, /setRecordAttachmentUri\(persistedAttachment\.uri\)/);
+  assert.doesNotMatch(records, /setRecordAttachmentUri\(pickedUri\)/);
+  assert.match(durableMedia, /woofwatcher-attachments/);
+  assert.match(durableMedia, /await options\.fileSystem\.copyAsync/);
+  assert.match(durableMedia, /return \{ ok: false, reason: "durable-copy-failed" \}/);
 });
 
 test("keeps household sync health visible from More", () => {
@@ -4492,8 +4575,9 @@ test("keeps household responsibility visible in Calendar and More", () => {
   assert.match(more, /Open routine board/);
 });
 
-test("keeps Reminder Center visible in Calendar before push notifications are enabled", () => {
+test("keeps Reminder Center visible while gating future push controls from production", () => {
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+  const reminders = readAppFile("reminders.tsx");
 
   assert.match(calendar, /deriveCareReminderCenter/);
   assert.match(calendar, /careReminderCenter/);
@@ -4513,6 +4597,13 @@ test("keeps Reminder Center visible in Calendar before push notifications are en
   assert.match(calendar, /Open push proof/);
   assert.match(calendar, /accessibilityLabel="Open push notifications proof mission"/);
   assert.match(calendar, /reminderCount/);
+  assert.match(
+    calendar,
+    /\{consumerSurfacePolicy\.pushNotificationControls \? \(\s*<View style=\{\[s\.reminderNotificationPanel/,
+  );
+  assert.match(reminders, /getConsumerSurfacePolicy/);
+  assert.match(reminders, /showNotificationControls/);
+  assert.match(reminders, /\{showNotificationControls \? \(/);
 });
 
 test("routes Reminder Center rows to concrete care workflows", () => {
@@ -5454,6 +5545,35 @@ test("keeps the root install guard cross-platform for deadline beta exports", ()
   assert.match(guardSource, /package-lock\.json/);
   assert.match(guardSource, /yarn\.lock/);
   assert.doesNotMatch(guardSource, /\bsh\b|-c/);
+});
+
+test("keeps Darwin native tooling available to frozen EAS iOS installs", () => {
+  const workspace = readFileSync(
+    join(process.cwd(), "pnpm-workspace.yaml"),
+    "utf8",
+  );
+  const lockfile = readFileSync(
+    join(process.cwd(), "pnpm-lock.yaml"),
+    "utf8",
+  );
+  const darwinPackages = [
+    "@esbuild/darwin-arm64@0.27.3",
+    "@esbuild/darwin-x64@0.27.3",
+    "lightningcss-darwin-arm64@1.32.0",
+    "lightningcss-darwin-x64@1.32.0",
+    "@tailwindcss/oxide-darwin-arm64@4.3.0",
+    "@tailwindcss/oxide-darwin-x64@4.3.0",
+    "@rollup/rollup-darwin-arm64@4.60.3",
+    "@rollup/rollup-darwin-x64@4.60.3",
+    "@expo/ngrok-bin-darwin-arm64@2.3.41",
+    "@expo/ngrok-bin-darwin-x64@2.3.41",
+  ];
+
+  assert.doesNotMatch(workspace, /darwin-(?:arm64|x64)["']?:\s*["']-["']/);
+  assert.doesNotMatch(lockfile, /darwin-(?:arm64|x64):\s*'-'/);
+  for (const packageId of darwinPackages) {
+    assert.match(lockfile, new RegExp(packageId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
 });
 
 test("keeps a deadline beta doctor command for mobile export handoff", () => {

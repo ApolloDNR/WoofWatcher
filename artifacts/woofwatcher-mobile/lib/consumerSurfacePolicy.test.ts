@@ -14,6 +14,7 @@ test("free production exposes only complete local consumer surfaces", () => {
     futureDogPlanning: false,
     providerSyncControls: false,
     householdSetupModes: false,
+    pushNotificationControls: false,
   });
 });
 
@@ -26,6 +27,7 @@ test("development and internal builds retain provider QA surfaces", () => {
     assert.equal(policy.futureDogPlanning, true);
     assert.equal(policy.providerSyncControls, true);
     assert.equal(policy.householdSetupModes, true);
+    assert.equal(policy.pushNotificationControls, true);
   }
 });
 

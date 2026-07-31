@@ -15,14 +15,14 @@ import {
   PrimaryButton,
 } from "@/components/auth-ui";
 import { useColors } from "@/hooks/useColors";
-import { isClerkConfigured } from "@/lib/auth";
+import { isClerkEnabledForBuild } from "@/lib/auth";
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignUpScreen() {
-  // Clerk hooks throw without a configured provider, so the local-preview
-  // gateway renders instead of mounting the account form in preview builds.
-  if (!isClerkConfigured) {
+  // Clerk hooks require the matching provider. Production remains local-only
+  // even if a valid Clerk key is accidentally present in the build environment.
+  if (!isClerkEnabledForBuild) {
     return (
       <LocalPreviewGateway subtitle="Account creation is not connected in this preview build. Care data stays local-first until production sync providers are configured." />
     );

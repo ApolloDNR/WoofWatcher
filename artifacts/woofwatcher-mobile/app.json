@@ -81,14 +81,19 @@
         "expo-image-picker",
         {
           "cameraPermission": "WoofWatcher uses the camera only when you choose to add a photo of your dog or a care record.",
-          "photosPermission": "WoofWatcher lets you choose photos of your dog and care documents to keep on this device."
+          "photosPermission": "WoofWatcher lets you choose photos of your dog and care documents to keep on this device.",
+          "microphonePermission": false
         }
       ],
       [
         "expo-location",
         {
           "locationWhenInUsePermission": "WoofWatcher uses your location only while you record a walk, to draw its route. The route stays in your care log on this device.",
-          "isAndroidBackgroundLocationEnabled": false
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
         }
       ],
       "expo-web-browser"

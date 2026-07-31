@@ -20,6 +20,7 @@ export interface ConsumerSurfacePolicy {
   futureDogPlanning: boolean;
   providerSyncControls: boolean;
   householdSetupModes: boolean;
+  pushNotificationControls: boolean;
 }
 
 export interface ProviderRuntimePolicy {
@@ -38,6 +39,7 @@ export function deriveConsumerSurfacePolicy(
     futureDogPlanning: ownerOps,
     providerSyncControls: ownerOps,
     householdSetupModes: ownerOps,
+    pushNotificationControls: ownerOps,
   };
 }
 

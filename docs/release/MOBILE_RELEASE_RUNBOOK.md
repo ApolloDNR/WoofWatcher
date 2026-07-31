@@ -9,6 +9,16 @@ Fable should polish mobile first, then keep the web dashboard/PWA visually consi
 Version 1.0 ships **free and local-first**. It does not require Clerk, Supabase,
 cloud storage, live AI, push, or payments. Those provider-backed systems remain
 future-release work and must not be configured into the v1 store build.
+The mobile package explicitly excludes the dormant `@clerk/expo` native module
+from Expo autolinking, so the local-only binary does not inherit Clerk's native
+iOS 17 deployment floor or ship the unused native account SDK. Internal
+JavaScript auth work remains available for a later provider-enabled release.
+The production permission footprint is foreground location plus user-invoked
+camera/Photos access only. Microphone, background/always location, Android
+location foreground-service, and Android shared-storage permissions stay
+blocked. Picked medication-proof and record images are copied into the app's
+document directory before their URI is persisted; a failed copy leaves the
+care record unchanged.
 
 ## Current Mobile App Identity
 
@@ -28,6 +38,10 @@ The mobile app now has committed EAS profiles in `artifacts/woofwatcher-mobile/e
 - `preview`: internal device testing. Use for Apollo/Fable review, household workflow QA, and pre-TestFlight/Play internal checks.
 - `production`: store-ready build path. iOS uses default production archive behavior; Android emits an App Bundle for Google Play.
 - `submit.production`: credential-free submit profile. Store identifiers and credentials stay in App Store Connect / EAS credential storage, never in git. Upload must wait for Apple Developer, Google Play, privacy/legal, and Apollo approval.
+
+The root pnpm lockfile retains Linux x64 and Darwin arm64/x64 native tooling.
+Do not restore the Darwin deletion overrides: EAS installs the monorepo on
+macOS and needs those optional binaries for a frozen, reproducible iOS build.
 
 ## Required Accounts And Secrets
 
@@ -151,3 +165,12 @@ Before relying on the web surface:
 - No native simulator/device screenshots from Codex in this environment.
 - The internal `/care-twin-qa` route can now collect local screenshot evidence from the device photo library and tags it by platform. A release QA packet is not complete until the iOS and Android evidence counts are both satisfied in the cockpit/share report.
 - App Store or Play Store submission requires Apollo approval.
+
+## Codex Native Release Checkpoint - 2026-07-30
+
+- `pnpm run test:focused` passed **755/755** on Node 24.14.0 with pnpm 10.24.0.
+- `pnpm run build:ci` passed all workspace typechecks/builds, a 270-file Expo web export, all 13 runtime routes, and live-preview proof.
+- The store-material validator passed the full iPhone/Play pack while preserving the 10 real owner/native blockers.
+- Pinned pnpm 10.24.0 accepted the updated frozen lockfile; Darwin arm64/x64 native packages are present for EAS macOS.
+- Disposable iOS/Android prebuild inspection confirmed iOS 15.1, no Clerk native linkage, foreground-only location, no microphone usage key, and Android removal of unused audio permission while retaining Expo ImagePicker's legacy photo permissions for older-OS compatibility.
+- These are configuration and generated-project checks, not a signed TestFlight install or physical-iPhone pass.
