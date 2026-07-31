@@ -35,7 +35,7 @@ date/jurisdiction confirmation, and Apollo's approval of the exact binary.
 | Check | Result |
 |---|---|
 | Workspace typecheck (all 5 packages) | **Clean** — 0 errors |
-| Focused test suite | **741 / 741 pass** on Node 24.14.0 with pnpm 10.24.0 |
+| Focused test suite | **743 / 743 pass** on Node 24.14.0 with pnpm 10.24.0 |
 | Full CI build | **Passed** — all workspace typechecks/builds, Expo export, runtime smoke, and live-preview proof |
 | Web export smoke | **Passed** — 267 files exported |
 | Runtime route smoke | **Passed** — all 13 user routes |

@@ -39,13 +39,13 @@ import {
   clerkProxyUrl,
   clerkPublishableKey,
   isClerkEnabledForBuild,
+  providerApiBaseUrl,
   useWoofAuth,
 } from "@/lib/auth";
 
 SplashScreen.preventAutoHideAsync();
 
-const domain = process.env.EXPO_PUBLIC_DOMAIN;
-if (isClerkEnabledForBuild && domain) setBaseUrl(`https://${domain}`);
+if (providerApiBaseUrl) setBaseUrl(providerApiBaseUrl);
 
 const queryClient = new QueryClient();
 
@@ -64,9 +64,8 @@ function RootLayoutNav() {
   const router = useRouter();
   const colors = useColors();
 
-  // Development convenience: skip the sign-in gate so the app can be reviewed
-  // in the web preview / simulator without logging in on every reload. Real
-  // production builds (where __DEV__ is false) always enforce authentication.
+  // Free production intentionally skips accounts. Development/internal builds
+  // enforce sign-in only when the provider runtime was explicitly configured.
   useEffect(() => {
     if (!isClerkEnabledForBuild) {
       if (segments[0] === "(auth)") router.replace("/(tabs)");

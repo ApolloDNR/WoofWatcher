@@ -439,7 +439,11 @@ test("keeps local Clerk placeholders from blanking the web preview", () => {
   assert.match(auth, /!isPlaceholderPublishableKey/);
   assert.match(
     auth,
-    /isClerkEnabledForBuild\s*=\s*[\s\S]*isClerkConfigured && isOwnerOpsBuild\(\)/,
+    /providerRuntimePolicy\s*=\s*deriveProviderRuntimePolicy/,
+  );
+  assert.match(
+    auth,
+    /isClerkEnabledForBuild\s*=\s*providerRuntimePolicy\.clerkEnabled/,
   );
   assert.match(
     auth,

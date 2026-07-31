@@ -131,7 +131,7 @@ Capture these six screens from one internally consistent care state, in this upl
 3. Plan — real saved routines only; no “sample day” or placeholder metrics.
 4. Story — the same four care moments as real timeline waypoints.
 5. Pack — supplies checklist with no cross-device or household-sync claim.
-6. Care Pass — sitter preview generated from the same local data. Do not use the Health screen as store art while it presents an unexplained precise numerical Health Score.
+6. Care Pass — sitter preview generated from the same local data. It makes a stronger handoff-focused store story than the factual Days Logged coverage on Health.
 
 Required sets:
 

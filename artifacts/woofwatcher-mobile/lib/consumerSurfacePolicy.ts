@@ -22,6 +22,11 @@ export interface ConsumerSurfacePolicy {
   householdSetupModes: boolean;
 }
 
+export interface ProviderRuntimePolicy {
+  clerkEnabled: boolean;
+  apiBaseUrl: string | null;
+}
+
 export function deriveConsumerSurfacePolicy(
   channel: BuildChannel,
 ): ConsumerSurfacePolicy {
@@ -33,6 +38,28 @@ export function deriveConsumerSurfacePolicy(
     futureDogPlanning: ownerOps,
     providerSyncControls: ownerOps,
     householdSetupModes: ownerOps,
+  };
+}
+
+/**
+ * Compose build channel and provider configuration into the only runtime
+ * policy allowed to activate accounts or the remote API. Production wins
+ * even when a valid secret and domain were accidentally left in EAS.
+ */
+export function deriveProviderRuntimePolicy({
+  channel,
+  clerkConfigured,
+  apiDomain,
+}: {
+  channel: BuildChannel;
+  clerkConfigured: boolean;
+  apiDomain?: string | null;
+}): ProviderRuntimePolicy {
+  const clerkEnabled = clerkConfigured && isOwnerOpsChannel(channel);
+  const domain = apiDomain?.trim();
+  return {
+    clerkEnabled,
+    apiBaseUrl: clerkEnabled && domain ? `https://${domain}` : null,
   };
 }
 
