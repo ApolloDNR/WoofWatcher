@@ -5399,6 +5399,27 @@ test("keeps TrailMap raster tiles decorative inside the labeled map image", () =
   );
 });
 
+test("keeps core-route pixel stage backgrounds out of accessibility traversal", () => {
+  const stages = [
+    [readAppFile(join("(tabs)", "calendar.tsx")), "PLANS_COMMAND_STAGE_ROOM"],
+    [readAppFile(join("(tabs)", "health.tsx")), "HEALTH_WATCH_STAGE_ROOM"],
+    [readAppFile(join("(tabs)", "log.tsx")), "LOG_COMMAND_STAGE_ROOM"],
+    [readAppFile(join("(tabs)", "more.tsx")), "MORE_COMMAND_STAGE_ROOM"],
+    [readAppFile(join("(tabs)", "records.tsx")), "recordsStageIsNight"],
+    [readAppFile("woofguide.tsx"), "WOOFGUIDE_STAGE_ROOM"],
+    [readAppFile("premium.tsx"), "PREMIUM_VALUE_STAGE_ROOM"],
+    [readAppFile("adventure.tsx"), "ADVENTURE_STAGE_SCENE"],
+  ] as const;
+
+  for (const [source, stageAsset] of stages) {
+    assert.match(
+      source,
+      new RegExp(`<ImageBackground[\\s\\S]*?accessible=\\{false\\}[\\s\\S]*?source=\\{[\\s\\S]*?${stageAsset}`),
+      `${stageAsset} must stay decorative behind the route's labeled care content and controls`,
+    );
+  }
+});
+
 test("keeps More rooted in a live pixel launch command stage", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

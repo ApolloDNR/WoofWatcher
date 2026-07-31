@@ -330,6 +330,7 @@ export default function AdventureScreen() {
         contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 16, paddingBottom: bottomPadding }}
       >
         <ImageBackground
+          accessible={false}
           source={ADVENTURE_STAGE_SCENE}
           resizeMode="cover"
           imageStyle={[stageImageFill, s.heroImage, pixelImageStyle]}

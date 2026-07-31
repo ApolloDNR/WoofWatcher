@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-07-31 core-route pixel-stage accessibility boundary
+
+Source excludes decorative stage backgrounds on eight premium routes from accessibility traversal while preserving their labeled care content and controls. Real VoiceOver/TalkBack traversal and route-named iOS/Android evidence remain blocked on native review.
+
 ## 2026-07-31 Dog Profile hero accessibility boundary
 
 Source excludes the decorative park hero from accessibility traversal while preserving labeled profile controls and dog identity. Real VoiceOver/TalkBack traversal and route-named iOS/Android Dog Profile evidence remain blocked on native review.

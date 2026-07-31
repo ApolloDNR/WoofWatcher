@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-07-31 core-route pixel-stage accessibility QA
+
+- PASS: Eight decorative route stages use `accessible={false}` while their care content and controls retain meaningful accessibility.
+- RED/GREEN: Mobile readiness failed `151/152`, then passed `152/152`.
+- OPEN: Native VoiceOver/TalkBack traversal and route-named iOS/Android evidence remain due.
+
 ## 2026-07-31 Dog Profile hero accessibility QA
 
 - PASS: The decorative park hero uses `accessible={false}` while profile controls and dog identity retain their labels.

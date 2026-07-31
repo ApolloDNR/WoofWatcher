@@ -378,6 +378,7 @@ export default function WoofGuideScreen() {
               <View style={s.emptyArea}>
                 <BoardCard padded={false} enter={0} style={s.guideStageCard}>
                   <ImageBackground
+                    accessible={false}
                     source={WOOFGUIDE_STAGE_ROOM}
                     resizeMode="cover"
                     imageStyle={[stageImageFill, s.guideStageImage, pixelImageStyle]}

@@ -2499,6 +2499,7 @@ export default function LogScreen() {
             <>
           <BoardCard padded={false} style={s.logCommandStageCard}>
             <ImageBackground
+              accessible={false}
               source={LOG_COMMAND_STAGE_ROOM}
               resizeMode="cover"
               // Android fades images in over 300ms by default, which reads

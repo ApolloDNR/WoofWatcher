@@ -1064,6 +1064,7 @@ export default function RecordsScreen() {
 
           <BoardCard padded={false} style={s.recordsCredentialStageCard} enter={0}>
             <ImageBackground
+              accessible={false}
               source={
                 recordsStageIsNight
                   ? RECORDS_CREDENTIAL_STAGE_ROOM_NIGHT

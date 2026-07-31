@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-07-31: Core-route pixel stages are decorative backgrounds
+
+- Plans, Health, Quick Log, More, Records, WoofGuide, Plus, and Adventure expose their meaning through labeled care content and controls.
+- Their atmospheric `ImageBackground` artwork must not create duplicate unlabeled image stops.
+- Native VoiceOver/TalkBack traversal remains a separate launch gate.
+
 ## 2026-07-31: Dog Profile park art is decorative
 
 - The profile controls and dog identity own the meaningful accessible content.

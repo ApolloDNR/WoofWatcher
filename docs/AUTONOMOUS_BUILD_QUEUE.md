@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-07-31 core-route pixel-stage accessibility
+
+- DONE: Decorative stage backgrounds on Plans, Health, Quick Log, More, Records, WoofGuide, Plus, and Adventure are excluded from accessibility traversal while their labeled care content and controls remain available.
+- VERIFIED: Red-first mobile readiness failed `151/152`, then passed `152/152` after the minimal source corrections.
+- NEXT: Run the strongest local verification and dependency-complete branch CI. Native VoiceOver/TalkBack and route-named iOS/Android core-route evidence remain required.
+
 ## 2026-07-31 Dog Profile hero accessibility
 
 - DONE: The decorative full-bleed park artwork is excluded from accessibility traversal while the labeled profile controls and dog identity remain available.

@@ -942,6 +942,7 @@ export default function CalendarScreen() {
                   />
                 </View>
                 <ImageBackground
+                  accessible={false}
                   source={PLANS_COMMAND_STAGE_ROOM}
                   resizeMode="cover"
                   imageStyle={[stageImageFill, s.commandDeckSceneImage, pixelImageStyle]}

@@ -1569,6 +1569,7 @@ export default function MoreScreen() {
           <BoardCard style={s.moreCommandStageCard}>
             <View style={s.moreCommandHeadRow}>
               <ImageBackground
+                accessible={false}
                 source={MORE_COMMAND_STAGE_ROOM}
                 resizeMode="cover"
                 imageStyle={[stageImageFill, s.moreCommandThumbImage, pixelImageStyle]}

@@ -772,6 +772,7 @@ export default function HealthScreen() {
 
         <BoardCard style={s.heroCard}>
           <ImageBackground
+            accessible={false}
             source={HEALTH_WATCH_STAGE_ROOM}
             resizeMode="cover"
             imageStyle={[stageImageFill, s.healthStageImage, pixelImageStyle]}

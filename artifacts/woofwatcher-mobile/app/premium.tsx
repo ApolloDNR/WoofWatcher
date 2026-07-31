@@ -149,6 +149,7 @@ function PremiumScreenBody() {
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
           <BoardCard padded={false} enter={0} style={s.premiumValueStageCard}>
             <ImageBackground
+              accessible={false}
               source={PREMIUM_VALUE_STAGE_ROOM}
               resizeMode="stretch"
               imageStyle={[stageImageFill, s.premiumValueStageImage, pixelImageStyle]}
