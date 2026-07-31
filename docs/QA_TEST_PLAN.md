@@ -4,6 +4,7 @@
 
 - PASS: Eight decorative route stages use `accessible={false}` while their care content and controls retain meaningful accessibility.
 - RED/GREEN: Mobile readiness failed `151/152`, then passed `152/152`.
+- CI: Run `30663233070`, job `91264136185`, passed dependency install, JSON doctor, focused tests, typecheck, CI-safe builds, and post steps for `4ef01a66`.
 - OPEN: Native VoiceOver/TalkBack traversal and route-named iOS/Android evidence remain due.
 
 ## 2026-07-31 Dog Profile hero accessibility QA

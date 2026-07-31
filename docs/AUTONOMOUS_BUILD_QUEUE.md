@@ -4,7 +4,8 @@
 
 - DONE: Decorative stage backgrounds on Plans, Health, Quick Log, More, Records, WoofGuide, Plus, and Adventure are excluded from accessibility traversal while their labeled care content and controls remain available.
 - VERIFIED: Red-first mobile readiness failed `151/152`, then passed `152/152` after the minimal source corrections.
-- NEXT: Run the strongest local verification and dependency-complete branch CI. Native VoiceOver/TalkBack and route-named iOS/Android core-route evidence remain required.
+- CI: `WoofWatcher Verify` run `30663233070`, job `91264136185`, passed for implementation commit `4ef01a66`.
+- NEXT: Rerun dependency-complete branch CI after this proof-record commit. Native VoiceOver/TalkBack and route-named iOS/Android core-route evidence remain required.
 
 ## 2026-07-31 Dog Profile hero accessibility
 

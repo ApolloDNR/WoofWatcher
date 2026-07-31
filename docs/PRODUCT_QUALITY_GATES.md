@@ -4,6 +4,8 @@
 
 Decorative stage backgrounds on Plans, Health, Quick Log, More, Records, WoofGuide, Plus, and Adventure are excluded from assistive traversal so labeled care content and controls remain the meaningful stops. Native screen-reader and route-named iOS/Android proof remain open.
 
+Dependency-complete branch CI passed in run `30663233070`, job `91264136185`, for implementation commit `4ef01a66`.
+
 ## 2026-07-31 Dog Profile hero accessibility gate
 
 The decorative full-bleed park hero is excluded from assistive traversal so the labeled profile controls and dog identity remain the meaningful stops. Native screen-reader and route-named iOS/Android proof remain open.
