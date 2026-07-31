@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-07-31 shared brand-crest accessibility
+
+- DONE: The Phoenix crest inside the shared WoofWatcher logo is excluded from accessibility traversal; the adjacent readable wordmark remains the meaningful brand identity.
+- VERIFIED: Red-first mobile readiness failed `152/153`, then passed after the minimal shared-component correction.
+- NEXT: Native VoiceOver/TalkBack traversal and route-named Auth/Setup evidence remain required.
+
 ## 2026-07-31 core-route pixel-stage accessibility
 
 - DONE: Decorative stage backgrounds on Plans, Health, Quick Log, More, Records, WoofGuide, Plus, and Adventure are excluded from accessibility traversal while their labeled care content and controls remain available.

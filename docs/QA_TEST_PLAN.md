@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-07-31 shared brand-crest accessibility QA
+
+- PASS: The shared Phoenix crest uses `accessible={false}` while the visible WoofWatcher wordmark remains readable.
+- RED/GREEN: Mobile readiness failed `152/153` before the source correction and must pass afterward.
+- OPEN: Confirm the account gateway announces the brand once with native VoiceOver and TalkBack.
+
 ## 2026-07-31 core-route pixel-stage accessibility QA
 
 - PASS: Eight decorative route stages use `accessible={false}` while their care content and controls retain meaningful accessibility.

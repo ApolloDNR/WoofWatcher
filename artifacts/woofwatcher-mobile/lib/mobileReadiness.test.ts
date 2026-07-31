@@ -5364,6 +5364,16 @@ test("keeps the Auth gateway stage dog out of accessibility traversal", () => {
   );
 });
 
+test("keeps the shared brand crest decorative beside the WoofWatcher wordmark", () => {
+  const logo = readAppFile("../components/brand/WoofWatcherLogo.tsx");
+
+  assert.match(
+    logo,
+    /<Image[\s\S]*?accessible=\{false\}[\s\S]*?source=\{PHOENIX_MARK\}/,
+    "the Phoenix crest must not create a duplicate unlabeled stop beside the readable WoofWatcher wordmark",
+  );
+});
+
 test("keeps the Home room backdrop out of accessibility traversal", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 

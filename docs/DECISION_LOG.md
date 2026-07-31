@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-07-31: The shared Phoenix crest is decorative
+
+- The adjacent WoofWatcher wordmark owns the meaningful brand identity.
+- The crest must not create a duplicate unlabeled image stop in the account gateway.
+- Native VoiceOver/TalkBack traversal remains a separate launch gate.
+
 ## 2026-07-31: Core-route pixel stages are decorative backgrounds
 
 - Plans, Health, Quick Log, More, Records, WoofGuide, Plus, and Adventure expose their meaning through labeled care content and controls.

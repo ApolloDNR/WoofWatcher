@@ -20,6 +20,7 @@ const PHOENIX_MARK = require("@/assets/brand/phoenix-mark.png");
 export function WoofWatcherMark({ size = 44 }: { size?: number }) {
   return (
     <Image
+      accessible={false}
       source={PHOENIX_MARK}
       style={{ width: size, height: size }}
       resizeMode="contain"

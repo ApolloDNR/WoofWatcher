@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-07-31 shared brand-crest accessibility slice
+
+The Phoenix crest inside the shared WoofWatcher logo is decorative beside the readable wordmark and now stays out of accessibility traversal. Red-first readiness failed `152/153` before the correction. Native VoiceOver/TalkBack and route-named Auth/Setup proof remain open.
+
 ## 2026-07-31 core-route pixel-stage accessibility slice
 
 The atmospheric stage backgrounds behind Plans, Health, Quick Log, More, Records, WoofGuide, Plus, and Adventure are decorative and now stay out of accessibility traversal while the real care content and controls remain meaningful. Red-first readiness failed `151/152` before the corrections and passed `152/152` after. Native VoiceOver/TalkBack and route-named iOS/Android core-route proof remain open.
