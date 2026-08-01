@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-01 Avatar Studio choice-thumbnail accessibility slice
+
+Avatar Studio template and mood artwork now stays out of accessibility traversal inside controls that already announce the selection or preview action. Red-first mobile readiness failed `155/156` before the corrections and passed `156/156` after. Native VoiceOver/TalkBack, route-named iOS/Android Avatar Studio proof, sprite/gait review, and Apollo visual approval remain open.
+
 ## 2026-07-31 shared brand-crest accessibility slice
 
 The Phoenix crest inside the shared WoofWatcher logo is decorative beside the readable wordmark and now stays out of accessibility traversal. Red-first readiness failed `152/153` before the correction and passed `153/153` afterward. Native VoiceOver/TalkBack and route-named Auth/Setup proof remain open.

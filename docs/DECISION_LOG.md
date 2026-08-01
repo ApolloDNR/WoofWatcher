@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-01: Avatar Studio choice thumbnails are decorative
+
+- Template controls announce the dog template action; mood controls announce the preview action.
+- Their child artwork must not create duplicate or unlabeled assistive-technology stops.
+- Native VoiceOver/TalkBack traversal remains a separate launch gate.
+
 ## 2026-07-31: The shared Phoenix crest is decorative
 
 - The adjacent WoofWatcher wordmark owns the meaningful brand identity.

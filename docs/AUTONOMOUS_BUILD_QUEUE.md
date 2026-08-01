@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-01 Avatar Studio choice-thumbnail accessibility
+
+- DONE: Template and mood artwork is excluded from accessibility traversal inside controls that already announce the template or mood action.
+- VERIFIED: Red-first mobile readiness failed `155/156`, then passed `156/156` after the two minimal image corrections.
+- NEXT: Run strongest local verification and dependency-complete branch CI. Native VoiceOver/TalkBack and route-named iOS/Android Avatar Studio evidence remain required.
+
 ## 2026-07-31 shared brand-crest accessibility
 
 - DONE: The Phoenix crest inside the shared WoofWatcher logo is excluded from accessibility traversal; the adjacent readable wordmark remains the meaningful brand identity.

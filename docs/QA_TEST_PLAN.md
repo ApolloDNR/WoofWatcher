@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-08-01 Avatar Studio choice-thumbnail accessibility QA
+
+- PASS: Template and mood thumbnails use `accessible={false}` inside explicitly labeled selection controls.
+- RED/GREEN: Mobile readiness failed `155/156` before the source correction, then passed `156/156` afterward.
+- OPEN: Confirm native VoiceOver/TalkBack announces each choice once and capture route-named iOS/Android Avatar Studio evidence.
+
 ## 2026-07-31 shared brand-crest accessibility QA
 
 - PASS: The shared Phoenix crest uses `accessible={false}` while the visible WoofWatcher wordmark remains readable.

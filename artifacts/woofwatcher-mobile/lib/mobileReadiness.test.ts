@@ -5415,6 +5415,21 @@ test("keeps Story thumbnails decorative inside labeled navigation controls", () 
   );
 });
 
+test("keeps Avatar Studio choice thumbnails decorative inside labeled controls", () => {
+  const portrait = readAppFile("portrait.tsx");
+
+  assert.match(
+    portrait,
+    /<Image[\s\S]*?accessible=\{false\}[\s\S]*?source=\{getAvatarTemplateDisplaySource\(template\.id\)\}/,
+    "avatar template artwork must not create a duplicate stop inside its labeled selection control",
+  );
+  assert.match(
+    portrait,
+    /<Image[\s\S]*?accessible=\{false\}[\s\S]*?source=\{moodStill \?\? PIXEL_HEAD_SOURCE\}/,
+    "mood artwork must not create a duplicate stop inside its labeled preview control",
+  );
+});
+
 test("keeps the Dog Profile park backdrop out of accessibility traversal", () => {
   const profile = readAppFile("profile.tsx");
 

@@ -1239,6 +1239,7 @@ export default function PortraitScreen() {
                         ]}
                       >
                         <Image
+                          accessible={false}
                           source={getAvatarTemplateDisplaySource(template.id)}
                           style={[s.templateArt, pixelImageStyle]}
                           contentFit="contain"
@@ -1913,6 +1914,7 @@ export default function PortraitScreen() {
                       ]}
                     >
                       <Image
+                        accessible={false}
                         source={moodStill ?? PIXEL_HEAD_SOURCE}
                         style={[s.moodThumb, pixelImageStyle]}
                         contentFit="contain"

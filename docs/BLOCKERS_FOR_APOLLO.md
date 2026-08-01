@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-01 Avatar Studio choice-thumbnail accessibility boundary
+
+Source excludes decorative template and mood artwork from accessibility traversal while preserving the labeled controls. Real VoiceOver/TalkBack traversal, route-named device evidence, sprite/gait review, and Apollo visual approval remain blocked on native review.
+
 ## 2026-07-31 shared brand-crest accessibility boundary
 
 Source excludes the decorative Phoenix crest from accessibility traversal while preserving the readable WoofWatcher wordmark. Real VoiceOver/TalkBack traversal and route-named Auth/Setup evidence remain blocked on native review.
