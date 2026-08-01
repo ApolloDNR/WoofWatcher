@@ -2788,3 +2788,10 @@ Dog ID PNG/share flows before approving Records.
 
 - Source contract: a walk-journal card remains one labeled story action; its child proof photo is excluded from accessibility traversal.
 - Native gate: verify the story date/text is announced once and the card still opens the matching log in VoiceOver and TalkBack.
+
+# 2026-08-01 Avatar Studio preview accessibility
+
+- Source contract: the composed room, dog still, and raster accessories stay
+  out of traversal; photo proof and labeled choices/actions remain available.
+- Native gate: verify the preview does not add raw image stops in VoiceOver or
+  TalkBack and capture route-named iOS/Android evidence.

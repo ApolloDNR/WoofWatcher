@@ -577,3 +577,10 @@ Source now excludes the decorative Home room/park backdrop from accessibility tr
 # 2026-08-01 Story walk-journal photo accessibility boundary
 
 Source now excludes proof-photo thumbnails inside fully labeled walk-journal controls from accessibility traversal. Native VoiceOver/TalkBack traversal, route-named iOS/Android Story proof, and Apollo accessibility approval remain required.
+
+# 2026-08-01 Avatar Studio accessibility proof remains open
+
+Source now excludes the composed room, dog still, and accessory rasters from
+traversal while retaining readable controls and photo proof. Native
+VoiceOver/TalkBack traversal, route-named iOS/Android Avatar Studio evidence,
+and Apollo accessibility approval remain required.

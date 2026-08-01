@@ -3043,3 +3043,10 @@ Native traversal remains required.
 # 2026-08-01 Keep walk-journal photos subordinate to story actions
 
 Walk-journal cards announce their real date and story text as one actionable control. Their child proof photos are decorative for assistive technology because exposing both creates a duplicate stop without adding care context.
+
+# 2026-08-01 Keep Avatar Studio preview rasters decorative
+
+The room, selected dog still, and raster accessories form one composed visual
+preview beside readable template, mood, speech, and action controls. Exclude
+those rasters from traversal while retaining the meaningful photo reference.
+Native VoiceOver/TalkBack proof remains required.

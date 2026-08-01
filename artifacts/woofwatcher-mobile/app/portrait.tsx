@@ -555,6 +555,7 @@ export default function PortraitScreen() {
             style={[s.canvasCard, { borderColor: colors.border }]}
           >
             <Image
+              accessible={false}
               source={PIXEL_ROOM_SOURCE}
               style={[StyleSheet.absoluteFill, pixelImageStyle]}
               contentFit="cover"
@@ -657,6 +658,7 @@ export default function PortraitScreen() {
               {selectedTemplateBase ? (
                 <View style={s.templatePreviewStage}>
                   <Image
+                    accessible={false}
                     source={PIXEL_ROOM_SOURCE}
                     style={[StyleSheet.absoluteFill, pixelImageStyle]}
                     contentFit="cover"
@@ -678,6 +680,7 @@ export default function PortraitScreen() {
                       .map((layer) => (
                         <Image
                           key={layer.id}
+                          accessible={false}
                           source={layer.source}
                           style={[s.templateAccessoryLayer, pixelImageStyle]}
                           contentFit="contain"
@@ -751,6 +754,7 @@ export default function PortraitScreen() {
                     ) : (
                       <>
                         <Image
+                          accessible={false}
                           source={selectedTemplateStillSource}
                           style={[s.templateHeroDog, pixelImageStyle]}
                           contentFit="contain"
@@ -766,6 +770,7 @@ export default function PortraitScreen() {
                             return (
                               <Image
                                 key={layer.id}
+                                accessible={false}
                                 source={layer.source}
                                 style={[
                                   s.templateAccessoryLayer,

@@ -5501,6 +5501,26 @@ test("keeps core-route pixel stage backgrounds out of accessibility traversal", 
   }
 });
 
+test("keeps Avatar Studio preview artwork out of accessibility traversal", () => {
+  const portrait = readAppFile("../app/portrait.tsx");
+
+  assert.match(
+    portrait,
+    /<Image[\s\S]*?accessible=\{false\}[\s\S]*?source=\{PIXEL_ROOM_SOURCE\}[\s\S]*?style=\{\[StyleSheet\.absoluteFill, pixelImageStyle\]\}/,
+    "the working and live-preview room art must stay decorative behind readable Avatar Studio status and controls",
+  );
+  assert.match(
+    portrait,
+    /<Image[\s\S]*?accessible=\{false\}[\s\S]*?source=\{selectedTemplateStillSource\}/,
+    "the selected dog still must not create a raw image stop beside the readable template and mood controls",
+  );
+  assert.match(
+    portrait,
+    /<Image[\s\S]*?key=\{layer\.id\}[\s\S]*?accessible=\{false\}[\s\S]*?source=\{layer\.source\}/,
+    "preview accessory layers must remain decorative parts of the composed avatar",
+  );
+});
+
 test("keeps More rooted in a live pixel launch command stage", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

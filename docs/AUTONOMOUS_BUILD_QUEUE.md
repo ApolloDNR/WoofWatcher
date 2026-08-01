@@ -1937,3 +1937,11 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - VERIFIED: Red-first mobile readiness failed `157/158`, then passed `158/158` after the source correction.
 - CI: Dependency-complete `WoofWatcher Verify` run `30704128055`, job `91380174759`, passed implementation/docs commit `543613d5`; pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Capture native VoiceOver/TalkBack traversal and route-named iOS/Android Story evidence. Source coverage does not replace device approval.
+
+## 2026-08-01 Avatar Studio preview accessibility
+
+- DONE: Marked the composed Avatar Studio room, selected dog still, and raster
+  accessory layers decorative while preserving readable choices and actions.
+- VERIFIED: Red-first mobile readiness failed `158/159`, then passed `159/159`.
+- NEXT: Capture native VoiceOver/TalkBack traversal and route-named iOS/Android
+  Avatar Studio evidence. Source coverage does not replace device approval.

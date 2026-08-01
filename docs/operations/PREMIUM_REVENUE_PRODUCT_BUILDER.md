@@ -5186,3 +5186,12 @@ final branch tip as current.
 Real walk-journal proof photos now use `accessible={false}` inside parent controls that already announce the date and complete story text. A red-first mobile readiness contract failed `157/158` before the correction and passed `158/158` afterward. Native VoiceOver/TalkBack traversal, route-named device evidence, provider/store proof, and Apollo approval remain separate gates.
 
 Dependency-complete `WoofWatcher Verify` run `30704128055`, job `91380174759`, passed implementation/docs commit `543613d5`, including pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit before treating the final branch tip as current.
+
+# 2026-08-01 Avatar Studio preview accessibility slice
+
+The composed Avatar Studio room, selected dog still, and raster accessory
+layers now use `accessible={false}` while the photo reference and labeled
+template, mood, speech, reset, and save surfaces remain meaningful. Red-first
+mobile readiness failed `158/159` before the correction and passed `159/159`
+afterward. Native traversal, route-named device evidence, provider/store proof,
+and Apollo approval remain separate gates.

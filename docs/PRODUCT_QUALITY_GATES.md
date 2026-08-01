@@ -581,3 +581,10 @@ Auth/Setup evidence remain open.
 
 - Source guard complete: real proof photos inside fully labeled walk-journal actions no longer create duplicate image stops.
 - Still open: native VoiceOver/TalkBack traversal and route-named iOS/Android Story evidence.
+
+# 2026-08-01 Avatar Studio preview accessibility boundary
+
+- Source guard complete: room, dog still, and raster accessory layers in the
+  composed preview are decorative; meaningful controls and photo proof remain.
+- Still open: native VoiceOver/TalkBack traversal and route-named iOS/Android
+  Avatar Studio evidence.
