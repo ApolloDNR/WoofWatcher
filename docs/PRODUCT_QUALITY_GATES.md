@@ -4,6 +4,8 @@
 
 Template and mood artwork is decorative inside controls whose labels already communicate the selection or preview action. Source coverage prevents duplicate image stops; native VoiceOver/TalkBack proof remains open.
 
+Dependency-complete branch CI passed in run `30692059483`, job `91348402048`, for implementation commit `018a9933`.
+
 ## 2026-07-31 Shared brand-crest accessibility gate
 
 The Phoenix crest inside the shared WoofWatcher logo is decorative beside the readable wordmark and is excluded from assistive traversal. Native VoiceOver/TalkBack proof remains open.

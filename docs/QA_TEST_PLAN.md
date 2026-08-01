@@ -4,6 +4,7 @@
 
 - PASS: Template and mood thumbnails use `accessible={false}` inside explicitly labeled selection controls.
 - RED/GREEN: Mobile readiness failed `155/156` before the source correction, then passed `156/156` afterward.
+- CI: Run `30692059483`, job `91348402048`, passed dependency install, JSON doctor, focused tests, typecheck, CI-safe builds, and post steps for `018a9933`.
 - OPEN: Confirm native VoiceOver/TalkBack announces each choice once and capture route-named iOS/Android Avatar Studio evidence.
 
 ## 2026-07-31 shared brand-crest accessibility QA
