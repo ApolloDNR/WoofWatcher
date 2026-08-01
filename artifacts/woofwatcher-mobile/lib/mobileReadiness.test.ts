@@ -5394,6 +5394,27 @@ test("keeps the Home room backdrop out of accessibility traversal", () => {
   );
 });
 
+test("keeps Story thumbnails decorative inside labeled navigation controls", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const story = readAppFile(join("(tabs)", "story.tsx"));
+
+  assert.match(
+    home,
+    /<Image\s+accessible=\{false\}\s+source=\{require\("@\/assets\/board\/hero\.png"\)\}/,
+    "the Today's Story artwork must not create a duplicate stop inside its labeled navigation control",
+  );
+  assert.match(
+    story,
+    /<Image\s+accessible=\{false\}\s+source=\{TRAIL_THUMBS\[index % TRAIL_THUMBS\.length\]\}/,
+    "recent-adventure artwork must not create a duplicate stop inside its labeled navigation control",
+  );
+  assert.match(
+    story,
+    /<Image\s+accessible=\{false\}\s+source=\{\{ uri: item\.photoUri \}\}/,
+    "memory photos must not create a duplicate stop inside their labeled navigation controls",
+  );
+});
+
 test("keeps the Dog Profile park backdrop out of accessibility traversal", () => {
   const profile = readAppFile("profile.tsx");
 

@@ -5154,3 +5154,12 @@ Dependency-complete `WoofWatcher Verify` run `30680188213`, job `91315498053`,
 passed implementation/docs commit `bd877aa8`, including pinned dependency
 install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps,
 and Complete job.
+
+## 2026-07-31 Story navigation-thumbnail accessibility slice
+
+The Home Today's Story artwork and Story's recent-adventure and memory-photo
+thumbnails are now `accessible={false}` inside parent controls that already
+announce the destination and its real title/date/visit context. A red-first
+mobile-readiness contract failed `154/155` before the correction and passed
+`155/155` afterward. Native VoiceOver/TalkBack traversal, route-named device
+screenshots, provider/store proof, and Apollo approval remain separate gates.

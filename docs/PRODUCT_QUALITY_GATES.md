@@ -558,3 +558,10 @@ Auth/Setup evidence remain open.
   traversal while the profile identity and avatar-status copy remain readable.
 - OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android More
   evidence, and Apollo accessibility approval.
+
+## 2026-07-31 Story navigation-thumbnail accessibility gate
+
+- PASS (source): child artwork is excluded from traversal inside labeled Home
+  and Story navigation controls; the parent retains meaningful context.
+- OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android
+  Home/Story evidence, and Apollo accessibility approval.

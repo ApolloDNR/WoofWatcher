@@ -3021,3 +3021,10 @@ The mood artwork in More repeats identity and avatar-state information already
 expressed by the adjacent dog name, breed, and status copy. Excluding the raw
 image avoids an unlabeled duplicate stop without hiding care information.
 Native VoiceOver/TalkBack traversal remains required.
+
+## 2026-07-31 - Keep Story navigation thumbnails decorative
+
+Today's Story, recent-adventure, and memory-photo artwork repeats information
+already carried by labeled parent navigation controls. Exclude the child Image
+from traversal while preserving the parent's real title/date/visit context.
+Native traversal remains required.

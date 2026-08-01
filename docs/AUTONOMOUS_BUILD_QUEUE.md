@@ -1904,3 +1904,12 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   `91315498053`, passed implementation/docs commit `bd877aa8`.
 - NEXT: Capture native VoiceOver/TalkBack traversal and route-named iOS/Android
   More evidence. Source coverage does not replace device approval.
+
+## 2026-07-31 Story navigation-thumbnail accessibility
+
+- DONE: Marked the Home Today's Story thumbnail plus Story's recent-adventure
+  and memory-photo thumbnails decorative inside their already-labeled
+  navigation controls, preserving title, date, and visit context on the parent.
+- VERIFIED: Red-first mobile readiness failed `154/155`, then passed `155/155`.
+- NEXT: Capture native VoiceOver/TalkBack traversal and route-named iOS/Android
+  Home/Story evidence. Source coverage does not replace device approval.

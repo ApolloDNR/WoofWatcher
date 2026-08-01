@@ -559,3 +559,10 @@ Source now excludes the decorative Home room/park backdrop from accessibility tr
   unlabeled duplicate stop before readable identity and avatar-status copy.
 - Still blocked: native VoiceOver/TalkBack traversal, route-named iOS/Android
   More evidence, and Apollo accessibility approval.
+
+## 2026-07-31 Story navigation-thumbnail accessibility boundary
+
+- Source guard complete: Home/Story child thumbnails no longer create duplicate
+  or unlabeled stops inside controls that already announce meaningful context.
+- Still blocked: native VoiceOver/TalkBack traversal, route-named iOS/Android
+  Home/Story evidence, and Apollo accessibility approval.

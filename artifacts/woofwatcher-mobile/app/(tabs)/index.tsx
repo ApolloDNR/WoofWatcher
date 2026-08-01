@@ -2465,6 +2465,7 @@ export default function HomeScreen() {
             ]}
           >
             <Image
+              accessible={false}
               source={require("@/assets/board/hero.png")}
               style={[s.todayStoryThumb, { borderColor: colors.border }]}
               resizeMode="cover"

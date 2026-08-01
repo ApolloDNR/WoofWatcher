@@ -2763,3 +2763,10 @@ Dog ID PNG/share flows before approving Records.
   remain readable.
 - Still required: native VoiceOver/TalkBack traversal and route-named
   iOS/Android More evidence.
+
+## 2026-07-31 Story navigation-thumbnail accessibility QA
+
+- Source readiness requires Home Today's Story, recent-adventure, and memory
+  thumbnails to remain decorative inside labeled navigation controls.
+- Still required: confirm each parent announces its title/date/visit context in
+  native VoiceOver/TalkBack traversal on route-named iOS/Android Home/Story.

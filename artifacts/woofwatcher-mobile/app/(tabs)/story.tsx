@@ -652,6 +652,7 @@ export default function StoryScreen() {
                       style={s.trailRow}
                     >
                       <Image
+                        accessible={false}
                         source={TRAIL_THUMBS[index % TRAIL_THUMBS.length]}
                         style={[s.trailThumb, { borderColor: colors.border }]}
                         resizeMode="cover"
@@ -876,6 +877,7 @@ export default function StoryScreen() {
                       >
                         {item.photoUri ? (
                           <Image
+                            accessible={false}
                             source={{ uri: item.photoUri }}
                             style={[
                               s.memoryPhoto,
