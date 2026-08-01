@@ -5195,3 +5195,9 @@ template, mood, speech, reset, and save surfaces remain meaningful. Red-first
 mobile readiness failed `158/159` before the correction and passed `159/159`
 afterward. Native traversal, route-named device evidence, provider/store proof,
 and Apollo approval remain separate gates.
+
+Dependency-complete `WoofWatcher Verify` run `30710732752`, job `91397612299`,
+passed implementation/docs commit `e0feda2d`, including pinned dependency
+install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps,
+and Complete job. Rerun after this proof-record commit before treating the
+final branch tip as current.
