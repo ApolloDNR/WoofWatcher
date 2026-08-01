@@ -1913,3 +1913,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - VERIFIED: Red-first mobile readiness failed `154/155`, then passed `155/155`.
 - NEXT: Capture native VoiceOver/TalkBack traversal and route-named iOS/Android
   Home/Story evidence. Source coverage does not replace device approval.
+- CI: Dependency-complete `WoofWatcher Verify` run `30686045490`, job
+  `91331912216`, passed implementation/docs commit `368841c7`.
+- NEXT: Rerun branch CI after this proof-record commit before treating
+  dependency proof as current for the final tip.

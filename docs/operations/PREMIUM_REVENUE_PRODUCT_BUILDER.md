@@ -5163,3 +5163,9 @@ announce the destination and its real title/date/visit context. A red-first
 mobile-readiness contract failed `154/155` before the correction and passed
 `155/155` afterward. Native VoiceOver/TalkBack traversal, route-named device
 screenshots, provider/store proof, and Apollo approval remain separate gates.
+
+Dependency-complete `WoofWatcher Verify` run `30686045490`, job `91331912216`,
+passed implementation/docs commit `368841c7`, including pinned dependency
+install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps,
+and Complete job. Rerun after this proof-record commit before treating the
+final branch tip as current.
