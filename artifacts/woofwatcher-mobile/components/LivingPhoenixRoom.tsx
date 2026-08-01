@@ -976,6 +976,7 @@ export function LivingPhoenixRoom({
             <View style={[styles.frameCorner, styles.frameCornerBottomRight]} />
           </View>
           <Animated.Image
+            accessible={false}
             source={stageSource}
             resizeMode="cover"
             style={[
@@ -1075,6 +1076,7 @@ export function LivingPhoenixRoom({
                   layer.source ? (
                     <Animated.Image
                       key={`avatar-underlay-${layer.id}`}
+                      accessible={false}
                       source={layer.source}
                       resizeMode="contain"
                       style={[
@@ -1104,6 +1106,7 @@ export function LivingPhoenixRoom({
                   layer.source ? (
                     <Animated.Image
                       key={`avatar-overlay-${layer.id}`}
+                      accessible={false}
                       source={layer.source}
                       resizeMode="contain"
                       style={[
@@ -1145,6 +1148,7 @@ export function LivingPhoenixRoom({
             ]}
           />
           <Animated.Image
+            accessible={false}
             source={fallbackAvatarSource}
             resizeMode="contain"
             style={[styles.fallbackAvatar, pixelImageStyle]}
@@ -1821,6 +1825,7 @@ function RoamingTwinRig({
                 layer.source ? (
                   <Animated.Image
                     key={`roam-underlay-${layer.id}`}
+                    accessible={false}
                     source={layer.source}
                     resizeMode="contain"
                     style={[
@@ -1849,6 +1854,7 @@ function RoamingTwinRig({
                 layer.source ? (
                   <Animated.Image
                     key={`roam-overlay-${layer.id}`}
+                    accessible={false}
                     source={layer.source}
                     resizeMode="contain"
                     style={[

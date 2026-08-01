@@ -150,6 +150,16 @@
   CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
+
+## 2026-08-01 Living Phoenix room raster accessibility
+
+- DONE: Marked the shared room backdrop, fallback care twin, and staged/roaming
+  accessory rasters decorative inside the already-labeled Phoenix room and pet
+  controls.
+- VERIFIED: Red-first mobile readiness failed `159/160`, then passed `160/160`.
+- NEXT: Run strongest local verification and fresh dependency-complete branch
+  CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android Phoenix
+  room evidence remain required.
 - BLOCKED EXTERNALLY: Route-named iOS/Android Quick Care screenshots, native
   accessibility review, and Apollo visual approval remain open.
 

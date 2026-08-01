@@ -5521,6 +5521,41 @@ test("keeps Avatar Studio preview artwork out of accessibility traversal", () =>
   );
 });
 
+test("keeps Living Phoenix room rasters inside its labeled controls", () => {
+  const room = readAppFile("../components/LivingPhoenixRoom.tsx");
+
+  assert.match(
+    room,
+    /<Pressable[\s\S]*?accessibilityLabel={`Phoenix room\./,
+    "the Phoenix room control must retain the meaningful care-twin summary",
+  );
+  assert.match(
+    room,
+    /<Animated\.Image\s+accessible=\{false\}\s+source=\{stageSource\}/,
+    "the room backdrop must not create a raw image stop inside the labeled Phoenix room control",
+  );
+  assert.match(
+    room,
+    /<Animated\.Image[\s\S]*?key={`avatar-(?:underlay|overlay)-\$\{layer\.id\}`}[\s\S]*?accessible=\{false\}[\s\S]*?source=\{layer\.source\}/,
+    "the staged accessory layers must stay decorative parts of the labeled care twin",
+  );
+  assert.match(
+    room,
+    /<Animated\.Image\s+accessible=\{false\}\s+source=\{fallbackAvatarSource\}/,
+    "the fallback care-twin raster must not duplicate the Phoenix room label",
+  );
+  assert.match(
+    room,
+    /<Pressable[\s\S]*?accessibilityLabel={`Pet \$\{petName \?\? "your dog"\}`}/,
+    "the roaming pet control must retain its meaningful action label",
+  );
+  assert.match(
+    room,
+    /<Animated\.Image[\s\S]*?key={`roam-(?:underlay|overlay)-\$\{layer\.id\}`}[\s\S]*?accessible=\{false\}[\s\S]*?source=\{layer\.source\}/,
+    "roaming accessory layers must stay decorative parts of the labeled pet control",
+  );
+});
+
 test("keeps More rooted in a live pixel launch command stage", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 

@@ -2795,3 +2795,11 @@ Dog ID PNG/share flows before approving Records.
   out of traversal; photo proof and labeled choices/actions remain available.
 - Native gate: verify the preview does not add raw image stops in VoiceOver or
   TalkBack and capture route-named iOS/Android evidence.
+
+## 2026-08-01 Living Phoenix room raster accessibility
+
+- Source contract: the labeled Phoenix room and pet controls own the care-twin
+  meaning; their backdrop, fallback dog, and accessory rasters stay out of
+  accessibility traversal.
+- Native gate: verify VoiceOver and TalkBack announce each control once without
+  raw image stops, then capture route-named iOS/Android evidence.

@@ -588,3 +588,10 @@ Auth/Setup evidence remain open.
   composed preview are decorative; meaningful controls and photo proof remain.
 - Still open: native VoiceOver/TalkBack traversal and route-named iOS/Android
   Avatar Studio evidence.
+
+## 2026-08-01 Living Phoenix room accessibility boundary
+
+- PASS (source): room, fallback care-twin, and accessory rasters are decorative
+  inside controls that retain meaningful Phoenix room and pet-action labels.
+- OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android evidence,
+  and Apollo accessibility approval.

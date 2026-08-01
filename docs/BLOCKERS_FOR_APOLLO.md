@@ -584,3 +584,10 @@ Source now excludes the composed room, dog still, and accessory rasters from
 traversal while retaining readable controls and photo proof. Native
 VoiceOver/TalkBack traversal, route-named iOS/Android Avatar Studio evidence,
 and Apollo accessibility approval remain required.
+
+## 2026-08-01 Living Phoenix room accessibility proof remains open
+
+Source now excludes the room backdrop, fallback dog, and accessory rasters from
+the labeled Phoenix room and pet controls. Native VoiceOver/TalkBack traversal,
+route-named iOS/Android evidence, and Apollo accessibility approval remain
+required.

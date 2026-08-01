@@ -3050,3 +3050,10 @@ The room, selected dog still, and raster accessories form one composed visual
 preview beside readable template, mood, speech, and action controls. Exclude
 those rasters from traversal while retaining the meaningful photo reference.
 Native VoiceOver/TalkBack proof remains required.
+
+## 2026-08-01 Keep Living Phoenix room rasters subordinate to controls
+
+The shared room backdrop, fallback care twin, and accessory layers form one
+composed scene whose meaning is already carried by the Phoenix room and pet
+control labels. Exclude those rasters from traversal without hiding either
+action. Native VoiceOver/TalkBack proof remains required.
