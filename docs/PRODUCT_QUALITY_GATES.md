@@ -551,3 +551,10 @@ Auth/Setup evidence remain open.
 
 - PASS (source): the decorative Home room/park backdrop is excluded from accessibility traversal and the labeled care controls retain responsibility for meaning.
 - OPEN (native): VoiceOver/TalkBack traversal and route-named iOS/Android evidence.
+
+## 2026-07-31 More profile-art accessibility gate
+
+- PASS (source): the decorative dog mood artwork is excluded from accessibility
+  traversal while the profile identity and avatar-status copy remain readable.
+- OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android More
+  evidence, and Apollo accessibility approval.

@@ -2755,3 +2755,11 @@ Dog ID PNG/share flows before approving Records.
 # 2026-07-31 Home room accessibility source check
 
 - Static readiness coverage requires the Home full-bleed room/park Image to remain `accessible={false}`. Native VoiceOver/TalkBack traversal remains open.
+
+## 2026-07-31 More dog-profile accessibility QA
+
+- Source readiness requires the decorative mood artwork in the More profile
+  card to remain `accessible={false}` while dog name, breed, and avatar status
+  remain readable.
+- Still required: native VoiceOver/TalkBack traversal and route-named
+  iOS/Android More evidence.

@@ -5140,3 +5140,12 @@ JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps.
 The full-bleed Home room/park backdrop now uses `accessible={false}` so the decorative Image does not create an unlabeled screen-reader stop before the labeled care console and care-twin controls. A red-first mobile readiness contract protects the source boundary. This does not replace native VoiceOver/TalkBack traversal, route-named device screenshots, provider/store evidence, or Apollo approval.
 
 Dependency-complete WoofWatcher Verify run `30627115480`, job `91144838944`, passed implementation/docs commit `b4d185af`, including dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps.
+
+## 2026-07-31 More dog-profile accessibility slice
+
+The More profile card now marks its mood artwork `accessible={false}` because
+the adjacent dog name, breed, and avatar-status copy already carry its meaning.
+A red-first mobile-readiness contract failed `153/154` before the change and
+passed `154/154` afterward. Native VoiceOver/TalkBack traversal, route-named
+iOS/Android More evidence, provider/store proof, and Apollo approval remain
+separate launch gates.

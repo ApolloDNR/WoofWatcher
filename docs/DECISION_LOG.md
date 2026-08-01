@@ -3014,3 +3014,10 @@ readiness are not inferred from this source guard.
 # 2026-07-31 - Treat the Home room backdrop as decorative
 
 The full-bleed room/park art establishes atmosphere but does not add care information beyond the labeled Home console and care-twin controls. Its Image is excluded from accessibility traversal to avoid an unlabeled duplicate stop; native traversal remains required before release approval.
+
+## 2026-07-31 - Keep More profile mood artwork decorative
+
+The mood artwork in More repeats identity and avatar-state information already
+expressed by the adjacent dog name, breed, and status copy. Excluding the raw
+image avoids an unlabeled duplicate stop without hiding care information.
+Native VoiceOver/TalkBack traversal remains required.

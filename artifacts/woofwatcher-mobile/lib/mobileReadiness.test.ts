@@ -5374,6 +5374,16 @@ test("keeps the shared brand crest decorative beside the WoofWatcher wordmark", 
   );
 });
 
+test("keeps the More dog profile artwork out of accessibility traversal", () => {
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+
+  assert.match(
+    more,
+    /<Image\s+accessible=\{false\}\s+source=\{getAvatarSource\(status\.mood\)\}/,
+    "the decorative profile artwork must not create an unlabeled stop before the readable dog name, breed, and avatar status",
+  );
+});
+
 test("keeps the Home room backdrop out of accessibility traversal", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
 

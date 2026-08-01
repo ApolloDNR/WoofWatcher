@@ -552,3 +552,10 @@ review, and Apollo visual approval remain blocked.
 # 2026-07-31 Home backdrop accessibility boundary
 
 Source now excludes the decorative Home room/park backdrop from accessibility traversal. Apollo/native helpers still need to capture real VoiceOver/TalkBack traversal and route-named iOS/Android proof; source and CI do not satisfy that launch gate.
+
+## 2026-07-31 More profile-art accessibility boundary
+
+- Source guard complete: the More dog-profile mood artwork no longer creates an
+  unlabeled duplicate stop before readable identity and avatar-status copy.
+- Still blocked: native VoiceOver/TalkBack traversal, route-named iOS/Android
+  More evidence, and Apollo accessibility approval.

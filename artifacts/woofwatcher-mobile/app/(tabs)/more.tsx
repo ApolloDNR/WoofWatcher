@@ -1797,7 +1797,7 @@ export default function MoreScreen() {
             </Pressable>
             <View style={s.profileAvatarWrap}>
               <View style={[s.profileAvatar, { backgroundColor: colors.card, borderColor: colors.card }]}>
-                <Image source={getAvatarSource(status.mood)} style={s.profileAvatarImg} resizeMode="cover" />
+                <Image accessible={false} source={getAvatarSource(status.mood)} style={s.profileAvatarImg} resizeMode="cover" />
               </View>
             </View>
             <View style={s.profileBody}>

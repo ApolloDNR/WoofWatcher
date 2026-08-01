@@ -1894,3 +1894,11 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - Added a red-first mobile readiness contract. Source coverage does not replace native screen-reader traversal or route-named iOS/Android proof.
 - PROOF: WoofWatcher Verify run `30627115480`, job `91144838944`, passed implementation/docs commit `b4d185af` with dependency install, JSON doctor, focused tests, typecheck, and CI-safe builds.
 - NEXT: Native VoiceOver/TalkBack traversal and route-named iOS/Android Home evidence remain required.
+
+## 2026-07-31 More dog-profile accessibility
+
+- DONE: Marked the More profile card's mood artwork decorative so the readable
+  dog name, breed, and avatar-status copy remain the meaningful assistive stops.
+- VERIFIED: Red-first mobile readiness failed `153/154`, then passed `154/154`.
+- NEXT: Capture native VoiceOver/TalkBack traversal and route-named iOS/Android
+  More evidence. Source coverage does not replace device approval.
