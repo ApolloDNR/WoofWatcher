@@ -1098,6 +1098,7 @@ export default function StoryScreen() {
                         ]}
                       >
                         <Image
+                          accessible={false}
                           source={current ? BADGE_TROPHY_ART : BADGE_ART[tierIndex % BADGE_ART.length]}
                           style={s.titleBadgeArt}
                           resizeMode="contain"

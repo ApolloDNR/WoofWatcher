@@ -1,5 +1,9 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-01 Story badge-row accessibility gate
+
+Earned Story badge artwork is decorative inside a parent row whose label already communicates the badge title, unlock level and date, and current state. Source coverage prevents duplicate image stops; native VoiceOver/TalkBack proof remains open.
+
 ## 2026-08-01 Avatar Studio choice-thumbnail accessibility gate
 
 Template and mood artwork is decorative inside controls whose labels already communicate the selection or preview action. Source coverage prevents duplicate image stops; native VoiceOver/TalkBack proof remains open.

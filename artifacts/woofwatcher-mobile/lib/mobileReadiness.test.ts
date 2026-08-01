@@ -5415,6 +5415,21 @@ test("keeps Story thumbnails decorative inside labeled navigation controls", () 
   );
 });
 
+test("keeps earned Story badge art decorative inside labeled badge rows", () => {
+  const story = readAppFile(join("(tabs)", "story.tsx"));
+
+  assert.match(
+    story,
+    /badge earned\. Unlocked at level/,
+    "earned badge rows must retain their complete semantic label",
+  );
+  assert.match(
+    story,
+    /<Image\s+accessible=\{false\}\s+source=\{current \? BADGE_TROPHY_ART : BADGE_ART\[tierIndex % BADGE_ART\.length\]\}[\s\S]*?style=\{s\.titleBadgeArt\}/,
+    "earned badge artwork must not create a duplicate stop inside its fully labeled badge row",
+  );
+});
+
 test("keeps Avatar Studio choice thumbnails decorative inside labeled controls", () => {
   const portrait = readAppFile("portrait.tsx");
 

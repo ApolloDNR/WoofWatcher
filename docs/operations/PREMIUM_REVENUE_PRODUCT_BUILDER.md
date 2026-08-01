@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-01 Story badge-row accessibility slice
+
+Earned badge artwork in Story now stays out of accessibility traversal inside rows that already announce badge title, unlock level and date, and current state. The separately labeled badge shelf remains meaningful. Red-first mobile readiness failed `156/157` before the correction and passed `157/157` after. Native VoiceOver/TalkBack and route-named iOS/Android Story proof remain open.
+
 ## 2026-08-01 Avatar Studio choice-thumbnail accessibility slice
 
 Avatar Studio template and mood artwork now stays out of accessibility traversal inside controls that already announce the selection or preview action. Red-first mobile readiness failed `155/156` before the corrections and passed `156/156` after. Native VoiceOver/TalkBack, route-named iOS/Android Avatar Studio proof, sprite/gait review, and Apollo visual approval remain open.

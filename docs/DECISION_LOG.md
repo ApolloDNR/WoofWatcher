@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-01: Earned badge-row artwork is decorative
+
+- The parent Story row owns the meaningful badge title, unlock level and date, and current-state announcement.
+- Its child badge artwork must not create a duplicate assistive-technology stop.
+- The separately labeled earned-badge shelf remains meaningful and traversable; native VoiceOver/TalkBack remains a launch gate.
+
 ## 2026-08-01: Avatar Studio choice thumbnails are decorative
 
 - Template controls announce the dog template action; mood controls announce the preview action.

@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-08-01 Story badge-row accessibility QA
+
+- PASS: Earned-row badge art uses `accessible={false}` while each parent row retains its complete semantic label.
+- RED/GREEN: Mobile readiness failed `156/157` before the source correction, then passed `157/157` afterward.
+- OPEN: Confirm native VoiceOver/TalkBack announces each earned badge once and capture route-named iOS/Android Story evidence.
+
 ## 2026-08-01 Avatar Studio choice-thumbnail accessibility QA
 
 - PASS: Template and mood thumbnails use `accessible={false}` inside explicitly labeled selection controls.
