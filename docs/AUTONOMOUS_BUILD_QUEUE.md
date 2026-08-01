@@ -4,7 +4,8 @@
 
 - DONE: Shared caregiver portrait artwork is excluded from accessibility traversal beside rows that already expose the caregiver name, role, and access details.
 - VERIFIED: Red-first mobile readiness failed `160/161`, then passed `161/161` after the minimal shared-component correction.
-- NEXT: Run strongest local verification and dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android Pack evidence remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30723679195`, job `91431473849`, passed implementation/docs commit `77215285`; pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native VoiceOver/TalkBack traversal and route-named iOS/Android Pack evidence remain required.
 
 ## 2026-08-01 Story badge-row accessibility
 

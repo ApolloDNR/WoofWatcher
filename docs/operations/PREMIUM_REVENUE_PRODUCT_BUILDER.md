@@ -4,6 +4,8 @@
 
 Shared caregiver portrait artwork now stays out of accessibility traversal beside readable caregiver name, role, and access details. Red-first mobile readiness failed `160/161` before the correction and passed `161/161` after. Native VoiceOver/TalkBack and route-named iOS/Android Pack proof remain open.
 
+`WoofWatcher Verify` run `30723679195`, job `91431473849`, passed checkout, pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job for implementation/docs commit `77215285`.
+
 ## 2026-08-01 Story badge-row accessibility slice
 
 Earned badge artwork in Story now stays out of accessibility traversal inside rows that already announce badge title, unlock level and date, and current state. The separately labeled badge shelf remains meaningful. Red-first mobile readiness failed `156/157` before the correction and passed `157/157` after. Native VoiceOver/TalkBack and route-named iOS/Android Story proof remain open.
