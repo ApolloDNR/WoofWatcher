@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-01 shared caregiver-portrait accessibility
+
+- DONE: Shared caregiver portrait artwork is excluded from accessibility traversal beside rows that already expose the caregiver name, role, and access details.
+- VERIFIED: Red-first mobile readiness failed `160/161`, then passed `161/161` after the minimal shared-component correction.
+- NEXT: Run strongest local verification and dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android Pack evidence remain required.
+
 ## 2026-08-01 Story badge-row accessibility
 
 - DONE: Earned badge artwork is excluded from accessibility traversal inside rows that already announce badge title, level, date, and current status.

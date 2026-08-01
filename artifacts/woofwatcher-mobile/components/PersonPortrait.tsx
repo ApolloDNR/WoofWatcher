@@ -33,11 +33,11 @@ export function PersonPortrait({
 }) {
   return (
     <Image
+      accessible={false}
       source={PORTRAITS[personPortraitIndex(name)]}
       style={[{ width: size, height: size, borderRadius: size / 2 }, style]}
       resizeMode="cover"
       fadeDuration={0}
-      accessibilityLabel={`${name} avatar`}
     />
   );
 }

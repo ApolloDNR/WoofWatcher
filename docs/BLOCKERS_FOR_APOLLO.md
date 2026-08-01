@@ -1,5 +1,10 @@
 # Blockers For Apollo
 
+## 2026-08-01 caregiver portrait native accessibility proof
+
+- Source-level duplicate-stop prevention is covered and locally green.
+- Apollo/device access is still required for VoiceOver/TalkBack traversal and route-named iOS/Android Pack proof; source tests do not constitute native approval.
+
 ## 2026-08-01 Story badge-row accessibility boundary
 
 Source excludes earned-row badge artwork from accessibility traversal while preserving each row's complete semantic label and the separately labeled badge shelf. Real VoiceOver/TalkBack traversal and route-named iOS/Android Story evidence remain blocked on native review.

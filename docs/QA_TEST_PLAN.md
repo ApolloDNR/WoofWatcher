@@ -1,5 +1,10 @@
 # QA Test Plan
 
+## 2026-08-01 caregiver portrait accessibility evidence
+
+- Source regression: shared caregiver portraits are decorative beside readable caregiver identity and access details; mobile readiness passed `161/161` after a red-first `160/161` failure.
+- Still required: native VoiceOver/TalkBack traversal and route-named iOS/Android Pack screenshots.
+
 ## 2026-08-01 Story badge-row accessibility QA
 
 - PASS: Earned-row badge art uses `accessible={false}` while each parent row retains its complete semantic label.

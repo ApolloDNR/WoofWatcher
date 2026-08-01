@@ -1,5 +1,9 @@
 # WoofWatcher Decision Log
 
+## 2026-08-01: Caregiver portraits are decorative inside identity-rich rows
+
+Shared stock caregiver portraits do not carry identity beyond the adjacent caregiver name, role, and access details, so their internal Image is excluded from accessibility traversal. Readable caregiver identity remains the semantic source of truth.
+
 ## 2026-08-01: Earned badge-row artwork is decorative
 
 - The parent Story row owns the meaningful badge title, unlock level and date, and current-state announcement.

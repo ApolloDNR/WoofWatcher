@@ -5344,6 +5344,19 @@ test("keeps shared board medallion artwork out of accessibility traversal", () =
   );
 });
 
+test("keeps shared caregiver portraits decorative beside readable caregiver identity", () => {
+  const personPortrait = readFileSync(
+    join(process.cwd(), "artifacts/woofwatcher-mobile/components/PersonPortrait.tsx"),
+    "utf8",
+  );
+
+  assert.match(
+    personPortrait,
+    /<Image[\s\S]*?accessible=\{false\}[\s\S]*?source=\{PORTRAITS\[personPortraitIndex\(name\)\]\}/,
+    "caregiver portrait art must not create a duplicate stop beside the readable caregiver name, role, and access details",
+  );
+});
+
 test("keeps the living Story trail map out of accessibility traversal", () => {
   const dayTrail = readAppFile("../components/DayTrailScene.tsx");
 
