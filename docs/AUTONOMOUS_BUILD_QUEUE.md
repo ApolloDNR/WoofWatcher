@@ -1935,4 +1935,5 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 
 - DONE: Marked real walk-journal photos decorative inside controls that already announce the walk date and full story text.
 - VERIFIED: Red-first mobile readiness failed `157/158`, then passed `158/158` after the source correction.
+- CI: Dependency-complete `WoofWatcher Verify` run `30704128055`, job `91380174759`, passed implementation/docs commit `543613d5`; pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Capture native VoiceOver/TalkBack traversal and route-named iOS/Android Story evidence. Source coverage does not replace device approval.
