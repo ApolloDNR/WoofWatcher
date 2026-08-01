@@ -4,6 +4,8 @@
 
 Earned Story badge artwork is decorative inside a parent row whose label already communicates the badge title, unlock level and date, and current state. Source coverage prevents duplicate image stops; native VoiceOver/TalkBack proof remains open.
 
+Dependency-complete branch CI passed in run `30697960044`, job `91363932031`, for implementation commit `778dd2a9`.
+
 ## 2026-08-01 Avatar Studio choice-thumbnail accessibility gate
 
 Template and mood artwork is decorative inside controls whose labels already communicate the selection or preview action. Source coverage prevents duplicate image stops; native VoiceOver/TalkBack proof remains open.

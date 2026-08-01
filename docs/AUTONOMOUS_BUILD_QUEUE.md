@@ -4,7 +4,8 @@
 
 - DONE: Earned badge artwork is excluded from accessibility traversal inside rows that already announce badge title, level, date, and current status.
 - VERIFIED: Red-first mobile readiness failed `156/157`, then passed `157/157` after the minimal image correction.
-- NEXT: Run dependency-complete branch CI. Native VoiceOver/TalkBack and route-named iOS/Android Story evidence remain required.
+- CI: `WoofWatcher Verify` run `30697960044`, job `91363932031`, passed for implementation commit `778dd2a9`.
+- NEXT: Rerun dependency-complete branch CI after this proof-record commit. Native VoiceOver/TalkBack and route-named iOS/Android Story evidence remain required.
 
 ## 2026-08-01 Avatar Studio choice-thumbnail accessibility
 

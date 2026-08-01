@@ -4,6 +4,7 @@
 
 - PASS: Earned-row badge art uses `accessible={false}` while each parent row retains its complete semantic label.
 - RED/GREEN: Mobile readiness failed `156/157` before the source correction, then passed `157/157` afterward.
+- CI: Run `30697960044`, job `91363932031`, passed dependency install, JSON doctor, focused tests, typecheck, CI-safe builds, and post steps for `778dd2a9`.
 - OPEN: Confirm native VoiceOver/TalkBack announces each earned badge once and capture route-named iOS/Android Story evidence.
 
 ## 2026-08-01 Avatar Studio choice-thumbnail accessibility QA
