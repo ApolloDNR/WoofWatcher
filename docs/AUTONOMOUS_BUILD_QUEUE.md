@@ -1931,3 +1931,8 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   `91331912216`, passed implementation/docs commit `368841c7`.
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
+# 2026-08-01 Story walk-journal photo accessibility
+
+- DONE: Marked real walk-journal photos decorative inside controls that already announce the walk date and full story text.
+- VERIFIED: Red-first mobile readiness failed `157/158`, then passed `158/158` after the source correction.
+- NEXT: Capture native VoiceOver/TalkBack traversal and route-named iOS/Android Story evidence. Source coverage does not replace device approval.

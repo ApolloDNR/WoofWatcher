@@ -577,3 +577,7 @@ Auth/Setup evidence remain open.
   and Story navigation controls; the parent retains meaningful context.
 - OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android
   Home/Story evidence, and Apollo accessibility approval.
+# 2026-08-01 Story walk-journal accessibility boundary
+
+- Source guard complete: real proof photos inside fully labeled walk-journal actions no longer create duplicate image stops.
+- Still open: native VoiceOver/TalkBack traversal and route-named iOS/Android Story evidence.

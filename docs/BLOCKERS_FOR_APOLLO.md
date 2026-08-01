@@ -574,3 +574,6 @@ Source now excludes the decorative Home room/park backdrop from accessibility tr
   or unlabeled stops inside controls that already announce meaningful context.
 - Still blocked: native VoiceOver/TalkBack traversal, route-named iOS/Android
   Home/Story evidence, and Apollo accessibility approval.
+# 2026-08-01 Story walk-journal photo accessibility boundary
+
+Source now excludes proof-photo thumbnails inside fully labeled walk-journal controls from accessibility traversal. Native VoiceOver/TalkBack traversal, route-named iOS/Android Story proof, and Apollo accessibility approval remain required.

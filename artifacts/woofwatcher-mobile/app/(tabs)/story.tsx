@@ -826,6 +826,7 @@ export default function StoryScreen() {
                         </View>
                         {story.photoUri ? (
                           <Image
+                            accessible={false}
                             source={{ uri: story.photoUri }}
                             style={[s.journalThumb, { backgroundColor: colors.muted }]}
                             resizeMode="cover"

@@ -3040,3 +3040,6 @@ Today's Story, recent-adventure, and memory-photo artwork repeats information
 already carried by labeled parent navigation controls. Exclude the child Image
 from traversal while preserving the parent's real title/date/visit context.
 Native traversal remains required.
+# 2026-08-01 Keep walk-journal photos subordinate to story actions
+
+Walk-journal cards announce their real date and story text as one actionable control. Their child proof photos are decorative for assistive technology because exposing both creates a duplicate stop without adding care context.

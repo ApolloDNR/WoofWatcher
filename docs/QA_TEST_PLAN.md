@@ -2784,3 +2784,7 @@ Dog ID PNG/share flows before approving Records.
   thumbnails to remain decorative inside labeled navigation controls.
 - Still required: confirm each parent announces its title/date/visit context in
   native VoiceOver/TalkBack traversal on route-named iOS/Android Home/Story.
+# 2026-08-01 Story walk-journal photo accessibility
+
+- Source contract: a walk-journal card remains one labeled story action; its child proof photo is excluded from accessibility traversal.
+- Native gate: verify the story date/text is announced once and the card still opens the matching log in VoiceOver and TalkBack.

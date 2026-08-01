@@ -5415,6 +5415,16 @@ test("keeps Story thumbnails decorative inside labeled navigation controls", () 
   );
 });
 
+test("keeps Story walk-journal photos decorative inside labeled story controls", () => {
+  const story = readAppFile(join("(tabs)", "story.tsx"));
+
+  assert.match(
+    story,
+    /accessibilityLabel={`Open walk story from[\s\S]*?<Image\s+accessible=\{false\}\s+source=\{\{ uri: story\.photoUri \}\}/,
+    "walk-journal photos must not create a duplicate stop inside controls that already announce the date and story text",
+  );
+});
+
 test("keeps earned Story badge art decorative inside labeled badge rows", () => {
   const story = readAppFile(join("(tabs)", "story.tsx"));
 
