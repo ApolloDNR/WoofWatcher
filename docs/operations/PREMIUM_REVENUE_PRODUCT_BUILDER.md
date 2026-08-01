@@ -5190,6 +5190,12 @@ announce the room state and pet action. Red-first mobile readiness failed
 `159/160` before the correction and passed `160/160` afterward. Native
 VoiceOver/TalkBack traversal, route-named device evidence, provider/store proof,
 and Apollo approval remain separate gates.
+
+Dependency-complete `WoofWatcher Verify` run `30717393911`, job `91415244039`,
+passed implementation/docs commit `b694dea4`, including pinned dependency
+install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps,
+and Complete job. Rerun after this proof-record commit before treating the final
+branch tip as current.
 # 2026-08-01 Story walk-journal photo accessibility slice
 
 Real walk-journal proof photos now use `accessible={false}` inside parent controls that already announce the date and complete story text. A red-first mobile readiness contract failed `157/158` before the correction and passed `158/158` afterward. Native VoiceOver/TalkBack traversal, route-named device evidence, provider/store proof, and Apollo approval remain separate gates.
