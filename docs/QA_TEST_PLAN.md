@@ -3,6 +3,7 @@
 ## 2026-08-01 secondary-dog portrait accessibility evidence
 
 - Source regression: Pack secondary-dog portraits are decorative beside readable dog name and breed; mobile readiness passed `162/162` after a red-first `161/162` failure.
+- CI: Run `30729207867`, job `91446332705`, passed pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps for `d7554e44`.
 - Still required: native VoiceOver/TalkBack traversal and route-named iOS/Android Pack screenshots.
 
 ## 2026-08-01 caregiver portrait accessibility evidence

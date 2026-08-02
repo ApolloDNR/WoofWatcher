@@ -5,6 +5,8 @@
 - PASS at source level: Pack secondary-dog portrait artwork cannot add a duplicate screen-reader stop beside readable dog name and breed.
 - OPEN native gate: VoiceOver/TalkBack traversal and route-named iOS/Android Pack proof.
 
+Dependency-complete branch CI passed in run `30729207867`, job `91446332705`, for implementation/docs commit `d7554e44`.
+
 ## 2026-08-01 caregiver portrait accessibility gate
 
 - PASS at source level: shared caregiver portrait artwork cannot add a duplicate screen-reader stop beside readable caregiver identity and access details.

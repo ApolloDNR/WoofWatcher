@@ -4,7 +4,8 @@
 
 - DONE: Pack secondary-dog portrait artwork is excluded from accessibility traversal beside readable dog name and breed.
 - VERIFIED: Red-first mobile readiness failed `161/162`, then passed `162/162` after the minimal Pack correction.
-- NEXT: Run dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android Pack evidence remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30729207867`, job `91446332705`, passed implementation/docs commit `d7554e44`; pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native VoiceOver/TalkBack traversal and route-named iOS/Android Pack evidence remain required.
 
 ## 2026-08-01 shared caregiver-portrait accessibility
 
