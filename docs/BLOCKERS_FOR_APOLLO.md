@@ -1,5 +1,10 @@
 # Blockers For Apollo
 
+## 2026-08-01 secondary-dog portrait native accessibility proof
+
+- Source-level duplicate-stop prevention is covered and locally green.
+- Apollo/device access is still required for VoiceOver/TalkBack traversal and route-named iOS/Android Pack proof; source tests do not constitute native approval.
+
 ## 2026-08-01 caregiver portrait native accessibility proof
 
 - Source-level duplicate-stop prevention is covered and locally green.

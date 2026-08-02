@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-01 secondary-dog portrait accessibility gate
+
+- PASS at source level: Pack secondary-dog portrait artwork cannot add a duplicate screen-reader stop beside readable dog name and breed.
+- OPEN native gate: VoiceOver/TalkBack traversal and route-named iOS/Android Pack proof.
+
 ## 2026-08-01 caregiver portrait accessibility gate
 
 - PASS at source level: shared caregiver portrait artwork cannot add a duplicate screen-reader stop beside readable caregiver identity and access details.

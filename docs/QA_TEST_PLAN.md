@@ -1,5 +1,10 @@
 # QA Test Plan
 
+## 2026-08-01 secondary-dog portrait accessibility evidence
+
+- Source regression: Pack secondary-dog portraits are decorative beside readable dog name and breed; mobile readiness passed `162/162` after a red-first `161/162` failure.
+- Still required: native VoiceOver/TalkBack traversal and route-named iOS/Android Pack screenshots.
+
 ## 2026-08-01 caregiver portrait accessibility evidence
 
 - Source regression: shared caregiver portraits are decorative beside readable caregiver identity and access details; mobile readiness passed `161/161` after a red-first `160/161` failure.

@@ -1201,10 +1201,10 @@ export default function PackScreen() {
                 >
                   <View style={[s.petAvatarFrame, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
                     <Image
+                      accessible={false}
                       source={getAvatarSource("calm")}
                       style={s.petAvatarImage}
                       resizeMode="cover"
-                      accessibilityLabel={`${pet.name} avatar`}
                     />
                   </View>
                   <View style={s.petHeroCopy}>

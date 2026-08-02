@@ -5357,6 +5357,21 @@ test("keeps shared caregiver portraits decorative beside readable caregiver iden
   );
 });
 
+test("keeps secondary dog portraits decorative beside readable dog identity", () => {
+  const pack = readAppFile(join("(tabs)", "pack.tsx"));
+
+  assert.match(
+    pack,
+    /<Image[\s\S]*?accessible=\{false\}[\s\S]*?source=\{getAvatarSource\("calm"\)\}[\s\S]*?style=\{s\.petAvatarImage\}/,
+    "secondary dog portrait art must not create a duplicate stop beside the readable dog name and breed",
+  );
+  assert.doesNotMatch(
+    pack,
+    /accessibilityLabel=\{`\$\{pet\.name\} avatar`\}/,
+    "secondary dog portraits must not retain a redundant avatar label",
+  );
+});
+
 test("keeps the living Story trail map out of accessibility traversal", () => {
   const dayTrail = readAppFile("../components/DayTrailScene.tsx");
 

@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-01 secondary-dog portrait accessibility
+
+- DONE: Pack secondary-dog portrait artwork is excluded from accessibility traversal beside readable dog name and breed.
+- VERIFIED: Red-first mobile readiness failed `161/162`, then passed `162/162` after the minimal Pack correction.
+- NEXT: Run dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android Pack evidence remain required.
+
 ## 2026-08-01 shared caregiver-portrait accessibility
 
 - DONE: Shared caregiver portrait artwork is excluded from accessibility traversal beside rows that already expose the caregiver name, role, and access details.

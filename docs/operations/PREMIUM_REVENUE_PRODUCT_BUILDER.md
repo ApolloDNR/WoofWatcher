@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-01 secondary-dog portrait accessibility slice
+
+Pack secondary-dog portrait artwork now stays out of accessibility traversal beside readable dog name and breed. Red-first mobile readiness failed `161/162` before the correction and passed `162/162` after. Native VoiceOver/TalkBack and route-named iOS/Android Pack proof remain open.
+
 ## 2026-08-01 shared caregiver-portrait accessibility slice
 
 Shared caregiver portrait artwork now stays out of accessibility traversal beside readable caregiver name, role, and access details. Red-first mobile readiness failed `160/161` before the correction and passed `161/161` after. Native VoiceOver/TalkBack and route-named iOS/Android Pack proof remain open.
