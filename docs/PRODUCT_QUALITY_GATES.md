@@ -5,6 +5,8 @@
 - PASS (source): the decorative Auth gateway room image cannot add an unlabeled screen-reader stop around its readable gateway content.
 - OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android Auth/Setup evidence, and Apollo approval.
 
+Dependency-complete branch CI passed in run `30752667096`, job `91509356659`, for implementation/docs commit `19d9755f`.
+
 ## 2026-08-02 shared care-twin sprite accessibility
 
 - PASS (source): `SpriteSheetPlayer` keeps its nested animated raster decorative inside semantically labeled care surfaces.

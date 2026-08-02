@@ -4,6 +4,8 @@
 
 The Auth gateway room `ImageBackground` is now decorative while its readable speech, status, trust, and proof content remains available to assistive technology. A red-first mobile-readiness contract protects the boundary. Native VoiceOver/TalkBack traversal and route-named iOS/Android Auth/Setup evidence remain separate release gates.
 
+Dependency-complete `WoofWatcher Verify` run `30752667096`, job `91509356659`, passed implementation/docs commit `19d9755f`, including pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job.
+
 ## 2026-08-02 shared care-twin sprite accessibility slice
 
 The shared `SpriteSheetPlayer` now explicitly marks its nested `Animated.Image` decorative. The viewport was already hidden from accessibility, and this closes the native image boundary at the raster itself across every animated care-twin caller while leaving meaningful dog state and actions to readable parent cards and controls. Red-first mobile readiness failed before the correction and passed afterward. Native VoiceOver/TalkBack and route-named iOS/Android proof remain open.

@@ -4,7 +4,8 @@
 
 - DONE: Excluded the decorative Auth gateway room image from accessibility traversal while preserving its readable speech, status, trust, and proof content.
 - VERIFIED: Red-first mobile readiness failed on the missing `ImageBackground` boundary, then passed after the minimal shared Auth correction.
-- NEXT: Run strongest local verification and dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android Auth/Setup evidence remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30752667096`, job `91509356659`, passed implementation/docs commit `19d9755f`; pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native VoiceOver/TalkBack traversal and route-named iOS/Android Auth/Setup evidence remain required.
 
 ## 2026-08-02 shared care-twin sprite accessibility
 
