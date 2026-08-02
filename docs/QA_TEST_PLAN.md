@@ -2826,3 +2826,10 @@ Dog ID PNG/share flows before approving Records.
   Studio destination once; its animated child image stays out of traversal.
 - Native gate: verify the control remains actionable in VoiceOver and TalkBack
   and capture route-named iOS/Android Dog Profile evidence.
+
+## 2026-08-02 Pack primary-dog portrait accessibility
+
+- Source contract: the animated portrait remains outside traversal; dog name,
+  breed, and care level remain readable as separate identity text.
+- Native gate: verify VoiceOver and TalkBack do not announce an extra avatar
+  stop, then capture route-named iOS/Android Pack evidence.

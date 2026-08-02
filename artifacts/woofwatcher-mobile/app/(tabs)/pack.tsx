@@ -403,13 +403,7 @@ function PackInfoTile({
  * amplitude stays tiny so the portrait reads alive without pulling focus, and
  * it holds completely still when the OS Reduce Motion setting is on.
  */
-function BreathingPetSprite({
-  source,
-  accessibilityLabel,
-}: {
-  source: ImageSourcePropType;
-  accessibilityLabel: string;
-}) {
+function BreathingPetSprite({ source }: { source: ImageSourcePropType }) {
   const reduced = useReducedMotion();
   const breath = useSharedValue(0);
 
@@ -429,10 +423,10 @@ function BreathingPetSprite({
 
   return (
     <Animated.Image
+      accessible={false}
       source={source}
       style={[s.petAvatarImage, breathStyle]}
       resizeMode="cover"
-      accessibilityLabel={accessibilityLabel}
     />
   );
 }
@@ -1169,7 +1163,6 @@ export default function PackScreen() {
               <View style={[s.petAvatarFrame, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
                 <BreathingPetSprite
                   source={getAvatarSource(status.mood)}
-                  accessibilityLabel={`${petName} avatar`}
                 />
               </View>
               <View style={s.petHeroCopy}>

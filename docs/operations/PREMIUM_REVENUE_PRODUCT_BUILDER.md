@@ -5263,3 +5263,11 @@ passed implementation/docs commit `e0feda2d`, including pinned dependency
 install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps,
 and Complete job. Rerun after this proof-record commit before treating the
 final branch tip as current.
+
+## 2026-08-02 Pack primary-dog portrait accessibility slice
+
+The animated primary-dog portrait now uses `accessible={false}` and no longer
+repeats an avatar label before the adjacent dog name, breed, and care level.
+Red-first mobile readiness failed `170/171` before the correction and passed
+`171/171` afterward. Native VoiceOver/TalkBack traversal, route-named device
+evidence, provider/store proof, and Apollo approval remain separate gates.

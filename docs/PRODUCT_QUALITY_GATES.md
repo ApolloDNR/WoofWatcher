@@ -626,3 +626,10 @@ Auth/Setup evidence remain open.
   its animated child image no longer creates a duplicate stop.
 - OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android Dog
   Profile evidence, and Apollo accessibility approval.
+
+## 2026-08-02 Pack primary-dog portrait accessibility boundary
+
+- PASS (source): the breathing portrait raster is decorative while adjacent
+  name, breed, and care-level text remain the identity source of truth.
+- OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android Pack
+  evidence, and Apollo accessibility approval.

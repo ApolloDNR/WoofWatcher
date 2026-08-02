@@ -5585,6 +5585,21 @@ test("keeps secondary dog portraits decorative beside readable dog identity", ()
   );
 });
 
+test("keeps the primary Pack dog portrait decorative beside readable dog identity", () => {
+  const pack = readAppFile(join("(tabs)", "pack.tsx"));
+
+  assert.match(
+    pack,
+    /<Animated\.Image[\s\S]*?accessible=\{false\}[\s\S]*?source=\{source\}[\s\S]*?style=\{\[s\.petAvatarImage, breathStyle\]\}/,
+    "the breathing primary-dog portrait must not create a duplicate stop beside the readable dog name, breed, and care level",
+  );
+  assert.doesNotMatch(
+    pack,
+    /<BreathingPetSprite[\s\S]*?accessibilityLabel=\{`\$\{petName\} avatar`\}/,
+    "the primary Pack portrait must not retain a redundant avatar label",
+  );
+});
+
 test("keeps the living Story trail map out of accessibility traversal", () => {
   const dayTrail = readAppFile("../components/DayTrailScene.tsx");
 

@@ -619,3 +619,9 @@ required.
 Source now keeps the animated portrait image subordinate to the labeled Avatar
 Studio control. Native VoiceOver/TalkBack traversal, route-named iOS/Android
 Dog Profile evidence, and Apollo accessibility approval remain required.
+
+## 2026-08-02 Pack primary-dog portrait accessibility proof remains open
+
+Source now excludes the breathing primary-dog raster from traversal while
+preserving readable identity text. Native VoiceOver/TalkBack traversal,
+route-named iOS/Android Pack evidence, and Apollo approval remain required.

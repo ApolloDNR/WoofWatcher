@@ -3089,3 +3089,9 @@ The Dog Profile portrait is one button whose label and hint already identify
 the dog and the Avatar Studio destination. Exclude its animated child image
 from traversal so assistive technology does not announce the same portrait
 twice. Native VoiceOver/TalkBack proof remains required.
+
+## 2026-08-02 Keep the Pack primary-dog portrait decorative
+
+The Pack hero already presents the dog's name, breed, and care level directly
+beside its breathing portrait. Exclude that raster from traversal and remove
+its duplicate avatar label; native VoiceOver/TalkBack proof remains required.
