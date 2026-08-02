@@ -1934,7 +1934,7 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(room, /reactionProgress/);
   assert.match(room, /energyBlocks/);
   assert.match(room, /statusReadouts\?\.slice\(0, 4\)/);
-  assert.match(room, /Phoenix room/);
+  assert.match(room, /buildCareTwinRoomAccessibilityLabel/);
   assert.match(room, /deriveCareTwinScene/);
   assert.match(room, /plan\.tapVerb/);
   assert.match(room, /plan\.recommendedActionLabel/);
@@ -5817,13 +5817,13 @@ test("keeps Living Phoenix room rasters inside its labeled controls", () => {
 
   assert.match(
     room,
-    /<Pressable[\s\S]*?accessibilityLabel={`Phoenix room\./,
-    "the Phoenix room control must retain the meaningful care-twin summary",
+    /<Pressable[\s\S]*?accessibilityLabel=\{buildCareTwinRoomAccessibilityLabel\(\{[\s\S]*?petName,[\s\S]*?\}\)\}/,
+    "the care-twin room control must build its meaningful summary from the active dog identity",
   );
   assert.match(
     room,
     /<Animated\.Image\s+accessible=\{false\}\s+source=\{stageSource\}/,
-    "the room backdrop must not create a raw image stop inside the labeled Phoenix room control",
+    "the room backdrop must not create a raw image stop inside the labeled care-twin room control",
   );
   assert.match(
     room,
@@ -5833,7 +5833,7 @@ test("keeps Living Phoenix room rasters inside its labeled controls", () => {
   assert.match(
     room,
     /<Animated\.Image\s+accessible=\{false\}\s+source=\{fallbackAvatarSource\}/,
-    "the fallback care-twin raster must not duplicate the Phoenix room label",
+    "the fallback care-twin raster must not duplicate the care-twin room label",
   );
   assert.match(
     room,

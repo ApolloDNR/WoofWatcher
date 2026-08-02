@@ -485,3 +485,14 @@ export function deriveCareTwinScene(motion: AvatarMotionModel): AvatarLifePlan {
 export function deriveAvatarLifePlan(motion: AvatarMotionModel): AvatarLifePlan {
   return deriveCareTwinScene(motion);
 }
+
+export function buildCareTwinRoomAccessibilityLabel(input: {
+  petName?: string;
+  templateLabel: string;
+  motionLabel: string;
+  tapVerb: string;
+  speech: string;
+}): string {
+  const roomOwner = input.petName?.trim();
+  return `${roomOwner ? `${roomOwner}'s` : "Your dog's"} room. ${input.templateLabel} care twin. ${input.motionLabel}. ${input.tapVerb}. ${input.speech}`;
+}

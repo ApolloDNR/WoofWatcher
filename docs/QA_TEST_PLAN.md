@@ -2839,3 +2839,9 @@ Dog ID PNG/share flows before approving Records.
   breed, and care level remain readable as separate identity text.
 - Native gate: verify VoiceOver and TalkBack do not announce an extra avatar
   stop, then capture route-named iOS/Android Pack evidence.
+
+## 2026-08-02 Care-twin room dog identity accessibility
+
+- With a non-Phoenix profile name, confirm Home, Avatar Studio, and focused QA
+  announce that dog's room name and never announce Phoenix by default.
+- Confirm an intentionally blank dog name announces "Your dog's room."

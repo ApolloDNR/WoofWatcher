@@ -5220,6 +5220,14 @@ install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps,
 and Complete job. Rerun after this proof-record commit before treating the
 final branch tip as current.
 
+## 2026-08-02 Care-twin room dog identity accessibility slice
+
+The shared living room control now builds its accessibility label from the
+active dog profile name rather than hardcoding Phoenix, while blank identity
+uses "Your dog's room." A red-first avatar-life test failed before the helper
+existed and passed `7/7` after wiring. Native VoiceOver/TalkBack and route-named
+device proof remain separate release gates.
+
 ## 2026-08-02 Dog Profile portrait accessibility slice
 
 The Dog Profile portrait control now owns the full dog identity and Avatar

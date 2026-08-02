@@ -3101,3 +3101,9 @@ twice. Native VoiceOver/TalkBack proof remains required.
 The Pack hero already presents the dog's name, breed, and care level directly
 beside its breathing portrait. Exclude that raster from traversal and remove
 its duplicate avatar label; native VoiceOver/TalkBack proof remains required.
+
+## 2026-08-02 Name the active dog in the shared care-twin room
+
+The living room accessibility label follows the saved dog profile name rather
+than hardcoding Phoenix. A blank profile uses the truthful generic "Your dog's
+room" fallback. Native VoiceOver/TalkBack traversal remains required.

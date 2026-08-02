@@ -640,3 +640,10 @@ Auth/Setup evidence remain open.
   name, breed, and care-level text remain the identity source of truth.
 - OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android Pack
   evidence, and Apollo accessibility approval.
+
+## 2026-08-02 Care-twin room dog identity accessibility boundary
+
+- PASS (source): shared care-twin room controls announce the active profile
+  dog, with a generic fallback only when the saved name is blank.
+- OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android evidence,
+  and Apollo accessibility approval.

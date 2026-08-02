@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   CARE_TWIN_SPRITE_MANIFEST,
+  buildCareTwinRoomAccessibilityLabel,
   deriveAvatarLifePlan,
   deriveCareTwinScene,
   type CareTwinSpriteAction,
@@ -22,6 +23,29 @@ function motion(overrides: Partial<AvatarMotionModel>): AvatarMotionModel {
     ...overrides,
   };
 }
+
+test("names the active dog in the care-twin room accessibility label", () => {
+  assert.equal(
+    buildCareTwinRoomAccessibilityLabel({
+      petName: "Mochi",
+      templateLabel: "Shepherd",
+      motionLabel: "Happy",
+      tapVerb: "Pet Mochi",
+      speech: "Ready for a walk.",
+    }),
+    "Mochi's room. Shepherd care twin. Happy. Pet Mochi. Ready for a walk.",
+  );
+  assert.equal(
+    buildCareTwinRoomAccessibilityLabel({
+      petName: "   ",
+      templateLabel: "Shepherd",
+      motionLabel: "Calm",
+      tapVerb: "Pet your dog",
+      speech: "All settled.",
+    }),
+    "Your dog's room. Shepherd care twin. Calm. Pet your dog. All settled.",
+  );
+});
 
 test("routes eating and drinking avatar states to the bowl", () => {
   const eating = deriveCareTwinScene(motion({ state: "eating", cue: "chew" }));

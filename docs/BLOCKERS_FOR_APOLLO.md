@@ -629,3 +629,9 @@ Dog Profile evidence, and Apollo accessibility approval remain required.
 Source now excludes the breathing primary-dog raster from traversal while
 preserving readable identity text. Native VoiceOver/TalkBack traversal,
 route-named iOS/Android Pack evidence, and Apollo approval remain required.
+
+## 2026-08-02 Care-twin room identity accessibility proof remains open
+
+Source now announces the active profile dog's name across shared living-room
+controls instead of hardcoding Phoenix. Native VoiceOver/TalkBack traversal,
+route-named iOS/Android evidence, and Apollo approval remain required.

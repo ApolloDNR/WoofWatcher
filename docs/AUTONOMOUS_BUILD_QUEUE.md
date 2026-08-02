@@ -195,6 +195,17 @@
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
 
+## 2026-08-02 Care-twin room dog identity accessibility
+
+- DONE: The shared living room control now names the active dog in its
+  screen-reader label instead of announcing every household's room as
+  Phoenix's; blank names fall back to "Your dog's room."
+- VERIFIED: A red-first avatar-life test failed on the missing dog-aware label
+  builder, then passed `7/7` after the shared formatter and room wiring landed.
+- NEXT: Run the strongest local verification, push the verified slice, and
+  require fresh dependency-complete branch CI. Native VoiceOver/TalkBack
+  traversal and route-named iOS/Android evidence remain open.
+
 ## 2026-08-02 Dog Profile portrait accessibility
 
 - DONE: Kept the labeled Dog Profile portrait control as the single Avatar

@@ -41,6 +41,7 @@ import {
 } from "@/lib/careTwinChoreography";
 import {
   CARE_TWIN_SPRITE_MANIFEST,
+  buildCareTwinRoomAccessibilityLabel,
   deriveCareTwinScene,
   type AvatarLifePlan,
   type AvatarRoomZone,
@@ -957,7 +958,13 @@ export function LivingPhoenixRoom({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Phoenix room. ${avatarRoomRuntime?.templateLabel ?? "Shepherd"} care twin. ${motion.label}. ${plan.tapVerb}. ${speech}`}
+      accessibilityLabel={buildCareTwinRoomAccessibilityLabel({
+        petName,
+        templateLabel: avatarRoomRuntime?.templateLabel ?? "Shepherd",
+        motionLabel: motion.label,
+        tapVerb: plan.tapVerb,
+        speech,
+      })}
       accessibilityHint={accessibilityHint}
       onPress={handlePress}
       onLongPress={onLongPress}
