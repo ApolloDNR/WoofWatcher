@@ -3,6 +3,7 @@
 ## 2026-08-02 Avatar Studio reference-photo accessibility proof
 
 - PASS (source): the owner-provided reference photo is announced as `Reference photo for the pixel twin`; decorative room, template, accessory, and mood artwork remains excluded from traversal.
+- PASS (CI): run `30766182906`, job `91545230757`, passed the dependency-complete workflow for implementation/docs commit `2d28deb5`.
 - OPEN (native): verify VoiceOver/TalkBack announces the reference image once and keeps the surrounding PHOTO REFERENCE explanation readable on iOS and Android.
 
 ## 2026-08-02 shared sprite accessibility proof

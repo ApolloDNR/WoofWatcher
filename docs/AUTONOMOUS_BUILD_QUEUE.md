@@ -4,7 +4,8 @@
 
 - DONE: Kept the owner-provided reference photo meaningful in accessibility traversal with an explicit image label while leaving composed preview artwork decorative.
 - VERIFIED: Red-first mobile readiness failed on the unnamed reference image, then passed after the minimal Avatar Studio correction.
-- NEXT: Run dependency-complete branch CI, then record the final-tip proof. Native VoiceOver/TalkBack traversal and route-named iOS/Android Avatar Studio evidence remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30766182906`, job `91545230757`, passed implementation/docs commit `2d28deb5`; pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native VoiceOver/TalkBack traversal and route-named iOS/Android Avatar Studio evidence remain required.
 
 ## 2026-08-02 Auth gateway room accessibility
 

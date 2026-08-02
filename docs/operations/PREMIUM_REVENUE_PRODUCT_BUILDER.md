@@ -4,6 +4,8 @@
 
 The owner-provided Avatar Studio reference photo now carries an explicit accessible image label while the surrounding composed pixel artwork stays decorative. A red-first mobile-readiness contract protects that semantic distinction. Native VoiceOver/TalkBack traversal and route-named iOS/Android Avatar Studio evidence remain separate release gates.
 
+Dependency-complete `WoofWatcher Verify` run `30766182906`, job `91545230757`, passed implementation/docs commit `2d28deb5`, including pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit before treating the final branch tip as current.
+
 ## 2026-08-02 Auth gateway room accessibility slice
 
 The Auth gateway room `ImageBackground` is now decorative while its readable speech, status, trust, and proof content remains available to assistive technology. A red-first mobile-readiness contract protects the boundary. Native VoiceOver/TalkBack traversal and route-named iOS/Android Auth/Setup evidence remain separate release gates.

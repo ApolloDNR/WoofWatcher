@@ -5,6 +5,8 @@
 - PASS (source): the meaningful owner-provided reference photo has an explicit accessible name without exposing subordinate preview art.
 - OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android Avatar Studio evidence, and Apollo approval.
 
+Dependency-complete branch CI passed in run `30766182906`, job `91545230757`, for implementation/docs commit `2d28deb5`.
+
 ## 2026-08-02 Auth gateway room accessibility
 
 - PASS (source): the decorative Auth gateway room image cannot add an unlabeled screen-reader stop around its readable gateway content.
