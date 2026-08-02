@@ -1,5 +1,10 @@
 # WoofWatcher Decision Log
 
+## 2026-08-02: Auth gateway room art is decorative
+
+- The Auth `ImageBackground` provides atmosphere only; its child speech, care-start status, trust steps, and proof controls carry the meaningful account-gateway content.
+- Keep those descendants traversable while excluding the room raster itself. Source coverage does not replace native VoiceOver/TalkBack review.
+
 ## 2026-08-02: Shared sprite sheets are subordinate artwork
 
 - `SpriteSheetPlayer` renders animation inside care cards and controls whose surrounding copy owns the meaningful dog state or action.

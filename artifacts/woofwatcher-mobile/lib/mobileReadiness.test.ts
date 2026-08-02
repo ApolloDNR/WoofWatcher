@@ -5605,6 +5605,16 @@ test("keeps the Auth gateway stage dog out of accessibility traversal", () => {
   );
 });
 
+test("keeps the Auth gateway room art out of accessibility traversal", () => {
+  const authUi = readAppFile("../components/auth-ui.tsx");
+
+  assert.match(
+    authUi,
+    /<ImageBackground\s+accessible=\{false\}\s+source=\{PIXEL_ROOM_SOURCE\}/,
+    "the decorative Auth room must not create an unlabeled stop around the readable gateway content",
+  );
+});
+
 test("keeps the shared brand crest decorative beside the WoofWatcher wordmark", () => {
   const logo = readAppFile("../components/brand/WoofWatcherLogo.tsx");
 

@@ -104,6 +104,7 @@ export function AuthShell({
         </View>
 
         <ImageBackground
+          accessible={false}
           source={PIXEL_ROOM_SOURCE}
           resizeMode="cover"
           imageStyle={[stageImageFill, styles.stageImage, pixelImageStyle]}

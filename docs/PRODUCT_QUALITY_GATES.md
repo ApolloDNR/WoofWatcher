@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-02 Auth gateway room accessibility
+
+- PASS (source): the decorative Auth gateway room image cannot add an unlabeled screen-reader stop around its readable gateway content.
+- OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android Auth/Setup evidence, and Apollo approval.
+
 ## 2026-08-02 shared care-twin sprite accessibility
 
 - PASS (source): `SpriteSheetPlayer` keeps its nested animated raster decorative inside semantically labeled care surfaces.

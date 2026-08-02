@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-02 Auth gateway room accessibility status
+
+The source-level room-image boundary is hardened. Native VoiceOver/TalkBack traversal, route-named iOS/Android Auth/Setup evidence, provider proof, store review, and Apollo approval remain open.
+
 ## 2026-08-02 shared care-twin sprite accessibility boundary
 
 Source now explicitly excludes the animated sprite-sheet raster from accessibility traversal while preserving semantic care-twin state and actions on surrounding controls. Native VoiceOver/TalkBack traversal, route-named iOS/Android proof, and Apollo accessibility approval remain required.

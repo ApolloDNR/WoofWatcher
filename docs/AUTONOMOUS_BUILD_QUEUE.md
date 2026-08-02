@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-02 Auth gateway room accessibility
+
+- DONE: Excluded the decorative Auth gateway room image from accessibility traversal while preserving its readable speech, status, trust, and proof content.
+- VERIFIED: Red-first mobile readiness failed on the missing `ImageBackground` boundary, then passed after the minimal shared Auth correction.
+- NEXT: Run strongest local verification and dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android Auth/Setup evidence remain required.
+
 ## 2026-08-02 shared care-twin sprite accessibility
 
 - DONE: Explicitly excluded the nested animated sprite-sheet image from accessibility traversal while preserving readable care-twin state and action labels on parent cards and controls.
