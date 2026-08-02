@@ -101,6 +101,7 @@ import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import { resolvePetName } from "@/lib/petIdentity";
 import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
 import { shareTextPayload } from "@/lib/shareText";
+import { persistPickedMedia } from "@/lib/durablePickedMedia";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -502,27 +503,23 @@ export default function RecordsScreen() {
         allowsEditing: false,
       });
       if (!result.canceled && result.assets[0]?.uri) {
-        const pickedUri = result.assets[0].uri;
-        if (Platform.OS === "web") {
-          setRecordAttachmentUri(pickedUri);
+        const asset = result.assets[0];
+        const persistedAttachment = await persistPickedMedia({
+          platform: Platform.OS,
+          sourceUri: asset.uri,
+          fileName: asset.fileName,
+          mimeType: asset.mimeType,
+          filePrefix: "record-attachment",
+          fileSystem: FileSystem,
+        });
+        if (!persistedAttachment.ok) {
+          notifyDialog(
+            "Attachment not saved",
+            "WoofWatcher could not copy that file into durable app storage. No record attachment was added. Try again or choose another file.",
+          );
           return;
         }
-        // ImagePicker hands back a cache-directory URI the OS may purge at
-        // any time - a vault attachment must not silently vanish. Copy it to
-        // durable app storage and store that URI instead; if the copy fails,
-        // the cache URI still beats nothing.
-        try {
-          const durableDir = `${FileSystem.documentDirectory}woofwatcher-attachments/`;
-          await FileSystem.makeDirectoryAsync(durableDir, { intermediates: true }).catch(() => {});
-          const extension = pickedUri.split(".").pop()?.split("?")[0] || "jpg";
-          const durableUri = `${durableDir}attachment_${Date.now()}_${Math.random()
-            .toString(36)
-            .slice(2, 8)}.${extension}`;
-          await FileSystem.copyAsync({ from: pickedUri, to: durableUri });
-          setRecordAttachmentUri(durableUri);
-        } catch {
-          setRecordAttachmentUri(pickedUri);
-        }
+        setRecordAttachmentUri(persistedAttachment.uri);
       }
     } catch {
       notifyDialog("Attachment unavailable", "Choose the file details manually for now.");

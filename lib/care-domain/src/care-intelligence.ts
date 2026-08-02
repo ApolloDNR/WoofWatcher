@@ -27,6 +27,11 @@ export interface CareIntelligenceInput {
   routines?: readonly RoutineBoardRoutine[];
   caregivers?: readonly RoutineBoardCaregiver[];
   now?: number;
+  /**
+   * Whether care entries have a real remote household destination.
+   * Device-local saves are complete, unpenalized care records when false.
+   */
+  providerSyncEnabled?: boolean;
   /** Display name for owner-facing copy; resolved via resolvePetName so renamed dogs never read "Phoenix". */
   petName?: string | null;
 }
@@ -205,14 +210,21 @@ function mealCarePoint(entry: CareIntelligenceEntry): number {
   return 1;
 }
 
-function syncPenalty(entry: CareIntelligenceEntry): number {
+function syncPenalty(
+  entry: CareIntelligenceEntry,
+  providerSyncEnabled: boolean,
+): number {
+  if (!providerSyncEnabled) return 1;
   if (entry.syncStatus === "failed") return 0.82;
   if (entry.syncStatus === "local") return 0.9;
   if (entry.syncStatus === "pending") return 0.95;
   return 1;
 }
 
-function entryConfidence(entry: CareIntelligenceEntry): number {
+function entryConfidence(
+  entry: CareIntelligenceEntry,
+  providerSyncEnabled: boolean,
+): number {
   const normalized = normalizeCareEventType(entry.type, entry.details);
   const groups = FIELD_GROUPS[normalized] ?? [];
   const covered = groups.filter((keys) => hasAnyField(entry, keys)).length;
@@ -229,7 +241,11 @@ function entryConfidence(entry: CareIntelligenceEntry): number {
     (hasValue(details.routineId) ? 0.1 : 0) +
     noteCredit +
     structuredCredit;
-  return clamp(round(base * syncPenalty(entry) * 100), 0, 100);
+  return clamp(
+    round(base * syncPenalty(entry, providerSyncEnabled) * 100),
+    0,
+    100,
+  );
 }
 
 function ratioPercent(done: number, target: number): number {
@@ -341,6 +357,7 @@ function nextActionFromLoops(
 export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntelligence {
   const now = input.now ?? Date.now();
   const routines = input.routines ?? [];
+  const providerSyncEnabled = input.providerSyncEnabled === true;
   const petName = resolvePetName(input.petName);
   const visibleToday = input.entries.filter((entry) => isSameLocalDay(entry.occurredAt, now) && isHouseholdVisible(entry));
   const status = deriveCareDayStatus(visibleToday, routines, now);
@@ -359,15 +376,23 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
   const coreProgress = round(mealProgress * 0.42 + walkProgress * 0.31 + pottyProgress * 0.27);
   const routineProgress = routines.length ? ratioPercent(board.doneCount, routines.length) : coreProgress;
 
-  const confidenceScores = visibleToday.map(entryConfidence);
+  const confidenceScores = visibleToday.map((entry) =>
+    entryConfidence(entry, providerSyncEnabled),
+  );
   const confidenceScore = confidenceScores.length
     ? round(confidenceScores.reduce((sum, value) => sum + value, 0) / confidenceScores.length)
     : 0;
   const structuredLogCount = confidenceScores.filter((score) => score >= 72).length;
 
-  const failedSyncEntries = visibleToday.filter((entry) => entry.syncStatus === "failed");
-  const pendingSyncEntries = visibleToday.filter((entry) => entry.syncStatus === "pending");
-  const localEntries = visibleToday.filter((entry) => entry.syncStatus === "local");
+  const failedSyncEntries = providerSyncEnabled
+    ? visibleToday.filter((entry) => entry.syncStatus === "failed")
+    : [];
+  const pendingSyncEntries = providerSyncEnabled
+    ? visibleToday.filter((entry) => entry.syncStatus === "pending")
+    : [];
+  const localEntries = providerSyncEnabled
+    ? visibleToday.filter((entry) => entry.syncStatus === "local")
+    : [];
   const syncScore = failedSyncEntries.length
     ? 55
     : pendingSyncEntries.length

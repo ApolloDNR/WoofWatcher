@@ -259,7 +259,6 @@ function formatDueDate(ms: number): string {
     month: "short",
     day: "numeric",
     year: "numeric",
-    timeZone: "UTC",
   });
 }
 

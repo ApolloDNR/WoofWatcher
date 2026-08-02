@@ -29,3 +29,4 @@ export * from "./adventure.ts";
 export * from "./onboarding.ts";
 export * from "./premium.ts";
 export * from "./care-intelligence.ts";
+export * from "./care-entry-sync.ts";

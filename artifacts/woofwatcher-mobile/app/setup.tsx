@@ -25,7 +25,6 @@ import {
   applyBreedTemplateToAvatarConfig,
   deriveSetupTwinPlan,
 } from "@/lib/breedTemplateMatch";
-import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { notifyDialog } from "@/lib/confirmDialog";
 import {
   getKeyboardAvoidingVerticalOffset,
@@ -37,9 +36,11 @@ import {
   applySetupWizardDraft,
   buildSetupWizardConfirmation,
   createSetupWizardDraft,
+  makeSetupWizardDraftDeviceOnly,
   type SetupWizardDraft,
   type SetupWizardHouseholdMode,
 } from "@/lib/setupWizard";
+import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 // Storybook mockup: big warm serif for celebration titles (same face the
@@ -105,11 +106,17 @@ export default function SetupScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const ownerOps = isOwnerOpsBuild();
+  const consumerSurfacePolicy = getConsumerSurfacePolicy();
+  const ownerOps = consumerSurfacePolicy.ownerOps;
   const { state, updateCareDoc, isLoaded } = useCare();
   const { isSignedIn } = useWoofAuth();
   const { avatarConfig, hasConfiguredAvatar, saveAvatarConfig } = useAvatar();
-  const [draft, setDraft] = useState<SetupWizardDraft>(() => createSetupWizardDraft(state));
+  const [draft, setDraft] = useState<SetupWizardDraft>(() => {
+    const next = createSetupWizardDraft(state);
+    return consumerSurfacePolicy.householdSetupModes
+      ? next
+      : makeSetupWizardDraftDeviceOnly(next);
+  });
   const [dirty, setDirty] = useState(false);
   // Confirm toggle for the breed-matched twin swap. hasConfiguredAvatar
   // already blocks the swap when the owner customized the twin, but it cannot
@@ -126,8 +133,13 @@ export default function SetupScreen() {
 
   useEffect(() => {
     if (!isLoaded || dirty) return;
-    setDraft(createSetupWizardDraft(state));
-  }, [dirty, isLoaded, state]);
+    const next = createSetupWizardDraft(state);
+    setDraft(
+      consumerSurfacePolicy.householdSetupModes
+        ? next
+        : makeSetupWizardDraftDeviceOnly(next),
+    );
+  }, [consumerSurfacePolicy.householdSetupModes, dirty, isLoaded, state]);
 
   const preview = useMemo(() => applySetupWizardDraft(state, draft, state.updatedAt), [draft, state]);
   const onboarding = useMemo(
@@ -141,8 +153,13 @@ export default function SetupScreen() {
     [preview],
   );
   const confirmation = useMemo(
-    () => buildSetupWizardConfirmation(preview, { isSignedIn: Boolean(isSignedIn), isClerkConfigured }),
-    [isSignedIn, preview],
+    () =>
+      buildSetupWizardConfirmation(preview, {
+        isSignedIn: Boolean(isSignedIn),
+        isClerkConfigured,
+        consumerRelease: !consumerSurfacePolicy.householdSetupModes,
+      }),
+    [consumerSurfacePolicy.householdSetupModes, isSignedIn, preview],
   );
   const authSetupProofManifest = buildAuthSetupProofManifest(state.launchProviderProfile.authSetupProofEvidence ?? undefined);
   // Breed-matched pixel twin plan: previewed under the breed field so the
@@ -403,62 +420,76 @@ export default function SetupScreen() {
             <Field label="Time" value={draft.routineTime} placeholder="7:30 AM" onChangeText={(value) => setField("routineTime", value)} />
           </Section>
 
-          <Section title="Household path" icon="home-outline">
-            <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>HOW SHOULD THIS CARE HOME START?</Text>
-            <View style={s.modeStack}>
-              {HOUSEHOLD_MODES.map((item) => {
-                const selected = draft.householdMode === item.value;
-                return (
-                  <Pressable
-                    key={item.value}
-                    accessibilityRole="button"
-                    aria-selected={selected}
-                    accessibilityLabel={`${item.label}. ${item.detail}`}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setField("householdMode", item.value);
-                    }}
-                    style={({ pressed }) => [
-                      s.modeCard,
-                      {
-                        backgroundColor: selected ? colors.primary + "14" : colors.background,
-                        borderColor: selected ? colors.primary : colors.border,
-                        opacity: pressed ? 0.76 : 1,
-                      },
-                    ]}
-                  >
-                    <View style={[s.modeIcon, { backgroundColor: selected ? colors.primary : colors.primary + "16" }]}>
-                      <Ionicons name={item.icon} size={16} color={selected ? "#fff" : colors.primary} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[s.modeTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
-                      <Text style={[s.modeDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{item.detail}</Text>
-                    </View>
-                    <Ionicons
-                      name={selected ? "checkmark-circle" : "ellipse-outline"}
-                      size={18}
-                      color={selected ? colors.primary : colors.mutedForeground}
-                    />
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Field
-              label="Household name"
-              value={draft.householdName}
-              placeholder="Phoenix House"
-              onChangeText={(value) => setField("householdName", value)}
-            />
-            {draft.householdMode === "join" && (
+          {consumerSurfacePolicy.householdSetupModes ? (
+            <Section title="Household path" icon="home-outline">
+              <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>HOW SHOULD THIS CARE HOME START?</Text>
+              <View style={s.modeStack}>
+                {HOUSEHOLD_MODES.map((item) => {
+                  const selected = draft.householdMode === item.value;
+                  return (
+                    <Pressable
+                      key={item.value}
+                      accessibilityRole="button"
+                      aria-selected={selected}
+                      accessibilityLabel={`${item.label}. ${item.detail}`}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setField("householdMode", item.value);
+                      }}
+                      style={({ pressed }) => [
+                        s.modeCard,
+                        {
+                          backgroundColor: selected ? colors.primary + "14" : colors.background,
+                          borderColor: selected ? colors.primary : colors.border,
+                          opacity: pressed ? 0.76 : 1,
+                        },
+                      ]}
+                    >
+                      <View style={[s.modeIcon, { backgroundColor: selected ? colors.primary : colors.primary + "16" }]}>
+                        <Ionicons name={item.icon} size={16} color={selected ? "#fff" : colors.primary} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.modeTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
+                        <Text style={[s.modeDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{item.detail}</Text>
+                      </View>
+                      <Ionicons
+                        name={selected ? "checkmark-circle" : "ellipse-outline"}
+                        size={18}
+                        color={selected ? colors.primary : colors.mutedForeground}
+                      />
+                    </Pressable>
+                  );
+                })}
+              </View>
               <Field
-                label="Invite code"
-                value={draft.inviteCode}
-                placeholder="WW-42"
-                autoCapitalize="characters"
-                onChangeText={(value) => setField("inviteCode", value)}
+                label="Household name"
+                value={draft.householdName}
+                placeholder="Phoenix House"
+                onChangeText={(value) => setField("householdName", value)}
               />
-            )}
-          </Section>
+              {draft.householdMode === "join" && (
+                <Field
+                  label="Invite code"
+                  value={draft.inviteCode}
+                  placeholder="WW-42"
+                  autoCapitalize="characters"
+                  onChangeText={(value) => setField("inviteCode", value)}
+                />
+              )}
+            </Section>
+          ) : (
+            <Section title="Care storage" icon="phone-portrait-outline">
+              <View style={[s.boundaryBox, { backgroundColor: colors.sage + "14", borderColor: colors.sage + "44" }]}>
+                <Ionicons name="shield-checkmark-outline" size={16} color={colors.sage} />
+                <Text style={[s.boundaryText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                  Your dog's profile, routines, logs, and records are saved privately on this device.
+                </Text>
+              </View>
+              <Text style={[s.modeDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                Use Privacy &amp; Safety to export a backup before changing or resetting this device.
+              </Text>
+            </Section>
+          )}
 
           <Section title="Household caregiver" icon="people-outline">
             <Field label="Name" value={draft.caregiverName} placeholder="Apollo" onChangeText={(value) => setField("caregiverName", value)} />

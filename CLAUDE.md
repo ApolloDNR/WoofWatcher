@@ -4,7 +4,7 @@
 
 Before changing code, read these files in order:
 
-0. `docs/handoff/HANDOFF_2026-07-18.md` (latest handoff - current state of the app)
+0. `docs/handoff/HANDOFF_2026-07-29.md` (latest handoff - current state of the app; then `docs/release/LAUNCH_READINESS_2026-07-29.md` for the go-to-store status)
 0.1. The `premium-living-app` project skill (`.claude/skills/premium-living-app/`) -
    the operating SOP for all product work in this repo: honesty rules, craft
    bar, verification recipes, audit procedures, data-safety laws, release

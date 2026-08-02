@@ -214,6 +214,17 @@ test("care entry write errors stay documented and typed", () => {
   assert.match(createBlock, /"400":/, "OpenAPI must document invalid create-care-entry payload errors");
   assert.match(updateBlock, /"400":/, "OpenAPI must document invalid update-care-entry payload or param errors");
   assert.match(updateBlock, /"404":/, "OpenAPI must keep documenting update-care-entry not-found errors");
+  assert.match(updateBlock, /"409":/, "OpenAPI must document stale care-entry update conflicts");
+  assert.match(
+    updateBlock,
+    /CareEntryConflict/,
+    "OpenAPI must return the winning care entry for one-step conflict rebase",
+  );
+  assert.match(
+    route,
+    /CARE_ENTRY_SYNC_REVISION_KEY[\s\S]*incomingRevision[\s\S]*revisionGuard[\s\S]*res\.status\(409\)[\s\S]*entry: UpdateCareEntryResponse\.parse\(current\)/,
+    "care-entry updates must reject stale client revisions atomically",
+  );
   assert.match(deleteBlock, /"400":/, "OpenAPI must document invalid delete-care-entry param errors");
   assert.match(deleteBlock, /"404":/, "OpenAPI must keep documenting delete-care-entry not-found errors");
   assert.match(
@@ -228,13 +239,124 @@ test("care entry write errors stay documented and typed", () => {
   );
   assert.match(
     reactClient,
-    /UpdateCareEntryMutationError = ErrorType<ApiError>/,
-    "React API update mutation error alias must preserve invalid and not-found error bodies",
+    /UpdateCareEntryMutationError = ErrorType<ApiError \| CareEntryConflict>/,
+    "React API update mutation error alias must preserve invalid, not-found, and conflict bodies",
   );
   assert.match(
     reactClient,
     /DeleteCareEntryMutationError = ErrorType<ApiError>/,
     "React API delete mutation error alias must preserve invalid and not-found error bodies",
+  );
+});
+
+test("care entry revision protocol stays documented, validated, and emitted by the mobile client", () => {
+  const route = readCareEntriesRouteSource();
+  const openapi = read("lib/api-spec/openapi.yaml");
+  const reactSchemas = read(
+    "lib/api-client-react/src/generated/api.schemas.ts",
+  );
+  const zodSchemas = read("lib/api-zod/src/generated/api.ts");
+  const zodTypes = read(
+    "lib/api-zod/src/generated/types/careEntryUpdate.ts",
+  );
+  const zodProtocolType = read(
+    "lib/api-zod/src/generated/types/careEntryUpdateClientSyncProtocol.ts",
+  );
+  const zodConflictType = read(
+    "lib/api-zod/src/generated/types/careEntryConflict.ts",
+  );
+  const zodTypesIndex = read(
+    "lib/api-zod/src/generated/types/index.ts",
+  );
+  const zodPublicIndex = read("lib/api-zod/src/index.ts");
+  const careContext = read(
+    "artifacts/woofwatcher-mobile/context/CareContext.tsx",
+  );
+
+  assert.match(
+    openapi,
+    /clientSyncProtocol:\s*\n\s*type:\s*string\s*\n\s*enum:\s*\[revision-v1\]/,
+    "OpenAPI must document the current care-entry revision protocol",
+  );
+  assert.match(
+    reactSchemas,
+    /clientSyncProtocol\?:\s*CareEntryUpdateClientSyncProtocol/,
+    "React API types must expose the current care-entry revision protocol",
+  );
+  assert.match(
+    reactSchemas,
+    /export const CareEntryUpdateClientSyncProtocol = \{\s*'revision-v1': 'revision-v1',\s*\} as const/,
+    "React API models must preserve the generated revision-protocol enum",
+  );
+  assert.match(
+    zodSchemas,
+    /"clientSyncProtocol":\s*zod\.enum\(\["revision-v1"\]\)\.optional\(\)/,
+    "Zod must validate the current care-entry revision protocol",
+  );
+  assert.match(
+    zodTypes,
+    /clientSyncProtocol\?:\s*CareEntryUpdateClientSyncProtocol/,
+    "Zod request types must expose the current care-entry revision protocol",
+  );
+  assert.match(
+    zodProtocolType,
+    /export const CareEntryUpdateClientSyncProtocol = \{\s*'revision-v1': 'revision-v1',\s*\} as const/,
+    "Zod models must preserve the generated revision-protocol enum",
+  );
+  assert.match(
+    zodConflictType,
+    /export interface CareEntryConflict \{\s*error: string;\s*entry: CareEntry;\s*\}/,
+    "Zod generated models must expose the typed conflict envelope",
+  );
+  assert.match(
+    zodTypesIndex,
+    /export \* from '\.\/careEntryConflict'/,
+    "Zod generated types must export the conflict envelope",
+  );
+  assert.match(
+    zodPublicIndex,
+    /\bCareEntryConflict\b/,
+    "the public Zod type barrel must expose the conflict envelope",
+  );
+  assert.match(
+    route,
+    /isNextCareEntrySyncRevision\(existing\.details, policy\.details\)/,
+    "marked clients must establish exactly the next selected-row revision",
+  );
+  assert.match(
+    route,
+    /sql`\$\{storedRevision\} = \$\{incomingRevision - 1\}`/,
+    "the atomic update predicate must close the selected-row revision race",
+  );
+  assert.match(
+    route,
+    /jsonb_typeof\([^)]*details[^)]*CARE_ENTRY_SYNC_REVISION_KEY[^)]*\) = 'number'/,
+    "SQL and domain revision parsing must both reject string revisions",
+  );
+  assert.match(
+    route,
+    /trunc\(\([^)]*CARE_ENTRY_SYNC_REVISION_KEY[^)]*\)::numeric\)/,
+    "SQL and domain revision parsing must both reject fractional revisions",
+  );
+  assert.match(
+    careContext,
+    /clientSyncProtocol:\s*CARE_ENTRY_SYNC_PROTOCOL/,
+    "every mobile care-entry PATCH must identify the guarded revision protocol",
+  );
+  assert.match(
+    careContext,
+    /prepareCareEntryForOfflineEdit<Entry>\(\s*current,\s*mutablePatch,\s*pendingSyncPatch,/,
+    "signed-out edits must persist the merged field-level sync journal",
+  );
+  assert.match(
+    careContext,
+    /decideCareEntryEditSyncDisposition\(\s*current,\s*signedInRef\.current,\s*\)/,
+    "owner edits must use the auth-aware sync disposition contract",
+  );
+  assert.doesNotMatch(
+    careContext,
+    /signedInRef\.current\s*&&\s*requiresCareEntrySyncReview\(current\)/,
+    "sign-out must not let a legacy row acquire an incomplete field journal",
   );
 });
 
@@ -541,8 +663,8 @@ test("care entry writes keep role-aware trust and read-only boundaries", () => {
   );
   assert.match(
     reactClient,
-    /UpdateCareEntryMutationError = ErrorType<ApiError>/,
-    "React API update mutation must keep role-policy errors typed as ApiError",
+    /UpdateCareEntryMutationError = ErrorType<ApiError \| CareEntryConflict>/,
+    "React API update mutation must keep role-policy and conflict errors typed",
   );
   assert.match(
     reactClient,

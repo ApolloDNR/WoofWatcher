@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-01 reconciled launch-hardening proof boundary
+
+The automation branch now includes mainline sync recovery, durable media, private walk-route rendering, consumer capability gating, and release/legal hardening. Local source tests and PixelLab proof do not replace dependency-complete branch CI, native iOS/Android testing, provider credentials, store review, legal approval, or Apollo launch approval. The signed-in wipe semantics decision remains required before provider-backed sync launches.
+
 ## 2026-08-01 secondary-dog portrait native accessibility proof
 
 - Source-level duplicate-stop prevention is covered and locally green.

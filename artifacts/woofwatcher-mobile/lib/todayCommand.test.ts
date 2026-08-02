@@ -291,6 +291,7 @@ test("overdue assigned routine becomes the primary command when core care is han
 test("recent failed sync creates a sync action", () => {
   const command = deriveTodayCommand(
     state({
+      providerSyncEnabled: true,
       entries: [
         {
           id: "temp_1",
@@ -310,6 +311,61 @@ test("recent failed sync creates a sync action", () => {
   assert.equal(command.primaryAction.route, "/log");
   assert.equal(command.primaryAction.urgency, "watch");
   assert.equal(command.sync.failed, 1);
+});
+
+test("local-first care is complete on device and never becomes retry debt", () => {
+  const command = deriveTodayCommand(
+    state({
+      providerSyncEnabled: false,
+      entries: [
+        {
+          id: "temp_local",
+          type: "meal",
+          title: "Breakfast",
+          caregiver: "Emma",
+          occurredAt: "2026-06-06T07:35:00-07:00",
+          syncStatus: "local",
+          syncError: "Saved offline. Sign in or refresh to sync.",
+          details: {
+            routineId: "breakfast",
+            mealCompletion: "complete",
+          },
+        },
+      ],
+    }),
+    MORNING,
+  );
+
+  assert.notEqual(command.primaryAction.kind, "sync");
+  assert.equal(command.sync.failed, 0);
+  assert.equal(command.sync.pending, 0);
+  assert.equal(command.sync.local, 1);
+  assert.equal(command.sync.label, "Saved on this device");
+});
+
+test("stale failed status is treated as a local save without a provider", () => {
+  const command = deriveTodayCommand(
+    state({
+      providerSyncEnabled: false,
+      entries: [
+        {
+          id: "temp_failed",
+          type: "note",
+          title: "Care note",
+          caregiver: "Emma",
+          occurredAt: "2026-06-06T08:00:00-07:00",
+          syncStatus: "failed",
+          syncError: "Network unavailable",
+        },
+      ],
+    }),
+    MORNING,
+  );
+
+  assert.notEqual(command.primaryAction.kind, "sync");
+  assert.equal(command.sync.failed, 0);
+  assert.equal(command.sync.local, 1);
+  assert.equal(command.sync.label, "Saved on this device");
 });
 
 test("handoff review opens the exact latest care log when the day is caught up", () => {

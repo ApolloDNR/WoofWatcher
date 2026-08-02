@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import { useCare } from "@/context/CareContext";
-import { isClerkConfigured } from "@/lib/auth";
+import { isClerkEnabledForBuild } from "@/lib/auth";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
@@ -34,7 +34,7 @@ const TRUST_STEPS = [
   {
     icon: "shield-checkmark-outline" as const,
     label: "Provider account",
-    detail: isClerkConfigured ? "Clerk key detected" : "Waiting on production keys",
+    detail: isClerkEnabledForBuild ? "Provider enabled" : "Local-only mode",
   },
   {
     icon: "home-outline" as const,
@@ -93,12 +93,12 @@ export function AuthShell({
           <WoofWatcherLogo layout="row" size={42} wordmarkSize={28} navy={colors.foreground} copper={colors.copper} />
           <View style={[styles.modePill, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
             <Ionicons
-              name={isClerkConfigured ? "cloud-done-outline" : "phone-portrait-outline"}
+              name={isClerkEnabledForBuild ? "cloud-done-outline" : "phone-portrait-outline"}
               size={13}
               color={colors.sage}
             />
             <Text style={[styles.modePillText, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-              {isClerkConfigured ? "Account ready" : "Local preview"}
+              {isClerkEnabledForBuild ? "Account ready" : "Local preview"}
             </Text>
           </View>
         </View>

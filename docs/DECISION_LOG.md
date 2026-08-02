@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-01: Reconcile final mainline launch hardening before further polish
+
+- Real care-entry sync recovery, durable user-picked media, route privacy, and truthful release gating have higher launch impact than another isolated visual annotation.
+- Preserve both histories with a normal merge; do not force-push main or discard the automation branch's later accessibility/proof contracts.
+- TrailMap uses the bundled private SVG canvas rather than remote raster tiles, so recorded coordinates never create a map-service request. The map remains one labeled accessibility image.
+
 ## 2026-08-01: Secondary-dog portraits are decorative inside identity-rich cards
 
 Pack's secondary-dog portrait does not carry identity beyond the adjacent dog name and breed, so the Image is excluded from accessibility traversal and its redundant avatar label is removed. Readable dog identity remains the semantic source of truth.

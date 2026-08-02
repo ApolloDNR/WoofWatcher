@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-08-01 final launch-hardening reconciliation
+
+- DONE: Merged current `origin/main` launch hardening into the dedicated automation branch without rewriting either history.
+- DONE: Preserved the automation branch's Auth proof wiring and accessibility contracts while adopting mainline care-entry revision/conflict recovery, durable picked media, private device-only walk-route canvas, consumer capability policy, legal parity, and store/native release boundaries.
+- VERIFIED: Mainline `WoofWatcher Verify` runs `30607692142` and `30611130511` were green before reconciliation. The merged mobile-readiness and walk-map privacy tests pass locally; PixelLab passes `ok=149 missing=0 invalid=0`.
+- LOCAL LIMIT: Dependency-complete typecheck/aggregate tests remain unavailable because this checkout lacks the exact pnpm 10.24.0 install and package links (`@tanstack/react-query`, `zod`, `@workspace/care-domain`, Expo).
+- NEXT: Commit and push the merge, then require fresh dependency-complete branch CI before treating the reconciled tip as proven. Native/provider/store/Apollo evidence remains separate.
+
 ## 2026-08-01 secondary-dog portrait accessibility
 
 - DONE: Pack secondary-dog portrait artwork is excluded from accessibility traversal beside readable dog name and breed.

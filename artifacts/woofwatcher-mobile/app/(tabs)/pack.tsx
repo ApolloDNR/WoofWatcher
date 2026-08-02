@@ -24,7 +24,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useGetMe } from "@workspace/api-client-react";
+import { getGetMeQueryKey, useGetMe } from "@workspace/api-client-react";
 import {
   buildCarePass,
   deriveAccessPassPlan,
@@ -48,7 +48,9 @@ import { PressScale } from "@/components/motion/GameFeel";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
+import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { deriveCareCareer, deriveCareStreak } from "@/lib/careCareer";
 import {
@@ -441,9 +443,31 @@ export default function PackScreen() {
   const insets = useSafeAreaInsets();
   const { state } = useCare();
   const { avatarConfig, getAvatarSource } = useAvatar();
-  const me = useGetMe();
+  const { isSignedIn } = useWoofAuth();
+  const consumerSurfacePolicy = getConsumerSurfacePolicy();
+  const me = useGetMe({
+    query: {
+      queryKey: getGetMeQueryKey(),
+      enabled:
+        consumerSurfacePolicy.householdProviderActions &&
+        isClerkEnabledForBuild &&
+        Boolean(isSignedIn),
+    },
+  });
   const now = Date.now();
   const [segment, setSegment] = useState<PackSegment>("supplies");
+  const visiblePackSegments = consumerSurfacePolicy.householdProviderActions
+    ? PACK_SEGMENTS
+    : PACK_SEGMENTS.filter((item) => item.key !== "access");
+
+  useEffect(() => {
+    if (
+      !consumerSurfacePolicy.householdProviderActions &&
+      segment === "access"
+    ) {
+      setSegment("people");
+    }
+  }, [consumerSurfacePolicy.householdProviderActions, segment]);
 
   // Supplies checklist: null until the stored list loads, so the starter
   // defaults never flash in over a user's saved answers (same pattern as
@@ -837,7 +861,7 @@ export default function PackScreen() {
           contentContainerStyle={s.segmentScrollContent}
         >
           <BoardSegmentTabs
-            segments={PACK_SEGMENTS}
+            segments={visiblePackSegments}
             active={segment}
             onChange={changeSegment}
             style={s.segmentTabsInline}
@@ -1335,7 +1359,13 @@ export default function PackScreen() {
                     <View
                       style={[
                         s.presenceDot,
-                        { backgroundColor: person.needsInvite ? colors.amber : colors.sage },
+                        {
+                          backgroundColor:
+                            consumerSurfacePolicy.householdProviderActions &&
+                            person.needsInvite
+                              ? colors.amber
+                              : colors.sage,
+                        },
                       ]}
                     />
                   </Pressable>
@@ -1406,7 +1436,7 @@ export default function PackScreen() {
 
             {householdAccess.people.length === 0 ? (
               <Text style={[s.emptyCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Add the first caregiver to build household access.
+                Complete setup to add the first caregiver to this device.
               </Text>
             ) : (
               /* Full roster - every person, their sync state, their real log
@@ -1454,7 +1484,11 @@ export default function PackScreen() {
                         numberOfLines={1}
                         style={[s.personMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
                       >
-                        {person.role} - {person.needsInvite ? "Invite needed" : "Synced"}
+                        {person.role} - {consumerSurfacePolicy.householdProviderActions
+                          ? person.needsInvite
+                            ? "Invite needed"
+                            : "Ready"
+                          : "On this device"}
                       </Text>
                       {routineLine ? (
                         <Text
@@ -1470,20 +1504,36 @@ export default function PackScreen() {
                         style={[
                           s.personSideText,
                           {
-                            color: person.needsInvite ? colors.amber : colors.mutedForeground,
+                            color:
+                              consumerSurfacePolicy.householdProviderActions &&
+                              person.needsInvite
+                                ? colors.amber
+                                : colors.mutedForeground,
                             fontFamily: "Inter_600SemiBold",
                           },
                         ]}
                       >
-                        {person.needsInvite ? "Invite" : `${logCount} log${logCount === 1 ? "" : "s"}`}
+                        {consumerSurfacePolicy.householdProviderActions &&
+                        person.needsInvite
+                          ? "Invite"
+                          : `${logCount} log${logCount === 1 ? "" : "s"}`}
                       </Text>
                       <View
                         accessibilityLabel={
-                          person.needsInvite ? `${person.name} needs an invite` : `${person.name} is synced`
+                          consumerSurfacePolicy.householdProviderActions &&
+                          person.needsInvite
+                            ? `${person.name} needs an invite`
+                            : `${person.name} is saved on this device`
                         }
                         style={[
                           s.presenceDot,
-                          { backgroundColor: person.needsInvite ? colors.amber : colors.sage },
+                          {
+                            backgroundColor:
+                              consumerSurfacePolicy.householdProviderActions &&
+                              person.needsInvite
+                                ? colors.amber
+                                : colors.sage,
+                          },
                         ]}
                       />
                     </View>
@@ -1493,18 +1543,31 @@ export default function PackScreen() {
             )}
 
             <BoardActionButton
-              label="Manage household"
+              label={
+                consumerSurfacePolicy.householdProviderActions
+                  ? "Manage household"
+                  : "Edit care team"
+              }
               icon="key-outline"
               variant="soft"
-              onPress={() => openMoreSection("household")}
-              accessibilityLabel="Open the Care Team section in More to manage the household"
+              onPress={() =>
+                consumerSurfacePolicy.householdProviderActions
+                  ? openMoreSection("household")
+                  : open("/setup")
+              }
+              accessibilityLabel={
+                consumerSurfacePolicy.householdProviderActions
+                  ? "Open the Care Team section in More to manage the household"
+                  : "Open setup to edit the care team saved on this device"
+              }
               style={s.segmentAction}
             />
           </BoardCard>
         ) : null}
 
         {/* Access */}
-        {segment === "access" ? (
+        {segment === "access" &&
+        consumerSurfacePolicy.householdProviderActions ? (
           <BoardCard style={[s.sectionCard, { borderColor: accessTone + "44" }]}>
             <BoardSectionHeader
               title="Access"
@@ -1533,7 +1596,7 @@ export default function PackScreen() {
 
             <View style={s.accessMetrics}>
               {[
-                { label: "Synced", value: householdAccess.syncedMembers },
+                { label: "Ready", value: householdAccess.syncedMembers },
                 { label: "Invites", value: householdAccess.localOnlyCaregivers },
                 { label: "Routine-only", value: householdAccess.routineOnlyOwners },
               ].map((metric) => (

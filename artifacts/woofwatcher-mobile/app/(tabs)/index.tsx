@@ -56,6 +56,7 @@ import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type Entry } from "@/context/CareContext";
 import { announce } from "@/lib/announce";
+import { isClerkEnabledForBuild } from "@/lib/auth";
 import { useColors } from "@/hooks/useColors";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import {
@@ -96,6 +97,10 @@ import {
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
 import { resolvePetName } from "@/lib/petIdentity";
 import { deriveTodayCommand, findPendingMealOutcome } from "@/lib/todayCommand";
+import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
+
+const HOME_PROVIDER_SYNC_ENABLED =
+  isClerkEnabledForBuild && getConsumerSurfacePolicy().providerSyncControls;
 
 interface QuickItem {
   key: string;
@@ -461,6 +466,7 @@ export default function HomeScreen() {
         routines: state.routines,
         caregivers: state.caregivers,
         now,
+        providerSyncEnabled: HOME_PROVIDER_SYNC_ENABLED,
       }),
     [state.entries, state.routines, state.caregivers, now],
   );
@@ -480,6 +486,7 @@ export default function HomeScreen() {
           entries: state.entries,
           routines: state.routines,
           caregivers: state.caregivers,
+          providerSyncEnabled: HOME_PROVIDER_SYNC_ENABLED,
         },
         now,
       ),

@@ -47,7 +47,6 @@ import {
 } from "@/lib/careCareer";
 import {
   MIN_MOBILE_TOUCH_TARGET,
-  MOBILE_INLINE_HIT_SLOP,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
 } from "@/lib/mobileLayout";
@@ -188,9 +187,6 @@ export default function StoryScreen() {
      screen gutters and two 8px gaps between rounded tiles. */
   const memoryTile = Math.floor((windowWidth - 32 - 16) / 3);
   const [segment, setSegment] = useState<StorySegment>("adventures");
-  /* Adventures hero map style: the drawn storybook world by default, with a
-     toggle back to the real raster tiles. Session-only choice (v1). */
-  const [heroMapStyle, setHeroMapStyle] = useState<"storybook" | "real">("storybook");
 
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
@@ -515,8 +511,8 @@ export default function StoryScreen() {
             </BoardCard>
 
             {routedWalk ? (
-              /* Real trail map hero: OSM tiles + the recorded route of the
-                 most recent routed walk. Tapping opens that walk's log. */
+              /* Private trail hero: the recorded GPS shape is projected onto
+                 the bundled route canvas. Tapping opens that walk's log. */
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Trail map of the latest recorded walk. ${routedWalkChip}. Open the walk log.`}
@@ -528,13 +524,8 @@ export default function StoryScreen() {
                 <TrailMap
                   route={routedWalk.route}
                   aspectRatio={5 / 4}
-                  mapStyle={heroMapStyle}
                   style={s.trailHeroMap}
-                  accessibilityLabel={
-                    heroMapStyle === "storybook"
-                      ? "Storybook map of the latest recorded walk route"
-                      : "Map of the latest recorded walk route"
-                  }
+                  accessibilityLabel="Private device-only view of the latest recorded walk route"
                 >
                   <View
                     style={[s.trailHeroChip, { backgroundColor: colors.card + "F0", borderColor: colors.border }]}
@@ -547,40 +538,6 @@ export default function StoryScreen() {
                       {routedWalkChip}
                     </Text>
                   </View>
-                  {/* Map style toggle: Storybook <-> Real. Nested Pressable
-                      claims the touch, so the hero press-through to the walk
-                      log never fires when flipping styles. */}
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      heroMapStyle === "storybook"
-                        ? "Map style: Storybook. Switch to Real."
-                        : "Map style: Real. Switch to Storybook."
-                    }
-                    hitSlop={MOBILE_INLINE_HIT_SLOP}
-                    onPress={() =>
-                      setHeroMapStyle((prev) => (prev === "storybook" ? "real" : "storybook"))
-                    }
-                    style={({ pressed }) => [
-                      s.trailStyleToggle,
-                      {
-                        backgroundColor: colors.card + "F0",
-                        borderColor: colors.border,
-                        opacity: pressed ? 0.82 : 1,
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name={heroMapStyle === "storybook" ? "color-palette-outline" : "map-outline"}
-                      size={13}
-                      color={colors.forest}
-                    />
-                    <Text
-                      style={[s.trailStyleToggleText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
-                    >
-                      {heroMapStyle === "storybook" ? "Storybook" : "Real"}
-                    </Text>
-                  </Pressable>
                 </TrailMap>
               </Pressable>
             ) : (
@@ -1243,23 +1200,6 @@ const s = StyleSheet.create({
   },
   trailHeroChipDot: { width: 8, height: 8, borderRadius: 4 },
   trailHeroChipText: { fontSize: 12, flexShrink: 1 },
-  // 28px pill + MOBILE_INLINE_HIT_SLOP (10) per side = a 48px touch target.
-  // Bottom-left: clear of the walk chip (top-left) and the OSM attribution
-  // (bottom-right).
-  trailStyleToggle: {
-    position: "absolute",
-    left: 12,
-    bottom: 12,
-    minHeight: 28,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-  },
-  trailStyleToggleText: { fontSize: 11.5 },
   trailList: { gap: 4, marginBottom: 2 },
   trailRow: { flexDirection: "row", alignItems: "center", gap: 11, minHeight: 56, paddingVertical: 6 },
   trailThumb: { width: 48, height: 48, borderRadius: 12, borderWidth: 1 },

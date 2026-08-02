@@ -21,10 +21,13 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.pegasusdreamscapes.woofwatcher",
+      "buildNumber": "1",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
-        "NSCameraUsageDescription": "WoofWatcher uses the camera when you choose to capture Phoenix photos for avatar, care log, or record updates.",
-        "NSPhotoLibraryUsageDescription": "WoofWatcher lets you choose Phoenix photos and care documents for avatar, log, record, and Care Pass updates.",
-        "ITSAppUsesNonExemptEncryption": false
+        "NSCameraUsageDescription": "WoofWatcher uses the camera only when you choose to add a photo of your dog or a care record.",
+        "NSPhotoLibraryUsageDescription": "WoofWatcher lets you choose photos of your dog and care documents to keep on this device."
       },
       "privacyManifests": {
         "NSPrivacyCollectedDataTypes": [],
@@ -77,15 +80,20 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "WoofWatcher uses the camera when you choose to capture Phoenix photos for avatar, care log, or record updates.",
-          "photosPermission": "WoofWatcher lets you choose Phoenix photos and care documents for avatar, log, record, and Care Pass updates."
+          "cameraPermission": "WoofWatcher uses the camera only when you choose to add a photo of your dog or a care record.",
+          "photosPermission": "WoofWatcher lets you choose photos of your dog and care documents to keep on this device.",
+          "microphonePermission": false
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "WoofWatcher uses your location only while you record a walk, to draw the route on the walk map. Routes stay in your care log on this device.",
-          "isAndroidBackgroundLocationEnabled": false
+          "locationWhenInUsePermission": "WoofWatcher uses your location only while you record a walk, to draw its route. The route stays in your care log on this device.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
         }
       ],
       "expo-web-browser"

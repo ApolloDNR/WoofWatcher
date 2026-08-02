@@ -214,6 +214,7 @@ export function deriveHealthWatch(input: CareHealthInput): CareHealthWatch {
     (entry) => normalizeCareEventType(entry.type, entry.details) === "vomit",
   );
   const yellowBile = vomit30.filter(isYellowBile);
+  const urgentVomit = vomit30.filter(isHealthUrgent);
   const reducedMeals = recent7.filter(isReducedMeal);
   const stoolWatch = recent7.filter(isStoolWatch);
   const anxietyWatch = recent7.filter(isAnxietyWatch);
@@ -229,11 +230,23 @@ export function deriveHealthWatch(input: CareHealthInput): CareHealthWatch {
 
   const signals: CareHealthSignal[] = [];
 
-  if (vomit7.length >= 2 || yellowBile.length > 0 || dayStatus.healthAlert) {
+  if (
+    vomit7.length >= 2 ||
+    yellowBile.length > 0 ||
+    urgentVomit.length > 0 ||
+    dayStatus.healthAlert
+  ) {
     const vomitDetail =
       vomit7.length > 0
         ? `${countPhrase(vomit7.length, "vomit incident")} in 7 days`
-        : `${countPhrase(yellowBile.length, "yellow bile note")} in 30 days`;
+        : yellowBile.length > 0
+          ? `${countPhrase(yellowBile.length, "yellow bile note")} in 30 days`
+          : `${countPhrase(urgentVomit.length, "urgent vomit log")} in 30 days`;
+    const vomitEvidence = [
+      ...new Set(
+        [...vomit7, ...yellowBile, ...urgentVomit].map(entryId),
+      ),
+    ];
     signals.push({
       kind: "vomit-pattern",
       label: "Vomit pattern",
@@ -241,8 +254,8 @@ export function deriveHealthWatch(input: CareHealthInput): CareHealthWatch {
         yellowBile.length > 0
           ? `${vomitDetail}, with yellow bile noted.`
           : `${vomitDetail}.`,
-      urgency: redFlags.length > 0 ? "alert" : "watch",
-      entryIds: vomit7.map(entryId),
+      urgency: urgentVomit.length > 0 ? "alert" : "watch",
+      entryIds: vomitEvidence,
     });
   }
 
