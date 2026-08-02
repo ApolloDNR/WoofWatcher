@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-02 shared care-twin sprite accessibility slice
+
+The shared `SpriteSheetPlayer` now explicitly marks its nested `Animated.Image` decorative. The viewport was already hidden from accessibility, and this closes the native image boundary at the raster itself across every animated care-twin caller while leaving meaningful dog state and actions to readable parent cards and controls. Red-first mobile readiness failed before the correction and passed afterward. Native VoiceOver/TalkBack and route-named iOS/Android proof remain open.
+
 ## 2026-08-01 final launch-hardening reconciliation
 
 Merged current `origin/main` into `automation/premium-revenue-product-builder` by normal merge. The reconciliation brings the final care-entry revision/conflict recovery protocol, durable picked-media persistence, private bundled walk-route canvas, truthful consumer capability policy, legal-content parity, and native/store release boundaries onto the later premium accessibility branch.

@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-02 shared care-twin sprite accessibility boundary
+
+Source now explicitly excludes the animated sprite-sheet raster from accessibility traversal while preserving semantic care-twin state and actions on surrounding controls. Native VoiceOver/TalkBack traversal, route-named iOS/Android proof, and Apollo accessibility approval remain required.
+
 ## 2026-08-01 reconciled launch-hardening proof boundary
 
 The automation branch now includes mainline sync recovery, durable media, private walk-route rendering, consumer capability gating, and release/legal hardening. Dependency-complete `WoofWatcher Verify` run `30734551511`, job `91460861820`, proves merge commit `f058e4a5`; it does not replace native iOS/Android testing, provider credentials, store review, legal approval, or Apollo launch approval. The signed-in wipe semantics decision remains required before provider-backed sync launches.

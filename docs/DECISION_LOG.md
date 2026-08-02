@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-02: Shared sprite sheets are subordinate artwork
+
+- `SpriteSheetPlayer` renders animation inside care cards and controls whose surrounding copy owns the meaningful dog state or action.
+- Keep its nested raster explicitly decorative so one shared renderer cannot create duplicate or unlabeled image stops across routes.
+- Native VoiceOver/TalkBack traversal remains a separate launch gate.
+
 ## 2026-08-01: Reconcile final mainline launch hardening before further polish
 
 - Real care-entry sync recovery, durable user-picked media, route privacy, and truthful release gating have higher launch impact than another isolated visual annotation.

@@ -1,5 +1,10 @@
 # QA Test Plan
 
+## 2026-08-02 shared sprite accessibility proof
+
+- PASS (source): the shared animated sprite raster is explicitly excluded from accessibility traversal.
+- OPEN (native): verify VoiceOver/TalkBack announces the surrounding dog state or action once on each route without a separate image stop.
+
 ## 2026-08-01 secondary-dog portrait accessibility evidence
 
 - Source regression: Pack secondary-dog portraits are decorative beside readable dog name and breed; mobile readiness passed `162/162` after a red-first `161/162` failure.

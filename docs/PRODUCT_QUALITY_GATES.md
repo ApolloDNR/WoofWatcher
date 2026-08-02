@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-02 shared care-twin sprite accessibility
+
+- PASS (source): `SpriteSheetPlayer` keeps its nested animated raster decorative inside semantically labeled care surfaces.
+- OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android evidence, and Apollo approval.
+
 ## 2026-08-01 secondary-dog portrait accessibility gate
 
 - PASS at source level: Pack secondary-dog portrait artwork cannot add a duplicate screen-reader stop beside readable dog name and breed.

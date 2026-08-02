@@ -5547,6 +5547,16 @@ test("keeps shared board medallion artwork out of accessibility traversal", () =
   );
 });
 
+test("keeps shared care-twin sprite sheets out of accessibility traversal", () => {
+  const spritePlayer = readAppFile("../components/SpriteSheetPlayer.tsx");
+
+  assert.match(
+    spritePlayer,
+    /<Animated\.Image[\s\S]*?accessible=\{false\}[\s\S]*?source=\{asset\.source\}/,
+    "animated sprite sheets must stay decorative inside care controls and cards that own their readable state labels",
+  );
+});
+
 test("keeps shared caregiver portraits decorative beside readable caregiver identity", () => {
   const personPortrait = readFileSync(
     join(process.cwd(), "artifacts/woofwatcher-mobile/components/PersonPortrait.tsx"),

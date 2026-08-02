@@ -100,6 +100,7 @@ export function SpriteSheetPlayer({
       testID={testID}
     >
       <Animated.Image
+        accessible={false}
         source={asset.source}
         resizeMode="stretch"
         style={[

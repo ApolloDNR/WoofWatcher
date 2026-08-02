@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-02 shared care-twin sprite accessibility
+
+- DONE: Explicitly excluded the nested animated sprite-sheet image from accessibility traversal while preserving readable care-twin state and action labels on parent cards and controls.
+- VERIFIED: Red-first mobile readiness failed on the missing image boundary, then passed after the shared renderer correction.
+- NEXT: Run dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android care-twin evidence remain required.
+
 ## 2026-08-01 final launch-hardening reconciliation
 
 - DONE: Merged current `origin/main` launch hardening into the dedicated automation branch without rewriting either history.
