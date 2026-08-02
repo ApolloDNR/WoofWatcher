@@ -4,7 +4,8 @@
 
 - DONE: Explicitly excluded the nested animated sprite-sheet image from accessibility traversal while preserving readable care-twin state and action labels on parent cards and controls.
 - VERIFIED: Red-first mobile readiness failed on the missing image boundary, then passed after the shared renderer correction.
-- NEXT: Run dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android care-twin evidence remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30746267479`, job `91492286767`, passed implementation/docs commit `38e928d9`; pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native VoiceOver/TalkBack traversal and route-named iOS/Android care-twin evidence remain required.
 
 ## 2026-08-01 final launch-hardening reconciliation
 
