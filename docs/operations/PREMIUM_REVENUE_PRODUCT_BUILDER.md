@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-02 Avatar Studio reference-photo accessibility slice
+
+The owner-provided Avatar Studio reference photo now carries an explicit accessible image label while the surrounding composed pixel artwork stays decorative. A red-first mobile-readiness contract protects that semantic distinction. Native VoiceOver/TalkBack traversal and route-named iOS/Android Avatar Studio evidence remain separate release gates.
+
 ## 2026-08-02 Auth gateway room accessibility slice
 
 The Auth gateway room `ImageBackground` is now decorative while its readable speech, status, trust, and proof content remains available to assistive technology. A red-first mobile-readiness contract protects the boundary. Native VoiceOver/TalkBack traversal and route-named iOS/Android Auth/Setup evidence remain separate release gates.

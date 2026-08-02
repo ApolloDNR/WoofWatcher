@@ -607,6 +607,8 @@ export default function PortraitScreen() {
                 >
                   <Image
                     source={{ uri: sourceUri }}
+                    accessible
+                    accessibilityLabel="Reference photo for the pixel twin"
                     style={s.sourceProofImage}
                     contentFit="cover"
                     transition={160}

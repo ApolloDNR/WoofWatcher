@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-02 Avatar Studio reference-photo accessibility
+
+- PASS (source): the meaningful owner-provided reference photo has an explicit accessible name without exposing subordinate preview art.
+- OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android Avatar Studio evidence, and Apollo approval.
+
 ## 2026-08-02 Auth gateway room accessibility
 
 - PASS (source): the decorative Auth gateway room image cannot add an unlabeled screen-reader stop around its readable gateway content.

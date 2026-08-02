@@ -5802,6 +5802,16 @@ test("keeps Avatar Studio preview artwork out of accessibility traversal", () =>
   );
 });
 
+test("keeps the Avatar Studio reference photo meaningfully labeled", () => {
+  const portrait = readAppFile("../app/portrait.tsx");
+
+  assert.match(
+    portrait,
+    /<Image[\s\S]*?source=\{\{ uri: sourceUri \}\}[\s\S]*?accessibilityLabel="Reference photo for the pixel twin"[\s\S]*?style=\{s\.sourceProofImage\}/,
+    "the owner-provided reference photo must remain a named image instead of becoming an unlabeled or decorative accessibility stop",
+  );
+});
+
 test("keeps Living Phoenix room rasters inside its labeled controls", () => {
   const room = readAppFile("../components/LivingPhoenixRoom.tsx");
 

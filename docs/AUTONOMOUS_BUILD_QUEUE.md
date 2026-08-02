@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-02 Avatar Studio reference-photo accessibility
+
+- DONE: Kept the owner-provided reference photo meaningful in accessibility traversal with an explicit image label while leaving composed preview artwork decorative.
+- VERIFIED: Red-first mobile readiness failed on the unnamed reference image, then passed after the minimal Avatar Studio correction.
+- NEXT: Run dependency-complete branch CI, then record the final-tip proof. Native VoiceOver/TalkBack traversal and route-named iOS/Android Avatar Studio evidence remain required.
+
 ## 2026-08-02 Auth gateway room accessibility
 
 - DONE: Excluded the decorative Auth gateway room image from accessibility traversal while preserving its readable speech, status, trust, and proof content.

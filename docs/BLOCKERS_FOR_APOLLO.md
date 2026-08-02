@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-02 Avatar Studio reference-photo accessibility status
+
+The source now distinguishes the meaningful owner-provided reference photo from decorative pixel-preview artwork. Native VoiceOver/TalkBack traversal, route-named iOS/Android Avatar Studio evidence, and Apollo accessibility approval remain open.
+
 ## 2026-08-02 Auth gateway room accessibility status
 
 The source-level room-image boundary is hardened. Native VoiceOver/TalkBack traversal, route-named iOS/Android Auth/Setup evidence, provider proof, store review, and Apollo approval remain open.

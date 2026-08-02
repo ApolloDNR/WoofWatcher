@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-02: The Avatar Studio reference photo is meaningful
+
+- The owner-selected source photo explains which real dog the pixel twin is based on, so it remains a named accessibility image.
+- Pixel rooms, template layers, accessories, mood thumbnails, and composed previews remain decorative when nearby text or controls already carry their meaning.
+- Source coverage does not replace native VoiceOver/TalkBack review.
+
 ## 2026-08-02: Auth gateway room art is decorative
 
 - The Auth `ImageBackground` provides atmosphere only; its child speech, care-start status, trust steps, and proof controls carry the meaningful account-gateway content.
