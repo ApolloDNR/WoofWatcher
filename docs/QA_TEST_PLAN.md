@@ -2845,3 +2845,5 @@ Dog ID PNG/share flows before approving Records.
 - With a non-Phoenix profile name, confirm Home, Avatar Studio, and focused QA
   announce that dog's room name and never announce Phoenix by default.
 - Confirm an intentionally blank dog name announces "Your dog's room."
+- Dependency-complete proof: `WoofWatcher Verify` run `30772959195`, job
+  `91563197730`, passed implementation commit `b7733e3f`.

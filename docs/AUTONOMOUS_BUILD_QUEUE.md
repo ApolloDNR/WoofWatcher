@@ -205,6 +205,12 @@
 - NEXT: Run the strongest local verification, push the verified slice, and
   require fresh dependency-complete branch CI. Native VoiceOver/TalkBack
   traversal and route-named iOS/Android evidence remain open.
+- CI: Dependency-complete `WoofWatcher Verify` run `30772959195`, job
+  `91563197730`, passed implementation/docs commit `b7733e3f`; pinned
+  dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds,
+  post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating
+  dependency proof as current for the final tip.
 
 ## 2026-08-02 Dog Profile portrait accessibility
 
