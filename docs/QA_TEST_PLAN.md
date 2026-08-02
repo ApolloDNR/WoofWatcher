@@ -2814,3 +2814,10 @@ Dog ID PNG/share flows before approving Records.
   accessibility traversal.
 - Native gate: verify VoiceOver and TalkBack announce each control once without
   raw image stops, then capture route-named iOS/Android evidence.
+
+## 2026-08-02 Dog Profile portrait accessibility
+
+- Source contract: the portrait control announces the dog portrait and Avatar
+  Studio destination once; its animated child image stays out of traversal.
+- Native gate: verify the control remains actionable in VoiceOver and TalkBack
+  and capture route-named iOS/Android Dog Profile evidence.

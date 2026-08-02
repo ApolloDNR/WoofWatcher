@@ -373,10 +373,10 @@ export default function ProfileScreen() {
           style={[s.avatarRing, { backgroundColor: colors.card, borderColor: colors.gold, shadowColor: colors.navy }]}
         >
           <Animated.Image
+            accessible={false}
             source={getAvatarSource(status.mood)}
             style={[s.avatarImg, breathStyle]}
             resizeMode="cover"
-            accessibilityLabel={`${petName} avatar`}
           />
         </PressScale>
 

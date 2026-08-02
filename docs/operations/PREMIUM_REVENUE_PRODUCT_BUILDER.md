@@ -5202,6 +5202,15 @@ install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps,
 and Complete job. Rerun after this proof-record commit before treating the
 final branch tip as current.
 
+## 2026-08-02 Dog Profile portrait accessibility slice
+
+The Dog Profile portrait control now owns the full dog identity and Avatar
+Studio action announcement; its animated child image uses `accessible={false}`
+and no longer repeats a second avatar label. Red-first mobile readiness failed
+`167/168` before the correction and passed `168/168` afterward. Native
+VoiceOver/TalkBack traversal, route-named device evidence, provider/store
+proof, and Apollo approval remain separate gates.
+
 ## 2026-08-01 Living Phoenix room raster accessibility slice
 
 The shared Phoenix room backdrop, fallback care twin, and staged/roaming

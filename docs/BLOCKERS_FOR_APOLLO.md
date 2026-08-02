@@ -605,3 +605,9 @@ Source now excludes the room backdrop, fallback dog, and accessory rasters from
 the labeled Phoenix room and pet controls. Native VoiceOver/TalkBack traversal,
 route-named iOS/Android evidence, and Apollo accessibility approval remain
 required.
+
+## 2026-08-02 Dog Profile portrait accessibility proof remains open
+
+Source now keeps the animated portrait image subordinate to the labeled Avatar
+Studio control. Native VoiceOver/TalkBack traversal, route-named iOS/Android
+Dog Profile evidence, and Apollo accessibility approval remain required.

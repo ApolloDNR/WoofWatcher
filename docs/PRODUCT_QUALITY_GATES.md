@@ -607,3 +607,10 @@ Auth/Setup evidence remain open.
   inside controls that retain meaningful Phoenix room and pet-action labels.
 - OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android evidence,
   and Apollo accessibility approval.
+
+## 2026-08-02 Dog Profile portrait accessibility boundary
+
+- PASS (source): the labeled portrait control owns the Avatar Studio action;
+  its animated child image no longer creates a duplicate stop.
+- OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android Dog
+  Profile evidence, and Apollo accessibility approval.

@@ -174,6 +174,15 @@
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
 
+## 2026-08-02 Dog Profile portrait accessibility
+
+- DONE: Kept the labeled Dog Profile portrait control as the single Avatar
+  Studio action and removed its redundant child-image announcement.
+- VERIFIED: Red-first mobile readiness failed `167/168`, then passed `168/168`
+  after the child `Animated.Image` became decorative.
+- NEXT: Capture native VoiceOver/TalkBack traversal and route-named iOS/Android
+  Dog Profile evidence. Source coverage does not replace device approval.
+
 ## 2026-08-01 Living Phoenix room raster accessibility
 
 - DONE: Marked the shared room backdrop, fallback care twin, and staged/roaming

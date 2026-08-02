@@ -5696,6 +5696,21 @@ test("keeps the Dog Profile park backdrop out of accessibility traversal", () =>
   );
 });
 
+test("keeps the Dog Profile portrait as one labeled Avatar Studio action", () => {
+  const profile = readAppFile("profile.tsx");
+
+  assert.match(
+    profile,
+    /<PressScale[\s\S]*?accessibilityLabel=\{`\$\{petName\}'s portrait`\}[\s\S]*?accessibilityHint="Opens Avatar Studio to change the pixel twin\."[\s\S]*?<Animated\.Image[\s\S]*?accessible=\{false\}[\s\S]*?source=\{getAvatarSource\(status\.mood\)\}/,
+    "the portrait control must announce one Avatar Studio action without a duplicate child-image stop",
+  );
+  assert.doesNotMatch(
+    profile,
+    /accessibilityLabel=\{`\$\{petName\} avatar`\}/,
+    "the decorative child portrait must not retain a redundant avatar label",
+  );
+});
+
 test("keeps TrailMap's private canvas inside one labeled map image", () => {
   const trailMap = readAppFile("../components/TrailMap.tsx");
 

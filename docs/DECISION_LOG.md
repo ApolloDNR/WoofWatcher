@@ -3071,3 +3071,10 @@ The shared room backdrop, fallback care twin, and accessory layers form one
 composed scene whose meaning is already carried by the Phoenix room and pet
 control labels. Exclude those rasters from traversal without hiding either
 action. Native VoiceOver/TalkBack proof remains required.
+
+## 2026-08-02 Keep the Dog Profile portrait subordinate to its action
+
+The Dog Profile portrait is one button whose label and hint already identify
+the dog and the Avatar Studio destination. Exclude its animated child image
+from traversal so assistive technology does not announce the same portrait
+twice. Native VoiceOver/TalkBack proof remains required.
