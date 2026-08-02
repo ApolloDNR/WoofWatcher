@@ -5211,6 +5211,12 @@ and no longer repeats a second avatar label. Red-first mobile readiness failed
 VoiceOver/TalkBack traversal, route-named device evidence, provider/store
 proof, and Apollo approval remain separate gates.
 
+Dependency-complete `WoofWatcher Verify` run `30740279118`, job `91476322268`,
+passed implementation/docs commit `75593401`, including pinned dependency
+install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps,
+and Complete job. Rerun after this proof-record commit before treating the
+final branch tip as current.
+
 ## 2026-08-01 Living Phoenix room raster accessibility slice
 
 The shared Phoenix room backdrop, fallback care twin, and staged/roaming

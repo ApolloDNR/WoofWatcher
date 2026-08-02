@@ -182,6 +182,12 @@
   after the child `Animated.Image` became decorative.
 - NEXT: Capture native VoiceOver/TalkBack traversal and route-named iOS/Android
   Dog Profile evidence. Source coverage does not replace device approval.
+- CI: Dependency-complete `WoofWatcher Verify` run `30740279118`, job
+  `91476322268`, passed implementation/docs commit `75593401`; pinned
+  dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds,
+  post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating
+  dependency proof as current for the final tip.
 
 ## 2026-08-01 Living Phoenix room raster accessibility
 
