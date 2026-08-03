@@ -2119,3 +2119,13 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
+# 2026-08-03 Care-twin interaction identity
+
+- DONE: Shared living-room interaction verbs now follow Dog Profile identity,
+  so renamed-dog households hear `Pet Mochi` and `Let Mochi rest` instead of
+  Phoenix-specific actions.
+- VERIFIED: A red-first avatar-life test failed on `Pet Phoenix`, then focused
+  avatar-life plus mobile-readiness coverage passed `180/180` after the fix.
+- NEXT: Require dependency-complete branch CI, then capture native
+  VoiceOver/TalkBack and route-named iOS/Android room-interaction evidence.
+  Source coverage does not replace provider, store, or Apollo approval.

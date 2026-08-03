@@ -668,3 +668,8 @@ required; source tests do not clear native evidence gates.
 Source tests now prove watch-state packet guidance follows the active dog name.
 Route-named iOS/Android Health review and share-sheet evidence plus Apollo
 approval remain required; this does not claim native or veterinary approval.
+## 2026-08-03 Care-twin interaction identity proof remains open
+
+Source tests now prove personalized happy/rest interaction verbs follow Dog
+Profile. Native VoiceOver/TalkBack traversal, route-named iOS/Android evidence,
+and Apollo approval remain required; source and CI do not clear those gates.

@@ -445,45 +445,63 @@ function withSpriteTrack(plan: Omit<AvatarLifePlan, "spriteTrack">): AvatarLifeP
   };
 }
 
-export function deriveCareTwinScene(motion: AvatarMotionModel): AvatarLifePlan {
+function withPetName(plan: AvatarLifePlan, petName?: string | null): AvatarLifePlan {
+  const safePetName = petName?.trim();
+  if (!safePetName) return plan;
+
+  return {
+    ...plan,
+    tapVerb: plan.tapVerb
+      .replace("Pet Phoenix", `Pet ${safePetName}`)
+      .replace("Let Phoenix rest", `Let ${safePetName} rest`),
+  };
+}
+
+export function deriveCareTwinScene(
+  motion: AvatarMotionModel,
+  petName?: string | null,
+): AvatarLifePlan {
   const plan = STATE_PLAN[motion.state] ?? STATE_PLAN.happy;
 
   if (motion.cue === "health-watch") {
-    return withSpriteTrack({
+    return withPetName(withSpriteTrack({
       ...STATE_PLAN.sick,
       moodLabel: MOOD_LABEL[motion.avatarMood],
-    });
+    }), petName);
   }
 
   if (motion.cue === "walk-cycle") {
-    return withSpriteTrack({
+    return withPetName(withSpriteTrack({
       ...STATE_PLAN.walking,
       moodLabel: MOOD_LABEL[motion.avatarMood],
-    });
+    }), petName);
   }
 
   if (motion.cue === "chew") {
-    return withSpriteTrack({
+    return withPetName(withSpriteTrack({
       ...STATE_PLAN.eating,
       moodLabel: MOOD_LABEL[motion.avatarMood],
-    });
+    }), petName);
   }
 
   if (motion.cue === "lap") {
-    return withSpriteTrack({
+    return withPetName(withSpriteTrack({
       ...STATE_PLAN.drinking,
       moodLabel: MOOD_LABEL[motion.avatarMood],
-    });
+    }), petName);
   }
 
-  return withSpriteTrack({
+  return withPetName(withSpriteTrack({
     ...plan,
     moodLabel: MOOD_LABEL[motion.avatarMood],
-  });
+  }), petName);
 }
 
-export function deriveAvatarLifePlan(motion: AvatarMotionModel): AvatarLifePlan {
-  return deriveCareTwinScene(motion);
+export function deriveAvatarLifePlan(
+  motion: AvatarMotionModel,
+  petName?: string | null,
+): AvatarLifePlan {
+  return deriveCareTwinScene(motion, petName);
 }
 
 export function buildCareTwinRoomAccessibilityLabel(input: {

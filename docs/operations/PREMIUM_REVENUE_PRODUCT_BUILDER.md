@@ -5356,3 +5356,10 @@ passed implementation/docs commit `b66dd729`, including pinned dependency
 install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps,
 and Complete job. Rerun after this proof-record commit before treating the
 final branch tip as current.
+## 2026-08-03 Care-twin interaction identity slice
+
+The shared living-room scene now receives the active dog name when deriving
+its interaction plan, replacing Phoenix-specific happy/rest verbs for renamed
+dogs while preserving starter defaults. Red-first coverage caught the identity
+leak; native VoiceOver/TalkBack and route-named device proof remain separate
+release gates.

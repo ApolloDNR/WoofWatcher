@@ -3149,3 +3149,12 @@ copy never invents an identity.
 Health Review Packet prompts must use the packet's active `dogName` input.
 Default Phoenix identity is valid only before profile personalization; it must
 not leak into owner-reviewed caregiver or vet copy for a renamed dog.
+## 2026-08-03: Care-twin interaction verbs follow Dog Profile
+
+Decision: direct pet/rest verbs in the shared living room use the active dog
+name when supplied, while the canonical Phoenix starter copy remains the
+fallback for preview/runtime callers without profile identity.
+
+Reason: the room label already followed Dog Profile, so announcing `Pet
+Phoenix` or `Let Phoenix rest` inside a renamed dog's room broke the dog-first
+source-of-truth contract.

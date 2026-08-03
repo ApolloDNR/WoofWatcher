@@ -351,7 +351,10 @@ export function LivingPhoenixRoom({
 }: Props) {
   const colors = useColors();
   const theme = MOOD_THEME[mood];
-  const scenePlan = useMemo(() => deriveCareTwinScene(motion), [motion]);
+  const scenePlan = useMemo(
+    () => deriveCareTwinScene(motion, petName),
+    [motion, petName],
+  );
 
   // --- One-way care-event lifecycle ---------------------------------------
   // A care-event scene (eat/drink/celebrate/walk from a fresh log) plays its

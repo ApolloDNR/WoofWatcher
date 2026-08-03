@@ -690,3 +690,8 @@ Auth/Setup evidence remain open.
   dog, with a generic fallback only when the saved name is blank.
 - OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android evidence,
   and Apollo accessibility approval.
+# 2026-08-03 Care-twin interaction identity gate
+
+The shared care-twin scene now personalizes direct interaction verbs from Dog
+Profile instead of leaking the Phoenix starter identity after a rename. Native
+screen-reader traversal and route-named device proof remain open gates.

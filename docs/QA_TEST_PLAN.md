@@ -2889,3 +2889,9 @@ Dog ID PNG/share flows before approving Records.
   confirm factual-note guidance names that dog rather than Phoenix.
 - Confirm the shared packet text remains non-diagnostic and suitable for
   owner-reviewed caregiver or vet handoff.
+# 2026-08-03 Care-twin interaction identity QA
+
+Source coverage now checks that happy and tired living-room interactions use
+the active Dog Profile name. Native QA must still confirm the personalized
+verbs in VoiceOver and TalkBack on iOS and Android without changing the
+underlying care-state action, room motion, or long-press Avatar Studio route.

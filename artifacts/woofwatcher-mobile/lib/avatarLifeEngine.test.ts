@@ -47,6 +47,23 @@ test("names the active dog in the care-twin room accessibility label", () => {
   );
 });
 
+test("names the active dog in care-twin interaction verbs", () => {
+  assert.equal(
+    deriveCareTwinScene(
+      motion({ state: "happy", avatarMood: "happy", cue: "tail-wag" }),
+      "Mochi",
+    ).tapVerb,
+    "Pet Mochi",
+  );
+  assert.equal(
+    deriveCareTwinScene(
+      motion({ state: "tired", avatarMood: "calm", cue: "slow-breath" }),
+      " Mochi ",
+    ).tapVerb,
+    "Let Mochi rest",
+  );
+});
+
 test("routes eating and drinking avatar states to the bowl", () => {
   const eating = deriveCareTwinScene(motion({ state: "eating", cue: "chew" }));
   const drinking = deriveCareTwinScene(motion({ state: "drinking", cue: "lap" }));
