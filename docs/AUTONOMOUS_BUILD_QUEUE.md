@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-03 active-dog Alone Time timeline identity
+
+- DONE: Leaving Home now persists the resolved Dog Profile name in the household-visible Alone Time timeline entry instead of hardcoding Phoenix.
+- VERIFIED: Red-first Alone Time behavior coverage failed on `Phoenix` versus `Luna`, then passed with mobile readiness after the builder and Quick Log wiring were corrected.
+- NEXT: Run strongest local verification and dependency-complete branch CI. Native VoiceOver/TalkBack, household handoff review, and route-named iOS/Android evidence remain required.
+
 ## 2026-08-02 active-dog Today navigation accessibility
 
 - DONE: The shared center Today tab now names the active dog from Dog Profile instead of hardcoding Phoenix; blank profiles use the truthful "your dog's room" fallback.

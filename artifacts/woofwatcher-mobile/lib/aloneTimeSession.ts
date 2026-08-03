@@ -25,6 +25,7 @@ export interface AloneTimeEntryLike {
 
 export interface AloneTimeStartOptions {
   caregiver: string;
+  petName?: string;
   now?: number;
 }
 
@@ -114,9 +115,10 @@ export function getAloneTimeReturnOptions(): AloneTimeReturnOption[] {
 export function buildAloneTimeStartEntry(options: AloneTimeStartOptions): AloneTimeBuiltEntry {
   const occurredAt = iso(options.now);
   const caregiver = clean(options.caregiver) || "Care team";
+  const petName = clean(options.petName) || "Your dog";
   return {
     type: "alone",
-    title: "Alone Time - Phoenix home alone",
+    title: `Alone Time - ${petName} home alone`,
     caregiver,
     occurredAt,
     mood: "home_alone",

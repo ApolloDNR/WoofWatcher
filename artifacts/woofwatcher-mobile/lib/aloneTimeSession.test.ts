@@ -14,10 +14,10 @@ const START = new Date("2026-06-19T12:30:00-07:00").getTime();
 const RETURN = new Date("2026-06-19T14:08:00-07:00").getTime();
 
 test("starts an open home-alone session with household-visible lifecycle details", () => {
-  const entry = buildAloneTimeStartEntry({ caregiver: "Apollo", now: START });
+  const entry = buildAloneTimeStartEntry({ caregiver: "Apollo", petName: "  Luna  ", now: START });
 
   assert.equal(entry.type, "alone");
-  assert.equal(entry.title, "Alone Time - Phoenix home alone");
+  assert.equal(entry.title, "Alone Time - Luna home alone");
   assert.equal(entry.caregiver, "Apollo");
   assert.equal(entry.occurredAt, "2026-06-19T19:30:00.000Z");
   assert.equal(entry.mood, "home_alone");

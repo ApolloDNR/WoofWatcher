@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-03 Alone Time dog-identity status
+
+The source-level hardcoded Phoenix defect in new Leaving Home timeline entries is closed. Native iOS/Android review must still confirm the renamed-dog title across Log, household handoff/report surfaces, and VoiceOver/TalkBack; this run does not replace device evidence.
+
 ## 2026-08-02 Today navigation native accessibility proof remains open
 
 Source now names the active dog in the shared center-tab room hint and falls back truthfully for an unnamed profile. Native VoiceOver/TalkBack traversal, route-named iOS/Android bottom-navigation proof, and Apollo accessibility approval remain required.

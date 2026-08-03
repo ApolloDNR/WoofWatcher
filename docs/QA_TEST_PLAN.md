@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-08-03 active-dog Alone Time identity coverage
+
+- Automated: starting an Alone Time session with a renamed Dog Profile persists that dog name in the shared timeline title.
+- Automated: focused Alone Time behavior and mobile readiness pass after the Quick Log start path forwards the resolved profile name.
+- Native remaining: confirm the renamed dog title in Log, household handoff/report surfaces, and VoiceOver/TalkBack on iOS and Android.
+
 ## 2026-08-02 active-dog Today navigation accessibility
 
 - Rename the active dog, focus the center Today tab from another route, and confirm the hint names that dog.

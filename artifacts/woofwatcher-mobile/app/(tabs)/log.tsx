@@ -2326,7 +2326,7 @@ export default function LogScreen() {
     // A rapid second tap lands before the open session exists in state.
     if (isDuplicateQuickTap("alone")) return;
     markQuickSave("alone");
-    const entry = buildAloneTimeStartEntry({ caregiver, now });
+    const entry = buildAloneTimeStartEntry({ caregiver, petName: petDisplayName, now });
     const id = addEntry(entry);
     setLastQuickLog({ id, title: `${petDisplayName} is home alone` });
     setSelectedType("alone");

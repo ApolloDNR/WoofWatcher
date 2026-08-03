@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-03: Dog Profile identity owns Alone Time timeline titles
+
+- Decision: the Leaving Home lifecycle builder accepts the resolved active-dog name and persists it in the shared timeline title.
+- Reason: the Dog Profile is the source of truth; a hardcoded Phoenix title contradicts renamed-dog care records and weakens household trust.
+- Boundary: this changes local/shared care-record identity only and does not claim provider sync, native traversal, or launch approval.
+
 ## 2026-08-02: Primary navigation follows the active Dog Profile identity
 
 Decision: The center Today tab must name the active dog from persisted profile state. It may use "your dog's room" only when no usable name exists; it must not hardcode Phoenix after an owner renames the dog.

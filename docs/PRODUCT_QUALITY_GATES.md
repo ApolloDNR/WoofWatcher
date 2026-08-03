@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-03 Alone Time dog-identity gate
+
+- PASS (source/test): the household-visible Leaving Home entry uses the active Dog Profile name; renamed dogs no longer produce a Phoenix timeline record.
+- OPEN (native): iOS/Android timeline, household handoff, and screen-reader review remain required.
+
 ## 2026-08-02 active-dog Today navigation accessibility
 
 - PASS (source): The shared Today tab derives its room hint from the active Dog Profile name and uses a truthful blank-name fallback.

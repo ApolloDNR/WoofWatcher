@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-03 active-dog Alone Time identity slice
+
+The Leaving Home lifecycle now persists the resolved Dog Profile name in its household-visible timeline title instead of hardcoding Phoenix. Red-first behavior coverage failed on the old title and passed after the builder and Quick Log wiring were corrected. Native iOS/Android timeline, handoff, and accessibility review remain separate release gates.
+
 ## 2026-08-02 active-dog Today navigation accessibility slice
 
 The shared center Today tab now derives its accessibility hint from the active Dog Profile name, with a truthful unnamed-dog fallback and unchanged fast-log guidance when already on Today. Red-first mobile layout coverage protects all three branches. Native VoiceOver/TalkBack and route-named iOS/Android proof remain separate launch gates.
