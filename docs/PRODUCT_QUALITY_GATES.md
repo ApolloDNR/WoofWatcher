@@ -3,6 +3,7 @@
 ## 2026-08-03 care-twin routine identity gate
 
 - PASS (source/test): upcoming walk, play, and training reactions use the active Dog Profile name in Home and Avatar Studio.
+- PASS (CI): `WoofWatcher Verify` run `30811196782`, job `91678096654`, passed corrected branch tip `4911054e`, including dependency install, focused tests, typecheck, and CI-safe builds.
 - OPEN (native): iOS/Android interaction, VoiceOver/TalkBack, and route-named evidence remain required.
 
 ## 2026-08-03 Alone Time dog-identity gate

@@ -4,7 +4,8 @@
 
 - DONE: Upcoming activity reactions now name the active Dog Profile instead of telling renamed-dog households that Phoenix is watching the routine board.
 - VERIFIED: Red-first avatar-motion coverage failed on `Phoenix` versus `Luna`, then passed with mobile readiness after the shared model and both Home/Avatar Studio callers were corrected.
-- NEXT: Run dependency-complete branch CI. Native iOS/Android care-twin interaction, VoiceOver/TalkBack, and household review remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30811196782`, job `91678096654`, passed corrected branch tip `4911054e`; pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native iOS/Android care-twin interaction, VoiceOver/TalkBack, and household review remain required.
 
 ## 2026-08-03 active-dog Alone Time timeline identity
 

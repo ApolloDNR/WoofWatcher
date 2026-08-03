@@ -4,6 +4,8 @@
 
 Upcoming activity guidance in the shared avatar-motion model now uses the resolved Dog Profile name, and both Home and Avatar Studio provide that identity. Red-first behavior coverage caught the old Phoenix line and passed after the correction. Native interaction/accessibility evidence remains a separate release gate.
 
+The first dependency-complete run caught Home's existing dog-name binding below the new memo; corrected branch tip `4911054e` resolves directly from profile state at the call site. `WoofWatcher Verify` run `30811196782`, job `91678096654`, then passed pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job.
+
 ## 2026-08-03 active-dog Alone Time identity slice
 
 The Leaving Home lifecycle now persists the resolved Dog Profile name in its household-visible timeline title instead of hardcoding Phoenix. Red-first behavior coverage failed on the old title and passed after the builder and Quick Log wiring were corrected. Native iOS/Android timeline, handoff, and accessibility review remain separate release gates.
