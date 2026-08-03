@@ -4,6 +4,7 @@
 
 - DONE: The shared center Today tab now names the active dog from Dog Profile instead of hardcoding Phoenix; blank profiles use the truthful "your dog's room" fallback.
 - VERIFIED: Red-first mobile layout coverage failed on the missing hint builder, then passed after the helper and tab wiring landed.
+- CI: Dependency-complete `WoofWatcher Verify` run `30780120191`, job `91582970218`, passed implementation/docs commit `ccaf1cbc`; pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps all passed.
 - NEXT: Run dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android bottom-navigation evidence remain required.
 
 ## 2026-08-02 Avatar Studio reference-photo accessibility

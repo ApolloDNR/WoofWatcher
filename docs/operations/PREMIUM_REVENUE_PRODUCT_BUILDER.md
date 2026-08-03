@@ -4,6 +4,8 @@
 
 The shared center Today tab now derives its accessibility hint from the active Dog Profile name, with a truthful unnamed-dog fallback and unchanged fast-log guidance when already on Today. Red-first mobile layout coverage protects all three branches. Native VoiceOver/TalkBack and route-named iOS/Android proof remain separate launch gates.
 
+Dependency-complete `WoofWatcher Verify` run `30780120191`, job `91582970218`, passed implementation/docs commit `ccaf1cbc`, including pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit before treating the final branch tip as current.
+
 ## 2026-08-02 Avatar Studio reference-photo accessibility slice
 
 The owner-provided Avatar Studio reference photo now carries an explicit accessible image label while the surrounding composed pixel artwork stays decorative. A red-first mobile-readiness contract protects that semantic distinction. Native VoiceOver/TalkBack traversal and route-named iOS/Android Avatar Studio evidence remain separate release gates.

@@ -4,6 +4,7 @@
 
 - PASS (source): The shared Today tab derives its room hint from the active Dog Profile name and uses a truthful blank-name fallback.
 - PASS (behavior): Red-first mobile layout coverage protects renamed, blank, and already-on-Today behavior.
+- PASS (CI): `WoofWatcher Verify` run `30780120191`, job `91582970218`, passed commit `ccaf1cbc` including dependency install, focused tests, typecheck, and CI-safe builds.
 - OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android bottom-navigation evidence, and Apollo approval.
 
 ## 2026-08-02 Avatar Studio reference-photo accessibility
