@@ -4940,6 +4940,12 @@ correction. Native Health review/share evidence, provider/store proof,
 veterinary review, and Apollo approval remain separate gates. Run branch CI
 after this commit before treating dependency-complete proof as current.
 
+Dependency-complete `WoofWatcher Verify` run `30838449712`, job `91769332357`,
+passed implementation/docs commit `58a86059`, including pinned dependency
+install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps,
+and Complete job. Rerun after this proof-record commit before treating the final
+branch tip as current.
+
 ## 2026-07-27 Avatar emote icon dark-mode boundary slice
 
 Avatar Studio's fixed-light emote icon tiles now keep a constant translucent

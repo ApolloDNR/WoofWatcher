@@ -231,6 +231,10 @@
   `8/8` after the correction.
 - NEXT: Run aggregate verification and branch CI; native Health review and
   share-sheet evidence remain separate release gates.
+- CI: Dependency-complete `WoofWatcher Verify` run `30838449712`, job
+  `91769332357`, passed implementation/docs commit `58a86059`.
+- NEXT: Rerun branch CI after this proof-record commit before treating
+  dependency proof as current for the final tip.
 
 ## 2026-08-02 Month timeline dog identity
 
