@@ -5234,6 +5234,12 @@ to `your dog's` for blank or placeholder profiles. Red-first focused coverage
 failed on the missing behavior and passed `10/10` after implementation.
 Native Calendar review, provider/store proof, and Apollo approval remain open.
 
+Dependency-complete `WoofWatcher Verify` run `30788127664`, job `91605779646`,
+passed implementation/docs commit `15363c29`: checkout, pinned dependency
+install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps,
+and Complete job all passed. Rerun after this proof-record commit before
+treating the final branch tip as current.
+
 ## 2026-08-02 Care-twin room dog identity accessibility slice
 
 The shared living room control now builds its accessibility label from the

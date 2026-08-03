@@ -210,6 +210,11 @@
   builder, then passed `10/10` after the screen used the tested behavior.
 - NEXT: Run aggregate local verification and fresh dependency-complete branch
   CI. Native route review remains separate from this source behavior proof.
+- CI: `WoofWatcher Verify` run `30788127664`, job `91605779646`, passed
+  implementation/docs commit `15363c29`, including pinned dependencies, JSON
+  doctor, focused tests, typecheck plus CI-safe builds, and Complete job.
+- NEXT: Rerun branch CI after this proof-record commit before treating
+  dependency proof as current for the final tip.
 
 ## 2026-08-02 Care-twin room dog identity accessibility
 

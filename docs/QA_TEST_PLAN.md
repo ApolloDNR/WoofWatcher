@@ -2861,3 +2861,5 @@ Dog ID PNG/share flows before approving Records.
   and confirm the first-moment prompt uses that saved name.
 - With a blank or placeholder `My Dog` profile, confirm the prompt says
   `your dog's first moment` instead of inventing Phoenix.
+- Dependency-complete proof: `WoofWatcher Verify` run `30788127664`, job
+  `91605779646`, passed implementation/docs commit `15363c29`.
