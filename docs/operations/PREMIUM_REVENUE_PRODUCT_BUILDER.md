@@ -5363,3 +5363,9 @@ its interaction plan, replacing Phoenix-specific happy/rest verbs for renamed
 dogs while preserving starter defaults. Red-first coverage caught the identity
 leak; native VoiceOver/TalkBack and route-named device proof remain separate
 release gates.
+
+Dependency-complete `WoofWatcher Verify` run `30863671300`, job `91850813115`,
+passed implementation/docs commit `130dcd9f` with pinned dependency install,
+JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and
+Complete job. Rerun after this proof-record commit before treating the final
+branch tip as current.
