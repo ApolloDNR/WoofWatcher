@@ -5226,6 +5226,14 @@ install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps,
 and Complete job. Rerun after this proof-record commit before treating the
 final branch tip as current.
 
+## 2026-08-02 Month timeline dog identity slice
+
+The Calendar month view no longer hardcodes Phoenix in the empty current-day
+prompt. A pure prompt builder uses the saved Dog Profile name and falls back
+to `your dog's` for blank or placeholder profiles. Red-first focused coverage
+failed on the missing behavior and passed `10/10` after implementation.
+Native Calendar review, provider/store proof, and Apollo approval remain open.
+
 ## 2026-08-02 Care-twin room dog identity accessibility slice
 
 The shared living room control now builds its accessibility label from the

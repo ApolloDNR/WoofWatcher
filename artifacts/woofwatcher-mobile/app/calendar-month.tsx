@@ -20,6 +20,7 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import {
+  buildEmptyDayPrompt,
   buildMonthView,
   dateKeyStamp,
   entriesForDayKey,
@@ -352,7 +353,7 @@ export default function CalendarMonthScreen() {
                 </Text>
                 <Text style={[s.emptyBody, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                   {selectedKey === todayKey
-                    ? "Tap the + to log Phoenix's first moment today."
+                    ? buildEmptyDayPrompt(state.profile.name)
                     : "Real meals, walks, and potties you log will show up here."}
                 </Text>
               </View>

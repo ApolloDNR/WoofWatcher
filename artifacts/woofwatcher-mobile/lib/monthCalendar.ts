@@ -58,6 +58,13 @@ export const MONTH_NAMES = [
 
 export const WEEKDAY_LABELS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
 
+/** Owner-facing prompt for today's empty timeline, using the saved Dog Profile. */
+export function buildEmptyDayPrompt(profileName: string | null | undefined): string {
+  const name = profileName?.trim();
+  const subject = name && name !== "My Dog" ? `${name}'s` : "your dog's";
+  return `Tap the + to log ${subject} first moment today.`;
+}
+
 function isLeapYear(year: number): boolean {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 }

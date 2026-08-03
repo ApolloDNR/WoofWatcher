@@ -3113,3 +3113,9 @@ its duplicate avatar label; native VoiceOver/TalkBack proof remains required.
 The living room accessibility label follows the saved dog profile name rather
 than hardcoding Phoenix. A blank profile uses the truthful generic "Your dog's
 room" fallback. Native VoiceOver/TalkBack traversal remains required.
+
+## 2026-08-02 Calendar copy follows Dog Profile identity
+
+The empty current-day month timeline names the saved dog rather than assuming
+Phoenix. Blank and placeholder profiles use `your dog's` so owner-facing care
+copy never invents an identity.

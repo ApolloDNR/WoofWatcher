@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildEmptyDayPrompt,
   buildMonthView,
   daysInMonth,
   dateKeyForYmd,
@@ -17,6 +18,13 @@ import {
 // Entry timestamps carry explicit offsets and the runner is pinned to a fixed
 // zone, so local-day bucketing is deterministic regardless of host settings.
 process.env.TZ = "America/Los_Angeles";
+
+test("buildEmptyDayPrompt names the active dog and falls back without inventing one", () => {
+  assert.equal(buildEmptyDayPrompt("Luna"), "Tap the + to log Luna's first moment today.");
+  assert.equal(buildEmptyDayPrompt("  Milo  "), "Tap the + to log Milo's first moment today.");
+  assert.equal(buildEmptyDayPrompt("My Dog"), "Tap the + to log your dog's first moment today.");
+  assert.equal(buildEmptyDayPrompt("   "), "Tap the + to log your dog's first moment today.");
+});
 
 test("weekdayOfFirst matches known Gregorian dates", () => {
   assert.equal(weekdayOfFirst(2025, 4), 4); // May 1 2025 is a Thursday

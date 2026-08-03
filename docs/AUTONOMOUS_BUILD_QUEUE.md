@@ -202,6 +202,15 @@
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
 
+## 2026-08-02 Month timeline dog identity
+
+- DONE: Replaced the hardcoded Phoenix empty-today prompt with the saved Dog
+  Profile name and a truthful generic fallback for blank or placeholder names.
+- VERIFIED: Red-first month-calendar coverage failed on the missing prompt
+  builder, then passed `10/10` after the screen used the tested behavior.
+- NEXT: Run aggregate local verification and fresh dependency-complete branch
+  CI. Native route review remains separate from this source behavior proof.
+
 ## 2026-08-02 Care-twin room dog identity accessibility
 
 - DONE: The shared living room control now names the active dog in its

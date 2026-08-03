@@ -639,3 +639,9 @@ route-named iOS/Android Pack evidence, and Apollo approval remain required.
 Source now announces the active profile dog's name across shared living-room
 controls instead of hardcoding Phoenix. Native VoiceOver/TalkBack traversal,
 route-named iOS/Android evidence, and Apollo approval remain required.
+
+## 2026-08-02 Month timeline identity proof remains open
+
+Source now derives the empty-today prompt from Dog Profile with a generic
+fallback. Route-named iOS/Android Calendar review and Apollo approval remain
+required; source tests do not clear native evidence gates.

@@ -2854,3 +2854,10 @@ Dog ID PNG/share flows before approving Records.
 - Confirm an intentionally blank dog name announces "Your dog's room."
 - Dependency-complete proof: `WoofWatcher Verify` run `30772959195`, job
   `91563197730`, passed implementation commit `b7733e3f`.
+
+## 2026-08-02 Month timeline dog identity
+
+- Rename the Dog Profile, open Calendar month view on an empty current day,
+  and confirm the first-moment prompt uses that saved name.
+- With a blank or placeholder `My Dog` profile, confirm the prompt says
+  `your dog's first moment` instead of inventing Phoenix.

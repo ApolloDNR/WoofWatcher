@@ -633,6 +633,12 @@ Auth/Setup evidence remain open.
   inside controls that retain meaningful Phoenix room and pet-action labels.
 - OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android evidence,
   and Apollo accessibility approval.
+
+## 2026-08-02 Month timeline dog identity boundary
+
+- PASS (source): the empty current-day timeline follows Dog Profile identity
+  and uses a generic dog-first fallback for blank or placeholder names.
+- OPEN (native): route-named iOS/Android Calendar review and Apollo approval.
 - PASS (CI): `WoofWatcher Verify` run `30772959195`, job `91563197730`, passed
   dependency-complete verification for implementation commit `b7733e3f`.
 
