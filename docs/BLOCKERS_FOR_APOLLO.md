@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-02 Today navigation native accessibility proof remains open
+
+Source now names the active dog in the shared center-tab room hint and falls back truthfully for an unnamed profile. Native VoiceOver/TalkBack traversal, route-named iOS/Android bottom-navigation proof, and Apollo accessibility approval remain required.
+
 ## 2026-08-02 Avatar Studio reference-photo accessibility status
 
 The source now distinguishes the meaningful owner-provided reference photo from decorative pixel-preview artwork. Native VoiceOver/TalkBack traversal, route-named iOS/Android Avatar Studio evidence, and Apollo accessibility approval remain open.

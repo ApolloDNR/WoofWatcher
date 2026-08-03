@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  buildTodayTabAccessibilityHint,
   getCenteredModalBackdropPadding,
   getDockedComposerBottomPadding,
   getFloatingDebugButtonTopOffset,
@@ -15,6 +16,21 @@ import {
   MOBILE_INLINE_HIT_SLOP,
   MIN_MOBILE_TOUCH_TARGET,
 } from "./mobileLayout.ts";
+
+test("names the active dog in the shared Today tab hint", () => {
+  assert.equal(
+    buildTodayTabAccessibilityHint({ onToday: false, petName: "Milo" }),
+    "Open Milo's room and today's care",
+  );
+  assert.equal(
+    buildTodayTabAccessibilityHint({ onToday: false, petName: "  " }),
+    "Open your dog's room and today's care",
+  );
+  assert.equal(
+    buildTodayTabAccessibilityHint({ onToday: true, petName: "Milo" }),
+    "Opens the fast log sheet",
+  );
+});
 
 test("derives iOS tabbed route padding from the floating paw and safe area", () => {
   const metrics = getFloatingTabChromeMetrics({ platform: "ios", bottomInset: 34 });

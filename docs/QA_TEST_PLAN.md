@@ -1,5 +1,12 @@
 # QA Test Plan
 
+## 2026-08-02 active-dog Today navigation accessibility
+
+- Rename the active dog, focus the center Today tab from another route, and confirm the hint names that dog.
+- Clear the dog name and confirm the hint says "your dog's room" without inventing Phoenix.
+- From Today, confirm the same control announces the fast-log action.
+- Capture native VoiceOver and TalkBack evidence separately before release approval.
+
 ## 2026-08-02 Avatar Studio reference-photo accessibility proof
 
 - PASS (source): the owner-provided reference photo is announced as `Reference photo for the pixel twin`; decorative room, template, accessory, and mood artwork remains excluded from traversal.

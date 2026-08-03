@@ -6,8 +6,9 @@ import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBounce } from "@/components/motion/GameFeel";
+import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { getFloatingTabChromeMetrics } from "@/lib/mobileLayout";
+import { buildTodayTabAccessibilityHint, getFloatingTabChromeMetrics } from "@/lib/mobileLayout";
 
 export const unstable_settings = {
   initialRouteName: "index",
@@ -50,6 +51,7 @@ function TabIcon({
    fast-log sheet, so the paw is also the quickest way to log care. */
 function CenterToday() {
   const colors = useColors();
+  const { state } = useCare();
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
@@ -65,11 +67,10 @@ function CenterToday() {
         accessibilityRole="button"
         accessibilityLabel={onToday ? "Quick log" : "Today"}
         aria-selected={onToday}
-        accessibilityHint={
-          onToday
-            ? "Opens the fast log sheet"
-            : "Open Phoenix's room and today's care"
-        }
+        accessibilityHint={buildTodayTabAccessibilityHint({
+          onToday,
+          petName: state.profile.name,
+        })}
         onPress={() => {
           if (Platform.OS !== "web") {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

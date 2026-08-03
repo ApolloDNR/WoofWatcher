@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-02 active-dog Today navigation accessibility
+
+- DONE: The shared center Today tab now names the active dog from Dog Profile instead of hardcoding Phoenix; blank profiles use the truthful "your dog's room" fallback.
+- VERIFIED: Red-first mobile layout coverage failed on the missing hint builder, then passed after the helper and tab wiring landed.
+- NEXT: Run dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android bottom-navigation evidence remain required.
+
 ## 2026-08-02 Avatar Studio reference-photo accessibility
 
 - DONE: Kept the owner-provided reference photo meaningful in accessibility traversal with an explicit image label while leaving composed preview artwork decorative.

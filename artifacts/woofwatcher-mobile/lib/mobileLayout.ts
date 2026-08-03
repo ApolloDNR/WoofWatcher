@@ -21,6 +21,20 @@ export interface FloatingTabChromeMetrics {
 export const MIN_MOBILE_TOUCH_TARGET = 48;
 export const MOBILE_INLINE_HIT_SLOP = 10;
 
+export function buildTodayTabAccessibilityHint({
+  onToday,
+  petName,
+}: {
+  onToday: boolean;
+  petName?: string | null;
+}): string {
+  if (onToday) return "Opens the fast log sheet";
+  const name = petName?.trim();
+  return name
+    ? `Open ${name}'s room and today's care`
+    : "Open your dog's room and today's care";
+}
+
 const TAB_BAR_NATIVE_HEIGHT = 72;
 const TAB_BAR_WEB_HEIGHT = 72;
 const TAB_BAR_NATIVE_BOTTOM = 12;

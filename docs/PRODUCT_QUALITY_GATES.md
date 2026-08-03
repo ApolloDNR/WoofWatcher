@@ -1,5 +1,11 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-02 active-dog Today navigation accessibility
+
+- PASS (source): The shared Today tab derives its room hint from the active Dog Profile name and uses a truthful blank-name fallback.
+- PASS (behavior): Red-first mobile layout coverage protects renamed, blank, and already-on-Today behavior.
+- OPEN (native): VoiceOver/TalkBack traversal, route-named iOS/Android bottom-navigation evidence, and Apollo approval.
+
 ## 2026-08-02 Avatar Studio reference-photo accessibility
 
 - PASS (source): the meaningful owner-provided reference photo has an explicit accessible name without exposing subordinate preview art.

@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-02: Primary navigation follows the active Dog Profile identity
+
+Decision: The center Today tab must name the active dog from persisted profile state. It may use "your dog's room" only when no usable name exists; it must not hardcode Phoenix after an owner renames the dog.
+
+Reason: Dog Profile is the living source of truth, and app-wide primary navigation should not contradict it in screen-reader guidance.
+
 ## 2026-08-02: The Avatar Studio reference photo is meaningful
 
 - The owner-selected source photo explains which real dog the pixel twin is based on, so it remains a named accessibility image.

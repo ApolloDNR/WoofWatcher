@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-02 active-dog Today navigation accessibility slice
+
+The shared center Today tab now derives its accessibility hint from the active Dog Profile name, with a truthful unnamed-dog fallback and unchanged fast-log guidance when already on Today. Red-first mobile layout coverage protects all three branches. Native VoiceOver/TalkBack and route-named iOS/Android proof remain separate launch gates.
+
 ## 2026-08-02 Avatar Studio reference-photo accessibility slice
 
 The owner-provided Avatar Studio reference photo now carries an explicit accessible image label while the surrounding composed pixel artwork stays decorative. A red-first mobile-readiness contract protects that semantic distinction. Native VoiceOver/TalkBack traversal and route-named iOS/Android Avatar Studio evidence remain separate release gates.
