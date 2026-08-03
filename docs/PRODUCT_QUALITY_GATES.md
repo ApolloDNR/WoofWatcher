@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-03 Logged-care reaction identity boundary
+
+- PASS (source): immediate Home care-twin feedback receives the resolved Dog Profile name across logged-care reaction branches.
+- OPEN (native): iOS/Android interaction, VoiceOver/TalkBack traversal, route-named evidence, and Apollo approval.
+
 ## 2026-08-03 care-twin routine identity gate
 
 - PASS (source/test): upcoming walk, play, and training reactions use the active Dog Profile name in Home and Avatar Studio.

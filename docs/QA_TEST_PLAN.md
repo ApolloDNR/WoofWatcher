@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-08-03 logged-care reaction identity
+
+- Rename the active dog, then log a pending meal and start a walk from Home; reaction detail must use the saved dog name.
+- Confirm training, play, mood, and generic-care reaction detail also follows Dog Profile identity while the untouched demo profile still reads Phoenix.
+- Source coverage is complete; native iOS/Android interaction and VoiceOver/TalkBack review remain open.
+
 ## 2026-08-03 active-dog Alone Time identity coverage
 
 - Automated: starting an Alone Time session with a renamed Dog Profile persists that dog name in the shared timeline title.

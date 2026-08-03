@@ -5,6 +5,7 @@ import {
 } from "../../../lib/care-domain/src/index.ts";
 
 import type { CareTwinSpriteAction } from "./avatarLifeEngine.ts";
+import { resolvePetName } from "./petIdentity.ts";
 
 export type CareTwinReactionToneRole = "care" | "reward" | "hydration" | "health" | "soft";
 
@@ -24,6 +25,7 @@ export type CareTwinReactionIcon =
 export interface CareTwinLogReactionInput {
   type: CareEventType | string;
   label: string;
+  petName?: string | null;
   title?: string | null;
   mood?: string | null;
   severity?: string | null;
@@ -51,13 +53,14 @@ function isPendingMeal(details: CareTwinLogReactionInput["details"]): boolean {
 
 export function describeCareTwinReactionForLog(input: CareTwinLogReactionInput): CareTwinLogReactionPlan {
   const type = normalizeCareEventType(input.type, input.details as CareEventDetails);
+  const petName = resolvePetName(input.petName);
 
   if (type === "meal") {
     return {
       icon: "meal",
       label: isPendingMeal(input.details) ? "Meal served" : "Meal logged",
       detail: isPendingMeal(input.details)
-        ? "Outcome stays open so the household can update what Phoenix actually ate."
+        ? `Outcome stays open so the household can update what ${petName} actually ate.`
         : "Diet progress and the household timeline stay connected.",
       spriteAction: "eat-loop",
       toneRole: "care",
@@ -70,7 +73,7 @@ export function describeCareTwinReactionForLog(input: CareTwinLogReactionInput):
       icon: "walk",
       label: started ? "Walk started" : "Walk logged",
       detail: started
-        ? "Main Phoenix walks in the room; finish in Log with route, distance, and social notes."
+        ? `Main ${petName} walks in the room; finish in Log with route, distance, and social notes.`
         : "Activity progress updates without spawning a second avatar.",
       spriteAction: "walk-loop",
       toneRole: "reward",
@@ -101,7 +104,7 @@ export function describeCareTwinReactionForLog(input: CareTwinLogReactionInput):
     return {
       icon: "training",
       label: "Training win",
-      detail: "A real practice moment adds progress to Phoenix's story.",
+      detail: `A real practice moment adds progress to ${petName}'s story.`,
       spriteAction: "celebrate-hop",
       toneRole: "reward",
     };
@@ -121,7 +124,7 @@ export function describeCareTwinReactionForLog(input: CareTwinLogReactionInput):
     return {
       icon: "play",
       label: "Play logged",
-      detail: "Bond and energy context update on the main Phoenix sprite.",
+      detail: `Bond and energy context update on the main ${petName} sprite.`,
       spriteAction: "tail-wag",
       toneRole: "reward",
     };
@@ -163,7 +166,7 @@ export function describeCareTwinReactionForLog(input: CareTwinLogReactionInput):
     return {
       icon: needsComfort ? "heart" : "play",
       label: needsComfort ? "Mood check-in" : "Mood logged",
-      detail: needsComfort ? "Phoenix stays gentle while the household gets context." : "Mood context updates Phoenix's care twin.",
+      detail: needsComfort ? `${petName} stays gentle while the household gets context.` : `Mood context updates ${petName}'s care twin.`,
       spriteAction: needsComfort ? "comfort-loop" : "tail-wag",
       toneRole: needsComfort ? "soft" : "reward",
     };
@@ -172,7 +175,7 @@ export function describeCareTwinReactionForLog(input: CareTwinLogReactionInput):
   return {
     icon: "note",
     label: `${input.label} logged`,
-    detail: "Care context updates the main Phoenix room.",
+    detail: `Care context updates the main ${petName} room.`,
     spriteAction: "tail-wag",
     toneRole: input.severity === "alert" ? "health" : "soft",
   };

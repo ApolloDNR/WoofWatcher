@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-03 logged-care reaction identity slice
+
+Home's shared care-twin reaction policy now receives the resolved active-dog name for walk starts and quick care logs. Pending meal, active walk, training, play, mood, and fallback feedback no longer contradicts a renamed Dog Profile. Red-first policy coverage proves the behavior; native interaction/accessibility and provider/store/Apollo evidence remain separate gates.
+
 ## 2026-08-03 active-dog care-twin routine identity slice
 
 Upcoming activity guidance in the shared avatar-motion model now uses the resolved Dog Profile name, and both Home and Avatar Studio provide that identity. Red-first behavior coverage caught the old Phoenix line and passed after the correction. Native interaction/accessibility evidence remains a separate release gate.

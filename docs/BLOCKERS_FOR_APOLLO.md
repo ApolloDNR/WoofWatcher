@@ -1,5 +1,10 @@
 # Blockers For Apollo
 
+## 2026-08-03 logged-care reaction identity status
+
+- Source correction complete: Home reaction detail follows the active Dog Profile after care is logged.
+- Still blocked on real native iOS/Android reaction review, VoiceOver/TalkBack traversal, route-named evidence, and Apollo approval; no provider, store, payment, live-AI, or launch gate changed.
+
 ## 2026-08-03 care-twin routine identity status
 
 The source-level upcoming-activity reaction now follows the active Dog Profile rather than hardcoding Phoenix. Native iOS/Android care-twin taps, VoiceOver/TalkBack traversal, route-named proof, and Apollo approval remain open.

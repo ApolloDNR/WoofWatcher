@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-03: Logged-care reactions follow Dog Profile identity
+
+- Decision: pass the resolved active-dog name into the shared care-twin reaction policy and use it in care feedback details.
+- Reason: immediate feedback after a real log is part of the household care record loop and must not contradict a renamed Dog Profile.
+- Boundary: source behavior does not replace native interaction, accessibility, provider, store, or launch approval.
+
 ## 2026-08-03: Care-twin routine reactions follow Dog Profile identity
 
 - Decision: pass the resolved active-dog name into the shared avatar-motion model and use it in upcoming activity guidance.

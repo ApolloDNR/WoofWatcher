@@ -1993,8 +1993,10 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   );
   assert.match(
     reactionPolicy,
-    /Outcome stays open so the household can update what Phoenix actually ate/,
+    /Outcome stays open so the household can update what \$\{petName\} actually ate/,
   );
+  assert.match(reactionPolicy, /const petName = resolvePetName\(input\.petName\)/);
+  assert.match(home, /describeCareTwinReactionForLog\(\{[\s\S]*?petName,/);
   assert.match(
     reactionPolicy,
     /Bathroom attempt logged without pretending pee or poop happened/,

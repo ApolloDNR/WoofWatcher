@@ -38,6 +38,24 @@ test("maps quick care logs to the main Phoenix sprite instead of generic bubbles
   assert.equal(describeCareTwinReactionForLog({ type: "walk", label: "Walk" }).spriteAction, "walk-loop");
 });
 
+test("names the active dog in household care-twin reaction details", () => {
+  const meal = describeCareTwinReactionForLog({
+    type: "meal",
+    label: "Meal",
+    petName: "  Luna  ",
+    details: { mealLifecycle: "outcome-pending", mealCompletion: "served" },
+  });
+  const walk = describeCareTwinReactionForLog({
+    type: "walk",
+    label: "Walk",
+    petName: "Luna",
+    details: { walkStartedAt: "2026-08-03T12:00:00.000Z" },
+  });
+
+  assert.equal(meal.detail, "Outcome stays open so the household can update what Luna actually ate.");
+  assert.equal(walk.detail, "Main Luna walks in the room; finish in Log with route, distance, and social notes.");
+});
+
 test("keeps health and safety reactions calm and non-diagnostic", () => {
   const vomit = describeCareTwinReactionForLog({
     type: "vomit",

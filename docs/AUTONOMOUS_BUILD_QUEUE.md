@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-03 active-dog logged-care reaction identity
+
+- DONE: Home care-twin feedback for meal, walk, training, play, mood, and fallback logs now names the active Dog Profile instead of hardcoding Phoenix.
+- VERIFIED: Red-first reaction-policy coverage failed on Phoenix versus Luna, then passed after the shared policy and both Home log callers received the resolved dog name.
+- NEXT: Require dependency-complete branch CI. Native iOS/Android reaction review, VoiceOver/TalkBack, and household review remain required.
+
 ## 2026-08-03 active-dog care-twin routine identity
 
 - DONE: Upcoming activity reactions now name the active Dog Profile instead of telling renamed-dog households that Phoenix is watching the routine board.

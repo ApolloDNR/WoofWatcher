@@ -1434,6 +1434,7 @@ export default function HomeScreen() {
     const reactionPlan = describeCareTwinReactionForLog({
       type: "walk",
       label: "Walk",
+      petName,
       title: "Walk started",
       details: entry.details,
     });
@@ -1500,6 +1501,7 @@ export default function HomeScreen() {
     const reactionPlan = describeCareTwinReactionForLog({
       type: entry.type,
       label: item.label,
+      petName,
       title: entry.title,
       mood: entry.mood,
       severity: entry.severity,
