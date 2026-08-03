@@ -3137,3 +3137,9 @@ room" fallback. Native VoiceOver/TalkBack traversal remains required.
 The empty current-day month timeline names the saved dog rather than assuming
 Phoenix. Blank and placeholder profiles use `your dog's` so owner-facing care
 copy never invents an identity.
+
+## 2026-08-03 Health handoff copy follows Dog Profile identity
+
+Health Review Packet prompts must use the packet's active `dogName` input.
+Default Phoenix identity is valid only before profile personalization; it must
+not leak into owner-reviewed caregiver or vet copy for a renamed dog.

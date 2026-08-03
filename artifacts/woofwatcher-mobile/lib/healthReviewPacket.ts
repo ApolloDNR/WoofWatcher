@@ -113,7 +113,7 @@ function buildPrompts(input: HealthReviewPacketInput): string[] {
       : [
           "Capture timing, food gap, appetite after, energy after, stool detail, and hydration.",
           "Add a photo only when it helps the household or vet understand the observation.",
-          "Keep notes factual: what happened, when, what Phoenix ate, and how she acted after.",
+          `Keep notes factual: what happened, when, what ${input.dogName} ate, and how she acted after.`,
         ];
 
   if (input.healthStatus === "alert" || input.redFlagCount > 0) {

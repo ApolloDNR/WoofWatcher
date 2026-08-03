@@ -205,6 +205,7 @@ test("builds a steady non-diagnostic Health Review Packet", () => {
 test("raises watch language when bile, food gap, or health signals need review", () => {
   const packet = deriveHealthReviewPacket({
     ...baseInput,
+    dogName: "Luna",
     healthStatus: "watch",
     healthSummary: "1 vomit incident in 7 days, with yellow bile noted.",
     healthCounts: {
@@ -223,6 +224,12 @@ test("raises watch language when bile, food gap, or health signals need review",
   assert.match(packet.summary, /Pattern noticed/);
   assert.match(packet.summary, /13.5 hours/);
   assert.ok(packet.prompts.includes("Capture timing, food gap, appetite after, energy after, stool detail, and hydration."));
+  assert.ok(
+    packet.prompts.includes(
+      "Keep notes factual: what happened, when, what Luna ate, and how she acted after.",
+    ),
+  );
+  assert.doesNotMatch(packet.prompts.join(" "), /Phoenix/);
   assert.ok(packet.vetShareChecklist.includes("Longest food gap: 13.5 hours"));
   assert.ok(packet.vetShareChecklist.includes("Appetite watch logs: 2"));
   assert.ok(packet.vetShareChecklist.includes("Anxiety or alone-time signals: 1"));

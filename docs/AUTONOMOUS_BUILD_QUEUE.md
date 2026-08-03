@@ -223,6 +223,15 @@
 - NEXT: Rerun branch CI after this proof-record commit before treating
   dependency proof as current for the final tip.
 
+## 2026-08-03 Health Review Packet dog identity
+
+- DONE: Replaced the remaining hardcoded Phoenix reference in watch-state
+  Health Review Packet guidance with the active Dog Profile name.
+- VERIFIED: Red-first packet coverage failed on Luna-versus-Phoenix and passed
+  `8/8` after the correction.
+- NEXT: Run aggregate verification and branch CI; native Health review and
+  share-sheet evidence remain separate release gates.
+
 ## 2026-08-02 Month timeline dog identity
 
 - DONE: Replaced the hardcoded Phoenix empty-today prompt with the saved Dog

@@ -4931,6 +4931,15 @@ focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete
 job all passed. Rerun after this proof-record commit before treating the final
 branch tip as current.
 
+## 2026-08-03 Health Review Packet dog identity slice
+
+Watch-state factual-note guidance now uses the packet's active Dog Profile name
+instead of hardcoding Phoenix into caregiver/vet review copy. Red-first packet
+coverage failed on Luna-versus-Phoenix and passed `8/8` after the minimal
+correction. Native Health review/share evidence, provider/store proof,
+veterinary review, and Apollo approval remain separate gates. Run branch CI
+after this commit before treating dependency-complete proof as current.
+
 ## 2026-07-27 Avatar emote icon dark-mode boundary slice
 
 Avatar Studio's fixed-light emote icon tiles now keep a constant translucent

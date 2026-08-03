@@ -2876,3 +2876,10 @@ Dog ID PNG/share flows before approving Records.
   `your dog's first moment` instead of inventing Phoenix.
 - Dependency-complete proof: `WoofWatcher Verify` run `30788127664`, job
   `91605779646`, passed implementation/docs commit `15363c29`.
+
+## 2026-08-03 Health Review Packet dog identity
+
+- Rename the Dog Profile, create a watch-state Health Review Packet, and
+  confirm factual-note guidance names that dog rather than Phoenix.
+- Confirm the shared packet text remains non-diagnostic and suitable for
+  owner-reviewed caregiver or vet handoff.

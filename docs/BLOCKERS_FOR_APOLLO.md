@@ -658,3 +658,9 @@ route-named iOS/Android evidence, and Apollo approval remain required.
 Source now derives the empty-today prompt from Dog Profile with a generic
 fallback. Route-named iOS/Android Calendar review and Apollo approval remain
 required; source tests do not clear native evidence gates.
+
+## 2026-08-03 Health Review Packet identity proof remains open
+
+Source tests now prove watch-state packet guidance follows the active dog name.
+Route-named iOS/Android Health review and share-sheet evidence plus Apollo
+approval remain required; this does not claim native or veterinary approval.
