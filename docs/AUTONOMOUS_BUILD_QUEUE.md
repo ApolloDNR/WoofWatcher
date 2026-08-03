@@ -4,7 +4,8 @@
 
 - DONE: Home care-twin feedback for meal, walk, training, play, mood, and fallback logs now names the active Dog Profile instead of hardcoding Phoenix.
 - VERIFIED: Red-first reaction-policy coverage failed on Phoenix versus Luna, then passed after the shared policy and both Home log callers received the resolved dog name.
-- NEXT: Require dependency-complete branch CI. Native iOS/Android reaction review, VoiceOver/TalkBack, and household review remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30824585841`, job `91722833989`, passed implementation/docs commit `ce7e8306`; pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native iOS/Android reaction review, VoiceOver/TalkBack, and household review remain required.
 
 ## 2026-08-03 active-dog care-twin routine identity
 
