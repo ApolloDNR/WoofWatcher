@@ -4,6 +4,8 @@
 
 The Leaving Home lifecycle now persists the resolved Dog Profile name in its household-visible timeline title instead of hardcoding Phoenix. Red-first behavior coverage failed on the old title and passed after the builder and Quick Log wiring were corrected. Native iOS/Android timeline, handoff, and accessibility review remain separate release gates.
 
+Dependency-complete `WoofWatcher Verify` run `30798861440`, job `91638574853`, passed implementation/docs commit `000c06f8`, including pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job.
+
 ## 2026-08-02 active-dog Today navigation accessibility slice
 
 The shared center Today tab now derives its accessibility hint from the active Dog Profile name, with a truthful unnamed-dog fallback and unchanged fast-log guidance when already on Today. Red-first mobile layout coverage protects all three branches. Native VoiceOver/TalkBack and route-named iOS/Android proof remain separate launch gates.

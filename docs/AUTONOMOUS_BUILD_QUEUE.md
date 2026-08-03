@@ -4,7 +4,8 @@
 
 - DONE: Leaving Home now persists the resolved Dog Profile name in the household-visible Alone Time timeline entry instead of hardcoding Phoenix.
 - VERIFIED: Red-first Alone Time behavior coverage failed on `Phoenix` versus `Luna`, then passed with mobile readiness after the builder and Quick Log wiring were corrected.
-- NEXT: Run strongest local verification and dependency-complete branch CI. Native VoiceOver/TalkBack, household handoff review, and route-named iOS/Android evidence remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30798861440`, job `91638574853`, passed implementation/docs commit `000c06f8`; pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native VoiceOver/TalkBack, household handoff review, and route-named iOS/Android evidence remain required.
 
 ## 2026-08-02 active-dog Today navigation accessibility
 

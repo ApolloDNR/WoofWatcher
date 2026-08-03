@@ -4,6 +4,7 @@
 
 - Automated: starting an Alone Time session with a renamed Dog Profile persists that dog name in the shared timeline title.
 - Automated: focused Alone Time behavior and mobile readiness pass after the Quick Log start path forwards the resolved profile name.
+- CI: `WoofWatcher Verify` run `30798861440`, job `91638574853`, passed the dependency-complete implementation commit `000c06f8`.
 - Native remaining: confirm the renamed dog title in Log, household handoff/report surfaces, and VoiceOver/TalkBack on iOS and Android.
 
 ## 2026-08-02 active-dog Today navigation accessibility
