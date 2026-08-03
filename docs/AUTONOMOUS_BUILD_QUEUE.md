@@ -4,7 +4,8 @@
 
 - DONE: The meal detail sheet now names the active Dog Profile when explaining the served-to-outcome follow-up instead of hardcoding Phoenix.
 - VERIFIED: Red-first Quick Log coverage failed on Phoenix versus Luna, then the focused Quick Log and mobile-readiness suite passed `187/187` after the shared builder and Log caller received the resolved dog name.
-- NEXT: Run aggregate verification and dependency-complete branch CI. Native iOS/Android meal-flow, accessibility, and household review remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30851988574`, job `91813936298`, passed implementation/docs commit `4e62cef8`; pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native iOS/Android meal-flow, accessibility, and household review remain required.
 
 ## 2026-08-03 active-dog logged-care reaction identity
 
