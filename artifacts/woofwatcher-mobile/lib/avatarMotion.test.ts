@@ -73,6 +73,7 @@ test("turns a recent visible meal log into eating motion", () => {
 test("perks up when a walk routine is coming soon", () => {
   const motion = deriveAvatarMotion({
     now: localTime(8, 45),
+    petName: "Luna",
     entries: [],
     routines: [
       { id: "walk", label: "Morning walk", type: "walk", time: "9:00 AM", owner: "Emma" },
@@ -82,7 +83,7 @@ test("perks up when a walk routine is coming soon", () => {
   assert.equal(motion.state, "excited");
   assert.equal(motion.avatarMood, "excited");
   assert.equal(motion.cue, "paw-bounce");
-  assert.match(motion.line, /walk/i);
+  assert.equal(motion.line, "Morning walk is coming up. Luna is watching the routine board.");
 });
 
 test("shows bored attention motion for overdue activity routines", () => {

@@ -5,6 +5,7 @@ import {
   type CareEventDetails,
 } from "../../../lib/care-domain/src/index.ts";
 import type { Mood } from "./phoenixStatus.ts";
+import { resolvePetName } from "./petIdentity.ts";
 
 export type AvatarMotionState =
   | "happy"
@@ -67,6 +68,7 @@ export interface AvatarMotionCaregiver {
 }
 
 export interface AvatarMotionInput {
+  petName?: string | null;
   entries: readonly AvatarMotionEntry[];
   routines: readonly AvatarMotionRoutine[];
   caregivers?: readonly AvatarMotionCaregiver[];
@@ -273,7 +275,7 @@ function openRoutineMotion(
       intensity: "high",
       label: "Ready soon",
       speech: "Walk soon?",
-      line: `${open.label} is coming up. Phoenix is watching the routine board.`,
+      line: `${open.label} is coming up. ${resolvePetName(input.petName)} is watching the routine board.`,
       route: "/calendar",
     };
   }

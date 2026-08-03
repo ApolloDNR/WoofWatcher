@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-03 active-dog care-twin routine identity slice
+
+Upcoming activity guidance in the shared avatar-motion model now uses the resolved Dog Profile name, and both Home and Avatar Studio provide that identity. Red-first behavior coverage caught the old Phoenix line and passed after the correction. Native interaction/accessibility evidence remains a separate release gate.
+
 ## 2026-08-03 active-dog Alone Time identity slice
 
 The Leaving Home lifecycle now persists the resolved Dog Profile name in its household-visible timeline title instead of hardcoding Phoenix. Red-first behavior coverage failed on the old title and passed after the builder and Quick Log wiring were corrected. Native iOS/Android timeline, handoff, and accessibility review remain separate release gates.

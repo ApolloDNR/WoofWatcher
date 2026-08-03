@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-03 active-dog care-twin routine identity
+
+- DONE: Upcoming activity reactions now name the active Dog Profile instead of telling renamed-dog households that Phoenix is watching the routine board.
+- VERIFIED: Red-first avatar-motion coverage failed on `Phoenix` versus `Luna`, then passed with mobile readiness after the shared model and both Home/Avatar Studio callers were corrected.
+- NEXT: Run dependency-complete branch CI. Native iOS/Android care-twin interaction, VoiceOver/TalkBack, and household review remain required.
+
 ## 2026-08-03 active-dog Alone Time timeline identity
 
 - DONE: Leaving Home now persists the resolved Dog Profile name in the household-visible Alone Time timeline entry instead of hardcoding Phoenix.

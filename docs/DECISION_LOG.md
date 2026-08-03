@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-03: Care-twin routine reactions follow Dog Profile identity
+
+- Decision: pass the resolved active-dog name into the shared avatar-motion model and use it in upcoming activity guidance.
+- Reason: care-twin guidance is part of the real routines-to-logs loop and must not contradict the Dog Profile after a rename.
+- Boundary: source behavior does not replace native interaction, accessibility, provider, store, or launch approval.
+
 ## 2026-08-03: Dog Profile identity owns Alone Time timeline titles
 
 - Decision: the Leaving Home lifecycle builder accepts the resolved active-dog name and persists it in the shared timeline title.

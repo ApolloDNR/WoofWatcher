@@ -381,13 +381,14 @@ export default function PortraitScreen() {
   const avatarMotion = useMemo(
     () =>
       deriveAvatarMotion({
+        petName,
         entries: state.entries,
         routines: state.routines,
         caregivers: state.caregivers,
         now,
         energy: status.energy,
       }),
-    [state.entries, state.routines, state.caregivers, now, status.energy],
+    [petName, state.entries, state.routines, state.caregivers, now, status.energy],
   );
   const caregiver = state.caregivers[0]?.name ?? "you";
   const scanTranslate = scanAnim.interpolate({

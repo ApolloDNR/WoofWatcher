@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-03 care-twin routine identity status
+
+The source-level upcoming-activity reaction now follows the active Dog Profile rather than hardcoding Phoenix. Native iOS/Android care-twin taps, VoiceOver/TalkBack traversal, route-named proof, and Apollo approval remain open.
+
 ## 2026-08-03 Alone Time dog-identity status
 
 The source-level hardcoded Phoenix defect in new Leaving Home timeline entries is closed. Native iOS/Android review must still confirm the renamed-dog title across Log, household handoff/report surfaces, and VoiceOver/TalkBack; this run does not replace device evidence.
