@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-03 Quick Log meal guidance identity
+
+- DONE: The meal detail sheet now names the active Dog Profile when explaining the served-to-outcome follow-up instead of hardcoding Phoenix.
+- VERIFIED: Red-first Quick Log coverage failed on Phoenix versus Luna, then the focused Quick Log and mobile-readiness suite passed `187/187` after the shared builder and Log caller received the resolved dog name.
+- NEXT: Run aggregate verification and dependency-complete branch CI. Native iOS/Android meal-flow, accessibility, and household review remain required.
+
 ## 2026-08-03 active-dog logged-care reaction identity
 
 - DONE: Home care-twin feedback for meal, walk, training, play, mood, and fallback logs now names the active Dog Profile instead of hardcoding Phoenix.

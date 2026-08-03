@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-03: Meal follow-up guidance follows Dog Profile identity
+
+- Decision: pass the resolved active-dog name into the shared Quick Log detail presentation and use it in served-to-outcome meal guidance.
+- Reason: Dog Profile is the source of truth, and an owner reviewing an outcome-pending meal must not see another dog's name.
+- Boundary: meal persistence and completion semantics are unchanged; native, provider, store, and launch gates remain separate.
+
 ## 2026-08-03: Logged-care reactions follow Dog Profile identity
 
 - Decision: pass the resolved active-dog name into the shared care-twin reaction policy and use it in care feedback details.

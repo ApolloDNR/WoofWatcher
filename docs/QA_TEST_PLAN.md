@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-08-03 Quick Log meal guidance identity
+
+- Rename the active dog to Luna, open the Meal quick-log detail sheet, and confirm the pending-outcome explanation says what Luna ate.
+- Confirm the untouched demo profile still uses Phoenix and that meal quick logging remains served/outcome-pending rather than claiming the meal was eaten.
+- Source coverage is complete; native iOS/Android interaction and VoiceOver/TalkBack review remain open.
+
 ## 2026-08-03 logged-care reaction identity
 
 - Rename the active dog, then log a pending meal and start a walk from Home; reaction detail must use the saved dog name.

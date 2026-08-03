@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-03 Quick Log meal guidance identity
+
+- PASS (source/test): served-to-outcome meal guidance uses the resolved active Dog Profile name.
+- OPEN (native): iOS/Android meal-detail interaction, screen-reader traversal, route-named evidence, and Apollo approval.
+
 ## 2026-08-03 Logged-care reaction identity boundary
 
 - PASS (source): immediate Home care-twin feedback receives the resolved Dog Profile name across logged-care reaction branches.

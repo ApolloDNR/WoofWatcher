@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-03 Quick Log meal guidance identity slice
+
+The shared meal detail presentation now receives the resolved active-dog name from Log, so its served-to-outcome follow-up no longer contradicts a renamed Dog Profile. Red-first coverage failed on Phoenix versus Luna, then focused Quick Log and mobile-readiness coverage passed `187/187`. Meal persistence and outcome-pending semantics are unchanged; native interaction/accessibility and provider/store/Apollo evidence remain separate gates.
+
 ## 2026-08-03 logged-care reaction identity slice
 
 Home's shared care-twin reaction policy now receives the resolved active-dog name for walk starts and quick care logs. Pending meal, active walk, training, play, mood, and fallback feedback no longer contradicts a renamed Dog Profile. Red-first policy coverage proves the behavior; native interaction/accessibility and provider/store/Apollo evidence remain separate gates.

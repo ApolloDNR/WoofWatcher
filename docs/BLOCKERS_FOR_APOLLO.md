@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-03 Quick Log meal guidance identity status
+
+The source-level meal detail sheet now follows the active Dog Profile. Native iOS/Android meal-flow review, VoiceOver/TalkBack traversal, route-named evidence, and Apollo approval remain open; no provider, payment, store, live-AI, or launch gate changed.
+
 ## 2026-08-03 logged-care reaction identity status
 
 - Source correction complete: Home reaction detail follows the active Dog Profile after care is logged.

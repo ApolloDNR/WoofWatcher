@@ -330,6 +330,15 @@ test("detail sheet presentation explains quick logging, details, and safety boun
   assert.ok(medication.detailChecklist.some((item) => item.includes("dose")));
 });
 
+test("meal detail sheet names the active dog in pending-outcome guidance", () => {
+  const meal = describeQuickLogDetailSheet("meal", "Meal", "Luna");
+
+  assert.equal(
+    meal.quickSummary,
+    "Quick tap serves the usual meal and keeps the meal outcome pending until someone confirms what Luna ate.",
+  );
+});
+
 test("quick-log dedupe window treats a rapid same-type second tap as the same intent", () => {
   const saved = {
     id: "temp_1",

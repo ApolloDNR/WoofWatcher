@@ -2186,9 +2186,13 @@ export default function LogScreen() {
   const launcherDetailPresentation = useMemo(
     () =>
       launcherDetailAction
-        ? describeQuickLogDetailSheet(launcherDetailAction.type, launcherDetailAction.label)
+        ? describeQuickLogDetailSheet(
+            launcherDetailAction.type,
+            launcherDetailAction.label,
+            petDisplayName,
+          )
         : null,
-    [launcherDetailAction],
+    [launcherDetailAction, petDisplayName],
   );
   const selectedLauncherAction = useMemo(
     () =>
