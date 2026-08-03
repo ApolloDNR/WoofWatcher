@@ -406,7 +406,7 @@ export default function HomeScreen() {
   const avatarMotion = useMemo(
     () =>
       deriveAvatarMotion({
-        petName,
+        petName: resolvePetName(state.profile.name),
         entries: state.entries,
         routines: state.routines,
         caregivers: state.caregivers,
@@ -414,7 +414,7 @@ export default function HomeScreen() {
         energy: status.energy,
         reactionsSince: reactionSessionFloor.current,
       }),
-    [petName, state.entries, state.routines, state.caregivers, now, status.energy],
+    [state.profile.name, state.entries, state.routines, state.caregivers, now, status.energy],
   );
   // The heart status line and the living room must tell one story: the room
   // scheduler can have the twin asleep (quiet hours, low energy) while the
