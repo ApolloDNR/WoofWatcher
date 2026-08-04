@@ -3,6 +3,7 @@
 ## 2026-08-04 Today Command setup identity
 
 - PASS (source/test): Home's empty-account setup action uses the canonical Dog Profile identity rule for renamed, blank, and placeholder profiles.
+- PASS (CI): `WoofWatcher Verify` run `30936091210`, job `92082489770`, passed implementation/docs commit `c0516088` including dependency install, focused tests, typecheck, and CI-safe builds.
 - OPEN (native/provider): iOS/Android Home interaction, VoiceOver/TalkBack, route-named evidence, provider/store proof, and Apollo approval.
 
 ## 2026-08-04 More hub dog identity

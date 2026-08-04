@@ -4,7 +4,8 @@
 
 - DONE: Home's empty-account setup command now resolves the active Dog Profile name canonically instead of exposing whitespace or the `My Dog` placeholder.
 - VERIFIED: Red-first Today Command coverage failed on `Set up   Luna  `, then focused identity/readiness coverage passed `194/194`; unnamed profiles retain the intentional Phoenix starter identity.
-- NEXT: Require dependency-complete branch CI. Native iOS/Android Home review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30936091210`, job `92082489770`, passed implementation/docs commit `c0516088`; pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native iOS/Android Home review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
 
 ## 2026-08-04 More hub dog identity
 

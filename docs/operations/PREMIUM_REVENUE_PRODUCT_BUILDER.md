@@ -4,6 +4,8 @@
 
 Home's empty-account setup command now resolves Dog Profile identity canonically, so renamed dogs are trimmed and the stored `My Dog` placeholder retains the intentional Phoenix starter identity. Red-first Today Command coverage caught the raw-name interpolation before the minimal fix. Care-loop behavior and launch gates are unchanged; native/provider/store/Apollo evidence remains separate.
 
+Dependency-complete `WoofWatcher Verify` run `30936091210`, job `92082489770`, passed implementation/docs commit `c0516088`, including pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit before treating the final branch tip as current.
+
 ## 2026-08-04 More hub dog identity slice
 
 More now resolves its route-wide pet name through the canonical Dog Profile rule before that identity reaches Care Team, Access Pass, invites, Care Pass sharing, WoofGuide, and the profile header. Red-first readiness coverage caught the duplicated raw-name fallback. Provider behavior and launch gates are unchanged; native/provider/store/Apollo evidence remains separate.

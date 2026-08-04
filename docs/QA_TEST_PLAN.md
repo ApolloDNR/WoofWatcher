@@ -4,6 +4,7 @@
 
 - With no routines or logs, save the active dog as `  Luna  ` and confirm Home says `Set up Luna`.
 - Confirm the placeholder `My Dog` profile says `Set up Phoenix` and never exposes the placeholder as dog identity.
+- Dependency-complete CI: `WoofWatcher Verify` run `30936091210`, job `92082489770`, passed implementation/docs commit `c0516088`.
 - Source tests do not replace native iOS/Android interaction, VoiceOver/TalkBack traversal, provider proof, or Apollo approval.
 
 ## 2026-08-04 More hub dog identity
