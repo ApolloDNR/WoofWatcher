@@ -3164,3 +3164,10 @@ source-of-truth contract.
 The account gateway uses the active profile name for its stage and setup trust
 copy. Phoenix remains the deliberate starter identity only while the profile is
 blank or still `My Dog`; provider readiness claims remain unchanged.
+
+## 2026-08-03 Trends identity follows Dog Profile
+
+Standalone insight routes must consume `resolvePetName` rather than recreate
+placeholder rules or pass raw profile identity downstream. Trends headers and
+mood summaries are owner-facing care evidence and must agree with the rest of
+the dog-first care loop.

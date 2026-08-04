@@ -35,6 +35,7 @@ import {
   getStandaloneRouteBottomPadding,
   MIN_MOBILE_TOUCH_TARGET,
 } from "@/lib/mobileLayout";
+import { resolvePetName } from "@/lib/petIdentity";
 import {
   bucketAverages,
   bucketCounts,
@@ -353,8 +354,7 @@ export default function TrendsScreen() {
     bottomInset: insets.bottom,
   });
 
-  const petName =
-    state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
+  const petName = resolvePetName(state.profile.name);
 
   // Stable `now` per window + entries so buckets/animations don't churn each render.
   const now = useMemo(() => Date.now(), [windowKey, state.entries]);
@@ -370,7 +370,7 @@ export default function TrendsScreen() {
       now,
       lookbackDays: moodLookbackDays(windowKey),
       limit: Number.MAX_SAFE_INTEGER,
-      petName: state.profile.name,
+      petName,
     });
     for (const item of moodTrend.items) {
       const at = Date.parse(item.occurredAt);
@@ -392,7 +392,7 @@ export default function TrendsScreen() {
       }
     }
     return { moodSamples: mood, activitySamples: activity, pottyTimes: potty };
-  }, [state.entries, now, windowKey, state.profile.name]);
+  }, [state.entries, now, windowKey, petName]);
 
   const moodAverages = useMemo(() => bucketAverages(moodSamples, win.buckets), [moodSamples, win]);
   const activityValues = useMemo(() => bucketSums(activitySamples, win.buckets), [activitySamples, win]);

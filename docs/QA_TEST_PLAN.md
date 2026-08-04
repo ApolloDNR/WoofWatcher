@@ -2902,3 +2902,11 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
   and setup trust step use that name instead of Phoenix.
 - Confirm blank and placeholder profiles still use the Phoenix starter identity.
 - Native iOS/Android Auth/Setup and VoiceOver/TalkBack proof remain open.
+
+## 2026-08-03 Trends dog identity QA
+
+- Rename Dog Profile to `  Luna  ` and confirm the Trends kicker reads
+  `Luna · Insights`; blank or `My Dog` profiles use the starter Phoenix name.
+- Confirm Mood Trend consumes the same resolved identity and never exposes raw
+  whitespace or the `My Dog` placeholder in owner-facing trend copy.
+- Source coverage is complete; route-named iOS/Android review remains required.

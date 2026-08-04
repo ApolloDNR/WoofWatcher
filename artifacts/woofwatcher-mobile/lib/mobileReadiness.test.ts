@@ -23,6 +23,21 @@ function readMobileLibFile(path: string): string {
   return readFileSync(join(MOBILE_LIB_DIR, path), "utf8");
 }
 
+test("routes Trends identity through the canonical Dog Profile name", () => {
+  const trends = readAppFile("trends.tsx");
+
+  assert.match(trends, /import \{ resolvePetName \} from "@\/lib\/petIdentity"/);
+  assert.match(trends, /const petName = resolvePetName\(state\.profile\.name\)/);
+  assert.match(
+    trends,
+    /deriveMoodTrend\(\{[\s\S]*?petName,[\s\S]*?\}\)/,
+  );
+  assert.doesNotMatch(
+    trends,
+    /state\.profile\.name && state\.profile\.name !== "My Dog"/,
+  );
+});
+
 function getStyleBlock(source: string, styleName: string): string {
   const marker = `  ${styleName}: {`;
   const start = source.indexOf(marker);

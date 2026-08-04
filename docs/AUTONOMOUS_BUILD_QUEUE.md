@@ -2141,3 +2141,13 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   doctor, focused tests, typecheck plus CI-safe builds, and post steps passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip
   dependency proof as current.
+
+## 2026-08-03 Trends Dog Profile identity
+
+- DONE: Trends now resolves Dog Profile identity canonically for both its route
+  header and mood-trend derivation, trimming renamed dogs and preserving the
+  intentional Phoenix starter fallback.
+- VERIFIED: Red-first readiness failed on the missing canonical wiring; focused
+  identity/readiness coverage passed after implementation.
+- NEXT: Require dependency-complete branch CI, then route-named native Trends
+  evidence. Source coverage does not replace device or Apollo approval.

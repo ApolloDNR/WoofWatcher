@@ -5370,6 +5370,13 @@ JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and
 Complete job. Rerun after this proof-record commit before treating the final
 branch tip as current.
 
+## 2026-08-03 Trends Dog Profile identity slice
+
+Trends now routes its header and mood-trend input through the canonical Dog
+Profile identity rule. A red-first readiness contract caught the prior raw-name
+wiring; focused readiness and identity coverage passed after the fix. Native
+route proof, provider/store evidence, and Apollo approval remain separate gates.
+
 ## 2026-08-03 Auth gateway dog identity slice
 
 AuthShell now derives its stage label and setup trust detail from the canonical

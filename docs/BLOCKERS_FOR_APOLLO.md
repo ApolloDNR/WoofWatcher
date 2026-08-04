@@ -677,3 +677,9 @@ approval remain required; this does not claim native or veterinary approval.
 Source tests now prove personalized happy/rest interaction verbs follow Dog
 Profile. Native VoiceOver/TalkBack traversal, route-named iOS/Android evidence,
 and Apollo approval remain required; source and CI do not clear those gates.
+
+## 2026-08-03 Trends identity proof remains open
+
+Source now resolves the Trends header and mood-trend identity from Dog Profile.
+Route-named iOS/Android Trends evidence and Apollo approval remain required;
+source tests do not clear native release gates.

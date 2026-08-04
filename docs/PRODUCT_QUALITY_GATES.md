@@ -702,3 +702,9 @@ screen-reader traversal and route-named device proof remain open gates.
   unconfigured profiles retain the intentional Phoenix starter identity.
 - OPEN (native/provider): route-named iOS/Android Auth/Setup review,
   VoiceOver/TalkBack, real provider evidence, and Apollo approval.
+
+## 2026-08-03 Trends Dog Profile identity gate
+
+- PASS (source): Trends uses the canonical Dog Profile resolver for its header
+  and mood-trend input, including trimmed renamed names and starter fallback.
+- OPEN (native): route-named iOS/Android Trends review and Apollo approval.
