@@ -4,6 +4,7 @@
 
 - Save the active dog as `  Luna  ` and confirm More shows Luna without whitespace across the profile header, Care Team, invites, Access Pass, sharing, and WoofGuide entry copy.
 - Confirm blank and `My Dog` profiles retain Phoenix as the starter identity.
+- Dependency-complete CI: `WoofWatcher Verify` run `30921324379`, job `92032392645`, passed implementation/docs commit `960caade`.
 - Source coverage does not replace native iOS/Android interaction, VoiceOver/TalkBack traversal, provider proof, or Apollo approval.
 
 ## 2026-08-04 Auth account dog identity

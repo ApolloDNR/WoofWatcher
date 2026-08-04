@@ -4,7 +4,8 @@
 
 - DONE: More now resolves the active Dog Profile name canonically before feeding Care Team, Access Pass, invites, sharing, WoofGuide, and profile copy.
 - VERIFIED: Red-first mobile readiness failed on the duplicated raw-name fallback; blank and `My Dog` profiles keep the intentional Phoenix starter identity.
-- NEXT: Run focused/broad verification and dependency-complete branch CI. Native iOS/Android More review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30921324379`, job `92032392645`, passed implementation/docs commit `960caade`; pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native iOS/Android More review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
 
 ## 2026-08-04 Auth account dog identity
 

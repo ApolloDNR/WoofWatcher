@@ -3,6 +3,7 @@
 ## 2026-08-04 More hub dog identity
 
 - PASS (source/test): More routes its owner-facing identity through the canonical Dog Profile resolver instead of duplicating raw-name fallback logic.
+- PASS (CI): `WoofWatcher Verify` run `30921324379`, job `92032392645`, passed implementation/docs commit `960caade` including dependency install, focused tests, typecheck, and CI-safe builds.
 - OPEN (native/provider): iOS/Android More interaction, VoiceOver/TalkBack, route-named evidence, provider/store proof, and Apollo approval.
 
 ## 2026-08-04 Auth account dog identity
