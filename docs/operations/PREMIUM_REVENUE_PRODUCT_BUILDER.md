@@ -5377,6 +5377,11 @@ Profile identity rule. A red-first readiness contract caught the prior raw-name
 wiring; focused readiness and identity coverage passed after the fix. Native
 route proof, provider/store evidence, and Apollo approval remain separate gates.
 
+Dependency-complete `WoofWatcher Verify` run `30882157821`, job `91905616350`,
+passed implementation/docs commit `ea29fba5` with pinned dependency install,
+JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and
+Complete job. Rerun after this proof-record commit for final-tip authority.
+
 ## 2026-08-03 Auth gateway dog identity slice
 
 AuthShell now derives its stage label and setup trust detail from the canonical

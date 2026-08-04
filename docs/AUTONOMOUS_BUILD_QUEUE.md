@@ -2149,5 +2149,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   intentional Phoenix starter fallback.
 - VERIFIED: Red-first readiness failed on the missing canonical wiring; focused
   identity/readiness coverage passed after implementation.
-- NEXT: Require dependency-complete branch CI, then route-named native Trends
-  evidence. Source coverage does not replace device or Apollo approval.
+- CI: Dependency-complete `WoofWatcher Verify` run `30882157821`, job
+  `91905616350`, passed implementation/docs commit `ea29fba5`.
+- NEXT: Route-named native Trends evidence remains required. Rerun branch CI
+  after this proof-record commit before treating final-tip proof as current.
