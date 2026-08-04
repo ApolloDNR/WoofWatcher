@@ -2,12 +2,16 @@ import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { PixelIcon } from "@/components/PixelIcon";
+import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
+import { buildNotFoundIdentityCopy } from "@/lib/petIdentity";
 
 export default function NotFoundScreen() {
   const colors = useColors();
   const router = useRouter();
+  const { state } = useCare();
+  const identityCopy = buildNotFoundIdentityCopy(state.profile.name);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -33,8 +37,7 @@ export default function NotFoundScreen() {
           { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
         ]}
       >
-        The screen you were looking for is not here. Head back to the Phoenix
-        Room and pick up the day from there.
+        {identityCopy}
       </Text>
       <Pressable
         accessibilityRole="button"

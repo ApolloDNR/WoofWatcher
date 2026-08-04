@@ -42,3 +42,8 @@ export function buildAuthAccountIdentityCopy(name: string | null | undefined): {
     signUp: `Create the account layer for ${petName}'s care twin. Care data stays local-first until production sync providers are configured.`,
   };
 }
+
+export function buildNotFoundIdentityCopy(name: string | null | undefined): string {
+  const petName = resolvePetName(name);
+  return `The screen you were looking for is not here. Head back to ${petName}'s room and pick up the day from there.`;
+}

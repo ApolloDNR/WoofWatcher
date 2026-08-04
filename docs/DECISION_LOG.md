@@ -3198,3 +3198,7 @@ the dog-first care loop.
 
 - CI: Dependency-complete `WoofWatcher Verify` run `30893971949`, job `91942353828`, passed implementation/docs commit `7cec621f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+
+## 2026-08-04 Missing-route recovery follows Dog Profile
+
+Global recovery copy is part of the owner-facing care shell, so it must consume the same canonical Dog Profile identity as core routes. Renamed dogs use their trimmed saved name; Phoenix remains only the intentional blank/`My Dog` starter fallback.

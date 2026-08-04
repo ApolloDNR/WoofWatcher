@@ -704,3 +704,7 @@ source tests do not clear native release gates.
 
 - CI: Dependency-complete `WoofWatcher Verify` run `30893971949`, job `91942353828`, passed implementation/docs commit `7cec621f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+
+## 2026-08-04 Missing-route identity proof remains open
+
+Source tests now prove the global missing-route recovery message follows Dog Profile identity. Route-named iOS/Android recovery-screen review and Apollo approval remain required; source coverage does not clear native release gates.

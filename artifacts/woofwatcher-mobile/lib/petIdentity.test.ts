@@ -4,7 +4,16 @@ import test from "node:test";
 import {
   buildAuthAccountIdentityCopy,
   buildAuthGatewayIdentityCopy,
+  buildNotFoundIdentityCopy,
 } from "./petIdentity.ts";
+
+test("routes a missing screen back to the active dog's room", () => {
+  assert.equal(
+    buildNotFoundIdentityCopy("  Mochi  "),
+    "The screen you were looking for is not here. Head back to Mochi's room and pick up the day from there.",
+  );
+  assert.match(buildNotFoundIdentityCopy("My Dog"), /Phoenix's room/);
+});
 
 test("names the active dog throughout the account gateway", () => {
   assert.deepEqual(buildAuthGatewayIdentityCopy("  Luna  "), {

@@ -23,6 +23,13 @@ function readMobileLibFile(path: string): string {
   return readFileSync(join(MOBILE_LIB_DIR, path), "utf8");
 }
 
+test("routes missing-screen copy through Dog Profile identity", () => {
+  const notFound = readAppFile("+not-found.tsx");
+
+  assert.match(notFound, /buildNotFoundIdentityCopy\(state\.profile\.name\)/);
+  assert.doesNotMatch(notFound, /Head back to the Phoenix/);
+});
+
 test("routes Trends identity through the canonical Dog Profile name", () => {
   const trends = readAppFile("trends.tsx");
 
