@@ -23,6 +23,7 @@ import { useCare } from "@/context/CareContext";
 import { isClerkEnabledForBuild } from "@/lib/auth";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import { buildAuthGatewayIdentityCopy } from "@/lib/petIdentity";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 
 const PIXEL_ROOM_SOURCE = require("@/assets/avatar/rooms/phoenix-room-day-option-b.png");
@@ -30,23 +31,25 @@ const PIXEL_DOG_SOURCE = require("@/assets/avatar/phoenix/approved/phoenix-main-
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 const BUBBLE_INK = "#142033";
 
-const TRUST_STEPS = [
-  {
-    icon: "shield-checkmark-outline" as const,
-    label: "Provider account",
-    detail: isClerkEnabledForBuild ? "Provider enabled" : "Local-only mode",
-  },
-  {
-    icon: "home-outline" as const,
-    label: "Local-first care",
-    detail: "Logs stay usable on this device while sync is configured.",
-  },
-  {
-    icon: "sparkles-outline" as const,
-    label: "CareTwin ready",
-    detail: "Set up Phoenix, then invite your household when providers are live.",
-  },
-];
+function buildTrustSteps(setupDetail: string) {
+  return [
+    {
+      icon: "shield-checkmark-outline" as const,
+      label: "Provider account",
+      detail: isClerkEnabledForBuild ? "Provider enabled" : "Local-only mode",
+    },
+    {
+      icon: "home-outline" as const,
+      label: "Local-first care",
+      detail: "Logs stay usable on this device while sync is configured.",
+    },
+    {
+      icon: "sparkles-outline" as const,
+      label: "CareTwin ready",
+      detail: setupDetail,
+    },
+  ];
+}
 
 export function AuthShell({
   title,
@@ -61,6 +64,8 @@ export function AuthShell({
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state } = useCare();
+  const gatewayIdentity = buildAuthGatewayIdentityCopy(state.profile.name);
+  const trustSteps = buildTrustSteps(gatewayIdentity.setupDetail);
   const bottomPadding = getStandaloneRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -128,13 +133,13 @@ export function AuthShell({
           <View style={[styles.stageHud, { backgroundColor: colors.ivory, borderColor: colors.brandNavy + "22" }]}>
             <View style={[styles.stageDot, { backgroundColor: colors.brandNavy }]} />
             <Text style={[styles.stageHudText, { color: BUBBLE_INK, fontFamily: "Inter_700Bold" }]}>
-              Phoenix care starts here
+              {gatewayIdentity.stageLabel}
             </Text>
           </View>
         </ImageBackground>
 
         <View style={styles.trustGrid}>
-          {TRUST_STEPS.map((step) => (
+          {trustSteps.map((step) => (
             <View
               key={step.label}
               style={[styles.trustTile, { backgroundColor: colors.card, borderColor: colors.border }]}

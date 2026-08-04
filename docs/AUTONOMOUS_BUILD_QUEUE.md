@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-03 Auth gateway dog identity
+
+- DONE: The account gateway stage and setup trust step now follow the active Dog Profile instead of hardcoding Phoenix after a rename.
+- VERIFIED: Red-first identity coverage failed on the missing gateway builder, then focused identity plus mobile-readiness coverage passed `174/174`; blank and placeholder profiles retain the intentional Phoenix starter identity.
+- NEXT: Run dependency-complete branch CI. Native iOS/Android Auth/Setup review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
+
 ## 2026-08-03 Quick Log meal guidance identity
 
 - DONE: The meal detail sheet now names the active Dog Profile when explaining the served-to-outcome follow-up instead of hardcoding Phoenix.

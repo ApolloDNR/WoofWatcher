@@ -695,3 +695,10 @@ Auth/Setup evidence remain open.
 The shared care-twin scene now personalizes direct interaction verbs from Dog
 Profile instead of leaking the Phoenix starter identity after a rename. Native
 screen-reader traversal and route-named device proof remain open gates.
+
+## 2026-08-03 Auth gateway dog identity gate
+
+- PASS (source): account-gateway stage and setup copy follow Dog Profile;
+  unconfigured profiles retain the intentional Phoenix starter identity.
+- OPEN (native/provider): route-named iOS/Android Auth/Setup review,
+  VoiceOver/TalkBack, real provider evidence, and Apollo approval.

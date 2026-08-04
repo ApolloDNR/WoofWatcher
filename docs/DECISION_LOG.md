@@ -3158,3 +3158,9 @@ fallback for preview/runtime callers without profile identity.
 Reason: the room label already followed Dog Profile, so announcing `Pet
 Phoenix` or `Let Phoenix rest` inside a renamed dog's room broke the dog-first
 source-of-truth contract.
+
+## 2026-08-03 Account gateway follows Dog Profile identity
+
+The account gateway uses the active profile name for its stage and setup trust
+copy. Phoenix remains the deliberate starter identity only while the profile is
+blank or still `My Dog`; provider readiness claims remain unchanged.

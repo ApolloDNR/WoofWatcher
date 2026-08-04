@@ -18,3 +18,14 @@ export function resolvePetName(
   if (!trimmed || trimmed === DEFAULT_PET_PLACEHOLDER) return fallback;
   return trimmed;
 }
+
+export function buildAuthGatewayIdentityCopy(name: string | null | undefined): {
+  setupDetail: string;
+  stageLabel: string;
+} {
+  const petName = resolvePetName(name);
+  return {
+    setupDetail: `Set up ${petName}, then invite your household when providers are live.`,
+    stageLabel: `${petName} care starts here`,
+  };
+}

@@ -5369,3 +5369,13 @@ passed implementation/docs commit `130dcd9f` with pinned dependency install,
 JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and
 Complete job. Rerun after this proof-record commit before treating the final
 branch tip as current.
+
+## 2026-08-03 Auth gateway dog identity slice
+
+AuthShell now derives its stage label and setup trust detail from the canonical
+Dog Profile identity. Renamed households no longer see Phoenix in those two
+gateway messages, while blank and `My Dog` profiles keep the intentional
+Phoenix starter copy. Red-first identity coverage failed before the builder
+existed; focused identity plus mobile readiness passed `174/174` afterward.
+Native Auth/Setup proof, providers, store review, and Apollo approval remain
+separate gates.

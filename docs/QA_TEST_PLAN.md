@@ -2895,3 +2895,10 @@ Source coverage now checks that happy and tired living-room interactions use
 the active Dog Profile name. Native QA must still confirm the personalized
 verbs in VoiceOver and TalkBack on iOS and Android without changing the
 underlying care-state action, room motion, or long-press Avatar Studio route.
+
+## 2026-08-03 Auth gateway dog identity QA
+
+- Rename the Dog Profile, reopen the account gateway, and confirm the stage
+  and setup trust step use that name instead of Phoenix.
+- Confirm blank and placeholder profiles still use the Phoenix starter identity.
+- Native iOS/Android Auth/Setup and VoiceOver/TalkBack proof remain open.
