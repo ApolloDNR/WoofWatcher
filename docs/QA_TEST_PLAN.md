@@ -4,6 +4,7 @@
 
 - Rename the active dog to Luna and confirm local-preview sign-in, configured sign-in, and configured sign-up guidance all name Luna.
 - Confirm blank and `My Dog` profiles retain Phoenix as the starter identity.
+- Dependency-complete CI: `WoofWatcher Verify` run `30906930893`, job `91984081583`, passed implementation/docs commit `755dcfd7`.
 - Source coverage does not replace native iOS/Android interaction, VoiceOver/TalkBack traversal, or real Clerk provider proof.
 
 ## 2026-08-03 Quick Log meal guidance identity

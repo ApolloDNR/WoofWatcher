@@ -3,6 +3,7 @@
 ## 2026-08-04 Auth account dog identity
 
 - PASS (source/test): account guidance resolves the active Dog Profile name across preview sign-in and provider-enabled sign-in/sign-up paths.
+- PASS (CI): `WoofWatcher Verify` run `30906930893`, job `91984081583`, passed implementation/docs commit `755dcfd7` including dependency install, focused tests, typecheck, and CI-safe builds.
 - OPEN (native/provider): iOS/Android auth interaction, VoiceOver/TalkBack, Clerk evidence, route-named screenshots, and Apollo approval.
 
 ## 2026-08-03 Quick Log meal guidance identity

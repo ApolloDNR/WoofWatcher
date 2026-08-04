@@ -4,6 +4,8 @@
 
 Local-preview sign-in and provider-enabled sign-in/sign-up guidance now receive canonical Dog Profile identity copy, so renamed households no longer see Phoenix in account instructions. Red-first behavior coverage failed on the missing builder and passed after the minimal shared copy and route wiring. Auth enablement, local-first storage, and provider gates are unchanged; native/provider/store/Apollo evidence remains separate.
 
+Dependency-complete `WoofWatcher Verify` run `30906930893`, job `91984081583`, passed implementation/docs commit `755dcfd7`, including pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit before treating the final branch tip as current.
+
 ## 2026-08-03 Quick Log meal guidance identity slice
 
 The shared meal detail presentation now receives the resolved active-dog name from Log, so its served-to-outcome follow-up no longer contradicts a renamed Dog Profile. Red-first coverage failed on Phoenix versus Luna, then focused Quick Log and mobile-readiness coverage passed `187/187`. Meal persistence and outcome-pending semantics are unchanged; native interaction/accessibility and provider/store/Apollo evidence remain separate gates.

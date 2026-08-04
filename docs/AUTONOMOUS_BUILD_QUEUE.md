@@ -4,6 +4,7 @@
 
 - DONE: Local-preview sign-in plus provider-enabled sign-in and sign-up guidance now follow the active Dog Profile instead of hardcoding Phoenix after a rename.
 - VERIFIED: Red-first identity coverage failed on the missing shared account-copy builder, then passed `4/4`; blank and placeholder profiles retain the intentional Phoenix starter identity.
+- CI: Dependency-complete `WoofWatcher Verify` run `30906930893`, job `91984081583`, passed implementation/docs commit `755dcfd7`; pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps all passed.
 - NEXT: Run focused/broad verification and dependency-complete branch CI. Native iOS/Android Auth review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
 
 ## 2026-08-03 Auth gateway dog identity
