@@ -5379,3 +5379,9 @@ Phoenix starter copy. Red-first identity coverage failed before the builder
 existed; focused identity plus mobile readiness passed `174/174` afterward.
 Native Auth/Setup proof, providers, store review, and Apollo approval remain
 separate gates.
+
+Dependency-complete `WoofWatcher Verify` run `30873151395`, job `91879068943`,
+passed implementation/docs commit `4b436ab9` with pinned dependency install,
+JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and
+Complete job. Rerun after this proof-record commit before treating the final
+branch tip as current.

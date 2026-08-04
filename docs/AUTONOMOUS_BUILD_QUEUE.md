@@ -4,7 +4,8 @@
 
 - DONE: The account gateway stage and setup trust step now follow the active Dog Profile instead of hardcoding Phoenix after a rename.
 - VERIFIED: Red-first identity coverage failed on the missing gateway builder, then focused identity plus mobile-readiness coverage passed `174/174`; blank and placeholder profiles retain the intentional Phoenix starter identity.
-- NEXT: Run dependency-complete branch CI. Native iOS/Android Auth/Setup review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30873151395`, job `91879068943`, passed implementation/docs commit `4b436ab9`; pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native iOS/Android Auth/Setup review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
 
 ## 2026-08-03 Quick Log meal guidance identity
 
