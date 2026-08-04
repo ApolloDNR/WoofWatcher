@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-04 Today Command setup identity
+
+- DONE: Home's empty-account setup command now resolves the active Dog Profile name canonically instead of exposing whitespace or the `My Dog` placeholder.
+- VERIFIED: Red-first Today Command coverage failed on `Set up   Luna  `, then focused identity/readiness coverage passed `194/194`; unnamed profiles retain the intentional Phoenix starter identity.
+- NEXT: Require dependency-complete branch CI. Native iOS/Android Home review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
+
 ## 2026-08-04 More hub dog identity
 
 - DONE: More now resolves the active Dog Profile name canonically before feeding Care Team, Access Pass, invites, sharing, WoofGuide, and profile copy.

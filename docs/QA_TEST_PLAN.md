@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-08-04 Today Command setup identity
+
+- With no routines or logs, save the active dog as `  Luna  ` and confirm Home says `Set up Luna`.
+- Confirm the placeholder `My Dog` profile says `Set up Phoenix` and never exposes the placeholder as dog identity.
+- Source tests do not replace native iOS/Android interaction, VoiceOver/TalkBack traversal, provider proof, or Apollo approval.
+
 ## 2026-08-04 More hub dog identity
 
 - Save the active dog as `  Luna  ` and confirm More shows Luna without whitespace across the profile header, Care Team, invites, Access Pass, sharing, and WoofGuide entry copy.

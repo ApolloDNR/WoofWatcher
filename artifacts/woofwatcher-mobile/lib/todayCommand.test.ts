@@ -31,6 +31,20 @@ test("missed meal in the morning creates a log-meal primary action", () => {
   assert.match(command.primaryAction.detail, /Breakfast/i);
 });
 
+test("empty Today Command follows the canonical Dog Profile identity", () => {
+  const renamed = deriveTodayCommand(
+    state({ profile: { name: "  Luna  " }, routines: [], caregivers: [] }),
+    new Date("2026-06-06T01:00:00-07:00").getTime(),
+  );
+  const starter = deriveTodayCommand(
+    state({ profile: { name: "My Dog" }, routines: [], caregivers: [] }),
+    new Date("2026-06-06T01:00:00-07:00").getTime(),
+  );
+
+  assert.equal(renamed.primaryAction.label, "Set up Luna");
+  assert.equal(starter.primaryAction.label, "Set up Phoenix");
+});
+
 test("partial meal log satisfies the meal routine and moves command to the next open care item", () => {
   const command = deriveTodayCommand(
     state({

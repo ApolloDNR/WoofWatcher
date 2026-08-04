@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-04 Today Command setup identity status
+
+Source-level Home setup copy now follows the canonical Dog Profile rule. Native iOS/Android Home review, VoiceOver/TalkBack traversal, provider/store evidence, and Apollo approval remain open; no provider, payment, live-AI, or launch capability was enabled.
+
 ## 2026-08-04 More hub dog-identity status
 
 Source-level More identity now follows the canonical Dog Profile rule across household and handoff copy. Native iOS/Android review, VoiceOver/TalkBack traversal, provider/store evidence, and Apollo approval remain open; no provider, payment, live-AI, or launch capability was enabled.

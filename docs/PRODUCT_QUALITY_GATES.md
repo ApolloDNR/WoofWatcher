@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-04 Today Command setup identity
+
+- PASS (source/test): Home's empty-account setup action uses the canonical Dog Profile identity rule for renamed, blank, and placeholder profiles.
+- OPEN (native/provider): iOS/Android Home interaction, VoiceOver/TalkBack, route-named evidence, provider/store proof, and Apollo approval.
+
 ## 2026-08-04 More hub dog identity
 
 - PASS (source/test): More routes its owner-facing identity through the canonical Dog Profile resolver instead of duplicating raw-name fallback logic.

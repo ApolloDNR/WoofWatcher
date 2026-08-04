@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-04: Today Command setup follows Dog Profile identity
+
+- Decision: resolve the empty-account Home setup label through `resolvePetName` instead of interpolating raw profile state.
+- Reason: Today Command is the real-care front door and must not expose whitespace or the `My Dog` storage placeholder.
+- Boundary: routines, logs, persistence, provider readiness, and launch gates are unchanged.
+
 ## 2026-08-04: More hub identity follows the canonical Dog Profile rule
 
 - Decision: resolve the More route's shared `petName` through `resolvePetName` before it reaches household, handoff, assistant, and profile surfaces.
