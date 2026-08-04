@@ -2189,6 +2189,8 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: Avatar Studio Customize guidance now names the active Dog Profile instead of hardcoding Phoenix; trimmed renamed dogs are honored and blank/`My Dog` starter profiles intentionally retain Phoenix.
 - VERIFIED: Red-first identity coverage failed because the new active-dog copy boundary did not exist, then focused identity plus mobile-readiness coverage passed `182/182` after implementation.
 - NEXT: Require dependency-complete branch CI. Route-named iOS/Android Avatar Studio evidence and Apollo approval remain open; source coverage does not clear native release gates.
+- CI: Dependency-complete `WoofWatcher Verify` run `30961680846`, job `92166753898`, passed implementation/docs commit `7dde9fdb`; pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
 
 ## 2026-08-04 Missing-route Dog Profile identity
 
