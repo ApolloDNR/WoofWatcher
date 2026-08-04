@@ -714,3 +714,6 @@ screen-reader traversal and route-named device proof remain open gates.
 - DONE: Adventure Mode now resolves its route-wide dog name through the canonical Dog Profile identity rule, trimming renamed dogs and preserving the intentional Phoenix starter fallback.
 - VERIFIED: A red-first mobile-readiness contract failed on the route's duplicated raw-name fallback, then passed after canonical wiring.
 - NEXT: Require dependency-complete branch CI. Route-named iOS/Android Adventure evidence and Apollo approval remain open; source coverage does not clear native release gates.
+
+- CI: Dependency-complete `WoofWatcher Verify` run `30893971949`, job `91942353828`, passed implementation/docs commit `7cec621f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
