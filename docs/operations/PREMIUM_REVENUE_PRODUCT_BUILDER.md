@@ -5428,3 +5428,5 @@ branch tip as current.
 ## 2026-08-04 Missing-route Dog Profile identity slice
 
 The global recovery screen now derives its room destination copy from the canonical Dog Profile name, preserving Phoenix only for blank/`My Dog` starter profiles. Red-first identity coverage caught the hardcoded leak; native route proof, provider/store evidence, and Apollo approval remain separate gates.
+
+Dependency-complete `WoofWatcher Verify` run `30950107740`, job `92129772326`, passed implementation/docs commit `aeeeb930` with pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit for final-tip authority.

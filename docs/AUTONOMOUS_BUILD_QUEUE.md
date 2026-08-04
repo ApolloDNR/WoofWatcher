@@ -2189,3 +2189,5 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: The global missing-route recovery screen now sends owners back to the active Dog Profile name's room instead of hardcoding Phoenix; blank and `My Dog` starter profiles intentionally retain Phoenix.
 - VERIFIED: A red-first pet identity test failed on the missing builder, then focused identity and mobile-readiness coverage passed `181/181` after canonical wiring.
 - NEXT: Require dependency-complete branch CI. Route-named iOS/Android recovery-screen evidence and Apollo approval remain open; source coverage does not clear native release gates.
+- CI: Dependency-complete `WoofWatcher Verify` run `30950107740`, job `92129772326`, passed implementation/docs commit `aeeeb930`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
