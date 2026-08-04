@@ -42,6 +42,7 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
+import { resolvePetName } from "@/lib/petIdentity";
 import { shareTextPayload } from "@/lib/shareText";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -121,7 +122,7 @@ export default function AdventureScreen() {
     topInset: insets.top,
     surface: "standalone",
   });
-  const petName = state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
+  const petName = resolvePetName(state.profile.name);
   const now = Date.now();
   const adventure = useMemo(
     () =>

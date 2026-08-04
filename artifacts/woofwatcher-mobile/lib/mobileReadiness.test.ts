@@ -38,6 +38,17 @@ test("routes Trends identity through the canonical Dog Profile name", () => {
   );
 });
 
+test("routes Adventure identity through the canonical Dog Profile name", () => {
+  const adventure = readAppFile("adventure.tsx");
+
+  assert.match(adventure, /import \{ resolvePetName \} from "@\/lib\/petIdentity"/);
+  assert.match(adventure, /const petName = resolvePetName\(state\.profile\.name\)/);
+  assert.doesNotMatch(
+    adventure,
+    /state\.profile\.name && state\.profile\.name !== "My Dog"/,
+  );
+});
+
 function getStyleBlock(source: string, styleName: string): string {
   const marker = `  ${styleName}: {`;
   const start = source.indexOf(marker);

@@ -708,3 +708,9 @@ screen-reader traversal and route-named device proof remain open gates.
 - PASS (source): Trends uses the canonical Dog Profile resolver for its header
   and mood-trend input, including trimmed renamed names and starter fallback.
 - OPEN (native): route-named iOS/Android Trends review and Apollo approval.
+
+## 2026-08-04 Adventure Dog Profile identity
+
+- DONE: Adventure Mode now resolves its route-wide dog name through the canonical Dog Profile identity rule, trimming renamed dogs and preserving the intentional Phoenix starter fallback.
+- VERIFIED: A red-first mobile-readiness contract failed on the route's duplicated raw-name fallback, then passed after canonical wiring.
+- NEXT: Require dependency-complete branch CI. Route-named iOS/Android Adventure evidence and Apollo approval remain open; source coverage does not clear native release gates.

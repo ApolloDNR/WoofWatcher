@@ -683,3 +683,9 @@ and Apollo approval remain required; source and CI do not clear those gates.
 Source now resolves the Trends header and mood-trend identity from Dog Profile.
 Route-named iOS/Android Trends evidence and Apollo approval remain required;
 source tests do not clear native release gates.
+
+## 2026-08-04 Adventure Dog Profile identity
+
+- DONE: Adventure Mode now resolves its route-wide dog name through the canonical Dog Profile identity rule, trimming renamed dogs and preserving the intentional Phoenix starter fallback.
+- VERIFIED: A red-first mobile-readiness contract failed on the route's duplicated raw-name fallback, then passed after canonical wiring.
+- NEXT: Require dependency-complete branch CI. Route-named iOS/Android Adventure evidence and Apollo approval remain open; source coverage does not clear native release gates.

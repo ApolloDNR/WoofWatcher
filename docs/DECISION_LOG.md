@@ -3171,3 +3171,9 @@ Standalone insight routes must consume `resolvePetName` rather than recreate
 placeholder rules or pass raw profile identity downstream. Trends headers and
 mood summaries are owner-facing care evidence and must agree with the rest of
 the dog-first care loop.
+
+## 2026-08-04 Adventure Dog Profile identity
+
+- DONE: Adventure Mode now resolves its route-wide dog name through the canonical Dog Profile identity rule, trimming renamed dogs and preserving the intentional Phoenix starter fallback.
+- VERIFIED: A red-first mobile-readiness contract failed on the route's duplicated raw-name fallback, then passed after canonical wiring.
+- NEXT: Require dependency-complete branch CI. Route-named iOS/Android Adventure evidence and Apollo approval remain open; source coverage does not clear native release gates.
