@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-04 More hub dog identity slice
+
+More now resolves its route-wide pet name through the canonical Dog Profile rule before that identity reaches Care Team, Access Pass, invites, Care Pass sharing, WoofGuide, and the profile header. Red-first readiness coverage caught the duplicated raw-name fallback. Provider behavior and launch gates are unchanged; native/provider/store/Apollo evidence remains separate.
+
 ## 2026-08-04 Auth account dog identity slice
 
 Local-preview sign-in and provider-enabled sign-in/sign-up guidance now receive canonical Dog Profile identity copy, so renamed households no longer see Phoenix in account instructions. Red-first behavior coverage failed on the missing builder and passed after the minimal shared copy and route wiring. Auth enablement, local-first storage, and provider gates are unchanged; native/provider/store/Apollo evidence remains separate.

@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-08-04 More hub dog identity
+
+- Save the active dog as `  Luna  ` and confirm More shows Luna without whitespace across the profile header, Care Team, invites, Access Pass, sharing, and WoofGuide entry copy.
+- Confirm blank and `My Dog` profiles retain Phoenix as the starter identity.
+- Source coverage does not replace native iOS/Android interaction, VoiceOver/TalkBack traversal, provider proof, or Apollo approval.
+
 ## 2026-08-04 Auth account dog identity
 
 - Rename the active dog to Luna and confirm local-preview sign-in, configured sign-in, and configured sign-up guidance all name Luna.

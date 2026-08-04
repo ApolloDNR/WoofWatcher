@@ -44,6 +44,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
+import { resolvePetName } from "@/lib/petIdentity";
 import { deriveCareSyncDashboard, type CareSyncDashboard } from "@/lib/careSync";
 import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
@@ -415,10 +416,7 @@ export default function MoreScreen() {
       }),
     [entries, routines, caregivers, now, providerSyncEnabled],
   );
-  const petName =
-    profile.name && profile.name !== "My Dog"
-      ? profile.name
-      : "Phoenix";
+  const petName = resolvePetName(profile.name);
   const careTwinRoster = useMemo(
     () => deriveCareTwinRoster(state),
     [state.activePetId, state.profile, state.pets],

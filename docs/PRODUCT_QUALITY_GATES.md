@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-04 More hub dog identity
+
+- PASS (source/test): More routes its owner-facing identity through the canonical Dog Profile resolver instead of duplicating raw-name fallback logic.
+- OPEN (native/provider): iOS/Android More interaction, VoiceOver/TalkBack, route-named evidence, provider/store proof, and Apollo approval.
+
 ## 2026-08-04 Auth account dog identity
 
 - PASS (source/test): account guidance resolves the active Dog Profile name across preview sign-in and provider-enabled sign-in/sign-up paths.

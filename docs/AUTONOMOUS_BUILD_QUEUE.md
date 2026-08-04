@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-04 More hub dog identity
+
+- DONE: More now resolves the active Dog Profile name canonically before feeding Care Team, Access Pass, invites, sharing, WoofGuide, and profile copy.
+- VERIFIED: Red-first mobile readiness failed on the duplicated raw-name fallback; blank and `My Dog` profiles keep the intentional Phoenix starter identity.
+- NEXT: Run focused/broad verification and dependency-complete branch CI. Native iOS/Android More review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
+
 ## 2026-08-04 Auth account dog identity
 
 - DONE: Local-preview sign-in plus provider-enabled sign-in and sign-up guidance now follow the active Dog Profile instead of hardcoding Phoenix after a rename.

@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-04: More hub identity follows the canonical Dog Profile rule
+
+- Decision: resolve the More route's shared `petName` through `resolvePetName` before it reaches household, handoff, assistant, and profile surfaces.
+- Reason: More fans one identity value into several trust-sensitive workflows; whitespace or placeholder drift weakens the Dog Profile source-of-truth contract.
+- Boundary: profile persistence, provider readiness, sharing behavior, and launch gates are unchanged.
+
 ## 2026-08-04: Auth account guidance follows Dog Profile identity
 
 - Decision: derive preview sign-in and configured sign-in/sign-up guidance through the canonical Dog Profile name rule.
