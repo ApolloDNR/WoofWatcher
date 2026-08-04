@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-08-04 Auth account dog identity
+
+- Rename the active dog to Luna and confirm local-preview sign-in, configured sign-in, and configured sign-up guidance all name Luna.
+- Confirm blank and `My Dog` profiles retain Phoenix as the starter identity.
+- Source coverage does not replace native iOS/Android interaction, VoiceOver/TalkBack traversal, or real Clerk provider proof.
+
 ## 2026-08-03 Quick Log meal guidance identity
 
 - Rename the active dog to Luna, open the Meal quick-log detail sheet, and confirm the pending-outcome explanation says what Luna ate.

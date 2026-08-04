@@ -598,8 +598,13 @@ test("keeps auth entry styled as the truthful CareTwin gateway", () => {
   assert.match(authUi, /authSetupProofManifest\.blockers\.map/);
   assert.match(authUi, /Native proof blocked/);
   assert.match(authUi, /accessibilityLabel=\{label\}/);
-  assert.match(signIn, /account layer ready for shared sync/);
-  assert.match(signUp, /Care data stays local-first until production sync providers are configured/);
+  assert.match(signIn, /buildAuthAccountIdentityCopy/);
+  assert.match(signIn, /buildAuthAccountIdentityCopy\(state\.profile\.name\)/);
+  assert.match(signIn, /subtitle=\{identityCopy\.previewSignIn\}/);
+  assert.match(signIn, /subtitle=\{identityCopy\.signIn\}/);
+  assert.match(signUp, /buildAuthAccountIdentityCopy/);
+  assert.match(signUp, /buildAuthAccountIdentityCopy\(state\.profile\.name\)/);
+  assert.match(signUp, /subtitle=\{identityCopy\.signUp\}/);
 });
 
 test("keeps selected Quick Log launcher tiles readable in dark mode", () => {

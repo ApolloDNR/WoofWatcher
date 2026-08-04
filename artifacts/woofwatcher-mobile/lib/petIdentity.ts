@@ -29,3 +29,16 @@ export function buildAuthGatewayIdentityCopy(name: string | null | undefined): {
     stageLabel: `${petName} care starts here`,
   };
 }
+
+export function buildAuthAccountIdentityCopy(name: string | null | undefined): {
+  previewSignIn: string;
+  signIn: string;
+  signUp: string;
+} {
+  const petName = resolvePetName(name);
+  return {
+    previewSignIn: `Accounts are not connected in this preview build. Review ${petName}'s care space in local-only mode and sign in once production auth is configured.`,
+    signIn: `Return to your household care space, review ${petName}'s open loops, and keep the account layer ready for shared sync.`,
+    signUp: `Create the account layer for ${petName}'s care twin. Care data stays local-first until production sync providers are configured.`,
+  };
+}

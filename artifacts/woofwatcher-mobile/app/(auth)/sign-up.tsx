@@ -14,12 +14,16 @@ import {
   LocalPreviewGateway,
   PrimaryButton,
 } from "@/components/auth-ui";
+import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { isClerkEnabledForBuild } from "@/lib/auth";
+import { buildAuthAccountIdentityCopy } from "@/lib/petIdentity";
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignUpScreen() {
+  const { state } = useCare();
+  const identityCopy = buildAuthAccountIdentityCopy(state.profile.name);
   // Clerk hooks require the matching provider. Production remains local-only
   // even if a valid Clerk key is accidentally present in the build environment.
   if (!isClerkEnabledForBuild) {
@@ -27,10 +31,10 @@ export default function SignUpScreen() {
       <LocalPreviewGateway subtitle="Account creation is not connected in this preview build. Care data stays local-first until production sync providers are configured." />
     );
   }
-  return <ClerkSignUpScreen />;
+  return <ClerkSignUpScreen subtitle={identityCopy.signUp} />;
 }
 
-function ClerkSignUpScreen() {
+function ClerkSignUpScreen({ subtitle }: { subtitle: string }) {
   const colors = useColors();
   const { signUp, errors, fetchStatus } = useSignUp();
   const { startSSOFlow } = useSSO();
@@ -160,7 +164,7 @@ function ClerkSignUpScreen() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Create the account layer for Phoenix's care twin. Care data stays local-first until production sync providers are configured."
+      subtitle={subtitle}
     >
       <FormError message={formError} />
       <Field

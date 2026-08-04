@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildAuthGatewayIdentityCopy } from "./petIdentity.ts";
+import {
+  buildAuthAccountIdentityCopy,
+  buildAuthGatewayIdentityCopy,
+} from "./petIdentity.ts";
 
 test("names the active dog throughout the account gateway", () => {
   assert.deepEqual(buildAuthGatewayIdentityCopy("  Luna  "), {
@@ -19,4 +22,23 @@ test("uses the starter identity before a dog is named", () => {
     setupDetail: "Set up Phoenix, then invite your household when providers are live.",
     stageLabel: "Phoenix care starts here",
   });
+});
+
+test("names the active dog throughout sign-in and sign-up guidance", () => {
+  assert.deepEqual(buildAuthAccountIdentityCopy("  Luna  "), {
+    previewSignIn:
+      "Accounts are not connected in this preview build. Review Luna's care space in local-only mode and sign in once production auth is configured.",
+    signIn:
+      "Return to your household care space, review Luna's open loops, and keep the account layer ready for shared sync.",
+    signUp:
+      "Create the account layer for Luna's care twin. Care data stays local-first until production sync providers are configured.",
+  });
+});
+
+test("keeps the starter dog identity in account guidance before naming", () => {
+  assert.deepEqual(
+    buildAuthAccountIdentityCopy("My Dog"),
+    buildAuthAccountIdentityCopy("   "),
+  );
+  assert.match(buildAuthAccountIdentityCopy("My Dog").signIn, /Phoenix's open loops/);
 });

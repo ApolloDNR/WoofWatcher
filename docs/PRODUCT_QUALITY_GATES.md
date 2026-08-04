@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-04 Auth account dog identity
+
+- PASS (source/test): account guidance resolves the active Dog Profile name across preview sign-in and provider-enabled sign-in/sign-up paths.
+- OPEN (native/provider): iOS/Android auth interaction, VoiceOver/TalkBack, Clerk evidence, route-named screenshots, and Apollo approval.
+
 ## 2026-08-03 Quick Log meal guidance identity
 
 - PASS (source/test): served-to-outcome meal guidance uses the resolved active Dog Profile name.

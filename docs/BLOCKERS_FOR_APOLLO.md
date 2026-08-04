@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-04 Auth account dog-identity status
+
+Source-level preview/configured account guidance now follows Dog Profile after a rename. Real native iOS/Android Auth review, VoiceOver/TalkBack traversal, Clerk provider evidence, store review, and Apollo approval remain open; no provider capability was enabled.
+
 ## 2026-08-03 Auth gateway dog-identity status
 
 Source-level gateway copy now follows Dog Profile after a rename. Real native iOS/Android Auth/Setup review, VoiceOver/TalkBack traversal, provider evidence, store review, and Apollo approval remain open; no provider capability was enabled.

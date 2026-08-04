@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-04: Auth account guidance follows Dog Profile identity
+
+- Decision: derive preview sign-in and configured sign-in/sign-up guidance through the canonical Dog Profile name rule.
+- Reason: account entry is part of the household care loop and must not contradict a renamed dog before or after providers are enabled.
+- Boundary: auth enablement, provider readiness, local-first storage, and sync behavior are unchanged.
+
 ## 2026-08-03: Meal follow-up guidance follows Dog Profile identity
 
 - Decision: pass the resolved active-dog name into the shared Quick Log detail presentation and use it in served-to-outcome meal guidance.

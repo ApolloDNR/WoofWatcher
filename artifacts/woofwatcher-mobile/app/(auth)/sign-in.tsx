@@ -14,23 +14,27 @@ import {
   LocalPreviewGateway,
   PrimaryButton,
 } from "@/components/auth-ui";
+import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { isClerkEnabledForBuild } from "@/lib/auth";
+import { buildAuthAccountIdentityCopy } from "@/lib/petIdentity";
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
+  const { state } = useCare();
+  const identityCopy = buildAuthAccountIdentityCopy(state.profile.name);
   // Clerk hooks require the matching provider. Production remains local-only
   // even if a valid Clerk key is accidentally present in the build environment.
   if (!isClerkEnabledForBuild) {
     return (
-      <LocalPreviewGateway subtitle="Accounts are not connected in this preview build. Review Phoenix's care space in local-only mode and sign in once production auth is configured." />
+      <LocalPreviewGateway subtitle={identityCopy.previewSignIn} />
     );
   }
-  return <ClerkSignInScreen />;
+  return <ClerkSignInScreen subtitle={identityCopy.signIn} />;
 }
 
-function ClerkSignInScreen() {
+function ClerkSignInScreen({ subtitle }: { subtitle: string }) {
   const colors = useColors();
   const { signIn, errors, fetchStatus } = useSignIn();
   const { startSSOFlow } = useSSO();
@@ -104,7 +108,7 @@ function ClerkSignInScreen() {
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Return to your household care space, review Phoenix's open loops, and keep the account layer ready for shared sync."
+      subtitle={subtitle}
     >
       <FormError message={formError} />
       <Field

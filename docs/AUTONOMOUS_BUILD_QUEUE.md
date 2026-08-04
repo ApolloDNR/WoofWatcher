@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-04 Auth account dog identity
+
+- DONE: Local-preview sign-in plus provider-enabled sign-in and sign-up guidance now follow the active Dog Profile instead of hardcoding Phoenix after a rename.
+- VERIFIED: Red-first identity coverage failed on the missing shared account-copy builder, then passed `4/4`; blank and placeholder profiles retain the intentional Phoenix starter identity.
+- NEXT: Run focused/broad verification and dependency-complete branch CI. Native iOS/Android Auth review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
+
 ## 2026-08-03 Auth gateway dog identity
 
 - DONE: The account gateway stage and setup trust step now follow the active Dog Profile instead of hardcoding Phoenix after a rename.
