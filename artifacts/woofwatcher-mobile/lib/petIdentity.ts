@@ -47,3 +47,7 @@ export function buildNotFoundIdentityCopy(name: string | null | undefined): stri
   const petName = resolvePetName(name);
   return `The screen you were looking for is not here. Head back to ${petName}'s room and pick up the day from there.`;
 }
+
+export function buildAvatarStudioIdentityCopy(name: string | null | undefined): string {
+  return `Make me ${resolvePetName(name)}.`;
+}

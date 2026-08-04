@@ -77,7 +77,7 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
-import { resolvePetName } from "@/lib/petIdentity";
+import { buildAvatarStudioIdentityCopy, resolvePetName } from "@/lib/petIdentity";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
@@ -912,7 +912,7 @@ export default function PortraitScreen() {
                     activeTab === "emotes"
                       ? "Try my moods."
                       : activeTab === "customize"
-                        ? "Make me Phoenix."
+                        ? buildAvatarStudioIdentityCopy(petName)
                         : "I'm ready."
                   }
                   energy={status.energy}

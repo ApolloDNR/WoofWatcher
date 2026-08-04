@@ -708,3 +708,7 @@ source tests do not clear native release gates.
 ## 2026-08-04 Missing-route identity proof remains open
 
 Source tests now prove the global missing-route recovery message follows Dog Profile identity. Route-named iOS/Android recovery-screen review and Apollo approval remain required; source coverage does not clear native release gates.
+
+## 2026-08-04 Avatar Studio identity proof remains open
+
+Source tests now prove Customize preview guidance follows Dog Profile identity. Route-named iOS/Android Avatar Studio review, native accessibility traversal, final asset approval, and Apollo approval remain required; source coverage does not clear those gates.

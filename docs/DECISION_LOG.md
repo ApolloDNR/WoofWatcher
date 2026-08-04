@@ -3202,3 +3202,7 @@ the dog-first care loop.
 ## 2026-08-04 Missing-route recovery follows Dog Profile
 
 Global recovery copy is part of the owner-facing care shell, so it must consume the same canonical Dog Profile identity as core routes. Renamed dogs use their trimmed saved name; Phoenix remains only the intentional blank/`My Dog` starter fallback.
+
+## 2026-08-04 Avatar Studio guidance follows Dog Profile
+
+Avatar Studio preview speech is owner-facing care-twin identity, even when Phoenix remains the internal asset/template family name. Customize guidance therefore follows the canonical Dog Profile name; Phoenix remains only the intentional blank/`My Dog` starter fallback.

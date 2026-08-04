@@ -2,10 +2,17 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildAvatarStudioIdentityCopy,
   buildAuthAccountIdentityCopy,
   buildAuthGatewayIdentityCopy,
   buildNotFoundIdentityCopy,
 } from "./petIdentity.ts";
+
+test("names the active dog in Avatar Studio customization guidance", () => {
+  assert.equal(buildAvatarStudioIdentityCopy("  Mochi  "), "Make me Mochi.");
+  assert.equal(buildAvatarStudioIdentityCopy("My Dog"), "Make me Phoenix.");
+  assert.equal(buildAvatarStudioIdentityCopy("   "), "Make me Phoenix.");
+});
 
 test("routes a missing screen back to the active dog's room", () => {
   assert.equal(
