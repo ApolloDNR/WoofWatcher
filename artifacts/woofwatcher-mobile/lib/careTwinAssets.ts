@@ -101,8 +101,8 @@ export const CARE_TWIN_SPRITE_ASSETS: Partial<Record<CareTwinSpriteAction, CareT
     frameHeight: 256,
   },
   "walk-loop": {
-    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png", () =>
-      require("@/assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png"),
+    source: bundledAsset("assets/avatar/phoenix/storybook/storybook-walk-loop-v2-strip.png", () =>
+      require("@/assets/avatar/phoenix/storybook/storybook-walk-loop-v2-strip.png"),
     ),
     columns: 8,
     rows: 1,

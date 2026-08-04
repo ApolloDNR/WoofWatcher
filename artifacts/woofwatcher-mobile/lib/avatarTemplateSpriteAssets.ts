@@ -69,19 +69,19 @@ export const AVATAR_TEMPLATE_SPRITE_ASSETS: Partial<
       label: "Shepherd walk loop",
       asset: spriteAsset(
         bundledAsset(
-          "assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png",
+          "assets/avatar/phoenix/storybook/storybook-walk-loop-v2-strip.png",
           () =>
-            require("@/assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png"),
+            require("@/assets/avatar/phoenix/storybook/storybook-walk-loop-v2-strip.png"),
         ),
       ),
       track: {
         key: "shepherd:storybook-walk-loop",
         frameCount: 8,
-        fps: 9,
+        fps: 10,
         loop: true,
         slotSize: 256,
         requiredAsset:
-          "assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png",
+          "assets/avatar/phoenix/storybook/storybook-walk-loop-v2-strip.png",
         anchor: "bottom-center",
         notes:
           "Storybook board-matched shepherd walk loop for live Avatar Studio movement.",

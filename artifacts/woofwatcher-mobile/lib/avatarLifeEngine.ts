@@ -95,15 +95,13 @@ export const CARE_TWIN_SPRITE_MANIFEST: Record<CareTwinSpriteAction, CareTwinSpr
   "walk-loop": {
     key: "walk-loop",
     frameCount: 8,
-    // 12fps over the two-stride strip keeps a natural ~1.5 strides/sec dog
-    // cadence; 10fps read as a choppy flipbook.
-    fps: 12,
+    fps: 10,
     loop: true,
     anchor: "bottom-center",
     slotSize: 256,
-    requiredAsset: "assets/avatar/phoenix/storybook/storybook-walk-loop-strip.png",
+    requiredAsset: "assets/avatar/phoenix/storybook/storybook-walk-loop-v2-strip.png",
     fallbackAnimation: "walk",
-    notes: "Option B side-profile walk loop, same facing direction as the approved standing source, stable transparent strip.",
+    notes: "Eight-pose side-profile Phoenix gait with distinct contact, compression, passing, and lift phases on one stable baseline.",
   },
   "eat-loop": {
     key: "eat-loop",

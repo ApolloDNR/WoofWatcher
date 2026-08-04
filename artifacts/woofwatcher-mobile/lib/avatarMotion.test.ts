@@ -166,3 +166,29 @@ test("reactionsSince keeps reactions for entries logged in this session", () => 
   assert.equal(motion.state, "eating");
   assert.equal(motion.cue, "chew");
 });
+
+test("an open walk remains authoritative after reload even when its start log predates the session gate", () => {
+  const motion = deriveAvatarMotion({
+    now: NOW,
+    activeWalk: true,
+    reactionsSince: NOW - 60_000,
+    entries: [
+      {
+        id: "walk-open-before-reload",
+        type: "walk",
+        title: "Morning walk",
+        occurredAt: iso(-12),
+        details: {
+          walkLifecycle: "started",
+          walkStartedAt: iso(-12),
+          householdVisible: true,
+        },
+      },
+    ],
+    routines: [],
+  });
+
+  assert.equal(motion.state, "walking");
+  assert.equal(motion.cue, "walk-cycle");
+  assert.equal(motion.speech, "Out exploring.");
+});

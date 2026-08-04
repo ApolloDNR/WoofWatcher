@@ -16,7 +16,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -36,6 +35,7 @@ import {
   type CareEventType,
   type StickyNoteColor,
 } from "@workspace/care-domain";
+import { useAppViewport } from "@/context/AppViewportContext";
 import { useCare, Entry } from "@/context/CareContext";
 import { announce } from "@/lib/announce";
 import { isClerkConfigured } from "@/lib/auth";
@@ -1062,7 +1062,7 @@ export default function LogScreen() {
   // Under 360pt the console chrome truncates ("Tap saves. Hold o...",
   // "SAVED On d..."), so narrow screens get shorter honest strings and
   // drop the decorative under-5-sec pill.
-  const { width: viewportWidth } = useWindowDimensions();
+  const { width: viewportWidth } = useAppViewport();
   const narrowViewport = viewportWidth > 0 && viewportWidth < 360;
 
   const caregiver =

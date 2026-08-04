@@ -3,9 +3,55 @@ import test from "node:test";
 
 import {
   IMMERSIVE_ROAM_WAYPOINTS,
+  careTwinCanRoam,
   deriveCareTwinRoamPlan,
+  resolveRoamingTwinSpriteAction,
   roamPoseAt,
 } from "./careTwinRoam.ts";
+
+test("an active walk keeps the twin roaming even though walking is a care-action scene", () => {
+  assert.equal(
+    careTwinCanRoam({
+      transparentScene: true,
+      isStudio: false,
+      scenePhase: "care-action",
+      awayOnWalk: true,
+      hasWalkSprite: true,
+      hasDwellSprite: true,
+    }),
+    true,
+  );
+  assert.equal(
+    careTwinCanRoam({
+      transparentScene: true,
+      isStudio: false,
+      scenePhase: "care-action",
+      awayOnWalk: false,
+      hasWalkSprite: true,
+      hasDwellSprite: true,
+    }),
+    false,
+  );
+});
+
+test("the roaming rig paints the current gait immediately instead of trailing through an invisible pose", () => {
+  assert.equal(
+    resolveRoamingTwinSpriteAction({
+      moving: true,
+      dwellAction: "tail-wag",
+      overrideAction: null,
+    }),
+    "walk-loop",
+  );
+  assert.equal(
+    resolveRoamingTwinSpriteAction({
+      moving: false,
+      dwellAction: "tail-wag",
+      overrideAction: "ear-perk",
+    }),
+    "ear-perk",
+  );
+});
 
 test("roam plan is deterministic per seed and varies across seeds", () => {
   const a = deriveCareTwinRoamPlan({ anchorZone: "rug", seed: 7 });
