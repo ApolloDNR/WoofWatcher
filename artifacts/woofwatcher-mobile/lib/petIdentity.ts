@@ -55,3 +55,7 @@ export function buildAvatarStudioIdentityCopy(name: string | null | undefined): 
 export function buildCareTwinAwayIdentityCopy(name: string | null | undefined): string {
   return `${resolvePetName(name)} is out exploring`;
 }
+
+export function buildCareTwinLiveTitle(name: string | null | undefined): string {
+  return `${resolvePetName(name).toLocaleUpperCase()} TWIN`;
+}

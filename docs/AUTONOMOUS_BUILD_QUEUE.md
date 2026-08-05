@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-04 live care-twin HUD identity
+
+- DONE: The shared living-room HUD now names the active Dog Profile instead of labeling every renamed dog `PHOENIX TWIN`.
+- VERIFIED: Red-first identity coverage failed on the missing formatter, then focused identity/mobile-readiness coverage passed `184/184`; trimmed renamed dogs and the intentional blank/`My Dog` Phoenix starter identity are covered.
+- NEXT: Run broad verification and dependency-complete branch CI. Native iOS/Android room review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
+
 ## 2026-08-04 live care-twin away identity
 
 - DONE: The shared room's active-walk banner now resolves Dog Profile identity at the component boundary instead of formatting a raw prop.

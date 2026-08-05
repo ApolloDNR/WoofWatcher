@@ -1977,7 +1977,8 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.doesNotMatch(home, /avatarIdentityBar/);
   assert.match(room, /roomLiveTitle/);
   assert.match(room, /roomLiveDetail/);
-  assert.match(room, /PHOENIX TWIN/);
+  assert.match(room, /buildCareTwinLiveTitle\(petName\)/);
+  assert.doesNotMatch(room, /isStudio \? "STUDIO RIG" : "PHOENIX TWIN"/);
   assert.match(room, /avatarRoomRuntime\?\.activeSlots\.length/);
   assert.match(room, /liveSubText/);
   assert.match(room, /reactionProgress/);

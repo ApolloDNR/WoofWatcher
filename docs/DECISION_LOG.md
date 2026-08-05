@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-04: Living care-twin HUD follows Dog Profile identity
+
+- Decision: derive the non-studio room HUD title from the canonical active-dog name while retaining `STUDIO RIG` for production tooling.
+- Reason: the primary care-twin surface must not relabel a renamed dog as Phoenix.
+- Boundary: Phoenix asset/template identifiers, animation state, care persistence, and launch gates are unchanged.
+
 ## 2026-08-04: Live care-twin away copy owns canonical identity
 
 - Decision: resolve the active dog name inside the shared care-twin away-banner formatter instead of trusting every caller to normalize the prop first.

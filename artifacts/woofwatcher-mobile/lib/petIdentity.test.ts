@@ -6,8 +6,15 @@ import {
   buildAuthAccountIdentityCopy,
   buildAuthGatewayIdentityCopy,
   buildCareTwinAwayIdentityCopy,
+  buildCareTwinLiveTitle,
   buildNotFoundIdentityCopy,
 } from "./petIdentity.ts";
+
+test("names the active dog in the living care-twin HUD", () => {
+  assert.equal(buildCareTwinLiveTitle("  Mochi  "), "MOCHI TWIN");
+  assert.equal(buildCareTwinLiveTitle("My Dog"), "PHOENIX TWIN");
+  assert.equal(buildCareTwinLiveTitle("   "), "PHOENIX TWIN");
+});
 
 test("names the active dog in the live care-twin away banner", () => {
   assert.equal(

@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-04 live care-twin HUD identity status
+
+Source-level room HUD identity now follows the active Dog Profile while intentional Phoenix asset/template names remain unchanged. Native iOS/Android room review, VoiceOver/TalkBack traversal, route-named evidence, provider/store proof, and Apollo approval remain open; no provider, payment, live-AI, or launch capability was enabled.
+
 ## 2026-08-04 live care-twin away identity status
 
 Source-level active-walk room copy now follows canonical Dog Profile identity at the shared component boundary. Native iOS/Android active-walk review, VoiceOver/TalkBack traversal, route-named evidence, provider/store proof, and Apollo approval remain open; no provider, payment, live-AI, or launch capability was enabled.

@@ -57,7 +57,10 @@ import {
   type RoamPlan,
 } from "@/lib/careTwinRoam";
 import { pixelImageStyle } from "@/lib/pixelRendering";
-import { buildCareTwinAwayIdentityCopy } from "@/lib/petIdentity";
+import {
+  buildCareTwinAwayIdentityCopy,
+  buildCareTwinLiveTitle,
+} from "@/lib/petIdentity";
 import type { Mood } from "@/lib/phoenixStatus";
 
 // Constant ink for text on the fixed cream overlay chips/bubbles: the
@@ -483,7 +486,7 @@ export function LivingPhoenixRoom({
     [avatarConfig, shouldUseAvatarRuntime, stagePoseAction],
   );
   const avatarAccessoryCount = avatarRoomRuntime?.activeSlots.length ?? 0;
-  const roomLiveTitle = isStudio ? "STUDIO RIG" : "PHOENIX TWIN";
+  const roomLiveTitle = isStudio ? "STUDIO RIG" : buildCareTwinLiveTitle(petName);
   const roomLiveDetail = avatarRoomRuntime
     ? avatarAccessoryCount > 0
       ? `${avatarRoomRuntime.templateLabel} - ${avatarAccessoryCount} add-ons`

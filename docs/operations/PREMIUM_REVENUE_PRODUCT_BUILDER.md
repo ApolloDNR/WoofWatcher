@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-04 live care-twin HUD identity slice
+
+The shared living room now builds its non-studio HUD title from canonical Dog Profile identity, so renamed dogs see their own care twin while blank/`My Dog` profiles retain the intentional Phoenix starter identity. Red-first identity coverage caught the hardcoded `PHOENIX TWIN` label; studio tooling, Phoenix asset/template identifiers, animation behavior, and launch gates are unchanged. Native/provider/store/Apollo evidence remains separate.
+
 ## 2026-08-04 live care-twin away identity slice
 
 The shared living room now builds its active-walk banner from canonical Dog Profile identity, so whitespace-padded renamed dogs are trimmed and blank/`My Dog` profiles retain the intentional Phoenix starter identity even if a caller passes raw profile state. Red-first identity coverage caught the missing formatter; walk state, timing, persistence, and launch gates are unchanged. Native/provider/store/Apollo evidence remains separate.
