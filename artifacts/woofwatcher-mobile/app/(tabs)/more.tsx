@@ -44,7 +44,7 @@ import { useAvatar } from "@/context/AvatarContext";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
-import { resolvePetName } from "@/lib/petIdentity";
+import { buildCareTwinQaIdentityCopy, resolvePetName } from "@/lib/petIdentity";
 import { deriveCareSyncDashboard, type CareSyncDashboard } from "@/lib/careSync";
 import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
@@ -417,6 +417,7 @@ export default function MoreScreen() {
     [entries, routines, caregivers, now, providerSyncEnabled],
   );
   const petName = resolvePetName(profile.name);
+  const careTwinQaIdentityCopy = buildCareTwinQaIdentityCopy(profile.name);
   const careTwinRoster = useMemo(
     () => deriveCareTwinRoster(state),
     [state.activePetId, state.profile, state.pets],
@@ -1180,7 +1181,7 @@ export default function MoreScreen() {
             icon: "star" as PulseIconName,
             iconName: "phone-portrait-outline" as keyof typeof Ionicons.glyphMap,
             label: "Care Twin QA",
-            sub: "Internal device review for Phoenix room states and sprite loops",
+            sub: careTwinQaIdentityCopy.menuDetail,
             onPress: () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never);

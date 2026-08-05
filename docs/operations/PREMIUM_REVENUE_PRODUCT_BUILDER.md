@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-05 — Dog-aware Care Twin QA entry
+
+The internal device-review path now carries Dog Profile identity into both More's Care Twin QA description and the QA route subtitle. `buildCareTwinQaIdentityCopy` trims renamed dogs, preserves the intentional Phoenix starter fallback, and prevents a Mochi/Luna profile from being sent into a Phoenix-labeled review workflow. This does not complete native QA; route-named iOS/Android evidence and human approval remain required.
+
 ## 2026-08-05 WoofGuide composer identity slice
 
 WoofGuide now builds its composer placeholder through canonical Dog Profile identity, so whitespace-padded renamed dogs are trimmed and blank/`My Dog` profiles retain the intentional Phoenix starter identity. Red-first real identity coverage caught the missing formatter before the minimal route wiring. Prompt handling, local-first data, owner review, provider gating, and veterinary boundaries are unchanged; native/provider/store/Apollo evidence remains separate.

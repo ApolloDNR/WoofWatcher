@@ -14,6 +14,7 @@ import { LivingPhoenixRoom, type PhoenixRoomStat } from "@/components/LivingPhoe
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import { buildCareTwinQaIdentityCopy } from "@/lib/petIdentity";
 import {
   evaluateCareTwinRuntimeQaScenario,
   listCareTwinRuntimeQaScenarios,
@@ -260,6 +261,7 @@ function CareTwinQaScreenBody() {
   const routeParams = useLocalSearchParams<{ qaSurface?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const { state } = useCare();
+  const careTwinQaIdentityCopy = buildCareTwinQaIdentityCopy(state.profile.name);
   const [selectedEvidencePlatform, setSelectedEvidencePlatform] = useState<QaScreenshotEvidencePlatform>(() =>
     qaScreenshotPlatformForRuntime(),
   );
@@ -804,7 +806,7 @@ function CareTwinQaScreenBody() {
         <BoardRouteHeader
           kicker="Native QA"
           title="Care Twin State Lab"
-          subtitle="Open this route on iOS and Android to review every production Phoenix room state without manually editing care history."
+          subtitle={careTwinQaIdentityCopy.routeSubtitle}
           back
           onBack={() => router.back()}
         />

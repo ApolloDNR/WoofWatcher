@@ -1,5 +1,10 @@
 # Autonomous Build Queue
 
+## 2026-08-05 — Care Twin QA follows Dog Profile identity
+
+- More's internal Care Twin QA entry and the QA route header now resolve the active Dog Profile name through the canonical identity helper. A renamed dog such as Mochi no longer enters a device-review workflow described as Phoenix; blank and `My Dog` starter profiles intentionally retain Phoenix.
+- Red-first identity coverage and mobile source-wiring coverage protect both entry points. This is product/source hardening only; real iOS/Android screenshots and human native review remain open.
+
 ## 2026-08-05 WoofGuide composer identity
 
 - DONE: WoofGuide's message composer now uses canonical Dog Profile identity instead of interpolating raw stored profile text.

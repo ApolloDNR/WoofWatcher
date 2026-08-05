@@ -74,7 +74,7 @@ test("routes Adventure identity through the canonical Dog Profile name", () => {
 test("routes More identity through the canonical Dog Profile name", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
 
-  assert.match(more, /import \{ resolvePetName \} from "@\/lib\/petIdentity"/);
+  assert.match(more, /import \{ buildCareTwinQaIdentityCopy, resolvePetName \} from "@\/lib\/petIdentity"/);
   assert.match(more, /const petName = resolvePetName\(profile\.name\)/);
   assert.doesNotMatch(
     more,
@@ -1376,6 +1376,12 @@ test("registers the care twin native QA route for device review", () => {
   );
 
   assert.match(rootLayout, /name="care-twin-qa"/);
+  assert.match(more, /buildCareTwinQaIdentityCopy\(profile\.name\)/);
+  assert.match(more, /sub: careTwinQaIdentityCopy\.menuDetail/);
+  assert.doesNotMatch(more, /Internal device review for Phoenix room states/);
+  assert.match(qaRoute, /buildCareTwinQaIdentityCopy\(state\.profile\.name\)/);
+  assert.match(qaRoute, /subtitle=\{careTwinQaIdentityCopy\.routeSubtitle\}/);
+  assert.doesNotMatch(qaRoute, /production Phoenix room state/);
   assert.match(
     qaRoute,
     /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/,

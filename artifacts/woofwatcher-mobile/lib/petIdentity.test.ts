@@ -8,9 +8,20 @@ import {
   buildCareTwinAwayIdentityCopy,
   buildCareTwinLiveTitle,
   buildCareTwinPetActionLabel,
+  buildCareTwinQaIdentityCopy,
   buildNotFoundIdentityCopy,
   buildWoofGuideComposerPlaceholder,
 } from "./petIdentity.ts";
+
+test("names the active dog throughout the care-twin QA entry", () => {
+  assert.deepEqual(buildCareTwinQaIdentityCopy("  Mochi  "), {
+    menuDetail: "Internal device review for Mochi room states and sprite loops",
+    routeSubtitle:
+      "Open this route on iOS and Android to review every production Mochi room state without manually editing care history.",
+  });
+  assert.match(buildCareTwinQaIdentityCopy("My Dog").menuDetail, /Phoenix room states/);
+  assert.doesNotMatch(buildCareTwinQaIdentityCopy("Mochi").routeSubtitle, /Phoenix/);
+});
 
 test("names the active dog in the live care-twin pet action", () => {
   assert.equal(buildCareTwinPetActionLabel("  Luna  "), "Pet Luna");

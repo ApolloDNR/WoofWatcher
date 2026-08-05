@@ -64,6 +64,17 @@ export function buildCareTwinPetActionLabel(name: string | null | undefined): st
   return `Pet ${resolvePetName(name)}`;
 }
 
+export function buildCareTwinQaIdentityCopy(name: string | null | undefined): {
+  menuDetail: string;
+  routeSubtitle: string;
+} {
+  const petName = resolvePetName(name);
+  return {
+    menuDetail: `Internal device review for ${petName} room states and sprite loops`,
+    routeSubtitle: `Open this route on iOS and Android to review every production ${petName} room state without manually editing care history.`,
+  };
+}
+
 export function buildWoofGuideComposerPlaceholder(
   name: string | null | undefined,
 ): string {
