@@ -4,6 +4,8 @@
 
 WoofGuide now builds its composer placeholder through canonical Dog Profile identity, so whitespace-padded renamed dogs are trimmed and blank/`My Dog` profiles retain the intentional Phoenix starter identity. Red-first real identity coverage caught the missing formatter before the minimal route wiring. Prompt handling, local-first data, owner review, provider gating, and veterinary boundaries are unchanged; native/provider/store/Apollo evidence remains separate.
 
+Dependency-complete `WoofWatcher Verify` run `30991369852`, job `92258054240`, passed implementation/docs commit `dede6276`, including pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit before treating the final branch tip as current.
+
 ## 2026-08-04 live care-twin HUD identity slice
 
 The shared living room now builds its non-studio HUD title from canonical Dog Profile identity, so renamed dogs see their own care twin while blank/`My Dog` profiles retain the intentional Phoenix starter identity. Red-first identity coverage caught the hardcoded `PHOENIX TWIN` label; studio tooling, Phoenix asset/template identifiers, animation behavior, and launch gates are unchanged. Native/provider/store/Apollo evidence remains separate.

@@ -4,7 +4,8 @@
 
 - DONE: WoofGuide's message composer now uses canonical Dog Profile identity instead of interpolating raw stored profile text.
 - VERIFIED: Red-first identity coverage failed on the missing builder, then focused identity/mobile-readiness coverage passed `185/185`; trimmed renamed dogs and the intentional blank/`My Dog` Phoenix starter identity are covered.
-- NEXT: Run dependency-complete branch CI. Native iOS/Android WoofGuide review, VoiceOver/TalkBack, live-AI provider proof, and Apollo approval remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30991369852`, job `92258054240`, passed implementation/docs commit `dede6276`; pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native iOS/Android WoofGuide review, VoiceOver/TalkBack, live-AI provider proof, and Apollo approval remain required.
 
 ## 2026-08-04 live care-twin HUD identity
 
