@@ -5,15 +5,14 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   Easing,
   Image,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,7 +27,6 @@ import {
 import Reanimated, {
   Easing as ReanimatedEasing,
   runOnJS,
-  useAnimatedScrollHandler,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -54,6 +52,7 @@ import { PetPortrait } from "@/components/PetPortrait";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
 import { useAvatar } from "@/context/AvatarContext";
+import { useAppViewport } from "@/context/AppViewportContext";
 import { useCare, type Entry } from "@/context/CareContext";
 import { announce } from "@/lib/announce";
 import { isClerkEnabledForBuild } from "@/lib/auth";
@@ -76,6 +75,14 @@ import {
   type HomeMissionTone,
 } from "@/lib/homeMissionDeck";
 import { getHomeFirstScreenLayout } from "@/lib/homeFirstScreenLayout";
+import {
+  getHomeFixedHeroCollapseOffset,
+  getHomeFixedHeroTop,
+  resolveHomeWelcomeCardHeight,
+  resolveHomeWelcomeCardMaxHeight,
+  shouldHoldHomeFixedHeroTop,
+} from "@/lib/homeFixedHeroLayout";
+import { isHomeSceneReady } from "@/lib/homeSceneReady";
 import { getHomeMissionDeckLayout } from "@/lib/homeMissionLayout";
 import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
 import {
@@ -347,9 +354,18 @@ export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { width: viewportWidth, height: viewportHeight } =
-    useWindowDimensions();
+    useAppViewport();
   const router = useRouter();
-  const { state, addEntry, deleteEntry, updateEntry, refresh, storageWarning, legacyImport } = useCare();
+  const {
+    state,
+    addEntry,
+    deleteEntry,
+    updateEntry,
+    refresh,
+    storageWarning,
+    legacyImport,
+    isLoaded,
+  } = useCare();
   // The data-loss warning must reach screen-reader users on every platform.
   useEffect(() => {
     if (storageWarning === "save-failed") {
@@ -396,6 +412,10 @@ export default function HomeScreen() {
   }, []);
 
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  const openWalkSession = useMemo(
+    () => findOpenWalkSession(state.entries),
+    [state.entries],
+  );
   // Session-scoped reaction gate: the room only reacts to care logged in
   // THIS session. Without the floor, a meal logged minutes before an app
   // reload replayed "Meal logged. Tail wag." plus the eat loop on mount -
@@ -411,9 +431,17 @@ export default function HomeScreen() {
         caregivers: state.caregivers,
         now,
         energy: status.energy,
+        activeWalk: Boolean(openWalkSession),
         reactionsSince: reactionSessionFloor.current,
       }),
-    [state.entries, state.routines, state.caregivers, now, status.energy],
+    [
+      state.entries,
+      state.routines,
+      state.caregivers,
+      now,
+      openWalkSession,
+      status.energy,
+    ],
   );
   // The heart status line and the living room must tell one story: the room
   // scheduler can have the twin asleep (quiet hours, low energy) while the
@@ -542,20 +570,13 @@ export default function HomeScreen() {
   // could only tween maxHeight on the JS thread, a drop-frame risk right
   // after the first quick log. Reduce Motion collapses instantly.
   const reducedMotion = useReducedMotion();
-  // Scroll position for the hero parallax; heroExitStart is measured from
-  // the hero wrapper's layout (a huge default keeps parallax off until then).
-  const scrollY = useSharedValue(0);
-  const heroExitStart = useSharedValue(1_000_000);
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
-    },
-  });
   const welcomeCollapse = useSharedValue(1);
   const [welcomeCardHeight, setWelcomeCardHeight] = useState(0);
   useEffect(() => {
     if (welcomeShouldShow) {
       welcomeWasShown.current = true;
+      welcomeCollapse.value = 1;
+      setWelcomeCollapsed(false);
       return;
     }
     if (!welcomeWasShown.current || welcomeCollapsed) return;
@@ -572,11 +593,26 @@ export default function HomeScreen() {
       },
     );
   }, [reducedMotion, welcomeCollapse, welcomeCollapsed, welcomeShouldShow]);
-  const welcomeCardAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: welcomeCollapse.value,
-    ...(welcomeCardHeight > 0
-      ? { maxHeight: welcomeCollapse.value * welcomeCardHeight }
-      : {}),
+  const welcomeCardAnimatedStyle = useAnimatedStyle(() => {
+    const maxHeight = resolveHomeWelcomeCardMaxHeight({
+      naturalHeight: welcomeCardHeight,
+      welcomeCollapse: welcomeCollapse.value,
+      welcomeShouldShow,
+    });
+    return {
+      opacity: welcomeCollapse.value,
+      ...(maxHeight === undefined ? {} : { maxHeight }),
+    };
+  });
+  const fixedHeroCollapseStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: getHomeFixedHeroCollapseOffset({
+          welcomeCardHeight,
+          welcomeCollapse: welcomeCollapse.value,
+        }),
+      },
+    ],
   }));
   const welcomeVisible =
     welcomeShouldShow || (welcomeWasShown.current && !welcomeCollapsed);
@@ -599,10 +635,6 @@ export default function HomeScreen() {
     if (!Number.isFinite(startedAt)) return 0;
     return Math.max(0, Math.round((now - startedAt) / 60000));
   }, [now, openAloneStartedAt]);
-  const openWalkSession = useMemo(
-    () => findOpenWalkSession(state.entries),
-    [state.entries],
-  );
   const openWalkStartedAt = openWalkSession
     ? String(
         openWalkSession.details?.walkStartedAt ?? openWalkSession.occurredAt,
@@ -1592,24 +1624,7 @@ export default function HomeScreen() {
     opacity: 1 - welcomeCollapse.value,
     maxHeight: heroStageHeight * (1 - welcomeCollapse.value),
   }));
-  // Storybook depth: once the room's top edge passes the viewport top, the
-  // scene drifts down inside its clipped frame (scrolling away ~16% slower)
-  // and dims a touch - the page recedes instead of just leaving. Gap-free by
-  // construction: the translation only starts after the frame's top is
-  // offscreen, so the seam it opens is never visible. Reduce Motion keeps
-  // the room fixed.
-  const heroParallaxStyle = useAnimatedStyle(() => {
-    if (reducedMotion) return { transform: [{ translateY: 0 }], opacity: 1 };
-    const height = Math.max(1, heroStageHeight);
-    const progress = Math.min(
-      Math.max((scrollY.value - heroExitStart.value) / height, 0),
-      1,
-    );
-    return {
-      transform: [{ translateY: progress * height * 0.16 }],
-      opacity: 1 - progress * 0.18,
-    };
-  });
+  const [fixedHeroTop, setFixedHeroTop] = useState<number | null>(null);
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
   useEffect(() => {
     if (isWebRoutePreview) return;
@@ -1620,6 +1635,103 @@ export default function HomeScreen() {
     }).start();
   }, [fade, isWebRoutePreview]);
 
+  const roomIsNight =
+    colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours());
+  const fixedBackdropSource = openWalkSession
+    ? roomIsNight
+      ? HOME_IMMERSIVE_PARK_NIGHT
+      : HOME_IMMERSIVE_PARK_DAY
+    : roomIsNight
+      ? HOME_IMMERSIVE_ROOM_NIGHT
+      : HOME_IMMERSIVE_ROOM_DAY;
+
+  const fixedHero =
+    fixedHeroTop === null ? null : (
+      <Reanimated.View
+        accessibilityElementsHidden
+        aria-hidden
+        importantForAccessibility="no-hide-descendants"
+        pointerEvents="none"
+        testID="home-fixed-hero"
+        style={[
+          s.fixedHeroLayer,
+          {
+            top: fixedHeroTop,
+            left: routeHorizontalPadding,
+            width: heroStageWidth,
+            height: heroStageHeight,
+          },
+          fixedHeroCollapseStyle,
+          heroDeferredForWelcome ? welcomeHeroAnimatedStyle : null,
+        ]}
+      >
+        <View
+          style={[
+            s.heroWrap,
+            { height: heroStageHeight, overflow: "hidden" },
+          ]}
+        >
+          <View
+            style={
+              heroStageScale < 1
+                ? {
+                    width: heroStageWidth,
+                    height: heroDesignHeight,
+                    transform: [{ scale: heroStageScale }],
+                    transformOrigin: "top center",
+                  }
+                : { width: "100%", height: heroDesignHeight }
+            }
+          >
+            <LivingPhoenixRoom
+              mood={avatarMotion.avatarMood}
+              motion={avatarMotion}
+              speech={
+                roomSpeechOverride ??
+                (avatarMotion.speech || SPEECH_BY_MOOD[status.mood])
+              }
+              energy={status.energy}
+              presenceLabel={presenceLabel}
+              nextLabel={
+                openWalkSession
+                  ? "Walk active"
+                  : openAloneSession
+                    ? "Home alone"
+                    : avatarMotion.label
+              }
+              reaction={roomReaction}
+              statusReadouts={roomStats}
+              avatarConfig={avatarConfig}
+              petName={petName}
+              awayOnWalk={Boolean(openWalkSession)}
+              awayMinutes={openWalkMinutes}
+              chromeDensity="compact"
+              transparentScene
+            />
+          </View>
+        </View>
+      </Reanimated.View>
+    );
+
+  if (!isHomeSceneReady(isLoaded, welcomeDismissed, storageWarning)) {
+    return (
+      <View
+        accessibilityLabel="Loading Today"
+        accessibilityRole="progressbar"
+        aria-busy
+        style={[s.root, { backgroundColor: colors.background }]}
+      >
+        <Image
+          source={fixedBackdropSource}
+          resizeMode="cover"
+          style={s.fullBleedArt}
+          fadeDuration={0}
+        />
+        <ActivityIndicator color={colors.forest} style={s.homeLoading} />
+      </View>
+    );
+  }
+
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       {/* Full-bleed storybook backdrop from the mock boards: the scene fills
@@ -1627,18 +1739,11 @@ export default function HomeScreen() {
           band; a soft scrim quiets the lower floor so the floating console
           stays legible while the background still peeks through. */}
       <Image
-        source={
-          openWalkSession
-            ? colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours())
-              ? HOME_IMMERSIVE_PARK_NIGHT
-              : HOME_IMMERSIVE_PARK_DAY
-            : colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours())
-              ? HOME_IMMERSIVE_ROOM_NIGHT
-              : HOME_IMMERSIVE_ROOM_DAY
-        }
+        source={fixedBackdropSource}
         resizeMode="cover"
         style={s.fullBleedArt}
         fadeDuration={0}
+        testID="home-fixed-backdrop"
       />
       {colors.isDark ? (
         <View
@@ -1656,19 +1761,22 @@ export default function HomeScreen() {
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
+      {fixedHero}
       <Reanimated.ScrollView
         style={s.container}
+        testID="home-scrolling-console"
         contentContainerStyle={{
           paddingTop: topPadding,
           paddingBottom: bottomPadding,
           paddingHorizontal: routeHorizontalPadding,
         }}
         showsVerticalScrollIndicator={false}
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
       >
         <Animated.View style={{ opacity: fade }}>
-          <View style={[s.header, { backgroundColor: colors.card }]}>
+          <View
+            style={[s.header, { backgroundColor: colors.card }]}
+            testID="home-header"
+          >
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${petName}. ${careStatusLabel}. Open profile`}
@@ -1751,9 +1859,13 @@ export default function HomeScreen() {
               pointerEvents={welcomeShouldShow ? "auto" : "none"}
               onLayout={(event) => {
                 const measured = Math.round(event.nativeEvent.layout.height);
-                if (welcomeShouldShow && measured > 0) {
-                  setWelcomeCardHeight((prev) => Math.max(prev, measured));
-                }
+                setWelcomeCardHeight((currentHeight) =>
+                  resolveHomeWelcomeCardHeight({
+                    currentHeight,
+                    measuredHeight: measured,
+                    welcomeShouldShow,
+                  }),
+                );
               }}
               style={[{ overflow: "hidden" }, welcomeCardAnimatedStyle]}
             >
@@ -1809,77 +1921,47 @@ export default function HomeScreen() {
             </Reanimated.View>
           ) : null}
 
-          {/* The room is a framed storybook card: day/night art fills the
-              frame and the living twin roams inside it, matching Apollo's
-              storybook mockup Home. On short phones the stage height is
-              clamped (uniform scale) and it stays folded while the first-run
-              welcome card is up, growing in as the card folds away. */}
+          {/* This transparent spacer owns the room's scroll geometry and all
+              touch targets. The painted room is a touch-free fixed sibling
+              behind the ScrollView, so a swipe that starts over Phoenix is
+              still an ordinary page scroll and can cancel the press. */}
           <Reanimated.View
             pointerEvents={heroDeferredForWelcome ? "none" : "auto"}
+            testID="home-scrolling-hero-spacer"
             onLayout={(event) => {
-              // Where the hero's top crosses the viewport top: its offset in
-              // the scroll content (the fade wrapper starts at the content
-              // top) plus the container's top padding.
-              heroExitStart.value = topPadding + event.nativeEvent.layout.y;
+              if (
+                shouldHoldHomeFixedHeroTop({
+                  welcomeWasShown: welcomeWasShown.current,
+                  welcomeShouldShow,
+                  welcomeCollapsed,
+                })
+              ) {
+                return;
+              }
+              const top = getHomeFixedHeroTop({
+                topPadding,
+                spacerY: event.nativeEvent.layout.y,
+                welcomeCardHeight,
+                welcomeCollapsed,
+              });
+              setFixedHeroTop((current) => (current === top ? current : top));
             }}
-            style={
+            style={[
+              s.heroBackdrop,
+              { height: heroStageHeight, overflow: "hidden" },
               heroDeferredForWelcome
-                ? [{ overflow: "hidden" }, welcomeHeroAnimatedStyle]
-                : null
-            }
+                ? welcomeHeroAnimatedStyle
+                : null,
+            ]}
           >
-          <View style={s.heroBackdrop}>
-            <View
-              accessibilityLabel={`${petName} Room`}
-              accessibilityHint={homeFirstScreenLayout.qaLabel}
-              style={[
-                s.heroWrap,
-                { height: heroStageHeight, overflow: "hidden" },
-              ]}
-            >
-             <Reanimated.View style={heroParallaxStyle}>
-             <View
-               style={
-                 heroStageScale < 1
-                   ? {
-                       width: heroStageWidth,
-                       height: heroDesignHeight,
-                       transform: [{ scale: heroStageScale }],
-                       transformOrigin: "top center",
-                     }
-                   : { width: "100%", height: heroDesignHeight }
-               }
-             >
-              <LivingPhoenixRoom
-                mood={avatarMotion.avatarMood}
-                motion={avatarMotion}
-                speech={
-                  roomSpeechOverride ??
-                  (avatarMotion.speech || SPEECH_BY_MOOD[status.mood])
-                }
-                energy={status.energy}
-                presenceLabel={presenceLabel}
-                nextLabel={
-                  openWalkSession
-                    ? "Walk active"
-                    : openAloneSession
-                      ? "Home alone"
-                      : avatarMotion.label
-                }
-                reaction={roomReaction}
-                statusReadouts={roomStats}
-                avatarConfig={avatarConfig}
-                petName={petName}
-                awayOnWalk={Boolean(openWalkSession)}
-                awayMinutes={openWalkMinutes}
-                chromeDensity="compact"
-                transparentScene
-                onPress={tapPhoenixRoom}
-                onLongPress={openAvatarStudio}
-                accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
-              />
-            </View>
-            </Reanimated.View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${petName} Room. Phoenix ${avatarTemplate.label} care twin. ${avatarMotion.label}.`}
+              accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
+              onPress={tapPhoenixRoom}
+              onLongPress={openAvatarStudio}
+              style={StyleSheet.absoluteFill}
+            />
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Open Avatar Studio. ${avatarTemplate.label} care twin ${hasConfiguredAvatar ? "configured" : "ready to customize"}`}
@@ -1897,8 +1979,6 @@ export default function HomeScreen() {
             >
               <Ionicons name="color-wand-outline" size={17} color={colors.forest} />
             </Pressable>
-          </View>
-          </View>
           </Reanimated.View>
 
           {/* Local-first means a failing device store IS a data risk - never
@@ -3358,7 +3438,15 @@ export default function HomeScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  container: { flex: 1 },
+  container: { flex: 1, zIndex: 2 },
+  fixedHeroLayer: {
+    position: "absolute",
+    zIndex: 1,
+    overflow: "hidden",
+  },
+  homeLoading: {
+    ...StyleSheet.absoluteFillObject,
+  },
 
   header: {
     flexDirection: "row",

@@ -73,6 +73,11 @@ export interface AvatarMotionInput {
   now?: number;
   energy?: number | null;
   /**
+   * An open walk session is live state, not a one-shot reaction. It remains
+   * authoritative across app reloads until the household finishes the walk.
+   */
+  activeWalk?: boolean;
+  /**
    * Session gate for reaction states: recent-entry reactions (eating,
    * drinking, walking, treat, ...) only play for entries logged at or after
    * this timestamp. Home passes its mount time so an app reload never
@@ -316,6 +321,19 @@ export function deriveAvatarMotion(input: AvatarMotionInput): AvatarMotionModel 
       speech: "Let's take it easy.",
       line: `${health.summary} WoofWatcher tracks patterns; it does not diagnose or replace veterinary care.`,
       route: "/records",
+    };
+  }
+
+  if (input.activeWalk) {
+    return {
+      state: "walking",
+      avatarMood: "happy",
+      cue: "walk-cycle",
+      intensity: "high",
+      label: "Walking",
+      speech: "Out exploring.",
+      line: "Walk in progress. Phoenix keeps moving until the session is finished.",
+      route: "/log",
     };
   }
 

@@ -1,4 +1,8 @@
-import type { AvatarRoomZone } from "./avatarLifeEngine.ts";
+import type {
+  AvatarRoomZone,
+  CareTwinScenePhase,
+  CareTwinSpriteAction,
+} from "./avatarLifeEngine.ts";
 
 /**
  * Roam choreography for the immersive Home room: deterministic waypoint
@@ -47,6 +51,39 @@ export interface RoamPlanInput {
   seed: number;
   /** Pause on each waypoint before the next walk leg. */
   dwellMs?: number;
+}
+
+export interface CareTwinRoamEligibilityInput {
+  transparentScene: boolean;
+  isStudio: boolean;
+  scenePhase: CareTwinScenePhase;
+  awayOnWalk: boolean;
+  hasWalkSprite: boolean;
+  hasDwellSprite: boolean;
+}
+
+export interface RoamingTwinSpriteActionInput {
+  moving: boolean;
+  dwellAction: CareTwinSpriteAction;
+  overrideAction?: CareTwinSpriteAction | null;
+}
+
+export function careTwinCanRoam(input: CareTwinRoamEligibilityInput): boolean {
+  return (
+    input.transparentScene &&
+    !input.isStudio &&
+    (input.awayOnWalk ||
+      input.scenePhase === "idle" ||
+      input.scenePhase === "routine") &&
+    input.hasWalkSprite &&
+    input.hasDwellSprite
+  );
+}
+
+export function resolveRoamingTwinSpriteAction(
+  input: RoamingTwinSpriteActionInput,
+): CareTwinSpriteAction {
+  return input.overrideAction ?? (input.moving ? "walk-loop" : input.dwellAction);
 }
 
 /** Sprite rig travel speed in stage-width percent per second. */
