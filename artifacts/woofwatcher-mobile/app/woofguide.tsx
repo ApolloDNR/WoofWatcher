@@ -116,7 +116,7 @@ function buildAssistantContext(state: CareState) {
 
   return {
     profile: {
-      name: state.profile.name,
+      name: resolvePetName(state.profile.name),
       breed: state.profile.breed,
       background: state.profile.background,
       careFocus: state.profile.careFocus,

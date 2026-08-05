@@ -45,6 +45,21 @@ test("routes Trends identity through the canonical Dog Profile name", () => {
   );
 });
 
+test("normalizes Dog Profile identity before building WoofGuide provider context", () => {
+  const woofGuide = readAppFile("woofguide.tsx");
+
+  assert.match(
+    woofGuide,
+    /profile:\s*\{\s*name:\s*resolvePetName\(state\.profile\.name\)/,
+    "future provider-backed summaries and handoffs must receive canonical Dog Profile identity",
+  );
+  assert.doesNotMatch(
+    woofGuide,
+    /profile:\s*\{\s*name:\s*state\.profile\.name/,
+    "raw whitespace or the My Dog placeholder must not cross the WoofGuide provider boundary",
+  );
+});
+
 test("routes Adventure identity through the canonical Dog Profile name", () => {
   const adventure = readAppFile("adventure.tsx");
 

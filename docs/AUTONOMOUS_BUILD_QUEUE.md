@@ -2228,3 +2228,9 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Require dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android room evidence remain open; source coverage does not clear native release gates.
 - CI: Dependency-complete `WoofWatcher Verify` run `31003745398`, job `92298554338`, passed implementation/docs commit `e1c36f3f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+
+## 2026-08-05 WoofGuide provider-context identity
+
+- DONE: The care snapshot prepared for future provider-backed WoofGuide summaries and handoffs now carries canonical Dog Profile identity instead of raw persisted profile text; renamed dogs are trimmed and blank/`My Dog` profiles retain the intentional Phoenix starter identity.
+- VERIFIED: A red-first mobile-readiness contract failed on the raw provider-context name before the boundary was corrected.
+- NEXT: Require dependency-complete branch CI. Live AI remains disabled pending provider, model-policy, veterinary-safety, owner-review, and Apollo approval; source coverage does not clear those gates.

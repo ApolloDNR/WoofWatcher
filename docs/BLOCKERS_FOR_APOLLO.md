@@ -728,3 +728,7 @@ Source tests now prove Customize preview guidance follows Dog Profile identity. 
 ## 2026-08-05 Care-twin pet action proof remains open
 
 Source tests now prove the live room's pet action follows canonical Dog Profile identity. Native VoiceOver/TalkBack traversal, route-named iOS/Android room evidence, and Apollo approval remain required; source coverage does not clear those gates.
+
+## 2026-08-05 WoofGuide provider-context identity proof remains open
+
+Source coverage now proves future WoofGuide provider context receives canonical Dog Profile identity. Live AI still requires approved credentials, model and citation policy, owner-review write gates, veterinary-safety review, fallback and incident handling, route-named native evidence, and Apollo approval.

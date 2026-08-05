@@ -5460,3 +5460,7 @@ Dependency-complete `WoofWatcher Verify` run `30961680846`, job `92166753898`, p
 The live room's meaningful pet action now consumes canonical Dog Profile identity. Red-first behavior coverage proves trimmed renamed dogs and the deliberate blank/`My Dog` Phoenix starter fallback; the room-readiness contract protects the component wiring. Native accessibility traversal, device evidence, provider/store proof, and Apollo approval remain separate gates.
 
 Dependency-complete `WoofWatcher Verify` run `31003745398`, job `92298554338`, passed implementation/docs commit `e1c36f3f` with pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit for final-tip authority.
+
+## 2026-08-05 WoofGuide provider-context identity slice
+
+WoofGuide now normalizes the active Dog Profile name before placing it in the structured context reserved for a future approved AI provider. Red-first readiness coverage protects the boundary; live AI, automatic writes, provider readiness, veterinary approval, and public launch remain disabled or separately gated.

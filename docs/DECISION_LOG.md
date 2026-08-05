@@ -3226,3 +3226,7 @@ The WoofGuide composer is an owner-facing care seam and must use canonical Dog P
 ## 2026-08-05 Care-twin pet action follows Dog Profile
 
 The live room's pet control is a meaningful owner-facing accessibility action, so its label must consume canonical Dog Profile identity rather than raw persisted profile text. Renamed dogs are trimmed; blank and `My Dog` profiles retain the intentional Phoenix starter identity.
+
+## 2026-08-05 WoofGuide provider context follows Dog Profile
+
+The structured care snapshot is part of the owner-facing AI boundary even while live AI is disabled. Its dog name must use canonical Dog Profile identity before any future provider request so whitespace and the `My Dog` placeholder cannot reappear in summaries or handoffs. This does not enable live AI, automatic writes, or veterinary advice.
