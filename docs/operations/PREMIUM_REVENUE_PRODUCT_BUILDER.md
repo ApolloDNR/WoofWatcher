@@ -5466,3 +5466,6 @@ Dependency-complete `WoofWatcher Verify` run `31003745398`, job `92298554338`, p
 WoofGuide now normalizes the active Dog Profile name before placing it in the structured context reserved for a future approved AI provider. Red-first readiness coverage protects the boundary; live AI, automatic writes, provider readiness, veterinary approval, and public launch remain disabled or separately gated.
 
 Dependency-complete `WoofWatcher Verify` run `31018021482`, job `92347159956`, passed implementation/docs commit `1d9bccc1` with checkout, pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit for final-tip authority.
+## 2026-08-05 Household rename identity slice
+
+More's household rename modal now suggests a pack name from canonical Dog Profile identity instead of hardcoding Phoenix. Red-first readiness coverage caught the stale owner-facing placeholder; renamed dogs now receive their trimmed name while blank/`My Dog` profiles keep the intentional starter identity. Household provider behavior, sync, native proof, and launch gates are unchanged.

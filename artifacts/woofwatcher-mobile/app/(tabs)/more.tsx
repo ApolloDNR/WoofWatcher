@@ -3574,7 +3574,7 @@ export default function MoreScreen() {
             icon="home-outline"
             title="Rename household"
             subtitle="Give your care team a name everyone recognizes."
-            placeholder="The Phoenix Pack"
+            placeholder={`The ${petName} Pack`}
             value={renameValue}
             onChangeText={setRenameValue}
             confirmLabel="Save"

@@ -732,3 +732,6 @@ Source tests now prove the live room's pet action follows canonical Dog Profile 
 ## 2026-08-05 WoofGuide provider-context identity proof remains open
 
 Source coverage now proves future WoofGuide provider context receives canonical Dog Profile identity. Live AI still requires approved credentials, model and citation policy, owner-review write gates, veterinary-safety review, fallback and incident handling, route-named native evidence, and Apollo approval.
+## 2026-08-05 Household rename identity proof remains open
+
+Source coverage now proves More's household rename suggestion follows canonical Dog Profile identity. Native modal/accessibility evidence, real household-provider rename proof, route-named iOS/Android captures, and Apollo approval remain required.

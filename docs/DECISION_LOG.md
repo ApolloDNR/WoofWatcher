@@ -3230,3 +3230,6 @@ The live room's pet control is a meaningful owner-facing accessibility action, s
 ## 2026-08-05 WoofGuide provider context follows Dog Profile
 
 The structured care snapshot is part of the owner-facing AI boundary even while live AI is disabled. Its dog name must use canonical Dog Profile identity before any future provider request so whitespace and the `My Dog` placeholder cannot reappear in summaries or handoffs. This does not enable live AI, automatic writes, or veterinary advice.
+## 2026-08-05: Household rename guidance follows Dog Profile
+
+Household naming suggestions are owner-facing shared-care identity, so More must build the rename placeholder from the canonical active dog name. Renamed dogs receive `The Luna Pack`; blank and `My Dog` profiles retain the intentional `The Phoenix Pack` starter suggestion. This does not create, rename, or sync a provider-backed household.

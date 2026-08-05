@@ -80,6 +80,16 @@ test("routes More identity through the canonical Dog Profile name", () => {
     more,
     /profile\.name && profile\.name !== "My Dog"/,
   );
+  assert.match(
+    more,
+    /placeholder=\{`The \$\{petName\} Pack`\}/,
+    "household rename guidance should follow the active Dog Profile identity",
+  );
+  assert.doesNotMatch(
+    more,
+    /placeholder="The Phoenix Pack"/,
+    "renamed-dog households should not receive a hardcoded Phoenix household suggestion",
+  );
 });
 
 function getStyleBlock(source: string, styleName: string): string {

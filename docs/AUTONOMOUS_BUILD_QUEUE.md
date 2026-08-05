@@ -2236,3 +2236,8 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Require dependency-complete branch CI. Live AI remains disabled pending provider, model-policy, veterinary-safety, owner-review, and Apollo approval; source coverage does not clear those gates.
 - CI: Dependency-complete `WoofWatcher Verify` run `31018021482`, job `92347159956`, passed implementation/docs commit `1d9bccc1`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+## 2026-08-05 Household rename Dog Profile identity
+
+- DONE: More's household rename suggestion now follows the active Dog Profile name instead of hardcoding `The Phoenix Pack`; canonical route identity trims renamed dogs and preserves Phoenix only for blank/`My Dog` starter profiles.
+- PASS (red-first source): mobile readiness first failed on the stale placeholder, then protects the dynamic `The ${petName} Pack` wiring.
+- REMAINS: native iOS/Android modal review, VoiceOver/TalkBack traversal, household-provider proof, and Apollo approval remain separate gates.
