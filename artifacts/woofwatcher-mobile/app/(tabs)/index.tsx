@@ -80,6 +80,7 @@ import {
   getHomeFixedHeroTop,
   resolveHomeWelcomeCardHeight,
   resolveHomeWelcomeCardMaxHeight,
+  shouldHoldHomeFixedHeroTop,
 } from "@/lib/homeFixedHeroLayout";
 import { isHomeSceneReady } from "@/lib/homeSceneReady";
 import { getHomeMissionDeckLayout } from "@/lib/homeMissionLayout";
@@ -574,6 +575,8 @@ export default function HomeScreen() {
   useEffect(() => {
     if (welcomeShouldShow) {
       welcomeWasShown.current = true;
+      welcomeCollapse.value = 1;
+      setWelcomeCollapsed(false);
       return;
     }
     if (!welcomeWasShown.current || welcomeCollapsed) return;
@@ -1704,19 +1707,18 @@ export default function HomeScreen() {
               awayMinutes={openWalkMinutes}
               chromeDensity="compact"
               transparentScene
-              onPress={tapPhoenixRoom}
-              onLongPress={openAvatarStudio}
-              accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
             />
           </View>
         </View>
       </Reanimated.View>
     );
 
-  if (!isHomeSceneReady(isLoaded, welcomeDismissed)) {
+  if (!isHomeSceneReady(isLoaded, welcomeDismissed, storageWarning)) {
     return (
       <View
         accessibilityLabel="Loading Today"
+        accessibilityRole="progressbar"
+        aria-busy
         style={[s.root, { backgroundColor: colors.background }]}
       >
         <Image
@@ -1927,11 +1929,20 @@ export default function HomeScreen() {
             pointerEvents={heroDeferredForWelcome ? "none" : "auto"}
             testID="home-scrolling-hero-spacer"
             onLayout={(event) => {
+              if (
+                shouldHoldHomeFixedHeroTop({
+                  welcomeWasShown: welcomeWasShown.current,
+                  welcomeShouldShow,
+                  welcomeCollapsed,
+                })
+              ) {
+                return;
+              }
               const top = getHomeFixedHeroTop({
                 topPadding,
                 spacerY: event.nativeEvent.layout.y,
                 welcomeCardHeight,
-                welcomeCollapse: welcomeCollapse.value,
+                welcomeCollapsed,
               });
               setFixedHeroTop((current) => (current === top ? current : top));
             }}

@@ -6,6 +6,14 @@ import { inflateSync } from "node:zlib";
 
 const PNG_SIGNATURE = "89504e470d0a1a0a";
 const BYTES_PER_PIXEL = 4;
+const FRAME_COUNT = 8;
+const FRAME_WIDTH = 256;
+const MAX_HARD_PIXEL_COLORS = 256;
+
+const productionGaitAsset = new URL(
+  "../assets/avatar/phoenix/storybook/storybook-walk-loop-v3-hard-pixel-strip.png",
+  import.meta.url,
+);
 
 function paethPredictor(left: number, above: number, upperLeft: number): number {
   const estimate = left + above - upperLeft;
@@ -82,30 +90,87 @@ function decodeEightBitRgbaPng(file: URL): {
 }
 
 test("the production Phoenix gait contains eight genuinely distinct RGBA frames", () => {
-  const asset = new URL(
-    "../assets/avatar/phoenix/storybook/storybook-walk-loop-v2-strip.png",
-    import.meta.url,
-  );
-  const decoded = decodeEightBitRgbaPng(asset);
+  const decoded = decodeEightBitRgbaPng(productionGaitAsset);
   assert.equal(decoded.width, 2048);
   assert.equal(decoded.height, 256);
 
-  const frameWidth = 256;
   const hashes = new Set<string>();
-  for (let frame = 0; frame < 8; frame += 1) {
+  for (let frame = 0; frame < FRAME_COUNT; frame += 1) {
     const hash = createHash("sha256");
     for (let row = 0; row < decoded.height; row += 1) {
       const rowStart = row * decoded.width * BYTES_PER_PIXEL;
-      const frameStart = rowStart + frame * frameWidth * BYTES_PER_PIXEL;
+      const frameStart = rowStart + frame * FRAME_WIDTH * BYTES_PER_PIXEL;
       hash.update(
         decoded.pixels.subarray(
           frameStart,
-          frameStart + frameWidth * BYTES_PER_PIXEL,
+          frameStart + FRAME_WIDTH * BYTES_PER_PIXEL,
         ),
       );
     }
     hashes.add(hash.digest("hex"));
   }
 
-  assert.equal(hashes.size, 8);
+  assert.equal(hashes.size, FRAME_COUNT);
+});
+
+test("the production Phoenix gait uses binary transparency and a restrained hard-pixel palette", () => {
+  const decoded = decodeEightBitRgbaPng(productionGaitAsset);
+  const colors = new Set<string>();
+  let partiallyTransparentPixels = 0;
+
+  for (
+    let offset = 0;
+    offset < decoded.pixels.length;
+    offset += BYTES_PER_PIXEL
+  ) {
+    const alpha = decoded.pixels[offset + 3];
+    if (alpha !== 0 && alpha !== 255) partiallyTransparentPixels += 1;
+    if (alpha === 0) continue;
+    colors.add(
+      `${decoded.pixels[offset]},${decoded.pixels[offset + 1]},${decoded.pixels[offset + 2]}`,
+    );
+  }
+
+  assert.equal(
+    partiallyTransparentPixels,
+    0,
+    "hard-pixel sprites must not contain antialiased partial-alpha pixels",
+  );
+  assert.ok(
+    colors.size <= MAX_HARD_PIXEL_COLORS,
+    `hard-pixel palette must stay at or below ${MAX_HARD_PIXEL_COLORS} colors; found ${colors.size}`,
+  );
+});
+
+test("the production Phoenix gait has eight silhouette phases on one stable paw baseline", () => {
+  const decoded = decodeEightBitRgbaPng(productionGaitAsset);
+  const silhouetteHashes = new Set<string>();
+  const baselines: number[] = [];
+
+  for (let frame = 0; frame < FRAME_COUNT; frame += 1) {
+    const silhouette = Buffer.alloc(FRAME_WIDTH * decoded.height);
+    let baseline = -1;
+    for (let row = 0; row < decoded.height; row += 1) {
+      for (let column = 0; column < FRAME_WIDTH; column += 1) {
+        const pixelOffset =
+          (row * decoded.width + frame * FRAME_WIDTH + column) * BYTES_PER_PIXEL;
+        if (decoded.pixels[pixelOffset + 3] === 0) continue;
+        silhouette[row * FRAME_WIDTH + column] = 1;
+        baseline = row;
+      }
+    }
+    assert.ok(baseline >= 0, `frame ${frame + 1} must contain Phoenix pixels`);
+    baselines.push(baseline);
+    silhouetteHashes.add(createHash("sha256").update(silhouette).digest("hex"));
+  }
+
+  assert.equal(
+    silhouetteHashes.size,
+    FRAME_COUNT,
+    "each gait phase must have a distinct silhouette, not only recolored pixels",
+  );
+  assert.ok(
+    Math.max(...baselines) - Math.min(...baselines) <= 1,
+    `paw baseline may drift by at most 1 px; found ${baselines.join(", ")}`,
+  );
 });

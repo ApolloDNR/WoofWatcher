@@ -10,3 +10,7 @@ test("Home waits for care data and the persisted welcome choice before measuring
   assert.equal(isHomeSceneReady(true, false), true);
   assert.equal(isHomeSceneReady(true, true), true);
 });
+
+test("Home renders after a storage read failure once the welcome choice is hydrated", () => {
+  assert.equal(isHomeSceneReady(false, false, "read-failed"), true);
+});

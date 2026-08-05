@@ -1487,7 +1487,7 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(careTwinAssets, /dogless-room-layer/);
   assert.match(careTwinAssets, /listCareTwinSpriteSlots/);
   assert.match(careTwinAssets, /storybook-idle-tail-wag-strip\.png/);
-  assert.match(careTwinAssets, /storybook-walk-loop-v2-strip\.png/);
+  assert.match(careTwinAssets, /storybook-walk-loop-v3-hard-pixel-strip\.png/);
   assert.match(careTwinAssets, /storybook-ear-perk-strip\.png/);
   assert.match(careTwinAssets, /storybook-bark-reaction-strip\.png/);
   assert.match(careTwinAssets, /storybook-eat-loop-strip\.png/);
@@ -3509,7 +3509,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     ["storybook-idle-tail-wag-strip.png", { width: 2048, height: 256 }],
     ["storybook-ear-perk-strip.png", { width: 1536, height: 256 }],
     ["storybook-bark-reaction-strip.png", { width: 1536, height: 256 }],
-    ["storybook-walk-loop-v2-strip.png", { width: 2048, height: 256 }],
+    ["storybook-walk-loop-v3-hard-pixel-strip.png", { width: 2048, height: 256 }],
     ["storybook-eat-loop-strip.png", { width: 2048, height: 256 }],
     ["storybook-drink-loop-strip.png", { width: 2048, height: 256 }],
     ["storybook-sleep-loop-strip.png", { width: 2048, height: 256 }],

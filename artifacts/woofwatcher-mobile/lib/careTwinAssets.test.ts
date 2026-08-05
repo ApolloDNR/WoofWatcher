@@ -84,7 +84,7 @@ test("uses the hard-pixel Option B Phoenix family for live runtime actions", () 
   assert.equal(CARE_TWIN_SPRITE_MANIFEST["walk-loop"].fps, 10);
   assert.match(
     CARE_TWIN_SPRITE_MANIFEST["walk-loop"].requiredAsset,
-    /storybook-walk-loop-v2-strip\.png$/,
+    /storybook-walk-loop-v3-hard-pixel-strip\.png$/,
   );
   assert.match(CARE_TWIN_SPRITE_MANIFEST["bark-loop"].requiredAsset, /storybook-bark-reaction-strip\.png/);
   assert.notEqual(CARE_TWIN_SPRITE_MANIFEST["bark-loop"].requiredAsset, CARE_TWIN_SPRITE_MANIFEST["ear-perk"].requiredAsset);

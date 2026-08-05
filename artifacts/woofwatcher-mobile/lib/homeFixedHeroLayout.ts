@@ -2,20 +2,30 @@ export function getHomeFixedHeroTop(input: {
   topPadding: number;
   spacerY: number;
   welcomeCardHeight?: number;
-  welcomeCollapse?: number;
+  welcomeCollapsed?: boolean;
 }): number {
   const welcomeCardHeight = Math.max(0, input.welcomeCardHeight ?? 0);
-  const welcomeCollapse = Math.max(
-    0,
-    Math.min(1, input.welcomeCollapse ?? 1),
-  );
-  const collapsedWelcomeHeight =
-    welcomeCardHeight * (1 - welcomeCollapse);
 
-  // The spacer already moves as the welcome card folds. Store the fixed
-  // layer's expanded baseline here so the animated collapse transform below
-  // is the only movement that reaches the painted room.
-  return input.topPadding + input.spacerY + collapsedWelcomeHeight;
+  // During a settled collapsed layout, rebuild the expanded baseline from
+  // the spacer's collapsed coordinate. The UI-thread transform below remains
+  // the only owner of movement during the animation itself.
+  return (
+    input.topPadding +
+    input.spacerY +
+    (input.welcomeCollapsed ? welcomeCardHeight : 0)
+  );
+}
+
+export function shouldHoldHomeFixedHeroTop(input: {
+  welcomeWasShown: boolean;
+  welcomeShouldShow: boolean;
+  welcomeCollapsed: boolean;
+}): boolean {
+  return (
+    input.welcomeWasShown &&
+    !input.welcomeShouldShow &&
+    !input.welcomeCollapsed
+  );
 }
 
 export function getHomeFixedHeroCollapseOffset(input: {
@@ -26,6 +36,7 @@ export function getHomeFixedHeroCollapseOffset(input: {
   const welcomeCardHeight = Math.max(0, input.welcomeCardHeight);
   const welcomeCollapse = Math.max(0, Math.min(1, input.welcomeCollapse));
   const offset = -welcomeCardHeight * (1 - welcomeCollapse);
+  // Normalize -0 so geometry assertions and DOM measurements stay stable.
   return offset === 0 ? 0 : offset;
 }
 

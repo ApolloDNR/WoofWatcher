@@ -99,9 +99,11 @@ export const CARE_TWIN_SPRITE_MANIFEST: Record<CareTwinSpriteAction, CareTwinSpr
     loop: true,
     anchor: "bottom-center",
     slotSize: 256,
-    requiredAsset: "assets/avatar/phoenix/storybook/storybook-walk-loop-v2-strip.png",
+    requiredAsset:
+      "assets/avatar/phoenix/storybook/storybook-walk-loop-v3-hard-pixel-strip.png",
     fallbackAnimation: "walk",
-    notes: "Eight-pose side-profile Phoenix gait with distinct contact, compression, passing, and lift phases on one stable baseline.",
+    notes:
+      "Eight-pose hard-pixel side-profile Phoenix gait with distinct contact, compression, passing, and lift phases on one stable baseline.",
   },
   "eat-loop": {
     key: "eat-loop",
