@@ -57,6 +57,7 @@ import {
   type RoamPlan,
 } from "@/lib/careTwinRoam";
 import { pixelImageStyle } from "@/lib/pixelRendering";
+import { buildCareTwinAwayIdentityCopy } from "@/lib/petIdentity";
 import type { Mood } from "@/lib/phoenixStatus";
 
 // Constant ink for text on the fixed cream overlay chips/bubbles: the
@@ -1037,7 +1038,7 @@ export function LivingPhoenixRoom({
             <PixelIcon name="walk" size={18} />
             <View>
               <Text style={styles.awayCueTitle}>
-                {petName ?? "Phoenix"} is out exploring
+                {buildCareTwinAwayIdentityCopy(petName)}
               </Text>
               <Text style={styles.awayCueDetail}>
                 {typeof awayMinutes === "number" && awayMinutes >= 0

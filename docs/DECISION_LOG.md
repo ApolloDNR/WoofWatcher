@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-04: Live care-twin away copy owns canonical identity
+
+- Decision: resolve the active dog name inside the shared care-twin away-banner formatter instead of trusting every caller to normalize the prop first.
+- Reason: the active-walk banner is real household care state and must never expose whitespace or the stored `My Dog` placeholder.
+- Boundary: walk timing, log persistence, household sync, provider readiness, and launch gates are unchanged.
+
 ## 2026-08-04: Today Command setup follows Dog Profile identity
 
 - Decision: resolve the empty-account Home setup label through `resolvePetName` instead of interpolating raw profile state.

@@ -51,3 +51,7 @@ export function buildNotFoundIdentityCopy(name: string | null | undefined): stri
 export function buildAvatarStudioIdentityCopy(name: string | null | undefined): string {
   return `Make me ${resolvePetName(name)}.`;
 }
+
+export function buildCareTwinAwayIdentityCopy(name: string | null | undefined): string {
+  return `${resolvePetName(name)} is out exploring`;
+}

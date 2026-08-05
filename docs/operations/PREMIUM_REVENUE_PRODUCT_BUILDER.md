@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-04 live care-twin away identity slice
+
+The shared living room now builds its active-walk banner from canonical Dog Profile identity, so whitespace-padded renamed dogs are trimmed and blank/`My Dog` profiles retain the intentional Phoenix starter identity even if a caller passes raw profile state. Red-first identity coverage caught the missing formatter; walk state, timing, persistence, and launch gates are unchanged. Native/provider/store/Apollo evidence remains separate.
+
 ## 2026-08-04 Today Command setup identity slice
 
 Home's empty-account setup command now resolves Dog Profile identity canonically, so renamed dogs are trimmed and the stored `My Dog` placeholder retains the intentional Phoenix starter identity. Red-first Today Command coverage caught the raw-name interpolation before the minimal fix. Care-loop behavior and launch gates are unchanged; native/provider/store/Apollo evidence remains separate.

@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-04 live care-twin away identity
+
+- DONE: The shared room's active-walk banner now resolves Dog Profile identity at the component boundary instead of formatting a raw prop.
+- VERIFIED: Red-first identity coverage failed on the missing formatter, then focused identity/mobile-readiness coverage passed `183/183`; trimmed renamed dogs and the intentional blank/`My Dog` Phoenix starter identity are covered.
+- NEXT: Run broad local verification and dependency-complete branch CI. Native iOS/Android active-walk review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
+
 ## 2026-08-04 Today Command setup identity
 
 - DONE: Home's empty-account setup command now resolves the active Dog Profile name canonically instead of exposing whitespace or the `My Dog` placeholder.

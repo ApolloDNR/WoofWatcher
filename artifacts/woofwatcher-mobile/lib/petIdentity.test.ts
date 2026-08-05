@@ -5,8 +5,24 @@ import {
   buildAvatarStudioIdentityCopy,
   buildAuthAccountIdentityCopy,
   buildAuthGatewayIdentityCopy,
+  buildCareTwinAwayIdentityCopy,
   buildNotFoundIdentityCopy,
 } from "./petIdentity.ts";
+
+test("names the active dog in the live care-twin away banner", () => {
+  assert.equal(
+    buildCareTwinAwayIdentityCopy("  Luna  "),
+    "Luna is out exploring",
+  );
+  assert.equal(
+    buildCareTwinAwayIdentityCopy("My Dog"),
+    "Phoenix is out exploring",
+  );
+  assert.equal(
+    buildCareTwinAwayIdentityCopy("   "),
+    "Phoenix is out exploring",
+  );
+});
 
 test("names the active dog in Avatar Studio customization guidance", () => {
   assert.equal(buildAvatarStudioIdentityCopy("  Mochi  "), "Make me Mochi.");
