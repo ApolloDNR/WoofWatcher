@@ -78,6 +78,8 @@ import { getHomeFirstScreenLayout } from "@/lib/homeFirstScreenLayout";
 import {
   getHomeFixedHeroCollapseOffset,
   getHomeFixedHeroTop,
+  resolveHomeWelcomeCardHeight,
+  resolveHomeWelcomeCardMaxHeight,
 } from "@/lib/homeFixedHeroLayout";
 import { isHomeSceneReady } from "@/lib/homeSceneReady";
 import { getHomeMissionDeckLayout } from "@/lib/homeMissionLayout";
@@ -588,12 +590,17 @@ export default function HomeScreen() {
       },
     );
   }, [reducedMotion, welcomeCollapse, welcomeCollapsed, welcomeShouldShow]);
-  const welcomeCardAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: welcomeCollapse.value,
-    ...(welcomeCardHeight > 0
-      ? { maxHeight: welcomeCollapse.value * welcomeCardHeight }
-      : {}),
-  }));
+  const welcomeCardAnimatedStyle = useAnimatedStyle(() => {
+    const maxHeight = resolveHomeWelcomeCardMaxHeight({
+      naturalHeight: welcomeCardHeight,
+      welcomeCollapse: welcomeCollapse.value,
+      welcomeShouldShow,
+    });
+    return {
+      opacity: welcomeCollapse.value,
+      ...(maxHeight === undefined ? {} : { maxHeight }),
+    };
+  });
   const fixedHeroCollapseStyle = useAnimatedStyle(() => ({
     transform: [
       {
@@ -1850,9 +1857,13 @@ export default function HomeScreen() {
               pointerEvents={welcomeShouldShow ? "auto" : "none"}
               onLayout={(event) => {
                 const measured = Math.round(event.nativeEvent.layout.height);
-                if (welcomeShouldShow && measured > 0) {
-                  setWelcomeCardHeight((prev) => Math.max(prev, measured));
-                }
+                setWelcomeCardHeight((currentHeight) =>
+                  resolveHomeWelcomeCardHeight({
+                    currentHeight,
+                    measuredHeight: measured,
+                    welcomeShouldShow,
+                  }),
+                );
               }}
               style={[{ overflow: "hidden" }, welcomeCardAnimatedStyle]}
             >
@@ -1919,6 +1930,8 @@ export default function HomeScreen() {
               const top = getHomeFixedHeroTop({
                 topPadding,
                 spacerY: event.nativeEvent.layout.y,
+                welcomeCardHeight,
+                welcomeCollapse: welcomeCollapse.value,
               });
               setFixedHeroTop((current) => (current === top ? current : top));
             }}
