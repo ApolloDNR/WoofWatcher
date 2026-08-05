@@ -4,7 +4,8 @@
 
 - DONE: The shared room's active-walk banner now resolves Dog Profile identity at the component boundary instead of formatting a raw prop.
 - VERIFIED: Red-first identity coverage failed on the missing formatter, then focused identity/mobile-readiness coverage passed `183/183`; trimmed renamed dogs and the intentional blank/`My Dog` Phoenix starter identity are covered.
-- NEXT: Run broad local verification and dependency-complete branch CI. Native iOS/Android active-walk review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30970884413`, job `92194711423`, passed implementation/docs commit `379eda8d`; pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native iOS/Android active-walk review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
 
 ## 2026-08-04 Today Command setup identity
 
