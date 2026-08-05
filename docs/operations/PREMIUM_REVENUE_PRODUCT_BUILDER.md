@@ -5469,3 +5469,5 @@ Dependency-complete `WoofWatcher Verify` run `31018021482`, job `92347159956`, p
 ## 2026-08-05 Household rename identity slice
 
 More's household rename modal now suggests a pack name from canonical Dog Profile identity instead of hardcoding Phoenix. Red-first readiness coverage caught the stale owner-facing placeholder; renamed dogs now receive their trimmed name while blank/`My Dog` profiles keep the intentional starter identity. Household provider behavior, sync, native proof, and launch gates are unchanged.
+
+Dependency-complete `WoofWatcher Verify` run `31032566290`, job `92396622792`, passed implementation/docs commit `27663e6a` in `1m52s`, including pinned dependency install, JSON doctor, focused tests, typecheck, and CI-safe builds.
