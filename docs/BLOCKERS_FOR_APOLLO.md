@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-05 WoofGuide composer identity status
+
+Source-level WoofGuide composer identity now follows the active Dog Profile while live answers remain disabled without an approved provider. Native iOS/Android review, VoiceOver/TalkBack traversal, provider/store proof, and Apollo approval remain open; no live AI or external action was enabled.
+
 ## 2026-08-04 live care-twin HUD identity status
 
 Source-level room HUD identity now follows the active Dog Profile while intentional Phoenix asset/template names remain unchanged. Native iOS/Android room review, VoiceOver/TalkBack traversal, route-named evidence, provider/store proof, and Apollo approval remain open; no provider, payment, live-AI, or launch capability was enabled.

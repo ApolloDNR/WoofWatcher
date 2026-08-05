@@ -59,3 +59,9 @@ export function buildCareTwinAwayIdentityCopy(name: string | null | undefined): 
 export function buildCareTwinLiveTitle(name: string | null | undefined): string {
   return `${resolvePetName(name).toLocaleUpperCase()} TWIN`;
 }
+
+export function buildWoofGuideComposerPlaceholder(
+  name: string | null | undefined,
+): string {
+  return `Ask about ${resolvePetName(name)}...`;
+}

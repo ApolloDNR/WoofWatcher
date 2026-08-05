@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-05 WoofGuide composer identity
+
+- DONE: WoofGuide's message composer now uses canonical Dog Profile identity instead of interpolating raw stored profile text.
+- VERIFIED: Red-first identity coverage failed on the missing builder, then focused identity/mobile-readiness coverage passed `185/185`; trimmed renamed dogs and the intentional blank/`My Dog` Phoenix starter identity are covered.
+- NEXT: Run dependency-complete branch CI. Native iOS/Android WoofGuide review, VoiceOver/TalkBack, live-AI provider proof, and Apollo approval remain required.
+
 ## 2026-08-04 live care-twin HUD identity
 
 - DONE: The shared living-room HUD now names the active Dog Profile instead of labeling every renamed dog `PHOENIX TWIN`.

@@ -30,7 +30,10 @@ import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/Boa
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
-import { resolvePetName } from "@/lib/petIdentity";
+import {
+  buildWoofGuideComposerPlaceholder,
+  resolvePetName,
+} from "@/lib/petIdentity";
 import {
   getDockedComposerBottomPadding,
   getKeyboardAvoidingVerticalOffset,
@@ -662,7 +665,7 @@ export default function WoofGuideScreen() {
             <TextInput
               value={input}
               onChangeText={setInput}
-              placeholder={`Ask about ${state.profile.name}...`}
+              placeholder={buildWoofGuideComposerPlaceholder(state.profile.name)}
               placeholderTextColor={colors.mutedForeground}
               style={[s.input, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
               multiline

@@ -8,7 +8,23 @@ import {
   buildCareTwinAwayIdentityCopy,
   buildCareTwinLiveTitle,
   buildNotFoundIdentityCopy,
+  buildWoofGuideComposerPlaceholder,
 } from "./petIdentity.ts";
+
+test("names the active dog in the WoofGuide composer", () => {
+  assert.equal(
+    buildWoofGuideComposerPlaceholder("  Luna  "),
+    "Ask about Luna...",
+  );
+  assert.equal(
+    buildWoofGuideComposerPlaceholder("My Dog"),
+    "Ask about Phoenix...",
+  );
+  assert.equal(
+    buildWoofGuideComposerPlaceholder("   "),
+    "Ask about Phoenix...",
+  );
+});
 
 test("names the active dog in the living care-twin HUD", () => {
   assert.equal(buildCareTwinLiveTitle("  Mochi  "), "MOCHI TWIN");

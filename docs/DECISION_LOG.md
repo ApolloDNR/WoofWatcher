@@ -3218,3 +3218,7 @@ Global recovery copy is part of the owner-facing care shell, so it must consume 
 ## 2026-08-04 Avatar Studio guidance follows Dog Profile
 
 Avatar Studio preview speech is owner-facing care-twin identity, even when Phoenix remains the internal asset/template family name. Customize guidance therefore follows the canonical Dog Profile name; Phoenix remains only the intentional blank/`My Dog` starter fallback.
+
+## 2026-08-05 WoofGuide composer follows Dog Profile
+
+The WoofGuide composer is an owner-facing care seam and must use canonical Dog Profile identity rather than raw persisted profile text. Renamed dogs are trimmed; blank and `My Dog` profiles retain the intentional Phoenix starter identity. This changes no live-AI, external-action, or veterinary-safety boundary.
