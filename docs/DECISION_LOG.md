@@ -3222,3 +3222,7 @@ Avatar Studio preview speech is owner-facing care-twin identity, even when Phoen
 ## 2026-08-05 WoofGuide composer follows Dog Profile
 
 The WoofGuide composer is an owner-facing care seam and must use canonical Dog Profile identity rather than raw persisted profile text. Renamed dogs are trimmed; blank and `My Dog` profiles retain the intentional Phoenix starter identity. This changes no live-AI, external-action, or veterinary-safety boundary.
+
+## 2026-08-05 Care-twin pet action follows Dog Profile
+
+The live room's pet control is a meaningful owner-facing accessibility action, so its label must consume canonical Dog Profile identity rather than raw persisted profile text. Renamed dogs are trimmed; blank and `My Dog` profiles retain the intentional Phoenix starter identity.

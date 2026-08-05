@@ -5889,8 +5889,8 @@ test("keeps Living Phoenix room rasters inside its labeled controls", () => {
   );
   assert.match(
     room,
-    /<Pressable[\s\S]*?accessibilityLabel={`Pet \$\{petName \?\? "your dog"\}`}/,
-    "the roaming pet control must retain its meaningful action label",
+    /<Pressable[\s\S]*?accessibilityLabel=\{buildCareTwinPetActionLabel\(petName\)\}/,
+    "the roaming pet control must retain its canonical Dog Profile action label",
   );
   assert.match(
     room,

@@ -60,6 +60,7 @@ import { pixelImageStyle } from "@/lib/pixelRendering";
 import {
   buildCareTwinAwayIdentityCopy,
   buildCareTwinLiveTitle,
+  buildCareTwinPetActionLabel,
 } from "@/lib/petIdentity";
 import type { Mood } from "@/lib/phoenixStatus";
 
@@ -1823,7 +1824,7 @@ function RoamingTwinRig({
       {petBurstId ? <PetHeartsBurst key={petBurstId} /> : null}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Pet ${petName ?? "your dog"}`}
+        accessibilityLabel={buildCareTwinPetActionLabel(petName)}
         accessibilityHint="A little affection - hearts and a tail wag."
         onPress={handlePet}
         style={[

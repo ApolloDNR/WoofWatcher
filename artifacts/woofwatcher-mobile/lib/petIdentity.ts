@@ -60,6 +60,10 @@ export function buildCareTwinLiveTitle(name: string | null | undefined): string 
   return `${resolvePetName(name).toLocaleUpperCase()} TWIN`;
 }
 
+export function buildCareTwinPetActionLabel(name: string | null | undefined): string {
+  return `Pet ${resolvePetName(name)}`;
+}
+
 export function buildWoofGuideComposerPlaceholder(
   name: string | null | undefined,
 ): string {

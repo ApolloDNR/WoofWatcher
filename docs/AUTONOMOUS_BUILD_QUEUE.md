@@ -2220,3 +2220,9 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Require dependency-complete branch CI. Route-named iOS/Android recovery-screen evidence and Apollo approval remain open; source coverage does not clear native release gates.
 - CI: Dependency-complete `WoofWatcher Verify` run `30950107740`, job `92129772326`, passed implementation/docs commit `aeeeb930`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+
+## 2026-08-05 Care-twin pet action identity
+
+- DONE: The live room's tappable dog action now resolves the canonical Dog Profile name instead of announcing raw persisted text; trimmed renamed dogs are honored and blank/`My Dog` profiles retain the intentional Phoenix starter identity.
+- VERIFIED: Red-first identity coverage failed on the missing action-label builder, and the existing room-readiness contract then caught the stale raw-name wiring before it was updated to require the canonical builder.
+- NEXT: Require dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android room evidence remain open; source coverage does not clear native release gates.

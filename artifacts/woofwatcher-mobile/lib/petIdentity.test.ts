@@ -7,9 +7,16 @@ import {
   buildAuthGatewayIdentityCopy,
   buildCareTwinAwayIdentityCopy,
   buildCareTwinLiveTitle,
+  buildCareTwinPetActionLabel,
   buildNotFoundIdentityCopy,
   buildWoofGuideComposerPlaceholder,
 } from "./petIdentity.ts";
+
+test("names the active dog in the live care-twin pet action", () => {
+  assert.equal(buildCareTwinPetActionLabel("  Luna  "), "Pet Luna");
+  assert.equal(buildCareTwinPetActionLabel("My Dog"), "Pet Phoenix");
+  assert.equal(buildCareTwinPetActionLabel("   "), "Pet Phoenix");
+});
 
 test("names the active dog in the WoofGuide composer", () => {
   assert.equal(
