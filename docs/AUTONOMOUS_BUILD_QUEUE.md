@@ -4,7 +4,8 @@
 
 - DONE: The shared living-room HUD now names the active Dog Profile instead of labeling every renamed dog `PHOENIX TWIN`.
 - VERIFIED: Red-first identity coverage failed on the missing formatter, then focused identity/mobile-readiness coverage passed `184/184`; trimmed renamed dogs and the intentional blank/`My Dog` Phoenix starter identity are covered.
-- NEXT: Run broad verification and dependency-complete branch CI. Native iOS/Android room review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `30979715502`, job `92221343828`, passed implementation/docs commit `1bc699a1`; pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native iOS/Android room review, VoiceOver/TalkBack, provider proof, and Apollo approval remain required.
 
 ## 2026-08-04 live care-twin away identity
 
