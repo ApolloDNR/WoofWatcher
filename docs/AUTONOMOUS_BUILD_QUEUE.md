@@ -2234,3 +2234,5 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: The care snapshot prepared for future provider-backed WoofGuide summaries and handoffs now carries canonical Dog Profile identity instead of raw persisted profile text; renamed dogs are trimmed and blank/`My Dog` profiles retain the intentional Phoenix starter identity.
 - VERIFIED: A red-first mobile-readiness contract failed on the raw provider-context name before the boundary was corrected.
 - NEXT: Require dependency-complete branch CI. Live AI remains disabled pending provider, model-policy, veterinary-safety, owner-review, and Apollo approval; source coverage does not clear those gates.
+- CI: Dependency-complete `WoofWatcher Verify` run `31018021482`, job `92347159956`, passed implementation/docs commit `1d9bccc1`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
