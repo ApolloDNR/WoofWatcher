@@ -1,4 +1,5 @@
 import type { AvatarMotionModel, AvatarMotionState } from "./avatarMotion";
+import { resolvePetName } from "./petIdentity.ts";
 
 export type AvatarRoomZone = "rug" | "door" | "bowl" | "bed" | "window";
 export type AvatarLifeAnimation = "idle" | "walk" | "eat" | "drink" | "sleep" | "comfort" | "celebrate";
@@ -446,8 +447,7 @@ function withSpriteTrack(plan: Omit<AvatarLifePlan, "spriteTrack">): AvatarLifeP
 }
 
 function withPetName(plan: AvatarLifePlan, petName?: string | null): AvatarLifePlan {
-  const safePetName = petName?.trim();
-  if (!safePetName) return plan;
+  const safePetName = resolvePetName(petName);
 
   return {
     ...plan,

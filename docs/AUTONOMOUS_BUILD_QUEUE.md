@@ -2249,3 +2249,9 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - PASS (red-first source): mobile readiness first failed on the stale placeholder, then protects the dynamic `The ${petName} Pack` wiring.
 - PASS (branch CI): `WoofWatcher Verify` run `31032566290`, job `92396622792`, passed implementation/docs commit `27663e6a` with pinned dependency install, JSON doctor, focused tests, typecheck, and CI-safe builds.
 - REMAINS: native iOS/Android modal review, VoiceOver/TalkBack traversal, household-provider proof, and Apollo approval remain separate gates.
+
+## 2026-08-05 Care-twin interaction fallback identity
+
+- DONE: The shared avatar-life scene engine now applies canonical Dog Profile identity before building pet/rest interaction verbs, so a raw `My Dog` placeholder cannot surface as `Pet My Dog` or `Let My Dog rest`.
+- VERIFIED: Red-first avatar-life coverage failed with `Pet My Dog` and passed after routing the engine through `resolvePetName`; renamed dogs remain trimmed and blank/`My Dog` retain Phoenix.
+- NEXT: Require dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android room evidence remain open; source coverage does not clear native release gates.

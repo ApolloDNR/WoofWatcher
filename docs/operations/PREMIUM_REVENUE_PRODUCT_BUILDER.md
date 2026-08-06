@@ -5479,3 +5479,7 @@ Setup's household-name field now derives its empty-state hint from the Dog Profi
 Dependency-complete `WoofWatcher Verify` run `31058280950`, job `92480475366`, passed implementation/docs commit `0d1647c2` in `2m1s`, including pinned dependency install, JSON doctor, focused tests, typecheck, and CI-safe builds.
 
 Dependency-complete `WoofWatcher Verify` run `31032566290`, job `92396622792`, passed implementation/docs commit `27663e6a` in `1m52s`, including pinned dependency install, JSON doctor, focused tests, typecheck, and CI-safe builds.
+
+## 2026-08-05 Care-twin interaction fallback identity slice
+
+The shared avatar-life scene engine now resolves canonical Dog Profile identity before formatting owner-facing pet/rest verbs. Red-first coverage reproduced `Pet My Dog`, then passed with the intentional `Pet Phoenix` starter fallback while preserving trimmed renamed-dog actions. Native accessibility/device proof, provider/store proof, and Apollo approval remain separate gates.

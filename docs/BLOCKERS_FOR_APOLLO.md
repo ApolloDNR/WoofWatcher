@@ -741,3 +741,7 @@ Source coverage now proves Setup's household-name hint follows the current canon
 Dependency-complete `WoofWatcher Verify` run `31058280950`, job `92480475366`, passed the Setup identity implementation on commit `0d1647c2`. This does not clear the native/provider/Apollo gates above.
 
 Dependency-complete branch CI passed for the implementation in `WoofWatcher Verify` run `31032566290`, job `92396622792`, on commit `27663e6a`. This does not clear the native/provider/Apollo gates above.
+
+## 2026-08-05 Care-twin interaction fallback proof remains open
+
+Source coverage now proves the shared avatar-life engine converts raw blank/`My Dog` identity to the intentional Phoenix starter name before announcing pet/rest actions. Native VoiceOver/TalkBack traversal, route-named iOS/Android room evidence, and Apollo approval remain required.

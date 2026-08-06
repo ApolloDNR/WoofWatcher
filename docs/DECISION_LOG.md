@@ -3237,3 +3237,7 @@ Household naming suggestions are owner-facing shared-care identity, so More must
 ## 2026-08-05 Setup household guidance follows Dog Profile
 
 Setup builds the household-name hint from the current dog-name draft through canonical pet identity. Renamed dogs receive a trimmed hint such as `Luna House`; blank and `My Dog` drafts retain the intentional `Phoenix House` starter identity. This is guidance only and does not create, rename, or sync a provider-backed household.
+
+## 2026-08-05 Shared care-twin verbs enforce canonical identity
+
+Avatar-life scene derivation is an owner-facing accessibility boundary, not only an internal animation helper. It must resolve the supplied dog name canonically so raw `My Dog`, blank, and whitespace values cannot leak into pet/rest action verbs; Phoenix remains the intentional starter fallback.

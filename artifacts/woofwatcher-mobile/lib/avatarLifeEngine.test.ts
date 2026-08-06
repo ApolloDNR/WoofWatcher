@@ -62,6 +62,13 @@ test("names the active dog in care-twin interaction verbs", () => {
     ).tapVerb,
     "Let Mochi rest",
   );
+  assert.equal(
+    deriveCareTwinScene(
+      motion({ state: "happy", avatarMood: "happy", cue: "tail-wag" }),
+      "My Dog",
+    ).tapVerb,
+    "Pet Phoenix",
+  );
 });
 
 test("routes eating and drinking avatar states to the bowl", () => {
