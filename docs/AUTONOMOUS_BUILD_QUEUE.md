@@ -5,7 +5,8 @@
 - DONE: Adventure Mode and new local Adventure memories now resolve the saved Dog Profile through the canonical identity boundary instead of displaying or persisting the `My Dog` placeholder.
 - VERIFIED: Red-first Adventure coverage reproduced `My Dog`, then focused Adventure and identity coverage passed `8/8` after the shared-domain fix; trimmed renamed dogs remain intact and blank/placeholder profiles retain Phoenix.
 - BOUNDARY: Quest math, care-log evidence, memory privacy/storage, provider sync, native QA, store review, and launch approval are unchanged.
-- NEXT: Run the strongest local verification and require dependency-complete branch CI. Native route-named Adventure review and VoiceOver/TalkBack evidence remain required.
+- CI: Dependency-complete `WoofWatcher Verify` run `31113935808`, job `92658577939`, passed implementation/docs commit `508b26e0`; pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Native route-named Adventure review and VoiceOver/TalkBack evidence remain required.
 
 ## 2026-08-06 Calendar empty-day Dog Profile identity
 

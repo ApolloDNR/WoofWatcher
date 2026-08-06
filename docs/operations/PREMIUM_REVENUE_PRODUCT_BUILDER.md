@@ -4,6 +4,8 @@
 
 Adventure Mode and new local Adventure memory drafts now resolve Dog Profile identity canonically before building owner-visible quest copy or persisted memory records. Red-first behavior coverage caught the stored `My Dog` placeholder in the shared domain; trimmed renamed dogs remain intact and blank/placeholder profiles retain the intentional Phoenix starter identity. Quest XP, real-care evidence, private local storage, providers, native/store proof, and launch approval remain unchanged.
 
+Dependency-complete `WoofWatcher Verify` run `31113935808`, job `92658577939`, passed implementation/docs commit `508b26e0`, including pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit before treating the final branch tip as current.
+
 ## 2026-08-06 Calendar empty-day identity slice
 
 Calendar's month-day empty state now resolves Dog Profile identity canonically before inviting the owner to log the day's first moment. Red-first behavior coverage caught the stored `My Dog` placeholder producing generic `your dog` copy; renamed dogs remain trimmed and blank/placeholder profiles retain the intentional Phoenix starter identity. Calendar persistence, sync, native/provider/store evidence, and launch approval remain separate.
