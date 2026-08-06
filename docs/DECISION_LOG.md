@@ -3267,3 +3267,10 @@ drafts and previously saved passes must resolve canonical Dog Profile identity.
 The `My Dog` placeholder falls back to Phoenix for starter data, while a stale
 placeholder pass adopts the active renamed dog in the current plan. This does
 not enable provider sharing, remote permissions, or automatic external action.
+
+## 2026-08-06 Today paw accessibility identity follows Dog Profile
+
+The shared floating Today paw is an owner-facing Dog Profile identity boundary.
+Its non-Home screen-reader hint resolves renamed, blank, and `My Dog` values
+through `resolvePetName`; the on-Today action remains the identity-free
+`Opens the fast log sheet` instruction.

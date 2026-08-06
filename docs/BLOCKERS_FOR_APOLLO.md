@@ -771,3 +771,10 @@ approval remain required; remote sharing remains disabled.
 Dependency-complete `WoofWatcher Verify` run `31087591690`, job `92570641436`,
 passed implementation/docs commit `bd3e9c63`. This does not clear the
 provider/native/privacy/Apollo gates above.
+
+## 2026-08-06 Today paw accessibility identity proof remains open
+
+Source tests now prove the floating Today paw announces canonical Dog Profile
+identity instead of the stored `My Dog` placeholder. Native VoiceOver/TalkBack
+traversal, route-named iOS/Android bottom-navigation evidence, and Apollo
+accessibility approval remain required.

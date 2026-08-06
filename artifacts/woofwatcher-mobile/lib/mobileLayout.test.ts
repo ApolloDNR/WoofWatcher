@@ -23,8 +23,12 @@ test("names the active dog in the shared Today tab hint", () => {
     "Open Milo's room and today's care",
   );
   assert.equal(
+    buildTodayTabAccessibilityHint({ onToday: false, petName: "My Dog" }),
+    "Open Phoenix's room and today's care",
+  );
+  assert.equal(
     buildTodayTabAccessibilityHint({ onToday: false, petName: "  " }),
-    "Open your dog's room and today's care",
+    "Open Phoenix's room and today's care",
   );
   assert.equal(
     buildTodayTabAccessibilityHint({ onToday: true, petName: "Milo" }),

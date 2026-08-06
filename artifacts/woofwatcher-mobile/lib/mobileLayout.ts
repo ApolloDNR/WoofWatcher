@@ -1,3 +1,5 @@
+import { resolvePetName } from "./petIdentity.ts";
+
 export type MobileRuntimePlatform = "android" | "ios" | "web" | string;
 
 export interface MobileLayoutInput {
@@ -29,10 +31,8 @@ export function buildTodayTabAccessibilityHint({
   petName?: string | null;
 }): string {
   if (onToday) return "Opens the fast log sheet";
-  const name = petName?.trim();
-  return name
-    ? `Open ${name}'s room and today's care`
-    : "Open your dog's room and today's care";
+  const name = resolvePetName(petName);
+  return `Open ${name}'s room and today's care`;
 }
 
 const TAB_BAR_NATIVE_HEIGHT = 72;

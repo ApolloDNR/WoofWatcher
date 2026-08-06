@@ -5516,3 +5516,11 @@ Dependency-complete `WoofWatcher Verify` run `31087591690`, job `92570641436`,
 passed implementation/docs commit `bd3e9c63` in `2m1s`, including pinned
 dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds,
 post steps, and Complete job.
+
+## 2026-08-06 Today paw accessibility identity slice
+
+`buildTodayTabAccessibilityHint` now uses canonical Dog Profile identity for
+the shared non-Home navigation hint. Red-first source coverage reproduces the
+old `My Dog` announcement and protects trimmed renamed dogs plus the Phoenix
+starter fallback. Native screen-reader traversal, route-named device proof,
+and Apollo accessibility approval remain open.

@@ -2298,3 +2298,14 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   `92570641436`, passed implementation/docs commit `bd3e9c63` in `2m1s` with
   pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe
   builds, post steps, and Complete job all green.
+
+## 2026-08-06 Today paw accessibility identity
+
+- DONE: The shared floating Today paw now resolves its screen-reader navigation
+  hint through Dog Profile identity, so renamed dogs are trimmed and the stored
+  `My Dog` starter placeholder is announced as Phoenix.
+- VERIFIED: Red-first mobile layout coverage reproduced `Open My Dog's room`
+  before the shared boundary was corrected.
+- NEXT: Require dependency-complete branch CI. Native VoiceOver/TalkBack
+  traversal and route-named iOS/Android bottom-navigation evidence remain open;
+  source coverage does not replace device or Apollo approval.
