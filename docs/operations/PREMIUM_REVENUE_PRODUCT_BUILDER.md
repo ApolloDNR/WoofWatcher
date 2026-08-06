@@ -6,6 +6,8 @@ The automation branch now incorporates the latest mainline Home scene architectu
 
 The previous automation tip `0591e778` is dependency-complete: `WoofWatcher Verify` run `31124979898`, job `92693666007`, passed checkout, pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job.
 
+Merge verification is also dependency-complete: focused Home/layout/motion/readiness coverage passed `208/208`, PixelLab passed `ok=150 missing=0 invalid=0`, and `WoofWatcher Verify` run `31128105402`, job `92707488218`, passed merge commit `c0df8fd8` with every step green. The broad local partial-checkout run passed `777/779`; only `careCareer` and `careSync` remained blocked by the missing `@workspace/care-domain` package link. Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+
 ## 2026-08-06 Adventure memory identity slice
 
 Adventure Mode and new local Adventure memory drafts now resolve Dog Profile identity canonically before building owner-visible quest copy or persisted memory records. Red-first behavior coverage caught the stored `My Dog` placeholder in the shared domain; trimmed renamed dogs remain intact and blank/placeholder profiles retain the intentional Phoenix starter identity. Quest XP, real-care evidence, private local storage, providers, native/store proof, and launch approval remain unchanged.

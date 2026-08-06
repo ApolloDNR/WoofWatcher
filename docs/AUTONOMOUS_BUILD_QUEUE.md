@@ -2,10 +2,12 @@
 
 ## 2026-08-06 Mainline Home scene reconciliation
 
-- IN PROGRESS: Merge `origin/main` Home scene anchoring, compact-web viewport, active-walk gait, and replacement hard-pixel walk strip into the automation branch without rewriting either history.
+- DONE: Merged `origin/main` Home scene anchoring, compact-web viewport, active-walk gait, and replacement hard-pixel walk strip into the automation branch without rewriting either history.
 - PRESERVED: Automation-only Dog Profile identity, fixed light/dark color, and decorative-image accessibility boundaries were retained while resolving the Home and root-layout conflicts.
 - BASELINE CI: `WoofWatcher Verify` run `31124979898`, job `92693666007`, passed the pre-merge automation tip `0591e778` with install, doctor, focused tests, typecheck, and CI-safe builds all green.
-- NEXT: Run focused Home/layout/motion/readiness checks, the broad available suite, TypeScript/build/PixelLab checks, then push and require dependency-complete branch CI. Native iOS/Android visual and screen-reader approval remain separate.
+- VERIFIED: Focused Home/layout/motion/readiness coverage passed `208/208`; PixelLab passed `ok=150 missing=0 invalid=0`; the broad partial-checkout suite passed `777/779` with only the known unresolved `@workspace/care-domain` links in `careCareer` and `careSync`.
+- CI: Dependency-complete `WoofWatcher Verify` run `31128105402`, job `92707488218`, passed merge commit `c0df8fd8` with install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all green.
+- NEXT: Rerun branch CI after this proof-record commit. Native iOS/Android visual and screen-reader approval remain separate.
 
 ## 2026-08-06 Adventure Dog Profile identity persistence
 
