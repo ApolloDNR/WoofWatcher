@@ -18,6 +18,14 @@ const MOBILE_LIB_DIR = join(
   "woofwatcher-mobile",
   "lib",
 );
+const RECORDS_SCREEN_PATH = join(
+  process.cwd(),
+  "artifacts",
+  "woofwatcher-mobile",
+  "components",
+  "health",
+  "RecordsScreen.tsx",
+);
 
 function readAppFile(path: string): string {
   return readFileSync(join(APP_DIR, path), "utf8");
@@ -25,6 +33,14 @@ function readAppFile(path: string): string {
 
 function readMobileLibFile(path: string): string {
   return readFileSync(join(MOBILE_LIB_DIR, path), "utf8");
+}
+
+function readRecordsScreen(): string {
+  assert.ok(
+    existsSync(RECORDS_SCREEN_PATH),
+    "Health must own the substantive Records screen",
+  );
+  return readFileSync(RECORDS_SCREEN_PATH, "utf8");
 }
 
 function getStyleBlock(source: string, styleName: string): string {
@@ -598,13 +614,13 @@ test("keeps tabbed mobile routes clear with shared universal tab chrome", () => 
   const mobileLayout = readMobileLibFile("mobileLayout.ts");
   const tabs = readAppFile(join("(tabs)", "_layout.tsx"));
   const tabbedRoutes = [
-    "index",
-    "log",
-    "calendar",
-    "health",
-    "more",
-    "records",
-  ];
+    ["index", readAppFile(join("(tabs)", "index.tsx"))],
+    ["log", readAppFile(join("(tabs)", "log.tsx"))],
+    ["calendar", readAppFile(join("(tabs)", "calendar.tsx"))],
+    ["health", readAppFile(join("(tabs)", "health.tsx"))],
+    ["more", readAppFile(join("(tabs)", "more.tsx"))],
+    ["records", readRecordsScreen()],
+  ] as const;
 
   assert.match(mobileLayout, /getFloatingTabChromeMetrics/);
   assert.match(mobileLayout, /getTabbedRouteBottomPadding/);
@@ -623,8 +639,7 @@ test("keeps tabbed mobile routes clear with shared universal tab chrome", () => 
     "the universal shell should not retain the elevated paw overlay",
   );
 
-  for (const route of tabbedRoutes) {
-    const source = readAppFile(join("(tabs)", `${route}.tsx`));
+  for (const [route, source] of tabbedRoutes) {
     assert.match(
       source,
       /getTabbedRouteBottomPadding/,
@@ -2429,7 +2444,7 @@ test("extends the mobile pixel board system across core v1.5 routes", () => {
     plans: readAppFile(join("(tabs)", "calendar.tsx")),
     health: readAppFile(join("(tabs)", "health.tsx")),
     more: readAppFile(join("(tabs)", "more.tsx")),
-    records: readAppFile(join("(tabs)", "records.tsx")),
+    records: readRecordsScreen(),
     woofguide: readAppFile("woofguide.tsx"),
     avatarStudio: readAppFile("portrait.tsx"),
   };
@@ -2482,7 +2497,7 @@ test("extends the mobile pixel board system across core v1.5 routes", () => {
 test("keeps Quick Log, Plans, and Records on shared board card anatomy", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const plans = readAppFile(join("(tabs)", "calendar.tsx"));
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   for (const [route, source] of Object.entries({ log, plans, records })) {
     assert.match(
@@ -2518,7 +2533,7 @@ test("keeps web route previews visible before native entry animation starts", ()
     home: readAppFile(join("(tabs)", "index.tsx")),
     log: readAppFile(join("(tabs)", "log.tsx")),
     plans: readAppFile(join("(tabs)", "calendar.tsx")),
-    records: readAppFile(join("(tabs)", "records.tsx")),
+    records: readRecordsScreen(),
     more: readAppFile(join("(tabs)", "more.tsx")),
     premium: readAppFile("premium.tsx"),
   };
@@ -2560,7 +2575,7 @@ test("keeps the floating route gutter consistent across web and native", () => {
   const routeSources: Record<string, string> = {
     log: readAppFile(join("(tabs)", "log.tsx")),
     plans: readAppFile(join("(tabs)", "calendar.tsx")),
-    records: readAppFile(join("(tabs)", "records.tsx")),
+    records: readRecordsScreen(),
     more: readAppFile(join("(tabs)", "more.tsx")),
   };
 
@@ -2621,7 +2636,7 @@ test("keeps compact mobile proof and mission cards from clipping", () => {
     "Quick Log pixel stage should stay bounded to the phone viewport",
   );
   assert.match(
-    getStyleBlock(readAppFile(join("(tabs)", "records.tsx")), "recordsCredentialStageCard"),
+    getStyleBlock(readRecordsScreen(), "recordsCredentialStageCard"),
     /width:\s*"100%"[\s\S]*maxWidth:\s*"100%"/,
     "Records pixel stage should stay bounded to the phone viewport",
   );
@@ -3930,7 +3945,7 @@ test("does not keep hidden legacy headers behind board route headers", () => {
 });
 
 test("keeps Records report history wired for printable Care Pass artifacts", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
   const careTwinQaRoute = readAppFile("care-twin-qa.tsx");
 
   assert.match(records, /getCarePassArtifactPrintView/);
@@ -4018,7 +4033,7 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
 });
 
 test("keeps Records dog ID wired for printable credential sharing", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(records, /getPetCredentialPrintView/);
   assert.match(records, /getPetCredentialImageView/);
@@ -4038,7 +4053,7 @@ test("keeps Records dog ID wired for printable credential sharing", () => {
 });
 
 test("keeps Records organized around a vault command hierarchy", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(records, /interface RecordsCommandItem/);
   assert.match(records, /const recordsCommandItems: RecordsCommandItem\[\] = \[/);
@@ -4072,7 +4087,7 @@ test("keeps Records organized around a vault command hierarchy", () => {
 });
 
 test("keeps Records Care Pass and reports on shared board card anatomy", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(
     records,
@@ -4089,7 +4104,7 @@ test("keeps Records Care Pass and reports on shared board card anatomy", () => {
 });
 
 test("keeps Records and Care Pass actions on shared mobile touch targets", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   for (const styleName of [
     "shareInline",
@@ -4110,7 +4125,7 @@ test("keeps Records and Care Pass actions on shared mobile touch targets", () =>
 });
 
 test("keeps Records vault, diet, and cabinet on shared board card anatomy", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(
     records,
@@ -4127,7 +4142,7 @@ test("keeps Records vault, diet, and cabinet on shared board card anatomy", () =
 });
 
 test("keeps Records trend sections on shared board card anatomy", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(
     records,
@@ -4172,7 +4187,7 @@ test("keeps Records trend sections on shared board card anatomy", () => {
 });
 
 test("keeps Records section status labels as badges instead of passive actions", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(
     records,
@@ -4206,7 +4221,7 @@ test("keeps Records section status labels as badges instead of passive actions",
 });
 
 test("keeps Records dog ID heading on shared board section anatomy", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   // The heading stays short and static ("ID Card") so the four inline share
   // actions never clip it; the resolved pet name renders on the card itself.
@@ -4221,7 +4236,7 @@ test("keeps Records dog ID heading on shared board section anatomy", () => {
 });
 
 test("keeps Records activity and potty sections on shared board card anatomy", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(
     records,
@@ -4238,7 +4253,7 @@ test("keeps Records activity and potty sections on shared board card anatomy", (
 });
 
 test("keeps Records watch, grooming, and medication sections on shared board card anatomy", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(
     records,
@@ -4259,7 +4274,7 @@ test("keeps Records watch, grooming, and medication sections on shared board car
 });
 
 test("keeps Records wired to medication adherence status", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(records, /deriveMedicationAdherence/);
   assert.match(records, /medicationAdherence/);
@@ -4278,7 +4293,7 @@ test("keeps Log composer wired to medication routine defaults", () => {
 });
 
 test("keeps Records wired to medication follow-up reminders", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(records, /deriveMedicationFollowUps/);
   assert.match(records, /medicationFollowUps/);
@@ -4287,7 +4302,7 @@ test("keeps Records wired to medication follow-up reminders", () => {
 });
 
 test("keeps Records wired to medication history", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(records, /deriveMedicationHistory/);
   assert.match(records, /medicationHistory/);
@@ -4296,7 +4311,7 @@ test("keeps Records wired to medication history", () => {
 });
 
 test("keeps Records medication history searchable and filterable", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(records, /medicationSearch/);
   assert.match(records, /medicationOutcomeFilter/);
@@ -4308,7 +4323,7 @@ test("keeps Records medication history searchable and filterable", () => {
 
 test("keeps hydration visible from Home quick log to Records", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(home, /type: "water"/);
   assert.match(home, /label: "Water"/);
@@ -4323,7 +4338,7 @@ test("keeps hydration visible from Home quick log to Records", () => {
 });
 
 test("keeps walk activity insights visible in Records", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
   const log = readAppFile(join("(tabs)", "log.tsx"));
   const home = readAppFile(join("(tabs)", "index.tsx"));
 
@@ -4351,7 +4366,7 @@ test("keeps walk activity insights visible in Records", () => {
 });
 
 test("keeps weekly care trends visible in Records", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(records, /deriveCareTrends/);
   assert.match(records, /careTrends/);
@@ -4366,7 +4381,7 @@ test("keeps weekly care trends visible in Records", () => {
 
 test("keeps training progress visible from Log composer to Records", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(log, /type: "training"/);
   assert.match(log, /trainingOutcome/);
@@ -4381,7 +4396,7 @@ test("keeps training progress visible from Log composer to Records", () => {
 
 test("keeps alone-time anxiety tracking visible from Log composer to Records", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(log, /type: "alone"/);
   assert.match(log, /aloneOutcome/);
@@ -4413,7 +4428,7 @@ test("keeps Alone Time as a start and return lifecycle instead of a loose durati
 });
 
 test("keeps weight trend shared between Records and Care Pass reports", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
   const carePass = readFileSync(
     join(process.cwd(), "lib", "care-domain", "src", "care-pass.ts"),
     "utf8",
@@ -4428,7 +4443,7 @@ test("keeps weight trend shared between Records and Care Pass reports", () => {
 
 test("keeps grooming care visible from Log composer to Records and Care Pass reports", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
   const carePass = readFileSync(
     join(process.cwd(), "lib", "care-domain", "src", "care-pass.ts"),
     "utf8",
@@ -4449,7 +4464,7 @@ test("keeps grooming care visible from Log composer to Records and Care Pass rep
 
 test("keeps Incident Watch visible from Log composer to Records and Care Pass reports", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
   const carePass = readFileSync(
     join(process.cwd(), "lib", "care-domain", "src", "care-pass.ts"),
     "utf8",
@@ -4493,7 +4508,7 @@ test("keeps Incident Watch visible from Log composer to Records and Care Pass re
 
 test("keeps potty health visible from Log composer to Records", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(log, /type: "potty"/);
   assert.match(log, /label: "Condition"/);
@@ -4601,7 +4616,7 @@ test("keeps care log trust review wired into Log detail flows", () => {
 });
 
 test("copies picked care files into durable storage before persisting native URIs", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
   const durableMedia = readMobileLibFile("durablePickedMedia.ts");
 
   assert.match(records, /persistPickedMedia/);
@@ -4799,7 +4814,7 @@ test("keeps Plans organized around a mission-first mobile hierarchy", () => {
 });
 
 test("keeps Records rooted in a live pixel credential stage", () => {
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
 
   assert.match(records, /ImageBackground/);
   assert.match(records, /RECORDS_CREDENTIAL_STAGE_ROOM/);
@@ -5656,14 +5671,16 @@ test("keeps every current care mutation surface truthful when future data is rea
     join("(tabs)", "index.tsx"),
     join("(tabs)", "log.tsx"),
     join("(tabs)", "more.tsx"),
-    join("(tabs)", "records.tsx"),
+  ];
+  const surfaceSources = [
+    ...surfacePaths.map((path) => [path, readAppFile(path)] as const),
+    ["components/health/RecordsScreen.tsx", readRecordsScreen()] as const,
   ];
 
   assert.match(context, /careMutationsBlocked: boolean/);
   assert.match(context, /updateEntry: \([^;]+\) => boolean/);
   assert.match(context, /updateCareDoc: \([^;]+\) => boolean/);
-  for (const path of surfacePaths) {
-    const source = readAppFile(path);
+  for (const [path, source] of surfaceSources) {
     assert.match(source, /careMutationsBlocked/, `${path} must consume the read-only capability`);
     for (const match of source.matchAll(/\baddEntry\(/g)) {
       const boundary = source.slice(Math.max(0, match.index - 700), match.index + 700);
@@ -5679,13 +5696,14 @@ test("keeps every current care mutation surface truthful when future data is rea
   const mutationFiles = [
     ...listAppFiles(),
     join(mobileRoot, "components", "WalkRouteRecorder.tsx"),
+    RECORDS_SCREEN_PATH,
   ];
   const expectedInventory = {
     "app/(tabs)/calendar.tsx": { addEntry: 1, deleteEntry: 1, updateCareDoc: 6, updateEntry: 0 },
     "app/(tabs)/index.tsx": { addEntry: 2, deleteEntry: 1, updateCareDoc: 0, updateEntry: 1 },
     "app/(tabs)/log.tsx": { addEntry: 5, deleteEntry: 2, updateCareDoc: 1, updateEntry: 8 },
     "app/(tabs)/more.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 5, updateEntry: 0 },
-    "app/(tabs)/records.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 3, updateEntry: 0 },
+    "components/health/RecordsScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 3, updateEntry: 0 },
     "app/adventure.tsx": { addEntry: 2, deleteEntry: 1, updateCareDoc: 1, updateEntry: 0 },
     "app/fastlog.tsx": { addEntry: 2, deleteEntry: 0, updateCareDoc: 0, updateEntry: 0 },
     "app/privacy.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
@@ -5736,13 +5754,12 @@ test("keeps every current care mutation surface truthful when future data is rea
   assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.updateEntry, 0), 10);
   assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.deleteEntry, 0), 5);
 
-  for (const [path, expectedAcceptedCallbacks] of [
-    [join("(tabs)", "more.tsx"), 5],
-    [join("(tabs)", "records.tsx"), 3],
-    ["privacy.tsx", 1],
-    ["setup.tsx", 1],
+  for (const [path, source, expectedAcceptedCallbacks] of [
+    [join("(tabs)", "more.tsx"), readAppFile(join("(tabs)", "more.tsx")), 5],
+    ["components/health/RecordsScreen.tsx", readRecordsScreen(), 3],
+    ["privacy.tsx", readAppFile("privacy.tsx"), 1],
+    ["setup.tsx", readAppFile("setup.tsx"), 1],
   ] as const) {
-    const source = readAppFile(path);
     assert.equal(
       source.match(/runAcceptedCareMutation\(/g)?.length ?? 0,
       expectedAcceptedCallbacks,
@@ -5775,7 +5792,7 @@ test("keeps every current care mutation surface truthful when future data is rea
 test("wires strict workflow validation and canonical local care dates through every affected route", () => {
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
   const log = readAppFile(join("(tabs)", "log.tsx"));
-  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const records = readRecordsScreen();
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const month = readAppFile("calendar-month.tsx");
   const guide = readAppFile("woofguide.tsx");

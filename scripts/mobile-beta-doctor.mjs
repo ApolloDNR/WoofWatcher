@@ -277,7 +277,7 @@ const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
 const careContextPath = join(mobileRoot, "context", "CareContext.tsx");
 const premiumRoutePath = join(mobileRoot, "app", "premium.tsx");
 const privacyRoutePath = join(mobileRoot, "app", "privacy.tsx");
-const recordsRoutePath = join(mobileRoot, "app", "(tabs)", "records.tsx");
+const recordsScreenPath = join(mobileRoot, "components", "health", "RecordsScreen.tsx");
 const pwaVanillaAppEntryPath = join(root, "artifacts", "woofwatcher", "src", "vanilla", "app-entry.js");
 const pwaPrivacyCloudPath = join(root, "artifacts", "woofwatcher", "src", "vanilla", "woof-privacy-cloud.js");
 const pwaOperationsPath = join(root, "artifacts", "woofwatcher", "src", "vanilla", "woof-operations.js");
@@ -313,7 +313,7 @@ const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, 
 const careContextSource = existsSync(careContextPath) ? readFileSync(careContextPath, "utf8") : "";
 const premiumRouteSource = existsSync(premiumRoutePath) ? readFileSync(premiumRoutePath, "utf8") : "";
 const privacyRouteSource = existsSync(privacyRoutePath) ? readFileSync(privacyRoutePath, "utf8") : "";
-const recordsRouteSource = existsSync(recordsRoutePath) ? readFileSync(recordsRoutePath, "utf8") : "";
+const recordsScreenSource = existsSync(recordsScreenPath) ? readFileSync(recordsScreenPath, "utf8") : "";
 const pwaVanillaAppEntrySource = existsSync(pwaVanillaAppEntryPath) ? readFileSync(pwaVanillaAppEntryPath, "utf8") : "";
 const pwaPrivacyCloudSource = existsSync(pwaPrivacyCloudPath) ? readFileSync(pwaPrivacyCloudPath, "utf8") : "";
 const pwaOperationsSource = existsSync(pwaOperationsPath) ? readFileSync(pwaOperationsPath, "utf8") : "";
@@ -973,7 +973,7 @@ const carePassStorageProofGuardIsSourceBacked = includesAll(carePassDomainSource
   "structured storage proof",
 ])
   && !/baseStatus === "local-only" && options\.storageProviderConfigured/.test(carePassDomainSource)
-  && includesAll(recordsRouteSource, [
+  && includesAll(recordsScreenSource, [
     "deriveLaunchProviderSetup",
     "describeCarePassArtifactExport(artifact",
     "const storage = exportView.storage",
@@ -1444,7 +1444,7 @@ const recordsBinaryExportProofManifestIsSourceBacked = includesAll(reportBinaryE
   "iOS Care Pass PDF",
   "Android Dog ID PNG",
 ])
-  && includesAll(recordsRouteSource, [
+  && includesAll(recordsScreenSource, [
     "buildReportBinaryExportProofManifest",
     "Binary proof manifest",
     "const binaryProofManifest = buildReportBinaryExportProofManifest",
@@ -1482,7 +1482,7 @@ const generatedBinaryArtifactExportsAreSourceBacked = includesAll(reportGenerate
     "Local PNG generated",
     "native share and reopen proof still required",
   ])
-  && includesAll(recordsRouteSource, [
+  && includesAll(recordsScreenSource, [
     "buildCarePassPdfArtifactSource",
     "buildDogIdPngArtifactSource",
     "buildGeneratedBinaryArtifactFilePlan",
