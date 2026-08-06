@@ -5499,3 +5499,8 @@ new local drafts and persisted pass views. Red-first coverage reproduced the
 `My Dog` leak, then proved the Phoenix starter fallback and a trimmed renamed
 dog in caregiver permission copy. Provider sharing remains disabled; delivery,
 revocation, role enforcement, native proof, and Apollo approval remain open.
+
+Dependency-complete `WoofWatcher Verify` run `31087591690`, job `92570641436`,
+passed implementation/docs commit `bd3e9c63` in `2m1s`, including pinned
+dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds,
+post steps, and Complete job.

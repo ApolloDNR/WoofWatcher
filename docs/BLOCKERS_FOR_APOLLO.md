@@ -759,3 +759,7 @@ cannot expose the `My Dog` placeholder and follow canonical Dog Profile
 identity. Real provider-backed delivery/revocation, role enforcement, native
 VoiceOver/TalkBack and route-named iOS/Android proof, privacy review, and Apollo
 approval remain required; remote sharing remains disabled.
+
+Dependency-complete `WoofWatcher Verify` run `31087591690`, job `92570641436`,
+passed implementation/docs commit `bd3e9c63`. This does not clear the
+provider/native/privacy/Apollo gates above.
