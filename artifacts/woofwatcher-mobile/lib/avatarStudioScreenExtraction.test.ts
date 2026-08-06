@@ -24,6 +24,14 @@ function callCount(source: string, name: string): number {
   return source.match(new RegExp(`\\b${name}\\(`, "g"))?.length ?? 0;
 }
 
+function between(source: string, start: string, end: string): string {
+  const startAt = source.indexOf(start);
+  const endAt = source.indexOf(end, startAt + start.length);
+  assert.notEqual(startAt, -1, `missing start anchor: ${start}`);
+  assert.notEqual(endAt, -1, `missing end anchor: ${end}`);
+  return source.slice(startAt, endAt);
+}
+
 test("moves Avatar Studio mechanically into one dual-surface owner", () => {
   assert.equal(
     existsSync(COMPONENT_PATH),
@@ -57,12 +65,10 @@ test("preserves the Avatar state, art, picker, motion, and creator anatomy", () 
   const component = read(COMPONENT_PATH);
 
   for (const anchor of [
-    "phase",
     "activeTab",
     "draft",
     "previewEmote",
     "sourceUri",
-    "scanLine",
     "savedToast",
     "setNow",
     "ImagePicker",
@@ -85,12 +91,23 @@ test("preserves the Avatar state, art, picker, motion, and creator anatomy", () 
   assert.match(component, /launchImageLibraryAsync/);
   assert.match(component, /if \(res\.canceled \|\| !res\.assets\?\.\[0\]\?\.uri\) return/);
   assert.match(component, /Haptics\.impactAsync\(Haptics\.ImpactFeedbackStyle\.Medium\)/);
-  assert.equal(component.match(/\buseEffect\(/g)?.length ?? 0, 4);
-  assert.equal(component.match(/\bAnimated\.loop\(/g)?.length ?? 0, 3);
-  assert.equal(component.match(/\.stop\(\)/g)?.length ?? 0, 3);
-  assert.equal(component.match(/\bclearInterval\(/g)?.length ?? 0, 2);
-  assert.equal(component.match(/\bclearTimeout\(/g)?.length ?? 0, 1);
-  assert.equal(component.match(/\.setValue\(0\)/g)?.length ?? 0, 3);
+  assert.equal(component.match(/\buseEffect\(/g)?.length ?? 0, 3);
+  assert.equal(component.match(/\bAnimated\.loop\(/g)?.length ?? 0, 1);
+  assert.equal(component.match(/\.stop\(\)/g)?.length ?? 0, 1);
+  assert.equal(component.match(/\bclearInterval\(/g)?.length ?? 0, 1);
+  assert.equal(component.match(/\bclearTimeout\(/g)?.length ?? 0, 0);
+  assert.equal(component.match(/\.setValue\(0\)/g)?.length ?? 0, 1);
+
+  const pick = between(component, "const pick = async", "const selectTemplate =");
+  assert.match(component, /type StudioTab = "reference" \| "template" \| "customize" \| "emotes"/);
+  assert.match(component, /Photo reference/);
+  assert.match(component, /Local only/);
+  assert.match(component, /Selected reference photo/);
+  assert.match(component, /Current manual pixel twin/);
+  assert.match(pick, /setSourceUri\(res\.assets\[0\]\.uri\)/);
+  assert.doesNotMatch(pick, /setDraft|setPhase|setTimeout|setInterval|suggest/i);
+  assert.doesNotMatch(component, /\bPhase\b|setPhase|scanLine|finishTimer|lineTimer|scanLoop|pulseLoop/);
+  assert.doesNotMatch(component, /AvatarScanSuggestion|buildTemplateScanSuggestion|detectedTraits|\bconfidence\b/);
 });
 
 test("keeps Avatar persistence separate and preserves Save and Reset ordering", () => {

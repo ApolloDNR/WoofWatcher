@@ -43,9 +43,7 @@ import {
 import {
   AVATAR_ACCESSORIES,
   AVATAR_EMOTE_STATES,
-  AVATAR_SCAN_WORKFLOW_STEPS,
   AVATAR_TEMPLATES,
-  buildTemplateScanSuggestion,
   createDefaultAvatarConfig,
   deriveAvatarAccessoryFit,
   describeAvatarConfig,
@@ -86,19 +84,7 @@ const DISPLAY = "Fredoka_700Bold";
 const PIXEL_ROOM_SOURCE = require("@/assets/avatar/rooms/phoenix-room-day-option-b.png");
 const PIXEL_HEAD_SOURCE = require("@/assets/avatar/phoenix/approved/phoenix-main-head-v2-crisp.png");
 
-type Phase = "idle" | "working" | "result";
-type StudioTab = "scan" | "template" | "customize" | "emotes";
-
-const SCAN_LINES = [
-  "Opening your photo as a reference...",
-  "Lining up pixel template bases...",
-  "Setting your dog side by side...",
-  "Suggesting a base to start from...",
-  "Handing the picks back to you...",
-];
-
-const SCAN_WORKFLOW_ACCESSIBILITY_SUMMARY =
-  "Photo reference, Template match, Pixel twin, Owner approval";
+type StudioTab = "reference" | "template" | "customize" | "emotes";
 const HERO_TEMPLATE_SPRITE_SIZE = 256;
 
 const COAT_SWATCHES = [
@@ -193,7 +179,6 @@ export default function AvatarStudioScreen({
   const {
     avatarConfig,
     hasCustomAvatar,
-    hasConfiguredAvatar,
     saveAvatarConfig,
     resetAvatarConfig,
   } = useAvatar();
@@ -223,21 +208,13 @@ export default function AvatarStudioScreen({
         })
       : insets.bottom + 22;
 
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [activeTab, setActiveTab] = useState<StudioTab>("scan");
+  const [activeTab, setActiveTab] = useState<StudioTab>("reference");
   const [draft, setDraft] = useState<PetAvatarConfig>(() => avatarConfig);
   const [previewEmote, setPreviewEmote] = useState<AvatarEmoteState>("happy");
   const [sourceUri, setSourceUri] = useState<string | null>(null);
-  const [scanLine, setScanLine] = useState(0);
   const [savedToast, setSavedToast] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const scanSuggestion = useMemo(
-    () => buildTemplateScanSuggestion(petName),
-    [petName],
-  );
 
-  const scanAnim = useRef(new Animated.Value(0)).current;
-  const pulse = useRef(new Animated.Value(0)).current;
   const templateLife = useRef(new Animated.Value(0)).current;
   const reduced = useReducedMotion();
 
@@ -249,61 +226,6 @@ export default function AvatarStudioScreen({
     const id = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(id);
   }, []);
-
-  useEffect(() => {
-    if (phase !== "working") return;
-    const scanLoop = Animated.loop(
-      Animated.timing(scanAnim, {
-        toValue: 1,
-        duration: 1800,
-        easing: Easing.inOut(Easing.ease),
-        useNativeDriver: Platform.OS !== "web",
-      }),
-    );
-    const pulseLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 860,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: Platform.OS !== "web",
-        }),
-        Animated.timing(pulse, {
-          toValue: 0,
-          duration: 860,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: Platform.OS !== "web",
-        }),
-      ]),
-    );
-    // Reduce Motion: skip the scan/pulse loops; the working phase still
-    // completes on its own timer below.
-    if (!reduced) {
-      scanLoop.start();
-      pulseLoop.start();
-    }
-    const lineTimer = setInterval(
-      () => setScanLine((idx) => (idx + 1) % SCAN_LINES.length),
-      900,
-    );
-    const finishTimer = setTimeout(() => {
-      setDraft(scanSuggestion.suggestedConfig);
-      setPhase("result");
-      setActiveTab("template");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => {},
-      );
-    }, 2450);
-
-    return () => {
-      scanLoop.stop();
-      pulseLoop.stop();
-      clearInterval(lineTimer);
-      clearTimeout(finishTimer);
-      scanAnim.setValue(0);
-      pulse.setValue(0);
-    };
-  }, [phase, pulse, reduced, scanAnim, scanSuggestion.suggestedConfig]);
 
   useEffect(() => {
     if (reduced) return; // Reduce Motion: template preview holds still
@@ -414,14 +336,6 @@ export default function AvatarStudioScreen({
     [state.entries, state.routines, state.caregivers, now, status.energy],
   );
   const caregiver = state.caregivers[0]?.name ?? "you";
-  const scanTranslate = scanAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 250],
-  });
-  const reticleOpacity = pulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.34, 0.84],
-  });
   const templateLift = templateLife.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -5],
@@ -465,9 +379,6 @@ export default function AvatarStudioScreen({
     if (res.canceled || !res.assets?.[0]?.uri) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     setSourceUri(res.assets[0].uri);
-    setScanLine(0);
-    setPhase("working");
-    setActiveTab("scan");
   };
 
   const selectTemplate = (templateId: AvatarTemplateId) => {
@@ -537,7 +448,6 @@ export default function AvatarStudioScreen({
     );
     setSavedToast(`${petName}'s care twin saved`);
     setTimeout(() => setSavedToast(null), 1600);
-    setPhase("idle");
   };
 
   const resetDraft = async () => {
@@ -570,110 +480,7 @@ export default function AvatarStudioScreen({
           plain
         />
 
-        {phase === "working" ? (
-          <BoardCard
-            padded={false}
-            style={[s.canvasCard, { borderColor: colors.border }]}
-          >
-            <Image
-              source={PIXEL_ROOM_SOURCE}
-              style={[StyleSheet.absoluteFill, pixelImageStyle]}
-              contentFit="cover"
-              transition={220}
-            />
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: "rgba(8,26,42,0.44)" },
-              ]}
-            />
-            <Animated.View
-              style={[
-                s.scanBand,
-                { transform: [{ translateY: scanTranslate }] },
-              ]}
-            >
-              <LinearGradient
-                colors={["transparent", colors.sage + "55", "#FFF9EF"]}
-                style={StyleSheet.absoluteFill}
-              />
-              <View style={[s.scanLine, { backgroundColor: "#FFF9EF" }]} />
-            </Animated.View>
-            <Animated.View
-              pointerEvents="none"
-              style={[s.reticle, { opacity: reticleOpacity }]}
-            >
-              <View style={[s.corner, s.cornerTL]} />
-              <View style={[s.corner, s.cornerTR]} />
-              <View style={[s.corner, s.cornerBL]} />
-              <View style={[s.corner, s.cornerBR]} />
-            </Animated.View>
-            <View style={s.workingCopy}>
-              <View style={[s.softPill, { backgroundColor: colors.amberSoft }]}>
-                <Ionicons name="scan-outline" size={12} color={colors.amber} />
-                <Text style={[s.softPillText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
-                  PixelLab template match
-                </Text>
-              </View>
-              {sourceUri ? (
-                <View
-                  style={[
-                    s.sourceProofCard,
-                    {
-                      backgroundColor: "rgba(255,249,239,0.94)",
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <Image
-                    source={{ uri: sourceUri }}
-                    style={s.sourceProofImage}
-                    contentFit="cover"
-                    transition={160}
-                  />
-                  <View style={s.sourceProofCopy}>
-                    <Text
-                      style={[
-                        s.sourceProofKicker,
-                        { color: colors.sage, fontFamily: "Inter_700Bold" },
-                      ]}
-                    >
-                      PHOTO REFERENCE
-                    </Text>
-                    <Text
-                      style={[
-                        s.sourceProofText,
-                        { color: colors.ink, fontFamily: "Inter_700Bold" },
-                      ]}
-                    >
-                      Building a pixel twin, not using the photo as the avatar.
-                    </Text>
-                  </View>
-                </View>
-              ) : null}
-              <Text
-                style={[
-                  s.workingText,
-                  { color: "#FFF9EF", fontFamily: DISPLAY },
-                ]}
-              >
-                {SCAN_LINES[scanLine]}
-              </Text>
-              <Text
-                style={[
-                  s.workingHint,
-                  {
-                    color: "rgba(255,249,239,0.82)",
-                    fontFamily: "Inter_600SemiBold",
-                  },
-                ]}
-              >
-                This suggests traits only. You approve the final avatar.
-              </Text>
-            </View>
-          </BoardCard>
-        ) : (
-          <BoardCard padded={false} style={s.heroPreview}>
+        <BoardCard padded={false} style={s.heroPreview}>
             <View style={s.liveRoomStage}>
               {selectedTemplateBase ? (
                 <View style={s.templatePreviewStage}>
@@ -931,8 +738,8 @@ export default function AvatarStudioScreen({
                   energy={status.energy}
                   presenceLabel={`${petName} with ${caregiver}`}
                   nextLabel={
-                    activeTab === "scan"
-                      ? "Scan or choose a template"
+                    activeTab === "reference"
+                      ? "Use a photo as a visual reference"
                       : selectedTemplate.label
                   }
                   avatarConfig={draft}
@@ -948,24 +755,24 @@ export default function AvatarStudioScreen({
               <View
                 style={[
                   s.softPill,
-                  { backgroundColor: draft.scanAssisted ? colors.sageSoft : colors.amberSoft },
+                  { backgroundColor: colors.amberSoft },
                 ]}
               >
                 <Ionicons
-                  name={draft.scanAssisted ? "scan-outline" : "color-palette-outline"}
+                  name="color-palette-outline"
                   size={12}
-                  color={draft.scanAssisted ? colors.forest : colors.amber}
+                  color={colors.amber}
                 />
                 <Text
                   style={[
                     s.softPillText,
                     {
-                      color: draft.scanAssisted ? colors.forest : colors.amber,
+                      color: colors.amber,
                       fontFamily: "Inter_700Bold",
                     },
                   ]}
                 >
-                  {draft.scanAssisted ? "Scan-assisted" : "Template-built"}
+                  Manual template
                 </Text>
               </View>
               <Text numberOfLines={1} adjustsFontSizeToFit style={[s.savedName, { fontFamily: DISPLAY }]}>
@@ -975,16 +782,17 @@ export default function AvatarStudioScreen({
                 {previewIsSprite ? "Live PixelLab sprite rig." : "Still preview until a live animation pack exists."}
               </Text>
             </View>
-          </BoardCard>
-        )}
+        </BoardCard>
 
         <View style={s.tabRow}>
-          {[
-            ["scan", "Scan"],
+          {(
+            [
+            ["reference", "Reference"],
             ["template", "Template"],
             ["customize", "Customize"],
             ["emotes", "Emotes"],
-          ].map(([key, label]) => {
+            ] as const
+          ).map(([key, label]) => {
             const active = activeTab === key;
             return (
               <PressScale
@@ -993,7 +801,7 @@ export default function AvatarStudioScreen({
                 aria-selected={active}
                 accessibilityLabel={`Avatar Studio ${label}`}
                 hitSlop={MOBILE_INLINE_HIT_SLOP}
-                onPress={() => selectStudioTab(key as StudioTab)}
+                onPress={() => selectStudioTab(key)}
                 haptic="none"
                 containerStyle={s.tabLayout}
                 style={[
@@ -1020,192 +828,47 @@ export default function AvatarStudioScreen({
           })}
         </View>
 
-        {phase === "result" ? (
+        {activeTab === "reference" ? (
           <BoardCard style={s.avatarBoard}>
             <BoardSectionHeader
-              title="Suggested starting traits"
-              accessory={<BoardPill label="Owner review" tone={colors.amber} />}
+              title="Photo reference"
+              accessory={<BoardPill label="Local only" tone={colors.sage} />}
             />
-            <Text
-              style={[
-                s.copy,
-                {
-                  color: colors.mutedForeground,
-                  fontFamily: "Inter_500Medium",
-                },
-              ]}
-            >
-              Set your photo side by side and pick the base that best matches
-              your dog. These are starting cues to compare against, not an
-              automatic detection.
+            <Text style={[s.copy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              Choose one photo to compare beside your pixel twin. WoofWatcher does not analyze it,
+              choose a template, or change any avatar option.
             </Text>
-            <View style={s.traitGrid}>
-              {scanSuggestion.detectedTraits.map((trait) => (
-                <View
-                  key={trait}
-                  style={[
-                    s.traitChip,
-                    {
-                      backgroundColor: colors.secondary,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={14}
-                    color={colors.sage}
-                  />
-                  <Text
-                    style={[
-                      s.traitText,
-                      { color: colors.foreground, fontFamily: "Inter_700Bold" },
-                    ]}
-                  >
-                    {trait}
-                  </Text>
+            {sourceUri ? (
+              <View style={s.referenceCompareRow}>
+                <View style={[s.referencePane, { borderColor: colors.border }]}>
+                  <Image source={{ uri: sourceUri }} accessibilityLabel="Selected reference photo" style={s.referenceImage} contentFit="cover" />
+                  <Text style={[s.referenceLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Your photo</Text>
                 </View>
-              ))}
-            </View>
-          </BoardCard>
-        ) : null}
-
-        {activeTab === "scan" ? (
-          <BoardCard style={s.avatarBoard}>
-            <BoardSectionHeader
-              title="Bring your dog in"
-              accessory={
-                <BoardPill
-                  label={hasConfiguredAvatar ? "Configured" : "Start"}
-                  tone={colors.sage}
-                />
-              }
-            />
-            <Text
-              style={[
-                s.copy,
-                {
-                  color: colors.mutedForeground,
-                  fontFamily: "Inter_500Medium",
-                },
-              ]}
-            >
-              Add 1-3 clear photos. WoofWatcher will suggest a base template and
-              traits, then you can edit every choice before saving.
-            </Text>
-            <View style={s.scanTruthRail}>
-              <View style={[s.softPill, { backgroundColor: colors.sageSoft }]}>
-                <Ionicons name="sparkles-outline" size={12} color={colors.forest} />
-                <Text style={[s.softPillText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
-                  PixelLab-backed template catalog
-                </Text>
-              </View>
-              <View style={[s.softPill, { backgroundColor: colors.amberSoft }]}>
-                <Ionicons name="shield-checkmark-outline" size={12} color={colors.amber} />
-                <Text style={[s.softPillText, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>
-                  Not a photo filter
-                </Text>
-              </View>
-            </View>
-            <View
-              accessibilityLabel={SCAN_WORKFLOW_ACCESSIBILITY_SUMMARY}
-              style={s.scanPipelineGrid}
-            >
-              {AVATAR_SCAN_WORKFLOW_STEPS.map((step, index) => (
-                <View
-                  key={step.id}
-                  style={[
-                    s.scanPipelineCard,
-                    {
-                      backgroundColor: colors.background,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <View
-                    style={[
-                      s.scanPipelineNumber,
-                      { backgroundColor: colors.primary },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        s.scanPipelineNumberText,
-                        { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" },
-                      ]}
-                    >
-                      {index + 1}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      s.scanPipelineLabel,
-                      {
-                        color: colors.foreground,
-                        fontFamily: "Inter_800ExtraBold",
-                      },
-                    ]}
-                  >
-                    {step.label}
-                  </Text>
-                  <Text
-                    style={[
-                      s.scanPipelineDetail,
-                      {
-                        color: colors.mutedForeground,
-                        fontFamily: "Inter_600SemiBold",
-                      },
-                    ]}
-                  >
-                    {step.detail}
-                  </Text>
+                <View style={[s.referencePane, { borderColor: colors.border }]}>
+                  <Image source={selectedTemplateStillSource} accessibilityLabel="Current manual pixel twin" style={[s.referenceImage, pixelImageStyle]} contentFit="contain" />
+                  <Text style={[s.referenceLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Current manual twin</Text>
                 </View>
-              ))}
-            </View>
+              </View>
+            ) : (
+              <View accessibilityLabel="No reference photo selected" style={[s.referenceEmpty, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <Text style={[s.copy, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>No photo selected. You can build and save every avatar choice without one.</Text>
+              </View>
+            )}
             <View style={s.actionRow}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Choose dog photo from gallery"
-                onPress={() => pick(false)}
-                style={({ pressed }) => [
-                  s.secondaryBtn,
-                  { borderColor: colors.border, opacity: pressed ? 0.65 : 1 },
-                ]}
-              >
-                <Ionicons
-                  name="images-outline"
-                  size={18}
-                  color={colors.foreground}
-                />
-                <Text
-                  style={[
-                    s.secondaryBtnText,
-                    { color: colors.foreground, fontFamily: "Inter_700Bold" },
-                  ]}
-                >
-                  Gallery
-                </Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Choose dog photo from gallery" onPress={() => pick(false)} style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, opacity: pressed ? 0.65 : 1 }]}>
+                <Ionicons name="images-outline" size={18} color={colors.foreground} />
+                <Text style={[s.secondaryBtnText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Gallery</Text>
               </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Take dog photo"
-                onPress={() => pick(true)}
-                style={({ pressed }) => [
-                  s.primaryBtn,
-                  {
-                    backgroundColor: colors.primary,
-                    opacity: pressed ? 0.82 : 1,
-                  },
-                ]}
-              >
+              <Pressable accessibilityRole="button" accessibilityLabel="Take dog photo" onPress={() => pick(true)} style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 }]}>
                 <Ionicons name="camera" size={18} color="#FFF9EF" />
-                <Text
-                  style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}
-                >
-                  Take photo
-                </Text>
+                <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>Take photo</Text>
               </Pressable>
             </View>
+            {sourceUri ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="Remove reference photo" onPress={() => setSourceUri(null)} style={s.referenceRemoveButton}>
+                <Text style={[s.referenceRemoveText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Remove photo</Text>
+              </Pressable>
+            ) : null}
           </BoardCard>
         ) : null}
 
@@ -1558,7 +1221,7 @@ export default function AvatarStudioScreen({
                 {productionTemplateReview.gameFeelChecks.map((check) => (
                   <View key={check} style={s.productionCheckRow}>
                     <Ionicons
-                      name="scan-circle-outline"
+                      name="checkmark-circle-outline"
                       size={17}
                       color={colors.sage}
                     />
@@ -2070,9 +1733,8 @@ export default function AvatarStudioScreen({
                 },
               ]}
             >
-              Provider scanning can plug in later. This version ships the
-              reliable PixelLab template matcher, character creator, and
-              emote-preview system first.
+              This version is a manual PixelLab template creator. Photos are
+              optional on-screen references and are never saved with the avatar.
             </Text>
           </BoardCard>
         )}
@@ -2101,75 +1763,6 @@ export default function AvatarStudioScreen({
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  canvasCard: {
-    height: 360,
-    overflow: "hidden",
-    marginBottom: 16,
-  },
-  scanBand: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 74,
-  },
-  scanLine: {
-    position: "absolute",
-    left: 12,
-    right: 12,
-    bottom: 0,
-    height: 3,
-    borderRadius: 3,
-  },
-  reticle: {
-    ...StyleSheet.absoluteFillObject,
-    margin: 20,
-  },
-  corner: {
-    position: "absolute",
-    width: 28,
-    height: 28,
-    borderColor: "#FFF9EF",
-  },
-  cornerTL: { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3 },
-  cornerTR: { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3 },
-  cornerBL: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3 },
-  cornerBR: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 },
-  workingCopy: {
-    position: "absolute",
-    left: 18,
-    right: 18,
-    bottom: 18,
-    gap: 8,
-  },
-  sourceProofCard: {
-    minHeight: 70,
-    borderRadius: 4,
-    borderWidth: 2,
-    padding: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    shadowColor: "#081424",
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-  },
-  sourceProofImage: {
-    width: 52,
-    height: 52,
-    borderRadius: 3,
-  },
-  sourceProofCopy: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-  },
-  sourceProofKicker: {
-    fontSize: 9,
-    letterSpacing: 1.1,
-    textTransform: "uppercase",
-  },
   /* Mock-board soft pills: sageSoft/amberSoft chips with forest/amber text. */
   softPill: {
     alignSelf: "flex-start",
@@ -2186,12 +1779,6 @@ const s = StyleSheet.create({
     letterSpacing: 0.2,
     flexShrink: 1,
   },
-  sourceProofText: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  workingText: { fontSize: 25, lineHeight: 30 },
-  workingHint: { fontSize: 13, lineHeight: 18 },
   heroPreview: {
     overflow: "hidden",
     aspectRatio: 0.96,
@@ -2423,48 +2010,13 @@ const s = StyleSheet.create({
   tabText: { fontSize: 11.5 },
   avatarBoard: { marginBottom: 10 },
   copy: { fontSize: 13, lineHeight: 19 },
-  scanTruthRail: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 10,
-  },
-  scanPipelineGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 10,
-  },
-  scanPipelineCard: {
-    flexBasis: "48%",
-    flexGrow: 1,
-    minHeight: 92,
-    borderRadius: 8,
-    borderWidth: 1,
-    padding: 9,
-    gap: 4,
-  },
-  scanPipelineNumber: {
-    width: 24,
-    height: 24,
-    borderRadius: 5,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scanPipelineNumberText: { fontSize: 11 },
-  scanPipelineLabel: { fontSize: 12 },
-  scanPipelineDetail: { fontSize: 10.8, lineHeight: 14 },
-  traitGrid: { gap: 8, marginTop: 12 },
-  traitChip: {
-    minHeight: 38,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  traitText: { fontSize: 12.5, flex: 1 },
+  referenceCompareRow: { flexDirection: "row", gap: 10, marginTop: 12 },
+  referencePane: { flex: 1, minWidth: 0, borderWidth: 1, borderRadius: 8, padding: 8, gap: 6 },
+  referenceImage: { width: "100%", aspectRatio: 1, borderRadius: 6 },
+  referenceLabel: { fontSize: 12, textAlign: "center" },
+  referenceEmpty: { minHeight: 96, borderWidth: 1, borderRadius: 8, padding: 12, justifyContent: "center", marginTop: 12 },
+  referenceRemoveButton: { minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
+  referenceRemoveText: { fontSize: 14 },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 4, marginBottom: 12 },
   secondaryBtn: {
     flex: 1,

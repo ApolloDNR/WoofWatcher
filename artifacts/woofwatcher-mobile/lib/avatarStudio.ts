@@ -62,7 +62,6 @@ export interface PetAvatarConfig {
   bandanaId?: AvatarCollarId;
   accessorySlots: AvatarAccessorySlots;
   emotePackId: AvatarEmotePackId;
-  scanAssisted: boolean;
   updatedAt: string;
 }
 
@@ -95,22 +94,6 @@ export interface AvatarAccessoryFitModel {
   needsDeviceQa: boolean;
 }
 
-export interface AvatarScanSuggestion {
-  templateId: AvatarTemplateId;
-  confidence: "high" | "medium" | "low";
-  detectedTraits: string[];
-  suggestedConfig: PetAvatarConfig;
-  copy: string;
-}
-
-export type AvatarScanWorkflowStepId = "photo-reference" | "template-match" | "pixel-twin" | "owner-approval";
-
-export interface AvatarScanWorkflowStep {
-  id: AvatarScanWorkflowStepId;
-  label: string;
-  detail: string;
-}
-
 export const AVATAR_EMOTE_STATES: AvatarEmoteState[] = [
   "happy",
   "calm",
@@ -122,29 +105,6 @@ export const AVATAR_EMOTE_STATES: AvatarEmoteState[] = [
   "proud",
   "home_alone",
   "not_feeling_well",
-];
-
-export const AVATAR_SCAN_WORKFLOW_STEPS: AvatarScanWorkflowStep[] = [
-  {
-    id: "photo-reference",
-    label: "Photo reference",
-    detail: "Use 1-3 clear photos as reference only; the saved avatar stays an editable pixel character.",
-  },
-  {
-    id: "template-match",
-    label: "Template match",
-    detail: "Match visible traits to the PixelLab-backed template catalog and body-class anchors.",
-  },
-  {
-    id: "pixel-twin",
-    label: "Pixel twin",
-    detail: "Preview the bundled PixelLab stills, emotes, and live sprite packs before saving.",
-  },
-  {
-    id: "owner-approval",
-    label: "Owner approval",
-    detail: "Owner approval is required before the suggested care twin becomes the active avatar.",
-  },
 ];
 
 export const AVATAR_TEMPLATES: AvatarTemplate[] = [
@@ -266,7 +226,7 @@ export const AVATAR_TEMPLATES: AvatarTemplate[] = [
     defaultEarTypeId: "button",
     defaultMuzzleTypeId: "long",
     recommendedEmotePackId: "starter-care-twin",
-    anchorNotes: "Bottom-center anchor; flexible default when scan confidence is not high.",
+    anchorNotes: "Bottom-center anchor; flexible neutral default for mixed breeds and manual customization.",
   },
 ];
 
@@ -367,7 +327,6 @@ export function createDefaultAvatarConfig(petName = "Phoenix", now = new Date().
       fx: "heart-sparkles",
     },
     emotePackId: "phoenix-shepherd",
-    scanAssisted: false,
     updatedAt: now,
   };
 }
@@ -408,37 +367,46 @@ export function normalizeAvatarConfig(input: unknown, petName = "Phoenix"): PetA
       data.emotePackId === "bully-starter"
         ? data.emotePackId
         : templateDefaults.recommendedEmotePackId,
-    scanAssisted: Boolean(data.scanAssisted),
     updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : fallback.updatedAt,
   };
 }
 
-export function buildTemplateScanSuggestion(petName = "Phoenix", now = new Date().toISOString()): AvatarScanSuggestion {
-  const suggestedConfig = {
-    ...createDefaultAvatarConfig(petName, now),
-    scanAssisted: true,
-  };
+const AVATAR_ACCESSORY_SLOT_KEYS = [
+  "head",
+  "face",
+  "neck",
+  "body",
+  "room",
+  "fx",
+] as const satisfies readonly (keyof AvatarAccessorySlots)[];
 
-  return {
-    templateId: "shepherd",
-    confidence: "high",
-    detectedTraits: [
-      "German Shepherd / Belgian Shepherd mix",
-      "Tall ears",
-      "Black and tan saddle coat",
-      "Dark muzzle",
-      "Medium-large working-dog body",
-      "Green bandana or collar detail",
-    ],
-    suggestedConfig,
-    copy: "Photos guide a PixelLab template suggestion for your dog's pixel care twin. You always approve the match before it becomes the live avatar.",
-  };
+const MANUAL_AVATAR_FIELDS = [
+  "templateId",
+  "coatPrimary",
+  "coatSecondary",
+  "faceMarkingId",
+  "earTypeId",
+  "muzzleTypeId",
+  "eyeColor",
+  "collarId",
+  "tagId",
+  "bandanaId",
+  "emotePackId",
+] as const satisfies readonly (keyof PetAvatarConfig)[];
+
+export function hasManualAvatarConfiguration(config: PetAvatarConfig): boolean {
+  const baseline = createDefaultAvatarConfig(config.petName, config.updatedAt);
+  return (
+    MANUAL_AVATAR_FIELDS.some((field) => config[field] !== baseline[field]) ||
+    AVATAR_ACCESSORY_SLOT_KEYS.some(
+      (slot) => config.accessorySlots[slot] !== baseline.accessorySlots[slot],
+    )
+  );
 }
 
 export function describeAvatarConfig(config: PetAvatarConfig): string {
   const template = getAvatarTemplate(config.templateId);
-  const scan = config.scanAssisted ? "scan-assisted" : "template-built";
-  return `${config.petName}: ${template.label}, ${config.faceMarkingId} face, ${config.earTypeId} ears, ${scan}`;
+  return `${config.petName}: ${template.label}, ${config.faceMarkingId} face, ${config.earTypeId} ears, template-built`;
 }
 
 function isEarType(value: unknown): value is AvatarEarTypeId {

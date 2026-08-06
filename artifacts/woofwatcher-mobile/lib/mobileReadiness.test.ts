@@ -3385,29 +3385,13 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
 
   assert.match(
     avatarStudio,
-    /<BoardCard\s+padded=\{false\}\s+style=\{\[s\.canvasCard/,
-  );
-  assert.match(
-    avatarStudio,
     /<BoardCard\s+padded=\{false\}\s+style=\{s\.heroPreview\}/,
-  );
-  assert.match(
-    avatarStudio,
-    /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Suggested starting traits"/,
   );
   assert.match(
     avatarStudio,
     /<BoardCard style=\{s\.avatarBoard\}[\s\S]*BoardSectionHeader[\s\S]*title="Mood set"/,
   );
   assert.doesNotMatch(avatarStudio, /<BoardSectionHeader[\s\S]*?\saction=/);
-  assert.match(
-    avatarStudio,
-    /BoardSectionHeader\s+title="Suggested starting traits"[\s\S]*<BoardPill\s+label="Owner review"/,
-  );
-  assert.match(
-    avatarStudio,
-    /BoardSectionHeader\s+title="Bring your dog in"[\s\S]*<BoardPill\s+label=\{hasConfiguredAvatar \? "Configured" : "Start"\}/,
-  );
   assert.match(
     avatarStudio,
     /BoardSectionHeader\s+title="Choose base template"[\s\S]*<BoardPill\s+label=\{`\$\{liveTemplateCount\}\/\$\{AVATAR_TEMPLATES\.length\} live`\}/,
@@ -3433,15 +3417,12 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     avatarStudio,
     /Choose a pixel twin, then customize\./,
   );
-  assert.match(avatarStudio, /AVATAR_SCAN_WORKFLOW_STEPS/);
-  assert.match(avatarStudio, /scanPipelineGrid/);
-  assert.match(avatarStudio, /scanPipelineCard/);
   assert.match(avatarStudio, /Photo reference/);
-  assert.match(avatarStudio, /Template match/);
-  assert.match(avatarStudio, /Pixel twin/);
-  assert.match(avatarStudio, /Owner approval/);
-  assert.match(avatarStudio, /PixelLab-backed template catalog/);
-  assert.match(avatarStudio, /Not a photo filter/);
+  assert.match(avatarStudio, /Local only/);
+  assert.match(avatarStudio, /does not analyze it/i);
+  assert.match(avatarStudio, /Selected reference photo/);
+  assert.match(avatarStudio, /Current manual pixel twin/);
+  assert.match(avatarStudio, /Manual template/);
   assert.match(avatarStudio, /Choose base template/);
   assert.match(avatarStudio, /Accessories/);
   assert.match(avatarStudio, /Save Avatar/);
@@ -3460,11 +3441,6 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /phoenix-room-day-option-b\.png/);
   assert.match(avatarStudio, /phoenix-main-head-v2-crisp\.png/);
   assert.match(avatarStudio, /selectedTemplateStillSource/);
-  assert.match(avatarStudio, /PHOTO REFERENCE/);
-  assert.match(
-    avatarStudio,
-    /Building a pixel twin, not using the photo as the avatar/,
-  );
   assert.doesNotMatch(avatarStudio, /assets\/board\/hero\.png/);
   assert.doesNotMatch(avatarStudio, /getAvatarSource\("happy"\)/);
   assert.match(avatarTemplateAssets, /AVATAR_TEMPLATE_PREVIEW_ASSETS/);
@@ -3873,14 +3849,12 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   }
   assert.match(avatarModel, /PetAvatarConfig/);
   assert.match(avatarModel, /AVATAR_TEMPLATES/);
-  assert.match(avatarModel, /buildTemplateScanSuggestion/);
+  assert.match(avatarModel, /hasManualAvatarConfiguration/);
   assert.doesNotMatch(avatarModel, /buildMockScanSuggestion/);
-  assert.match(avatarModel, /AVATAR_SCAN_WORKFLOW_STEPS/);
-  assert.match(avatarModel, /You always approve the match/);
-  assert.doesNotMatch(avatarModel, /perfectly scan/i);
   assert.match(avatarContext, /AVATAR_CONFIG_KEY/);
   assert.match(avatarContext, /saveAvatarConfig/);
   assert.match(avatarContext, /hasConfiguredAvatar/);
+  assert.match(avatarContext, /hasManualAvatarConfiguration\(avatarConfig\)/);
   assert.match(avatarContext, /storybook\/storybook-still-sit\.png/);
   assert.match(avatarContext, /storybook\/storybook-still-sleep\.png/);
   assert.doesNotMatch(avatarContext, /assets\/phoenix\/phoenix-happy\.png/);
@@ -3890,10 +3864,14 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.doesNotMatch(more, /Portrait Studio/);
   assert.doesNotMatch(avatarStudio, /backBtn:/);
   assert.doesNotMatch(avatarStudio, /headerTitle:/);
-  assert.doesNotMatch(avatarStudio, /Scan assist mock/);
-  assert.doesNotMatch(avatarStudio, /True AI scanning plugs in later/);
-  assert.match(avatarStudio, /PixelLab template match/);
-  assert.match(avatarStudio, /Provider scanning can plug in later/);
+  assert.doesNotMatch(
+    avatarStudio,
+    /scanAssisted|AvatarScanSuggestion|buildTemplateScanSuggestion|detectedTraits|\bconfidence\b|\bPhase\b|setPhase|scanLine|finishTimer|lineTimer|scanLoop|pulseLoop/,
+  );
+  assert.doesNotMatch(
+    avatarModel,
+    /scanAssisted|AvatarScanSuggestion|buildTemplateScanSuggestion|detectedTraits|\bconfidence\b|AVATAR_SCAN_WORKFLOW_STEPS/,
+  );
   assert.match(avatarStudio, /buildAvatarSpriteProductionQaSummary/);
   assert.match(avatarStudio, /buildAvatarSpriteProductionTemplateReview/);
   assert.match(avatarStudio, /Sprite production review/);
@@ -3912,10 +3890,6 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.doesNotMatch(
     avatarStudio,
     /heroPreview: \{[^\n]*(shadowOpacity|elevation)/,
-  );
-  assert.doesNotMatch(
-    avatarStudio,
-    /canvasCard: \{[^\n]*(shadowOpacity|elevation)/,
   );
 });
 
@@ -3964,6 +3938,7 @@ test("keeps Avatar Studio creator actions on shared mobile touch targets", () =>
     "tab",
     "secondaryBtn",
     "primaryBtn",
+    "referenceRemoveButton",
     "swatch",
     "optionPill",
     "moodChip",

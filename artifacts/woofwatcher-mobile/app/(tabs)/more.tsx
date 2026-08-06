@@ -851,7 +851,7 @@ function MoreScreenContent({
       icon: "star",
       iconName: "color-palette",
       label: "Avatar Studio",
-      sub: "Create a scan-assisted pixel care twin",
+      sub: "Create a pixel care twin with manual choices",
       onPress: () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.push("/portrait");
@@ -1508,7 +1508,7 @@ function MoreScreenContent({
               <View style={[s.avatarIdentityPill, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
                 <Ionicons name={hasConfiguredAvatar ? "sparkles" : "color-palette-outline"} size={12} color={colors.primary} />
                 <Text style={[s.avatarIdentityText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  {avatarTemplate.label} care twin{avatarConfig.scanAssisted ? " - scan-assisted" : ""}
+                  {avatarTemplate.label} care twin
                 </Text>
               </View>
               <View style={[s.profileStats, { borderTopColor: colors.border }]}>

@@ -131,8 +131,8 @@ export function matchBreedToTemplate(breed: string): BreedTemplateMatch {
  *
  * Safety rules, in order:
  * 1. If the owner already customized the twin in Avatar Studio
- *    (hasConfiguredAvatar - scan-assisted, non-default template, or any
- *    non-default collar/marking/coat), Setup NEVER overrides that choice.
+ *    (hasConfiguredAvatar — any non-default manual template, color, marking,
+ *    accessory, or emote choice), Setup NEVER overrides that choice.
  * 2. hasConfiguredAvatar cannot distinguish "never opened Avatar Studio"
  *    from "opened it and deliberately re-saved the default shepherd", so
  *    the swap is also gated behind an explicit matchTwinToBreed confirm

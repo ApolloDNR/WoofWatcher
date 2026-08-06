@@ -11,6 +11,7 @@ import React, {
 import { Platform, type ImageSourcePropType } from "react-native";
 import {
   createDefaultAvatarConfig,
+  hasManualAvatarConfiguration,
   normalizeAvatarConfig,
   type PetAvatarConfig,
 } from "@/lib/avatarStudio";
@@ -201,13 +202,7 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const hasCustomAvatar = !!avatarSet && Object.keys(avatarSet).length > 0;
-  const hasConfiguredAvatar =
-    avatarConfig.scanAssisted ||
-    avatarConfig.templateId !== "shepherd" ||
-    avatarConfig.collarId !== "forest-bandana" ||
-    avatarConfig.faceMarkingId !== "mask" ||
-    avatarConfig.coatPrimary !== "#1B1714" ||
-    avatarConfig.coatSecondary !== "#C99052";
+  const hasConfiguredAvatar = hasManualAvatarConfiguration(avatarConfig);
 
   const value = useMemo(
     () => ({
