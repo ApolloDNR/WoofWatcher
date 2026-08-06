@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-08-06 Adventure Dog Profile identity persistence
+
+- DONE: Adventure Mode and new local Adventure memories now resolve the saved Dog Profile through the canonical identity boundary instead of displaying or persisting the `My Dog` placeholder.
+- VERIFIED: Red-first Adventure coverage reproduced `My Dog`, then focused Adventure and identity coverage passed `8/8` after the shared-domain fix; trimmed renamed dogs remain intact and blank/placeholder profiles retain Phoenix.
+- BOUNDARY: Quest math, care-log evidence, memory privacy/storage, provider sync, native QA, store review, and launch approval are unchanged.
+- NEXT: Run the strongest local verification and require dependency-complete branch CI. Native route-named Adventure review and VoiceOver/TalkBack evidence remain required.
+
 ## 2026-08-06 Calendar empty-day Dog Profile identity
 
 - DONE: Calendar month empty-day guidance now resolves the saved Dog Profile through the canonical identity boundary instead of replacing blank or `My Dog` starter profiles with generic `your dog` copy.

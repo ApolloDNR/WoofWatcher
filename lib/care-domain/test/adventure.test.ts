@@ -209,3 +209,34 @@ test("builds a local Adventure memory draft without claiming cloud media storage
   assert.equal(memory.xp, 18);
   assert.deepEqual(memory.humans, ["Emma", "Apollo"]);
 });
+
+test("keeps Adventure mode and saved memories on canonical Dog Profile identity", () => {
+  const adventure = deriveAdventureMode({
+    now: NOW,
+    petName: "  My Dog  ",
+    entries: [],
+    memories: [],
+  });
+  const memory = buildAdventureMemoryDraft({
+    petName: "  My Dog  ",
+    title: "Creek loop",
+    nowIso: "2026-06-11T18:00:00.000Z",
+  });
+
+  assert.equal(adventure.petName, "Phoenix");
+  assert.equal(
+    adventure.summary,
+    "Phoenix's adventure log is waiting for a calm real-world care moment.",
+  );
+  assert.match(adventure.quests[0].prompt, /Take Phoenix on a calm/);
+  assert.equal(memory.petName, "Phoenix");
+
+  const renamed = deriveAdventureMode({
+    now: NOW,
+    petName: "  Luna  ",
+    entries: [],
+    memories: [],
+  });
+  assert.equal(renamed.petName, "Luna");
+  assert.match(renamed.summary, /^Luna's adventure log/);
+});

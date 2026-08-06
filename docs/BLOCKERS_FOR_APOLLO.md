@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-06 Adventure memory identity status
+
+Source-level Adventure guidance and newly saved local memories now follow canonical Dog Profile identity. Native iOS/Android Adventure review, VoiceOver/TalkBack traversal, provider/store proof, and Apollo approval remain open; no sharing, provider, payment, live-AI, or launch capability was enabled.
+
 ## 2026-08-06 Calendar empty-day identity status
 
 Source-level Calendar empty-day guidance now follows canonical Dog Profile identity, including the intentional Phoenix starter fallback. Native iOS/Android Calendar review, VoiceOver/TalkBack traversal, provider/store proof, and Apollo approval remain open; no provider, payment, live-AI, or launch capability was enabled.

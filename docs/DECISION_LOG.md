@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-06: Adventure memories follow Dog Profile identity
+
+- Decision: resolve Adventure Mode and new Adventure memory identity through `resolvePetName` at the shared care-domain boundary.
+- Reason: a storage placeholder must not appear in owner-visible quest guidance or become durable memory identity.
+- Boundary: quest XP, care evidence, local memory privacy, persistence providers, and launch gates are unchanged.
+
 ## 2026-08-06: Calendar empty days follow Dog Profile identity
 
 - Decision: derive the Calendar month empty-day prompt through `resolvePetName` at the shared month-calendar boundary.
