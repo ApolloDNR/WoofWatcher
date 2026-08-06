@@ -5476,4 +5476,6 @@ More's household rename modal now suggests a pack name from canonical Dog Profil
 
 Setup's household-name field now derives its empty-state hint from the Dog Profile name draft instead of hardcoding `Phoenix House`. Red-first identity coverage protects trimmed renamed-dog guidance and the blank/`My Dog` Phoenix starter fallback. This changes onboarding copy only; household creation, invite delivery, provider sync, native proof, and launch gates remain unchanged.
 
+Dependency-complete `WoofWatcher Verify` run `31058280950`, job `92480475366`, passed implementation/docs commit `0d1647c2` in `2m1s`, including pinned dependency install, JSON doctor, focused tests, typecheck, and CI-safe builds.
+
 Dependency-complete `WoofWatcher Verify` run `31032566290`, job `92396622792`, passed implementation/docs commit `27663e6a` in `1m52s`, including pinned dependency install, JSON doctor, focused tests, typecheck, and CI-safe builds.

@@ -2245,6 +2245,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 
 - DONE: More's household rename suggestion now follows the active Dog Profile name instead of hardcoding `The Phoenix Pack`; canonical route identity trims renamed dogs and preserves Phoenix only for blank/`My Dog` starter profiles.
 - DONE 2026-08-05: Setup's household-name hint now follows the dog name entered in Dog Profile (`Luna House`) instead of remaining `Phoenix House`; canonical identity trimming preserves Phoenix only for blank/`My Dog` starter setup.
+- PASS (branch CI): `WoofWatcher Verify` run `31058280950`, job `92480475366`, passed implementation/docs commit `0d1647c2` with pinned install, JSON doctor, focused tests, typecheck, and CI-safe builds.
 - PASS (red-first source): mobile readiness first failed on the stale placeholder, then protects the dynamic `The ${petName} Pack` wiring.
 - PASS (branch CI): `WoofWatcher Verify` run `31032566290`, job `92396622792`, passed implementation/docs commit `27663e6a` with pinned dependency install, JSON doctor, focused tests, typecheck, and CI-safe builds.
 - REMAINS: native iOS/Android modal review, VoiceOver/TalkBack traversal, household-provider proof, and Apollo approval remain separate gates.
