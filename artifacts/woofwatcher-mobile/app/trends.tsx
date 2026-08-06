@@ -1,38 +1,22 @@
-import { Stack, useRouter } from "expo-router";
-import { Platform } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import TrendsScreen from "@/components/health/TrendsScreen";
 import {
-  getRouteTopPadding,
-  getStandaloneRouteBottomPadding,
-} from "@/lib/mobileLayout";
+  Redirect,
+  type Href,
+  useLocalSearchParams,
+} from "expo-router";
 
-export default function TrendsRoute() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const topPadding = getRouteTopPadding({
-    platform: Platform.OS,
-    topInset: insets.top,
-    surface: "standalone",
-  });
-  const bottomPadding = getStandaloneRouteBottomPadding({
-    platform: Platform.OS,
-    bottomInset: insets.bottom,
-  });
+import { resolveCanonicalDestination } from "@/lib/navigationOwnership";
 
-  return (
-    <>
-      <Stack.Screen options={{ headerShown: false, title: "Trends" }} />
-      <TrendsScreen
-        contentTopPadding={topPadding}
-        contentBottomPadding={bottomPadding}
-        onBack={() =>
-          router.canGoBack()
-            ? router.back()
-            : router.replace("/(tabs)" as never)
-        }
-      />
-    </>
-  );
+export default function TrendsCompatibilityRoute() {
+  const params = useLocalSearchParams<
+    Record<string, string | string[]>
+  >();
+  const destination = resolveCanonicalDestination({
+    pathname: "/trends",
+    params,
+  });
+  const redirectHref: Href = destination.params
+    ? { pathname: destination.pathname, params: { ...destination.params } }
+    : destination.pathname;
+
+  return <Redirect href={redirectHref} />;
 }

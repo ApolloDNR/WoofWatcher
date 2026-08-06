@@ -30,7 +30,7 @@ export function deriveBileWatchStatus({
   return "Low Risk";
 }
 
-export type HealthReviewPacketRoute = `/log?type=${string}&detail=1&intent=${string}` | "/woofguide" | "/records";
+export type HealthReviewPacketRoute = `/log?type=${string}&detail=1&intent=${string}` | "/woofguide" | "/health?section=records";
 
 export interface HealthReviewPacketAction {
   label: string;

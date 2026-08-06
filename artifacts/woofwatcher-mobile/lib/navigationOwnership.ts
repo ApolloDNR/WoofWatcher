@@ -225,9 +225,16 @@ function resolveHealth(
 ): CanonicalDestination {
   const section = ownScalarParam(params, "section");
   if (section !== undefined) {
-    return isHealthSection(section)
-      ? healthSectionDestination(section, false)
-      : destination("health", "/health", true);
+    if (!isHealthSection(section)) {
+      return destination("health", "/health", true);
+    }
+    return healthSectionDestination(
+      section,
+      false,
+      section === "records"
+        ? validatedIdentifiers(params, ["entry", "report"])
+        : undefined,
+    );
   }
 
   const legacyTab = ownScalarParam(params, "tab");
@@ -283,6 +290,10 @@ export function resolveCanonicalDestination(input: {
       true,
       validatedIdentifiers(input.params, ["entry", "report"]),
     );
+  }
+
+  if (input.pathname === "/trends") {
+    return healthSectionDestination("trends", true);
   }
 
   if (input.pathname === "/pack") {

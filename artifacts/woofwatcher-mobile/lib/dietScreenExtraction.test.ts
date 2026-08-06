@@ -15,6 +15,12 @@ const DIET_SCREEN_PATH = join(
   "health",
   "DietScreen.tsx",
 );
+const HEALTH_SECTION_ROUTER_PATH = join(
+  MOBILE_ROOT,
+  "components",
+  "health",
+  "HealthSectionRouter.tsx",
+);
 
 function readDietScreen(): string {
   assert.ok(
@@ -24,16 +30,20 @@ function readDietScreen(): string {
   return readFileSync(DIET_SCREEN_PATH, "utf8");
 }
 
-test("moves the one Diet workflow behind More's temporary delegate", () => {
+test("moves the one Diet workflow from More to the canonical Health owner", () => {
   const more = readFileSync(MORE_ROUTE_PATH, "utf8");
   const diet = readDietScreen();
-
-  assert.match(more, /import DietScreen from "@\/components\/health\/DietScreen";/);
-  assert.equal((more.match(/<DietScreen\b/g) ?? []).length, 1);
-  assert.match(
-    more,
-    /registerSectionAnchor\("diet"\)[\s\S]{0,180}<DietScreen openDetails=\{sectionParam === "diet"\} \/>/,
+  assert.ok(
+    existsSync(HEALTH_SECTION_ROUTER_PATH),
+    "HealthSectionRouter must own the extracted Diet screen",
   );
+  const healthRouter = readFileSync(HEALTH_SECTION_ROUTER_PATH, "utf8");
+
+  assert.doesNotMatch(more, /import DietScreen from "@\/components\/health\/DietScreen";/);
+  assert.equal((more.match(/<DietScreen\b/g) ?? []).length, 0);
+  assert.match(healthRouter, /import DietScreen from "@\/components\/health\/DietScreen";/);
+  assert.equal((healthRouter.match(/<DietScreen\b/g) ?? []).length, 1);
+  assert.match(healthRouter, /<DietScreen openDetails/);
 
   for (const staleOwner of [
     /const \[dietOpen, setDietOpen\]/,

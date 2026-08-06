@@ -42,6 +42,14 @@ const DIET_SCREEN_PATH = join(
   "health",
   "DietScreen.tsx",
 );
+const HEALTH_SECTION_ROUTER_PATH = join(
+  process.cwd(),
+  "artifacts",
+  "woofwatcher-mobile",
+  "components",
+  "health",
+  "HealthSectionRouter.tsx",
+);
 
 function readAppFile(path: string): string {
   return readFileSync(join(APP_DIR, path), "utf8");
@@ -73,6 +81,14 @@ function readDietScreen(): string {
     "Health must own the substantive Diet screen",
   );
   return readFileSync(DIET_SCREEN_PATH, "utf8");
+}
+
+function readHealthSectionRouter(): string {
+  assert.ok(
+    existsSync(HEALTH_SECTION_ROUTER_PATH),
+    "Health must own its canonical section router",
+  );
+  return readFileSync(HEALTH_SECTION_ROUTER_PATH, "utf8");
 }
 
 function getStyleBlock(source: string, styleName: string): string {
@@ -1867,6 +1883,7 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const diet = readDietScreen();
+  const healthRouter = readHealthSectionRouter();
 
   assert.match(
     home,
@@ -1926,7 +1943,8 @@ test("keeps Home owner-preview section actions as real route targets", () => {
     more,
     /const sectionParam = Array\.isArray\(routeParams\.section\) \? routeParams\.section\[0\] : routeParams\.section/,
   );
-  assert.match(more, /<DietScreen openDetails=\{sectionParam === "diet"\} \/>/);
+  assert.doesNotMatch(more, /<DietScreen\b/);
+  assert.match(healthRouter, /<DietScreen openDetails/);
   assert.match(diet, /if \(openDetails\) setDietOpen\(true\)/);
   assert.match(more, /const householdFocus = sectionParam === "household"/);
   assert.match(
@@ -2032,13 +2050,17 @@ test("keeps Home watch cards deep-linked to exact care workflows", () => {
   assert.match(home, /target: "alone" as HomeWatchTarget/);
   assert.match(
     health,
-    /useLocalSearchParams<\{\s*tab\?: string \| string\[\];?\s*\}>/,
+    /useLocalSearchParams<Record<string, string \| string\[\]>>\(\)/,
   );
   assert.match(
     health,
-    /const requestedTab: HealthTab = tabParam === "bile" \? "bile" : "health";/,
+    /const resolved = resolveHealthSectionRoute\(params\)/,
   );
-  assert.match(health, /useEffect\(\(\) => \{\s*setActiveTab\(requestedTab\);/);
+  assert.match(
+    health,
+    /const activeTab = section === "bile-watch" \? "bile" : "health"/,
+  );
+  assert.doesNotMatch(health, /setActiveTab|requestedTab/);
 });
 
 test("keeps Home mission health rows tab-specific", () => {
@@ -2342,7 +2364,7 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /accessibilityLabel="Show Health 7-day rhythm"/);
   assert.match(
     health,
-    /scrollRef\.current\?\.scrollTo\(\{ y: 0, animated: true \}\)/,
+    /accessibilityLabel="Show Health 7-day rhythm"[\s\S]{0,180}selectHealthTab\("health"\)/,
   );
   assert.match(health, /accessibilityLabel="Open health owner notes"/);
   assert.match(health, /openHealthStatusRoute/);
@@ -5169,7 +5191,10 @@ test("keeps More organized around a grouped command directory", () => {
   assert.match(more, /careIntelligence\.nextAction\.label/);
   assert.match(more, /householdResponsibility\.nextStep/);
   assert.match(more, /router\.push\("\/more\?section=household" as never\)/);
-  assert.match(more, /router\.push\("\/records" as never\)/);
+  assert.match(
+    more,
+    /router\.push\(\{ pathname: "\/health", params: \{ section: "records" \} \}\)/,
+  );
   assert.match(
     more,
     /router\.push\(buildCareTwinQaFocusRoute\(routeVisualConsistencyTarget\) as never\)/,
@@ -5210,9 +5235,10 @@ test("keeps More organized around a grouped command directory", () => {
   );
 });
 
-test("keeps More household, tools, and diet sections on shared board card anatomy", () => {
+test("keeps More household and tools plus Health-owned diet on shared board card anatomy", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const diet = readDietScreen();
+  const healthRouter = readHealthSectionRouter();
   const launchModel = readMobileLibFile("launchReadiness.ts");
   const providerSetup = readMobileLibFile("launchProviderSetup.ts");
   const providerSyncProof = readMobileLibFile("careEntryProviderSyncProof.ts");
@@ -5479,7 +5505,8 @@ test("keeps More household, tools, and diet sections on shared board card anatom
     more,
     /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Tools & Sharing"/,
   );
-  assert.match(more, /<DietScreen openDetails=\{sectionParam === "diet"\} \/>/);
+  assert.doesNotMatch(more, /<DietScreen\b/);
+  assert.match(healthRouter, /<DietScreen openDetails/);
   assert.match(
     diet,
     /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Diet Profile"/,

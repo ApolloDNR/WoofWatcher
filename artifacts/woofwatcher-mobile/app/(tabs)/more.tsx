@@ -2,7 +2,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import {
+  Redirect,
+  type Href,
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
@@ -35,7 +41,6 @@ import {
   deriveHouseholdAccessPlan,
   deriveHouseholdResponsibility,
   deriveMyCareToday,
-  getCareEventDefinition,
   type AccessPassKind,
 } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
@@ -100,7 +105,6 @@ import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { BoardActionButton, BoardCard, BoardMetricTile, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
-import DietScreen from "@/components/health/DietScreen";
 import { ProgressFill } from "@/components/motion/GameFeel";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 import {
@@ -114,6 +118,7 @@ import {
   deriveCareerWeek,
   deriveCareStreak,
 } from "@/lib/careCareer";
+import { resolveCanonicalDestination } from "@/lib/navigationOwnership";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -354,6 +359,29 @@ function providerRowQaTarget(key: LaunchProviderSetupKey): ProviderRowQaTarget |
 }
 
 export default function MoreScreen() {
+  const routeParams = useLocalSearchParams<{
+    section?: string | string[];
+  }>();
+  const destination = resolveCanonicalDestination({
+    pathname: "/more",
+    params: routeParams,
+  });
+  const redirectHref: Href = destination.params
+    ? { pathname: destination.pathname, params: { ...destination.params } }
+    : destination.pathname;
+
+  if (destination.parent === "health") {
+    return <Redirect href={redirectHref} />;
+  }
+
+  return <MoreScreenContent routeParams={routeParams} />;
+}
+
+function MoreScreenContent({
+  routeParams,
+}: {
+  routeParams: Readonly<{ section?: string | string[] }>;
+}) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -363,9 +391,6 @@ export default function MoreScreen() {
   const ownerOps = consumerSurfacePolicy.ownerOps;
   const providerSyncEnabled =
     consumerSurfacePolicy.providerSyncControls && isClerkEnabledForBuild;
-  const routeParams = useLocalSearchParams<{
-    section?: string | string[];
-  }>();
   const sectionParam = Array.isArray(routeParams.section) ? routeParams.section[0] : routeParams.section;
   // `focus` is a navigation nonce (Date.now() at the call site). More stays
   // mounted between tab visits, so without it a second tap on the same
@@ -376,7 +401,7 @@ export default function MoreScreen() {
   const { state, careMutationsBlocked, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
   const showCareReadOnly = () =>
     notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
-  const { dietProfile, profile, entries, routines, caregivers, accessPasses } = state;
+  const { profile, entries, routines, caregivers, accessPasses } = state;
   const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
 
   const { signOut, isSignedIn } = useWoofAuth();
@@ -674,7 +699,7 @@ export default function MoreScreen() {
   });
 
   /**
-   * Anchored deep-links: `/more?section=household|access|care-pass|diet|career`
+   * Anchored deep-links: `/more?section=household|access|career`
    * scrolls the matching board into view, so arrivals from Pack, Home, or
    * Story land on the section itself instead of the top of this very long
    * page. Each anchor is a zero-height View that reports its y-offset inside
@@ -709,14 +734,11 @@ export default function MoreScreen() {
   );
 
   const sectionAnchorTarget =
-    sectionParam === "care-pass" || sectionParam === "carepass"
-      ? "care-pass"
-      : sectionParam === "household" ||
-          sectionParam === "access" ||
-          sectionParam === "diet" ||
-          sectionParam === "career"
-        ? sectionParam
-        : null;
+    sectionParam === "household" ||
+    sectionParam === "access" ||
+    sectionParam === "career"
+      ? sectionParam
+      : null;
 
   useEffect(() => {
     if (!sectionAnchorTarget) return;
@@ -1037,43 +1059,6 @@ export default function MoreScreen() {
     ]).start();
   }, [fade, isWebRoutePreview, slide]);
 
-  const generateCarePass = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const today = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-    const recentLines = entries
-      .slice(0, 5)
-      .map((e) => {
-        const label = getCareEventDefinition(e.type, e.details).label.toUpperCase();
-        return `  - ${label}: ${e.title}${e.note ? ` - ${e.note}` : ""}`;
-      })
-      .join("\n");
-    const routineLines = routines.map((r) => `  ${r.time} - ${r.label} (${r.owner})`).join("\n");
-    const pass = [
-      `WOOFWATCHER CARE PASS - ${today}`,
-      "",
-      `${petName} (${profile.breed})`,
-      `Weight: ${profile.weight.current} ${profile.weight.unit}`,
-      `Focus: ${profile.careFocus}`,
-      "",
-      "DIET",
-      `Food: ${dietProfile.primaryFood}`,
-      `Portion: ${dietProfile.normalPortion}`,
-      `Schedule: ${dietProfile.mealSchedule}`,
-      `Avoid: ${dietProfile.avoid}`,
-      `Snack: ${dietProfile.bedtimeSnack}`,
-      "",
-      "DAILY SCHEDULE",
-      routineLines,
-      "",
-      "RECENT LOG (last 5)",
-      recentLines || "  (no entries)",
-      "",
-      `Care boundary: ${profile.vetBoundary}`,
-    ].join("\n");
-
-    void shareTextPayload({ message: pass, title: `WoofWatcher Care Pass - ${petName}` });
-  };
-
   const nativeQaPrimaryMission = nativeQaCapturePlan.primaryMission;
   const nativeQaPrimaryMissionTarget =
     nativeQaPrimaryMission.target ??
@@ -1177,7 +1162,10 @@ export default function MoreScreen() {
       iconName: "card",
       label: "Care Pass",
       sub: "Share a summary for sitters or the vet",
-      onPress: generateCarePass,
+      onPress: () => {
+        Haptics.selectionAsync();
+        router.push({ pathname: "/health", params: { section: "care-pass" } });
+      },
     },
   ];
 
@@ -1519,7 +1507,7 @@ export default function MoreScreen() {
       tone: colors.primary,
       onPress: () => {
         Haptics.selectionAsync();
-        router.push("/records" as never);
+        router.push({ pathname: "/health", params: { section: "records" } });
       },
     },
     ...(ownerOps
@@ -3387,8 +3375,7 @@ export default function MoreScreen() {
           </View>
           ) : null}
 
-          {/* Links (holds the Care Pass build-and-share row) */}
-          <View collapsable={false} onLayout={registerSectionAnchor("care-pass")} />
+          {/* Links */}
           <BoardCard style={s.moreBoardCard}>
             <BoardSectionHeader title="Tools & Sharing" />
             {links.map((l, i) => (
@@ -3410,10 +3397,6 @@ export default function MoreScreen() {
               </Pressable>
             ))}
           </BoardCard>
-
-          {/* Diet profile */}
-          <View collapsable={false} onLayout={registerSectionAnchor("diet")} />
-          <DietScreen openDetails={sectionParam === "diet"} />
 
           {/* About / boundary */}
           <View style={[s.notice, { backgroundColor: colors.card, borderColor: colors.border }]}>

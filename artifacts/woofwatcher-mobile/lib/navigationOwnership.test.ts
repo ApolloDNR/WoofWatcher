@@ -120,6 +120,94 @@ test("Health accepts only its closed sections and legacy tab aliases", () => {
   }
 });
 
+test("canonical Records preserves only validated own entry and report identifiers", () => {
+  assert.deepEqual(
+    resolveCanonicalDestination({
+      pathname: "/health",
+      params: {
+        section: "records",
+        entry: ["entry_1", "ignored"],
+        report: "report:weekly",
+        item: "never-reflected",
+      },
+    }),
+    {
+      parent: "health",
+      pathname: "/health",
+      params: {
+        section: "records",
+        entry: "entry_1",
+        report: "report:weekly",
+      },
+      replace: false,
+    },
+  );
+
+  const inherited = Object.create({
+    entry: "entry_inherited",
+    report: "report_inherited",
+  }) as Record<string, string>;
+  inherited.section = "records";
+  assert.deepEqual(
+    resolveCanonicalDestination({ pathname: "/health", params: inherited }),
+    {
+      parent: "health",
+      pathname: "/health",
+      params: { section: "records" },
+      replace: false,
+    },
+  );
+
+  for (const invalid of [
+    "",
+    ".starts-with-punctuation",
+    "contains space",
+    "safe<script>",
+    `a${"b".repeat(80)}`,
+  ] as const) {
+    assert.deepEqual(
+      resolveCanonicalDestination({
+        pathname: "/health",
+        params: { section: "records", entry: invalid, report: invalid },
+      }),
+      {
+        parent: "health",
+        pathname: "/health",
+        params: { section: "records" },
+        replace: false,
+      },
+      invalid,
+    );
+  }
+});
+
+test("non-Records Health sections never retain Records identifiers", () => {
+  for (const section of [
+    "overview",
+    "health-watch",
+    "bile-watch",
+    "medications",
+    "diet",
+    "trends",
+    "dog-id",
+    "care-pass",
+  ] as const) {
+    assert.deepEqual(
+      resolveCanonicalDestination({
+        pathname: "/health",
+        params: { section, entry: "entry_1", report: "report_1" },
+      }),
+      {
+        parent: "health",
+        pathname: "/health",
+        params: { section },
+        replace: false,
+      },
+      section,
+    );
+  }
+});
+
 test("More accepts only its closed sections and maps legacy aliases to their owners", () => {
   for (const section of [
     "dog-profile",
@@ -262,6 +350,15 @@ test("legacy route files replace to their exact canonical parent", () => {
         parent: "health",
         pathname: "/health",
         params: { section: "records" },
+        replace: true,
+      },
+    ],
+    [
+      { pathname: "/trends" },
+      {
+        parent: "health",
+        pathname: "/health",
+        params: { section: "trends" },
         replace: true,
       },
     ],

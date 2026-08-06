@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ImageBackground, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Redirect, type Href, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { ImageBackground, type LayoutChangeEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   deriveCareReminderCenter,
@@ -22,6 +22,7 @@ import {
   BoardRouteHeader,
   BoardSectionHeader,
 } from "@/components/board/BoardPrimitives";
+import HealthSectionRouter from "@/components/health/HealthSectionRouter";
 import { PressScale } from "@/components/motion/GameFeel";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
@@ -45,14 +46,16 @@ import { resolvePetName } from "@/lib/petIdentity";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
 import { buildTrendWindow } from "@/lib/trendsChart";
+import {
+  resolveHealthSectionRoute,
+  type HealthCoreSection,
+} from "@/lib/healthSectionRouting";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 const HEALTH_WATCH_STAGE_ROOM = CARE_TWIN_ROOM_VARIANT_ASSETS.healthWatch.source;
 const HEALTH_WATCH_STAGE_SPRITE = getCareTwinSpriteAsset("health-watch");
 const HEALTH_WATCH_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["health-watch"];
-
-type HealthTab = "health" | "bile";
 
 function HealthHeaderAction({
   label,
@@ -203,9 +206,54 @@ function HealthSummaryRow({
 }
 
 export default function HealthScreen() {
+  const params = useLocalSearchParams<Record<string, string | string[]>>();
+  const router = useRouter();
+  const resolved = resolveHealthSectionRoute(params);
+  const redirectHref: Href = resolved.destination.params
+    ? {
+        pathname: resolved.destination.pathname,
+        params: { ...resolved.destination.params },
+      }
+    : resolved.destination.pathname;
+
+  if (resolved.destination.replace) {
+    return <Redirect href={redirectHref} />;
+  }
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    if (resolved.section === "overview") {
+      router.replace("/");
+      return;
+    }
+    router.replace("/health");
+  };
+
+  return (
+    <HealthSectionRouter
+      section={resolved.section}
+      entryId={resolved.entryId}
+      reportId={resolved.reportId}
+      onBack={handleBack}
+      renderCoreSection={(coreSection) => (
+        <HealthCoreScreen section={coreSection} onBack={handleBack} />
+      )}
+    />
+  );
+}
+
+function HealthCoreScreen({
+  section,
+  onBack,
+}: {
+  section: HealthCoreSection;
+  onBack: () => void;
+}) {
   const colors = useColors();
   const router = useRouter();
-  const params = useLocalSearchParams<{ tab?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const { state } = useCare();
   const now = Date.now();
@@ -223,18 +271,59 @@ export default function HealthScreen() {
     [healthWeek.start, now, state.entries],
   );
   const scrollRef = useRef<ScrollView>(null);
-  const tabParam = Array.isArray(params.tab) ? params.tab[0] : params.tab;
-  const requestedTab: HealthTab = tabParam === "bile" ? "bile" : "health";
-  const [activeTab, setActiveTab] = useState<HealthTab>(() => requestedTab);
-  useEffect(() => {
-    setActiveTab(requestedTab);
-  }, [requestedTab]);
+  const medicationAnchorYRef = useRef<number | null>(null);
+  const pendingMedicationScrollRef = useRef(false);
   const bottomPadding = getTabbedRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
   });
   const isWebRoutePreview = (Platform.OS as string) === "web";
   const routeHorizontalPadding = 16;
+  const activeTab = section === "bile-watch" ? "bile" : "health";
+  const scrollToMedicationAnchor = useCallback((): boolean => {
+    if (medicationAnchorYRef.current == null) return false;
+    scrollRef.current?.scrollTo({
+      y: Math.max(0, medicationAnchorYRef.current - 8),
+      animated: true,
+    });
+    return true;
+  }, []);
+  const registerSectionAnchor = useCallback(
+    (target: "medications") => (event: LayoutChangeEvent) => {
+      medicationAnchorYRef.current = event.nativeEvent.layout.y;
+      if (target === "medications" && pendingMedicationScrollRef.current) {
+        pendingMedicationScrollRef.current = false;
+        requestAnimationFrame(scrollToMedicationAnchor);
+      }
+    },
+    [scrollToMedicationAnchor],
+  );
+  useEffect(() => {
+    if (section !== "medications") {
+      pendingMedicationScrollRef.current = false;
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      return;
+    }
+    pendingMedicationScrollRef.current = true;
+    const frame = requestAnimationFrame(() => {
+      if (
+        pendingMedicationScrollRef.current &&
+        scrollToMedicationAnchor()
+      ) {
+        pendingMedicationScrollRef.current = false;
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [scrollToMedicationAnchor, section]);
+
+  const selectHealthTab = (tab: "health" | "bile") => {
+    router.replace({
+      pathname: "/health",
+      params: {
+        section: tab === "bile" ? "bile-watch" : "health-watch",
+      },
+    });
+  };
 
   const healthWatch = useMemo(
     // petName keeps pattern next steps ("... or <dog> seems painful ...")
@@ -621,10 +710,12 @@ export default function HealthScreen() {
           title="Health Watch"
           subtitle="Owner notes. No diagnosis."
           back
-          onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+          onBack={onBack}
           actionIcon="folder-open-outline"
           actionLabel="Open Records from Health Watch"
-          onAction={() => router.push("/records")}
+          onAction={() =>
+            router.push({ pathname: "/health", params: { section: "records" } })
+          }
           plain
           style={s.routeHeaderCompact}
         />
@@ -641,7 +732,7 @@ export default function HealthScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`Open ${tab.label}`}
                 aria-selected={active}
-                onPress={() => setActiveTab(tab.key)}
+                onPress={() => selectHealthTab(tab.key)}
                 style={[
                   s.tabPill,
                   {
@@ -795,8 +886,7 @@ export default function HealthScreen() {
                   label="7-day view"
                   accessibilityLabel="Show Health 7-day rhythm"
                   onPress={() => {
-                    setActiveTab("health");
-                    scrollRef.current?.scrollTo({ y: 0, animated: true });
+                    selectHealthTab("health");
                   }}
                 />
               }
@@ -916,7 +1006,9 @@ export default function HealthScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Open health records"
-              onPress={() => router.push("/records")}
+              onPress={() =>
+                router.push({ pathname: "/health", params: { section: "records" } })
+              }
               style={({ pressed }) => [
                 s.heroActionSecondary,
                 {
@@ -1029,15 +1121,19 @@ export default function HealthScreen() {
                       </View>
                     ) : undefined
                   }
-                  onPress={() => router.push("/records")}
-                  accessibilityLabel={`Weight. ${weightValue}. ${weightDetail}. Opens the weight trend in Records.`}
+                  onPress={() =>
+                    router.push({ pathname: "/health", params: { section: "trends" } })
+                  }
+                  accessibilityLabel={`Weight. ${weightValue}. ${weightDetail}. Opens Health Trends.`}
                 />
                 <HealthSummaryRow
                   icon="note"
                   label="Last vet visit"
                   value={lastVetVisit ? lastVetVisit.value : "None on file"}
                   detail={lastVetVisit ? lastVetVisit.detail : "Add a vet visit record to the vault"}
-                  onPress={() => router.push("/records")}
+                  onPress={() =>
+                    router.push({ pathname: "/health", params: { section: "records" } })
+                  }
                   accessibilityLabel={`Last vet visit. ${lastVetVisit ? `${lastVetVisit.detail}, ${lastVetVisit.value}` : "None on file"}. Opens Records.`}
                 />
                 <HealthSummaryRow
@@ -1051,7 +1147,9 @@ export default function HealthScreen() {
                         ? "In the record vault"
                         : "Add vaccine records to the vault"
                   }
-                  onPress={() => router.push("/records")}
+                  onPress={() =>
+                    router.push({ pathname: "/health", params: { section: "records" } })
+                  }
                   accessibilityLabel={`Vaccinations. ${vaccineCount > 0 ? `${vaccineCount} filed` : "None filed"}${expiredVaccineCount > 0 ? `, ${expiredVaccineCount} expired` : ""}. Opens Records.`}
                 />
                 <HealthSummaryRow
@@ -1059,12 +1157,15 @@ export default function HealthScreen() {
                   label="Sensitivities"
                   value={sensitivitiesOnFile || "Not on file"}
                   detail={sensitivitiesOnFile ? "Owner notes, not a diagnosis" : "Add in the diet profile"}
-                  onPress={() => router.push("/more")}
-                  accessibilityLabel={`Sensitivities. ${sensitivitiesOnFile || "Not on file"}. Opens the diet profile in More.`}
+                  onPress={() =>
+                    router.push({ pathname: "/health", params: { section: "diet" } })
+                  }
+                  accessibilityLabel={`Sensitivities. ${sensitivitiesOnFile || "Not on file"}. Opens the diet profile in Health.`}
                 />
               </View>
             </BoardCard>
 
+            <View collapsable={false} onLayout={registerSectionAnchor("medications")} />
             <BoardCard style={s.summaryCard} enter={3}>
               <BoardSectionHeader
                 title="Medications"
@@ -1127,8 +1228,10 @@ export default function HealthScreen() {
                       <PressScale
                         key={item.id}
                         accessibilityRole="button"
-                        accessibilityLabel={`${item.label}. ${item.dose}, ${item.time}. ${medStatusLabel}. Opens the medication plan in Records.`}
-                        onPress={() => router.push("/records")}
+                        accessibilityLabel={`${item.label}. ${item.dose}, ${item.time}. ${medStatusLabel}. Opens medications in Health.`}
+                        onPress={() =>
+                          router.push({ pathname: "/health", params: { section: "medications" } })
+                        }
                         scaleTo={0.97}
                         style={[s.summaryRow, { backgroundColor: colors.background, borderColor: colors.border }]}
                       >

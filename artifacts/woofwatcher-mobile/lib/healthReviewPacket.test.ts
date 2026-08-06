@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   buildHealthReviewPacketShareText,
   deriveBileWatchStatus,
@@ -24,6 +25,26 @@ const baseInput: HealthReviewPacketInput = {
   longestFoodGapLabel: "Needs more meal logs",
   bedtimeSnackLabel: "1 small bedtime snack",
 };
+
+test("keeps packet route ownership canonical without inventing an action", () => {
+  const source = readFileSync(
+    new URL("./healthReviewPacket.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /"\/health\?section=records"/);
+  assert.doesNotMatch(source, /\| "\/records"/);
+
+  const packet = deriveHealthReviewPacket(baseInput);
+  assert.deepEqual(packet.primaryAction, {
+    label: "Log health detail",
+    route: "/log?type=symptom&detail=1&intent=health-review",
+  });
+  assert.deepEqual(packet.secondaryAction, {
+    label: "Draft vet questions",
+    route: "/woofguide",
+    params: { prompt: "health-review" },
+  });
+});
 
 test("keeps a non-urgent 14-day yellow-bile pattern at Watch", () => {
   const now = Date.parse("2026-07-30T18:00:00.000Z");

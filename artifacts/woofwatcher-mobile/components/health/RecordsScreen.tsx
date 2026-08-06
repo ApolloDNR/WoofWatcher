@@ -3,11 +3,12 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   ImageBackground,
   KeyboardAvoidingView,
+  type LayoutChangeEvent,
   Modal,
   Platform,
   Pressable,
@@ -113,6 +114,7 @@ import {
   CARE_READ_ONLY_MESSAGE,
   runAcceptedCareMutation,
 } from "@/lib/careWriteProtection";
+import type { RecordsHealthSection } from "@/lib/healthSectionRouting";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -232,7 +234,17 @@ function credentialFieldReady(value: string): boolean {
   return normalized.length > 0 && normalized !== "not on file" && normalized !== "not set" && normalized !== "none";
 }
 
-export default function RecordsScreen() {
+export interface RecordsScreenProps {
+  section: RecordsHealthSection;
+  entryId?: string;
+  reportId?: string;
+  onBack: () => void;
+}
+
+export default function RecordsScreen({
+  section,
+  onBack,
+}: RecordsScreenProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -260,6 +272,47 @@ export default function RecordsScreen() {
     topInset: insets.top,
     surface: "tabbed",
   });
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionAnchorYRef = useRef<
+    Partial<Record<RecordsHealthSection, number>>
+  >({});
+  const pendingSectionRef = useRef<RecordsHealthSection | null>(null);
+  const scrollToSection = useCallback(
+    (target: RecordsHealthSection): boolean => {
+      const anchorY = sectionAnchorYRef.current[target];
+      if (anchorY == null) return false;
+      // Anchors are nested inside the Animated content wrapper, so their
+      // layout.y excludes the ScrollView content container's top padding.
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, topPadding + anchorY - 8),
+        animated: true,
+      });
+      return true;
+    },
+    [topPadding],
+  );
+  const registerSectionAnchor = useCallback(
+    (target: RecordsHealthSection) => (event: LayoutChangeEvent) => {
+      sectionAnchorYRef.current[target] = event.nativeEvent.layout.y;
+      if (pendingSectionRef.current === target) {
+        pendingSectionRef.current = null;
+        requestAnimationFrame(() => scrollToSection(target));
+      }
+    },
+    [scrollToSection],
+  );
+  useEffect(() => {
+    pendingSectionRef.current = section;
+    const frame = requestAnimationFrame(() => {
+      if (
+        pendingSectionRef.current === section &&
+        scrollToSection(section)
+      ) {
+        pendingSectionRef.current = null;
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [scrollToSection, section]);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 60000);
@@ -1125,6 +1178,7 @@ export default function RecordsScreen() {
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
+        ref={scrollRef}
         style={s.container}
         contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
@@ -1135,7 +1189,7 @@ export default function RecordsScreen() {
             title="Records"
             subtitle={`${resolvePetName(state.profile.name)}'s file cabinet - trends, incidents & reports`}
             back
-            onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+            onBack={onBack}
           />
 
           <BoardCard padded={false} style={s.recordsCredentialStageCard} enter={0}>
@@ -1330,6 +1384,7 @@ export default function RecordsScreen() {
             <Text style={[s.hydrationNext, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{careTrends.nextStep}</Text>
           </BoardCard>
 
+          <View collapsable={false} onLayout={registerSectionAnchor("dog-id")} />
           {/* Dog ID card. The four export actions live on their own wrapping
               row under the heading so the title and every action stay fully
               visible at narrow widths (a single header row clipped the title
@@ -2614,6 +2669,7 @@ export default function RecordsScreen() {
           </BoardCard>
 
           {/* Care pass */}
+          <View collapsable={false} onLayout={registerSectionAnchor("care-pass")} />
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader title="Care Pass" accessory={<BoardPill label="Preview" tone={colors.copper} />} />
             <View style={s.carePassList}>
@@ -2940,7 +2996,12 @@ export default function RecordsScreen() {
             <BoardSectionHeader
               title="Diet on File"
               accessory={
-                <Pressable onPress={() => router.push("/more")} hitSlop={MOBILE_INLINE_HIT_SLOP}>
+                <Pressable
+                  onPress={() =>
+                    router.push({ pathname: "/health", params: { section: "diet" } })
+                  }
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                >
                   <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Edit</Text>
                 </Pressable>
               }
@@ -2977,6 +3038,7 @@ export default function RecordsScreen() {
           </BoardCard>
 
           {/* Records cabinet */}
+          <View collapsable={false} onLayout={registerSectionAnchor("records")} />
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader title="Records Cabinet" accessory={<BoardPill label={`${recordVault.total} saved`} tone={colors.primary} />} />
             {recordList.length === 0 ? (
