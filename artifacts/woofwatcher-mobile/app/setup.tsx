@@ -41,6 +41,7 @@ import {
   type SetupWizardHouseholdMode,
 } from "@/lib/setupWizard";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
+import { buildSetupHouseholdPlaceholder } from "@/lib/petIdentity";
 
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 // Storybook mockup: big warm serif for celebration titles (same face the
@@ -464,7 +465,7 @@ export default function SetupScreen() {
               <Field
                 label="Household name"
                 value={draft.householdName}
-                placeholder="Phoenix House"
+                placeholder={buildSetupHouseholdPlaceholder(draft.dogName)}
                 onChangeText={(value) => setField("householdName", value)}
               />
               {draft.householdMode === "join" && (

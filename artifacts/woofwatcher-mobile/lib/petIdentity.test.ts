@@ -10,8 +10,15 @@ import {
   buildCareTwinPetActionLabel,
   buildCareTwinQaIdentityCopy,
   buildNotFoundIdentityCopy,
+  buildSetupHouseholdPlaceholder,
   buildWoofGuideComposerPlaceholder,
 } from "./petIdentity.ts";
+
+test("names the active dog in the setup household hint", () => {
+  assert.equal(buildSetupHouseholdPlaceholder("  Luna  "), "Luna House");
+  assert.equal(buildSetupHouseholdPlaceholder("My Dog"), "Phoenix House");
+  assert.equal(buildSetupHouseholdPlaceholder("   "), "Phoenix House");
+});
 
 test("names the active dog throughout the care-twin QA entry", () => {
   assert.deepEqual(buildCareTwinQaIdentityCopy("  Mochi  "), {

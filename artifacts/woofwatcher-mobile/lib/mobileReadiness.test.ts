@@ -92,6 +92,17 @@ test("routes More identity through the canonical Dog Profile name", () => {
   );
 });
 
+test("routes Setup household guidance through Dog Profile identity", () => {
+  const setup = readAppFile("setup.tsx");
+
+  assert.match(setup, /buildSetupHouseholdPlaceholder\(draft\.dogName\)/);
+  assert.doesNotMatch(
+    setup,
+    /placeholder="Phoenix House"/,
+    "renamed dogs should receive a household hint based on their setup name",
+  );
+});
+
 function getStyleBlock(source: string, styleName: string): string {
   const marker = `  ${styleName}: {`;
   const start = source.indexOf(marker);

@@ -3233,3 +3233,7 @@ The structured care snapshot is part of the owner-facing AI boundary even while 
 ## 2026-08-05: Household rename guidance follows Dog Profile
 
 Household naming suggestions are owner-facing shared-care identity, so More must build the rename placeholder from the canonical active dog name. Renamed dogs receive `The Luna Pack`; blank and `My Dog` profiles retain the intentional `The Phoenix Pack` starter suggestion. This does not create, rename, or sync a provider-backed household.
+
+## 2026-08-05 Setup household guidance follows Dog Profile
+
+Setup builds the household-name hint from the current dog-name draft through canonical pet identity. Renamed dogs receive a trimmed hint such as `Luna House`; blank and `My Dog` drafts retain the intentional `Phoenix House` starter identity. This is guidance only and does not create, rename, or sync a provider-backed household.

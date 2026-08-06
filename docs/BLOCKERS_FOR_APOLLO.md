@@ -736,4 +736,6 @@ Source coverage now proves future WoofGuide provider context receives canonical 
 
 Source coverage now proves More's household rename suggestion follows canonical Dog Profile identity. Native modal/accessibility evidence, real household-provider rename proof, route-named iOS/Android captures, and Apollo approval remain required.
 
+Source coverage now proves Setup's household-name hint follows the current canonical Dog Profile draft. Native onboarding/accessibility evidence, provider-backed household creation/invite/sync proof, route-named iOS/Android captures, and Apollo approval remain required.
+
 Dependency-complete branch CI passed for the implementation in `WoofWatcher Verify` run `31032566290`, job `92396622792`, on commit `27663e6a`. This does not clear the native/provider/Apollo gates above.

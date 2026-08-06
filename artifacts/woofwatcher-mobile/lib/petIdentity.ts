@@ -80,3 +80,9 @@ export function buildWoofGuideComposerPlaceholder(
 ): string {
   return `Ask about ${resolvePetName(name)}...`;
 }
+
+export function buildSetupHouseholdPlaceholder(
+  name: string | null | undefined,
+): string {
+  return `${resolvePetName(name)} House`;
+}
