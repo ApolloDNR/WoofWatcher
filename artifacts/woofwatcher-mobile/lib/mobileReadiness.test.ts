@@ -6,6 +6,10 @@ import { join, relative } from "node:path";
 import { deriveHealthWatch } from "../../../lib/care-domain/src/index.ts";
 import { describeQuickLogDetailSheet } from "./quickLogEntry.ts";
 import { buildTrendWindow } from "./trendsChart.ts";
+import {
+  UNIVERSAL_COMPATIBILITY_TABS,
+  UNIVERSAL_PRIMARY_TABS,
+} from "./universalTabBar.ts";
 
 const APP_DIR = join(process.cwd(), "artifacts", "woofwatcher-mobile", "app");
 const MOBILE_LIB_DIR = join(
@@ -129,40 +133,41 @@ test("registers the critical mobile routes and tabs", () => {
     );
   }
 
-  for (const tab of ["Log", "Plan", "Today", "Pack", "Story"]) {
-    assert.match(
-      tabLayout,
-      new RegExp(`title: "${tab}"`),
-      `${tab} tab should be visible`,
-    );
-  }
-  for (const tabRoute of ["index", "log", "calendar", "pack", "story"]) {
-    assert.match(
-      tabLayout,
-      new RegExp(`name="${tabRoute}"`),
-      `${tabRoute} tab screen should be registered`,
-    );
+  assert.match(tabLayout, /UNIVERSAL_PRIMARY_TABS\.map/);
+  assert.match(tabLayout, /name=\{tab\.name\}/);
+  assert.match(tabLayout, /title:\s*tab\.label/);
+  assert.match(tabLayout, /tabBarButton:\s*\(buttonProps\)\s*=>/);
+
+  for (const tab of UNIVERSAL_PRIMARY_TABS) {
     assert.ok(
-      existsSync(join(APP_DIR, "(tabs)", `${tabRoute}.tsx`)),
-      `${tabRoute} tab route file should exist`,
+      existsSync(join(APP_DIR, "(tabs)", `${tab.name}.tsx`)),
+      `${tab.label} tab route file should exist`,
     );
   }
-  for (const hiddenRoute of ["records", "health", "more"]) {
-    assert.match(
-      tabLayout,
-      new RegExp(`name="${hiddenRoute}"`),
-      `${hiddenRoute} route should stay registered for Today/Pack links and deep links`,
-    );
+
+  assert.equal(UNIVERSAL_PRIMARY_TABS.length, 5);
+  assert.equal(UNIVERSAL_COMPATIBILITY_TABS.length, 3);
+  assert.match(tabLayout, /UNIVERSAL_COMPATIBILITY_TABS\.map/);
+  assert.equal(
+    tabLayout.match(/href:\s*null/g)?.length ?? 0,
+    1,
+    "one bounded mapping should hide exactly the three compatibility routes",
+  );
+
+  for (const hiddenRoute of UNIVERSAL_COMPATIBILITY_TABS) {
     assert.ok(
       existsSync(join(APP_DIR, "(tabs)", `${hiddenRoute}.tsx`)),
       `${hiddenRoute} route file should exist`,
     );
   }
-  const hiddenTabCount = tabLayout.match(/href: null/g)?.length ?? 0;
-  assert.ok(
-    hiddenTabCount >= 3,
-    "health, more, and records should be hidden from the bottom tab bar with href: null",
-  );
+
+  for (const retiredLabel of ["Plan", "Today", "Pack", "Story"]) {
+    assert.doesNotMatch(
+      tabLayout,
+      new RegExp(`title:\\s*["']${retiredLabel}["']`),
+      `${retiredLabel} should not remain a visible tab label`,
+    );
+  }
 });
 
 test("keeps string router links pointed at existing route files", () => {
@@ -589,7 +594,7 @@ test("keeps critical mobile actions accessible to screen readers", () => {
   assert.match(more, /accessibilityLabel="Sign out of WoofWatcher"/);
 });
 
-test("keeps tabbed mobile routes clear of the floating paw nav", () => {
+test("keeps tabbed mobile routes clear with shared universal tab chrome", () => {
   const mobileLayout = readMobileLibFile("mobileLayout.ts");
   const tabs = readAppFile(join("(tabs)", "_layout.tsx"));
   const tabbedRoutes = [
@@ -611,8 +616,12 @@ test("keeps tabbed mobile routes clear of the floating paw nav", () => {
   assert.match(mobileLayout, /MIN_MOBILE_TOUCH_TARGET/);
   assert.match(mobileLayout, /MOBILE_INLINE_HIT_SLOP/);
   assert.match(tabs, /getFloatingTabChromeMetrics/);
-  assert.match(tabs, /centerFabBottom/);
   assert.match(tabs, /tabBarHeight/);
+  assert.doesNotMatch(
+    tabs,
+    /CenterToday|centerFabBottom|centerFabSize|centerSlot|fabWrap/,
+    "the universal shell should not retain the elevated paw overlay",
+  );
 
   for (const route of tabbedRoutes) {
     const source = readAppFile(join("(tabs)", `${route}.tsx`));
