@@ -48,6 +48,11 @@ import {
   type WoofGuideActionCard,
   type WoofGuideActionIcon,
 } from "@/lib/woofGuideActions";
+import { notifyDialog } from "@/lib/confirmDialog";
+import {
+  CARE_READ_ONLY_MESSAGE,
+  careMutationWasAccepted,
+} from "@/lib/careWriteProtection";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -172,7 +177,11 @@ export default function WoofGuideScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, addEntry, updateCareDoc } = useCare();
+  const { state, careMutationsBlocked, addEntry, updateCareDoc } = useCare();
+  const showCareReadOnly = useCallback(
+    () => notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE),
+    [],
+  );
   const { getToken } = useWoofAuth();
   const routeParams = useLocalSearchParams<{ prompt?: string | string[] }>();
   const promptParam = Array.isArray(routeParams.prompt) ? routeParams.prompt[0] : routeParams.prompt;
@@ -304,10 +313,18 @@ export default function WoofGuideScreen() {
   const applyDraft = useCallback(() => {
     const draft = reviewAction?.draft;
     if (!draft) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
 
     if (draft.kind === "log_entry" && draft.entry) {
-      addEntry(draft.entry);
+      const entryId = addEntry(draft.entry);
+      if (!careMutationWasAccepted(entryId)) {
+        showCareReadOnly();
+        return;
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setMessages((prev) => [
         { id: `draft_${Date.now()}`, role: "assistant", content: `${draft.title}\n\nAdded reviewed log draft to the household timeline.` },
         ...prev,
@@ -321,13 +338,18 @@ export default function WoofGuideScreen() {
         id: `woofguide_${Date.now()}`,
         ...draft.calendarEvent,
       };
-      updateCareDoc((doc) => ({
+      const updated = updateCareDoc((doc) => ({
         ...doc,
         calendarEvents: [
           event,
           ...doc.calendarEvents.filter((item) => item.id !== event.id),
         ],
       }));
+      if (!careMutationWasAccepted(updated)) {
+        showCareReadOnly();
+        return;
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setMessages((prev) => [
         { id: `draft_${Date.now()}`, role: "assistant", content: `${draft.title}\n\nReminder added to Calendar for review.` },
         ...prev,
@@ -349,7 +371,14 @@ export default function WoofGuideScreen() {
       setReviewAction(null);
       router.push("/records");
     }
-  }, [reviewAction, addEntry, updateCareDoc, router]);
+  }, [
+    reviewAction,
+    careMutationsBlocked,
+    addEntry,
+    updateCareDoc,
+    router,
+    showCareReadOnly,
+  ]);
 
   return (
     <>

@@ -1,3 +1,5 @@
+import { localDateKey, parseLocalDateKey, todayLocalDateKey } from "./localCalendar.ts";
+
 export function relativeTime(iso: string, now: number): string {
   const mins = Math.floor((now - new Date(iso).getTime()) / 60000);
   if (mins < 1) return "Just now";
@@ -9,8 +11,7 @@ export function relativeTime(iso: string, now: number): string {
 }
 
 export function dayKey(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  return localDateKey(new Date(iso));
 }
 
 export function dayLabel(iso: string, now: number): string {
@@ -28,12 +29,16 @@ export function dayLabel(iso: string, now: number): string {
 
 /** ISO date string YYYY-MM-DD for today in local time. */
 export function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayLocalDateKey();
 }
 
 /** Validate a YYYY-MM-DD string and return a Date, or null if invalid. */
 export function parseLocalDate(s: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
-  const d = new Date(`${s}T12:00:00`);
-  return Number.isNaN(d.getTime()) ? null : d;
+  const parts = parseLocalDateKey(s);
+  if (!parts) return null;
+
+  const date = new Date(0);
+  date.setFullYear(parts.year, parts.month - 1, parts.day);
+  date.setHours(12, 0, 0, 0);
+  return date;
 }

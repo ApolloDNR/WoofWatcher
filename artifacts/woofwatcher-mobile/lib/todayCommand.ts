@@ -1,7 +1,9 @@
 import {
   deriveCareDayStatus,
   deriveRoutineBoard,
+  isRoutineBoardScheduledItem,
   normalizeCareEventType,
+  parseClockTime,
   type CareEventType,
   type RoutineBoardItem,
 } from "../../../lib/care-domain/src/index.ts";
@@ -76,8 +78,8 @@ export interface TodayCommandRoutine {
   label: string;
   type: string;
   time: string;
-  owner?: string;
-  note?: string;
+  owner?: string | null;
+  note?: string | null;
 }
 
 export interface TodayCommandCaregiver {
@@ -161,16 +163,16 @@ function sortNewestFirst<T extends { occurredAt: string }>(items: readonly T[]):
   );
 }
 
-function routineDateMs(routine: TodayCommandRoutine, now: number): number {
-  const [time, periodRaw] = routine.time.trim().split(/\s+/);
-  const [hStr, mStr] = time.split(":");
-  const period = periodRaw?.toUpperCase();
-  let h = Number.parseInt(hStr, 10);
-  if (!Number.isFinite(h)) h = 0;
-  if (period === "PM" && h !== 12) h += 12;
-  if (period === "AM" && h === 12) h = 0;
+function routineDateMs(routine: TodayCommandRoutine, now: number): number | null {
+  const parsed = parseClockTime(routine.time);
+  if (!parsed) return null;
   const d = new Date(now);
-  d.setHours(h, Number.parseInt(mStr || "0", 10) || 0, 0, 0);
+  d.setHours(
+    Math.floor(parsed.minutesSinceMidnight / 60),
+    parsed.minutesSinceMidnight % 60,
+    0,
+    0,
+  );
   return d.getTime();
 }
 
@@ -181,7 +183,11 @@ function getRelevantRoutineOfType(
 ): TodayCommandRoutine | null {
   const candidates = routines
     .filter((routine) => normalizeCareEventType(routine.type) === type)
-    .map((routine) => ({ routine, ms: routineDateMs(routine, now) }));
+    .map((routine) => ({ routine, ms: routineDateMs(routine, now) }))
+    .filter(
+      (candidate): candidate is { routine: TodayCommandRoutine; ms: number } =>
+        candidate.ms !== null,
+    );
 
   return (
     candidates
@@ -353,13 +359,14 @@ export function deriveTodayCommand(
   const providerSyncEnabled = state.providerSyncEnabled === true;
   const todays = entries.filter((entry) => isSameLocalDay(entry.occurredAt, now));
   const sortedEntries = sortNewestFirst(entries);
-  const dayStatus = deriveCareDayStatus(entries, routines, now);
   const routineBoard = deriveRoutineBoard({
     routines,
     entries,
     caregivers: state.caregivers,
     now,
   });
+  const scheduledRoutines = routineBoard.items.filter(isRoutineBoardScheduledItem);
+  const dayStatus = deriveCareDayStatus(entries, scheduledRoutines, now);
 
   const rawPending = entries.filter((entry) => entry.syncStatus === "pending").length;
   const rawFailed = entries.filter((entry) => entry.syncStatus === "failed").length;
@@ -488,7 +495,7 @@ export function deriveTodayCommand(
   const walkRoutine = openRoutineOfType(routineBoard.items, "walk");
 
   if ((mealRoutine || dayStatus.counts.meals.done < dayStatus.counts.meals.target) && hour >= 6) {
-    const fallbackMealRoutine = getRelevantRoutineOfType(routines, "meal", now);
+    const fallbackMealRoutine = getRelevantRoutineOfType(scheduledRoutines, "meal", now);
     return {
       primaryAction: {
         kind: "log-meal",
@@ -511,7 +518,7 @@ export function deriveTodayCommand(
   }
 
   if ((walkRoutine || dayStatus.counts.walks.done < dayStatus.counts.walks.target) && hour >= 8) {
-    const fallbackWalkRoutine = getRelevantRoutineOfType(routines, "walk", now);
+    const fallbackWalkRoutine = getRelevantRoutineOfType(scheduledRoutines, "walk", now);
     return {
       primaryAction: {
         kind: "log-walk",

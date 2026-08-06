@@ -97,6 +97,22 @@ test("blends routines, logs, evidence, and sync into care intelligence", () => {
   assert.match(intelligence.subtitle, /care|confirm|outcome|record/i);
 });
 
+test("does not promote an invalid-time routine as the next care-intelligence action", () => {
+  const intelligence = deriveCareIntelligence({
+    now: NOW,
+    routines: [
+      { id: "legacy", label: "Legacy care", type: "walk", time: "9x:30 AM", owner: "Apollo" },
+    ],
+    entries: [],
+  });
+
+  assert.equal(intelligence.correctionCount, 1);
+  assert.equal(intelligence.routineProgress, 0);
+  assert.equal(intelligence.metrics[0].value, "0%");
+  assert.equal(intelligence.metrics[0].detail, "1 routine needs correction");
+  assert.ok(intelligence.openLoops.every((loop) => loop.targetRoutineId !== "legacy"));
+});
+
 test("keeps a pre-midnight pending meal outcome open just after the rollover", () => {
   // Dinner served 23:58 local, checked 00:02: the open loop survives the
   // local-day rollover with copy that owns it ("Last night's ...") - in

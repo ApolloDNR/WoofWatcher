@@ -43,6 +43,10 @@ import {
 } from "@/lib/mobileLayout";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
+import {
+  CARE_READ_ONLY_MESSAGE,
+  careMutationWasAccepted,
+} from "@/lib/careWriteProtection";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -110,7 +114,15 @@ export default function AdventureScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, addEntry, deleteEntry, updateCareDoc } = useCare();
+  const {
+    state,
+    careMutationsBlocked,
+    addEntry,
+    deleteEntry,
+    updateCareDoc,
+  } = useCare();
+  const showCareReadOnly = () =>
+    notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   const [questFeedback, setQuestFeedback] = useState<{ id: string; title: string } | null>(null);
   const bottomPadding = getStandaloneRouteBottomPadding({
     platform: Platform.OS,
@@ -168,6 +180,10 @@ export default function AdventureScreen() {
       notifyDialog("Complete care first", "Log a walk, training win, or play reset before saving this quest memory.");
       return;
     }
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const memory = buildAdventureMemoryDraft({
       petName,
       questId: quest?.id,
@@ -175,14 +191,18 @@ export default function AdventureScreen() {
       note: adventure.summary,
       humans: state.caregivers.map((caregiver) => caregiver.name).slice(0, 3),
     });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    updateCareDoc((doc) => ({
+    const updated = updateCareDoc((doc) => ({
       ...doc,
       adventureMemories: [
         memory,
         ...(doc.adventureMemories ?? []),
       ],
     }));
+    if (!careMutationWasAccepted(updated)) {
+      showCareReadOnly();
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     notifyDialog("Memory saved", "Saved as a private household memory on this device. Cloud photo backup isn't available yet.");
   };
 
@@ -207,12 +227,17 @@ export default function AdventureScreen() {
   };
 
   const startQuest = (quest: AdventureQuest, proofEntryId: string | null) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (careMutationsBlocked && quest.status === "available") {
+      showCareReadOnly();
+      return;
+    }
     if (quest.status === "locked") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       notifyDialog("Quest locked", quest.evidence);
       return;
     }
     if (quest.status === "complete") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       if (proofEntryId) {
         router.push(`/log?entry=${encodeURIComponent(proofEntryId)}` as never);
         return;
@@ -226,6 +251,7 @@ export default function AdventureScreen() {
     }
     if (quest.action === "start-walk") {
       if (openWalkSession?.id) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setQuestFeedback({ id: openWalkSession.id, title: "Walk already active" });
         // Land on the FINISH form, not the read-only record sheet: the
         // sheet says "In progress" with no way to end the walk.
@@ -235,12 +261,17 @@ export default function AdventureScreen() {
       // A rapid second tap lands before the open session exists in state;
       // it is the same intent, already answered by the first tap.
       if (isDuplicateQuestTap("walk")) return;
-      markQuestSave("walk");
       const entry = buildWalkSessionStartEntry({ caregiver, now, routineLabel: quest.title });
       const id = addEntry({
         ...entry,
         details: adventureDetails(quest, entry.details),
       } as Omit<Entry, "id">);
+      if (!careMutationWasAccepted(id)) {
+        showCareReadOnly();
+        return;
+      }
+      markQuestSave("walk");
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setQuestFeedback({ id, title: "Adventure walk started" });
       return;
     }
@@ -255,7 +286,6 @@ export default function AdventureScreen() {
     ) {
       return;
     }
-    markQuestSave(careType);
     const entry = buildQuickLogEntry(
       { type: careType, title: quest.title },
       state,
@@ -266,13 +296,27 @@ export default function AdventureScreen() {
       ...(careType === "training" ? { durationMinutes: 8 } : careType === "play" ? { durationMinutes: 10 } : {}),
       details: adventureDetails(quest, entry.details),
     });
+    if (!careMutationWasAccepted(id)) {
+      showCareReadOnly();
+      return;
+    }
+    markQuestSave(careType);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setQuestFeedback({ id, title: `${quest.title} logged` });
   };
 
-  const undoQuestFeedback = () => {
+  const undoQuestFeedback = async () => {
     if (!questFeedback) return;
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
+    const deleted = await deleteEntry(questFeedback.id);
+    if (!careMutationWasAccepted(deleted)) {
+      showCareReadOnly();
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void deleteEntry(questFeedback.id);
     setQuestFeedback(null);
   };
 

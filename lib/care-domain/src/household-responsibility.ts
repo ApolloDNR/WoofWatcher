@@ -1,5 +1,11 @@
 import { resolvePetName } from "./pet-identity.ts";
-import { type RoutineBoardEntry, type RoutineBoardItem, type RoutineBoardRoutine, deriveRoutineBoard } from "./routine-board.ts";
+import {
+  type RoutineBoardEntry,
+  type RoutineBoardItem,
+  type RoutineBoardRoutine,
+  deriveRoutineBoard,
+  isRoutineBoardScheduledItem,
+} from "./routine-board.ts";
 
 export type HouseholdResponsibilityStatus =
   | "needs-setup"
@@ -12,6 +18,7 @@ export type HouseholdResponsibilityActionKind =
   | "add-caregiver"
   | "create-routine"
   | "assign-routine"
+  | "correct-routine"
   | "log-routine"
   | "confirm-routine"
   | "review-next";
@@ -72,6 +79,7 @@ export interface HouseholdResponsibility {
   openRoutines: number;
   overdueRoutines: number;
   dueRoutines: number;
+  correctionRoutines: number;
   members: HouseholdResponsibilityCaregiver[];
   unassignedItems: RoutineBoardItem[];
   nextAction: HouseholdResponsibilityNextAction | null;
@@ -187,18 +195,26 @@ export function deriveHouseholdResponsibility(input: HouseholdResponsibilityInpu
     caregivers: input.caregivers?.map((caregiver) => ({ name: caregiver.name, role: caregiver.role ?? undefined })),
     now,
   });
+  const scheduledItems = board.items.filter(isRoutineBoardScheduledItem);
+  const correctionItems = board.items.filter((item) => item.status === "needs-correction");
   const todayEntries = visibleTodayEntries(input.entries, now);
   const members = buildMembers({
     caregivers: input.caregivers ?? [],
-    items: board.items,
+    items: scheduledItems,
     entries: todayEntries,
   });
-  const unassignedItems = board.items.filter((item) => !clean(item.owner));
+  const unassignedItems = scheduledItems.filter((item) => !clean(item.owner));
   const openUnassigned = unassignedItems.filter((item) => item.status !== "done");
-  const overdueItems = board.items.filter((item) => item.status === "overdue");
-  const dueItems = board.items.filter((item) => item.status === "due");
-  const upcomingItems = board.items.filter((item) => item.status === "upcoming");
-  const totalRoutines = board.items.length;
+  const overdueItems = scheduledItems.filter((item) => item.status === "overdue");
+  const dueItems = scheduledItems.filter((item) => item.status === "due");
+  const upcomingItems = scheduledItems.filter((item) => item.status === "upcoming");
+  const totalRoutines = scheduledItems.length;
+  const doneRoutines = scheduledItems.filter((item) => item.status === "done").length;
+  const openRoutines = totalRoutines - doneRoutines;
+  const correctionRoutines = correctionItems.length;
+  const firstCorrection = correctionItems[0] ?? null;
+  const correctionSummary = `${correctionRoutines} saved routine${correctionRoutines === 1 ? "" : "s"} need${correctionRoutines === 1 ? "s" : ""} a valid time before ${correctionRoutines === 1 ? "it" : "they"} can be scheduled.`;
+  const correctionNextStep = `Correct the saved routine time${correctionRoutines === 1 ? "" : "s"} in Plans. ${correctionRoutines === 1 ? "It is" : "They are"} not due or handled care yet.`;
 
   if (members.length === 0) {
     return {
@@ -210,13 +226,35 @@ export function deriveHouseholdResponsibility(input: HouseholdResponsibilityInpu
       totalRoutines,
       assignedRoutines: totalRoutines - unassignedItems.length,
       unassignedRoutines: unassignedItems.length,
-      doneRoutines: board.doneCount,
-      openRoutines: board.openCount,
+      doneRoutines,
+      openRoutines,
       overdueRoutines: overdueItems.length,
       dueRoutines: dueItems.length,
+      correctionRoutines,
       members,
       unassignedItems,
       nextAction: { kind: "add-caregiver", label: "Add caregiver" },
+    };
+  }
+
+  if (totalRoutines === 0 && firstCorrection) {
+    return {
+      status: "needs-care",
+      title: `Routine time${correctionRoutines === 1 ? "" : "s"} need${correctionRoutines === 1 ? "s" : ""} correction`,
+      summary: correctionSummary,
+      nextStep: correctionNextStep,
+      totalMembers: members.length,
+      totalRoutines: 0,
+      assignedRoutines: 0,
+      unassignedRoutines: 0,
+      doneRoutines: 0,
+      openRoutines: 0,
+      overdueRoutines: 0,
+      dueRoutines: 0,
+      correctionRoutines,
+      members,
+      unassignedItems,
+      nextAction: routineAction("correct-routine", firstCorrection),
     };
   }
 
@@ -234,6 +272,7 @@ export function deriveHouseholdResponsibility(input: HouseholdResponsibilityInpu
       openRoutines: 0,
       overdueRoutines: 0,
       dueRoutines: 0,
+      correctionRoutines,
       members,
       unassignedItems,
       nextAction: { kind: "create-routine", label: "Create routine" },
@@ -245,14 +284,18 @@ export function deriveHouseholdResponsibility(input: HouseholdResponsibilityInpu
     totalRoutines,
     assignedRoutines: totalRoutines - unassignedItems.length,
     unassignedRoutines: unassignedItems.length,
-    doneRoutines: board.doneCount,
-    openRoutines: board.openCount,
+    doneRoutines,
+    openRoutines,
     overdueRoutines: overdueItems.length,
     dueRoutines: dueItems.length,
+    correctionRoutines,
     members,
     unassignedItems,
   };
-  const summary = `${board.doneCount}/${totalRoutines} routines handled today. ${board.openCount} open, ${overdueItems.length} overdue, ${unassignedItems.length} unassigned.`;
+  const scheduledSummary = `${doneRoutines}/${totalRoutines} routines handled today. ${openRoutines} open, ${overdueItems.length} overdue, ${unassignedItems.length} unassigned.`;
+  const summary = correctionRoutines > 0
+    ? `${scheduledSummary} ${correctionSummary}`
+    : scheduledSummary;
 
   if (overdueItems.length > 0) {
     const item = overdueItems[0];
@@ -292,7 +335,18 @@ export function deriveHouseholdResponsibility(input: HouseholdResponsibilityInpu
     };
   }
 
-  if (board.openCount === 0) {
+  if (firstCorrection) {
+    return {
+      ...base,
+      status: "needs-care",
+      title: `Routine time${correctionRoutines === 1 ? "" : "s"} need${correctionRoutines === 1 ? "s" : ""} correction`,
+      summary,
+      nextStep: correctionNextStep,
+      nextAction: routineAction("correct-routine", firstCorrection),
+    };
+  }
+
+  if (openRoutines === 0) {
     return {
       ...base,
       status: "steady",
@@ -303,7 +357,7 @@ export function deriveHouseholdResponsibility(input: HouseholdResponsibilityInpu
     };
   }
 
-  const next = upcomingItems[0] ?? board.next;
+  const next = upcomingItems[0] ?? scheduledItems.find((item) => item.status !== "done") ?? null;
   return {
     ...base,
     status: "balanced",

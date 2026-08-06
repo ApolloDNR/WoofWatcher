@@ -27,6 +27,10 @@ import {
 } from "@/lib/breedTemplateMatch";
 import { notifyDialog } from "@/lib/confirmDialog";
 import {
+  CARE_READ_ONLY_MESSAGE,
+  runAcceptedCareMutation,
+} from "@/lib/careWriteProtection";
+import {
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   getRouteTopPadding,
@@ -108,7 +112,7 @@ export default function SetupScreen() {
   const router = useRouter();
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
   const ownerOps = consumerSurfacePolicy.ownerOps;
-  const { state, updateCareDoc, isLoaded } = useCare();
+  const { state, careMutationsBlocked, updateCareDoc, isLoaded } = useCare();
   const { isSignedIn } = useWoofAuth();
   const { avatarConfig, hasConfiguredAvatar, saveAvatarConfig } = useAvatar();
   const [draft, setDraft] = useState<SetupWizardDraft>(() => {
@@ -203,29 +207,36 @@ export default function SetupScreen() {
       notifyDialog("Almost there", saveBlockedMessage);
       return;
     }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    updateCareDoc((doc) => applySetupWizardDraft(doc, draft));
-    if (twinPlan.willSwapTemplate) {
-      // Persist through AvatarContext.saveAvatarConfig - the same state path
-      // Avatar Studio's Save uses - with the template-picker patch, so the
-      // room twin follows the typed breed without duplicating studio logic.
-      void saveAvatarConfig(
-        applyBreedTemplateToAvatarConfig(
-          avatarConfig,
-          twinPlan.resultTemplateId,
-          preview.profile.name,
-        ),
-      ).catch(() => {});
+    if (careMutationsBlocked) {
+      notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
+      return;
     }
-    // In-app success sheet (Alert is a no-op on react-native-web); the
-    // hand-off to Today or Plan happens from the sheet's own buttons.
-    setSuccessMoment({
-      dogName: preview.profile.name,
-      twinLine: twinPlan.successLine,
-      templateLine: twinPlan.willSwapTemplate
-        ? `Twin: ${twinPlan.resultTemplateLabel} - change anytime in Avatar Studio.`
-        : twinPlan.previewLine,
+    const updated = updateCareDoc((doc) => applySetupWizardDraft(doc, draft));
+    const accepted = runAcceptedCareMutation(updated, () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (twinPlan.willSwapTemplate) {
+        // Persist through AvatarContext.saveAvatarConfig - the same state path
+        // Avatar Studio's Save uses - with the template-picker patch, so the
+        // room twin follows the typed breed without duplicating studio logic.
+        void saveAvatarConfig(
+          applyBreedTemplateToAvatarConfig(
+            avatarConfig,
+            twinPlan.resultTemplateId,
+            preview.profile.name,
+          ),
+        ).catch(() => {});
+      }
+      // In-app success sheet (Alert is a no-op on react-native-web); the
+      // hand-off to Today or Plan happens from the sheet's own buttons.
+      setSuccessMoment({
+        dogName: preview.profile.name,
+        twinLine: twinPlan.successLine,
+        templateLine: twinPlan.willSwapTemplate
+          ? `Twin: ${twinPlan.resultTemplateLabel} - change anytime in Avatar Studio.`
+          : twinPlan.previewLine,
+      });
     });
+    if (!accepted) notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   };
 
   const meetDog = () => {

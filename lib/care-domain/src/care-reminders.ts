@@ -7,6 +7,7 @@ import {
 import { deriveRecordReminders, type CareRecord } from "./record-vault.ts";
 import {
   deriveRoutineBoard,
+  isRoutineBoardScheduledItem,
   type RoutineBoardCaregiver,
 } from "./routine-board.ts";
 
@@ -82,6 +83,7 @@ export interface CareReminderCenter {
   alertCount: number;
   watchCount: number;
   routineCount: number;
+  correctionCount: number;
   medicationCount: number;
   recordCount: number;
   groomingCount: number;
@@ -220,6 +222,7 @@ export function deriveCareReminderCenter(input: CareReminderCenterInput): CareRe
 
   const routineItems = routineBoard.items
     .filter((item) => item.status !== "done")
+    .filter(isRoutineBoardScheduledItem)
     .filter((item) => normalizeCareEventType(item.type) !== "medication")
     .filter((item) => item.status !== "upcoming" || item.minutesFromNow <= routineLookaheadMinutes)
     .map((item): CareReminderItem => {
@@ -320,6 +323,19 @@ export function deriveCareReminderCenter(input: CareReminderCenterInput): CareRe
   const status: CareReminderStatus = alertCount > 0 ? "attention" : watchCount > 0 ? "watch" : "clear";
   const notificationPreferenceSummary = notificationPreferenceSummaryFor(input.notificationPreferences);
   const providerBackedNotifications = hasProviderBackedNotifications(input.notificationPreferences);
+  const correctionCount = routineBoard.correctionCount;
+  const correctionSummary = `${correctionCount} routine${correctionCount === 1 ? "" : "s"} ${correctionCount === 1 ? "needs" : "need"} correction`;
+  const hasOnlyCorrectionRoutineInput = correctionCount > 0
+    && routineItems.length === 0
+    && medicationItems.length === 0
+    && records.length === 0
+    && input.entries.length === 0;
+  const summary = hasOnlyCorrectionRoutineInput
+    ? `${correctionSummary} before reminders can be scheduled.`
+    : `${summaryFor(allItems.length, alertCount, watchCount)}${correctionCount ? ` ${correctionSummary}.` : ""}`;
+  const nextStep = hasOnlyCorrectionRoutineInput
+    ? `Correct ${routineBoard.items.find((item) => item.status === "needs-correction")?.label ?? "the routine"}'s saved time in Plans.`
+    : nextStepFor(status);
 
   return {
     items: allItems.slice(0, limit),
@@ -327,12 +343,13 @@ export function deriveCareReminderCenter(input: CareReminderCenterInput): CareRe
     alertCount,
     watchCount,
     routineCount: allItems.filter((item) => item.kind === "routine").length,
+    correctionCount,
     medicationCount: allItems.filter((item) => item.kind === "medication").length,
     recordCount: allItems.filter((item) => item.kind === "record").length,
     groomingCount: allItems.filter((item) => item.kind === "grooming").length,
     status,
-    summary: summaryFor(allItems.length, alertCount, watchCount),
-    nextStep: nextStepFor(status),
+    summary,
+    nextStep,
     notificationReadiness: providerBackedNotifications
       ? "Reminder candidates are ready for owner review; push delivery is eligible for delivery QA, but launch still needs delivered-notification proof."
       : // Do not embed the preference summary here - screens render both

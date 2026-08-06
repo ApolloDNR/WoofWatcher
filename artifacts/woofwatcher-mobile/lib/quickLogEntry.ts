@@ -1,5 +1,6 @@
 import {
   deriveRoutineBoard,
+  isRoutineBoardScheduledItem,
   normalizeCareEventType,
   type CareEventType,
   type RoutineBoardItem,
@@ -181,6 +182,7 @@ function nextOpenRoutineOfType(
   });
   return (
     board.items
+      .filter(isRoutineBoardScheduledItem)
       .filter((routine) => routine.normalizedType === type && (routine.status === "overdue" || routine.status === "due"))
       .sort((a, b) => statusRank(a) - statusRank(b) || a.minutesFromNow - b.minutesFromNow)[0] ?? null
   );

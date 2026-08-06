@@ -1,5 +1,10 @@
 import type { CareState, Entry, Routine } from "@/context/CareContext";
-import { deriveCareDayStatus, normalizeCareEventType } from "@workspace/care-domain";
+import {
+  deriveCareDayStatus,
+  deriveRoutineBoard,
+  isRoutineBoardScheduledItem,
+  normalizeCareEventType,
+} from "@workspace/care-domain";
 
 export type Mood = "happy" | "excited" | "calm" | "anxious" | "unwell";
 
@@ -56,6 +61,7 @@ export interface PhoenixStatus {
   };
   nextRoutine: Routine | null;
   minutesUntilNext: number | null;
+  routineCorrectionCount: number;
 }
 
 function isToday(iso: string, now: number): boolean {
@@ -70,17 +76,6 @@ function isToday(iso: string, now: number): boolean {
 
 function hoursAgo(iso: string, now: number): number {
   return (now - new Date(iso).getTime()) / (1000 * 60 * 60);
-}
-
-function routineDateMs(r: Routine, now: number): number {
-  const [time, period] = r.time.split(" ");
-  const [hStr, mStr] = time.split(":");
-  let h = parseInt(hStr, 10);
-  if (period === "PM" && h !== 12) h += 12;
-  if (period === "AM" && h === 12) h = 0;
-  const d = new Date(now);
-  d.setHours(h, parseInt(mStr || "0", 10), 0, 0);
-  return d.getTime();
 }
 
 function entryDetailValue(entry: Entry, key: string): unknown {
@@ -143,7 +138,13 @@ export function derivePhoenixStatus(
   now: number = Date.now(),
 ): PhoenixStatus {
   const todays = state.entries.filter((e) => isToday(e.occurredAt, now));
-  const dayStatus = deriveCareDayStatus(state.entries, state.routines, now);
+  const routineBoard = deriveRoutineBoard({
+    routines: state.routines,
+    entries: state.entries,
+    now,
+  });
+  const scheduledRoutines = routineBoard.items.filter(isRoutineBoardScheduledItem);
+  const dayStatus = deriveCareDayStatus(state.entries, scheduledRoutines, now);
 
   const countType = (types: string[]) =>
     todays.filter((e) =>
@@ -185,14 +186,13 @@ export function derivePhoenixStatus(
   );
 
   // Next upcoming routine today — earliest by clock time, independent of array order
-  const nextRoutine =
-    state.routines
-      .map((r) => ({ r, ms: routineDateMs(r, now) }))
-      .filter((x) => x.ms > now)
-      .sort((a, b) => a.ms - b.ms)[0]?.r ?? null;
-  const minutesUntilNext = nextRoutine
-    ? Math.max(0, Math.round((routineDateMs(nextRoutine, now) - now) / 60000))
+  const nextItem = scheduledRoutines
+    .filter((item) => item.minutesFromNow > 0)
+    .sort((a, b) => a.minutesFromNow - b.minutesFromNow)[0] ?? null;
+  const nextRoutine = nextItem
+    ? state.routines.find((routine) => routine.id === nextItem.id) ?? null
     : null;
+  const minutesUntilNext = nextItem?.minutesFromNow ?? null;
 
   const walkSoon =
     normalizeCareEventType(nextRoutine?.type) === "walk" &&
@@ -224,5 +224,6 @@ export function derivePhoenixStatus(
     counts: { meals, walks, potty, training, walkMinutes, healthAlert },
     nextRoutine,
     minutesUntilNext,
+    routineCorrectionCount: routineBoard.correctionCount,
   };
 }

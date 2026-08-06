@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventType } from "./events.ts";
+import { parseClockTime } from "./clock-time.ts";
 import { deriveCareDayStatus } from "./status.ts";
 import { deriveHealthWatch, type CareHealthEntry, type CareHealthStatus } from "./health.ts";
 
@@ -24,7 +25,7 @@ export interface CareHandoffInput {
 }
 
 export interface CareHandoffItem {
-  kind: CareEventType | "health";
+  kind: CareEventType | "health" | "note";
   label: string;
   detail: string;
   urgency: CareHealthStatus;
@@ -69,16 +70,11 @@ function isSameLocalDay(iso: string, now: number): boolean {
   );
 }
 
-function routineDateMs(routine: CareHandoffRoutine, now: number): number {
-  const [time, periodRaw] = routine.time.trim().split(/\s+/);
-  const [hStr, mStr] = time.split(":");
-  const period = periodRaw?.toUpperCase();
-  let hour = Number.parseInt(hStr, 10);
-  if (!Number.isFinite(hour)) hour = 0;
-  if (period === "PM" && hour !== 12) hour += 12;
-  if (period === "AM" && hour === 12) hour = 0;
+function routineDateMs(routine: CareHandoffRoutine, now: number): number | null {
+  const parsed = parseClockTime(routine.time);
+  if (!parsed) return null;
   const d = new Date(now);
-  d.setHours(hour, Number.parseInt(mStr || "0", 10) || 0, 0, 0);
+  d.setHours(0, parsed.minutesSinceMidnight, 0, 0);
   return d.getTime();
 }
 
@@ -89,7 +85,8 @@ function getNextRoutine(
   return (
     routines
       .map((routine) => ({ routine, ms: routineDateMs(routine, now) }))
-      .filter(({ ms }) => ms > now)
+      .filter((candidate): candidate is { routine: CareHandoffRoutine; ms: number } =>
+        candidate.ms != null && candidate.ms > now)
       .sort((a, b) => a.ms - b.ms)[0]?.routine ?? null
   );
 }
@@ -123,10 +120,12 @@ export function deriveCareHandoff(input: CareHandoffInput): CareHandoffSummary {
   const now = input.now ?? Date.now();
   const entries = input.entries ?? [];
   const routines = input.routines ?? [];
+  const scheduledRoutines = routines.filter((routine) => parseClockTime(routine.time) !== null);
+  const correctionRoutines = routines.filter((routine) => parseClockTime(routine.time) === null);
   const caregivers = input.caregivers ?? [];
   const todays = entries.filter((entry) => isSameLocalDay(entry.occurredAt, now));
-  const status = deriveCareDayStatus(entries, routines, now);
-  const health = deriveHealthWatch({ entries, routines, now });
+  const status = deriveCareDayStatus(entries, scheduledRoutines, now);
+  const health = deriveHealthWatch({ entries, routines: scheduledRoutines, now });
   const pendingMealOutcomes = status.counts.meals.pending ?? 0;
   const missingMealLogs = Math.max(
     status.counts.meals.target - status.counts.meals.done - pendingMealOutcomes,
@@ -179,6 +178,16 @@ export function deriveCareHandoff(input: CareHandoffInput): CareHandoffSummary {
   // subject-verb agreement; these lines are quoted verbatim in the shared
   // Care Pass, so machine-glued grammar reads as a broken product.
   const needsAttention: CareHandoffItem[] = [];
+  if (correctionRoutines.length > 0) {
+    const labels = correctionRoutines.map((routine) => routine.label).join(", ");
+    needsAttention.push({
+      kind: "note",
+      label: correctionRoutines.length === 1 ? "Routine needs correction" : "Routines need correction",
+      detail: `${labels} ${correctionRoutines.length === 1 ? "has" : "have"} an invalid saved time and cannot be scheduled until corrected.`,
+      urgency: "watch",
+      entryIds: [],
+    });
+  }
   if (pendingMealOutcomes > 0) {
     needsAttention.push({
       kind: "meal",
@@ -271,7 +280,7 @@ export function deriveCareHandoff(input: CareHandoffInput): CareHandoffSummary {
       watch,
       needsAttention,
     },
-    next: getNextRoutine(routines, now),
+    next: getNextRoutine(scheduledRoutines, now),
     caregiverLoad,
   };
 }

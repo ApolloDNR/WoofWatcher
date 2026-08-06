@@ -1579,8 +1579,10 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
   );
   assert.match(
     home,
-    /BoardSectionHeader\s+title="Next Up"[\s\S]*accessibilityLabel=\{`Open Plan\. 1 of \$\{nextCount\} next up\.`\}/,
+    /BoardSectionHeader\s+title="Next Up"[\s\S]*nextCount > 0[\s\S]*`Open Plan\. 1 of \$\{nextCount\} next up\.`[\s\S]*"Open Plan\. No schedulable next items\."/,
   );
+  assert.match(home, /homeRoutinePlan\.correctionSummary/);
+  assert.match(home, /Review Plan\./);
   assert.match(home, /s\.nextPrimaryRow/);
   assert.match(home, /Snooze/);
   assert.match(home, /Reassign/);
@@ -4689,14 +4691,17 @@ test("keeps Plans routine quick logging recoverable and editable", () => {
 
   assert.match(
     calendar,
-    /\{ state, updateCareDoc, addEntry, deleteEntry \} = useCare\(\)/,
+    /const \{[\s\S]*state,[\s\S]*careMutationsBlocked,[\s\S]*updateCareDoc,[\s\S]*addEntry,[\s\S]*deleteEntry,[\s\S]*\} = useCare\(\)/,
   );
+  assert.match(calendar, /if \(careMutationsBlocked\) \{[\s\S]*showCareReadOnly\(\)/);
   assert.match(calendar, /const id = addEntry\(\{/);
+  assert.match(calendar, /if \(!careMutationWasAccepted\(id\)\) \{/);
   assert.match(
     calendar,
-    /showRoutineFeedback\(\{ id, title: routine\.label, type \}\)/,
+    /careMutationWasAccepted\(id\)[\s\S]*Haptics\.notificationAsync[\s\S]*showRoutineFeedback\(\{ id, title: routine\.label, type \}\)/,
   );
-  assert.match(calendar, /deleteEntry\(routineFeedback\.id\)/);
+  assert.match(calendar, /const deleted = await deleteEntry\(routineFeedback\.id\)/);
+  assert.match(calendar, /if \(!careMutationWasAccepted\(deleted\)\) \{/);
   assert.match(
     calendar,
     /router\.push\(`\/log\?entry=\$\{encodeURIComponent\(entryId\)\}` as never\)/,
@@ -4711,6 +4716,14 @@ test("keeps Plans routine quick logging recoverable and editable", () => {
   );
   assert.match(calendar, /routineFeedback\.title\} logged/);
   assert.match(calendar, />\s*Add details\s*</);
+  assert.match(
+    calendar,
+    /if \(status === "needs-correction"\) return "Needs correction";/,
+  );
+  assert.match(
+    calendar,
+    /if \(status === "needs-correction"\) return \{ label: "Needs correction", tone: "neutral" \};/,
+  );
 });
 
 test("keeps Plans reminder and routine sections on shared board card anatomy", () => {
@@ -5580,6 +5593,189 @@ test("keeps care document refresh conflict-safe in CareContext", () => {
   assert.match(careContext, /reconcileCareDocFromServer/);
   assert.match(careContext, /shouldPushLocal/);
   assert.match(careContext, /putCareState\(\{\s*version: plan\.version/);
+});
+
+test("keeps future care documents read-only across every persistence and sync boundary", () => {
+  const careContext = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"),
+    "utf8",
+  );
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+
+  assert.match(careContext, /futureCareDocRef/);
+  assert.match(careContext, /futureCareCacheRawRef/);
+  assert.match(careContext, /futureCareCacheRawRef\.current = raw/);
+  assert.match(careContext, /futureCareCacheRawRef\.current = null/);
+  assert.match(careContext, /isFutureCareDocDataVersion/);
+  assert.ok((careContext.match(/preserveFutureCareDoc\(/g) ?? []).length >= 4,
+    "hydrate, server adoption, conflict, and reconciliation must preserve future documents");
+  assert.ok((careContext.match(/careDocWritesBlocked\(\)/g) ?? []).length >= 4,
+    "cache persistence, local updates, provider pushes, and refresh must be blocked");
+  assert.match(careContext, /const persistEntryCreate = useCallback\(\s*\([^)]*\) => \{\s*if \(careDocWritesBlocked\(\)\) return;/);
+  assert.match(careContext, /const persistEntryUpdate = useCallback\(\s*\([^)]*\) => \{\s*if \(careDocWritesBlocked\(\)\) return;/);
+  assert.match(careContext, /const addEntry = useCallback\(\s*\([^)]*\) => \{\s*if \(careDocWritesBlocked\(\)\) return "";/);
+  assert.match(careContext, /const deleteEntry = useCallback\(\s*async \([^)]*\) => \{\s*if \(careDocWritesBlocked\(\)\) return false;/);
+  assert.match(careContext, /const updateEntry = useCallback\(\s*\([^)]*\) => \{\s*if \(careDocWritesBlocked\(\)\) return false;/);
+  assert.ok((careContext.match(/careDocWritesBlocked\(\)/g) ?? []).length >= 10,
+    "cache, document, entry, attachment ownership, provider mutation, and reconciliation paths must all fail closed");
+  assert.match(careContext, /onSuccess: \([^)]*\) => \{[\s\S]{0,260}careWriteCanContinue\(writeGeneration\)/);
+  assert.match(careContext, /onFailure: \([^)]*\) => \{[\s\S]{0,260}careWriteCanContinue\(writeGeneration\)/);
+  assert.match(careContext, /createCareEntry\([^;]*\)\s*\.then\(async \(created\) => \{\s*if \(!canContinue\(\)\) return;/);
+  assert.match(careContext, /\.catch\(\(\) => \{\s*if \(!canContinue\(\)\) return;/);
+  assert.match(careContext, /await deleteCareEntry\(realId\);[\s\S]{0,220}if \(!canContinue\(\)\) return false;/);
+  assert.match(careContext, /await putCareState\([\s\S]{0,300}!canContinue\(\)/);
+  assert.ok((careContext.match(/if \(!canContinue\(\)\) return/g) ?? []).length >= 25,
+    "create, delete, push, and reconciliation continuations must re-check the monotonic protection token");
+  assert.match(careContext, /setStorageWarning\("newer-version"\)/);
+  assert.match(home, /storageWarning === "newer-version"/);
+  assert.match(home, /created by a newer WoofWatcher version/i);
+  assert.match(home, /will not overwrite it/i);
+});
+
+test("keeps every current care mutation surface truthful when future data is read-only", () => {
+  const context = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "context", "CareContext.tsx"),
+    "utf8",
+  );
+  const surfacePaths = [
+    "adventure.tsx",
+    "fastlog.tsx",
+    "privacy.tsx",
+    "setup.tsx",
+    "woofguide.tsx",
+    join("(tabs)", "calendar.tsx"),
+    join("(tabs)", "index.tsx"),
+    join("(tabs)", "log.tsx"),
+    join("(tabs)", "more.tsx"),
+    join("(tabs)", "records.tsx"),
+  ];
+
+  assert.match(context, /careMutationsBlocked: boolean/);
+  assert.match(context, /updateEntry: \([^;]+\) => boolean/);
+  assert.match(context, /updateCareDoc: \([^;]+\) => boolean/);
+  for (const path of surfacePaths) {
+    const source = readAppFile(path);
+    assert.match(source, /careMutationsBlocked/, `${path} must consume the read-only capability`);
+    for (const match of source.matchAll(/\baddEntry\(/g)) {
+      const boundary = source.slice(Math.max(0, match.index - 700), match.index + 700);
+      assert.match(
+        boundary,
+        /careMutationsBlocked|careMutationWasAccepted|runAcceptedCareMutation/,
+        `${path}:${match.index} must reject the write before success feedback`,
+      );
+    }
+  }
+
+  const mobileRoot = join(process.cwd(), "artifacts", "woofwatcher-mobile");
+  const mutationFiles = [
+    ...listAppFiles(),
+    join(mobileRoot, "components", "WalkRouteRecorder.tsx"),
+  ];
+  const expectedInventory = {
+    "app/(tabs)/calendar.tsx": { addEntry: 1, deleteEntry: 1, updateCareDoc: 6, updateEntry: 0 },
+    "app/(tabs)/index.tsx": { addEntry: 2, deleteEntry: 1, updateCareDoc: 0, updateEntry: 1 },
+    "app/(tabs)/log.tsx": { addEntry: 5, deleteEntry: 2, updateCareDoc: 1, updateEntry: 8 },
+    "app/(tabs)/more.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 5, updateEntry: 0 },
+    "app/(tabs)/records.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 3, updateEntry: 0 },
+    "app/adventure.tsx": { addEntry: 2, deleteEntry: 1, updateCareDoc: 1, updateEntry: 0 },
+    "app/fastlog.tsx": { addEntry: 2, deleteEntry: 0, updateCareDoc: 0, updateEntry: 0 },
+    "app/privacy.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
+    "app/setup.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
+    "app/woofguide.tsx": { addEntry: 1, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
+    "components/WalkRouteRecorder.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 0, updateEntry: 1 },
+  } as const;
+  const actualInventory: Record<string, Record<"addEntry" | "deleteEntry" | "updateCareDoc" | "updateEntry", number>> = {};
+  const mutationPattern = /\b(addEntry|deleteEntry|updateCareDoc|updateEntry)\(/g;
+
+  for (const file of mutationFiles) {
+    const source = readFileSync(file, "utf8");
+    const calls = [...source.matchAll(mutationPattern)];
+    if (calls.length === 0) continue;
+    const path = relative(mobileRoot, file).replaceAll("\\", "/");
+    const counts = { addEntry: 0, deleteEntry: 0, updateCareDoc: 0, updateEntry: 0 };
+    for (const call of calls) counts[call[1] as keyof typeof counts] += 1;
+    actualInventory[path] = counts;
+    assert.match(source, /careMutationsBlocked/, `${path} must consume the read-only capability`);
+
+    for (const call of calls.filter((candidate) => candidate[1] === "updateCareDoc")) {
+      const before = source.slice(Math.max(0, call.index - 100), call.index);
+      const resultMatch = before.match(/(?:(?:const|let)\s+([A-Za-z]\w*)|([A-Za-z]\w*))\s*=\s*$/);
+      const returned = /return\s*$/.test(before);
+      assert.ok(resultMatch || returned, `${path}:${call.index} must consume updateCareDoc's boolean result`);
+      if (returned) {
+        assert.equal(path, "app/(tabs)/calendar.tsx");
+        assert.match(
+          source,
+          /const added = addEvent\([\s\S]{0,500}if \(!added\) return;[\s\S]{0,160}Haptics\.notificationAsync/,
+          `${path}:${call.index} must stop before success feedback when the returned update is rejected`,
+        );
+        continue;
+      }
+      const resultName = resultMatch?.[1] ?? resultMatch?.[2];
+      const after = source.slice(call.index, call.index + 2500);
+      assert.match(
+        after,
+        new RegExp(`(?:careMutationWasAccepted\\(${resultName}\\)|runAcceptedCareMutation\\(${resultName},)`),
+        `${path}:${call.index} must gate success effects on ${resultName}`,
+      );
+    }
+  }
+
+  assert.deepEqual(actualInventory, expectedInventory);
+  assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.addEntry, 0), 13);
+  assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.updateCareDoc, 0), 19);
+  assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.updateEntry, 0), 10);
+  assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.deleteEntry, 0), 5);
+
+  for (const [path, expectedAcceptedCallbacks] of [
+    [join("(tabs)", "more.tsx"), 5],
+    [join("(tabs)", "records.tsx"), 3],
+    ["privacy.tsx", 1],
+    ["setup.tsx", 1],
+  ] as const) {
+    const source = readAppFile(path);
+    assert.equal(
+      source.match(/runAcceptedCareMutation\(/g)?.length ?? 0,
+      expectedAcceptedCallbacks,
+      `${path} must put each rejected document save's success effects behind the accepted-result callback`,
+    );
+  }
+
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  assert.match(home, /const id = addEntry\([\s\S]{0,220}runAcceptedCareMutation\(id/);
+  assert.match(home, /if \(!accepted\)[\s\S]{0,120}return null/);
+  assert.match(home, /const updated = updateEntry\([\s\S]{0,220}runAcceptedCareMutation\(updated/);
+  assert.match(home, /const deleted = await deleteEntry\([\s\S]{0,220}runAcceptedCareMutation\(deleted/);
+  assert.doesNotMatch(home, /kind: "correction"[\s\S]{0,300}meta: "Start"/);
+
+  const adventure = readAppFile("adventure.tsx");
+  assert.match(
+    adventure,
+    /careMutationWasAccepted\(id\)[\s\S]{0,180}Haptics\.impactAsync\(Haptics\.ImpactFeedbackStyle\.Light\)[\s\S]{0,180}setQuestFeedback/,
+  );
+  assert.match(
+    adventure,
+    /updateCareDoc\([\s\S]{0,260}Haptics\.notificationAsync\(Haptics\.NotificationFeedbackType\.Success\)/,
+  );
+
+  const plans = readAppFile(join("(tabs)", "calendar.tsx"));
+  assert.match(plans, /Correction items stay visible but are not due or remaining care/);
+  assert.match(plans, /routineBoard\.correctionCount/);
+});
+
+test("keeps Home scheduling consumers on the canonical strict clock parser", () => {
+  const todayCommand = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "todayCommand.ts"),
+    "utf8",
+  );
+  const avatarMotion = readFileSync(
+    join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "avatarMotion.ts"),
+    "utf8",
+  );
+
+  assert.match(todayCommand, /parseClockTime/);
+  assert.doesNotMatch(todayCommand, /routine\.time\.trim\(\)\.split/);
+  assert.doesNotMatch(avatarMotion, /routine\.time\.trim\(\)\.split/);
 });
 
 test("keeps the root install guard cross-platform for deadline beta exports", () => {

@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
+import { parseClockTime } from "./clock-time.ts";
 import { getRecordDueStatus, type CareRecord } from "./record-vault.ts";
 
 export type MedicationAdherenceStatus = "taken" | "missed" | "due" | "upcoming";
@@ -131,16 +132,11 @@ function isSameLocalDay(iso: string, now: number): boolean {
   );
 }
 
-function scheduledMs(routine: MedicationRoutine, now: number): number {
-  const [time, periodRaw] = clean(routine.time).split(/\s+/);
-  const [hStr, mStr] = (time || "0:00").split(":");
-  const period = periodRaw?.toUpperCase();
-  let h = Number.parseInt(hStr, 10);
-  if (!Number.isFinite(h)) h = 0;
-  if (period === "PM" && h !== 12) h += 12;
-  if (period === "AM" && h === 12) h = 0;
+function scheduledMs(routine: MedicationRoutine, now: number): number | null {
+  const parsed = parseClockTime(routine.time);
+  if (!parsed) return null;
   const d = new Date(now);
-  d.setHours(h, Number.parseInt(mStr || "0", 10) || 0, 0, 0);
+  d.setHours(0, parsed.minutesSinceMidnight, 0, 0);
   return d.getTime();
 }
 
@@ -249,9 +245,12 @@ function statusFor(minutesFromNow: number, taken: boolean, skipped: boolean): Me
 
 export function deriveMedicationAdherence(input: MedicationAdherenceInput): MedicationAdherence {
   const now = input.now ?? Date.now();
-  const routines = [...input.routines]
+  const routines = input.routines
     .filter((routine) => normalizeCareEventType(routine.type) === "medication")
-    .sort((a, b) => scheduledMs(a, now) - scheduledMs(b, now));
+    .map((routine) => ({ routine, routineMs: scheduledMs(routine, now) }))
+    .filter((candidate): candidate is { routine: MedicationRoutine; routineMs: number } =>
+      candidate.routineMs != null)
+    .sort((a, b) => a.routineMs - b.routineMs);
 
   const candidates = input.entries
     .filter((entry) => isSameLocalDay(entry.occurredAt, now))
@@ -266,9 +265,8 @@ export function deriveMedicationAdherence(input: MedicationAdherenceInput): Medi
     .sort((a, b) => a.ms - b.ms);
 
   const used = new Set<string>();
-  const items = routines.map((routine, index): MedicationAdherenceItem => {
+  const items = routines.map(({ routine, routineMs }, index): MedicationAdherenceItem => {
     const id = clean(routine.id) || `medication_${index}`;
-    const routineMs = scheduledMs(routine, now);
     const exact = candidates.find(
       (candidate) => !used.has(candidate.key) && entryRoutineId(candidate.entry) === id,
     );

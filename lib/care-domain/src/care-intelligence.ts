@@ -1,6 +1,7 @@
 import { normalizeCareEventType, type CareEventDetails, type CareEventType } from "./events.ts";
 import { resolvePetName } from "./pet-identity.ts";
 import { deriveRoutineBoard, type RoutineBoardCaregiver, type RoutineBoardRoutine } from "./routine-board.ts";
+import { parseClockTime } from "./clock-time.ts";
 import { deriveCareDayStatus } from "./status.ts";
 
 export type CareIntelligenceStatus = "excellent" | "steady" | "building" | "needs-attention";
@@ -86,6 +87,7 @@ export interface CareIntelligence {
   visibleLogCount: number;
   structuredLogCount: number;
   pendingOutcomeCount: number;
+  correctionCount: number;
   openLoopCount: number;
   metrics: CareIntelligenceMetric[];
   openLoops: CareIntelligenceOpenLoop[];
@@ -357,10 +359,12 @@ function nextActionFromLoops(
 export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntelligence {
   const now = input.now ?? Date.now();
   const routines = input.routines ?? [];
+  const scheduledRoutines = routines.filter((routine) => parseClockTime(routine.time) !== null);
+  const correctionCount = routines.length - scheduledRoutines.length;
   const providerSyncEnabled = input.providerSyncEnabled === true;
   const petName = resolvePetName(input.petName);
   const visibleToday = input.entries.filter((entry) => isSameLocalDay(entry.occurredAt, now) && isHouseholdVisible(entry));
-  const status = deriveCareDayStatus(visibleToday, routines, now);
+  const status = deriveCareDayStatus(visibleToday, scheduledRoutines, now);
   const board = deriveRoutineBoard({
     routines,
     entries: visibleToday,
@@ -374,7 +378,9 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
   const walkProgress = ratioPercent(status.counts.walks.done, Math.max(status.counts.walks.target || 2, 1));
   const pottyProgress = ratioPercent(status.counts.potty.done, Math.max(status.counts.potty.target || 3, 1));
   const coreProgress = round(mealProgress * 0.42 + walkProgress * 0.31 + pottyProgress * 0.27);
-  const routineProgress = routines.length ? ratioPercent(board.doneCount, routines.length) : coreProgress;
+  const routineProgress = scheduledRoutines.length
+    ? ratioPercent(board.doneCount, scheduledRoutines.length)
+    : coreProgress;
 
   const confidenceScores = visibleToday.map((entry) =>
     entryConfidence(entry, providerSyncEnabled),
@@ -500,12 +506,17 @@ export function deriveCareIntelligence(input: CareIntelligenceInput): CareIntell
     visibleLogCount: visibleToday.length,
     structuredLogCount,
     pendingOutcomeCount: pendingMeals.length,
+    correctionCount,
     openLoopCount,
     metrics: [
       {
         label: "Routine fit",
-        value: routines.length ? `${board.doneCount}/${routines.length}` : `${coreProgress}%`,
-        detail: routines.length ? firstOpenRoutineLabel(board.next) : "Starter care rhythm",
+        value: scheduledRoutines.length ? `${board.doneCount}/${scheduledRoutines.length}` : `${coreProgress}%`,
+        detail: scheduledRoutines.length
+          ? firstOpenRoutineLabel(board.next)
+          : correctionCount
+            ? `${correctionCount} routine${correctionCount === 1 ? "" : "s"} ${correctionCount === 1 ? "needs" : "need"} correction`
+            : "Starter care rhythm",
         tone: toneForPercent(routineProgress),
       },
       {

@@ -37,6 +37,11 @@ import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { resolvePetName } from "@/lib/petIdentity";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import { shareTextPayload } from "@/lib/shareText";
+import { notifyDialog } from "@/lib/confirmDialog";
+import {
+  CARE_READ_ONLY_MESSAGE,
+  runAcceptedCareMutation,
+} from "@/lib/careWriteProtection";
 import {
   buildSupportRunbookShareText,
   deriveSupportRunbookPlan,
@@ -84,7 +89,7 @@ export default function PrivacyScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, updateCareDoc, eraseAllLocalData } = useCare();
+  const { state, careMutationsBlocked, updateCareDoc, eraseAllLocalData } = useCare();
   const { clearAvatarSet, resetAvatarConfig } = useAvatar();
   // Launch-ops cards (support runbook, launch gates) are owner tooling and
   // stay out of store production builds.
@@ -173,13 +178,16 @@ export default function PrivacyScreen() {
   };
 
   const saveLaunchSupportProfile = (providerStatus: LaunchSupportProfile["providerStatus"]) => {
+    if (careMutationsBlocked) {
+      notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
+      return;
+    }
     const requestedSupportPlan = deriveSupportRunbookPlan(launchDraft);
     const savedProviderStatus =
       providerStatus === "provider-approved" && !requestedSupportPlan.launchReady
         ? "owner-reviewed"
         : providerStatus;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({
+    const updated = updateCareDoc((doc) => ({
       ...doc,
       launchSupportProfile: {
         ...launchDraft,
@@ -193,7 +201,11 @@ export default function PrivacyScreen() {
             : doc.launchSupportProfile.ownerReviewedAt,
       },
     }));
-    setLaunchEditorOpen(false);
+    const accepted = runAcceptedCareMutation(updated, () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setLaunchEditorOpen(false);
+    });
+    if (!accepted) notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   };
 
   const shareExport = () => {

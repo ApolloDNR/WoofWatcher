@@ -103,6 +103,10 @@ import { BoardActionButton, BoardCard, BoardMetricTile, BoardPill, BoardRouteHea
 import { ProgressFill } from "@/components/motion/GameFeel";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 import {
+  CARE_READ_ONLY_MESSAGE,
+  runAcceptedCareMutation,
+} from "@/lib/careWriteProtection";
+import {
   deriveCareCareer,
   deriveCareerWeek,
   deriveCareStreak,
@@ -366,7 +370,9 @@ export default function MoreScreen() {
   const rawFocusParam = (routeParams as Record<string, string | string[] | undefined>).focus;
   const focusParam = Array.isArray(rawFocusParam) ? rawFocusParam[0] : rawFocusParam;
   const householdFocus = sectionParam === "household";
-  const { state, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
+  const { state, careMutationsBlocked, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
+  const showCareReadOnly = () =>
+    notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   const { dietProfile, profile, entries, routines, caregivers, accessPasses } = state;
   const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
 
@@ -822,12 +828,15 @@ export default function MoreScreen() {
   };
 
   const saveFuturePet = () => {
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const draft = buildCareTwinRosterDraft({
       name: petRosterName,
       breed: petRosterBreed,
     });
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({
+    const updated = updateCareDoc((doc) => ({
       ...doc,
       activePetId: "primary",
       pets: [
@@ -835,7 +844,11 @@ export default function MoreScreen() {
         draft,
       ],
     }));
-    setPetRosterOpen(false);
+    const accepted = runAcceptedCareMutation(updated, () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setPetRosterOpen(false);
+    });
+    if (!accepted) showCareReadOnly();
   };
 
   const openAccessPassSheet = () => {
@@ -845,20 +858,27 @@ export default function MoreScreen() {
   };
 
   const saveAccessPassDraft = () => {
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const draft = buildAccessPassDraft({
       holderName: accessPassName,
       kind: accessPassKind,
       petName,
     });
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({
+    const updated = updateCareDoc((doc) => ({
       ...doc,
       accessPasses: [
         ...(doc.accessPasses ?? []),
         draft,
       ],
     }));
-    setAccessPassOpen(false);
+    const accepted = runAcceptedCareMutation(updated, () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setAccessPassOpen(false);
+    });
+    if (!accepted) showCareReadOnly();
   };
 
   const shareAccessPassSummary = () => {
@@ -953,10 +973,13 @@ export default function MoreScreen() {
   };
 
   const saveProfile = () => {
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const name = pName.trim() || "Phoenix";
     const w = parseFloat(pWeight);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({
+    const updated = updateCareDoc((doc) => ({
       ...doc,
       profile: {
         ...doc.profile,
@@ -976,7 +999,11 @@ export default function MoreScreen() {
         },
       },
     }));
-    setProfileOpen(false);
+    const accepted = runAcceptedCareMutation(updated, () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setProfileOpen(false);
+    });
+    if (!accepted) showCareReadOnly();
   };
 
   const openDietEdit = () => {
@@ -995,8 +1022,11 @@ export default function MoreScreen() {
   };
 
   const saveDiet = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
+    const updated = updateCareDoc((doc) => ({
       ...doc,
       dietProfile: {
         ...doc.dietProfile,
@@ -1013,7 +1043,11 @@ export default function MoreScreen() {
         vetNotes: dVetNotes.trim(),
       },
     }));
-    setDietEditOpen(false);
+    const accepted = runAcceptedCareMutation(updated, () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setDietEditOpen(false);
+    });
+    if (!accepted) showCareReadOnly();
   };
 
   const confirmSignOut = () => {
@@ -1310,6 +1344,10 @@ export default function MoreScreen() {
   };
 
   const saveProviderSetup = () => {
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const reviewedAt = new Date(now).toISOString();
     const normalized = normalizeLaunchProviderProfile(providerDraft);
     const allProviderGatesReady = PROVIDER_SETUP_FIELDS.every(
@@ -1319,8 +1357,7 @@ export default function MoreScreen() {
       normalized.providerStatus === "provider-approved" && !allProviderGatesReady
         ? "owner-reviewed"
         : normalized.providerStatus;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({
+    const updated = updateCareDoc((doc) => ({
       ...doc,
       launchProviderProfile: {
         ...normalized,
@@ -1328,7 +1365,11 @@ export default function MoreScreen() {
         providerStatus,
       },
     }));
-    setProviderSetupOpen(false);
+    const accepted = runAcceptedCareMutation(updated, () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setProviderSetupOpen(false);
+    });
+    if (!accepted) showCareReadOnly();
   };
 
   const shareProviderSetupPlan = () => {

@@ -23,6 +23,7 @@ import {
   deriveHouseholdResponsibility,
   deriveRoutineBoard,
   normalizeCareEventType,
+  parseClockTime,
   type CareReminderItem,
   type RoutineBoardItem,
   type RoutineBoardStatus,
@@ -35,7 +36,7 @@ import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { PressScale, ProgressFill } from "@/components/motion/GameFeel";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { deriveCareStreak } from "@/lib/careCareer";
-import { confirmThroughSteps } from "@/lib/confirmDialog";
+import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { parseLocalDate } from "@/lib/time";
 import { resolvePetName } from "@/lib/petIdentity";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
@@ -60,6 +61,10 @@ import {
   BoardStatusPill,
   type BoardStatusPillTone,
 } from "@/components/board/BoardPrimitives";
+import {
+  CARE_READ_ONLY_MESSAGE,
+  careMutationWasAccepted,
+} from "@/lib/careWriteProtection";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -151,12 +156,7 @@ const REMINDER_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
 const BASE_URL = process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : "";
 
 function routineMinutes(time: string): number {
-  const [clock, period] = time.split(" ");
-  const [hStr, mStr] = clock.split(":");
-  let h = parseInt(hStr, 10);
-  if (period === "PM" && h !== 12) h += 12;
-  if (period === "AM" && h === 12) h = 0;
-  return h * 60 + parseInt(mStr || "0", 10);
+  return parseClockTime(time)?.minutesSinceMidnight ?? Number.POSITIVE_INFINITY;
 }
 
 function todayISO(): string {
@@ -205,6 +205,7 @@ function dayLabel(iso: string): string {
 }
 
 function routineStatusLabel(status: RoutineBoardStatus): string {
+  if (status === "needs-correction") return "Needs correction";
   if (status === "done") return "Done";
   if (status === "overdue") return "Overdue";
   if (status === "due") return "Due now";
@@ -215,6 +216,7 @@ function scheduleStatusPill(
   status: RoutineBoardStatus,
   isNextUpcoming: boolean,
 ): { label: string; tone: BoardStatusPillTone } {
+  if (status === "needs-correction") return { label: "Needs correction", tone: "neutral" };
   if (status === "done") return { label: "Done", tone: "done" };
   if (status === "overdue" || status === "due") return { label: "Due", tone: "due" };
   if (isNextUpcoming) return { label: "Up Next", tone: "upNext" };
@@ -222,6 +224,7 @@ function scheduleStatusPill(
 }
 
 function routineBoardPillTone(status: RoutineBoardStatus): BoardStatusPillTone {
+  if (status === "needs-correction") return "neutral";
   if (status === "done") return "done";
   if (status === "overdue" || status === "due") return "due";
   return "upcoming";
@@ -282,7 +285,15 @@ export default function CalendarScreen() {
   const router = useRouter();
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
   const ownerOps = consumerSurfacePolicy.ownerOps;
-  const { state, updateCareDoc, addEntry, deleteEntry } = useCare();
+  const {
+    state,
+    careMutationsBlocked,
+    updateCareDoc,
+    addEntry,
+    deleteEntry,
+  } = useCare();
+  const showCareReadOnly = () =>
+    notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
 
   const { getToken } = useWoofAuth();
   const {
@@ -396,7 +407,7 @@ export default function CalendarScreen() {
           id: item.id,
           label: item.label,
           type: item.normalizedType,
-          time: item.time,
+          time: item.status === "needs-correction" ? "Needs correction" : item.time,
           owner: item.owner || "",
           detail: item.note || "",
           status: item.status,
@@ -429,11 +440,19 @@ export default function CalendarScreen() {
     return weekDays.map((day) => {
       const dayKey = localDayKey(day);
       if (dayKey === todayKey) {
-        return new Map(routineBoard.items.map((item) => [item.id, item.status === "done"]));
+        return new Map(
+          routineBoard.items
+            .filter((item) => item.status !== "needs-correction")
+            .map((item) => [item.id, item.status === "done"]),
+        );
       }
       if (day.getTime() > now) return new Map<string, boolean>();
       const dayBoard = deriveRoutineBoard({ routines: sortedRoutines, entries, caregivers, now: day.getTime() });
-      return new Map(dayBoard.items.map((item) => [item.id, item.status === "done"]));
+      return new Map(
+        dayBoard.items
+          .filter((item) => item.status !== "needs-correction")
+          .map((item) => [item.id, item.status === "done"]),
+      );
     });
   }, [weekDays, routineBoard.items, sortedRoutines, entries, caregivers, now]);
 
@@ -487,13 +506,23 @@ export default function CalendarScreen() {
         ? colors.amber
         : colors.sage;
   const responsibilityIsCovered = responsibility.status === "balanced" || responsibility.status === "steady";
-  const completedScheduleCount = scheduleRows.filter((row) => row.status === "done").length;
-  const openScheduleCount = Math.max(0, scheduleRows.length - completedScheduleCount);
-  const nextScheduleRow = scheduleRows.find((row) => row.status !== "done") ?? scheduleRows[0];
-  const nextScheduleStatus = nextScheduleRow ? routineStatusLabel(nextScheduleRow.status) : "Ready";
+  const scheduledRoutineCount = routineBoard.items.length - routineBoard.correctionCount;
+  const scheduledRows = scheduleRows.filter((row) => row.status !== "needs-correction");
+  const completedScheduleCount = scheduledRows.filter((row) => row.status === "done").length;
+  const openScheduleCount = Math.max(0, scheduledRows.length - completedScheduleCount);
+  const nextScheduleRow = isSampleSchedule
+    ? scheduleRows[0]
+    : scheduledRows.find((row) => row.status !== "done") ?? null;
+  const nextScheduleStatus = nextScheduleRow
+    ? routineStatusLabel(nextScheduleRow.status)
+    : routineBoard.correctionCount > 0
+      ? "Needs correction"
+      : "Ready";
   const firstUpcomingScheduleIndex = scheduleRows.findIndex((row) => row.status === "upcoming");
   const commandDeckTone =
-    nextScheduleRow?.status === "overdue"
+    !nextScheduleRow && routineBoard.correctionCount > 0
+      ? colors.amber
+      : nextScheduleRow?.status === "overdue"
       ? colors.rose
       : nextScheduleRow?.status === "due"
         ? colors.amber
@@ -502,9 +531,13 @@ export default function CalendarScreen() {
     ? "Here's a sample day. Add your first routine to make it yours."
     : nextScheduleRow
       ? `${nextScheduleRow.label} is next at ${nextScheduleRow.time}.`
-      : `${resolvePetName(profile.name)} has a clear care board.`;
+      : routineBoard.correctionCount > 0
+        ? `${routineBoard.correctionCount} routine${routineBoard.correctionCount === 1 ? " needs" : "s need"} a valid time before it can be scheduled.`
+        : `${resolvePetName(profile.name)} has a clear care board.`;
   const commandDeckStatusTone: BoardStatusPillTone = isSampleSchedule
     ? "neutral"
+    : !nextScheduleRow && routineBoard.correctionCount > 0
+      ? "due"
     : nextScheduleRow?.status === "done"
       ? "done"
       : nextScheduleRow?.status === "overdue" || nextScheduleRow?.status === "due"
@@ -526,13 +559,31 @@ export default function CalendarScreen() {
   }, [calendarEvents, today]);
 
   const addEvent = (ev: Omit<CalendarEvent, "id">) => {
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return false;
+    }
     const id = `event_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    updateCareDoc((doc) => ({ ...doc, calendarEvents: [...doc.calendarEvents, { id, ...ev }] }));
+    return updateCareDoc((doc) => ({
+      ...doc,
+      calendarEvents: [...doc.calendarEvents, { id, ...ev }],
+    }));
   };
 
   const removeEvent = (id: string) => {
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
+    const updated = updateCareDoc((doc) => ({
+      ...doc,
+      calendarEvents: doc.calendarEvents.filter((e) => e.id !== id),
+    }));
+    if (!careMutationWasAccepted(updated)) {
+      showCareReadOnly();
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({ ...doc, calendarEvents: doc.calendarEvents.filter((e) => e.id !== id) }));
   };
 
   const [dateError, setDateError] = useState<string | null>(null);
@@ -553,8 +604,7 @@ export default function CalendarScreen() {
       return;
     }
     setDateError(null);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    addEvent({
+    const added = addEvent({
       title: evTitle.trim(),
       type: evType,
       date: evDate,
@@ -562,6 +612,8 @@ export default function CalendarScreen() {
       location: evLocation.trim() || undefined,
       source: "manual",
     });
+    if (!added) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setEvTitle("");
     setEvTime("");
     setEvLocation("");
@@ -587,7 +639,7 @@ export default function CalendarScreen() {
     setRoutineEditId(r.id);
     setRLabel(r.label);
     setRType(r.type);
-    setRTime(r.time);
+    setRTime(typeof r.time === "string" ? r.time : "");
     setROwner(r.owner ?? "");
     setRNote(r.note ?? "");
     setRTimeError(null);
@@ -608,9 +660,19 @@ export default function CalendarScreen() {
   const saveReminderNotificationPreferences = (
     draft: Parameters<typeof applyReminderNotificationPreferenceDraft>[1],
   ) => {
-    Haptics.selectionAsync();
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const savedAt = new Date().toISOString();
-    updateCareDoc((doc) => applyReminderNotificationPreferenceDraft(doc, draft, savedAt));
+    const updated = updateCareDoc((doc) =>
+      applyReminderNotificationPreferenceDraft(doc, draft, savedAt),
+    );
+    if (!careMutationWasAccepted(updated)) {
+      showCareReadOnly();
+      return;
+    }
+    Haptics.selectionAsync();
   };
 
   const openPushNotificationProofMission = () => {
@@ -653,8 +715,19 @@ export default function CalendarScreen() {
         },
       ],
       () => {
+        if (careMutationsBlocked) {
+          showCareReadOnly();
+          return;
+        }
+        const updated = updateCareDoc((doc) => ({
+          ...doc,
+          routines: doc.routines.filter((r) => r.id !== id),
+        }));
+        if (!careMutationWasAccepted(updated)) {
+          showCareReadOnly();
+          return;
+        }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        updateCareDoc((doc) => ({ ...doc, routines: doc.routines.filter((r) => r.id !== id) }));
         setRoutineOpen(false);
       },
     );
@@ -662,28 +735,37 @@ export default function CalendarScreen() {
 
   const submitRoutine = () => {
     if (!rLabel.trim()) return;
-    if (!rTime.trim()) {
-      setRTimeError("Enter a time (e.g. 7:00 AM)");
+    if (!parseClockTime(rTime)) {
+      setRTimeError("Enter an exact time (e.g. 7:00 AM)");
+      return;
+    }
+    if (careMutationsBlocked) {
+      showCareReadOnly();
       return;
     }
     setRTimeError(null);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    let updated: boolean;
     if (routineEditId) {
-      updateCareDoc((doc) => ({
+      updated = updateCareDoc((doc) => ({
         ...doc,
         routines: doc.routines.map((r) =>
           r.id === routineEditId
-            ? { ...r, label: rLabel.trim(), type: rType, time: rTime.trim(), owner: rOwner.trim(), note: rNote.trim() }
+            ? { ...r, label: rLabel.trim(), type: rType, time: rTime, owner: rOwner.trim(), note: rNote.trim() }
             : r,
         ),
       }));
     } else {
       const id = `routine_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-      updateCareDoc((doc) => ({
+      updated = updateCareDoc((doc) => ({
         ...doc,
-        routines: [...doc.routines, { id, label: rLabel.trim(), type: rType, time: rTime.trim(), owner: rOwner.trim(), note: rNote.trim() }],
+        routines: [...doc.routines, { id, label: rLabel.trim(), type: rType, time: rTime, owner: rOwner.trim(), note: rNote.trim() }],
       }));
     }
+    if (!careMutationWasAccepted(updated)) {
+      showCareReadOnly();
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setRoutineOpen(false);
   };
 
@@ -705,10 +787,18 @@ export default function CalendarScreen() {
     }, 9000);
   };
 
-  const undoRoutineFeedback = () => {
+  const undoRoutineFeedback = async () => {
     if (!routineFeedback) return;
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
+    const deleted = await deleteEntry(routineFeedback.id);
+    if (!careMutationWasAccepted(deleted)) {
+      showCareReadOnly();
+      return;
+    }
     clearRoutineFeedbackTimer();
-    void deleteEntry(routineFeedback.id);
     setRoutineFeedback(null);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
   };
@@ -730,6 +820,14 @@ export default function CalendarScreen() {
     owner?: string | null;
     note?: string | null;
   }) => {
+    if (!parseClockTime(routine.time)) {
+      notifyDialog("Routine needs correction", "Correct this routine's time before logging it as done.");
+      return;
+    }
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const type = normalizeCareEventType(routine.type);
     const owner = typeof routine.owner === "string" ? routine.owner.trim() : "";
     const note = typeof routine.note === "string" ? routine.note.trim() : "";
@@ -743,7 +841,6 @@ export default function CalendarScreen() {
       details.mealCompletion = "complete";
       details.householdVisible = true;
     }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const id = addEntry({
       type,
       title: routine.label,
@@ -752,6 +849,11 @@ export default function CalendarScreen() {
       ...(note ? { note } : {}),
       details,
     });
+    if (!careMutationWasAccepted(id)) {
+      showCareReadOnly();
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     showRoutineFeedback({ id, title: routine.label, type });
   };
 
@@ -792,8 +894,7 @@ export default function CalendarScreen() {
   };
 
   const addSuggestion = (sug: SuggestedEvent) => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    addEvent({
+    const added = addEvent({
       title: sug.title,
       type: sug.type || "event",
       date: sug.date,
@@ -802,6 +903,8 @@ export default function CalendarScreen() {
       note: sug.note,
       source: "woofguide",
     });
+    if (!added) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSuggestions((prev) => prev.filter((s) => s !== sug));
   };
 
@@ -842,6 +945,25 @@ export default function CalendarScreen() {
             },
           },
     );
+  }
+
+  const firstCorrectionRoutine = routineBoard.items.find(
+    (item) => item.status === "needs-correction",
+  );
+  if (firstCorrectionRoutine) {
+    planMissionRows.push({
+      id: "routine-correction",
+      eyebrow: "Plan correction",
+      title: `${routineBoard.correctionCount} routine${routineBoard.correctionCount === 1 ? " needs" : "s need"} a valid time`,
+      detail: "Correction items stay visible but are not due or remaining care",
+      icon: "clock",
+      tone: colors.amber,
+      actionLabel: "Fix",
+      onPress: () => {
+        Haptics.selectionAsync();
+        openBoardRoutine(firstCorrectionRoutine);
+      },
+    });
   }
 
   planMissionRows.push({
@@ -960,8 +1082,11 @@ export default function CalendarScreen() {
 
               <View style={s.commandDeckStats}>
                 {[
-                  { key: "done", label: "Done", value: isSampleSchedule ? "—" : `${completedScheduleCount}/${scheduleRows.length}` },
+                  { key: "done", label: "Done", value: isSampleSchedule ? "—" : `${completedScheduleCount}/${scheduledRoutineCount}` },
                   { key: "open", label: "Open", value: isSampleSchedule ? "—" : `${openScheduleCount}` },
+                  ...(routineBoard.correctionCount > 0
+                    ? [{ key: "correction", label: "Needs correction", value: `${routineBoard.correctionCount}` }]
+                    : []),
                 ].map((stat) => (
                   <View
                     key={stat.key}
@@ -1026,8 +1151,20 @@ export default function CalendarScreen() {
                 <BoardPill label="Sample day" tone={colors.mutedForeground} />
               ) : (
                 <BoardPill
-                  label={openScheduleCount === 0 ? "Clear" : `${openScheduleCount} open`}
-                  tone={openScheduleCount === 0 ? colors.sage : commandDeckTone}
+                  label={
+                    openScheduleCount === 0 && routineBoard.correctionCount > 0
+                      ? `${routineBoard.correctionCount} to fix`
+                      : openScheduleCount === 0
+                        ? "Clear"
+                        : `${openScheduleCount} open`
+                  }
+                  tone={
+                    openScheduleCount === 0 && routineBoard.correctionCount > 0
+                      ? colors.amber
+                      : openScheduleCount === 0
+                        ? colors.sage
+                        : commandDeckTone
+                  }
                 />
               )}
             </View>
@@ -1117,7 +1254,7 @@ export default function CalendarScreen() {
                                 {routine.label}
                               </Text>
                               <Text style={[s.weekPlanMeta, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                                {routine.time}
+                                {routine.status === "needs-correction" ? "Needs correction" : routine.time}
                               </Text>
                             </View>
                             <View style={s.weekDotRow}>
@@ -1238,6 +1375,7 @@ export default function CalendarScreen() {
             <View style={s.scheduleList}>
               {scheduleRows.map((row, index) => {
                 const done = row.status === "done";
+                const needsCorrection = row.status === "needs-correction";
                 const pill = scheduleStatusPill(row.status, index === firstUpcomingScheduleIndex);
                 const showRowPill = pill.label !== "Upcoming";
                 const band = scheduleBandForTime(row.time);
@@ -1349,11 +1487,16 @@ export default function CalendarScreen() {
                     </View>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={`Mark ${row.label} done`}
+                      accessibilityLabel={
+                        needsCorrection
+                          ? `${row.label} needs a corrected time before it can be logged`
+                          : `Mark ${row.label} done`
+                      }
                       onPress={(event) => {
                         event.stopPropagation();
-                        if (sourceRoutine) logRoutineDone(sourceRoutine);
+                        if (sourceRoutine && !needsCorrection) logRoutineDone(sourceRoutine);
                       }}
+                      disabled={needsCorrection}
                       style={[
                         s.scheduleStatus,
                         {
@@ -1362,7 +1505,7 @@ export default function CalendarScreen() {
                         },
                       ]}
                     >
-                      {done ? <Ionicons name="checkmark" size={13} color="#FFFFFF" /> : null}
+                      {done ? <Ionicons name="checkmark" size={13} color="#FFFFFF" /> : needsCorrection ? <Ionicons name="warning-outline" size={13} color={colors.amber} /> : null}
                     </Pressable>
                   </PressScale>
                   </React.Fragment>
@@ -1397,7 +1540,7 @@ export default function CalendarScreen() {
                   label={
                     isSampleSchedule
                       ? "Sample day"
-                      : `${completedScheduleCount}/${scheduleRows.length} done`
+                      : `${completedScheduleCount}/${scheduledRoutineCount} scheduled done`
                   }
                   tone={commandDeckTone}
                 />
@@ -1773,7 +1916,10 @@ export default function CalendarScreen() {
                 <View style={s.routineHeaderAccessory}>
                   {routineBoard.items.length > 0 && (
                     <Text style={[s.routineProgress, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {routineBoard.doneCount}/{routineBoard.items.length} done today
+                      {routineBoard.doneCount}/{scheduledRoutineCount} scheduled done today
+                      {routineBoard.correctionCount > 0
+                        ? ` · ${routineBoard.correctionCount} ${routineBoard.correctionCount === 1 ? "needs" : "need"} correction`
+                        : ""}
                     </Text>
                   )}
                   <Pressable
@@ -1912,16 +2058,24 @@ export default function CalendarScreen() {
                             tone={routineBoardPillTone(r.status)}
                             style={s.routineRowPill}
                           />
-                          <Text style={[s.routineTime, { color: done ? colors.sage : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{r.time}</Text>
+                          <Text style={[s.routineTime, { color: done ? colors.sage : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                            {r.status === "needs-correction" ? "Needs correction" : r.time}
+                          </Text>
                           <Pressable
                             onPress={(event) => {
                               event.stopPropagation?.();
-                              if (!done) logRoutineDone(r);
+                              if (!done && r.status !== "needs-correction") logRoutineDone(r);
                             }}
-                            disabled={done}
+                            disabled={done || r.status === "needs-correction"}
                             hitSlop={MOBILE_INLINE_HIT_SLOP}
                             accessibilityRole="button"
-                            accessibilityLabel={done ? `${r.label} already logged` : `Log ${r.label} as done`}
+                            accessibilityLabel={
+                              done
+                                ? `${r.label} already logged`
+                                : r.status === "needs-correction"
+                                  ? `${r.label} needs a corrected time before it can be logged`
+                                  : `Log ${r.label} as done`
+                            }
                             style={[s.routineDoneBtn, { backgroundColor: done ? colors.sage + "18" : colors.primary }]}
                           >
                             <Ionicons name={done ? "checkmark-circle" : "checkmark"} size={16} color={done ? colors.sage : "#fff"} />

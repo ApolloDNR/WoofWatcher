@@ -124,3 +124,25 @@ test("derives My Care Today from assigned routines and visible logs", () => {
     ],
   );
 });
+
+test("keeps an assigned invalid-time routine visible as a correction item", () => {
+  const today = deriveMyCareToday({
+    now: NOW,
+    personName: "Apollo",
+    petName: "Phoenix",
+    routines: [
+      { id: "legacy", label: "Legacy care", type: "walk", time: "9x:30 AM", owner: "Apollo" },
+    ],
+    entries: [],
+  });
+
+  assert.equal(today.assignedCount, 0);
+  assert.equal(today.correctionCount, 1);
+  assert.equal(today.doneCount, 0);
+  assert.equal(today.openCount, 0);
+  assert.equal(today.status, "needs-correction");
+  assert.equal(today.items[0].status, "needs-correction");
+  assert.equal(today.items[0].minutesFromNow, null);
+  assert.equal(today.summary, "0 schedulable routines assigned to Apollo. 1 routine needs correction.");
+  assert.equal(today.nextStep, "Correct Legacy care's saved time before it can be scheduled for Apollo.");
+});

@@ -102,6 +102,10 @@ import { resolvePetName } from "@/lib/petIdentity";
 import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
 import { shareTextPayload } from "@/lib/shareText";
 import { persistPickedMedia } from "@/lib/durablePickedMedia";
+import {
+  CARE_READ_ONLY_MESSAGE,
+  runAcceptedCareMutation,
+} from "@/lib/careWriteProtection";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -226,7 +230,9 @@ export default function RecordsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const ownerOps = isOwnerOpsBuild();
-  const { state, updateCareDoc } = useCare();
+  const { state, careMutationsBlocked, updateCareDoc } = useCare();
+  const showCareReadOnly = () =>
+    notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   const { width } = useAppViewport();
 
   const topPadding = getRouteTopPadding({
@@ -532,9 +538,12 @@ export default function RecordsScreen() {
       notifyDialog("Add a title", `Name this ${recordOption.label.toLowerCase()} record.`);
       return;
     }
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const id = `record_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateCareDoc((doc) => ({
+    const updated = updateCareDoc((doc) => ({
       ...doc,
       records: [
         ...doc.records,
@@ -553,7 +562,11 @@ export default function RecordsScreen() {
         },
       ],
     }));
-    setRecordOpen(false);
+    const accepted = runAcceptedCareMutation(updated, () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setRecordOpen(false);
+    });
+    if (!accepted) showCareReadOnly();
   };
 
   const deleteRecord = (id: string | undefined, title: string) => {
@@ -568,8 +581,15 @@ export default function RecordsScreen() {
         },
       ],
       () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        updateCareDoc((doc) => ({ ...doc, records: doc.records.filter((record) => record.id !== id) }));
+        if (careMutationsBlocked) {
+          showCareReadOnly();
+          return;
+        }
+        const updated = updateCareDoc((doc) => ({ ...doc, records: doc.records.filter((record) => record.id !== id) }));
+        const accepted = runAcceptedCareMutation(updated, () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        });
+        if (!accepted) showCareReadOnly();
       },
     );
   };
@@ -766,16 +786,23 @@ export default function RecordsScreen() {
   );
 
   const shareCarePass = (pass: CarePass) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const artifact = createCarePassArtifact(pass);
-    updateCareDoc((doc) => ({
+    const updated = updateCareDoc((doc) => ({
       ...doc,
       reportArtifacts: [
         artifact,
         ...doc.reportArtifacts.filter((item) => item.id !== artifact.id),
       ].slice(0, 12),
     }));
-    void shareTextPayload({ message: pass.message, title: pass.title });
+    const accepted = runAcceptedCareMutation(updated, () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      void shareTextPayload({ message: pass.message, title: pass.title });
+    });
+    if (!accepted) showCareReadOnly();
   };
 
   const shareReportArtifact = (artifact: CarePassArtifact) => {

@@ -109,6 +109,10 @@ import { shareTextPayload } from "@/lib/shareText";
 import { BoardActionButton, BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader, BoardSegmentTabs } from "@/components/board/BoardPrimitives";
 import { PressScale } from "@/components/motion/GameFeel";
 import { homeImmersiveRoomIsNight } from "./index";
+import {
+  CARE_READ_ONLY_MESSAGE,
+  careMutationWasAccepted,
+} from "@/lib/careWriteProtection";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -996,7 +1000,21 @@ export default function LogScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, addEntry, deleteEntry, updateEntry, updateCareDoc, refresh, syncOutbox, isSyncing } = useCare();
+  const {
+    state,
+    careMutationsBlocked,
+    addEntry,
+    deleteEntry,
+    updateEntry,
+    updateCareDoc,
+    refresh,
+    syncOutbox,
+    isSyncing,
+  } = useCare();
+  const showCareReadOnly = useCallback(
+    () => notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE),
+    [],
+  );
   const me = useGetMe({
     query: {
       queryKey: getGetMeQueryKey(),
@@ -1689,19 +1707,28 @@ export default function LogScreen() {
   ]);
 
   const handleLog = useCallback(() => {
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const entry = buildEntry();
     if (!entry) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const id = addEntry(entry);
+    if (!careMutationWasAccepted(id)) {
+      showCareReadOnly();
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     // Weight logs also update the living profile weight.
     if (entry.type === "weight" && entry.amount != null) {
       const w = parseFloat(entry.amount);
       if (!Number.isNaN(w)) {
-        updateCareDoc((doc) => ({
+        const profileUpdated = updateCareDoc((doc) => ({
           ...doc,
           profile: { ...doc.profile, weight: { ...doc.profile.weight, current: w } },
         }));
+        if (!careMutationWasAccepted(profileUpdated)) showCareReadOnly();
       }
     }
 
@@ -1739,12 +1766,23 @@ export default function LogScreen() {
     setPromptNote("");
     setPromptMode("post-log");
     setTimeout(() => promptRef.current?.focus(), 250);
-  }, [buildEntry, addEntry, updateCareDoc, config, state.dietProfile.normalPortion]);
+  }, [
+    addEntry,
+    buildEntry,
+    careMutationsBlocked,
+    config,
+    showCareReadOnly,
+    state.dietProfile.normalPortion,
+    updateCareDoc,
+  ]);
 
   const saveQuickNote = useCallback(() => {
     const text = promptNote.trim();
     if (promptId && text) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (careMutationsBlocked) {
+        showCareReadOnly();
+        return;
+      }
       const entry = state.entries.find((item) => item.id === promptId);
       const occurredAt = new Date().toISOString();
       const detailsWithNote = appendStickyNote(entry?.details ?? {}, {
@@ -1762,11 +1800,25 @@ export default function LogScreen() {
         summary: `${caregiver} added a sticky note to "${entry?.title ?? "this log"}".`,
         changes: ["stickyNotes"],
       });
-      updateEntry(promptId, { note: entry?.note ?? text, details });
+      const updated = updateEntry(promptId, { note: entry?.note ?? text, details });
+      if (!careMutationWasAccepted(updated)) {
+        showCareReadOnly();
+        return;
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     setPromptId(null);
     setPromptNote("");
-  }, [promptId, promptNote, promptMode, state.entries, caregiver, updateEntry]);
+  }, [
+    promptId,
+    promptNote,
+    promptMode,
+    state.entries,
+    caregiver,
+    careMutationsBlocked,
+    showCareReadOnly,
+    updateEntry,
+  ]);
 
   const handleDelete = useCallback(
     (id: string, title: string, onDeleted?: () => void) => {
@@ -1780,20 +1832,24 @@ export default function LogScreen() {
           },
         ],
         async () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          if (careMutationsBlocked) {
+            showCareReadOnly();
+            return;
+          }
           const entry = state.entries.find((item) => item.id === id);
           const deleted = await deleteEntry(id);
-          if (!deleted) {
+          if (!careMutationWasAccepted(deleted)) {
             notifyDialog("Delete failed", "WoofWatcher kept the log because the household sync rejected the delete. Try again after refresh.");
             return;
           }
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           // Shared-household accountability only: the deletion audit note
           // says "from the shared care log", so it is truthful and useful
           // only when more than one caregiver exists. For a solo owner it
           // would leave a "Deleted log - ..." row in their own timeline and
           // read as if the delete failed - so a solo delete just deletes.
           if (entry && state.caregivers.length > 1) {
-            addEntry(
+            const auditIdValue = addEntry(
               buildCareLogDeletionAuditEntry({
                 id: auditId(),
                 caregiver,
@@ -1801,12 +1857,23 @@ export default function LogScreen() {
                 entry,
               }),
             );
+            if (!careMutationWasAccepted(auditIdValue)) {
+              showCareReadOnly();
+            }
           }
           onDeleted?.();
         },
       );
     },
-    [addEntry, caregiver, deleteEntry, state.caregivers.length, state.entries],
+    [
+      addEntry,
+      caregiver,
+      careMutationsBlocked,
+      deleteEntry,
+      showCareReadOnly,
+      state.caregivers.length,
+      state.entries,
+    ],
   );
 
   const openEditEntry = useCallback((e: Entry) => {
@@ -1827,13 +1894,16 @@ export default function LogScreen() {
 
   const saveEditEntry = useCallback(() => {
     if (!editEntry) return;
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const title = editTitle.trim() || editEntry.title;
     const note = editNote.trim() || undefined;
     const changes: string[] = [];
     if (title !== editEntry.title) changes.push("title");
     if ((note ?? "") !== (editEntry.note ?? "")) changes.push("note");
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (changes.length) {
       const details = appendCareAuditEvent(editEntry.details ?? {}, {
         id: auditId(),
@@ -1843,14 +1913,27 @@ export default function LogScreen() {
         summary: `${caregiver} updated ${changes.join(" and ")} on "${editEntry.title}".`,
         changes,
       });
-      updateEntry(editEntry.id, {
+      const updated = updateEntry(editEntry.id, {
         ...(title !== editEntry.title ? { title } : {}),
         ...((note ?? "") !== (editEntry.note ?? "") ? { note } : {}),
         details,
       });
+      if (!careMutationWasAccepted(updated)) {
+        showCareReadOnly();
+        return;
+      }
     }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setEditEntry(null);
-  }, [caregiver, editEntry, editTitle, editNote, updateEntry]);
+  }, [
+    caregiver,
+    careMutationsBlocked,
+    editEntry,
+    editTitle,
+    editNote,
+    showCareReadOnly,
+    updateEntry,
+  ]);
 
   const openEntryDetail = useCallback((e: Entry) => {
     setDetailEntryId(e.id);
@@ -1865,10 +1948,18 @@ export default function LogScreen() {
         outcome,
       });
 
+      if (careMutationsBlocked) {
+        showCareReadOnly();
+        return;
+      }
+      const updated = updateEntry(entry.id, patch);
+      if (!careMutationWasAccepted(updated)) {
+        showCareReadOnly();
+        return;
+      }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateEntry(entry.id, patch);
     },
-    [caregiver, updateEntry],
+    [caregiver, careMutationsBlocked, showCareReadOnly, updateEntry],
   );
 
   const updatePottyDetailFromDetail = useCallback(
@@ -1887,10 +1978,24 @@ export default function LogScreen() {
         context: pottyDetailDraft.context === "none" ? undefined : pottyDetailDraft.context,
       });
 
+      if (careMutationsBlocked) {
+        showCareReadOnly();
+        return;
+      }
+      const updated = updateEntry(entry.id, patch);
+      if (!careMutationWasAccepted(updated)) {
+        showCareReadOnly();
+        return;
+      }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateEntry(entry.id, patch);
     },
-    [caregiver, pottyDetailDraft, updateEntry],
+    [
+      caregiver,
+      careMutationsBlocked,
+      pottyDetailDraft,
+      showCareReadOnly,
+      updateEntry,
+    ],
   );
   const openAloneSession = useMemo(
     () => findOpenAloneTimeSession(state.entries),
@@ -1966,14 +2071,34 @@ export default function LogScreen() {
         return;
       }
 
+      if (careMutationsBlocked) {
+        showCareReadOnly();
+        return;
+      }
+      const updated = updateEntry(detailEntry.id, patch);
+      if (!careMutationWasAccepted(updated)) {
+        showCareReadOnly();
+        return;
+      }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateEntry(detailEntry.id, patch);
     },
-    [caregiver, currentCaregiverRole, detailEntry, now, updateEntry],
+    [
+      caregiver,
+      careMutationsBlocked,
+      currentCaregiverRole,
+      detailEntry,
+      now,
+      showCareReadOnly,
+      updateEntry,
+    ],
   );
 
   const handleAttachProof = useCallback(async () => {
     if (!detailEntry) return;
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
@@ -2015,12 +2140,23 @@ export default function LogScreen() {
         return;
       }
 
+      const updated = updateEntry(detailEntry.id, patch);
+      if (!careMutationWasAccepted(updated)) {
+        showCareReadOnly();
+        return;
+      }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateEntry(detailEntry.id, patch);
     } catch {
       notifyDialog("Photo unavailable", "Attach proof later. Medication logs stay pending until an owner confirms them.");
     }
-  }, [caregiver, detailEntry, now, updateEntry]);
+  }, [
+    caregiver,
+    careMutationsBlocked,
+    detailEntry,
+    now,
+    showCareReadOnly,
+    updateEntry,
+  ]);
 
   const logSearch = useMemo(
     () => deriveCareLogSearch({ entries: state.entries, query: searchText, type: filter }),
@@ -2313,29 +2449,40 @@ export default function LogScreen() {
   }, []);
 
   const handleLeavingHome = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (openAloneSession) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setSelectedType("alone");
       setSelectedLauncherKey("alone:Alone Time");
       scrollRef.current?.scrollTo({ y: 360, animated: true });
       return;
     }
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     // A rapid second tap lands before the open session exists in state.
     if (isDuplicateQuickTap("alone")) return;
-    markQuickSave("alone");
     const entry = buildAloneTimeStartEntry({ caregiver, now });
     const id = addEntry(entry);
+    if (!careMutationWasAccepted(id)) {
+      showCareReadOnly();
+      return;
+    }
+    markQuickSave("alone");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLastQuickLog({ id, title: `${petDisplayName} is home alone` });
     setSelectedType("alone");
     setSelectedLauncherKey("alone:Alone Time");
   }, [
     addEntry,
     caregiver,
+    careMutationsBlocked,
     isDuplicateQuickTap,
     markQuickSave,
     now,
     openAloneSession,
     petDisplayName,
+    showCareReadOnly,
   ]);
 
   const handleReturnHome = useCallback(
@@ -2346,7 +2493,10 @@ export default function LogScreen() {
         notifyDialog("Check recovery time", "Enter recovery minutes as a number, or leave it blank.");
         return;
       }
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      if (careMutationsBlocked) {
+        showCareReadOnly();
+        return;
+      }
       const patch = buildAloneTimeReturnPatch(openAloneSession, {
         caregiver,
         outcome,
@@ -2354,31 +2504,63 @@ export default function LogScreen() {
         ...(recovery != null ? { recoveryMinutes: recovery } : {}),
         ...(returnNote.trim() ? { note: returnNote.trim() } : {}),
       });
-      updateEntry(openAloneSession.id, patch);
+      const updated = updateEntry(openAloneSession.id, patch);
+      if (!careMutationWasAccepted(updated)) {
+        showCareReadOnly();
+        return;
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setLastQuickLog({ id: openAloneSession.id, title: patch.title });
       setReturnRecoveryMinutes("");
       setReturnNote("");
     },
-    [caregiver, now, openAloneSession, returnNote, returnRecoveryMinutes, updateEntry],
+    [
+      caregiver,
+      careMutationsBlocked,
+      now,
+      openAloneSession,
+      returnNote,
+      returnRecoveryMinutes,
+      showCareReadOnly,
+      updateEntry,
+    ],
   );
 
   const handleStartWalk = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (openWalkSession) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setSelectedType("walk");
       setSelectedLauncherKey("walk:Walk");
       scrollRef.current?.scrollTo({ y: 360, animated: true });
       return;
     }
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     // A rapid second tap lands before the open session exists in state.
     if (isDuplicateQuickTap("walk")) return;
-    markQuickSave("walk");
     const entry = buildWalkSessionStartEntry({ caregiver, now });
     const id = addEntry(entry as Omit<Entry, "id">);
+    if (!careMutationWasAccepted(id)) {
+      showCareReadOnly();
+      return;
+    }
+    markQuickSave("walk");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLastQuickLog({ id, title: "Walk started" });
     setSelectedType("walk");
     setSelectedLauncherKey("walk:Walk");
-  }, [addEntry, caregiver, isDuplicateQuickTap, markQuickSave, now, openWalkSession]);
+  }, [
+    addEntry,
+    caregiver,
+    careMutationsBlocked,
+    isDuplicateQuickTap,
+    markQuickSave,
+    now,
+    openWalkSession,
+    showCareReadOnly,
+  ]);
 
   const handleFinishWalk = useCallback(() => {
     if (!openWalkSession?.id) return;
@@ -2395,7 +2577,10 @@ export default function LogScreen() {
       return;
     }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const patch = buildWalkSessionFinishPatch(openWalkSession, {
       caregiver,
       now,
@@ -2406,7 +2591,15 @@ export default function LogScreen() {
       ...(walkFinishNote.trim() ? { note: walkFinishNote.trim() } : {}),
     });
 
-    updateEntry(openWalkSession.id, patch as Partial<Omit<Entry, "id">>);
+    const updated = updateEntry(
+      openWalkSession.id,
+      patch as Partial<Omit<Entry, "id">>,
+    );
+    if (!careMutationWasAccepted(updated)) {
+      showCareReadOnly();
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLastQuickLog({ id: openWalkSession.id, title: patch.title ?? "Walk completed" });
     setWalkFinishRouteName("");
     setWalkFinishDistanceMiles("");
@@ -2415,8 +2608,10 @@ export default function LogScreen() {
     setWalkFinishNote("");
   }, [
     caregiver,
+    careMutationsBlocked,
     now,
     openWalkSession,
+    showCareReadOnly,
     updateEntry,
     walkFinishDistanceMiles,
     walkFinishDogInteractions,
@@ -2441,7 +2636,10 @@ export default function LogScreen() {
       return;
     }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     // Dedupe: the first tap already saved this intent and its feedback card
     // is still up; a bounce inside the shared window must not double-log.
     // Wall-clock time here - the screen's 30s `now` tick would otherwise
@@ -2452,7 +2650,6 @@ export default function LogScreen() {
     ) {
       return;
     }
-    markQuickSave(policy.type);
     const role = state.caregivers.find((person) => person.name === caregiver)?.role;
     const entry = buildQuickLogEntry(
       {
@@ -2465,15 +2662,29 @@ export default function LogScreen() {
       { caregiver, caregiverRole: role, now },
     );
     const id = addEntry(entry);
+    if (!careMutationWasAccepted(id)) {
+      showCareReadOnly();
+      return;
+    }
+    markQuickSave(policy.type);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLastQuickLog({ id, title: entry.title });
     setSelectedLauncherKey(launcherActionKey(action));
     setSelectedType(action.type);
   };
 
-  const undoLastQuickLog = () => {
+  const undoLastQuickLog = async () => {
     if (!lastQuickLog) return;
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
+    const deleted = await deleteEntry(lastQuickLog.id);
+    if (!careMutationWasAccepted(deleted)) {
+      showCareReadOnly();
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void deleteEntry(lastQuickLog.id);
     setLastQuickLog(null);
   };
 

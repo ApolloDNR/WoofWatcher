@@ -68,6 +68,18 @@ import {
   type AdventureMemory,
   type CarePassArtifact,
 } from "@workspace/care-domain";
+import {
+  CURRENT_CARE_DOC_DATA_VERSION,
+  isFutureCareDocDataVersion,
+  migrateCareDoc,
+  type CareCorrectionIssue,
+  type CareDocMigrationQuarantineItem,
+} from "../lib/careDocMigration";
+import {
+  createCareWriteProtection,
+  prioritizeCareStorageWarning,
+  type CareStorageWarning,
+} from "@/lib/careWriteProtection";
 import { useWoofAuth } from "@/lib/auth";
 import {
   normalizeReminderNotificationPreferences,
@@ -176,6 +188,7 @@ export interface Routine {
   time: string;
   owner: string;
   note: string;
+  correctionIssues?: CareCorrectionIssue[];
 }
 
 export interface Goal {
@@ -196,6 +209,7 @@ export interface Record {
   note: string;
   attachmentUri?: string;
   attachmentName?: string;
+  correctionIssues?: CareCorrectionIssue[];
 }
 
 export interface CalendarEvent {
@@ -207,6 +221,7 @@ export interface CalendarEvent {
   location?: string;
   note?: string;
   source: "manual" | "woofguide";
+  correctionIssues?: CareCorrectionIssue[];
 }
 
 export type ReportArtifact = CarePassArtifact;
@@ -259,6 +274,7 @@ export interface DietProfile {
  * individual server rows (see {@link Entry}) so concurrent edits are safe.
  */
 export interface CareDoc {
+  dataVersion: number;
   createdAt: string;
   updatedAt: string;
   activePetId: string;
@@ -277,6 +293,7 @@ export interface CareDoc {
   adventureMemories: AdventureMemory[];
   reportArtifacts: ReportArtifact[];
   calendarEvents: CalendarEvent[];
+  migrationQuarantine?: CareDocMigrationQuarantineItem[];
 }
 
 export interface CareState extends CareDoc {
@@ -293,6 +310,7 @@ function normalizeSupportLegalReadinessEvidence(
 function getDefaultDoc(): CareDoc {
   const now = new Date().toISOString();
   return {
+    dataVersion: CURRENT_CARE_DOC_DATA_VERSION,
     createdAt: now,
     // Epoch, deliberately: a pristine, never-edited doc must never win
     // wall-clock reconciliation. Stamping install time here made a fresh
@@ -365,7 +383,7 @@ function getDefaultDoc(): CareDoc {
 }
 
 function mergeDoc(partial: Partial<CareDoc> | null | undefined): CareDoc {
-  const merged = { ...getDefaultDoc(), ...(partial ?? {}) };
+  const merged = migrateCareDoc({ ...getDefaultDoc(), ...(partial ?? {}) });
   const launchSupportProfile = merged.launchSupportProfile ?? getDefaultDoc().launchSupportProfile;
   return {
     ...merged,
@@ -598,10 +616,11 @@ function isNotFound(err: unknown): boolean {
 
 interface CareContextValue {
   state: CareState;
+  careMutationsBlocked: boolean;
   addEntry: (entry: Omit<Entry, "id">) => string;
   deleteEntry: (id: string) => Promise<boolean>;
-  updateEntry: (id: string, patch: Partial<Omit<Entry, "id">>) => void;
-  updateCareDoc: (updater: (doc: CareDoc) => CareDoc) => void;
+  updateEntry: (id: string, patch: Partial<Omit<Entry, "id">>) => boolean;
+  updateCareDoc: (updater: (doc: CareDoc) => CareDoc) => boolean;
   refresh: () => void;
   /**
    * Store-compliance data deletion: resets the live care document and
@@ -621,7 +640,7 @@ interface CareContextValue {
    * persistence is paused to protect it; "reset" = the cache was corrupt and
    * was reset, with the raw blob kept under a recovery key.
    */
-  storageWarning: "save-failed" | "read-failed" | "reset" | null;
+  storageWarning: CareStorageWarning;
   /**
    * Set (for this session only) when boot found and adopted care data from
    * the legacy web PWA's localStorage. Home shows a one-time welcome-back
@@ -643,9 +662,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const [serverVersion, setServerVersion] = useState(0);
   const [hydrated, setHydrated] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [storageWarning, setStorageWarning] = useState<
-    "save-failed" | "read-failed" | "reset" | null
-  >(null);
+  const [storageWarning, setStorageWarning] = useState<CareStorageWarning>(null);
   const [legacyImport, setLegacyImport] = useState<
     LegacyImportResult["summary"] | null
   >(null);
@@ -657,6 +674,38 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const signedInRef = useRef(false);
   const syncingRef = useRef(false);
   const hydratedRef = useRef(false);
+  const careWriteProtectionRef = useRef(createCareWriteProtection());
+  const setCareStorageWarning = useCallback((warning: CareStorageWarning) => {
+    setStorageWarning((current) =>
+      prioritizeCareStorageWarning(
+        current,
+        warning,
+        careWriteProtectionRef.current.isBlocked(),
+      ),
+    );
+  }, []);
+  // A document from a newer schema is evidence, not input for this client.
+  // Keep its exact runtime object available while rendering safe defaults;
+  // every local/server write path below is gated until an owner wipe.
+  const futureCareDocRef = useRef<object | null>(null);
+  const futureCareCacheRawRef = useRef<string | null>(null);
+  const preserveFutureCareDoc = useCallback((value: unknown): boolean => {
+    if (!isFutureCareDocDataVersion(value)) return false;
+    careWriteProtectionRef.current.protect();
+    futureCareDocRef.current = value;
+    entryUpdateQueueRef.current?.cancelAll();
+    setStorageWarning("newer-version");
+    return true;
+  }, []);
+  const careDocWritesBlocked = useCallback(
+    (): boolean => careWriteProtectionRef.current.isBlocked(),
+    [],
+  );
+  const careWriteCanContinue = useCallback(
+    (generation: number): boolean =>
+      careWriteProtectionRef.current.canContinue(generation),
+    [],
+  );
   // Maps optimistic temp ids to their server ids, and queues patches that
   // arrive before a create resolves (post-log quick-note race).
   const realIdByTemp = useRef<Map<string, string>>(new Map());
@@ -672,6 +721,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     useRef<SerializedCareSyncWriter<string[] | null> | null>(null);
   const entryUpdateQueueRef =
     useRef<SerializedCareEntryMutationQueue<Entry> | null>(null);
+  const entryWriteGenerationRef = useRef<Map<string, number>>(new Map());
   // Bumped by eraseAllLocalData so in-flight sync results can't resurrect
   // data the owner just deleted from this device.
   const eraseGenerationRef = useRef(0);
@@ -703,11 +753,11 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       try {
         await discardedServerEntryWriter.enqueue(next);
       } catch {
-        setStorageWarning("save-failed");
+        setCareStorageWarning("save-failed");
         throw new Error("Could not persist cancelled care-entry cleanup.");
       }
     },
-    [discardedServerEntryWriter],
+    [discardedServerEntryWriter, setCareStorageWarning],
   );
 
   const clearDiscardedServerEntry = useCallback(
@@ -722,28 +772,41 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           next.length > 0 ? next : null,
         );
       } catch {
-        setStorageWarning("save-failed");
+        setCareStorageWarning("save-failed");
       }
     },
-    [discardedServerEntryWriter],
+    [discardedServerEntryWriter, setCareStorageWarning],
   );
 
   if (!entryUpdateQueueRef.current) {
     entryUpdateQueueRef.current =
       createSerializedCareEntryMutationQueue<Entry, ApiCareEntry>({
         mutate: async (entryId, entry, signal) => {
+          const writeGeneration = entryWriteGenerationRef.current.get(entryId);
+          const canContinue = () =>
+            writeGeneration !== undefined &&
+            careWriteCanContinue(writeGeneration);
+          if (!canContinue()) {
+            throw new Error("Care writes are blocked by a newer data version.");
+          }
           try {
-            return await updateCareEntry(
+            const updated = await updateCareEntry(
               entryId,
               toUpdateInput(entry),
               { signal },
             );
+            if (!canContinue()) {
+              throw new Error("Care writes are blocked by a newer data version.");
+            }
+            return updated;
           } catch (error) {
+            if (!canContinue()) throw error;
             return retryCareEntryMutationAfterConflict({
               error,
               input: entry,
               isConflict,
               fetchCurrent: async () => {
+                if (!canContinue()) throw error;
                 const conflictEntry = getCareEntryConflictEntry(
                   error,
                   entryId,
@@ -752,6 +815,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
                 const rows = await listCareEntries(undefined, {
                   signal,
                 });
+                if (!canContinue()) throw error;
                 const currentServerEntry = rows.find(
                   (row) => row.id === entryId,
                 );
@@ -760,16 +824,24 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
                   : null;
               },
               rebase: rebasePendingCareEntryAfterConflict,
-              mutate: (rebasedEntry) =>
-                updateCareEntry(
+              mutate: (rebasedEntry) => {
+                if (!canContinue()) throw error;
+                return updateCareEntry(
                   entryId,
                   toUpdateInput(rebasedEntry),
                   { signal },
-                ),
+                );
+              },
             });
           }
         },
         onSuccess: (entryId, localEntry, updated) => {
+          const writeGeneration = entryWriteGenerationRef.current.get(entryId);
+          if (
+            writeGeneration === undefined ||
+            !careWriteCanContinue(writeGeneration)
+          ) return;
+          entryWriteGenerationRef.current.delete(entryId);
           const synced = {
             ...adoptServerEntry(localEntry, toEntry(updated)),
             pendingSyncPatch: undefined,
@@ -787,6 +859,12 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           });
         },
         onFailure: (entryId, localEntry, error) => {
+          const writeGeneration = entryWriteGenerationRef.current.get(entryId);
+          if (
+            writeGeneration === undefined ||
+            !careWriteCanContinue(writeGeneration)
+          ) return;
+          entryWriteGenerationRef.current.delete(entryId);
           const retryBase =
             error instanceof CareEntryConflictRetryError
               ? error.rebasedInput
@@ -836,9 +914,14 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       try {
         const parsed = JSON.parse(raw);
         if (parsed?.doc) {
-          const cachedDoc = mergeDoc(parsed.doc);
-          docRef.current = cachedDoc;
-          setDoc(cachedDoc);
+          if (preserveFutureCareDoc(parsed.doc)) {
+            futureCareCacheRawRef.current = raw;
+            return false;
+          } else {
+            const cachedDoc = mergeDoc(parsed.doc);
+            docRef.current = cachedDoc;
+            setDoc(cachedDoc);
+          }
         }
         let cachedEntries: Entry[] = [];
         if (Array.isArray(parsed?.entries)) {
@@ -868,7 +951,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         // the persist effect overwrites the primary key with defaults, and
         // tell the owner instead of silently resetting.
         AsyncStorage.setItem(`${STORAGE_KEY}.recovery`, raw).catch(() => {});
-        setStorageWarning("reset");
+        setCareStorageWarning("reset");
         return false;
       }
     };
@@ -896,7 +979,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         }
         // Preserve any cancellation recorded in this live session even when
         // the older on-disk ledger is corrupt.
-        setStorageWarning("reset");
+        setCareStorageWarning("reset");
       }
     };
     // One-time adoption of the legacy web PWA's data (see lib/legacyImport).
@@ -922,7 +1005,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         if (Object.keys(result.docPatch).length) {
           const importedAt = new Date().toISOString();
           const previous = docRef.current;
-          const importedDoc: CareDoc = {
+          const importedDoc = mergeDoc({
             ...previous,
             ...result.docPatch,
             profile: result.docPatch.profile
@@ -944,7 +1027,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             // A real import is a real edit: the doc must not stay pristine
             // or reconciliation could discard the adopted data.
             updatedAt: importedAt,
-          };
+          });
           docRef.current = importedDoc;
           setDoc(importedDoc);
         }
@@ -990,16 +1073,16 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
               hydratedRef.current = true;
               setHydrated(true);
             })
-            .catch(() => setStorageWarning("read-failed"));
+            .catch(() => setCareStorageWarning("read-failed"));
         }, 1500);
       });
-  }, []);
+  }, [preserveFutureCareDoc, setCareStorageWarning]);
 
   // Persist the offline cache whenever synced state changes. A failing
   // device store is a data risk in a local-first app, so surface it instead
   // of swallowing it - and clear the warning when writes recover.
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || careDocWritesBlocked()) return;
     AsyncStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
@@ -1010,30 +1093,44 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     )
       .then(() => {
         setStorageWarning((current) =>
-          current === "save-failed" ? null : current,
+          prioritizeCareStorageWarning(
+            current,
+            current === "save-failed" ? null : current,
+            careWriteProtectionRef.current.isBlocked(),
+          ),
         );
       })
-      .catch(() => setStorageWarning("save-failed"));
+      .catch(() => setCareStorageWarning("save-failed"));
   }, [
     doc,
     entries,
     serverVersion,
     hydrated,
+    careDocWritesBlocked,
+    setCareStorageWarning,
   ]);
 
   const pushDoc = useCallback(async (next: CareDoc) => {
+    if (careDocWritesBlocked() || preserveFutureCareDoc(next)) return;
     // Guard every post-await state write against an owner wipe: a push (or
     // its conflict-retry) that resolves after "All data deleted" must not
     // write the pre-wipe doc back into memory, disk, or the server.
     const eraseGenerationAtStart = eraseGenerationRef.current;
+    const writeGeneration = careWriteProtectionRef.current.capture();
+    const canContinue = () => careWriteCanContinue(writeGeneration);
+    if (!canContinue()) return;
     try {
       const res = await putCareState({
         version: versionRef.current,
         doc: next as unknown as CareStateEnvelope["doc"],
       });
-      if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
+      if (
+        eraseGenerationRef.current !== eraseGenerationAtStart ||
+        !canContinue()
+      ) return;
       setServerVersion(res.version);
     } catch (err) {
+      if (!canContinue()) return;
       if (!isConflict(err)) return;
       if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
       // Another device wrote first. Adopt their doc + version, replay our
@@ -1043,39 +1140,57 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       // snapshot erased them locally and then pushed the erasure.
       const envelope = err.data as CareStateEnvelope | null;
       if (!envelope) return;
+      if (preserveFutureCareDoc(envelope.doc)) {
+        return;
+      }
+      if (!canContinue()) return;
       const merged: CareDoc = {
         ...mergeDoc(envelope.doc as Partial<CareDoc>),
         ...docRef.current,
         updatedAt: new Date().toISOString(),
       };
+      if (!canContinue()) return;
       setServerVersion(envelope.version);
+      if (!canContinue()) return;
       docRef.current = merged;
+      if (!canContinue()) return;
       setDoc(merged);
       try {
+        if (!canContinue()) return;
         const res = await putCareState({
           version: envelope.version,
           doc: merged as unknown as CareStateEnvelope["doc"],
         });
-        if (eraseGenerationRef.current !== eraseGenerationAtStart) return;
+        if (
+          eraseGenerationRef.current !== eraseGenerationAtStart ||
+          !canContinue()
+        ) return;
         setServerVersion(res.version);
       } catch {
         // Give up; the next full refresh reconciles.
       }
     }
-  }, []);
+  }, [careDocWritesBlocked, careWriteCanContinue, preserveFutureCareDoc]);
 
   const persistEntryCreate = useCallback(
     (tempId: string, entry: Omit<Entry, "id">) => {
+      if (careDocWritesBlocked()) return;
       if (!signedInRef.current) return;
       const eraseGenerationAtStart = eraseGenerationRef.current;
+      const writeGeneration = careWriteProtectionRef.current.capture();
+      const canContinue = () => careWriteCanContinue(writeGeneration);
+      if (!canContinue()) return;
       const createWasRetried =
         entry.syncStatus === "failed" || entry.syncStatus === "local";
+      if (!canContinue()) return;
       creatingTempEntries.current.add(tempId);
+      if (!canContinue()) return;
       entriesRef.current = entriesRef.current.map((current) =>
         current.id === tempId
           ? { ...current, syncStatus: "pending", syncError: undefined }
           : current,
       );
+      if (!canContinue()) return;
       setEntries((prev) =>
         prev.map((e) =>
           e.id === tempId
@@ -1083,15 +1198,20 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             : e,
         ),
       );
+      if (!canContinue()) return;
       createCareEntry(toCreateInput(entry, tempId))
         .then(async (created) => {
+          if (!canContinue()) return;
           const serverEntry = toEntry(created);
           const deleteAcknowledgedServerEntry = async (
             entryId: string,
           ) => {
+            if (!canContinue()) return;
             try {
               await deleteCareEntry(entryId);
+              if (!canContinue()) return;
             } catch (error) {
+              if (!canContinue()) return;
               if (!isNotFound(error)) throw error;
             }
           };
@@ -1107,9 +1227,13 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             // Persist both identities before attempting the compensating
             // delete. If the process exits between create and delete, a later
             // refresh can suppress by server id or by details.clientKey.
+            if (!canContinue()) return;
             await markServerEntryDiscarded(tempId);
+            if (!canContinue()) return;
             await markServerEntryDiscarded(serverEntry.id);
+            if (!canContinue()) return;
           }
+          if (!canContinue()) return;
           let acknowledgement =
             await reconcileCreatedCareEntryAcknowledgement<Entry>({
               localEntry,
@@ -1120,6 +1244,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
               currentEraseGeneration: eraseGenerationRef.current,
               deleteServerEntry: deleteAcknowledgedServerEntry,
             });
+          if (!canContinue()) return;
 
           if (acknowledgement.status === "adopted") {
             // The first helper call crosses an await boundary even on an
@@ -1135,9 +1260,13 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
               cancelledTempEntries.current.has(tempId) ||
               eraseGenerationRef.current !== eraseGenerationAtStart;
             if (mustDiscard) {
+              if (!canContinue()) return;
               await markServerEntryDiscarded(tempId);
+              if (!canContinue()) return;
               await markServerEntryDiscarded(serverEntry.id);
+              if (!canContinue()) return;
             }
+            if (!canContinue()) return;
             acknowledgement =
               await reconcileCreatedCareEntryAcknowledgement<Entry>({
                 localEntry,
@@ -1149,27 +1278,38 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
                 currentEraseGeneration: eraseGenerationRef.current,
                 deleteServerEntry: deleteAcknowledgedServerEntry,
               });
+            if (!canContinue()) return;
           }
 
           if (acknowledgement.status === "discarded") {
             if (acknowledgement.deleteSucceeded) {
+              if (!canContinue()) return;
               await clearDiscardedServerEntry(
                 acknowledgement.serverEntryId,
               );
+              if (!canContinue()) return;
             } else {
+              if (!canContinue()) return;
               await markServerEntryDiscarded(
                 acknowledgement.serverEntryId,
               );
+              if (!canContinue()) return;
             }
+            if (!canContinue()) return;
             cancelledTempEntries.current.delete(tempId);
+            if (!canContinue()) return;
             pendingPatch.current.delete(tempId);
+            if (!canContinue()) return;
             realIdByTemp.current.delete(tempId);
+            if (!canContinue()) return;
             entryUpdateQueue.cancel(tempId);
+            if (!canContinue()) return;
             entriesRef.current = entriesRef.current.filter(
               (entry) =>
                 entry.id !== tempId &&
                 entry.id !== acknowledgement.serverEntryId,
             );
+            if (!canContinue()) return;
             setEntries((previous) =>
               previous.filter(
                 (entry) =>
@@ -1177,6 +1317,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
                   entry.id !== acknowledgement.serverEntryId,
               ),
             );
+            if (!canContinue()) return;
             queryClient.invalidateQueries({
               queryKey: getListCareEntriesQueryKey(),
             });
@@ -1184,10 +1325,13 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           }
 
           const real = acknowledgement.entry;
+          if (!canContinue()) return;
           realIdByTemp.current.set(tempId, real.id);
           // Apply any patch that landed while the create was in flight.
           const queued = pendingPatch.current.get(tempId);
+          if (!canContinue()) return;
           pendingPatch.current.delete(tempId);
+          if (!canContinue()) return;
           cancelledTempEntries.current.delete(tempId);
           const acknowledged: Entry = queued
             ? applyQueuedPatchToAcknowledgedEntry<Entry>(
@@ -1221,26 +1365,34 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             if (!inserted) next.unshift(merged);
             return next;
           };
+          if (!canContinue()) return;
           entriesRef.current = replaceAcknowledgedEntry(
             entriesRef.current,
           );
+          if (!canContinue()) return;
           setEntries((previous) =>
             replaceAcknowledgedEntry(previous),
           );
+          if (!canContinue()) return;
           queryClient.invalidateQueries({
             queryKey: getListCareEntriesQueryKey(),
           });
           if (needsUpdate) {
+            if (!canContinue()) return;
+            entryWriteGenerationRef.current.set(real.id, writeGeneration);
+            if (!canContinue()) return;
             entryUpdateQueue.enqueue(real.id, merged);
           }
         })
         .catch(() => {
+          if (!canContinue()) return;
           if (
             cancelledTempEntries.current.has(tempId) ||
             eraseGenerationRef.current !== eraseGenerationAtStart
           ) {
             return;
           }
+          if (!canContinue()) return;
           entriesRef.current = entriesRef.current.map((current) =>
             current.id === tempId
               ? {
@@ -1250,6 +1402,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
                 }
               : current,
           );
+          if (!canContinue()) return;
           setEntries((prev) =>
             prev.map((e) =>
               e.id === tempId
@@ -1263,11 +1416,14 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           );
         })
         .finally(() => {
+          if (!canContinue()) return;
           creatingTempEntries.current.delete(tempId);
         });
     },
     [
       clearDiscardedServerEntry,
+      careDocWritesBlocked,
+      careWriteCanContinue,
       entryUpdateQueue,
       markServerEntryDiscarded,
       queryClient,
@@ -1276,31 +1432,40 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const persistEntryUpdate = useCallback(
     (id: string, entry: Entry) => {
+      if (careDocWritesBlocked()) return;
       if (!signedInRef.current) {
         entryUpdateQueue.cancel(id);
         return;
       }
+      const writeGeneration = careWriteProtectionRef.current.capture();
+      if (!careWriteCanContinue(writeGeneration)) return;
       const pendingEntry: Entry = {
         ...ensureCareEntrySyncRevision(entry),
         syncStatus: "pending",
         syncError: undefined,
       };
+      if (!careWriteCanContinue(writeGeneration)) return;
       entriesRef.current = entriesRef.current.map((current) =>
         current.id === id ? pendingEntry : current,
       );
+      if (!careWriteCanContinue(writeGeneration)) return;
       setEntries((prev) =>
         prev.map((current) => (current.id === id ? pendingEntry : current)),
       );
+      if (!careWriteCanContinue(writeGeneration)) return;
+      entryWriteGenerationRef.current.set(id, writeGeneration);
+      if (!careWriteCanContinue(writeGeneration)) return;
       entryUpdateQueue.enqueue(id, pendingEntry);
     },
-    [entryUpdateQueue],
+    [careDocWritesBlocked, careWriteCanContinue, entryUpdateQueue],
   );
 
   const syncFromServer = useCallback(async () => {
     if (
       !hydratedRef.current ||
       !signedInRef.current ||
-      syncingRef.current
+      syncingRef.current ||
+      careDocWritesBlocked()
     ) {
       return;
     }
@@ -1308,16 +1473,24 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     // flight when the owner wiped this device are discarded instead of
     // resurrecting the deleted data.
     const eraseGenerationAtStart = eraseGenerationRef.current;
+    const writeGeneration = careWriteProtectionRef.current.capture();
+    const canContinue = () => careWriteCanContinue(writeGeneration);
+    if (!canContinue()) return;
     syncingRef.current = true;
     setIsSyncing(true);
     try {
       const envelope = await getCareState();
       if (
         eraseGenerationRef.current !== eraseGenerationAtStart ||
-        !signedInRef.current
+        !signedInRef.current ||
+        !canContinue()
       ) {
         return;
       }
+      if (preserveFutureCareDoc(envelope.doc)) {
+        return;
+      }
+      if (!canContinue()) return;
       const plan = reconcileCareDocFromServer<CareDoc>({
         localDoc: docRef.current,
         localVersion: versionRef.current,
@@ -1326,6 +1499,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         serverUpdatedAt: envelope.updatedAt,
       });
       if (plan.shouldPushLocal) {
+        if (!canContinue()) return;
         const res = await putCareState({
           version: plan.version,
           doc: plan.doc as unknown as CareStateEnvelope["doc"],
@@ -1334,17 +1508,24 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         // pre-wipe doc restored into memory (and re-persisted) here.
         if (
           eraseGenerationRef.current !== eraseGenerationAtStart ||
-          !signedInRef.current
+          !signedInRef.current ||
+          !canContinue()
         ) {
           return;
         }
+        if (preserveFutureCareDoc(res.doc)) return;
+        if (!canContinue()) return;
         setDoc(mergeDoc(res.doc as Partial<CareDoc>));
+        if (!canContinue()) return;
         setServerVersion(res.version);
       } else {
+        if (!canContinue()) return;
         setDoc(mergeDoc(plan.doc as Partial<CareDoc>));
+        if (!canContinue()) return;
         setServerVersion(plan.version);
       }
 
+      if (!canContinue()) return;
       const entryRefreshPlan = buildCareEntryRefreshPlan({
         // The current API `since` filter is occurrence-based, not a server
         // update cursor, so full refresh remains the safe household sync path.
@@ -1354,7 +1535,8 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       const rows = await listCareEntries(entryRefreshPlan.params);
       if (
         eraseGenerationRef.current !== eraseGenerationAtStart ||
-        !signedInRef.current
+        !signedInRef.current ||
+        !canContinue()
       ) {
         return;
       }
@@ -1374,7 +1556,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       // orphan. Both stay opaque and non-renderable until full-list absence or
       // a compensating DELETE confirms the remote row is gone.
       for (const discardedId of suppressedIds) {
-        if (!signedInRef.current) return;
+        if (!signedInRef.current || !canContinue()) return;
         if (discardedId.startsWith("temp_")) {
           const matchingRows = rowsByClientKey.get(discardedId) ?? [];
           if (matchingRows.length === 0) {
@@ -1387,37 +1569,57 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           }
           await cleanupDiscardedServerEntryRows({
             rows: matchingRows,
-            markDiscarded: markServerEntryDiscarded,
+            markDiscarded: async (entryId) => {
+              if (!canContinue()) return;
+              await markServerEntryDiscarded(entryId);
+              if (!canContinue()) return;
+            },
             deleteEntry: async (entryId) => {
+              if (!canContinue()) return;
               try {
                 await deleteCareEntry(entryId);
+                if (!canContinue()) return;
               } catch (error) {
+                if (!canContinue()) return;
                 if (!isNotFound(error)) throw error;
               }
             },
-            clearDiscarded: clearDiscardedServerEntry,
-            shouldContinue: () => signedInRef.current,
+            clearDiscarded: async (entryId) => {
+              if (!canContinue()) return;
+              await clearDiscardedServerEntry(entryId);
+              if (!canContinue()) return;
+            },
+            shouldContinue: () => signedInRef.current && canContinue(),
           });
+          if (!canContinue()) return;
           continue;
         }
         if (!rowsById.has(discardedId)) {
+          if (!canContinue()) return;
           await clearDiscardedServerEntry(discardedId);
+          if (!canContinue()) return;
           continue;
         }
         try {
+          if (!canContinue()) return;
           try {
             await deleteCareEntry(discardedId);
+            if (!canContinue()) return;
           } catch (error) {
+            if (!canContinue()) return;
             if (!isNotFound(error)) throw error;
           }
+          if (!canContinue()) return;
           await clearDiscardedServerEntry(discardedId);
+          if (!canContinue()) return;
         } catch {
           // Keep suppressing the cancelled create and retry next refresh.
         }
       }
       if (
         eraseGenerationRef.current !== eraseGenerationAtStart ||
-        !signedInRef.current
+        !signedInRef.current ||
+        !canContinue()
       ) {
         return;
       }
@@ -1434,11 +1636,14 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         entriesRef.current,
         serverEntries,
       );
+      if (!canContinue()) return;
       entriesRef.current = mergedEntries;
+      if (!canContinue()) return;
       setEntries(mergedEntries);
       // Drain only the ids observed by this refresh. Tombstones added after
       // the snapshot remain in the set for the next refresh.
       for (const discardedId of recentlySuppressed) {
+        if (!canContinue()) return;
         recentlyDiscardedServerEntryIdsRef.current.delete(discardedId);
       }
       const retryableCreates = mergedEntries.filter(
@@ -1448,9 +1653,11 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         (entry) => shouldRetryUpdate(entry),
       );
       retryableCreates.forEach((entry) => {
+        if (!canContinue()) return;
         persistEntryCreate(entry.id, entry);
       });
       retryableUpdates.forEach((entry) => {
+        if (!canContinue()) return;
         persistEntryUpdate(entry.id, entry);
       });
     } catch {
@@ -1460,10 +1667,13 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       setIsSyncing(false);
     }
   }, [
+    careDocWritesBlocked,
+    careWriteCanContinue,
     clearDiscardedServerEntry,
     markServerEntryDiscarded,
     persistEntryCreate,
     persistEntryUpdate,
+    preserveFutureCareDoc,
   ]);
 
   useEffect(() => {
@@ -1473,6 +1683,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const addEntry = useCallback(
     (entry: Omit<Entry, "id">) => {
+      if (careDocWritesBlocked()) return "";
       const tempId = `temp_${Date.now()}_${Math.random()
         .toString(36)
         .slice(2, 7)}`;
@@ -1487,11 +1698,15 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       persistEntryCreate(tempId, entry);
       return tempId;
     },
-    [persistEntryCreate],
+    [careDocWritesBlocked, persistEntryCreate],
   );
 
   const deleteEntry = useCallback(
     async (id: string) => {
+      if (careDocWritesBlocked()) return false;
+      const writeGeneration = careWriteProtectionRef.current.capture();
+      const canContinue = () => careWriteCanContinue(writeGeneration);
+      if (!canContinue()) return false;
       // A quick undo can arrive after the optimistic create already swapped
       // its temp id for the server id; resolve through the mapping so the
       // right row is removed locally AND on the server.
@@ -1531,11 +1746,16 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         // response was lost, a future refresh will suppress/delete the server
         // row by id or by details.clientKey.
         for (const discardedId of deletionLedgerIds) {
+          if (!canContinue()) return false;
           await markServerEntryDiscarded(discardedId);
+          if (!canContinue()) return false;
         }
       } catch {
+        if (!canContinue()) return false;
         for (const discardedId of deletionLedgerIds) {
+          if (!canContinue()) return false;
           await clearDiscardedServerEntry(discardedId);
+          if (!canContinue()) return false;
           recentlyDiscardedServerEntryIdsRef.current.delete(discardedId);
         }
         if (cancelledTempId) {
@@ -1543,6 +1763,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         }
         return false;
       }
+      if (!canContinue()) return false;
       entryUpdateQueue.cancel(realId);
       const eraseGenerationAtStart = eraseGenerationRef.current;
       // Computed outside the updater (see updateEntry): a deferred updater
@@ -1550,40 +1771,53 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       entriesRef.current = entriesRef.current.filter(
         (e) => e.id !== realId && e.id !== id,
       );
+      if (!canContinue()) return false;
       setEntries((prev) => prev.filter((e) => e.id !== realId && e.id !== id));
       if (!signedInRef.current || realId.startsWith("temp_")) return true;
       try {
         try {
+          if (!canContinue()) return false;
           await deleteCareEntry(realId);
+          if (!canContinue()) return false;
         } catch (error) {
+          if (!canContinue()) return false;
           if (!isNotFound(error)) throw error;
         }
+        if (!canContinue()) return false;
         for (const discardedId of deletionLedgerIds) {
           if (!discardedId.startsWith("temp_")) {
+            if (!canContinue()) return false;
             await clearDiscardedServerEntry(discardedId);
+            if (!canContinue()) return false;
           }
         }
+        if (!canContinue()) return false;
         queryClient.invalidateQueries({
           queryKey: getListCareEntriesQueryKey(),
         });
         return true;
       } catch {
+        if (!canContinue()) return false;
         // Never restore across an owner wipe: a slow delete that fails after
         // "All data deleted" must not resurrect the entry into the freshly
         // wiped store.
         if (removed && eraseGenerationRef.current === eraseGenerationAtStart) {
           for (const discardedId of deletionLedgerIds) {
+            if (!canContinue()) return false;
             await clearDiscardedServerEntry(discardedId);
+            if (!canContinue()) return false;
             recentlyDiscardedServerEntryIdsRef.current.delete(discardedId);
           }
           if (cancelledTempId) {
             cancelledTempEntries.current.delete(cancelledTempId);
           }
           const restored = removed;
+          if (!canContinue()) return false;
           entriesRef.current = restoreEntryAfterDeleteFailure(
             entriesRef.current,
             restored,
           );
+          if (!canContinue()) return false;
           setEntries((previous) =>
             restoreEntryAfterDeleteFailure(previous, restored),
           );
@@ -1593,6 +1827,8 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     },
     [
       clearDiscardedServerEntry,
+      careDocWritesBlocked,
+      careWriteCanContinue,
       entryUpdateQueue,
       markServerEntryDiscarded,
       queryClient,
@@ -1601,6 +1837,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const updateEntry = useCallback(
     (id: string, patch: Partial<Omit<Entry, "id">>) => {
+      if (careDocWritesBlocked()) return false;
+      const writeGeneration = careWriteProtectionRef.current.capture();
+      if (!careWriteCanContinue(writeGeneration)) return false;
       const realId = realIdByTemp.current.get(id) ?? id;
       // Compute the merge OUTSIDE the setState updater. The old pattern
       // (assign inside the updater, read synchronously after) silently
@@ -1609,7 +1848,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       // committed-fresh and updated eagerly below so sequential same-tick
       // updates compose.
       const current = entriesRef.current.find((e) => e.id === realId);
-      if (!current) return;
+      if (!current) return false;
       const mutablePatch = toCareEntryMutablePatch(patch);
       const syncDisposition = decideCareEntryEditSyncDisposition(
         current,
@@ -1633,7 +1872,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             entry.id === realId ? preserved : entry,
           ),
         );
-        return;
+        return true;
       }
       const pendingPatchDelta = toPendingCareEntrySyncPatch(
         current,
@@ -1675,40 +1914,49 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         if (syncDisposition === "local") {
           entryUpdateQueue.cancel(realId);
         }
-        return;
+        return true;
       }
       if (syncDisposition === "local") {
         // Invalidate an older in-flight PATCH generation before returning.
         // Its eventual acknowledgement must not replace this offline edit.
         entryUpdateQueue.cancel(realId);
-        return;
+        return true;
       }
+      entryWriteGenerationRef.current.set(realId, writeGeneration);
+      if (!careWriteCanContinue(writeGeneration)) return false;
       entryUpdateQueue.enqueue(realId, merged);
+      return true;
     },
-    [entryUpdateQueue],
+    [careDocWritesBlocked, careWriteCanContinue, entryUpdateQueue],
   );
 
   const updateCareDoc = useCallback(
     (updater: (doc: CareDoc) => CareDoc) => {
+      if (careDocWritesBlocked()) {
+        setCareStorageWarning("newer-version");
+        return false;
+      }
       // Compute OUTSIDE the setState updater: calling pushDoc from inside it
       // was a render-phase side effect (duplicate PUTs under StrictMode /
       // replayed concurrent renders). docRef is updated eagerly so two
       // synchronous back-to-back updates compose instead of the second one
       // reading a stale base.
-      const next: CareDoc = {
+      const next = mergeDoc({
         ...updater(docRef.current),
         updatedAt: new Date().toISOString(),
-      };
+      });
       docRef.current = next;
       setDoc(next);
       if (signedInRef.current) void pushDoc(next);
+      return true;
     },
-    [pushDoc],
+    [careDocWritesBlocked, pushDoc, setCareStorageWarning],
   );
 
   const state = useMemo<CareState>(
     () => ({
       version: serverVersion,
+      dataVersion: doc.dataVersion,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
       activePetId: doc.activePetId,
@@ -1739,6 +1987,10 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     // reset the live document and remove every data-bearing WoofWatcher key.
     // The persist effect re-saves only a pristine default household.
     eraseGenerationRef.current += 1;
+    careWriteProtectionRef.current.reset();
+    futureCareDocRef.current = null;
+    futureCareCacheRawRef.current = null;
+    setStorageWarning(null);
     const tempIdsNeedingRemoteCleanup = entriesRef.current
       .filter(
         (entry) =>
@@ -1775,6 +2027,8 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     setServerVersion(0);
     realIdByTemp.current.clear();
     pendingPatch.current.clear();
+    creatingTempEntries.current.clear();
+    entryWriteGenerationRef.current.clear();
     try {
       const keys = await AsyncStorage.getAllKeys();
       const owned = selectWoofWatcherKeysForOwnerWipe(
@@ -1802,9 +2056,11 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     }
   }, [entryUpdateQueue, markServerEntryDiscarded]);
 
+  const careMutationsBlocked = careDocWritesBlocked();
   const value = useMemo<CareContextValue>(
     () => ({
       state,
+      careMutationsBlocked,
       addEntry,
       deleteEntry,
       updateEntry,
@@ -1819,6 +2075,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       state,
+      careMutationsBlocked,
       addEntry,
       deleteEntry,
       updateEntry,

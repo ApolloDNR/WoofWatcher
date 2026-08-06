@@ -44,6 +44,7 @@ async function loadReminderCenter() {
       medicationCount: number;
       recordCount: number;
       groomingCount: number;
+      correctionCount: number;
       status: string;
       summary: string;
       nextStep: string;
@@ -120,6 +121,24 @@ test("derives a shared reminder center from routines, medications, records, and 
   assert.match(center.summary, /reminder/i);
   assert.match(center.nextStep, /overdue|missed/i);
   assert.match(center.notificationReadiness, /ready for owner review/i);
+});
+
+test("omits an invalid-time routine from reminder calculations", async () => {
+  const deriveCareReminderCenter = await loadReminderCenter();
+
+  const center = deriveCareReminderCenter({
+    now: NOW,
+    routines: [
+      { id: "legacy", label: "Legacy care", type: "walk", time: "9x:30 AM", owner: "Apollo" },
+    ],
+    entries: [],
+  });
+
+  assert.equal(center.routineCount, 0);
+  assert.equal(center.correctionCount, 1);
+  assert.ok(center.items.every((item) => item.sourceId !== "legacy"));
+  assert.equal(center.summary, "1 routine needs correction before reminders can be scheduled.");
+  assert.equal(center.nextStep, "Correct Legacy care's saved time in Plans.");
 });
 
 test("clears visible routine reminders only when matching household-visible logs satisfy them", async () => {

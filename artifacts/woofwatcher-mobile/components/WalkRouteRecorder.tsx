@@ -48,13 +48,15 @@ export function useWalkRouteCaptureStatus(): WalkRouteCaptureSnapshot {
 }
 
 export function WalkRouteRecorderBridge() {
-  const { state, updateEntry, isLoaded } = useCare();
+  const { state, careMutationsBlocked, updateEntry, isLoaded } = useCare();
   const openWalk = useMemo(() => findOpenWalkSession(state.entries), [state.entries]);
   const entriesRef = useRef(state.entries);
   entriesRef.current = state.entries;
   const activeKeyRef = useRef<string | null>(null);
 
-  const sessionKey = isLoaded ? walkSessionKey(openWalk) : null;
+  const sessionKey = isLoaded && !careMutationsBlocked
+    ? walkSessionKey(openWalk)
+    : null;
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -74,7 +76,7 @@ export function WalkRouteRecorderBridge() {
           details.walkStartedAt === previousKey
         );
       });
-      if (result && finished) {
+      if (result && finished && !careMutationsBlocked) {
         updateEntry(finished.id, {
           details: {
             ...finished.details,
@@ -85,8 +87,10 @@ export function WalkRouteRecorderBridge() {
       }
     }
 
-    if (sessionKey) void startWalkRouteCapture(sessionKey);
-  }, [sessionKey, isLoaded, updateEntry]);
+    if (sessionKey && !careMutationsBlocked) {
+      void startWalkRouteCapture(sessionKey);
+    }
+  }, [careMutationsBlocked, sessionKey, isLoaded, updateEntry]);
 
   // Never leave a location watch running after the app tree unmounts.
   useEffect(() => () => cancelWalkRouteCapture(), []);

@@ -105,6 +105,11 @@ import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
 import { resolvePetName } from "@/lib/petIdentity";
 import { deriveTodayCommand, findPendingMealOutcome } from "@/lib/todayCommand";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
+import { deriveHomeRoutinePlan } from "@/lib/homeRoutinePlan";
+import {
+  CARE_READ_ONLY_MESSAGE,
+  runAcceptedCareMutation,
+} from "@/lib/careWriteProtection";
 
 const HOME_PROVIDER_SYNC_ENABLED =
   isClerkEnabledForBuild && getConsumerSurfacePolicy().providerSyncControls;
@@ -358,6 +363,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const {
     state,
+    careMutationsBlocked,
     addEntry,
     deleteEntry,
     updateEntry,
@@ -366,6 +372,8 @@ export default function HomeScreen() {
     legacyImport,
     isLoaded,
   } = useCare();
+  const showCareReadOnly = () =>
+    notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   // The data-loss warning must reach screen-reader users on every platform.
   useEffect(() => {
     if (storageWarning === "save-failed") {
@@ -374,6 +382,8 @@ export default function HomeScreen() {
       announce("Could not read saved care data. Saving is paused this session.");
     } else if (storageWarning === "reset") {
       announce("Saved care data could not be read and was reset. A recovery copy was kept.");
+    } else if (storageWarning === "newer-version") {
+      announce("This care data was created by a newer WoofWatcher version. This version will not overwrite it.");
     }
   }, [storageWarning]);
   const { avatarConfig, hasConfiguredAvatar } = useAvatar();
@@ -705,6 +715,16 @@ export default function HomeScreen() {
   // Session-local snooze: a snoozed routine steps out of Next Up for 30
   // minutes on this device, without touching the Plan schedule itself.
   const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
+  const homeRoutinePlan = useMemo(
+    () =>
+      deriveHomeRoutinePlan({
+        routines: state.routines,
+        entries: state.entries,
+        snoozedUntil,
+        now,
+      }),
+    [now, snoozedUntil, state.entries, state.routines],
+  );
 
   const nextUp = useMemo<HomeNextUpItem[]>(() => {
     if (openAloneSession) {
@@ -735,11 +755,8 @@ export default function HomeScreen() {
         },
       ];
     }
-    const awakeRoutines = state.routines.filter(
-      (r) => (snoozedUntil[r.id] ?? 0) <= now,
-    );
-    if (awakeRoutines.length) {
-      return awakeRoutines.slice(0, 3).map((r) => {
+    if (homeRoutinePlan.scheduledItems.length) {
+      return homeRoutinePlan.scheduledItems.slice(0, 3).map((r) => {
         const routineType = normalizeCareEventType(r.type ?? "note");
         return {
           label: r.label,
@@ -753,7 +770,7 @@ export default function HomeScreen() {
         };
       });
     }
-    if (state.routines.length) {
+    if (homeRoutinePlan.hasSavedRoutines) {
       // Everything scheduled is snoozed right now.
       return [];
     }
@@ -789,8 +806,7 @@ export default function HomeScreen() {
     openAloneSession,
     openWalkMinutes,
     openWalkSession,
-    snoozedUntil,
-    state.routines,
+    homeRoutinePlan,
     caregiver,
     hasCaregivers,
     now,
@@ -815,7 +831,7 @@ export default function HomeScreen() {
   );
 
   const nextPrimary = nextUp[0];
-  const nextCount = Math.max(nextUp.length, 1);
+  const nextCount = nextUp.length;
   const nextMeta = openAloneSession
     ? "I'm Home"
     : openWalkSession
@@ -1359,18 +1375,28 @@ export default function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [legacyImport]);
 
-  const undoQuickFeedback = () => {
+  const undoQuickFeedback = async () => {
     if (!quickFeedback) return;
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
+    }
     const title = quickFeedback.title;
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    void deleteEntry(quickFeedback.id);
-    setQuickFeedback(null);
-    // Clear the room bubble in the same commit: the undone log's "Meal
-    // served"/"Walk started" line must not linger over the twin for the
-    // rest of its 3.2s timer after the entry is already gone.
-    if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
-    setRoomSpeechOverride(null);
-    showToast(`${title} undone`);
+    const deleted = await deleteEntry(quickFeedback.id);
+    const accepted = runAcceptedCareMutation(deleted, () => {
+      setQuickFeedback(null);
+      // Clear the room bubble in the same commit: the undone log's "Meal
+      // served"/"Walk started" line must not linger over the twin for the
+      // rest of its 3.2s timer after the entry is already gone.
+      if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
+      setRoomSpeechOverride(null);
+      showToast(`${title} undone`);
+    });
+    if (!accepted) {
+      showCareReadOnly();
+      return;
+    }
   };
 
   const openQuickFeedbackDetails = () => {
@@ -1409,18 +1435,31 @@ export default function HomeScreen() {
   // and notes stay optional and editable from the saved log afterward).
   const finishWalkFromHome = () => {
     if (!openWalkSession?.id) return;
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return;
     }
     const patch = buildWalkSessionFinishPatch(openWalkSession, {
       caregiver,
       now: Date.now(),
     });
-    updateEntry(openWalkSession.id, patch as Partial<Omit<Entry, "id">>);
-    showRoomSpeech("Walk completed");
-    showToast(
-      `Walk completed · ${formatDuration(patch.durationMinutes)} logged · +${careXpForEntry({ ...openWalkSession, details: patch.details })} care XP`,
+    const updated = updateEntry(
+      openWalkSession.id,
+      patch as Partial<Omit<Entry, "id">>,
     );
+    const accepted = runAcceptedCareMutation(updated, () => {
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      }
+      showRoomSpeech("Walk completed");
+      showToast(
+        `Walk completed · ${formatDuration(patch.durationMinutes)} logged · +${careXpForEntry({ ...openWalkSession, details: patch.details })} care XP`,
+      );
+    });
+    if (!accepted) {
+      showCareReadOnly();
+      return;
+    }
   };
 
   // Double-tap safety: one save per intent on every quick-log surface. The
@@ -1451,10 +1490,13 @@ export default function HomeScreen() {
     routineId?: string;
     routineLabel?: string;
   }): string | null => {
+    if (careMutationsBlocked) {
+      showCareReadOnly();
+      return null;
+    }
     // A rapid second Walk tap lands before the open session exists in
     // state; it is the same intent, already answered by the first tap.
     if (isDuplicateQuickTap("walk")) return null;
-    markQuickSave("walk");
     const entry = buildWalkSessionStartEntry({
       caregiver,
       now,
@@ -1462,18 +1504,28 @@ export default function HomeScreen() {
       routineLabel: options?.routineLabel,
     });
     const id = addEntry(entry as Omit<Entry, "id">);
-    const reactionPlan = describeCareTwinReactionForLog({
-      type: "walk",
-      label: "Walk",
-      title: "Walk started",
-      details: entry.details,
+    const accepted = runAcceptedCareMutation(id, () => {
+      markQuickSave("walk");
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      }
+      const reactionPlan = describeCareTwinReactionForLog({
+        type: "walk",
+        label: "Walk",
+        title: "Walk started",
+        details: entry.details,
+      });
+      showRoomSpeech(reactionPlan.label);
+      showToast("Walk started · care XP lands when you finish", {
+        id,
+        title: "Walk started",
+        type: "walk",
+      });
     });
-    showRoomSpeech(reactionPlan.label);
-    showToast("Walk started · care XP lands when you finish", {
-      id,
-      title: "Walk started",
-      type: "walk",
-    });
+    if (!accepted) {
+      showCareReadOnly();
+      return null;
+    }
     return id;
   };
 
@@ -1491,15 +1543,16 @@ export default function HomeScreen() {
       router.push(homeLogDetailRoute(policy.type, Date.now()) as never);
       return;
     }
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
     if (item.type === "walk") {
       if (openWalkSession) {
         openActiveWalkFromHomeQuickLog();
         return;
       }
       startWalkSessionFromHome();
+      return;
+    }
+    if (careMutationsBlocked) {
+      showCareReadOnly();
       return;
     }
     // Dedupe against the same tick (ref) and the saved timeline (shared
@@ -1513,7 +1566,6 @@ export default function HomeScreen() {
     ) {
       return;
     }
-    markQuickSave(policy.type);
     const role = state.caregivers.find(
       (person) => person.name === caregiver,
     )?.role;
@@ -1528,31 +1580,41 @@ export default function HomeScreen() {
       { caregiver, caregiverRole: role, now },
     );
     const id = addEntry(entry);
-    const reactionPlan = describeCareTwinReactionForLog({
-      type: entry.type,
-      label: item.label,
-      title: entry.title,
-      mood: entry.mood,
-      severity: entry.severity,
-      details: entry.details,
+    const accepted = runAcceptedCareMutation(id, () => {
+      markQuickSave(policy.type);
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      }
+      const reactionPlan = describeCareTwinReactionForLog({
+        type: entry.type,
+        label: item.label,
+        title: entry.title,
+        mood: entry.mood,
+        severity: entry.severity,
+        details: entry.details,
+      });
+      showRoomSpeech(reactionPlan.label);
+      // The served-meal explainer lives in this one toast (with the room
+      // bubble) - no third dark callout over the sprite. The outcome-pending
+      // Next Up chip stays the persistent affordance after the toast fades.
+      const mealOutcomeOpen =
+        entry.type === "meal" &&
+        entry.details?.mealLifecycle === "outcome-pending";
+      showToast(
+        mealOutcomeOpen
+          ? `Meal served · outcome stays open · +${careXpForEntry(entry)} care XP`
+          : `${item.title} logged · +${careXpForEntry(entry)} care XP`,
+        {
+          id,
+          title: item.title,
+          type: item.type,
+        },
+      );
     });
-    showRoomSpeech(reactionPlan.label);
-    // The served-meal explainer lives in this one toast (with the room
-    // bubble) - no third dark callout over the sprite. The outcome-pending
-    // Next Up chip stays the persistent affordance after the toast fades.
-    const mealOutcomeOpen =
-      entry.type === "meal" &&
-      entry.details?.mealLifecycle === "outcome-pending";
-    showToast(
-      mealOutcomeOpen
-        ? `Meal served · outcome stays open · +${careXpForEntry(entry)} care XP`
-        : `${item.title} logged · +${careXpForEntry(entry)} care XP`,
-      {
-        id,
-        title: item.title,
-        type: item.type,
-      },
-    );
+    if (!accepted) {
+      showCareReadOnly();
+      return;
+    }
   };
 
   const tapPhoenixRoom = () => {
@@ -2000,6 +2062,8 @@ export default function HomeScreen() {
                   ? "Device storage is failing - new care logs may not survive an app restart."
                   : storageWarning === "read-failed"
                     ? "Couldn't read saved care data. Saving is paused this session to protect what's stored."
+                    : storageWarning === "newer-version"
+                      ? "This care data was created by a newer WoofWatcher version. This version will not overwrite it. Update WoofWatcher to safely open and edit this care plan."
                     : "Saved care data couldn't be read and was reset. A recovery copy was kept on this device."}
               </Text>
             </View>
@@ -2293,7 +2357,11 @@ export default function HomeScreen() {
                 accessory={
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Open Plan. 1 of ${nextCount} next up.`}
+                    accessibilityLabel={
+                      nextCount > 0
+                        ? `Open Plan. 1 of ${nextCount} next up.`
+                        : "Open Plan. No schedulable next items."
+                    }
                     hitSlop={MOBILE_INLINE_HIT_SLOP}
                     onPress={() => router.push("/calendar")}
                     style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
@@ -2306,6 +2374,29 @@ export default function HomeScreen() {
                   </Pressable>
                 }
               />
+              {homeRoutinePlan.correctionSummary ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${homeRoutinePlan.correctionSummary} Review Plan.`}
+                  accessibilityHint="Opens Plan to correct saved routine times."
+                  onPress={() => router.push("/calendar")}
+                  style={({ pressed }) => [
+                    s.nextMoreRow,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <Ionicons name="warning-outline" size={16} color={colors.amber} />
+                  <Text
+                    style={[
+                      s.nextMoreText,
+                      { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
+                    ]}
+                  >
+                    {homeRoutinePlan.correctionSummary}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={13} color={colors.mutedForeground} />
+                </Pressable>
+              ) : null}
               {pendingMealOpenLoop ? (
                 <Reanimated.View
                   pointerEvents={pendingMealChipSuppressed ? "none" : "auto"}
@@ -2436,11 +2527,6 @@ export default function HomeScreen() {
                             nextPrimary.kind !== "open-loop" &&
                             !openWalkSession
                           ) {
-                            if (Platform.OS !== "web") {
-                              Haptics.impactAsync(
-                                Haptics.ImpactFeedbackStyle.Light,
-                              );
-                            }
                             startWalkSessionFromHome({
                               routineId: nextPrimary.routineId,
                               routineLabel:
@@ -2511,8 +2597,9 @@ export default function HomeScreen() {
                     { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
                   ]}
                 >
-                  Everything scheduled is snoozed. It returns in 30 minutes, or
-                  open Plan to review.
+                  {homeRoutinePlan.correctionCount > 0
+                    ? "No routines can be scheduled until their times are corrected in Plan."
+                    : "Everything scheduled is snoozed. It returns in 30 minutes, or open Plan to review."}
                 </Text>
               )}
               {nextUp.length > 1 ? (

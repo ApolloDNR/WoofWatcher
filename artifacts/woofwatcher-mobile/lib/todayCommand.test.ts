@@ -387,3 +387,68 @@ test("handoff review opens the exact latest care log when the day is caught up",
   assert.equal(command.primaryAction.route, "/log?entry=training_1");
   assert.match(command.primaryAction.label, /Review handoff/i);
 });
+
+test("a correction-only meal array keeps the default meal target and copy", () => {
+  const withoutRoutine = deriveTodayCommand(state({ routines: [] }), MORNING);
+  const withCorrection = deriveTodayCommand(
+    state({
+      routines: [
+        {
+          id: "bad-breakfast",
+          label: "Bad breakfast",
+          type: "meal",
+          time: ["7:30 AM"] as unknown as string,
+          owner: "Emma",
+        },
+      ],
+    }),
+    MORNING,
+  );
+
+  assert.equal(withoutRoutine.primaryAction.kind, "log-meal");
+  assert.equal(withoutRoutine.primaryAction.detail, "0/2 meals logged today.");
+  assert.equal(withCorrection.primaryAction.kind, "log-meal");
+  assert.equal(withCorrection.primaryAction.label, "Log meal");
+  assert.equal(withCorrection.primaryAction.detail, "0/2 meals logged today.");
+});
+
+test("a correction-only whitespace walk keeps the default walk target and copy", () => {
+  const entries: TodayCommandState["entries"] = [
+    {
+      id: "meal-1",
+      type: "meal",
+      title: "Breakfast",
+      caregiver: "Emma",
+      occurredAt: "2026-06-06T07:30:00-07:00",
+    },
+    {
+      id: "meal-2",
+      type: "meal",
+      title: "Lunch",
+      caregiver: "Emma",
+      occurredAt: "2026-06-06T08:00:00-07:00",
+    },
+  ];
+  const withoutRoutine = deriveTodayCommand(state({ entries, routines: [] }), MORNING);
+  const withCorrection = deriveTodayCommand(
+    state({
+      entries,
+      routines: [
+        {
+          id: "bad-walk",
+          label: "Bad walk",
+          type: "walk",
+          time: " 8:30 AM ",
+          owner: "Emma",
+        },
+      ],
+    }),
+    MORNING,
+  );
+
+  assert.equal(withoutRoutine.primaryAction.kind, "log-walk");
+  assert.equal(withoutRoutine.primaryAction.detail, "0/2 walks logged today.");
+  assert.equal(withCorrection.primaryAction.kind, "log-walk");
+  assert.equal(withCorrection.primaryAction.label, "Log walk");
+  assert.equal(withCorrection.primaryAction.detail, "0/2 walks logged today.");
+});

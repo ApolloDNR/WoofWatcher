@@ -31,6 +31,11 @@ import {
 } from "@/lib/quickLogEntry";
 import { MEAL_OUTCOME_UPDATE_OPTIONS } from "@/lib/mealOutcomeUpdate";
 import { buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
+import { notifyDialog } from "@/lib/confirmDialog";
+import {
+  CARE_READ_ONLY_MESSAGE,
+  careMutationWasAccepted,
+} from "@/lib/careWriteProtection";
 
 /**
  * Fast-log sheet from Apollo's FINAL mock boards: a light parchment moment
@@ -124,7 +129,9 @@ export default function FastLogScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { state, addEntry } = useCare();
+  const { state, careMutationsBlocked, addEntry } = useCare();
+  const showCareReadOnly = () =>
+    notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   const [justLogged, setJustLogged] = useState<string | null>(null);
   const loggedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -211,11 +218,12 @@ export default function FastLogScreen() {
   };
 
   const logTile = (tile: FastLogTile) => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     if (tile.forceDetail) {
       openDetail(tile);
+      return;
+    }
+    if (careMutationsBlocked) {
+      showCareReadOnly();
       return;
     }
     const policy = getQuickLogPolicy(tile.type);
@@ -233,8 +241,14 @@ export default function FastLogScreen() {
         return;
       }
       if (isDuplicateQuickTap("walk")) return;
+      const entryId = addEntry(
+        buildWalkSessionStartEntry({ caregiver, now: Date.now() }) as Omit<Entry, "id">,
+      );
+      if (!careMutationWasAccepted(entryId)) {
+        showCareReadOnly();
+        return;
+      }
       recentQuickSave.current = { type: "walk", at: Date.now() };
-      addEntry(buildWalkSessionStartEntry({ caregiver, now: Date.now() }) as Omit<Entry, "id">);
       flashLogged(tile.key, "Walk started");
       return;
     }
@@ -245,14 +259,18 @@ export default function FastLogScreen() {
     ) {
       return;
     }
-    recentQuickSave.current = { type: policy.type, at: now };
     const role = state.caregivers.find((person) => person.name === caregiver)?.role;
     const entry = buildQuickLogEntry(
       { type: tile.type, title: tile.title },
       state,
       { caregiver, caregiverRole: role, now },
     );
-    addEntry(entry);
+    const entryId = addEntry(entry);
+    if (!careMutationWasAccepted(entryId)) {
+      showCareReadOnly();
+      return;
+    }
+    recentQuickSave.current = { type: policy.type, at: now };
     flashLogged(tile.key, `${tile.title} logged`);
   };
 

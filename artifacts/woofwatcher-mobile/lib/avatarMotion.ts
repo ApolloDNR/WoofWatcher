@@ -1,6 +1,7 @@
 import {
   deriveHealthWatch,
   deriveRoutineBoard,
+  isRoutineBoardScheduledItem,
   normalizeCareEventType,
   type CareEventDetails,
 } from "../../../lib/care-domain/src/index.ts";
@@ -104,19 +105,6 @@ const WALK_SOON_WINDOW_MINUTES = 60;
 
 function minutesBetween(iso: string, now: number): number {
   return (now - new Date(iso).getTime()) / 60_000;
-}
-
-function routineDateMs(routine: AvatarMotionRoutine, now: number): number {
-  const [time, periodRaw] = routine.time.trim().split(/\s+/);
-  const [hStr, mStr] = (time || "0:00").split(":");
-  const period = periodRaw?.toUpperCase();
-  let h = Number.parseInt(hStr, 10);
-  if (!Number.isFinite(h)) h = 0;
-  if (period === "PM" && h !== 12) h += 12;
-  if (period === "AM" && h === 12) h = 0;
-  const d = new Date(now);
-  d.setHours(h, Number.parseInt(mStr || "0", 10) || 0, 0, 0);
-  return d.getTime();
 }
 
 function isQuietHour(now: number): boolean {
@@ -238,9 +226,10 @@ function openRoutineMotion(
     caregivers: input.caregivers,
     now,
   });
-  const open = board.items.find((item) => item.status === "overdue") ??
-    board.items.find((item) => item.status === "due") ??
-    board.items.find((item) => item.status === "upcoming");
+  const scheduled = board.items.filter(isRoutineBoardScheduledItem);
+  const open = scheduled.find((item) => item.status === "overdue") ??
+    scheduled.find((item) => item.status === "due") ??
+    scheduled.find((item) => item.status === "upcoming");
 
   if (!open) return null;
 

@@ -63,6 +63,27 @@ test("marks overdue, due, upcoming, and unassigned routine states", () => {
   assert.equal(board.next?.id, "snack");
 });
 
+test("keeps invalid legacy times visible for correction but out of routine scheduling", () => {
+  const board = deriveRoutineBoard({
+    now: NOW,
+    routines: [
+      { id: "dinner", label: "Dinner", type: "meal", time: "6:00 PM", owner: "Emma" },
+      { id: "bad-walk", label: "Legacy walk", type: "walk", time: "6x:30 PM", owner: "Apollo" },
+      { id: "snack", label: "Bedtime snack", type: "meal", time: "8:00 PM", owner: "Emma" },
+    ],
+    entries: [],
+  });
+
+  assert.deepEqual(board.items.map((item) => item.id), ["dinner", "snack", "bad-walk"]);
+  assert.equal(board.items[2].status, "needs-correction");
+  assert.equal(board.items[2].minutesFromNow, null);
+  assert.equal(board.next?.id, "dinner");
+  assert.equal(board.doneCount, 0);
+  assert.equal(board.openCount, 2);
+  assert.equal(board.correctionCount, 1);
+  assert.equal(board.summary, "0/2 routines done today. 1 routine needs correction.");
+});
+
 test("fuzzy matching consumes each same-type entry once", () => {
   const board = deriveRoutineBoard({
     now: NOW,

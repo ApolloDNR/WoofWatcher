@@ -222,6 +222,23 @@ test("builds a caregiver handoff with done, watch, next, and load", () => {
   assert.match(handoff.message, /Emma logged 2/i);
 });
 
+test("omits malformed legacy times from the caregiver handoff next routine", () => {
+  const handoff = deriveCareHandoff({
+    now: NOW,
+    routines: [
+      { id: "bad-walk", type: "walk", label: "Legacy walk", time: "6x:30 PM", owner: "Apollo" },
+      { id: "dinner", type: "meal", label: "Dinner", time: "7:00 PM", owner: "Emma" },
+    ],
+    entries: [],
+  });
+
+  assert.equal(handoff.next?.id, "dinner");
+  assert.ok(handoff.sections.needsAttention.some(
+    (item) => item.label === "Routine needs correction" && /Legacy walk/.test(item.detail),
+  ));
+  assert.ok(handoff.sections.needsAttention.every((item) => item.label !== "Walk remaining"));
+});
+
 test("writes needs-attention sentences with real subject-verb agreement", () => {
   const handoff = deriveCareHandoff({
     now: NOW,
