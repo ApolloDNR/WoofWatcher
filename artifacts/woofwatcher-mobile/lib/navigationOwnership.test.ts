@@ -338,6 +338,319 @@ test("More accepts only its closed sections and maps legacy aliases to their own
   }
 });
 
+test("canonical More children preserve only their section-owned query payload", () => {
+  assert.deepEqual(
+    resolveCanonicalDestination({
+      pathname: "/more",
+      params: {
+        section: ["care-team-supplies", "privacy"],
+        item: ["travel-leash", "ignored"],
+        entry: "never-reflected",
+        prompt: "never-reflected",
+      },
+    }),
+    {
+      parent: "more",
+      pathname: "/more",
+      params: { section: "care-team-supplies", item: "travel-leash" },
+      replace: false,
+    },
+  );
+  assert.deepEqual(
+    resolveCanonicalDestination({
+      pathname: "/more",
+      params: {
+        section: "story-progress",
+        entry: ["entry.2", "ignored"],
+        walk: "walk:active",
+        item: "never-reflected",
+        doc: "terms",
+      },
+    }),
+    {
+      parent: "more",
+      pathname: "/more",
+      params: {
+        section: "story-progress",
+        entry: "entry.2",
+        walk: "walk:active",
+      },
+      replace: false,
+    },
+  );
+  assert.deepEqual(
+    resolveCanonicalDestination({
+      pathname: "/more",
+      params: {
+        section: "woofguide",
+        prompt: "🐕‍🦺 Café care",
+        doc: "privacy",
+      },
+    }),
+    {
+      parent: "more",
+      pathname: "/more",
+      params: { section: "woofguide", prompt: "🐕‍🦺 Café care" },
+      replace: false,
+    },
+  );
+  assert.deepEqual(
+    resolveCanonicalDestination({
+      pathname: "/more",
+      params: {
+        section: "legal",
+        doc: ["terms", "privacy"],
+        prompt: "never-reflected",
+      },
+    }),
+    {
+      parent: "more",
+      pathname: "/more",
+      params: { section: "legal", doc: "terms" },
+      replace: false,
+    },
+  );
+});
+
+test("canonical More drops child payload from every non-owning section", () => {
+  for (const section of [
+    "root",
+    "dog-profile",
+    "avatar-studio",
+    "care-team",
+    "adventure",
+    "settings",
+    "privacy",
+  ] as const) {
+    assert.deepEqual(
+      resolveCanonicalDestination({
+        pathname: "/more",
+        params: {
+          section,
+          item: "travel-leash",
+          entry: "entry.2",
+          walk: "walk:active",
+          prompt: "care prompt",
+          doc: "terms",
+        },
+      }),
+      section === "root"
+        ? { parent: "more", pathname: "/more", replace: false }
+        : {
+            parent: "more",
+            pathname: "/more",
+            params: { section },
+            replace: false,
+          },
+      section,
+    );
+  }
+
+  const crossSectionCases = [
+    ["care-team-supplies", { entry: "entry.2", walk: "walk:active" }],
+    ["story-progress", { item: "travel-leash", prompt: "care prompt" }],
+    ["woofguide", { item: "travel-leash", doc: "privacy" }],
+    ["legal", { entry: "entry.2", prompt: "care prompt" }],
+  ] as const;
+  for (const [section, extraParams] of crossSectionCases) {
+    assert.deepEqual(
+      resolveCanonicalDestination({
+        pathname: "/more",
+        params: { section, ...extraParams },
+      }),
+      {
+        parent: "more",
+        pathname: "/more",
+        params: { section },
+        replace: false,
+      },
+      section,
+    );
+  }
+});
+
+test("canonical More applies identifier boundaries and rejects inherited or malformed payload", () => {
+  const maxIdentifier = `a${"b".repeat(79)}`;
+  assert.deepEqual(
+    resolveCanonicalDestination({
+      pathname: "/more",
+      params: { section: "care-team-supplies", item: maxIdentifier },
+    }),
+    {
+      parent: "more",
+      pathname: "/more",
+      params: { section: "care-team-supplies", item: maxIdentifier },
+      replace: false,
+    },
+  );
+
+  for (const invalid of [
+    `a${"b".repeat(80)}`,
+    ".starts-with-punctuation",
+    "contains space",
+    "safe<script>",
+  ] as const) {
+    assert.deepEqual(
+      resolveCanonicalDestination({
+        pathname: "/more",
+        params: {
+          section: "story-progress",
+          entry: invalid,
+          walk: invalid,
+        },
+      }),
+      {
+        parent: "more",
+        pathname: "/more",
+        params: { section: "story-progress" },
+        replace: false,
+      },
+      invalid,
+    );
+  }
+
+  for (const [section, inheritedPayload] of [
+    ["care-team-supplies", { item: "travel-leash" }],
+    ["story-progress", { entry: "entry.2", walk: "walk:active" }],
+    ["woofguide", { prompt: "care prompt" }],
+    ["legal", { doc: "terms" }],
+  ] as const) {
+    const inherited = Object.create(inheritedPayload) as Record<string, string>;
+    inherited.section = section;
+    assert.deepEqual(
+      resolveCanonicalDestination({ pathname: "/more", params: inherited }),
+      {
+        parent: "more",
+        pathname: "/more",
+        params: { section },
+        replace: false,
+      },
+      section,
+    );
+  }
+
+  for (const malformed of [[123], [{}], [["travel-leash"]]] as const) {
+    for (const [section, key] of [
+      ["care-team-supplies", "item"],
+      ["story-progress", "entry"],
+      ["story-progress", "walk"],
+      ["woofguide", "prompt"],
+      ["legal", "doc"],
+    ] as const) {
+      assert.deepEqual(
+        resolveCanonicalDestination({
+          pathname: "/more",
+          params: {
+            section,
+            [key]: malformed as unknown as string[],
+          },
+        }),
+        {
+          parent: "more",
+          pathname: "/more",
+          params: { section },
+          replace: false,
+        },
+        `${section}:${key}`,
+      );
+    }
+  }
+});
+
+test("canonical WoofGuide enforces Unicode prompt boundaries and contextual join controls", () => {
+  for (const prompt of [
+    "Café care",
+    "🐕 care",
+    "🐕‍🦺 care",
+    "a\u200cb",
+    "a\u200db",
+    "🐕".repeat(280),
+  ] as const) {
+    assert.deepEqual(
+      resolveCanonicalDestination({
+        pathname: "/more",
+        params: { section: "woofguide", prompt },
+      }),
+      {
+        parent: "more",
+        pathname: "/more",
+        params: { section: "woofguide", prompt },
+        replace: false,
+      },
+      prompt,
+    );
+  }
+
+  for (const prompt of [
+    "🐕".repeat(281),
+    "line one\nline two",
+    "care\u0000prompt",
+    "care\u00adprompt",
+    "care\u200bprompt",
+    "care\u200eprompt",
+    "care\u202eprompt",
+    "care\u2066prompt",
+    "care\ufeffprompt",
+    "\u200cstart",
+    "end\u200d",
+    "a \u200cb",
+    "a\u200d b",
+    "a\u200c\u200db",
+  ] as const) {
+    assert.deepEqual(
+      resolveCanonicalDestination({
+        pathname: "/more",
+        params: { section: "woofguide", prompt },
+      }),
+      {
+        parent: "more",
+        pathname: "/more",
+        params: { section: "woofguide" },
+        replace: false,
+      },
+      prompt,
+    );
+  }
+});
+
+test("canonical Legal accepts only its own closed document enum", () => {
+  for (const doc of ["privacy", "terms"] as const) {
+    assert.deepEqual(
+      resolveCanonicalDestination({
+        pathname: "/more",
+        params: { section: "legal", doc },
+      }),
+      {
+        parent: "more",
+        pathname: "/more",
+        params: { section: "legal", doc },
+        replace: false,
+      },
+    );
+  }
+
+  for (const doc of [
+    "cookies",
+    ["cookies", "terms"],
+    [123],
+    [{}],
+    [["terms"]],
+  ] as const) {
+    assert.deepEqual(
+      resolveCanonicalDestination({
+        pathname: "/more",
+        params: { section: "legal", doc: doc as unknown as string },
+      }),
+      {
+        parent: "more",
+        pathname: "/more",
+        params: { section: "legal" },
+        replace: false,
+      },
+    );
+  }
+});
+
 test("legacy route files replace to their exact canonical parent", () => {
   const cases = [
     [

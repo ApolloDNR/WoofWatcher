@@ -192,6 +192,38 @@ function validatedIdentifiers(
   return validated;
 }
 
+function validatedPrompt(
+  params: IncomingParams | undefined,
+): Readonly<Record<"prompt", string>> | undefined {
+  const prompt = ownScalarParam(params, "prompt");
+  return prompt && isPrintablePrompt(prompt) ? { prompt } : undefined;
+}
+
+function validatedLegalDocument(
+  params: IncomingParams | undefined,
+): Readonly<Record<"doc", string>> | undefined {
+  const doc = ownScalarParam(params, "doc");
+  return doc === "privacy" || doc === "terms" ? { doc } : undefined;
+}
+
+function validatedMoreSectionParams(
+  section: Exclude<MoreSection, "root">,
+  params: IncomingParams | undefined,
+): Readonly<Record<string, string>> | undefined {
+  switch (section) {
+    case "care-team-supplies":
+      return validatedIdentifiers(params, ["item"]);
+    case "story-progress":
+      return validatedIdentifiers(params, ["entry", "walk"]);
+    case "woofguide":
+      return validatedPrompt(params);
+    case "legal":
+      return validatedLegalDocument(params);
+    default:
+      return undefined;
+  }
+}
+
 function destination(
   parent: PrimaryTab,
   pathname: DestinationPathname,
@@ -255,7 +287,11 @@ function resolveMore(params: IncomingParams | undefined): CanonicalDestination {
   if (isMoreSection(section)) {
     return section === "root"
       ? destination("more", "/more", false)
-      : moreSectionDestination(section, false);
+      : moreSectionDestination(
+          section,
+          false,
+          validatedMoreSectionParams(section, params),
+        );
   }
 
   const legacy = ownValue(LEGACY_MORE_SECTIONS, section);
@@ -313,17 +349,19 @@ export function resolveCanonicalDestination(input: {
   }
 
   if (input.pathname === "/woofguide") {
-    const prompt = ownScalarParam(input.params, "prompt");
-    const validatedPrompt =
-      prompt && isPrintablePrompt(prompt) ? { prompt } : undefined;
-    return moreSectionDestination("woofguide", true, validatedPrompt);
+    return moreSectionDestination(
+      "woofguide",
+      true,
+      validatedPrompt(input.params),
+    );
   }
 
   if (input.pathname === "/legal") {
-    const doc = ownScalarParam(input.params, "doc");
-    const validatedDoc =
-      doc === "privacy" || doc === "terms" ? { doc } : undefined;
-    return moreSectionDestination("legal", true, validatedDoc);
+    return moreSectionDestination(
+      "legal",
+      true,
+      validatedLegalDocument(input.params),
+    );
   }
 
   const legacyMoreSection = ownValue(LEGACY_MORE_PATHS, input.pathname);
