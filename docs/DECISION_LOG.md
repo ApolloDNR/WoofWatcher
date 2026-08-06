@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-06: Reconcile mainline Home scene work before new automation scope
+
+- Decision: merge `origin/main` into `automation/premium-revenue-product-builder` with a normal merge commit before starting another Home identity slice.
+- Reason: mainline introduced the authoritative fixed-hero, compact-web viewport, active-walk gait, and sprite-strip changes; building against the previous scene structure would create avoidable divergence.
+- Resolution boundary: retain both mainline scene behavior and automation-only Dog Profile identity, themed surface, and decorative accessibility fixes. Native/device/store/Apollo proof remains separate.
+
 ## 2026-08-06: Adventure memories follow Dog Profile identity
 
 - Decision: resolve Adventure Mode and new Adventure memory identity through `resolvePetName` at the shared care-domain boundary.

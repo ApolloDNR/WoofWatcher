@@ -2115,7 +2115,7 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
   assert.match(careTwinAssets, /dogless-room-layer/);
   assert.match(careTwinAssets, /listCareTwinSpriteSlots/);
   assert.match(careTwinAssets, /storybook-idle-tail-wag-strip\.png/);
-  assert.match(careTwinAssets, /storybook-walk-loop-strip\.png/);
+  assert.match(careTwinAssets, /storybook-walk-loop-v3-hard-pixel-strip\.png/);
   assert.match(careTwinAssets, /storybook-ear-perk-strip\.png/);
   assert.match(careTwinAssets, /storybook-bark-reaction-strip\.png/);
   assert.match(careTwinAssets, /storybook-eat-loop-strip\.png/);
@@ -2143,7 +2143,7 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(home, /homeFirstScreenLayout\.heroAspectRatio/);
   assert.match(home, /homeFirstScreenLayout\.presencePanelMinHeight/);
   assert.match(home, /getHomeMissionDeckLayout/);
-  assert.match(home, /useWindowDimensions/);
+  assert.match(home, /useAppViewport/);
   assert.match(home, /missionLayout\.qaLabel/);
   assert.match(home, /missionLayout\.detailLines/);
   assert.match(home, /homeMissions/);
@@ -2317,7 +2317,7 @@ test("keeps Home room animation alive without duplicate first-screen HUD chrome"
   assert.match(room, /testID="care-twin-roaming-rig"/);
   assert.match(room, /testID="care-twin-roaming-sprite-player"/);
   assert.match(room, /roamFlipMirrored/);
-  assert.match(room, /overrideAction \?\? \(moving \? "walk-loop" : dwellAction\)/);
+  assert.match(room, /resolveRoamingTwinSpriteAction/);
   // One-way care-event lifecycle: a fresh care log plays its event loop for
   // one short window and settles to the idle track (no eat/idle flip-flop),
   // and it never replays from a scene derived out of stored history.
@@ -2325,16 +2325,13 @@ test("keeps Home room animation alive without duplicate first-screen HUD chrome"
   assert.match(room, /function settledCareEventPlan/);
   assert.match(room, /const careEventSignatureRef = useRef\(careEventSignature\)/);
   assert.match(room, /if \(careEventActive\) return;/);
-  // Stage-rig pose swaps ride the same settle trough as the roaming rig:
-  // dip out, swap at the bottom, ease back — never a single-frame hard cut.
+  // The anchored rig can still settle between care-event poses; the moving
+  // rig resolves its active gait directly so it never disappears mid-walk.
   assert.match(room, /const POSE_SETTLE_OUT_MS = 70/);
   assert.match(room, /const POSE_SETTLE_IN_MS = 110/);
   assert.match(room, /displayedStagePose/);
   assert.match(room, /styles\.poseSettleFade, stagePoseFadeStyle/);
-  assert.match(
-    room,
-    /plan\.scenePhase === "idle" \|\| plan\.scenePhase === "routine"/,
-  );
+  assert.match(room, /careTwinCanRoam/);
   assert.match(room, /testID="care-twin-fallback-avatar-rig"/);
   assert.match(room, /compactChrome \? styles\.speechBubbleCompact : null/);
   assert.match(room, /compactChrome \? styles\.speechTextCompact : null/);
@@ -4150,7 +4147,7 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
     ["storybook-idle-tail-wag-strip.png", { width: 2048, height: 256 }],
     ["storybook-ear-perk-strip.png", { width: 1536, height: 256 }],
     ["storybook-bark-reaction-strip.png", { width: 1536, height: 256 }],
-    ["storybook-walk-loop-strip.png", { width: 2048, height: 256 }],
+    ["storybook-walk-loop-v3-hard-pixel-strip.png", { width: 2048, height: 256 }],
     ["storybook-eat-loop-strip.png", { width: 2048, height: 256 }],
     ["storybook-drink-loop-strip.png", { width: 2048, height: 256 }],
     ["storybook-sleep-loop-strip.png", { width: 2048, height: 256 }],
@@ -5749,7 +5746,7 @@ test("keeps the Home room backdrop out of accessibility traversal", () => {
 
   assert.match(
     home,
-    /<Image\s+accessible=\{false\}\s+source=\{[\s\S]*?HOME_IMMERSIVE_ROOM_DAY[\s\S]*?style=\{s\.fullBleedArt\}/,
+    /<Image\s+accessible=\{false\}\s+source=\{fixedBackdropSource\}[\s\S]*?style=\{s\.fullBleedArt\}/,
     "the decorative Home room backdrop must not create an unlabeled stop before the labeled care console and care-twin controls",
   );
 });

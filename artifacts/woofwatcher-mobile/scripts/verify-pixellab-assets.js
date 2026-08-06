@@ -95,6 +95,7 @@ const crispAssets = [
   ["assets/avatar/phoenix/candidates/option-b-comfort-loop-strip.png", 2048, 256],
   ["assets/avatar/phoenix/candidates/option-b-health-watch-strip.png", 2048, 256],
   ["assets/avatar/phoenix/candidates/option-b-celebrate-hop-strip.png", 2048, 256],
+  ["assets/avatar/phoenix/storybook/storybook-walk-loop-v3-hard-pixel-strip.png", 2048, 256],
 ];
 
 const templateEmotes = {

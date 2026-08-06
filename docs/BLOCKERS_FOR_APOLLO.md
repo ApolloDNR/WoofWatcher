@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-06 Mainline Home scene reconciliation status
+
+Source integration can preserve fixed hero positioning, active-walk gait, themed surfaces, and accessibility boundaries, but it cannot approve the result on real phones. Route-named iOS/Android Home screenshots, compact-phone safe-area/crop/touch review, VoiceOver/TalkBack traversal, store evidence, and Apollo visual approval remain open.
+
 ## 2026-08-06 Adventure memory identity status
 
 Source-level Adventure guidance and newly saved local memories now follow canonical Dog Profile identity. Native iOS/Android Adventure review, VoiceOver/TalkBack traversal, provider/store proof, and Apollo approval remain open; no sharing, provider, payment, live-AI, or launch capability was enabled.

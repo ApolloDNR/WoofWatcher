@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
-import { Platform, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -11,6 +11,7 @@ import { normalizeCareEventType } from "@workspace/care-domain";
 import { BoardCard, BoardPill, BoardRouteHeader } from "@/components/board/BoardPrimitives";
 import { PressScale } from "@/components/motion/GameFeel";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
+import { useAppViewport } from "@/context/AppViewportContext";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -120,7 +121,7 @@ export default function CalendarMonthScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
-  const { width: screenWidth } = useWindowDimensions();
+  const { width: screenWidth } = useAppViewport();
   const { state } = useCare();
 
   // The quick-add FAB floats bottom-right (right: 20 + width 60 = 80px lane). On

@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-08-06 Mainline Home scene reconciliation
+
+- IN PROGRESS: Merge `origin/main` Home scene anchoring, compact-web viewport, active-walk gait, and replacement hard-pixel walk strip into the automation branch without rewriting either history.
+- PRESERVED: Automation-only Dog Profile identity, fixed light/dark color, and decorative-image accessibility boundaries were retained while resolving the Home and root-layout conflicts.
+- BASELINE CI: `WoofWatcher Verify` run `31124979898`, job `92693666007`, passed the pre-merge automation tip `0591e778` with install, doctor, focused tests, typecheck, and CI-safe builds all green.
+- NEXT: Run focused Home/layout/motion/readiness checks, the broad available suite, TypeScript/build/PixelLab checks, then push and require dependency-complete branch CI. Native iOS/Android visual and screen-reader approval remain separate.
+
 ## 2026-08-06 Adventure Dog Profile identity persistence
 
 - DONE: Adventure Mode and new local Adventure memories now resolve the saved Dog Profile through the canonical identity boundary instead of displaying or persisting the `My Dog` placeholder.

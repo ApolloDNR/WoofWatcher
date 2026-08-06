@@ -16,7 +16,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -63,6 +62,7 @@ import {
   type MedicationHistoryOutcomeFilter,
   type RecordKind,
 } from "@workspace/care-domain";
+import { useAppViewport } from "@/context/AppViewportContext";
 import { useCare, Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -227,7 +227,7 @@ export default function RecordsScreen() {
   const router = useRouter();
   const ownerOps = isOwnerOpsBuild();
   const { state, updateCareDoc } = useCare();
-  const { width } = useWindowDimensions();
+  const { width } = useAppViewport();
 
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,

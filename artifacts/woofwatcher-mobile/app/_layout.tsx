@@ -34,6 +34,7 @@ import { WalkRouteRecorderBridge } from "@/components/WalkRouteRecorder";
 import { WebDialogHost } from "@/components/WebDialogHost";
 import { CareProvider } from "@/context/CareContext";
 import { AvatarProvider } from "@/context/AvatarContext";
+import { AppViewportProvider } from "@/context/AppViewportContext";
 import { useColors } from "@/hooks/useColors";
 import {
   clerkProxyUrl,
@@ -42,6 +43,7 @@ import {
   providerApiBaseUrl,
   useWoofAuth,
 } from "@/lib/auth";
+import { resolveWebAppViewport } from "@/lib/webAppViewport";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -278,6 +280,10 @@ function AppFrame() {
   const shouldAnchorCompactPreview = viewportWidth <= 520;
   const frameWidth = Math.min(viewportWidth, 390);
   const frameHeight = Math.min(viewportHeight, 932);
+  const initialViewport = resolveWebAppViewport({
+    width: viewportWidth,
+    height: viewportHeight,
+  });
 
   // Phone-sized viewports get the real app edge-to-edge, exactly like the
   // mock boards - no navy letterboxing, no rounded shell. The framed
@@ -295,8 +301,10 @@ function AppFrame() {
           },
         ]}
       >
-        <RootLayoutNav />
-        <WebDialogHost />
+        <AppViewportProvider initialViewport={initialViewport}>
+          <RootLayoutNav />
+          <WebDialogHost />
+        </AppViewportProvider>
       </View>
     );
   }
@@ -323,10 +331,12 @@ function AppFrame() {
           },
         ]}
       >
-        <RootLayoutNav />
-        {/* Themed notice/confirm dialogs for web builds: notifyDialog and
-            confirmThroughSteps render here instead of raw window.alert. */}
-        <WebDialogHost />
+        <AppViewportProvider initialViewport={initialViewport}>
+          <RootLayoutNav />
+          {/* Themed notice/confirm dialogs for web builds: notifyDialog and
+              confirmThroughSteps render here instead of raw window.alert. */}
+          <WebDialogHost />
+        </AppViewportProvider>
       </View>
     </View>
   );

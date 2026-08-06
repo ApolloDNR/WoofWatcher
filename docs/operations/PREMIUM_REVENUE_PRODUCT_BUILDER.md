@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-08-06 Mainline Home scene reconciliation
+
+The automation branch now incorporates the latest mainline Home scene architecture: fixed hero anchoring, compact-web viewport measurement, active-walk motion, hardened fallback behavior, and the replacement hard-pixel walk strip. Conflict resolution retained the automation branch's canonical Dog Profile identity dependency, themed fixed light/dark surfaces, and decorative backdrop accessibility semantics. This is source integration only until fresh local checks and final-tip branch CI pass; it does not replace native safe-area, crop, gait, touch, VoiceOver/TalkBack, store, or Apollo review.
+
+The previous automation tip `0591e778` is dependency-complete: `WoofWatcher Verify` run `31124979898`, job `92693666007`, passed checkout, pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job.
+
 ## 2026-08-06 Adventure memory identity slice
 
 Adventure Mode and new local Adventure memory drafts now resolve Dog Profile identity canonically before building owner-visible quest copy or persisted memory records. Red-first behavior coverage caught the stored `My Dog` placeholder in the shared domain; trimmed renamed dogs remain intact and blank/placeholder profiles retain the intentional Phoenix starter identity. Quest XP, real-care evidence, private local storage, providers, native/store proof, and launch approval remain unchanged.

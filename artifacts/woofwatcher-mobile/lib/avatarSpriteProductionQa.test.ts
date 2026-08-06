@@ -47,7 +47,7 @@ test("builds the selected template production review card from registered sprite
   assert.match(review.headline, /Shepherd: 2\/2 animations live/);
   assert.match(review.proofStatusLabel, /Ready for native review/);
   assert.match(review.actionSummary, /Shepherd live idle: 8 frames at 7 fps/);
-  assert.match(review.actionSummary, /Shepherd walk loop: 8 frames at 9 fps/);
+  assert.match(review.actionSummary, /Shepherd walk loop: 8 frames at 10 fps/);
   assert.equal(review.gameFeelChecks.length, 4);
   assert.match(review.gameFeelChecks.join("\n"), /crisp hard-pixel sprite/);
   assert.match(review.nativeProofStatus, /Local sprite metadata only/);

@@ -9,7 +9,6 @@ import {
   StyleSheet,
   type StyleProp,
   Text,
-  useWindowDimensions,
   View,
   type ViewStyle,
 } from "react-native";
@@ -36,6 +35,7 @@ import { enterUp, PressScale, ProgressFill } from "@/components/motion/GameFeel"
 import { type DayTrailStop } from "@/components/DayTrailScene";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { TrailMap } from "@/components/TrailMap";
+import { useAppViewport } from "@/context/AppViewportContext";
 import { useCare, type Entry } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -180,7 +180,7 @@ export default function StoryScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width: windowWidth } = useWindowDimensions();
+  const { width: windowWidth } = useAppViewport();
   const { state } = useCare();
   const now = Date.now();
   /* Mock-board memories grid: 3 columns on the parchment background - 16px

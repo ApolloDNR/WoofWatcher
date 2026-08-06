@@ -52,7 +52,9 @@ import { deriveAvatarRoomRuntime } from "@/lib/avatarRoomRuntime";
 import type { PetAvatarConfig } from "@/lib/avatarStudio";
 import type { AvatarMotionModel } from "@/lib/avatarMotion";
 import {
+  careTwinCanRoam,
   deriveCareTwinRoamPlan,
+  resolveRoamingTwinSpriteAction,
   type RoamFacing,
   type RoamPlan,
 } from "@/lib/careTwinRoam";
@@ -596,12 +598,16 @@ export function LivingPhoenixRoom({
   const roamBaseAction = ambientSpriteAction ?? plan.spriteAction;
   const roamDwellAction: CareTwinSpriteAction =
     roamBaseAction === "walk-loop" ? "tail-wag" : roamBaseAction;
-  const roamEligible =
-    transparentScene &&
-    !isStudio &&
-    (plan.scenePhase === "idle" || plan.scenePhase === "routine") &&
-    Boolean(getCareTwinSpriteAsset("walk-loop")) &&
-    Boolean(getCareTwinSpriteAsset(roamDwellAction) ?? avatarConfig);
+  const roamEligible = careTwinCanRoam({
+    transparentScene,
+    isStudio,
+    scenePhase: plan.scenePhase,
+    awayOnWalk,
+    hasWalkSprite: Boolean(getCareTwinSpriteAsset("walk-loop")),
+    hasDwellSprite: Boolean(
+      getCareTwinSpriteAsset(roamDwellAction) ?? avatarConfig,
+    ),
+  });
   const roamPlan = useMemo(
     () =>
       roamEligible
@@ -1061,8 +1067,6 @@ export function LivingPhoenixRoom({
       {layeredStageReady && (!roamActive || !roamPlan || !stageSize) ? (
         <Animated.View
           pointerEvents="none"
-          entering={FadeIn.duration(180)}
-          exiting={FadeOut.duration(140)}
           style={[
               styles.spriteRig,
               {
@@ -1141,8 +1145,6 @@ export function LivingPhoenixRoom({
       {useFallbackAvatarLayer && (!roamActive || !roamPlan || !stageSize) ? (
         <Animated.View
           pointerEvents="none"
-          entering={FadeIn.duration(180)}
-          exiting={FadeOut.duration(140)}
           style={[
               styles.spriteRig,
               {
@@ -1622,9 +1624,6 @@ function RoamingTwinRig({
   const [legIndex, setLegIndex] = useState(0);
   const [moving, setMoving] = useState(false);
   const [facing, setFacing] = useState<RoamFacing>("left");
-  // Mirror flips apply at the pose-settle trough (with the sprite swap)
-  // instead of instantly, so the dog never hard-flips at full opacity.
-  const facingTarget = useRef<RoamFacing>("left");
   const [petBurstId, setPetBurstId] = useState<number | null>(null);
   const petBurstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const paused = Boolean(overrideAction);
@@ -1660,7 +1659,6 @@ function RoamingTwinRig({
   useEffect(() => {
     setLegIndex(0);
     setMoving(false);
-    facingTarget.current = "left";
     setFacing("left");
     // A new plan re-anchors the twin. Glide there instead of snapping -
     // the instant reassignment here was the single-frame ~70px teleport
@@ -1688,7 +1686,7 @@ function RoamingTwinRig({
       return;
     }
     const leg = plan.legs[legIndex % plan.legs.length];
-    facingTarget.current = leg.facing;
+    setFacing(leg.facing);
     if (leg.kind === "walk") {
       setMoving(true);
       const target = (leg.to.xPct / 100) * stageWidth;
@@ -1738,46 +1736,22 @@ function RoamingTwinRig({
     walkBob.value = withTiming(0, { duration: 220 });
   }, [moving, paused, reduced, walkBob]);
 
-  const activeAction: CareTwinSpriteAction =
-    overrideAction ?? (moving ? "walk-loop" : dwellAction);
-  // The rendered pose trails the target action through a brief settle:
-  // opacity dips out, the sprite track (and facing) swap at the trough,
-  // then it eases back - never a hard cut mid-walk.
-  const [displayedAction, setDisplayedAction] =
-    useState<CareTwinSpriteAction>(activeAction);
-  const poseOpacity = useSharedValue(1);
-  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (activeAction === displayedAction) {
-      poseOpacity.value = withTiming(1, {
-        duration: POSE_SETTLE_IN_MS,
-        easing: Easing.out(Easing.quad),
-      });
-      return;
-    }
-    poseOpacity.value = withTiming(0, {
-      duration: POSE_SETTLE_OUT_MS,
-      easing: Easing.in(Easing.quad),
-    });
-    settleTimer.current = setTimeout(() => {
-      setDisplayedAction(activeAction);
-      setFacing(facingTarget.current);
-    }, POSE_SETTLE_OUT_MS);
-    return () => {
-      if (settleTimer.current) clearTimeout(settleTimer.current);
-    };
-  }, [activeAction, displayedAction, poseOpacity]);
+  const activeAction = resolveRoamingTwinSpriteAction({
+    moving,
+    dwellAction,
+    overrideAction,
+  });
   const runtime = useMemo(
     () =>
       avatarConfig
-        ? deriveAvatarRoomRuntime(avatarConfig, displayedAction)
+        ? deriveAvatarRoomRuntime(avatarConfig, activeAction)
         : null,
-    [avatarConfig, displayedAction],
+    [activeAction, avatarConfig],
   );
   const spriteAsset =
-    runtime?.spriteAsset ?? getCareTwinSpriteAsset(displayedAction);
+    runtime?.spriteAsset ?? getCareTwinSpriteAsset(activeAction);
   const spriteTrack =
-    runtime?.spriteTrack ?? CARE_TWIN_SPRITE_MANIFEST[displayedAction];
+    runtime?.spriteTrack ?? CARE_TWIN_SPRITE_MANIFEST[activeAction];
   // Accessory art is fitted to the template sprite-pack geometry; over the
   // Phoenix action strips it lands at the wrong scale, so it only rides
   // along when the runtime actually uses the template pack.
@@ -1799,17 +1773,11 @@ function RoamingTwinRig({
     ],
   }));
 
-  const poseFadeStyle = useAnimatedStyle(() => ({
-    opacity: poseOpacity.value,
-  }));
-
   if (!spriteAsset || !spriteTrack) return null;
 
   return (
     <Animated.View
       pointerEvents="box-none"
-      entering={FadeIn.duration(180)}
-      exiting={FadeOut.duration(140)}
       style={[styles.roamRig, rigStyle]}
       testID="care-twin-roaming-rig"
     >
@@ -1832,9 +1800,7 @@ function RoamingTwinRig({
           facing === "right" ? styles.roamFlipMirrored : null,
         ]}
       >
-        {/* The settle dip wraps the pose stack only - the ground shadow
-            stays put so the beat reads as the dog settling, not blinking. */}
-        <Animated.View style={[styles.poseSettleFade, poseFadeStyle]}>
+        <Animated.View style={styles.poseSettleFade}>
           {showAccessoryLayers
             ? runtime?.underlayLayers.map((layer) =>
                 layer.source ? (
@@ -1854,9 +1820,9 @@ function RoamingTwinRig({
             : null}
           <SpriteSheetPlayer
             key={
-              overrideKey !== null && displayedAction === overrideAction
-                ? `roam-${overrideKey}-${displayedAction}`
-                : `roam-${displayedAction}`
+              overrideKey !== null && activeAction === overrideAction
+                ? `roam-${overrideKey}-${activeAction}`
+                : `roam-${activeAction}`
             }
             asset={spriteAsset}
             height={ROAM_RIG_SIZE}
