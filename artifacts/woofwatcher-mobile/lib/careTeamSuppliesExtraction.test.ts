@@ -16,6 +16,7 @@ const COMPONENT_PATH = join(
 );
 const PACK_PATH = join(MOBILE_ROOT, "app", "(tabs)", "pack.tsx");
 const MORE_PATH = join(MOBILE_ROOT, "app", "(tabs)", "more.tsx");
+const ROUTER_PATH = join(MOBILE_ROOT, "components", "more", "MoreSectionRouter.tsx");
 
 function read(path: string): string {
   return existsSync(path) ? readFileSync(path, "utf8") : "";
@@ -240,14 +241,16 @@ test("leaves Pack as a resolver-backed redirect with no second mounted owner", (
   assert.equal(mutationCount(pack, "updateCareDoc"), 0);
 });
 
-test("dispatches only the extracted Care Team target and removes its duplicate More owner", () => {
+test("dispatches only the extracted Care Team target from the canonical router", () => {
   const more = read(MORE_PATH);
+  const router = read(ROUTER_PATH);
 
   assert.match(more, /resolveMoreSectionRoute/);
-  assert.match(more, /target\.kind === "care-team-supplies"/);
-  assert.match(more, /<CareTeamSuppliesScreen/);
-  assert.match(more, /section=\{resolved\.target\.section\}/);
-  assert.match(more, /itemId=\{resolved\.itemId\}/);
+  assert.match(more, /<MoreSectionRouter/);
+  assert.match(router, /case "care-team-supplies"/);
+  assert.match(router, /<CareTeamSuppliesScreen/);
+  assert.match(router, /section=\{target\.section\}/);
+  assert.match(router, /itemId=\{itemId\}/);
   assert.match(more, /<MoreScreenContent/);
   assert.equal(mutationCount(more, "updateCareDoc"), 1);
   assert.equal(mutationCount(more, "runAcceptedCareMutation"), 1);

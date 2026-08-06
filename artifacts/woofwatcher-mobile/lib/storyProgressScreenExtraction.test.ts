@@ -17,6 +17,7 @@ const COMPONENT_PATH = join(
   "StoryProgressScreen.tsx",
 );
 const STORY_ROUTE_PATH = join(MOBILE_ROOT, "app", "(tabs)", "story.tsx");
+const ROUTER_PATH = join(MOBILE_ROOT, "components", "more", "MoreSectionRouter.tsx");
 
 function read(path: string): string {
   return existsSync(path) ? readFileSync(path, "utf8") : "";
@@ -156,21 +157,17 @@ test("uses canonical child transitions and consolidates weekly career metrics", 
   assert.doesNotMatch(component, /Open Career and Stats/);
 });
 
-test("keeps the hidden Story route as one small temporary delegate", () => {
+test("keeps the hidden Story route as one small replace-only bridge", () => {
   const route = read(STORY_ROUTE_PATH);
+  const router = read(ROUTER_PATH);
 
   assert.ok(route.length <= 1_400, `Story delegate should stay small, received ${route.length} chars`);
-  assert.match(route, /import \{ useRouter \} from "expo-router"/);
-  assert.match(route, /import StoryProgressScreen from "@\/components\/more\/StoryProgressScreen"/);
-  assert.equal(route.match(/<StoryProgressScreen\b/g)?.length ?? 0, 1);
-  assert.match(route, /if \(router\.canGoBack\(\)\)/);
-  assert.match(route, /router\.back\(\)/);
-  assert.match(route, /router\.replace\("\/more"\)/);
-  assert.match(route, /onBack=\{handleBack\}/);
-  assert.equal(
-    route.match(/onOpenAdventure=\{\(\) => router\.push\("\/adventure"\)\}/g)?.length ?? 0,
-    1,
-  );
+  assert.match(route, /useLocalSearchParams/);
+  assert.match(route, /resolveCanonicalDestination/);
+  assert.match(route, /pathname:\s*"\/story"/);
+  assert.match(route, /<Redirect\s+href=\{redirectHref\}\s*\/>/);
+  assert.doesNotMatch(route, /StoryProgressScreen|useRouter|router\./);
+  assert.match(router, /<StoryProgressScreen[\s\S]{0,360}onBack=\{onBack\}[\s\S]{0,360}onOpenAdventure=\{\(\) => pushMore\("adventure"\)\}/);
 
   for (const forbidden of [
     "useCare",

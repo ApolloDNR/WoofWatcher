@@ -276,7 +276,7 @@ const setupRoutePath = join(mobileRoot, "app", "setup.tsx");
 const moreRoutePath = join(mobileRoot, "app", "(tabs)", "more.tsx");
 const careContextPath = join(mobileRoot, "context", "CareContext.tsx");
 const premiumRoutePath = join(mobileRoot, "app", "premium.tsx");
-const privacyRoutePath = join(mobileRoot, "app", "privacy.tsx");
+const privacyDataScreenPath = join(mobileRoot, "components", "more", "PrivacyDataScreen.tsx");
 const recordsScreenPath = join(mobileRoot, "components", "health", "RecordsScreen.tsx");
 const pwaVanillaAppEntryPath = join(root, "artifacts", "woofwatcher", "src", "vanilla", "app-entry.js");
 const pwaPrivacyCloudPath = join(root, "artifacts", "woofwatcher", "src", "vanilla", "woof-privacy-cloud.js");
@@ -312,7 +312,7 @@ const setupRouteSource = existsSync(setupRoutePath) ? readFileSync(setupRoutePat
 const moreRouteSource = existsSync(moreRoutePath) ? readFileSync(moreRoutePath, "utf8") : "";
 const careContextSource = existsSync(careContextPath) ? readFileSync(careContextPath, "utf8") : "";
 const premiumRouteSource = existsSync(premiumRoutePath) ? readFileSync(premiumRoutePath, "utf8") : "";
-const privacyRouteSource = existsSync(privacyRoutePath) ? readFileSync(privacyRoutePath, "utf8") : "";
+const privacyDataScreenSource = existsSync(privacyDataScreenPath) ? readFileSync(privacyDataScreenPath, "utf8") : "";
 const recordsScreenSource = existsSync(recordsScreenPath) ? readFileSync(recordsScreenPath, "utf8") : "";
 const pwaVanillaAppEntrySource = existsSync(pwaVanillaAppEntryPath) ? readFileSync(pwaVanillaAppEntryPath, "utf8") : "";
 const pwaPrivacyCloudSource = existsSync(pwaPrivacyCloudPath) ? readFileSync(pwaPrivacyCloudPath, "utf8") : "";
@@ -2057,7 +2057,7 @@ const supportLegalReadinessProofTargetIsSourceBacked = includesAll(mobileRelease
   && includesAll(livePreviewHandoffProofSource, [
     "support-legal-readiness-proof",
   ])
-  && includesAll(privacyRouteSource, [
+  && includesAll(privacyDataScreenSource, [
     "openSupportLegalProofMission",
     "support-legal-readiness-proof",
     "Share support runbook",
@@ -2129,7 +2129,7 @@ check(
     : "keep deriveSupportRunbookPlan wired to the support legal proof manifest so approval booleans alone cannot mark public launch ready",
 );
 
-const privacySupportStatusProofGuardIsSourceBacked = includesAll(privacyRouteSource, [
+const privacySupportStatusProofGuardIsSourceBacked = includesAll(privacyDataScreenSource, [
   "const launchProfileProviderApproved =",
   'state.launchSupportProfile.providerStatus === "provider-approved" && supportPlan.launchReady',
   "const requestedSupportPlan = deriveSupportRunbookPlan(launchDraft)",

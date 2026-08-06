@@ -14,7 +14,6 @@ import {
   Animated,
   Image,
   ImageBackground,
-  type LayoutChangeEvent,
   Modal,
   Platform,
   Pressable,
@@ -107,9 +106,18 @@ import {
   deriveCareerWeek,
   deriveCareStreak,
 } from "@/lib/careCareer";
-import { CareTeamSuppliesScreen } from "@/components/more/CareTeamSuppliesScreen";
+import MoreSectionRouter from "@/components/more/MoreSectionRouter";
+import {
+  MORE_DIRECTORY_GROUPS,
+  searchMoreDirectory,
+  type MoreDirectoryDestination,
+  type MoreDirectoryItem as CanonicalMoreDirectoryItem,
+} from "@/lib/moreDirectory";
 import { resolveMoreSectionRoute } from "@/lib/moreSectionRouting";
-import { resolveCanonicalDestination } from "@/lib/navigationOwnership";
+import type { MoreSection } from "@/lib/navigationOwnership";
+
+// resolveCanonicalDestination stays encapsulated by resolveMoreSectionRoute;
+// this route must not call or re-parse the canonical ownership boundary.
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -121,16 +129,6 @@ type HouseholdMemberSummary = {
   displayName?: string | null;
   email?: string | null;
   role?: string | null;
-};
-
-type MoreRouteSearchParams = {
-  section?: string | string[];
-  item?: string | string[];
-  entry?: string | string[];
-  walk?: string | string[];
-  prompt?: string | string[];
-  doc?: string | string[];
-  focus?: string | string[];
 };
 
 interface MoreDirectoryItem {
@@ -360,55 +358,71 @@ function providerRowQaTarget(key: LaunchProviderSetupKey): ProviderRowQaTarget |
 }
 
 export default function MoreScreen() {
-  const routeParams = useLocalSearchParams<MoreRouteSearchParams>();
+  const params = useLocalSearchParams<Record<string, string | string[]>>();
   const router = useRouter();
-  const destination = resolveCanonicalDestination({
-    pathname: "/more",
-    params: routeParams,
-  });
+  const resolved = resolveMoreSectionRoute(params);
+  const destination = resolved.destination;
   const redirectHref: Href = destination.params
     ? { pathname: destination.pathname, params: { ...destination.params } }
     : destination.pathname;
 
-  if (destination.parent === "health") {
+  if (destination.parent !== "more" || destination.replace) {
     return <Redirect href={redirectHref} />;
   }
 
-  const resolved = resolveMoreSectionRoute(routeParams);
-
-  if (resolved.target.kind === "care-team-supplies") {
-    return (
-      <CareTeamSuppliesScreen
-        section={resolved.target.section}
-        itemId={resolved.itemId}
-        onBack={() => (router.canGoBack() ? router.back() : router.replace("/more"))}
-      />
-    );
-  }
-
-  return <MoreScreenContent routeParams={routeParams} />;
+  return (
+    <MoreSectionRouter
+      section={resolved.section}
+      itemId={resolved.itemId}
+      entryId={resolved.entryId}
+      walkId={resolved.walkId}
+      prompt={resolved.prompt}
+      legalDocument={resolved.legalDocument}
+      onBack={() => {
+        if (router.canGoBack()) {
+          router.back();
+          return;
+        }
+        router.replace("/more");
+      }}
+      renderRoot={() => <MoreScreenContent />}
+    />
+  );
 }
 
-function MoreScreenContent({
-  routeParams,
-}: {
-  routeParams: Readonly<MoreRouteSearchParams>;
-}) {
+function MoreScreenContent({}: Record<string, never>) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const [moreSearchQuery, setMoreSearchQuery] = useState("");
+  const normalizedMoreQuery = moreSearchQuery.trim().replace(/\s+/g, " ");
+  const moreSearchResults = useMemo(
+    () => searchMoreDirectory(moreSearchQuery),
+    [moreSearchQuery],
+  );
+  const openMoreSection = useCallback(
+    (section: Exclude<MoreSection, "root">) => {
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        window.history.pushState({}, "", `/more?section=${encodeURIComponent(section)}`);
+      }
+      router.push({ pathname: "/more", params: { section } });
+    },
+    [router],
+  );
+  const openDirectoryDestination = (destination: MoreDirectoryDestination) => {
+    Haptics.selectionAsync();
+    if (destination.parent === "health") {
+      router.push({ pathname: "/health", params: { section: "care-pass" } });
+      return;
+    }
+    openMoreSection(destination.section);
+  };
   // Owner launch tooling renders in development/internal builds only; store
   // production builds keep More to complete device-local care surfaces.
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
   const ownerOps = consumerSurfacePolicy.ownerOps;
   const providerSyncEnabled =
     consumerSurfacePolicy.providerSyncControls && isClerkEnabledForBuild;
-  const sectionParam = Array.isArray(routeParams.section) ? routeParams.section[0] : routeParams.section;
-  // `focus` is a navigation nonce (Date.now() at the call site). More stays
-  // mounted between tab visits, so without it a second tap on the same
-  // Pack/Story shortcut would leave `section` unchanged and never re-scroll.
-  const rawFocusParam = (routeParams as Record<string, string | string[] | undefined>).focus;
-  const focusParam = Array.isArray(rawFocusParam) ? rawFocusParam[0] : rawFocusParam;
   const { state, careMutationsBlocked, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
   const showCareReadOnly = () =>
     notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
@@ -657,46 +671,7 @@ function MoreScreenContent({
     bottomInset: insets.bottom,
   });
 
-  /** The remaining legacy career anchor stays until Story moves in Task 4c. */
   const scrollRef = useRef<ScrollView>(null);
-  const sectionAnchorYRef = useRef<Record<string, number>>({});
-  const pendingAnchorRef = useRef<string | null>(null);
-
-  const scrollToAnchor = useCallback(
-    (key: string): boolean => {
-      const anchorY = sectionAnchorYRef.current[key];
-      if (anchorY == null) return false;
-      // Anchors measure against the content wrapper, which starts below the
-      // ScrollView's own top content padding.
-      scrollRef.current?.scrollTo({ y: Math.max(0, topPadding + anchorY - 8), animated: true });
-      return true;
-    },
-    [topPadding],
-  );
-
-  const registerSectionAnchor = useCallback(
-    (key: string) => (event: LayoutChangeEvent) => {
-      sectionAnchorYRef.current[key] = event.nativeEvent.layout.y;
-      if (pendingAnchorRef.current === key) {
-        pendingAnchorRef.current = null;
-        requestAnimationFrame(() => scrollToAnchor(key));
-      }
-    },
-    [scrollToAnchor],
-  );
-
-  const sectionAnchorTarget = sectionParam === "career" ? sectionParam : null;
-
-  useEffect(() => {
-    if (!sectionAnchorTarget) return;
-    pendingAnchorRef.current = sectionAnchorTarget;
-    const frame = requestAnimationFrame(() => {
-      if (pendingAnchorRef.current === sectionAnchorTarget && scrollToAnchor(sectionAnchorTarget)) {
-        pendingAnchorRef.current = null;
-      }
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [sectionAnchorTarget, focusParam, scrollToAnchor]);
   const modalSheetBottomPadding = getModalSheetBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -810,7 +785,7 @@ function MoreScreenContent({
       sub: `Ask about ${petName}'s care, diet, and patterns`,
       onPress: () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push("/woofguide");
+        openMoreSection("woofguide");
       },
     },
     ...(ownerOps
@@ -834,7 +809,7 @@ function MoreScreenContent({
       sub: "Export data, deletion request, AI disclosure, and storage gates",
       onPress: () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push("/privacy");
+        openMoreSection("privacy");
       },
     },
     {
@@ -844,7 +819,7 @@ function MoreScreenContent({
       sub: "Private quests, quest XP, and memories from real walks and wins",
       onPress: () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push("/adventure" as never);
+        openMoreSection("adventure");
       },
     },
     {
@@ -854,7 +829,7 @@ function MoreScreenContent({
       sub: "Create a pixel care twin with manual choices",
       onPress: () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push("/portrait");
+        openMoreSection("avatar-studio");
       },
     },
     ...(ownerOps
@@ -941,9 +916,9 @@ function MoreScreenContent({
       tile.key === "native-qa"
         ? () => router.push(buildCareTwinQaFocusRoute(nativeQaPrimaryMissionTarget) as never)
         : tile.key === "storage" || tile.key === "store-approval"
-          ? () => router.push("/privacy")
+          ? () => openMoreSection("privacy")
           : tile.key === "woofguide-ai"
-            ? () => router.push("/woofguide")
+            ? () => openMoreSection("woofguide")
             : tile.key === "plus-payments"
               ? () => router.push("/premium")
               : tile.status === "review"
@@ -1085,7 +1060,7 @@ function MoreScreenContent({
         return;
       case "open-privacy":
         Haptics.selectionAsync();
-        router.push("/privacy" as never);
+        openMoreSection("privacy");
         return;
       case "open-premium":
         Haptics.selectionAsync();
@@ -1093,11 +1068,11 @@ function MoreScreenContent({
         return;
       case "open-woofguide":
         Haptics.selectionAsync();
-        router.push("/woofguide" as never);
+        openMoreSection("woofguide");
         return;
       case "open-avatar-studio":
         Haptics.selectionAsync();
-        router.push("/portrait" as never);
+        openMoreSection("avatar-studio");
         return;
       case "share-beta-handoff":
         shareBetaHandoffPacket();
@@ -1254,6 +1229,24 @@ function MoreScreenContent({
   ];
 
   const H_PAD = 16;
+  const renderCanonicalDirectoryRow = (item: CanonicalMoreDirectoryItem) => (
+    <Pressable
+      key={item.id}
+      accessibilityRole="button"
+      accessibilityLabel={item.label}
+      onPress={() => openDirectoryDestination(item.destination)}
+      style={({ pressed }) => [
+        s.canonicalDirectoryRow,
+        { borderColor: colors.border, opacity: pressed ? 0.76 : 1 },
+      ]}
+    >
+      <View style={s.canonicalDirectoryCopy}>
+        <Text style={[s.canonicalDirectoryLabel, { color: colors.foreground }]}>{item.label}</Text>
+        <Text style={[s.canonicalDirectoryDetail, { color: colors.mutedForeground }]}>{item.detail}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+    </Pressable>
+  );
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -1268,11 +1261,42 @@ function MoreScreenContent({
             kicker="WOOFWATCHER"
             title="More"
             subtitle={`${petName}'s care tools, records, household, and settings.`}
-            back
-            onBack={() => (router.canGoBack() ? router.back() : router.replace("/"))}
             plain
             style={s.moreRouteHeader}
           />
+
+          <BoardCard enter={0} style={s.canonicalDirectoryCard}>
+            <TextInput
+              value={moreSearchQuery}
+              onChangeText={setMoreSearchQuery}
+              accessibilityLabel="Search More destinations"
+              placeholder="Search More"
+              placeholderTextColor={colors.mutedForeground}
+              style={[
+                s.canonicalDirectorySearch,
+                { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background },
+              ]}
+            />
+            {normalizedMoreQuery ? (
+              <View style={s.canonicalDirectoryGroup}>
+                <Text accessibilityRole="header" style={[s.canonicalDirectoryHeading, { color: colors.sage }]}>Search results</Text>
+                {moreSearchResults.length ? (
+                  moreSearchResults.map(renderCanonicalDirectoryRow)
+                ) : (
+                  <Text accessibilityRole="text" style={[s.canonicalDirectoryEmpty, { color: colors.mutedForeground }]}>
+                    {`No More destinations match “${normalizedMoreQuery}”. Try care team, export, privacy, or vet report.`}
+                  </Text>
+                )}
+              </View>
+            ) : (
+              MORE_DIRECTORY_GROUPS.map((group) => (
+                <View key={group.id} style={s.canonicalDirectoryGroup}>
+                  <Text accessibilityRole="header" style={[s.canonicalDirectoryHeading, { color: colors.sage }]}>{group.title}</Text>
+                  {group.items.map(renderCanonicalDirectoryRow)}
+                </View>
+              ))
+            )}
+          </BoardCard>
 
           {ownerOps ? (
           /* Launch Command Hub: a light parchment console. Same real gates,
@@ -1363,7 +1387,6 @@ function MoreScreenContent({
           </BoardCard>
           ) : null}
 
-          <View collapsable={false} onLayout={registerSectionAnchor("career")} />
           <BoardCard style={s.moreDirectoryCard}>
             <BoardSectionHeader
               title="Career & Stats"
@@ -1488,7 +1511,7 @@ function MoreScreenContent({
             <Pressable
               onPress={() => {
                 Haptics.selectionAsync();
-                router.push("/profile");
+                openMoreSection("dog-profile");
               }}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               accessibilityRole="button"
@@ -2689,6 +2712,36 @@ const s = StyleSheet.create({
   moreRouteHeader: {
     paddingHorizontal: 20,
   },
+  canonicalDirectoryCard: { marginTop: 8 },
+  canonicalDirectorySearch: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    fontFamily: "Inter_500Medium",
+    fontSize: 16,
+  },
+  canonicalDirectoryGroup: { marginTop: 14 },
+  canonicalDirectoryHeading: {
+    fontFamily: "Inter_800ExtraBold",
+    fontSize: 13,
+    lineHeight: 18,
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  canonicalDirectoryRow: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 10,
+  },
+  canonicalDirectoryCopy: { flex: 1 },
+  canonicalDirectoryLabel: { fontFamily: "Inter_700Bold", fontSize: 16, lineHeight: 20 },
+  canonicalDirectoryDetail: { fontFamily: "Inter_500Medium", fontSize: 14, lineHeight: 19, marginTop: 2 },
+  canonicalDirectoryEmpty: { fontFamily: "Inter_500Medium", fontSize: 15, lineHeight: 21, paddingVertical: 16 },
 
   moreCommandStageCard: {
     alignSelf: "stretch",

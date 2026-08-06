@@ -82,6 +82,11 @@ const AVATAR_STUDIO_SCREEN_PATH = join(
   "more",
   "AvatarStudioScreen.tsx",
 );
+const ADVENTURE_SCREEN_PATH = join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "more", "AdventureScreen.tsx");
+const WOOFGUIDE_SCREEN_PATH = join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "more", "WoofGuideScreen.tsx");
+const PRIVACY_DATA_SCREEN_PATH = join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "more", "PrivacyDataScreen.tsx");
+const LEGAL_SCREEN_PATH = join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "more", "LegalScreen.tsx");
+const MORE_SECTION_ROUTER_PATH = join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "more", "MoreSectionRouter.tsx");
 
 function readAppFile(path: string): string {
   return readFileSync(join(APP_DIR, path), "utf8");
@@ -154,6 +159,31 @@ function readAvatarStudioScreen(): string {
   );
   return readFileSync(AVATAR_STUDIO_SCREEN_PATH, "utf8");
 }
+
+function readMoreOwner(path: string, label: string): string {
+  assert.ok(existsSync(path), `${label} must be owned by More`);
+  return readFileSync(path, "utf8");
+}
+
+const readAdventureScreen = () => readMoreOwner(ADVENTURE_SCREEN_PATH, "Adventure");
+const readWoofGuideScreen = () => readMoreOwner(WOOFGUIDE_SCREEN_PATH, "WoofGuide");
+const readPrivacyDataScreen = () => readMoreOwner(PRIVACY_DATA_SCREEN_PATH, "Privacy & Data");
+const readLegalScreen = () => readMoreOwner(LEGAL_SCREEN_PATH, "Legal");
+const readMoreSectionRouter = () => readMoreOwner(MORE_SECTION_ROUTER_PATH, "More section router");
+
+test("routes every More child through one tabbed owner and leaves bridge files inert", () => {
+  const routerPath = join(process.cwd(), "artifacts", "woofwatcher-mobile", "components", "more", "MoreSectionRouter.tsx");
+  assert.ok(existsSync(routerPath), "canonical MoreSectionRouter must exist");
+  const router = readFileSync(routerPath, "utf8");
+  for (const owner of ["DogProfileScreen", "AvatarStudioScreen", "CareTeamSuppliesScreen", "StoryProgressScreen", "AdventureScreen", "WoofGuideScreen", "SettingsScreen", "PrivacyDataScreen", "LegalScreen"]) {
+    assert.ok(router.includes(`<${owner}`), owner);
+  }
+  for (const route of ["adventure.tsx", "woofguide.tsx", "privacy.tsx", "legal.tsx", "profile.tsx", "portrait.tsx", "(tabs)/story.tsx", "(tabs)/pack.tsx"]) {
+    const source = readAppFile(route);
+    assert.match(source, /resolveCanonicalDestination/, route);
+    assert.match(source, /<Redirect\s+href=\{redirectHref\}\s*\/>/, route);
+  }
+});
 
 function getStyleBlock(source: string, styleName: string): string {
   const marker = `  ${styleName}: {`;
@@ -317,7 +347,7 @@ test("keeps string router links pointed at existing route files", () => {
 
 test("keeps launch-blocking safety copy on premium, privacy, and WoofGuide surfaces", () => {
   const premium = readAppFile("premium.tsx");
-  const privacy = readAppFile("privacy.tsx");
+  const privacy = readPrivacyDataScreen();
   const privacyModel = readFileSync(
     join(
       process.cwd(),
@@ -328,7 +358,7 @@ test("keeps launch-blocking safety copy on premium, privacy, and WoofGuide surfa
     ),
     "utf8",
   );
-  const woofGuide = readAppFile("woofguide.tsx");
+  const woofGuide = readWoofGuideScreen();
   const privacySurface = `${privacy}\n${privacyModel}`;
 
   assert.match(premium, /Payments stay disabled|payments/i);
@@ -684,9 +714,9 @@ test("keeps auth entry styled as the truthful CareTwin gateway", () => {
 });
 
 test("keeps critical mobile actions accessible to screen readers", () => {
-  const privacy = readAppFile("privacy.tsx");
+  const privacy = readPrivacyDataScreen();
   const premium = readAppFile("premium.tsx");
-  const woofGuide = readAppFile("woofguide.tsx");
+  const woofGuide = readWoofGuideScreen();
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const careTeamSupplies = readCareTeamSuppliesScreen();
   const dogProfile = readDogProfileScreen();
@@ -743,6 +773,10 @@ test("keeps tabbed mobile routes clear with shared universal tab chrome", () => 
     ["story-progress", readStoryProgressScreen()],
     ["dog-profile", readDogProfileScreen()],
     ["avatar-studio", readAvatarStudioScreen()],
+    ["adventure", readAdventureScreen()],
+    ["woofguide", readWoofGuideScreen()],
+    ["privacy", readPrivacyDataScreen()],
+    ["legal", readLegalScreen()],
   ] as const;
 
   assert.match(mobileLayout, /getFloatingTabChromeMetrics/);
@@ -788,10 +822,8 @@ test("keeps tabbed mobile routes clear with shared universal tab chrome", () => 
 
 test("keeps standalone mobile routes on shared safe-area helpers", () => {
   const standaloneRoutes = [
-    "adventure",
     "care-twin-qa",
     "premium",
-    "privacy",
     "setup",
   ];
   const authUi = readFileSync(
@@ -804,7 +836,7 @@ test("keeps standalone mobile routes on shared safe-area helpers", () => {
     ),
     "utf8",
   );
-  const woofGuide = readAppFile("woofguide.tsx");
+  const woofGuide = readWoofGuideScreen();
 
   for (const route of standaloneRoutes) {
     const source = readAppFile(`${route}.tsx`);
@@ -834,9 +866,12 @@ test("keeps standalone mobile routes on shared safe-area helpers", () => {
   assert.match(authUi, /getRouteTopPadding/);
   assert.doesNotMatch(authUi, /paddingBottom:\s*insets\.bottom\s*\+\s*32/);
   assert.doesNotMatch(authUi, /paddingTop:\s*insets\.top\s*\+\s*48/);
-  assert.match(woofGuide, /getDockedComposerBottomPadding/);
+  assert.match(woofGuide, /getRouteTopPadding/);
+  assert.match(woofGuide, /surface:\s*"tabbed"/);
+  assert.match(woofGuide, /getTabbedRouteBottomPadding/);
   assert.match(woofGuide, /getKeyboardAvoidingVerticalOffset/);
   assert.match(woofGuide, /getModalSheetBottomPadding/);
+  assert.doesNotMatch(woofGuide, /surface:\s*"standalone"|getStandaloneRouteBottomPadding|getDockedComposerBottomPadding/);
   assert.doesNotMatch(woofGuide, /bottomInset\s*=\s*Platform\.OS/);
   assert.doesNotMatch(woofGuide, /paddingBottom:\s*bottomInset\s*\+\s*12/);
 });
@@ -868,6 +903,10 @@ test("keeps mobile interaction contracts centralized for route chrome, modals, a
     STORY_PROGRESS_SCREEN_PATH,
     DOG_PROFILE_SCREEN_PATH,
     AVATAR_STUDIO_SCREEN_PATH,
+    ADVENTURE_SCREEN_PATH,
+    WOOFGUIDE_SCREEN_PATH,
+    PRIVACY_DATA_SCREEN_PATH,
+    LEGAL_SCREEN_PATH,
     join(
       process.cwd(),
       "artifacts",
@@ -1678,7 +1717,7 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(home, /nextUpRoute = nextPrimary\?\.route/);
   assert.match(home, /\/log\?entry=/);
   assert.match(home, /\/calendar/);
-  assert.match(home, /\/adventure/);
+  assert.match(home, /pathname:\s*"\/more",\s*params:\s*\{\s*section:\s*"adventure"\s*\}/);
   assert.match(home, /\/health/);
 
   assert.match(missionDeck, /care-today/);
@@ -1987,7 +2026,7 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   // Reminders, and Care Sense links to Trends. Every target is a real route.
   assert.match(
     home,
-    /accessibilityLabel=\{`\$\{petName\}\. \$\{careStatusLabel\}\. Open profile`\}[\s\S]*router\.push\("\/profile" as never\)/,
+    /accessibilityLabel=\{`\$\{petName\}\. \$\{careStatusLabel\}\. Open profile`\}[\s\S]*router\.push\(\{ pathname: "\/more", params: \{ section: "dog-profile" \} \}\)/,
   );
   assert.match(
     home,
@@ -2018,14 +2057,10 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   assert.match(home, /onPress=\{\(\) => openStatusTile\("diet"\)\}/);
   assert.match(
     more,
-    /useLocalSearchParams<MoreRouteSearchParams>/,
+    /useLocalSearchParams<Record<string, string \| string\[\]>>/,
   );
-  assert.match(more, /resolveMoreSectionRoute\(routeParams\)/);
-  assert.match(more, /target\.kind === "care-team-supplies"/);
-  assert.match(
-    more,
-    /const sectionParam = Array\.isArray\(routeParams\.section\) \? routeParams\.section\[0\] : routeParams\.section/,
-  );
+  assert.match(more, /resolveMoreSectionRoute\(params\)/);
+  assert.match(more, /<MoreSectionRouter/);
   assert.doesNotMatch(more, /<DietScreen\b/);
   assert.match(healthRouter, /<DietScreen openDetails/);
   assert.match(diet, /if \(openDetails\) setDietOpen\(true\)/);
@@ -2597,7 +2632,7 @@ test("extends the mobile pixel board system across core v1.5 routes", () => {
     health: readAppFile(join("(tabs)", "health.tsx")),
     more: readAppFile(join("(tabs)", "more.tsx")),
     records: readRecordsScreen(),
-    woofguide: readAppFile("woofguide.tsx"),
+    woofguide: readWoofGuideScreen(),
     avatarStudio: readAvatarStudioScreen(),
   };
 
@@ -3040,7 +3075,7 @@ test("keeps Quick Log search and timeline on shared board card anatomy", () => {
 });
 
 test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
-  const guide = readAppFile("woofguide.tsx");
+  const guide = readWoofGuideScreen();
 
   assert.match(guide, /<BoardCard(?: enter=\{\d+\})? style=\{s\.guideIntroCard\}/);
   assert.match(
@@ -3053,7 +3088,7 @@ test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
   );
   assert.match(
     guide,
-    /import \{ BoardCard, BoardPill, BoardSectionHeader \}/,
+    /import \{ BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader \}/,
   );
   assert.match(guide, /guideIntroRow/);
   assert.match(guide, /guideIntroTitle/);
@@ -3076,7 +3111,7 @@ test("keeps WoofGuide prompts and actions on shared board card anatomy", () => {
 });
 
 test("keeps WoofGuide rooted in a live pixel guidance stage", () => {
-  const guide = readAppFile("woofguide.tsx");
+  const guide = readWoofGuideScreen();
 
   assert.match(guide, /inverted=\{messages\.length > 0\}/);
   assert.match(guide, /ImageBackground/);
@@ -3101,7 +3136,7 @@ test("keeps WoofGuide rooted in a live pixel guidance stage", () => {
 });
 
 test("keeps WoofGuide prompt, send, and owner-review actions on shared mobile touch targets", () => {
-  const guide = readAppFile("woofguide.tsx");
+  const guide = readWoofGuideScreen();
 
   for (const styleName of [
     "quickChip",
@@ -3117,7 +3152,7 @@ test("keeps WoofGuide prompt, send, and owner-review actions on shared mobile to
 });
 
 test("keeps the WoofGuide assistant honestly gated until a provider is configured", () => {
-  const guide = readAppFile("woofguide.tsx");
+  const guide = readWoofGuideScreen();
   const guideActions = readMobileLibFile("woofGuideActions.ts");
 
   // The screen must derive availability from the shared provider gate
@@ -3209,7 +3244,7 @@ test("keeps Premium rooted in a launch-safe pixel value stage", () => {
 });
 
 test("keeps Privacy export and launch safety surfaces on shared board anatomy", () => {
-  const privacy = readAppFile("privacy.tsx");
+  const privacy = readPrivacyDataScreen();
 
   assert.match(privacy, /@\/components\/board\/BoardPrimitives/);
   assert.match(
@@ -3257,6 +3292,7 @@ test("keeps Privacy export and launch safety surfaces on shared board anatomy", 
 test("keeps Avatar Studio preview and mood states on shared board anatomy", () => {
   const avatarStudio = readAvatarStudioScreen();
   const portraitDelegate = readAppFile("portrait.tsx");
+  const moreSectionRouter = readMoreSectionRouter();
   const avatarModel = readFileSync(
     join(
       process.cwd(),
@@ -3879,8 +3915,10 @@ test("keeps Avatar Studio preview and mood states on shared board anatomy", () =
   assert.match(avatarStudio, /productionTemplateReview\.nativeProofStatus/);
   assert.match(avatarStudio, /Open sprite QA cockpit/);
   assert.match(avatarStudio, /onOpenSpriteQa\(\)/);
-  assert.match(portraitDelegate, /pathname: "\/care-twin-qa"/);
-  assert.match(portraitDelegate, /qaSurface: "avatar-sprite-production-review"/);
+  assert.match(portraitDelegate, /pathname:\s*"\/portrait"/);
+  assert.match(portraitDelegate, /<Redirect\s+href=\{redirectHref\}/);
+  assert.match(moreSectionRouter, /pathname:\s*"\/care-twin-qa"/);
+  assert.match(moreSectionRouter, /qaSurface:\s*"avatar-sprite-production-review"/);
   assert.doesNotMatch(
     avatarStudio,
     /CARE TWIN STUDIO|templateConsoleBar|pixelFrameOverlay|templateLiveChip/,
@@ -5082,7 +5120,7 @@ test("keeps Access Pass and My Care Today operations visible from Care Team", ()
 
 test("keeps Adventure Mode routed to private real-care quests and memories", () => {
   const rootLayout = readAppFile("_layout.tsx");
-  const adventure = readAppFile("adventure.tsx");
+  const adventure = readAdventureScreen();
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const careContext = readFileSync(
@@ -5101,7 +5139,7 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   assert.match(home, /deriveAdventureMode/);
   assert.match(home, /adventureMode/);
   assert.match(home, /Adventure Mode/);
-  assert.match(home, /router\.push\("\/adventure" as never\)/);
+  assert.match(home, /router\.push\(\{ pathname: "\/more", params: \{ section: "adventure" \} \}\)/);
   assert.match(adventure, /deriveAdventureMode/);
   assert.match(adventure, /buildAdventureMemoryDraft/);
   assert.match(adventure, /buildQuickLogEntry/);
@@ -5192,11 +5230,11 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   assert.match(adventure, /deleteEntry\(questFeedback\.id\)/);
   assert.match(adventure, /stay on this device for now - cloud backup isn't available yet/);
   assert.match(more, /Adventure Mode/);
-  assert.match(more, /router\.push\("\/adventure"( as never)?\)/);
+  assert.match(more, /openMoreSection\("adventure"\)/);
 });
 
 test("keeps Adventure Mode actions on shared mobile touch targets", () => {
-  const adventure = readAppFile("adventure.tsx");
+  const adventure = readAdventureScreen();
 
   for (const styleName of [
     "primaryBtn",
@@ -5808,11 +5846,8 @@ test("keeps every current care mutation surface truthful when future data is rea
     "utf8",
   );
   const surfacePaths = [
-    "adventure.tsx",
     "fastlog.tsx",
-    "privacy.tsx",
     "setup.tsx",
-    "woofguide.tsx",
     join("(tabs)", "calendar.tsx"),
     join("(tabs)", "index.tsx"),
     join("(tabs)", "log.tsx"),
@@ -5820,6 +5855,9 @@ test("keeps every current care mutation surface truthful when future data is rea
   ];
   const surfaceSources = [
     ...surfacePaths.map((path) => [path, readAppFile(path)] as const),
+    ["components/more/AdventureScreen.tsx", readAdventureScreen()] as const,
+    ["components/more/WoofGuideScreen.tsx", readWoofGuideScreen()] as const,
+    ["components/more/PrivacyDataScreen.tsx", readPrivacyDataScreen()] as const,
     ["components/more/CareTeamSuppliesScreen.tsx", readCareTeamSuppliesScreen()] as const,
     ["components/more/DogProfileScreen.tsx", readDogProfileScreen()] as const,
     ["components/health/RecordsScreen.tsx", readRecordsScreen()] as const,
@@ -5849,6 +5887,9 @@ test("keeps every current care mutation surface truthful when future data is rea
     STORY_PROGRESS_SCREEN_PATH,
     DOG_PROFILE_SCREEN_PATH,
     AVATAR_STUDIO_SCREEN_PATH,
+    ADVENTURE_SCREEN_PATH,
+    WOOFGUIDE_SCREEN_PATH,
+    PRIVACY_DATA_SCREEN_PATH,
     RECORDS_SCREEN_PATH,
     DIET_SCREEN_PATH,
   ];
@@ -5861,11 +5902,11 @@ test("keeps every current care mutation surface truthful when future data is rea
     "components/more/DogProfileScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
     "components/health/RecordsScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 3, updateEntry: 0 },
     "components/health/DietScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
-    "app/adventure.tsx": { addEntry: 2, deleteEntry: 1, updateCareDoc: 1, updateEntry: 0 },
+    "components/more/AdventureScreen.tsx": { addEntry: 2, deleteEntry: 1, updateCareDoc: 1, updateEntry: 0 },
     "app/fastlog.tsx": { addEntry: 2, deleteEntry: 0, updateCareDoc: 0, updateEntry: 0 },
-    "app/privacy.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
+    "components/more/PrivacyDataScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
     "app/setup.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
-    "app/woofguide.tsx": { addEntry: 1, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
+    "components/more/WoofGuideScreen.tsx": { addEntry: 1, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
     "components/WalkRouteRecorder.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 0, updateEntry: 1 },
   } as const;
   const actualInventory: Record<string, Record<"addEntry" | "deleteEntry" | "updateCareDoc" | "updateEntry", number>> = {};
@@ -5924,7 +5965,7 @@ test("keeps every current care mutation surface truthful when future data is rea
     ["components/more/DogProfileScreen.tsx", readDogProfileScreen(), 1],
     ["components/health/RecordsScreen.tsx", readRecordsScreen(), 3],
     ["components/health/DietScreen.tsx", readDietScreen(), 1],
-    ["privacy.tsx", readAppFile("privacy.tsx"), 1],
+    ["components/more/PrivacyDataScreen.tsx", readPrivacyDataScreen(), 1],
     ["setup.tsx", readAppFile("setup.tsx"), 1],
   ] as const) {
     assert.equal(
@@ -5941,7 +5982,7 @@ test("keeps every current care mutation surface truthful when future data is rea
   assert.match(home, /const deleted = await deleteEntry\([\s\S]{0,220}runAcceptedCareMutation\(deleted/);
   assert.doesNotMatch(home, /kind: "correction"[\s\S]{0,300}meta: "Start"/);
 
-  const adventure = readAppFile("adventure.tsx");
+  const adventure = readAdventureScreen();
   assert.match(
     adventure,
     /careMutationWasAccepted\(id\)[\s\S]{0,180}Haptics\.impactAsync\(Haptics\.ImpactFeedbackStyle\.Light\)[\s\S]{0,180}setQuestFeedback/,
@@ -5963,7 +6004,7 @@ test("wires strict workflow validation and canonical local care dates through ev
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const dogProfile = readDogProfileScreen();
   const month = readAppFile("calendar-month.tsx");
-  const guide = readAppFile("woofguide.tsx");
+  const guide = readWoofGuideScreen();
   const guideActions = readMobileLibFile("woofGuideActions.ts");
 
   assert.match(calendar, /validateRoutineDraft/);

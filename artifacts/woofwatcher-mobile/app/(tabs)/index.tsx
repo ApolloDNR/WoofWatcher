@@ -1637,7 +1637,7 @@ export default function HomeScreen() {
 
   const openAvatarStudio = () => {
     void Haptics.selectionAsync();
-    router.push("/portrait");
+    router.push({ pathname: "/more", params: { section: "avatar-studio" } });
   };
 
   // Today's Story: one honest sentence from the day's real log evidence.
@@ -1843,7 +1843,7 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel={`${petName}. ${careStatusLabel}. Open profile`}
               accessibilityHint={`Opens ${petName}'s profile.`}
-              onPress={() => router.push("/profile" as never)}
+              onPress={() => router.push({ pathname: "/more", params: { section: "dog-profile" } })}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={({ pressed }) => [s.identityWrap, { opacity: pressed ? 0.75 : 1 }]}
             >
@@ -1877,7 +1877,7 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel="Open the Pack"
               accessibilityHint="Opens pets and people who share the care."
-              onPress={() => router.push("/pack" as never)}
+              onPress={() => router.push({ pathname: "/more", params: { section: "care-team-supplies" } })}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[
                 s.headerButton,
@@ -2627,7 +2627,7 @@ export default function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel={`Today's Story. ${todayStoryLine} Open Story.`}
             accessibilityHint={`Opens ${petName}'s living story.`}
-            onPress={() => router.push("/story" as never)}
+            onPress={() => router.push({ pathname: "/more", params: { section: "story-progress" } })}
             style={({ pressed }) => [
               s.todayStoryCard,
               s.softShadow,
@@ -3381,7 +3381,7 @@ export default function HomeScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Open Adventure Mode. ${adventureQuest.title}. ${adventureMode.summary}`}
-              onPress={() => router.push("/adventure" as never)}
+              onPress={() => router.push({ pathname: "/more", params: { section: "adventure" } })}
               style={({ pressed }) => [
                 s.adventureInline,
                 {

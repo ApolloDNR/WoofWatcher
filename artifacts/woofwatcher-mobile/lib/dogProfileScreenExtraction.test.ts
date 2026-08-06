@@ -16,6 +16,7 @@ const COMPONENT_PATH = join(
 );
 const PROFILE_ROUTE_PATH = join(MOBILE_ROOT, "app", "profile.tsx");
 const MORE_PATH = join(MOBILE_ROOT, "app", "(tabs)", "more.tsx");
+const ROUTER_PATH = join(MOBILE_ROOT, "components", "more", "MoreSectionRouter.tsx");
 
 function read(path: string): string {
   return existsSync(path) ? readFileSync(path, "utf8") : "";
@@ -166,12 +167,12 @@ test("keeps truthful facts and routes every supported edit into the one editor",
   assert.match(component, /accessibilityLabel="Save dog profile"/);
 });
 
-test("removes More's duplicate profile editor but keeps one truthful summary link", () => {
+test("keeps More's truthful profile summary linked to its closed canonical child", () => {
   const more = read(MORE_PATH);
 
   assert.match(more, /profileCard/);
   assert.match(more, /accessibilityLabel="Open dog profile"/);
-  assert.match(more, /router\.push\("\/profile"/);
+  assert.match(more, /openMoreSection\("dog-profile"\)/);
   assert.equal(callCount(more, "updateCareDoc"), 1);
   assert.equal(callCount(more, "runAcceptedCareMutation"), 1);
   for (const forbidden of [
@@ -194,18 +195,16 @@ test("removes More's duplicate profile editor but keeps one truthful summary lin
   assert.doesNotMatch(more, />Dog Profile<|CARE FOCUS \(OPTIONAL\)|MICROCHIP NUMBER|EMERGENCY CONTACT/);
 });
 
-test("keeps Profile as one small standalone compatibility delegate", () => {
+test("keeps Profile as one small replace-only compatibility bridge", () => {
   const route = read(PROFILE_ROUTE_PATH);
+  const router = read(ROUTER_PATH);
 
   assert.ok(route.length <= 1_400, `Profile delegate should stay small, received ${route.length} chars`);
-  assert.match(route, /import \{ useRouter \} from "expo-router"/);
-  assert.match(route, /import DogProfileScreen from "@\/components\/more\/DogProfileScreen"/);
-  assert.equal(route.match(/<DogProfileScreen\b/g)?.length ?? 0, 1);
-  assert.match(route, /surface="standalone"/);
-  assert.match(route, /if \(router\.canGoBack\(\)\)/);
-  assert.match(route, /router\.back\(\)/);
-  assert.match(route, /router\.replace\("\/"\)/);
-  assert.match(route, /onBack=\{handleBack\}/);
-  assert.match(route, /onOpenAvatarStudio=\{\(\) => router\.push\("\/portrait"\)\}/);
+  assert.match(route, /useLocalSearchParams/);
+  assert.match(route, /resolveCanonicalDestination/);
+  assert.match(route, /pathname:\s*"\/profile"/);
+  assert.match(route, /<Redirect\s+href=\{redirectHref\}\s*\/>/);
+  assert.doesNotMatch(route, /DogProfileScreen|surface="standalone"|useRouter|router\./);
   assert.doesNotMatch(route, /useCare|useAvatar|derivePhoenixStatus|HERO_PARK|Modal|StyleSheet|updateCareDoc/);
+  assert.match(router, /<DogProfileScreen\s+surface="tabbed"[\s\S]{0,240}onBack=\{onBack\}[\s\S]{0,240}onOpenAvatarStudio=\{\(\) => pushMore\("avatar-studio"\)\}/);
 });

@@ -15,6 +15,7 @@ const COMPONENT_PATH = join(
   "AvatarStudioScreen.tsx",
 );
 const PORTRAIT_ROUTE_PATH = join(MOBILE_ROOT, "app", "portrait.tsx");
+const ROUTER_PATH = join(MOBILE_ROOT, "components", "more", "MoreSectionRouter.tsx");
 
 function read(path: string): string {
   return existsSync(path) ? readFileSync(path, "utf8") : "";
@@ -141,22 +142,20 @@ test("selects route padding and floating feedback only from surface", () => {
   assert.match(component, /insets\.bottom \+ 22/);
 });
 
-test("keeps Portrait as one small standalone delegate with focused QA navigation", () => {
+test("keeps Portrait as one small replace-only bridge and moves focused QA navigation to the router", () => {
   const route = read(PORTRAIT_ROUTE_PATH);
+  const router = read(ROUTER_PATH);
 
   assert.ok(route.length <= 1_400, `Portrait delegate should stay small, received ${route.length} chars`);
-  assert.match(route, /import \{ useRouter \} from "expo-router"/);
-  assert.match(route, /import AvatarStudioScreen from "@\/components\/more\/AvatarStudioScreen"/);
-  assert.equal(route.match(/<AvatarStudioScreen\b/g)?.length ?? 0, 1);
-  assert.match(route, /surface="standalone"/);
-  assert.match(route, /if \(router\.canGoBack\(\)\)/);
-  assert.match(route, /router\.back\(\)/);
-  assert.match(route, /router\.replace\("\/"\)/);
-  assert.match(route, /onBack=\{handleBack\}/);
-  assert.match(route, /onOpenSpriteQa=\{\(\) =>/);
-  assert.match(route, /pathname:\s*"\/care-twin-qa"/);
-  assert.match(route, /qaSurface:\s*"avatar-sprite-production-review"/);
+  assert.match(route, /useLocalSearchParams/);
+  assert.match(route, /resolveCanonicalDestination/);
+  assert.match(route, /pathname:\s*"\/portrait"/);
+  assert.match(route, /<Redirect\s+href=\{redirectHref\}\s*\/>/);
+  assert.doesNotMatch(route, /AvatarStudioScreen|surface="standalone"|useRouter|router\.|care-twin-qa|qaSurface/);
   assert.doesNotMatch(route, /ImagePicker|useAvatar|setInterval|Animated|StyleSheet|saveAvatarConfig|resetAvatarConfig/);
+  assert.match(router, /<AvatarStudioScreen\s+surface="tabbed"[\s\S]{0,240}onOpenSpriteQa=\{openSpriteQa\}/);
+  assert.match(router, /pathname:\s*"\/care-twin-qa"/);
+  assert.match(router, /qaSurface:\s*"avatar-sprite-production-review"/);
 });
 
 test("leaves Avatar model, context keys, and registries as the persistence owners", () => {

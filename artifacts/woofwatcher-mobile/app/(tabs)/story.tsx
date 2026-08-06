@@ -1,22 +1,11 @@
-import { useRouter } from "expo-router";
+import { Redirect, type Href, useLocalSearchParams } from "expo-router";
+import { resolveCanonicalDestination } from "@/lib/navigationOwnership";
 
-import StoryProgressScreen from "@/components/more/StoryProgressScreen";
-
-export default function StoryCompatibilityScreen() {
-  const router = useRouter();
-
-  const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-    router.replace("/more");
-  };
-
-  return (
-    <StoryProgressScreen
-      onBack={handleBack}
-      onOpenAdventure={() => router.push("/adventure")}
-    />
-  );
+export default function LegacyMoreBridge() {
+  const params = useLocalSearchParams<Record<string, string | string[]>>();
+  const destination = resolveCanonicalDestination({ pathname: "/story", params });
+  const redirectHref: Href = destination.params
+    ? { pathname: destination.pathname, params: { ...destination.params } }
+    : destination.pathname;
+  return <Redirect href={redirectHref} />;
 }

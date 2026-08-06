@@ -1,5 +1,15 @@
 import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { test } from "node:test";
+
+const MOBILE_ROOT = existsSync(join(process.cwd(), "artifacts", "woofwatcher-mobile"))
+  ? join(process.cwd(), "artifacts", "woofwatcher-mobile")
+  : process.cwd();
+const readSource = (...parts: string[]) => {
+  const path = join(MOBILE_ROOT, ...parts);
+  return existsSync(path) ? readFileSync(path, "utf8") : "";
+};
 
 async function readRoutingModule() {
   return import("./moreSectionRouting.ts");
@@ -314,5 +324,40 @@ test("keeps identifier, prompt, and legal-document boundaries centralized", asyn
       }).legalDocument,
       undefined,
     );
+  }
+});
+
+test("renders every closed More target through the one canonical router", () => {
+  const router = readSource("components", "more", "MoreSectionRouter.tsx");
+  assert.match(router, /MORE_SECTION_TARGETS/);
+  for (const kind of ["root", "dog-profile", "avatar-studio", "care-team-supplies", "story-progress", "adventure", "woofguide", "settings", "privacy", "legal"]) {
+    assert.ok(router.includes(`case "${kind}"`), kind);
+  }
+  assert.match(router, /<DogProfileScreen\s+surface="tabbed"/);
+  assert.match(router, /<AvatarStudioScreen\s+surface="tabbed"/);
+  assert.match(router, /<CareTeamSuppliesScreen\s+section=\{target\.section\}\s+itemId=\{itemId\}\s+onBack=\{onBack\}/);
+  assert.match(router, /<StoryProgressScreen[\s\S]*entryId=\{entryId\}[\s\S]*walkId=\{walkId\}[\s\S]*onOpenAdventure=\{\(\) => pushMore\("adventure"\)\}/);
+  assert.match(router, /pathname:\s*"\/more",\s*params:\s*\{\s*section/);
+  assert.doesNotMatch(router, /useLocalSearchParams|resolveCanonicalDestination/);
+});
+
+test("keeps every legacy More path as a replace-only resolver bridge", () => {
+  const cases = [
+    [["app", "(tabs)", "pack.tsx"], "/pack"],
+    [["app", "(tabs)", "story.tsx"], "/story"],
+    [["app", "profile.tsx"], "/profile"],
+    [["app", "portrait.tsx"], "/portrait"],
+    [["app", "adventure.tsx"], "/adventure"],
+    [["app", "woofguide.tsx"], "/woofguide"],
+    [["app", "privacy.tsx"], "/privacy"],
+    [["app", "legal.tsx"], "/legal"],
+  ] as const;
+  for (const [parts, legacyPath] of cases) {
+    const route = readSource(...parts);
+    assert.match(route, /useLocalSearchParams/, legacyPath);
+    assert.match(route, /resolveCanonicalDestination/, legacyPath);
+    assert.match(route, new RegExp(`pathname:\\s*"${legacyPath}"`), legacyPath);
+    assert.match(route, /<Redirect\s+href=\{redirectHref\}\s*\/>/, legacyPath);
+    assert.doesNotMatch(route, /useRouter|router\.(?:push|back|replace)|useCare|useAvatar|useState|StyleSheet|ScrollView|updateCareDoc|addEntry|deleteEntry/, legacyPath);
   }
 });

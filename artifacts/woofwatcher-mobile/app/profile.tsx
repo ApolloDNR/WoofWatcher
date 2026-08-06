@@ -1,22 +1,11 @@
-import { useRouter } from "expo-router";
+import { Redirect, type Href, useLocalSearchParams } from "expo-router";
+import { resolveCanonicalDestination } from "@/lib/navigationOwnership";
 
-import DogProfileScreen from "@/components/more/DogProfileScreen";
-
-export default function ProfileCompatibilityScreen() {
-  const router = useRouter();
-  const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-    router.replace("/");
-  };
-
-  return (
-    <DogProfileScreen
-      surface="standalone"
-      onBack={handleBack}
-      onOpenAvatarStudio={() => router.push("/portrait")}
-    />
-  );
+export default function LegacyMoreBridge() {
+  const params = useLocalSearchParams<Record<string, string | string[]>>();
+  const destination = resolveCanonicalDestination({ pathname: "/profile", params });
+  const redirectHref: Href = destination.params
+    ? { pathname: destination.pathname, params: { ...destination.params } }
+    : destination.pathname;
+  return <Redirect href={redirectHref} />;
 }
