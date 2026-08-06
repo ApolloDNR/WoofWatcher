@@ -15,6 +15,58 @@ async function readRoutingModule() {
   return import("./moreSectionRouting.ts");
 }
 
+test("More section navigation delegates one history entry to Expo Router", async () => {
+  const routing = await readRoutingModule();
+  const navigateToMoreSection = Reflect.get(
+    routing,
+    "navigateToMoreSection",
+  ) as unknown;
+  assert.equal(
+    typeof navigateToMoreSection,
+    "function",
+    "More routing should expose its Expo-owned navigation boundary",
+  );
+
+  const routerEntries: unknown[] = [];
+  const browserEntries: unknown[] = [];
+  const previousWindow = Reflect.get(globalThis, "window");
+  Reflect.set(globalThis, "window", {
+    history: {
+      pushState: (...args: unknown[]) => browserEntries.push(args),
+    },
+  });
+  try {
+    (
+      navigateToMoreSection as (
+        push: (destination: unknown) => void,
+        section: string,
+        ownedParams?: { doc: "privacy" | "terms" },
+      ) => void
+    )((destination) => routerEntries.push(destination), "legal", {
+      doc: "terms",
+    });
+  } finally {
+    if (previousWindow === undefined) {
+      Reflect.deleteProperty(globalThis, "window");
+    } else {
+      Reflect.set(globalThis, "window", previousWindow);
+    }
+  }
+
+  assert.deepEqual(routerEntries, [
+    { pathname: "/more", params: { section: "legal", doc: "terms" } },
+  ]);
+  assert.deepEqual(browserEntries, []);
+
+  for (const owner of [
+    readSource("app", "(tabs)", "more.tsx"),
+    readSource("components", "more", "MoreSectionRouter.tsx"),
+  ]) {
+    assert.match(owner, /navigateToMoreSection/);
+    assert.doesNotMatch(owner, /window\.history|pushState/);
+  }
+});
+
 test("maps every canonical More section to one closed substantive owner", async () => {
   const { MORE_SECTION_TARGETS } = await readRoutingModule();
   assert.deepEqual(MORE_SECTION_TARGETS, {
@@ -337,7 +389,7 @@ test("renders every closed More target through the one canonical router", () => 
   assert.match(router, /<AvatarStudioScreen\s+surface="tabbed"/);
   assert.match(router, /<CareTeamSuppliesScreen\s+section=\{target\.section\}\s+itemId=\{itemId\}\s+onBack=\{onBack\}/);
   assert.match(router, /<StoryProgressScreen[\s\S]*entryId=\{entryId\}[\s\S]*walkId=\{walkId\}[\s\S]*onOpenAdventure=\{\(\) => pushMore\("adventure"\)\}/);
-  assert.match(router, /pathname:\s*"\/more",\s*params:\s*\{\s*section/);
+  assert.match(router, /navigateToMoreSection/);
   assert.doesNotMatch(router, /useLocalSearchParams|resolveCanonicalDestination/);
 });
 

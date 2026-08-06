@@ -1,3 +1,5 @@
+import type { MoreSection } from "./navigationOwnership.ts";
+
 export const UNIVERSAL_PRIMARY_TABS = [
   { name: "index", label: "Home", parent: "home" },
   { name: "log", label: "Log", parent: "log" },
@@ -11,3 +13,36 @@ export const UNIVERSAL_COMPATIBILITY_TABS = [
   "story",
   "records",
 ] as const;
+
+export type UniversalTabName =
+  (typeof UNIVERSAL_PRIMARY_TABS)[number]["name"];
+
+export interface UniversalTabPressInput {
+  tabName: UniversalTabName;
+  focused: boolean;
+  pathname: string;
+  moreSection: MoreSection;
+}
+
+export interface UniversalTabPressEffects {
+  preventDefault: () => void;
+  replace: (pathname: "/more") => void;
+}
+
+export function handleUniversalTabPress(
+  input: UniversalTabPressInput,
+  effects: UniversalTabPressEffects,
+): boolean {
+  if (
+    input.tabName !== "more" ||
+    !input.focused ||
+    input.pathname !== "/more" ||
+    input.moreSection === "root"
+  ) {
+    return false;
+  }
+
+  effects.preventDefault();
+  effects.replace("/more");
+  return true;
+}

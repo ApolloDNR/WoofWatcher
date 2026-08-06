@@ -1,6 +1,5 @@
 import { useRouter } from "expo-router";
 import React from "react";
-import { Platform } from "react-native";
 
 import AdventureScreen from "@/components/more/AdventureScreen";
 import AvatarStudioScreen from "@/components/more/AvatarStudioScreen";
@@ -12,7 +11,10 @@ import SettingsScreen from "@/components/more/SettingsScreen";
 import StoryProgressScreen from "@/components/more/StoryProgressScreen";
 import WoofGuideScreen from "@/components/more/WoofGuideScreen";
 import type { MoreSection } from "@/lib/navigationOwnership";
-import { MORE_SECTION_TARGETS } from "@/lib/moreSectionRouting";
+import {
+  MORE_SECTION_TARGETS,
+  navigateToMoreSection,
+} from "@/lib/moreSectionRouting";
 
 export interface MoreSectionRouterProps {
   section: MoreSection;
@@ -44,15 +46,10 @@ export default function MoreSectionRouter({
     nextSection: Exclude<MoreSection, "root">,
     ownedParams?: { doc: "privacy" | "terms" },
   ): void {
-    if (Platform.OS === "web" && typeof window !== "undefined") {
-      const query = new URLSearchParams({ section: nextSection });
-      if (ownedParams && nextSection === "legal") query.set("doc", ownedParams.doc);
-      window.history.pushState({}, "", `/more?${query.toString()}`);
-    }
-    router.push(
-      ownedParams && nextSection === "legal"
-        ? { pathname: "/more", params: { section: nextSection, doc: ownedParams.doc } }
-        : { pathname: "/more", params: { section: nextSection } },
+    navigateToMoreSection(
+      (destination) => router.push(destination),
+      nextSection,
+      ownedParams,
     );
   }
 

@@ -50,6 +50,29 @@ export interface ResolvedMoreSectionRoute {
   legalDocument?: "privacy" | "terms";
 }
 
+export type MoreSectionNavigationDestination = Readonly<{
+  pathname: "/more";
+  params: Readonly<
+    { section: Exclude<MoreSection, "root"> } &
+      Partial<{ doc: "privacy" | "terms" }>
+  >;
+}>;
+
+export function navigateToMoreSection(
+  push: (destination: MoreSectionNavigationDestination) => void,
+  nextSection: Exclude<MoreSection, "root">,
+  ownedParams?: Readonly<{ doc: "privacy" | "terms" }>,
+): void {
+  push(
+    ownedParams && nextSection === "legal"
+      ? {
+          pathname: "/more",
+          params: { section: nextSection, doc: ownedParams.doc },
+        }
+      : { pathname: "/more", params: { section: nextSection } },
+  );
+}
+
 export function resolveMoreSectionRoute(
   params: MoreRouteParams = {},
 ): ResolvedMoreSectionRoute {

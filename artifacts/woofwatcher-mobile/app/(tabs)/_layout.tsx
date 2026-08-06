@@ -1,5 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
+import {
+  Tabs,
+  useGlobalSearchParams,
+  usePathname,
+  useRouter,
+} from "expo-router";
 import React, { useEffect, useRef } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
@@ -9,7 +14,9 @@ import { useBounce } from "@/components/motion/GameFeel";
 import { UniversalTabButton } from "@/components/navigation/UniversalTabButton";
 import { useColors } from "@/hooks/useColors";
 import { getFloatingTabChromeMetrics } from "@/lib/mobileLayout";
+import { resolveMoreSectionRoute } from "@/lib/moreSectionRouting";
 import {
+  handleUniversalTabPress,
   UNIVERSAL_COMPATIBILITY_TABS,
   UNIVERSAL_PRIMARY_TABS,
 } from "@/lib/universalTabBar";
@@ -65,6 +72,11 @@ function TabIcon({
 export default function TabLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+  const params = useGlobalSearchParams<Record<string, string | string[]>>();
+  const router = useRouter();
+  const activeMoreSection =
+    pathname === "/more" ? resolveMoreSectionRoute(params).section : "root";
   const chrome = getFloatingTabChromeMetrics({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -131,6 +143,27 @@ export default function TabLayout() {
           <Tabs.Screen
             key={tab.name}
             name={tab.name}
+            listeners={
+              tab.name === "more"
+                ? ({ navigation }) => ({
+                    tabPress: (event) => {
+                      handleUniversalTabPress(
+                        {
+                          tabName: tab.name,
+                          focused: navigation.isFocused(),
+                          pathname,
+                          moreSection: activeMoreSection,
+                        },
+                        {
+                          preventDefault: () => event.preventDefault(),
+                          replace: (nextPathname) =>
+                            router.replace(nextPathname),
+                        },
+                      );
+                    },
+                  })
+                : undefined
+            }
             options={{
               title: tab.label,
               tabBarIcon: ({ color, focused }) => (

@@ -113,7 +113,10 @@ import {
   type MoreDirectoryDestination,
   type MoreDirectoryItem as CanonicalMoreDirectoryItem,
 } from "@/lib/moreDirectory";
-import { resolveMoreSectionRoute } from "@/lib/moreSectionRouting";
+import {
+  navigateToMoreSection,
+  resolveMoreSectionRoute,
+} from "@/lib/moreSectionRouting";
 import type { MoreSection } from "@/lib/navigationOwnership";
 
 // resolveCanonicalDestination stays encapsulated by resolveMoreSectionRoute;
@@ -402,10 +405,7 @@ function MoreScreenContent({}: Record<string, never>) {
   );
   const openMoreSection = useCallback(
     (section: Exclude<MoreSection, "root">) => {
-      if (Platform.OS === "web" && typeof window !== "undefined") {
-        window.history.pushState({}, "", `/more?section=${encodeURIComponent(section)}`);
-      }
-      router.push({ pathname: "/more", params: { section } });
+      navigateToMoreSection((destination) => router.push(destination), section);
     },
     [router],
   );

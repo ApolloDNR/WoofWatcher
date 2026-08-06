@@ -48,6 +48,101 @@ test("declares the exact universal primary and compatibility tab models", async 
   );
 });
 
+test("a focused More child tab press replaces exactly once with the More root", async () => {
+  const model = await import("./universalTabBar.ts");
+  const handleUniversalTabPress = Reflect.get(
+    model,
+    "handleUniversalTabPress",
+  ) as unknown;
+  assert.equal(
+    typeof handleUniversalTabPress,
+    "function",
+    "the tab model should expose its focused-child press contract",
+  );
+
+  const effects: string[] = [];
+  const handled = (
+    handleUniversalTabPress as (
+      input: {
+        tabName: string;
+        focused: boolean;
+        pathname: string;
+        moreSection: string;
+      },
+      effects: {
+        preventDefault: () => void;
+        replace: (pathname: string) => void;
+      },
+    ) => boolean
+  )(
+    {
+      tabName: "more",
+      focused: true,
+      pathname: "/more",
+      moreSection: "privacy",
+    },
+    {
+      preventDefault: () => effects.push("prevent-default"),
+      replace: (pathname) => effects.push(`replace:${pathname}`),
+    },
+  );
+
+  assert.equal(handled, true);
+  assert.deepEqual(effects, ["prevent-default", "replace:/more"]);
+});
+
+test("root and unfocused tab presses remain Expo-owned without a second action", async () => {
+  const model = await import("./universalTabBar.ts");
+  const handleUniversalTabPress = Reflect.get(
+    model,
+    "handleUniversalTabPress",
+  ) as (
+    input: {
+      tabName: string;
+      focused: boolean;
+      pathname: string;
+      moreSection: string;
+    },
+    effects: {
+      preventDefault: () => void;
+      replace: (pathname: string) => void;
+    },
+  ) => boolean;
+  assert.equal(typeof handleUniversalTabPress, "function");
+
+  for (const input of [
+    {
+      tabName: "more",
+      focused: true,
+      pathname: "/more",
+      moreSection: "root",
+    },
+    {
+      tabName: "more",
+      focused: false,
+      pathname: "/health",
+      moreSection: "root",
+    },
+    {
+      tabName: "health",
+      focused: true,
+      pathname: "/health",
+      moreSection: "root",
+    },
+  ] as const) {
+    const effects: string[] = [];
+    assert.equal(
+      handleUniversalTabPress(input, {
+        preventDefault: () => effects.push("prevent-default"),
+        replace: (pathname) => effects.push(`replace:${pathname}`),
+      }),
+      false,
+      JSON.stringify(input),
+    );
+    assert.deepEqual(effects, [], JSON.stringify(input));
+  }
+});
+
 test("keeps all five primary and three compatibility route files available", () => {
   for (const route of [
     "index",
@@ -105,9 +200,18 @@ test("maps the canonical model to regular Expo tab screens without a second Home
   assert.doesNotMatch(layout, /tab\.name\s*===\s*["']index["']/);
   assert.doesNotMatch(
     layout,
-    /CenterToday|centerSlot|fabWrap|usePathname|useRouter|router\.push|\/fastlog/,
+    /CenterToday|centerSlot|fabWrap|router\.push|\/fastlog/,
   );
-  assert.doesNotMatch(layout, /screenListeners|tabPress/);
+  assert.doesNotMatch(layout, /screenListeners/);
+  assert.equal(
+    layout.match(/tabPress:/g)?.length ?? 0,
+    1,
+    "only the More screen installs the focused-child reset listener",
+  );
+  assert.match(
+    layout,
+    /tab\.name\s*===\s*"more"[\s\S]*tabPress:[\s\S]*handleUniversalTabPress[\s\S]*navigation\.isFocused\(\)[\s\S]*router\.replace/,
+  );
 });
 
 test("keeps visible tab labels readable and preserves Expo icon tint", () => {
