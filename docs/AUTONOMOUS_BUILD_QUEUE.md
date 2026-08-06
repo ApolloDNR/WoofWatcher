@@ -2231,6 +2231,8 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: The live room's tappable dog action now resolves the canonical Dog Profile name instead of announcing raw persisted text; trimmed renamed dogs are honored and blank/`My Dog` profiles retain the intentional Phoenix starter identity.
 - VERIFIED: Red-first identity coverage failed on the missing action-label builder, and the existing room-readiness contract then caught the stale raw-name wiring before it was updated to require the canonical builder.
 - NEXT: Require dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android room evidence remain open; source coverage does not clear native release gates.
+- CI: Dependency-complete `WoofWatcher Verify` run `31067224307`, job `92507367651`, passed implementation/docs commit `fb0faafc`; pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
+- NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
 - CI: Dependency-complete `WoofWatcher Verify` run `31003745398`, job `92298554338`, passed implementation/docs commit `e1c36f3f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
 
