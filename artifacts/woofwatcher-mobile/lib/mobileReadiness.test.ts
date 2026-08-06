@@ -58,6 +58,14 @@ const CARE_TEAM_SUPPLIES_SCREEN_PATH = join(
   "more",
   "CareTeamSuppliesScreen.tsx",
 );
+const STORY_PROGRESS_SCREEN_PATH = join(
+  process.cwd(),
+  "artifacts",
+  "woofwatcher-mobile",
+  "components",
+  "more",
+  "StoryProgressScreen.tsx",
+);
 
 function readAppFile(path: string): string {
   return readFileSync(join(APP_DIR, path), "utf8");
@@ -105,6 +113,14 @@ function readCareTeamSuppliesScreen(): string {
     "More must own one tab-safe Care Team and supplies screen",
   );
   return readFileSync(CARE_TEAM_SUPPLIES_SCREEN_PATH, "utf8");
+}
+
+function readStoryProgressScreen(): string {
+  assert.ok(
+    existsSync(STORY_PROGRESS_SCREEN_PATH),
+    "More must own one tab-safe Story and Progress screen",
+  );
+  return readFileSync(STORY_PROGRESS_SCREEN_PATH, "utf8");
 }
 
 function getStyleBlock(source: string, styleName: string): string {
@@ -687,6 +703,7 @@ test("keeps tabbed mobile routes clear with shared universal tab chrome", () => 
     ["health", readAppFile(join("(tabs)", "health.tsx"))],
     ["more", readAppFile(join("(tabs)", "more.tsx"))],
     ["records", readRecordsScreen()],
+    ["story-progress", readStoryProgressScreen()],
   ] as const;
 
   assert.match(mobileLayout, /getFloatingTabChromeMetrics/);
@@ -810,6 +827,7 @@ test("keeps mobile interaction contracts centralized for route chrome, modals, a
   );
   const routeSources = [
     ...listAppFiles(),
+    STORY_PROGRESS_SCREEN_PATH,
     join(
       process.cwd(),
       "artifacts",
@@ -5807,6 +5825,7 @@ test("keeps every current care mutation surface truthful when future data is rea
     ...listAppFiles(),
     join(mobileRoot, "components", "WalkRouteRecorder.tsx"),
     CARE_TEAM_SUPPLIES_SCREEN_PATH,
+    STORY_PROGRESS_SCREEN_PATH,
     RECORDS_SCREEN_PATH,
     DIET_SCREEN_PATH,
   ];
