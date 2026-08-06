@@ -4,7 +4,8 @@
 
 - DONE: WoofGuide action cards and reviewed meal/vet-note drafts now resolve the saved Dog Profile through the canonical identity boundary instead of exposing the stored `My Dog` placeholder.
 - VERIFIED: Red-first behavior coverage failed on `My Dog has no meal logged today`, then focused WoofGuide identity, mobile-readiness, and shared care-domain coverage passed `361/361` after the minimal fix.
-- NEXT: Run the broad local checks and dependency-complete branch CI. Live AI/provider, native iOS/Android, VoiceOver/TalkBack, store, and Apollo approval remain separate gates.
+- CI: Dependency-complete `WoofWatcher Verify` run `31075945449`, job `92533897019`, passed implementation/docs commit `d0939c72`; pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, and post steps all passed.
+- NEXT: Rerun branch CI after this proof-record commit. Live AI/provider, native iOS/Android, VoiceOver/TalkBack, store, and Apollo approval remain separate gates.
 
 ## 2026-08-05 — Care Twin QA follows Dog Profile identity
 
