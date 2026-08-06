@@ -15,6 +15,13 @@ const RECORDS_SCREEN_PATH = join(
   "health",
   "RecordsScreen.tsx",
 );
+const TRENDS_ROUTE_PATH = join(MOBILE_ROOT, "app", "trends.tsx");
+const TRENDS_SCREEN_PATH = join(
+  MOBILE_ROOT,
+  "components",
+  "health",
+  "TrendsScreen.tsx",
+);
 
 test("keeps the extracted Records behavior behind a temporary compatibility bridge", () => {
   assert.ok(
@@ -38,4 +45,37 @@ test("keeps the extracted Records behavior behind a temporary compatibility brid
   assert.match(screen, /title="Care Pass"/);
   assert.match(screen, /persistPickedMedia/);
   assert.match(screen, /updateCareDoc\(/);
+});
+
+test("keeps the extracted Trends behavior behind a temporary compatibility bridge", () => {
+  assert.ok(
+    existsSync(TRENDS_SCREEN_PATH),
+    "Health must own the substantive Trends screen before the route becomes a bridge",
+  );
+
+  const route = readFileSync(TRENDS_ROUTE_PATH, "utf8");
+  const screen = readFileSync(TRENDS_SCREEN_PATH, "utf8");
+
+  assert.match(route, /import TrendsScreen from "@\/components\/health\/TrendsScreen"/);
+  assert.match(route, /<Stack\.Screen options=\{\{ headerShown: false, title: "Trends" \}\}/);
+  assert.match(route, /<TrendsScreen/);
+  assert.match(route, /contentTopPadding=\{topPadding\}/);
+  assert.match(route, /contentBottomPadding=\{bottomPadding\}/);
+  assert.match(route, /onBack=\{\(\) =>/);
+  assert.doesNotMatch(route, /deriveCareTrends|deriveMoodTrend|MoodLineChart|MetricBarChart/);
+  assert.doesNotMatch(route, /Redirect|router\.replace\("\/health/);
+  assert.match(screen, /export default function TrendsScreen\(\{/);
+  assert.match(screen, /onBack:\s*\(\) => void/);
+  assert.match(screen, /contentTopPadding\?: number/);
+  assert.match(screen, /contentBottomPadding\?: number/);
+  assert.doesNotMatch(screen, /Stack\.Screen|useRouter|useSafeAreaInsets/);
+  assert.doesNotMatch(
+    screen,
+    /getRouteTopPadding|getStandaloneRouteBottomPadding/,
+  );
+  assert.match(screen, /deriveCareTrends/);
+  assert.match(screen, /deriveMoodTrend/);
+  assert.match(screen, /BoardSegmentTabs/);
+  assert.match(screen, /MoodLineChart/);
+  assert.match(screen, /MetricBarChart/);
 });

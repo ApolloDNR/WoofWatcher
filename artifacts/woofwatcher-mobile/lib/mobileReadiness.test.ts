@@ -26,6 +26,14 @@ const RECORDS_SCREEN_PATH = join(
   "health",
   "RecordsScreen.tsx",
 );
+const TRENDS_SCREEN_PATH = join(
+  process.cwd(),
+  "artifacts",
+  "woofwatcher-mobile",
+  "components",
+  "health",
+  "TrendsScreen.tsx",
+);
 
 function readAppFile(path: string): string {
   return readFileSync(join(APP_DIR, path), "utf8");
@@ -41,6 +49,14 @@ function readRecordsScreen(): string {
     "Health must own the substantive Records screen",
   );
   return readFileSync(RECORDS_SCREEN_PATH, "utf8");
+}
+
+function readTrendsScreen(): string {
+  assert.ok(
+    existsSync(TRENDS_SCREEN_PATH),
+    "Health must own the substantive Trends screen",
+  );
+  return readFileSync(TRENDS_SCREEN_PATH, "utf8");
 }
 
 function getStyleBlock(source: string, styleName: string): string {
@@ -2360,6 +2376,24 @@ test("keeps Health Watch as one flagship pixel room with one status panel", () =
     /minHeight:\s*16[0-9]/,
     "Health pixel room should stay expressive but leave first-screen space for useful health rows",
   );
+});
+
+test("keeps the extracted Trends screen wired to every existing chart workflow", () => {
+  const trends = readTrendsScreen();
+
+  assert.match(trends, /TREND_WINDOWS/);
+  assert.match(trends, /buildTrendWindow\(windowKey, now\)/);
+  assert.match(trends, /deriveMoodTrend/);
+  assert.match(trends, /deriveCareTrends/);
+  assert.match(trends, /bucketAverages/);
+  assert.match(trends, /bucketSums/);
+  assert.match(trends, /bucketCounts/);
+  assert.match(trends, /MoodLineChart/);
+  assert.match(trends, /MetricBarChart/);
+  assert.match(trends, /ChartEmpty/);
+  assert.match(trends, /useReducedMotion/);
+  assert.match(trends, /This Week&apos;s Summary/);
+  assert.match(trends, /showSignals/);
 });
 
 test("locks the mobile pixel UI foundation to Apollo's reference boards", () => {
