@@ -5,6 +5,7 @@ import {
   normalizeCareEventType,
   summarizeRecordVault,
 } from "../../../lib/care-domain/src/index.ts";
+import { resolvePetName } from "./petIdentity.ts";
 
 export type WoofGuideActionUrgency = "normal" | "watch" | "alert";
 
@@ -123,7 +124,7 @@ function isToday(iso: string, now: number): boolean {
 }
 
 function dogName(state: WoofGuideActionState): string {
-  return state.profile?.name?.trim() || "your dog";
+  return resolvePetName(state.profile?.name);
 }
 
 function hasDietBaseline(diet?: WoofGuideActionDiet): boolean {

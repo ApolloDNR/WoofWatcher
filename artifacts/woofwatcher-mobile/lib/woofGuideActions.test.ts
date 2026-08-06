@@ -123,6 +123,32 @@ test("creates an owner-reviewed meal log draft when the first meal is missing", 
   assert.equal(mealAction?.draft?.entry?.details?.householdVisible, true);
 });
 
+test("keeps the Dog Profile placeholder out of owner-reviewed action copy", () => {
+  const actions = deriveWoofGuideActions(
+    {
+      profile: { name: "My Dog" },
+      dietProfile: {
+        primaryFood: "Sensitive kibble",
+        normalPortion: "1 cup",
+        mealSchedule: "7 AM and 6 PM",
+      },
+      routines: [{ id: "breakfast", type: "meal", label: "Breakfast", time: "7:00 AM" }],
+      records: [
+        { id: "rabies", type: "vaccine", title: "Rabies", due: "May 20, 2028" },
+        { id: "chip", type: "microchip", title: "HomeAgain", due: "985112003004551" },
+        { id: "insurance", type: "insurance", title: "Lemonade", due: "Policy WW-1042" },
+      ],
+      entries: [],
+    },
+    NOW,
+  );
+
+  const mealAction = actions.find((action) => action.id === "log-meal");
+  assert.equal(mealAction?.detail, "Phoenix has no meal logged today.");
+  assert.match(mealAction?.draft?.body ?? "", /reviewed served-meal log for Phoenix/);
+  assert.doesNotMatch(mealAction?.draft?.body ?? "", /My Dog/);
+});
+
 test("keeps the assistant gated off until provider proof and an API domain exist", () => {
   const noProof = resolveWoofGuideAssistantGate({
     apiBaseUrl: "https://example.com",

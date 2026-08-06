@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-06 WoofGuide reviewed-action identity status
+
+Source-level reviewed action cards and deterministic drafts now follow canonical Dog Profile identity. Native iOS/Android review, VoiceOver/TalkBack traversal, approved AI provider/model/citation/veterinary-safety proof, store review, and Apollo approval remain open; no live AI or unsupervised external action was enabled.
+
 ## 2026-08-05 WoofGuide composer identity status
 
 Source-level WoofGuide composer identity now follows the active Dog Profile while live answers remain disabled without an approved provider. Native iOS/Android review, VoiceOver/TalkBack traversal, provider/store proof, and Apollo approval remain open; no live AI or external action was enabled.

@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-06 WoofGuide reviewed-action identity slice
+
+WoofGuide's shared action derivation now resolves Dog Profile identity canonically before building action detail, provider-ready prompts, reviewed meal logs, and deterministic vet-note copy. Red-first behavior coverage caught the stored `My Dog` placeholder in real owner-reviewed meal copy before the minimal shared-boundary correction. Live AI remains gated, drafts remain owner-reviewed and non-diagnostic, and native/provider/store/Apollo evidence remains separate.
+
 ## 2026-08-05 — Dog-aware Care Twin QA entry
 
 The internal device-review path now carries Dog Profile identity into both More's Care Twin QA description and the QA route subtitle. `buildCareTwinQaIdentityCopy` trims renamed dogs, preserves the intentional Phoenix starter fallback, and prevents a Mochi/Luna profile from being sent into a Phoenix-labeled review workflow. This does not complete native QA; route-named iOS/Android evidence and human approval remain required.

@@ -1,5 +1,11 @@
 # Autonomous Build Queue
 
+## 2026-08-06 WoofGuide owner-reviewed action identity
+
+- DONE: WoofGuide action cards and reviewed meal/vet-note drafts now resolve the saved Dog Profile through the canonical identity boundary instead of exposing the stored `My Dog` placeholder.
+- VERIFIED: Red-first behavior coverage failed on `My Dog has no meal logged today`, then focused WoofGuide identity, mobile-readiness, and shared care-domain coverage passed `361/361` after the minimal fix.
+- NEXT: Run the broad local checks and dependency-complete branch CI. Live AI/provider, native iOS/Android, VoiceOver/TalkBack, store, and Apollo approval remain separate gates.
+
 ## 2026-08-05 — Care Twin QA follows Dog Profile identity
 
 - More's internal Care Twin QA entry and the QA route header now resolve the active Dog Profile name through the canonical identity helper. A renamed dog such as Mochi no longer enters a device-review workflow described as Phoenix; blank and `My Dog` starter profiles intentionally retain Phoenix.

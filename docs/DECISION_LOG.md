@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-06: WoofGuide reviewed actions follow Dog Profile identity
+
+- Decision: derive owner-reviewed WoofGuide action and draft identity through `resolvePetName` at the shared action boundary.
+- Reason: a storage placeholder must not enter household-visible logs, reminders, vet-note drafts, or future approved provider prompts as if it were the dog's real name.
+- Boundary: live AI, external actions, veterinary guidance, persistence semantics, and launch gates are unchanged.
+
 ## 2026-08-04: Living care-twin HUD follows Dog Profile identity
 
 - Decision: derive the non-studio room HUD title from the canonical active-dog name while retaining `STUDIO RIG` for production tooling.
