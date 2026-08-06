@@ -100,6 +100,7 @@ import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { BoardActionButton, BoardCard, BoardMetricTile, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import DietScreen from "@/components/health/DietScreen";
 import { ProgressFill } from "@/components/motion/GameFeel";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 import {
@@ -732,7 +733,6 @@ export default function MoreScreen() {
     bottomInset: insets.bottom,
   });
 
-  const [dietOpen, setDietOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [renameOpen, setRenameOpen] = useState(false);
@@ -758,22 +758,6 @@ export default function MoreScreen() {
   const [pInsuranceProvider, setPInsuranceProvider] = useState("");
   const [pInsurancePolicy, setPInsurancePolicy] = useState("");
 
-  const [dietEditOpen, setDietEditOpen] = useState(false);
-
-  useEffect(() => {
-    if (sectionParam === "diet") setDietOpen(true);
-  }, [sectionParam]);
-  const [dPrimaryFood, setDPrimaryFood] = useState("");
-  const [dNormalPortion, setDNormalPortion] = useState("");
-  const [dMealSchedule, setDMealSchedule] = useState("");
-  const [dToppers, setDToppers] = useState("");
-  const [dBedtimeSnack, setDBedtimeSnack] = useState("");
-  const [dTreatsAllowed, setDTreatsAllowed] = useState("");
-  const [dAvoid, setDAvoid] = useState("");
-  const [dSensitivities, setDSensitivities] = useState("");
-  const [dAppetiteQuirks, setDAppetiteQuirks] = useState("");
-  const [dVetNotes, setDVetNotes] = useState("");
-  const [dSupplements, setDSupplements] = useState("");
   const [savedNativeQaSummary, setSavedNativeQaSummary] =
     useState<LaunchReadinessNativeQaSummary | null>(null);
   const [nativeQaCapturePlan, setNativeQaCapturePlan] =
@@ -1023,50 +1007,6 @@ export default function MoreScreen() {
     if (!accepted) showCareReadOnly();
   };
 
-  const openDietEdit = () => {
-    setDPrimaryFood(dietProfile.primaryFood);
-    setDNormalPortion(dietProfile.normalPortion);
-    setDMealSchedule(dietProfile.mealSchedule);
-    setDToppers(dietProfile.toppers);
-    setDBedtimeSnack(dietProfile.bedtimeSnack);
-    setDTreatsAllowed(dietProfile.treatsAllowed);
-    setDAvoid(dietProfile.avoid);
-    setDSensitivities(dietProfile.sensitivities);
-    setDAppetiteQuirks(dietProfile.appetiteQuirks);
-    setDVetNotes(dietProfile.vetNotes);
-    setDSupplements(dietProfile.supplements);
-    setDietEditOpen(true);
-  };
-
-  const saveDiet = () => {
-    if (careMutationsBlocked) {
-      showCareReadOnly();
-      return;
-    }
-    const updated = updateCareDoc((doc) => ({
-      ...doc,
-      dietProfile: {
-        ...doc.dietProfile,
-        primaryFood: dPrimaryFood.trim(),
-        normalPortion: dNormalPortion.trim(),
-        mealSchedule: dMealSchedule.trim(),
-        toppers: dToppers.trim(),
-        supplements: dSupplements.trim(),
-        bedtimeSnack: dBedtimeSnack.trim(),
-        treatsAllowed: dTreatsAllowed.trim(),
-        avoid: dAvoid.trim(),
-        sensitivities: dSensitivities.trim(),
-        appetiteQuirks: dAppetiteQuirks.trim(),
-        vetNotes: dVetNotes.trim(),
-      },
-    }));
-    const accepted = runAcceptedCareMutation(updated, () => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setDietEditOpen(false);
-    });
-    if (!accepted) showCareReadOnly();
-  };
-
   const confirmSignOut = () => {
     confirmThroughSteps(
       [
@@ -1134,15 +1074,6 @@ export default function MoreScreen() {
     void shareTextPayload({ message: pass, title: `WoofWatcher Care Pass - ${petName}` });
   };
 
-  const dietItems: { icon: PulseIconName; label: string; value: string }[] = [
-    { icon: "bowl", label: "Food", value: dietProfile.primaryFood },
-    { icon: "bowl", label: "Portion", value: dietProfile.normalPortion },
-    { icon: "star", label: "Schedule", value: dietProfile.mealSchedule },
-    { icon: "candy", label: "Toppers", value: dietProfile.toppers },
-    { icon: "bone", label: "Bedtime snack", value: dietProfile.bedtimeSnack },
-    { icon: "bone", label: "Treats", value: dietProfile.treatsAllowed },
-    { icon: "vomit", label: "Avoid", value: dietProfile.avoid },
-  ];
   const nativeQaPrimaryMission = nativeQaCapturePlan.primaryMission;
   const nativeQaPrimaryMissionTarget =
     nativeQaPrimaryMission.target ??
@@ -3482,55 +3413,7 @@ export default function MoreScreen() {
 
           {/* Diet profile */}
           <View collapsable={false} onLayout={registerSectionAnchor("diet")} />
-          <BoardCard style={s.moreBoardCard}>
-            <BoardSectionHeader
-              title="Diet Profile"
-              accessory={
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-                  <Pressable onPress={() => { Haptics.selectionAsync(); openDietEdit(); }} hitSlop={MOBILE_INLINE_HIT_SLOP}>
-                    <Text style={[s.sectionLink, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>Edit</Text>
-                  </Pressable>
-                  <Pressable onPress={() => { Haptics.selectionAsync(); setDietOpen((v) => !v); }} hitSlop={MOBILE_INLINE_HIT_SLOP}>
-                    <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>{dietOpen ? "Hide" : "Details"}</Text>
-                  </Pressable>
-                </View>
-              }
-            />
-            <View style={s.dietHeader}>
-              <View style={[s.dietIconWrap, { backgroundColor: colors.copper + "1A" }]}>
-                <PulseIcon name="bowl" size={22} />
-              </View>
-              <View style={{ flex: 1 }}>
-                {/* Honest empty state (matches the Records screen's diet
-                    card) - an unset diet rendered a completely blank body. */}
-                <Text style={[s.dietTitle, { color: dietProfile.primaryFood ? colors.foreground : colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>
-                  {dietProfile.primaryFood || "No diet set yet"}
-                </Text>
-                <Text style={[s.dietSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {dietProfile.mealSchedule || "Add food and portions with Edit."}
-                </Text>
-              </View>
-            </View>
-            {dietOpen && (
-              <View style={[s.dietBody, { borderTopColor: colors.border }]}>
-                {dietItems.map((d) => (
-                  <View key={d.label} style={s.dietRow}>
-                    <View style={[s.dietRowIcon, { backgroundColor: PULSE_COLORS[d.icon] + "14" }]}>
-                      <PulseIcon name={d.icon} size={14} />
-                    </View>
-                    <Text style={[s.dietLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{d.label}</Text>
-                    <Text style={[s.dietValue, { color: d.value ? colors.foreground : colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{d.value || "Not set"}</Text>
-                  </View>
-                ))}
-                {dietProfile.vetNotes ? (
-                  <View style={[s.vetNote, { backgroundColor: colors.amber + "14", borderColor: colors.amber + "33" }]}>
-                    <Ionicons name="information-circle" size={16} color={colors.amber} style={{ marginTop: 1 }} />
-                    <Text style={[s.vetNoteText, { color: colors.amber, fontFamily: "Inter_500Medium" }]}>{dietProfile.vetNotes}</Text>
-                  </View>
-                ) : null}
-              </View>
-            )}
-          </BoardCard>
+          <DietScreen openDetails={sectionParam === "diet"} />
 
           {/* About / boundary */}
           <View style={[s.notice, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -3558,54 +3441,6 @@ export default function MoreScreen() {
           </Text>
         </Animated.View>
       </ScrollView>
-
-      {/* Diet profile edit modal */}
-      <Modal visible={dietEditOpen} transparent animationType="slide" onRequestClose={() => setDietEditOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDietEditOpen(false)}>
-          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
-              bounces={false}
-            >
-              <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
-              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Diet Profile</Text>
-
-              {[
-                { label: "PRIMARY FOOD", value: dPrimaryFood, set: setDPrimaryFood, placeholder: "e.g. Royal Canin GI dry kibble" },
-                { label: "NORMAL PORTION", value: dNormalPortion, set: setDNormalPortion, placeholder: "e.g. 1¼ cups twice daily" },
-                { label: "MEAL SCHEDULE", value: dMealSchedule, set: setDMealSchedule, placeholder: "e.g. 7 AM and 6 PM" },
-                { label: "TOPPERS", value: dToppers, set: setDToppers, placeholder: "e.g. Bone broth, low-sodium" },
-                { label: "SUPPLEMENTS", value: dSupplements, set: setDSupplements, placeholder: "e.g. Probiotic daily" },
-                { label: "BEDTIME SNACK", value: dBedtimeSnack, set: setDBedtimeSnack, placeholder: "e.g. ½ cup kibble at 10 PM" },
-                { label: "TREATS ALLOWED", value: dTreatsAllowed, set: setDTreatsAllowed, placeholder: "e.g. Zuke's minis, max 3/day" },
-                { label: "AVOID", value: dAvoid, set: setDAvoid, placeholder: "e.g. Grains, chicken, rawhide" },
-                { label: "SENSITIVITIES", value: dSensitivities, set: setDSensitivities, placeholder: "e.g. Chicken allergy confirmed" },
-                { label: "APPETITE QUIRKS", value: dAppetiteQuirks, set: setDAppetiteQuirks, placeholder: "e.g. Eats slowly, dislikes change" },
-                { label: "VET NOTES", value: dVetNotes, set: setDVetNotes, placeholder: "e.g. Low-fat diet per Dr. Kim" },
-              ].map((f) => (
-                <View key={f.label}>
-                  <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{f.label}</Text>
-                  <TextInput
-                    value={f.value}
-                    onChangeText={f.set}
-                    placeholder={f.placeholder}
-                    placeholderTextColor={colors.mutedForeground}
-                    style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-                  />
-                </View>
-              ))}
-
-              <Pressable
-                onPress={saveDiet}
-                style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
-              >
-                <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save diet profile</Text>
-              </Pressable>
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
 
       {consumerSurfacePolicy.householdProviderActions ? (
         <>
@@ -4819,18 +4654,6 @@ const s = StyleSheet.create({
   linkIconWrap: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   linkLabel: { fontSize: 15.5 },
   linkSub: { fontSize: 13, marginTop: 2 },
-
-  dietHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
-  dietIconWrap: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  dietTitle: { fontSize: 15.5 },
-  dietSub: { fontSize: 13, marginTop: 2 },
-  dietBody: { borderTopWidth: 1, marginTop: 14, paddingTop: 6 },
-  dietRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 9 },
-  dietRowIcon: { width: 26, height: 26, borderRadius: 9, alignItems: "center", justifyContent: "center" },
-  dietLabel: { fontSize: 13, width: 92 },
-  dietValue: { fontSize: 13, flex: 1, textAlign: "right" },
-  vetNote: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 14, borderWidth: 1, padding: 14, marginTop: 12 },
-  vetNoteText: { flex: 1, fontSize: 13.5, lineHeight: 19 },
 
   statusStrip: {
     flexDirection: "row",

@@ -34,6 +34,14 @@ const TRENDS_SCREEN_PATH = join(
   "health",
   "TrendsScreen.tsx",
 );
+const DIET_SCREEN_PATH = join(
+  process.cwd(),
+  "artifacts",
+  "woofwatcher-mobile",
+  "components",
+  "health",
+  "DietScreen.tsx",
+);
 
 function readAppFile(path: string): string {
   return readFileSync(join(APP_DIR, path), "utf8");
@@ -57,6 +65,14 @@ function readTrendsScreen(): string {
     "Health must own the substantive Trends screen",
   );
   return readFileSync(TRENDS_SCREEN_PATH, "utf8");
+}
+
+function readDietScreen(): string {
+  assert.ok(
+    existsSync(DIET_SCREEN_PATH),
+    "Health must own the substantive Diet screen",
+  );
+  return readFileSync(DIET_SCREEN_PATH, "utf8");
 }
 
 function getStyleBlock(source: string, styleName: string): string {
@@ -1850,6 +1866,7 @@ test("keeps Home Quick Log header action as a real route target", () => {
 test("keeps Home owner-preview section actions as real route targets", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const more = readAppFile(join("(tabs)", "more.tsx"));
+  const diet = readDietScreen();
 
   assert.match(
     home,
@@ -1909,7 +1926,8 @@ test("keeps Home owner-preview section actions as real route targets", () => {
     more,
     /const sectionParam = Array\.isArray\(routeParams\.section\) \? routeParams\.section\[0\] : routeParams\.section/,
   );
-  assert.match(more, /if \(sectionParam === "diet"\) setDietOpen\(true\)/);
+  assert.match(more, /<DietScreen openDetails=\{sectionParam === "diet"\} \/>/);
+  assert.match(diet, /if \(openDetails\) setDietOpen\(true\)/);
   assert.match(more, /const householdFocus = sectionParam === "household"/);
   assert.match(
     more,
@@ -5194,6 +5212,7 @@ test("keeps More organized around a grouped command directory", () => {
 
 test("keeps More household, tools, and diet sections on shared board card anatomy", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
+  const diet = readDietScreen();
   const launchModel = readMobileLibFile("launchReadiness.ts");
   const providerSetup = readMobileLibFile("launchProviderSetup.ts");
   const providerSyncProof = readMobileLibFile("careEntryProviderSyncProof.ts");
@@ -5460,12 +5479,13 @@ test("keeps More household, tools, and diet sections on shared board card anatom
     more,
     /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Tools & Sharing"/,
   );
+  assert.match(more, /<DietScreen openDetails=\{sectionParam === "diet"\} \/>/);
   assert.match(
-    more,
+    diet,
     /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Diet Profile"/,
   );
-  assert.doesNotMatch(more, /sectionHeader:/);
-  assert.doesNotMatch(more, /sectionTitle:/);
+  assert.doesNotMatch(diet, /sectionHeader:/);
+  assert.doesNotMatch(diet, /sectionTitle:/);
 });
 
 test("feeds saved native QA session proof into More launch readiness", () => {
@@ -5709,6 +5729,7 @@ test("keeps every current care mutation surface truthful when future data is rea
   const surfaceSources = [
     ...surfacePaths.map((path) => [path, readAppFile(path)] as const),
     ["components/health/RecordsScreen.tsx", readRecordsScreen()] as const,
+    ["components/health/DietScreen.tsx", readDietScreen()] as const,
   ];
 
   assert.match(context, /careMutationsBlocked: boolean/);
@@ -5731,13 +5752,15 @@ test("keeps every current care mutation surface truthful when future data is rea
     ...listAppFiles(),
     join(mobileRoot, "components", "WalkRouteRecorder.tsx"),
     RECORDS_SCREEN_PATH,
+    DIET_SCREEN_PATH,
   ];
   const expectedInventory = {
     "app/(tabs)/calendar.tsx": { addEntry: 1, deleteEntry: 1, updateCareDoc: 6, updateEntry: 0 },
     "app/(tabs)/index.tsx": { addEntry: 2, deleteEntry: 1, updateCareDoc: 0, updateEntry: 1 },
     "app/(tabs)/log.tsx": { addEntry: 5, deleteEntry: 2, updateCareDoc: 1, updateEntry: 8 },
-    "app/(tabs)/more.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 5, updateEntry: 0 },
+    "app/(tabs)/more.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 4, updateEntry: 0 },
     "components/health/RecordsScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 3, updateEntry: 0 },
+    "components/health/DietScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
     "app/adventure.tsx": { addEntry: 2, deleteEntry: 1, updateCareDoc: 1, updateEntry: 0 },
     "app/fastlog.tsx": { addEntry: 2, deleteEntry: 0, updateCareDoc: 0, updateEntry: 0 },
     "app/privacy.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
@@ -5789,8 +5812,9 @@ test("keeps every current care mutation surface truthful when future data is rea
   assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.deleteEntry, 0), 5);
 
   for (const [path, source, expectedAcceptedCallbacks] of [
-    [join("(tabs)", "more.tsx"), readAppFile(join("(tabs)", "more.tsx")), 5],
+    [join("(tabs)", "more.tsx"), readAppFile(join("(tabs)", "more.tsx")), 4],
     ["components/health/RecordsScreen.tsx", readRecordsScreen(), 3],
+    ["components/health/DietScreen.tsx", readDietScreen(), 1],
     ["privacy.tsx", readAppFile("privacy.tsx"), 1],
     ["setup.tsx", readAppFile("setup.tsx"), 1],
   ] as const) {
