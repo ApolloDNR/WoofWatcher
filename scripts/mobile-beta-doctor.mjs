@@ -253,6 +253,7 @@ const mobileReleaseQaPath = join(mobileRoot, "lib", "mobileReleaseQa.ts");
 const mobileReleaseSmokeChecklistPath = join(mobileRoot, "lib", "mobileReleaseSmokeChecklist.ts");
 const runtimeSmokePreviewPath = join(mobileRoot, "scripts", "smoke-runtime-preview.js");
 const livePreviewHandoffProofPath = join(mobileRoot, "scripts", "live-preview-handoff-proof.js");
+const universalNavigationManifestPath = join(mobileRoot, "lib", "universalNavigationManifest.json");
 const avatarSpriteProductionQaPath = join(mobileRoot, "lib", "avatarSpriteProductionQa.ts");
 const launchProviderSetupPath = join(mobileRoot, "lib", "launchProviderSetup.ts");
 const attachmentManifestPath = join(mobileRoot, "lib", "attachmentManifest.ts");
@@ -287,8 +288,17 @@ const betaHandoffPacketSource = existsSync(betaHandoffPacketPath) ? readFileSync
 const mobileLaunchQaEvidenceSource = existsSync(mobileLaunchQaEvidencePath) ? readFileSync(mobileLaunchQaEvidencePath, "utf8") : "";
 const mobileReleaseQaSource = existsSync(mobileReleaseQaPath) ? readFileSync(mobileReleaseQaPath, "utf8") : "";
 const mobileReleaseSmokeChecklistSource = existsSync(mobileReleaseSmokeChecklistPath) ? readFileSync(mobileReleaseSmokeChecklistPath, "utf8") : "";
-const runtimeSmokePreviewSource = existsSync(runtimeSmokePreviewPath) ? readFileSync(runtimeSmokePreviewPath, "utf8") : "";
-const livePreviewHandoffProofSource = existsSync(livePreviewHandoffProofPath) ? readFileSync(livePreviewHandoffProofPath, "utf8") : "";
+const universalNavigationManifestSource = existsSync(universalNavigationManifestPath)
+  ? readFileSync(universalNavigationManifestPath, "utf8")
+  : "";
+const runtimeSmokePreviewSource = [
+  existsSync(runtimeSmokePreviewPath) ? readFileSync(runtimeSmokePreviewPath, "utf8") : "",
+  universalNavigationManifestSource,
+].join("\n");
+const livePreviewHandoffProofSource = [
+  existsSync(livePreviewHandoffProofPath) ? readFileSync(livePreviewHandoffProofPath, "utf8") : "",
+  universalNavigationManifestSource,
+].join("\n");
 const avatarSpriteProductionQaSource = existsSync(avatarSpriteProductionQaPath) ? readFileSync(avatarSpriteProductionQaPath, "utf8") : "";
 const launchProviderSetupSource = existsSync(launchProviderSetupPath) ? readFileSync(launchProviderSetupPath, "utf8") : "";
 const attachmentManifestSource = existsSync(attachmentManifestPath) ? readFileSync(attachmentManifestPath, "utf8") : "";

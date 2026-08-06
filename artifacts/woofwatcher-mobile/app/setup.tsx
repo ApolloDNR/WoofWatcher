@@ -231,7 +231,7 @@ export default function SetupScreen() {
         ).catch(() => {});
       }
       // In-app success sheet (Alert is a no-op on react-native-web); the
-      // hand-off to Today or Plan happens from the sheet's own buttons.
+      // hand-off to Home or Plans happens from the sheet's own buttons.
       setSuccessMoment({
         dogName: preview.profile.name,
         twinLine: twinPlan.successLine,
@@ -299,7 +299,7 @@ export default function SetupScreen() {
           <BoardRouteHeader
             kicker="Care foundation"
             title="Set up WoofWatcher"
-            subtitle="One clean setup pass gives Today, Log, Reports, Records, and WoofGuide the context they need."
+            subtitle="One clean setup pass gives Home, Log, Plans, Health, and More the context they need."
             icon="sparkles-outline"
           />
 
@@ -623,7 +623,7 @@ export default function SetupScreen() {
 
       {/* Save celebration: an in-app board sheet instead of a native alert,
           so the success moment works on every platform and hands off to
-          Today or Plan without governance copy. */}
+          Home or Plans without governance copy. */}
       <Modal
         visible={successMoment !== null}
         transparent
@@ -631,7 +631,7 @@ export default function SetupScreen() {
         onRequestClose={meetDog}
       >
         <Pressable
-          accessibilityLabel="Continue to Today"
+          accessibilityLabel="Continue to Home"
           style={s.sheetBackdrop}
           onPress={meetDog}
         >

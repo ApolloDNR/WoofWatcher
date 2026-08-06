@@ -816,7 +816,7 @@ export default function HomeScreen() {
 
   // Served meal awaiting its outcome: rendered as its own open-loop chip
   // stacked above the planned Next Up item, so closing the meal loop never
-  // hides the plan (or the "more in Plan" link) from the hero flow.
+  // hides the plan (or the "more in Plans" link) from the hero flow.
   const pendingMealOpenLoop = useMemo(
     () =>
       pendingMeal
@@ -1780,7 +1780,7 @@ export default function HomeScreen() {
   if (!isHomeSceneReady(isLoaded, welcomeDismissed, storageWarning)) {
     return (
       <View
-        accessibilityLabel="Loading Today"
+        accessibilityLabel="Loading Home"
         accessibilityRole="progressbar"
         aria-busy
         style={[s.root, { backgroundColor: colors.background }]}
@@ -1877,8 +1877,8 @@ export default function HomeScreen() {
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Open the Pack"
-              accessibilityHint="Opens pets and people who share the care."
+              accessibilityLabel="Open Care Team & Supplies"
+              accessibilityHint="Opens caregivers, supply inventory, and travel checklists."
               onPress={() => router.push(canonicalMoreRoute("care-team-supplies"))}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[
@@ -1950,7 +1950,7 @@ export default function HomeScreen() {
                 Let's make {petName} yours
               </Text>
               <Text style={[s.welcomeBody, { color: colors.primaryForeground, fontFamily: "Inter_500Medium" }]}>
-                Add your dog's name, breed, and routines so Today, Log, and Records fit your real day. It takes a minute.
+                Add your dog's name, breed, and routines so Home, Log, and Health fit your real day. It takes a minute.
               </Text>
               <View style={s.welcomeActions}>
                 <Pressable
@@ -2364,8 +2364,8 @@ export default function HomeScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={
                       nextCount > 0
-                        ? `Open Plan. 1 of ${nextCount} next up.`
-                        : "Open Plan. No schedulable next items."
+                        ? `Open Plans. 1 of ${nextCount} next up.`
+                        : "Open Plans. No schedulable next items."
                     }
                     hitSlop={MOBILE_INLINE_HIT_SLOP}
                     onPress={() => router.push("/calendar")}
@@ -2382,8 +2382,8 @@ export default function HomeScreen() {
               {homeRoutinePlan.correctionSummary ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`${homeRoutinePlan.correctionSummary} Review Plan.`}
-                  accessibilityHint="Opens Plan to correct saved routine times."
+                  accessibilityLabel={`${homeRoutinePlan.correctionSummary} Review Plans.`}
+                  accessibilityHint="Opens Plans to correct saved routine times."
                   onPress={() => router.push("/calendar")}
                   style={({ pressed }) => [
                     s.nextMoreRow,
@@ -2575,8 +2575,8 @@ export default function HomeScreen() {
                           </Pressable>
                           <Pressable
                             accessibilityRole="button"
-                            accessibilityLabel={`Reassign ${nextPrimary.label} in Plan`}
-                            accessibilityHint="Opens the Plan tab, where routines and owners are edited."
+                            accessibilityLabel={`Reassign ${nextPrimary.label} in Plans`}
+                            accessibilityHint="Opens the Plans tab, where routines and owners are edited."
                             onPress={() => router.push("/calendar")}
                             style={({ pressed }) => [
                               s.nextButton,
@@ -2603,14 +2603,14 @@ export default function HomeScreen() {
                   ]}
                 >
                   {homeRoutinePlan.correctionCount > 0
-                    ? "No routines can be scheduled until their times are corrected in Plan."
-                    : "Everything scheduled is snoozed. It returns in 30 minutes, or open Plan to review."}
+                    ? "No routines can be scheduled until their times are corrected in Plans."
+                    : "Everything scheduled is snoozed. It returns in 30 minutes, or open Plans to review."}
                 </Text>
               )}
               {nextUp.length > 1 ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`View ${nextUp.length - 1} more planned ${nextUp.length - 1 === 1 ? "item" : "items"} in Plan`}
+                  accessibilityLabel={`View ${nextUp.length - 1} more planned ${nextUp.length - 1 === 1 ? "item" : "items"} in Plans`}
                   onPress={() => router.push("/calendar")}
                   style={({ pressed }) => [s.nextMoreRow, { opacity: pressed ? 0.6 : 1 }]}
                 >
@@ -2620,7 +2620,7 @@ export default function HomeScreen() {
                       { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" },
                     ]}
                   >
-                    {nextUp.length - 1} more in Plan
+                    {nextUp.length - 1} more in Plans
                   </Text>
                   <Ionicons name="chevron-forward" size={13} color={colors.mutedForeground} />
                 </Pressable>
@@ -2630,8 +2630,8 @@ export default function HomeScreen() {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Today's Story. ${todayStoryLine} Open Story.`}
-            accessibilityHint={`Opens ${petName}'s living story.`}
+            accessibilityLabel={`Today's Story. ${todayStoryLine} Open Story & Progress.`}
+            accessibilityHint={`Opens ${petName}'s Story & Progress.`}
             onPress={() => router.push(canonicalMoreRoute("story-progress"))}
             style={({ pressed }) => [
               s.todayStoryCard,

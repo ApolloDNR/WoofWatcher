@@ -45,7 +45,7 @@ export function deriveHomeRoutinePlan(input: HomeRoutinePlanInput): HomeRoutineP
     correctionItems,
     correctionCount,
     correctionSummary: correctionCount
-      ? `${correctionCount} routine${correctionCount === 1 ? "" : "s"} ${correctionCount === 1 ? "needs" : "need"} correction in Plan.`
+      ? `${correctionCount} routine${correctionCount === 1 ? "" : "s"} ${correctionCount === 1 ? "needs" : "need"} correction in Plans.`
       : null,
     hasSavedRoutines: input.routines.length > 0,
   };

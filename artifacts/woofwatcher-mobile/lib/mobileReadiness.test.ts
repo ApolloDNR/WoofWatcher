@@ -10,6 +10,7 @@ import {
   UNIVERSAL_COMPATIBILITY_TABS,
   UNIVERSAL_PRIMARY_TABS,
 } from "./universalTabBar.ts";
+import { UNIVERSAL_NAVIGATION_MANIFEST } from "./universalNavigationManifest.ts";
 
 const APP_DIR = join(process.cwd(), "artifacts", "woofwatcher-mobile", "app");
 const MOBILE_LIB_DIR = join(
@@ -492,19 +493,13 @@ test("keeps exported mobile runtime route smoke wired into CI", () => {
   assert.equal(routeList.status, 0);
   const routes = JSON.parse(routeList.stdout) as string[];
   assert.deepEqual(routes, [
-    "/",
-    "/sign-in",
-    "/setup",
-    "/log",
-    "/calendar",
-    "/health",
-    "/records",
-    "/more",
-    "/care-twin-qa",
-    "/woofguide",
-    "/premium",
-    "/privacy",
-    "/portrait",
+    ...new Set([
+      ...UNIVERSAL_NAVIGATION_MANIFEST.primaryTabs.map((item) => item.route),
+      ...UNIVERSAL_NAVIGATION_MANIFEST.canonicalChildren.map((item) => item.route),
+      ...UNIVERSAL_NAVIGATION_MANIFEST.legacyRedirects.map((item) => item.route),
+      ...UNIVERSAL_NAVIGATION_MANIFEST.legacyAliases.map((item) => item.route),
+      ...UNIVERSAL_NAVIGATION_MANIFEST.runtimeSupplementalRoutes,
+    ]),
   ]);
 });
 
@@ -559,6 +554,17 @@ test("keeps a static beta preview server wired for Apollo review", () => {
     ),
     "utf8",
   );
+  const navigationManifest = readFileSync(
+    join(
+      process.cwd(),
+      "artifacts",
+      "woofwatcher-mobile",
+      "lib",
+      "universalNavigationManifest.json",
+    ),
+    "utf8",
+  );
+  const livePreviewSources = `${livePreviewProof}\n${navigationManifest}`;
   assert.match(
     serveSmokePreview,
     /const root = path\.resolve\(projectRoot, "\.expo-smoke"\)/,
@@ -568,16 +574,17 @@ test("keeps a static beta preview server wired for Apollo review", () => {
   assert.match(serveSmokePreview, /Keep this terminal open/);
   assert.match(serveSmokePreview, /127\.0\.0\.1/);
   assert.match(livePreviewProof, /LIVE_PREVIEW_HANDOFF_ROUTES/);
-  assert.match(livePreviewProof, /records-local-file-handoff/);
-  assert.match(livePreviewProof, /report-binary-export-proof/);
-  assert.match(livePreviewProof, /care-entry-provider-sync-proof/);
-  assert.match(livePreviewProof, /woofguide-ai-provider-proof/);
-  assert.match(livePreviewProof, /push-notifications-proof/);
-  assert.match(livePreviewProof, /payments-provider-proof/);
-  assert.match(livePreviewProof, /store-accounts-proof/);
-  assert.match(livePreviewProof, /account-deletion-proof/);
-  assert.match(livePreviewProof, /support-legal-readiness-proof/);
-  assert.match(livePreviewProof, /route-visual-consistency/);
+  assert.match(livePreviewProof, /universal-navigation-manifest\.js/);
+  assert.match(livePreviewSources, /records-local-file-handoff/);
+  assert.match(livePreviewSources, /report-binary-export-proof/);
+  assert.match(livePreviewSources, /care-entry-provider-sync-proof/);
+  assert.match(livePreviewSources, /woofguide-ai-provider-proof/);
+  assert.match(livePreviewSources, /push-notifications-proof/);
+  assert.match(livePreviewSources, /payments-provider-proof/);
+  assert.match(livePreviewSources, /store-accounts-proof/);
+  assert.match(livePreviewSources, /account-deletion-proof/);
+  assert.match(livePreviewSources, /support-legal-readiness-proof/);
+  assert.match(livePreviewSources, /route-visual-consistency/);
   assert.match(livePreviewProof, /web preview only/);
   assert.match(livePreviewProof, /does not replace native iOS\/Android proof/);
   assert.match(doctorSource, /proof:live-preview/);
@@ -1770,10 +1777,10 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
   );
   assert.match(
     home,
-    /BoardSectionHeader\s+title="Next Up"[\s\S]*nextCount > 0[\s\S]*`Open Plan\. 1 of \$\{nextCount\} next up\.`[\s\S]*"Open Plan\. No schedulable next items\."/,
+    /BoardSectionHeader\s+title="Next Up"[\s\S]*nextCount > 0[\s\S]*`Open Plans\. 1 of \$\{nextCount\} next up\.`[\s\S]*"Open Plans\. No schedulable next items\."/,
   );
   assert.match(home, /homeRoutinePlan\.correctionSummary/);
-  assert.match(home, /Review Plan\./);
+  assert.match(home, /Review Plans\./);
   assert.match(home, /s\.nextPrimaryRow/);
   assert.match(home, /Snooze/);
   assert.match(home, /Reassign/);
@@ -5013,13 +5020,16 @@ test("migrates active Task 5 callers without weakening legacy route coverage", (
   const notFound = readAppFile("+not-found.tsx");
   const setup = readAppFile("setup.tsx");
   const fastLog = readAppFile("fastlog.tsx");
+  const retiredTabPattern = new RegExp(
+    `(?:${["Today", "Pack", "Story"].join("|")}) tab`,
+  );
   assert.match(notFound, /router\.replace\(canonicalHomeRoute\(\)\)/);
   assert.match(setup, /router\.replace\(canonicalHomeRoute\(\)\)/);
   assert.match(fastLog, /router\.replace\(canonicalLogRoute\(\) as never\)/);
-  assert.doesNotMatch(activeSources, /Today tab|Pack tab|Story tab/);
+  assert.doesNotMatch(activeSources, retiredTabPattern);
   assert.doesNotMatch(
     readFileSync(join(MOBILE_LIB_DIR, "mobileReleaseQa.ts"), "utf8"),
-    /Today tab|Pack tab|Story tab/,
+    retiredTabPattern,
   );
   assert.match(
     readAppFile("care-twin-qa.tsx"),

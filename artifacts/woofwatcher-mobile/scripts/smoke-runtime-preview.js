@@ -1,25 +1,18 @@
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
+const {
+  UNIVERSAL_NAVIGATION_MANIFEST,
+  UNIVERSAL_NAVIGATION_QA_ROUTES,
+  buildUniversalNavigationQaRoutes,
+} = require("./universal-navigation-manifest.js");
 
 const projectRoot = path.resolve(__dirname, "..");
 const root = path.resolve(projectRoot, ".expo-smoke");
 
-const MOBILE_RUNTIME_SMOKE_ROUTES = [
-  "/",
-  "/sign-in",
-  "/setup",
-  "/log",
-  "/calendar",
-  "/health",
-  "/records",
-  "/more",
-  "/care-twin-qa",
-  "/woofguide",
-  "/premium",
-  "/privacy",
-  "/portrait",
-];
+const MOBILE_RUNTIME_SMOKE_ROUTES = buildUniversalNavigationQaRoutes(
+  UNIVERSAL_NAVIGATION_MANIFEST.runtimeSupplementalRoutes,
+);
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -176,6 +169,8 @@ if (process.argv.includes("--list-routes")) {
 
 module.exports = {
   MOBILE_RUNTIME_SMOKE_ROUTES,
+  UNIVERSAL_NAVIGATION_MANIFEST,
+  UNIVERSAL_NAVIGATION_QA_ROUTES,
   createPreviewServer,
   requestRoute,
 };

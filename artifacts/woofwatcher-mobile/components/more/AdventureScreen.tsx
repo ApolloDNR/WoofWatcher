@@ -428,7 +428,7 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
           </View>
           {/* Quest track only: these are today's Adventure numbers, labeled
               "Quest level"/"Quest XP" so they never read as the canonical
-              care level ("Lv" + title) that Pack, More, and Story show. */}
+              care level ("Lv" + title) that More and Story & Progress show. */}
           <View
             style={s.levelRow}
             accessible
@@ -450,10 +450,10 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
         </ImageBackground>
 
         {/* Honest track note: quest numbers reset each day; the lifetime care
-            level ("Lv" + title) lives on Pack, More, and Story badges. */}
+            level ("Lv" + title) appears in More and Story & Progress. */}
         <Text style={[s.trackNote, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
           Quest level and quest XP track today's adventures and reset daily.{" "}
-          {petName}'s lifetime care level lives on Pack and More.
+          {petName}'s lifetime care level appears in More and Story & Progress.
         </Text>
 
         <BoardCard enter={0} style={s.board}>

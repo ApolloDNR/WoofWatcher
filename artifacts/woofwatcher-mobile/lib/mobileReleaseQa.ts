@@ -2,6 +2,10 @@ import type { QaScreenshotEvidence } from "./qaScreenshotEvidence.ts";
 import { qaScreenshotEvidenceNames } from "./qaScreenshotEvidence.ts";
 import { buildAvatarSpriteProductionQaSummary } from "./avatarSpriteProductionQa.ts";
 import type { StoreSubmissionPacket, StoreScreenshotChecklistItem } from "./storeSubmissionPacket.ts";
+import {
+  findUniversalCanonicalChild,
+  findUniversalPrimaryTab,
+} from "./universalNavigationManifest.ts";
 
 export type MobileReleaseQaReviewStatus = "unreviewed" | "pass" | "needs-review";
 
@@ -88,6 +92,25 @@ export interface RouteVisualProofManifest {
 }
 
 const AVATAR_SPRITE_PRODUCTION_QA = buildAvatarSpriteProductionQaSummary();
+
+function primaryNavigationRouteCheck(
+  name: Parameters<typeof findUniversalPrimaryTab>[0],
+  expected: string,
+  options: Pick<MobileReleaseQaRouteCheck, "proof" | "requiredNativePlatforms"> = {},
+): MobileReleaseQaRouteCheck {
+  const tab = findUniversalPrimaryTab(name);
+  return { label: tab.label, route: tab.route, expected, ...options };
+}
+
+function childNavigationRouteCheck(
+  parent: Parameters<typeof findUniversalCanonicalChild>[0],
+  section: Parameters<typeof findUniversalCanonicalChild>[1],
+  expected: string,
+  options: Pick<MobileReleaseQaRouteCheck, "proof" | "requiredNativePlatforms"> = {},
+): MobileReleaseQaRouteCheck {
+  const child = findUniversalCanonicalChild(parent, section);
+  return { label: child.label, route: child.route, expected, ...options };
+}
 
 export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
   {
@@ -201,19 +224,19 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "QA note confirming Care Pass Report History storage status stayed truthful.",
     ],
     routeChecklist: [
-      { label: "Home", route: "/", expected: "Confirm Phoenix status, next care, quick actions, and long-press-to-Studio are readable." },
-      { label: "Log", route: "/log", expected: "Quick-log one safe care event or open the detail sheet without keyboard or modal blocking.", proof: "iOS Quick Log or Log screenshot." },
-      { label: "Plans", route: "/calendar", expected: "Open the visible Next Mission row and confirm add/edit plan controls stay reachable." },
-      { label: "Health", route: "/health", expected: "Review Health Watch and Bile Watch copy for readable, non-diagnostic language." },
-      { label: "More", route: "/more", expected: "Use the visible directory, then open Launch Readiness and confirm beta/public launch boundaries stay truthful.", proof: "Android Launch Readiness screenshot." },
-      { label: "Dog Profile", route: "/more?section=dog-profile", expected: "Confirm identity, care facts, and veterinarian contacts are reachable from More." },
-      { label: "Privacy & Data", route: "/more?section=privacy", expected: "Confirm export and deletion controls are reachable from More without implying provider storage." },
-      { label: "Care Team & Supplies", route: "/more?section=care-team-supplies", expected: "Confirm household supplies and travel controls expose clear next actions." },
-      { label: "Story & Progress", route: "/more?section=story-progress", expected: "Confirm care career, adventure trail, memories, walk story, and badges are reachable without dead ends." },
-      { label: "Adventure", route: "/more?section=adventure", expected: "Confirm private care quests, proof rows, XP, and memory shelf are reachable without claiming public maps or cloud sharing." },
-      { label: "Records", route: "/health?section=records", expected: "Confirm records, dog ID, trend sections, and report history expose clear next actions." },
-      { label: "Avatar Studio", route: "/more?section=avatar-studio", expected: "Confirm the PixelLab-backed care twin path is reachable and labeled truthfully." },
-      { label: "Care Pass", route: "/health?section=care-pass", expected: "Confirm sitter/vet/trainer handoff previews and Report History storage status stay truthful.", proof: "Care Pass Report History storage status note or screenshot." },
+      primaryNavigationRouteCheck("index", "Confirm Phoenix status, next care, quick actions, and long-press-to-Studio are readable."),
+      primaryNavigationRouteCheck("log", "Quick-log one safe care event or open the detail sheet without keyboard or modal blocking.", { proof: "iOS Quick Log or Log screenshot." }),
+      primaryNavigationRouteCheck("calendar", "Open the visible Next Mission row and confirm add/edit plan controls stay reachable."),
+      primaryNavigationRouteCheck("health", "Review Health Watch and Bile Watch copy for readable, non-diagnostic language."),
+      primaryNavigationRouteCheck("more", "Use the visible directory, then open Launch Readiness and confirm beta/public launch boundaries stay truthful.", { proof: "Android Launch Readiness screenshot." }),
+      childNavigationRouteCheck("more", "dog-profile", "Confirm identity, care facts, and veterinarian contacts are reachable from More."),
+      childNavigationRouteCheck("more", "privacy", "Confirm export and deletion controls are reachable from More without implying provider storage."),
+      childNavigationRouteCheck("more", "care-team-supplies", "Confirm household supplies and travel controls expose clear next actions."),
+      childNavigationRouteCheck("more", "story-progress", "Confirm care career, adventure trail, memories, walk story, and badges are reachable without dead ends."),
+      childNavigationRouteCheck("more", "adventure", "Confirm private care quests, proof rows, XP, and memory shelf are reachable without claiming public maps or cloud sharing."),
+      childNavigationRouteCheck("health", "records", "Confirm records, dog ID, trend sections, and report history expose clear next actions."),
+      childNavigationRouteCheck("more", "avatar-studio", "Confirm the PixelLab-backed care twin path is reachable and labeled truthfully."),
+      childNavigationRouteCheck("health", "care-pass", "Confirm sitter/vet/trainer handoff previews and Report History storage status stay truthful.", { proof: "Care Pass Report History storage status note or screenshot." }),
     ],
     launchRisk:
       "If this loop is not proven, WoofWatcher may look polished in isolated screens while still failing the real owner beta journey.",
@@ -914,62 +937,14 @@ export const MOBILE_RELEASE_QA_SURFACES: readonly MobileReleaseQaSurface[] = [
       "Note listing the first route with overlap, confusing hierarchy, or mockup drift, or confirming no route-to-route design break was found.",
     ],
     routeChecklist: [
-      {
-        label: "Home",
-        route: "/",
-        expected:
-          "Phoenix Room, Care Status, Home Command, Today's Missions, and Quick Log read as one planned first screen.",
-        requiredNativePlatforms: ["ios", "android"],
-      },
-      {
-        label: "Log",
-        route: "/log",
-        expected:
-          "Quick Log Flow leads with tap and long-press actions, then the detail dock supports richer logs without taking over the route.",
-        requiredNativePlatforms: ["ios", "android"],
-      },
-      {
-        label: "Plans",
-        route: "/calendar",
-        expected:
-          "Today's Missions gives the owner the next responsibility before Mission Schedule shows the full day.",
-        requiredNativePlatforms: ["ios", "android"],
-      },
-      {
-        label: "Health",
-        route: "/health",
-        expected:
-          "Health Watch stays calm, non-diagnostic, readable, and free of duplicate metric rails or clipped review rows.",
-        requiredNativePlatforms: ["ios", "android"],
-      },
-      {
-        label: "More",
-        route: "/more",
-        expected:
-          "The visible directory maps Dog Profile, Privacy & Data, Story & Progress, Care Team & Supplies, and other canonical children.",
-        requiredNativePlatforms: ["ios", "android"],
-      },
-      {
-        label: "Story & Progress",
-        route: "/more?section=story-progress",
-        expected:
-          "Care career, adventure trail, memories, walk story, and badges stay on one planned board without dead ends.",
-        requiredNativePlatforms: ["ios", "android"],
-      },
-      {
-        label: "Records",
-        route: "/health?section=records",
-        expected:
-          "Vault Command gives clean exits for Dog ID, Record Vault, Care Pass, and Reports before dense record evidence.",
-        requiredNativePlatforms: ["ios", "android"],
-      },
-      {
-        label: "Care Team & Supplies",
-        route: "/more?section=care-team-supplies",
-        expected:
-          "Household supplies and travel controls read as one planned board with clear next actions.",
-        requiredNativePlatforms: ["ios", "android"],
-      },
+      primaryNavigationRouteCheck("index", "Phoenix Room, Care Status, Home Command, Today's Missions, and Quick Log read as one planned first screen.", { requiredNativePlatforms: ["ios", "android"] }),
+      primaryNavigationRouteCheck("log", "Quick Log Flow leads with tap and long-press actions, then the detail dock supports richer logs without taking over the route.", { requiredNativePlatforms: ["ios", "android"] }),
+      primaryNavigationRouteCheck("calendar", "Today's Missions gives the owner the next responsibility before Mission Schedule shows the full day.", { requiredNativePlatforms: ["ios", "android"] }),
+      primaryNavigationRouteCheck("health", "Health Watch stays calm, non-diagnostic, readable, and free of duplicate metric rails or clipped review rows.", { requiredNativePlatforms: ["ios", "android"] }),
+      primaryNavigationRouteCheck("more", "The visible directory maps Dog Profile, Privacy & Data, Story & Progress, Care Team & Supplies, and other canonical children.", { requiredNativePlatforms: ["ios", "android"] }),
+      childNavigationRouteCheck("more", "story-progress", "Care career, adventure trail, memories, walk story, and badges stay on one planned board without dead ends.", { requiredNativePlatforms: ["ios", "android"] }),
+      childNavigationRouteCheck("health", "records", "Vault Command gives clean exits for Dog ID, Record Vault, Care Pass, and Reports before dense record evidence.", { requiredNativePlatforms: ["ios", "android"] }),
+      childNavigationRouteCheck("more", "care-team-supplies", "Household supplies and travel controls read as one planned board with clear next actions.", { requiredNativePlatforms: ["ios", "android"] }),
     ],
     launchRisk:
       "If this pass is skipped, the app can have strong individual features but still feel visually crowded, confusing, or unplanned in an App Store preview.",

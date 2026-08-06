@@ -5,32 +5,19 @@ const {
   createPreviewServer,
   requestRoute,
 } = require("./smoke-runtime-preview.js");
+const {
+  UNIVERSAL_NAVIGATION_MANIFEST,
+  UNIVERSAL_NAVIGATION_QA_ROUTES,
+  buildUniversalNavigationQaRoutes,
+} = require("./universal-navigation-manifest.js");
 
 const projectRoot = path.resolve(__dirname, "..");
 const exportRoot = path.resolve(projectRoot, ".expo-smoke");
 const exportIndexPath = path.join(exportRoot, "index.html");
 
-const LIVE_PREVIEW_HANDOFF_ROUTES = [
-  "/",
-  "/sign-in",
-  "/setup",
-  "/log",
-  "/calendar",
-  "/health",
-  "/records",
-  "/more",
-  "/care-twin-qa?qaSurface=auth-setup-onboarding-proof",
-  "/care-twin-qa?qaSurface=records-local-file-handoff",
-  "/care-twin-qa?qaSurface=report-binary-export-proof",
-  "/care-twin-qa?qaSurface=care-entry-provider-sync-proof",
-  "/care-twin-qa?qaSurface=woofguide-ai-provider-proof",
-  "/care-twin-qa?qaSurface=push-notifications-proof",
-  "/care-twin-qa?qaSurface=payments-provider-proof",
-  "/care-twin-qa?qaSurface=store-accounts-proof",
-  "/care-twin-qa?qaSurface=account-deletion-proof",
-  "/care-twin-qa?qaSurface=support-legal-readiness-proof",
-  "/care-twin-qa?qaSurface=route-visual-consistency",
-];
+const LIVE_PREVIEW_HANDOFF_ROUTES = buildUniversalNavigationQaRoutes(
+  UNIVERSAL_NAVIGATION_MANIFEST.livePreviewSupplementalRoutes,
+);
 
 function normalizeBaseUrl(baseUrl) {
   const value = String(baseUrl || "").trim();
@@ -72,6 +59,7 @@ function buildLivePreviewHandoffProof(input) {
     routeChecks,
     truthBoundaries: [
       "Live preview proof is web preview only and does not replace native iOS/Android proof.",
+      "Static HTTP success proves shell availability only; rendered redirect, selected-tab, re-tap, Back, and history behavior require the separate navigation gate.",
       "Live preview proof does not approve provider-backed storage, sync, AI, payments, push, store approval, public launch, or Apollo sign-off.",
       ".expo-smoke metadata does not prove the export was produced from the current commit; keep branch CI and export logs attached.",
     ],
@@ -213,6 +201,8 @@ if (require.main === module) {
 
 module.exports = {
   LIVE_PREVIEW_HANDOFF_ROUTES,
+  UNIVERSAL_NAVIGATION_MANIFEST,
+  UNIVERSAL_NAVIGATION_QA_ROUTES,
   buildLivePreviewHandoffProof,
   collectLivePreviewHandoffProof,
   formatLivePreviewHandoffProofText,

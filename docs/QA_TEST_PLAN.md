@@ -366,11 +366,42 @@ Current evidence, 2026-07-03: `mobileReadiness.test.ts` and
 source-backed`, so local PDF/PNG generation cannot drift back to HTML/SVG-only
 fallbacks while native/provider proof remains open.
 
+## Universal Navigation QA (Current)
+
+The only visible primary tabs, in order, are **Home, Log, Plans, Health,
+More**. Each tab must keep a visible label, a selected shape plus color, and a
+minimum 48 px touch target. Health owns Overview, Health Watch, Bile Watch,
+Medications, Diet, Trends, Records, Dog ID, and Care Pass. More owns Dog
+Profile, Avatar Studio, Care Team, Care Team & Supplies, Story & Progress,
+Adventure, WoofGuide, Settings, Privacy & Data, and Legal.
+
+Run the following navigation pass on phone and desktop widths:
+
+1. Open the five tabs in order and confirm each selected parent remains visible.
+2. Open each Health and More child from a visible parent control where one is
+   available; use the canonical child URL for direct-only surfaces such as Dog
+   ID. No child may promote itself to a sixth tab.
+3. Exercise the required legacy URLs: `/records`, `/reminders`, `/pack`,
+   `/story`, `/profile`, `/portrait`, `/adventure`, `/woofguide`, `/privacy`,
+   and `/legal`. Confirm each reaches the canonical owner, then verify Back and
+   history contain no duplicate redirect root.
+4. Verify Home re-tap is idempotent, More re-tap returns an active More child to
+   More root, and malformed/unknown queries fall back calmly to the owning root.
+5. Inspect visible labels, selected shape and color, 48 px targets, large-text
+   layout, and keyboard focus. On physical iOS and Android, capture VoiceOver
+   and TalkBack tab order, label, hint, and selected-value evidence.
+
+Static HTTP smoke proves shell availability only. It does not prove client
+redirects, selected parent, re-tap, Back, or history behavior; those require
+rendered browser and physical-device evidence. Until both physical VoiceOver
+and TalkBack captures exist, native accessibility remains blocked rather than
+inferred from web output.
+
 ## Manual Mobile QA
 
 1. Sign up/sign in.
 2. Complete setup: dog profile, diet, routine, caregiver.
-3. Confirm Today shows next needed care.
+3. Confirm Home shows the next needed care.
 4. Log a meal with expected, served, eaten, skipped/partial, note, and caregiver visibility.
 5. Use Home Quick Log for a meal and confirm it records the open routine, expected portion, served amount, eaten amount, complete status, and household visibility.
 6. Confirm a visible matching meal log changes the routine from due/missed to handled and shows complete/partial/skipped status.
@@ -466,7 +497,7 @@ fallbacks while native/provider proof remains open.
 - Auth onboarding smoke.
 - Visual regression or screenshot review.
 - Rive/Lottie/Reanimated avatar asset runtime checks and a native-device visual pass for the PixelLab Phoenix, Retriever, Husky, and Bully emote packs.
-- Full accessibility pass for contrast, dynamic type, keyboard flow, touch targets, and native screen-reader traversal. Static labels for critical mobile actions are now covered.
+- Full physical-device accessibility pass for contrast, dynamic type, keyboard flow, 48 px touch targets, VoiceOver, and TalkBack traversal. Static labels and browser checks are supplemental only.
 - Document upload/security tests.
 - Self-serve provider-backed account deletion tests.
 - Payment/paywall tests when monetization is enabled.

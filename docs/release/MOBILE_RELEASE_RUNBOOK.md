@@ -71,9 +71,33 @@ When `pnpm` and dependencies are available, run:
 pnpm install --frozen-lockfile
 pnpm run build:ci
 pnpm --filter @workspace/woofwatcher-mobile run typecheck
+pnpm --filter @workspace/woofwatcher-mobile run verify:pixellab-assets
 ```
 
 GitHub Actions `WoofWatcher Verify` must pass on `main` before sending a build to external testers.
+
+`build:ci` executes the PixelLab verifier before Expo `smoke:web`, then runs
+the runtime and live-preview shell checks from the shared universal-navigation
+manifest. Static HTTP success proves shell availability only. It does not prove
+client redirects, selected tabs, re-tap, Back, or history behavior.
+
+## Universal Navigation Release Gate
+
+- Confirm the exact visible order and labels are **Home, Log, Plans, Health, More**,
+  with a selected shape plus color and minimum 48 px touch targets.
+- Under Health, exercise Overview, Health Watch, Bile Watch, Medications, Diet,
+  Trends, Records, Dog ID, and Care Pass.
+- Under More, exercise Dog Profile, Avatar Studio, Care Team, Care Team &
+  Supplies, Story & Progress, Adventure, WoofGuide, Settings, Privacy & Data,
+  and Legal.
+- Load `/records`, `/reminders`, `/pack`, `/story`, `/profile`, `/portrait`,
+  `/adventure`, `/woofguide`, `/privacy`, and `/legal`; confirm the canonical
+  owner stays selected, Back is clean, and no duplicate root is stacked.
+- Verify Home re-tap is idempotent, selected More re-tap resets only its active
+  child, and malformed queries fall back to the owning root.
+- Capture physical iOS VoiceOver and Android TalkBack order, labels, hints,
+  selected values, and large-text layout. Browser accessibility inspection is
+  supplemental; the gate remains blocked until both physical captures exist.
 
 ## iOS Path
 
@@ -83,7 +107,7 @@ GitHub Actions `WoofWatcher Verify` must pass on `main` before sending a build t
 4. Confirm app icon, splash screen, and Fable screenshots are final.
 5. Run an internal preview build first.
 6. Test on at least one iPhone small screen and one modern large iPhone.
-7. Verify first-run Explore, Home, Fast Log, meal lifecycle, potty flow, GPS walk recording, Plan, Story, Pack, Health/Bile Watch, Records, Care Pass, local guidance, Privacy, export, and deletion.
+7. Verify first-run Explore, Home, Log, Plans, Health, and More; then exercise Care Team & Supplies and Story & Progress under More, plus Records and Care Pass under Health, before checking local guidance, Privacy & Data, export, and deletion.
 8. Upload to internal TestFlight, install that signed binary, and repeat the native matrix on a physical iPhone.
 9. Do not submit to App Store review until privacy/legal/support obligations are approved and Apollo approves the exact TestFlight build.
 
@@ -104,7 +128,7 @@ pnpm exec eas submit --platform ios --profile production
 4. Confirm adaptive icon, splash screen, and Fable screenshots are final.
 5. Run an internal preview APK first.
 6. Test on at least one compact Android phone and one larger Android phone.
-7. Verify first-run Explore, Home, Fast Log, meal lifecycle, potty flow, GPS walk recording, Plan, Story, Pack, Health/Bile Watch, Records, Care Pass, local guidance, Privacy, export, and deletion.
+7. Verify first-run Explore, Home, Log, Plans, Health, and More; then exercise Care Team & Supplies and Story & Progress under More, plus Records and Care Pass under Health, before checking local guidance, Privacy & Data, export, and deletion.
 8. Use production App Bundle for Google Play internal testing.
 9. Do not submit publicly until privacy/legal/support/subscription obligations are approved.
 
@@ -131,7 +155,7 @@ Before relying on the web surface:
 
 - iOS safe areas: notch, Dynamic Island, bottom home indicator, modal keyboard avoidance.
 - Android safe areas: status bar, gesture navigation, back behavior, keyboard avoidance.
-- Bottom tab target sizes: at least 44px equivalent.
+- Bottom tab target sizes: at least 48 px on every platform.
 - Quick Log can complete common logs in under five seconds.
 - Meal served/outcome state is visually obvious.
 - Potty parent flow is not split into confusing pee/poop top-level routes.

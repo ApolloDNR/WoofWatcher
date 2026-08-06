@@ -12,6 +12,12 @@ export const canonicalLogRoute = (): "/log" => "/log";
 export const canonicalFastLogRoute = (): "/fastlog" => "/fastlog";
 export const canonicalPlansRoute = (): "/calendar" => "/calendar";
 
+export function replaceWithCanonicalHome(router: {
+  replace(route: ReturnType<typeof canonicalHomeRoute>): void;
+}): void {
+  router.replace(canonicalHomeRoute());
+}
+
 const OWNERSHIP_PATHS = new Set([
   "/",
   "/log",

@@ -42,7 +42,7 @@ test("Home keeps unsafe routines as correction evidence outside schedulable Next
   assert.equal(plan.scheduledCount, 1);
   assert.equal(plan.correctionCount, rawTimes.length);
   assert.equal(plan.correctionItems.every((item) => item.minutesFromNow === null), true);
-  assert.equal(plan.correctionSummary, "7 routines need correction in Plan.");
+  assert.equal(plan.correctionSummary, "7 routines need correction in Plans.");
 });
 
 test("Home does not replace a correction-only plan with startable suggestions", () => {
@@ -59,5 +59,5 @@ test("Home does not replace a correction-only plan with startable suggestions", 
   assert.equal(plan.hasSavedRoutines, true);
   assert.equal(plan.scheduledItems.length, 0);
   assert.equal(plan.correctionCount, 1);
-  assert.equal(plan.correctionSummary, "1 routine needs correction in Plan.");
+  assert.equal(plan.correctionSummary, "1 routine needs correction in Plans.");
 });

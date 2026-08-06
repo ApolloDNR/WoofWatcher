@@ -36,7 +36,7 @@ export const MORE_DIRECTORY_GROUPS: readonly MoreDirectoryGroup[] = [
     title: "People & Home",
     items: [
       { id: "care-team", label: "Care Team", detail: "Caregivers, household access, and responsibility.", searchTerms: ["caregiver", "people", "household"], destination: { parent: "more", section: "care-team" } },
-      { id: "supplies-travel", label: "Supplies & Travel", detail: "Pack inventory and the travel bag checklist.", searchTerms: ["supplies", "travel", "pack", "leash"], destination: { parent: "more", section: "care-team-supplies" } },
+      { id: "supplies-travel", label: "Care Team & Supplies", detail: "Household supply inventory and travel checklists.", searchTerms: ["supplies", "travel", "pack", "leash"], destination: { parent: "more", section: "care-team-supplies" } },
     ],
   },
   {

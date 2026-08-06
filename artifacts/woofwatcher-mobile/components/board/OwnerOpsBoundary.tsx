@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { replaceWithCanonicalHome } from "@/lib/canonicalRouteBuilders";
 import { MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 
 /**
@@ -52,19 +53,13 @@ export function OwnerOpsUnavailableScreen({
           ]}
         >
           This area holds internal owner tooling and is not included in the
-          store release. Everything for your dog's day lives in Today, Log,
-          Plan, Pack, and Story.
+          store release. Everything for your dog's day lives in Home, Log,
+          Plans, Health, and More.
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Back to Today"
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              router.replace("/");
-            }
-          }}
+          accessibilityLabel="Back to Home"
+          onPress={() => replaceWithCanonicalHome(router)}
           style={({ pressed }) => [
             styles.button,
             {
@@ -78,7 +73,7 @@ export function OwnerOpsUnavailableScreen({
               { color: colors.primaryForeground, fontFamily: "Inter_700Bold" },
             ]}
           >
-            Back to Today
+            Back to Home
           </Text>
         </Pressable>
       </View>

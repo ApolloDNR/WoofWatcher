@@ -9,6 +9,7 @@ import {
   canonicalMoreRoute,
   canonicalPlansRoute,
   canonicalizeOwnedRoute,
+  replaceWithCanonicalHome,
 } from "./canonicalRouteBuilders.ts";
 
 test("builds canonical tab and section routes without legacy aliases", () => {
@@ -18,6 +19,18 @@ test("builds canonical tab and section routes without legacy aliases", () => {
   assert.equal(canonicalPlansRoute(), "/calendar");
   assert.equal(canonicalHealthRoute("records"), "/health?section=records");
   assert.equal(canonicalMoreRoute("privacy"), "/more?section=privacy");
+});
+
+test("release-boundary navigation replaces exactly once with canonical Home", () => {
+  const calls: string[] = [];
+  const router = {
+    back: () => calls.push("back"),
+    replace: (route: string) => calls.push(`replace:${route}`),
+  };
+
+  replaceWithCanonicalHome(router);
+
+  assert.deepEqual(calls, ["replace:/"]);
 });
 
 test("normalizes indirect legacy callers through the canonical ownership resolver", () => {
