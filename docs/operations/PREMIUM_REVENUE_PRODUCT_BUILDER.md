@@ -5491,3 +5491,11 @@ Dependency-complete `WoofWatcher Verify` run `31032566290`, job `92396622792`, p
 The shared avatar-life scene engine now resolves canonical Dog Profile identity before formatting owner-facing pet/rest verbs. Red-first coverage reproduced `Pet My Dog`, then passed with the intentional `Pet Phoenix` starter fallback while preserving trimmed renamed-dog actions. Native accessibility/device proof, provider/store proof, and Apollo approval remain separate gates.
 
 Dependency-complete `WoofWatcher Verify` run `31067224307`, job `92507367651`, passed implementation/docs commit `fb0faafc` in `2m14s`, including pinned dependency install, JSON doctor, focused tests, typecheck, and CI-safe builds.
+
+## 2026-08-06 Access Pass Dog Profile identity slice
+
+The shared Access Pass domain now resolves canonical Dog Profile identity for
+new local drafts and persisted pass views. Red-first coverage reproduced the
+`My Dog` leak, then proved the Phoenix starter fallback and a trimmed renamed
+dog in caregiver permission copy. Provider sharing remains disabled; delivery,
+revocation, role enforcement, native proof, and Apollo approval remain open.

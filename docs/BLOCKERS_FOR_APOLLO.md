@@ -751,3 +751,11 @@ Dependency-complete branch CI passed for the implementation in `WoofWatcher Veri
 Source coverage now proves the shared avatar-life engine converts raw blank/`My Dog` identity to the intentional Phoenix starter name before announcing pet/rest actions. Native VoiceOver/TalkBack traversal, route-named iOS/Android room evidence, and Apollo approval remain required.
 
 Dependency-complete `WoofWatcher Verify` run `31067224307`, job `92507367651`, passed implementation/docs commit `fb0faafc`. This does not clear the native/Apollo gates above.
+
+## 2026-08-06 Access Pass identity proof remains open
+
+Source coverage now proves Access Pass drafts and saved permission summaries
+cannot expose the `My Dog` placeholder and follow canonical Dog Profile
+identity. Real provider-backed delivery/revocation, role enforcement, native
+VoiceOver/TalkBack and route-named iOS/Android proof, privacy review, and Apollo
+approval remain required; remote sharing remains disabled.

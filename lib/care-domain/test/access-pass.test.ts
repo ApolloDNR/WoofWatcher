@@ -76,6 +76,37 @@ test("builds a local Access Pass draft without pretending cloud sharing is live"
   assert.match(draft.notes, /Local draft/);
 });
 
+test("normalizes Dog Profile identity across Access Pass drafts and saved passes", () => {
+  const draft = buildAccessPassDraft({
+    holderName: "Aunt Lina",
+    kind: "sitter",
+    petName: "My Dog",
+    nowIso: "2026-06-11T09:15:00.000Z",
+  });
+
+  assert.equal(draft.petName, "Phoenix");
+
+  const plan = deriveAccessPassPlan({
+    now: NOW,
+    petName: "  Luna  ",
+    passes: [
+      {
+        id: "pass_placeholder",
+        holderName: "Maya",
+        role: "Sitter",
+        kind: "sitter",
+        startsAt: "2026-06-11T08:00:00-07:00",
+        endsAt: "2026-06-11T18:00:00-07:00",
+        petName: "My Dog",
+      },
+    ],
+  });
+
+  assert.equal(plan.passes[0].petName, "Luna");
+  assert.match(plan.summary, /access for Luna/);
+  assert.doesNotMatch(plan.summary, /My Dog|Phoenix/);
+});
+
 test("derives My Care Today from assigned routines and visible logs", () => {
   const today = deriveMyCareToday({
     now: NOW,

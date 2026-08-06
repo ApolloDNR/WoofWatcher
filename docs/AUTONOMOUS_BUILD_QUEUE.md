@@ -2238,6 +2238,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: The live room's tappable dog action now resolves the canonical Dog Profile name instead of announcing raw persisted text; trimmed renamed dogs are honored and blank/`My Dog` profiles retain the intentional Phoenix starter identity.
 - VERIFIED: Red-first identity coverage failed on the missing action-label builder, and the existing room-readiness contract then caught the stale raw-name wiring before it was updated to require the canonical builder.
 - NEXT: Require dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android room evidence remain open; source coverage does not clear native release gates.
+
 - CI: Dependency-complete `WoofWatcher Verify` run `31067224307`, job `92507367651`, passed implementation/docs commit `fb0faafc`; pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
 - CI: Dependency-complete `WoofWatcher Verify` run `31003745398`, job `92298554338`, passed implementation/docs commit `e1c36f3f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
@@ -2264,3 +2265,16 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - DONE: The shared avatar-life scene engine now applies canonical Dog Profile identity before building pet/rest interaction verbs, so a raw `My Dog` placeholder cannot surface as `Pet My Dog` or `Let My Dog rest`.
 - VERIFIED: Red-first avatar-life coverage failed with `Pet My Dog` and passed after routing the engine through `resolvePetName`; renamed dogs remain trimmed and blank/`My Dog` retain Phoenix.
 - NEXT: Require dependency-complete branch CI. Native VoiceOver/TalkBack traversal and route-named iOS/Android room evidence remain open; source coverage does not clear native release gates.
+
+## 2026-08-06 Access Pass Dog Profile identity
+
+- DONE: Shared Access Pass drafts and persisted pass views now resolve canonical
+  Dog Profile identity, so the stored `My Dog` placeholder cannot appear in a
+  caregiver permission summary and stale placeholder passes follow the active
+  renamed dog.
+- VERIFIED: Red-first domain coverage reproduced a draft named `My Dog`, then
+  passed with the Phoenix starter fallback and a trimmed `Luna` saved-pass
+  summary after the shared boundary was corrected.
+- NEXT: Require dependency-complete branch CI. Provider-backed pass delivery,
+  revocation, native accessibility/device evidence, and Apollo approval remain
+  separate gates; remote sharing stays disabled.

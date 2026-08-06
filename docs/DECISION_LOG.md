@@ -3247,3 +3247,11 @@ Setup builds the household-name hint from the current dog-name draft through can
 ## 2026-08-05 Shared care-twin verbs enforce canonical identity
 
 Avatar-life scene derivation is an owner-facing accessibility boundary, not only an internal animation helper. It must resolve the supplied dog name canonically so raw `My Dog`, blank, and whitespace values cannot leak into pet/rest action verbs; Phoenix remains the intentional starter fallback.
+
+## 2026-08-06 Access Pass identity follows Dog Profile
+
+Access Pass is a caregiver permission and handoff boundary, so both new local
+drafts and previously saved passes must resolve canonical Dog Profile identity.
+The `My Dog` placeholder falls back to Phoenix for starter data, while a stale
+placeholder pass adopts the active renamed dog in the current plan. This does
+not enable provider sharing, remote permissions, or automatic external action.
