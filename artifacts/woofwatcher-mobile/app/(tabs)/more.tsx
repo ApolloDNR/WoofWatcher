@@ -26,22 +26,13 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetMe,
-  useUpdateHousehold,
-  useJoinHousehold,
-  useUpdateMe,
   getGetMeQueryKey,
 } from "@workspace/api-client-react";
 import {
-  buildAccessPassDraft,
   deriveCareIntelligence,
-  deriveAccessPassPlan,
-  deriveHouseholdAccessPlan,
   deriveHouseholdResponsibility,
-  deriveMyCareToday,
-  type AccessPassKind,
 } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
@@ -50,7 +41,6 @@ import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 import { deriveCareSyncDashboard, type CareSyncDashboard } from "@/lib/careSync";
-import { buildCareTwinRosterDraft, deriveCareTwinRoster } from "@/lib/careTwinRoster";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
   buildBetaHandoffPacketShareText,
@@ -118,6 +108,8 @@ import {
   deriveCareerWeek,
   deriveCareStreak,
 } from "@/lib/careCareer";
+import { CareTeamSuppliesScreen } from "@/components/more/CareTeamSuppliesScreen";
+import { resolveMoreSectionRoute } from "@/lib/moreSectionRouting";
 import { resolveCanonicalDestination } from "@/lib/navigationOwnership";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -130,6 +122,16 @@ type HouseholdMemberSummary = {
   displayName?: string | null;
   email?: string | null;
   role?: string | null;
+};
+
+type MoreRouteSearchParams = {
+  section?: string | string[];
+  item?: string | string[];
+  entry?: string | string[];
+  walk?: string | string[];
+  prompt?: string | string[];
+  doc?: string | string[];
+  focus?: string | string[];
 };
 
 interface MoreDirectoryItem {
@@ -359,9 +361,8 @@ function providerRowQaTarget(key: LaunchProviderSetupKey): ProviderRowQaTarget |
 }
 
 export default function MoreScreen() {
-  const routeParams = useLocalSearchParams<{
-    section?: string | string[];
-  }>();
+  const routeParams = useLocalSearchParams<MoreRouteSearchParams>();
+  const router = useRouter();
   const destination = resolveCanonicalDestination({
     pathname: "/more",
     params: routeParams,
@@ -374,13 +375,25 @@ export default function MoreScreen() {
     return <Redirect href={redirectHref} />;
   }
 
+  const resolved = resolveMoreSectionRoute(routeParams);
+
+  if (resolved.target.kind === "care-team-supplies") {
+    return (
+      <CareTeamSuppliesScreen
+        section={resolved.target.section}
+        itemId={resolved.itemId}
+        onBack={() => (router.canGoBack() ? router.back() : router.replace("/more"))}
+      />
+    );
+  }
+
   return <MoreScreenContent routeParams={routeParams} />;
 }
 
 function MoreScreenContent({
   routeParams,
 }: {
-  routeParams: Readonly<{ section?: string | string[] }>;
+  routeParams: Readonly<MoreRouteSearchParams>;
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -397,15 +410,13 @@ function MoreScreenContent({
   // Pack/Story shortcut would leave `section` unchanged and never re-scroll.
   const rawFocusParam = (routeParams as Record<string, string | string[] | undefined>).focus;
   const focusParam = Array.isArray(rawFocusParam) ? rawFocusParam[0] : rawFocusParam;
-  const householdFocus = sectionParam === "household";
   const { state, careMutationsBlocked, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
   const showCareReadOnly = () =>
     notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
-  const { profile, entries, routines, caregivers, accessPasses } = state;
+  const { profile, entries, routines, caregivers } = state;
   const { avatarConfig, getAvatarSource, hasConfiguredAvatar } = useAvatar();
 
   const { signOut, isSignedIn } = useWoofAuth();
-  const queryClient = useQueryClient();
   const me = useGetMe({
     query: {
       queryKey: getGetMeQueryKey(),
@@ -415,14 +426,9 @@ function MoreScreenContent({
         Boolean(isSignedIn),
     },
   });
-  const updateHousehold = useUpdateHousehold();
-  const joinHousehold = useJoinHousehold();
-  const updateMe = useUpdateMe();
-
   const household = me.data?.household;
   const members: HouseholdMemberSummary[] = me.data?.members ?? [];
   const myName = me.data?.user?.displayName?.trim() || "";
-  const currentHuman = myName || caregivers[0]?.name || "Apollo";
 
   const now = Date.now();
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
@@ -453,10 +459,6 @@ function MoreScreenContent({
     profile.name && profile.name !== "My Dog"
       ? profile.name
       : "Phoenix";
-  const careTwinRoster = useMemo(
-    () => deriveCareTwinRoster(state),
-    [state.activePetId, state.profile, state.pets],
-  );
   const avatarTemplate = useMemo(
     () => getAvatarTemplate(avatarConfig.templateId),
     [avatarConfig.templateId],
@@ -629,42 +631,6 @@ function MoreScreenContent({
     () => deriveHouseholdResponsibility({ routines, entries, caregivers: responsibilityCaregivers, now }),
     [routines, entries, responsibilityCaregivers, now],
   );
-  const householdAccess = useMemo(
-    () =>
-      deriveHouseholdAccessPlan({
-        household: household ? { name: household.name, inviteCode: household.inviteCode } : null,
-        members,
-        caregivers,
-        routines,
-      }),
-    [household, members, caregivers, routines],
-  );
-  const careTeamName = consumerSurfacePolicy.householdProviderActions
-    ? householdAccess.householdName
-    : `${petName}'s Care Team`;
-  const careTeamSummary = consumerSurfacePolicy.householdProviderActions
-    ? householdAccess.summary
-    : "Caregivers, assigned routines, and care logs organized on this device.";
-  const accessPassPlan = useMemo(
-    () =>
-      deriveAccessPassPlan({
-        passes: accessPasses,
-        petName,
-        now,
-      }),
-    [accessPasses, petName, now],
-  );
-  const myCareToday = useMemo(
-    () =>
-      deriveMyCareToday({
-        personName: currentHuman,
-        petName,
-        routines,
-        entries,
-        now,
-      }),
-    [currentHuman, petName, routines, entries, now],
-  );
   const responsibilityTone =
     householdResponsibility.status === "needs-care"
       ? colors.rose
@@ -673,12 +639,6 @@ function MoreScreenContent({
         : householdResponsibility.status === "needs-setup"
           ? colors.primary
           : colors.sage;
-  const accessTone =
-    householdAccess.status === "needs-household" || householdAccess.status === "needs-invites"
-      ? colors.amber
-      : householdAccess.status === "needs-roles"
-        ? colors.copper
-        : colors.sage;
   const intelligenceTone =
     careIntelligence.status === "needs-attention"
       ? colors.amber
@@ -698,14 +658,7 @@ function MoreScreenContent({
     bottomInset: insets.bottom,
   });
 
-  /**
-   * Anchored deep-links: `/more?section=household|access|career`
-   * scrolls the matching board into view, so arrivals from Pack, Home, or
-   * Story land on the section itself instead of the top of this very long
-   * page. Each anchor is a zero-height View that reports its y-offset inside
-   * the scroll content (the health.tsx scrollRef pattern); if the target has
-   * not laid out yet on a cold mount, the scroll settles when it does.
-   */
+  /** The remaining legacy career anchor stays until Story moves in Task 4c. */
   const scrollRef = useRef<ScrollView>(null);
   const sectionAnchorYRef = useRef<Record<string, number>>({});
   const pendingAnchorRef = useRef<string | null>(null);
@@ -733,12 +686,7 @@ function MoreScreenContent({
     [scrollToAnchor],
   );
 
-  const sectionAnchorTarget =
-    sectionParam === "household" ||
-    sectionParam === "access" ||
-    sectionParam === "career"
-      ? sectionParam
-      : null;
+  const sectionAnchorTarget = sectionParam === "career" ? sectionParam : null;
 
   useEffect(() => {
     if (!sectionAnchorTarget) return;
@@ -755,19 +703,7 @@ function MoreScreenContent({
     bottomInset: insets.bottom,
   });
 
-  const [joinOpen, setJoinOpen] = useState(false);
-  const [joinCode, setJoinCode] = useState("");
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [renameValue, setRenameValue] = useState("");
-  const [nameOpen, setNameOpen] = useState(false);
-  const [nameValue, setNameValue] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
-  const [petRosterOpen, setPetRosterOpen] = useState(false);
-  const [petRosterName, setPetRosterName] = useState("");
-  const [petRosterBreed, setPetRosterBreed] = useState("");
-  const [accessPassOpen, setAccessPassOpen] = useState(false);
-  const [accessPassName, setAccessPassName] = useState("");
-  const [accessPassKind, setAccessPassKind] = useState<AccessPassKind>("sitter");
   const [pName, setPName] = useState("");
   const [pBreed, setPBreed] = useState("");
   const [pWeight, setPWeight] = useState("");
@@ -820,159 +756,6 @@ function MoreScreenContent({
       };
     }, []),
   );
-
-  const memberColor = (idx: number) => {
-    const palette = [colors.primary, colors.copper, colors.sage, colors.amber, colors.rose];
-    return palette[(idx >= 0 ? idx : 0) % palette.length];
-  };
-
-  const refreshMe = () => queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-
-  const shareInvite = () => {
-    if (!household) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void shareTextPayload({
-      message: `Join our ${household.name} on WoofWatcher to help care for ${petName}. Invite code: ${household.inviteCode}`,
-      title: "WoofWatcher invite",
-    });
-  };
-
-  const openFuturePetSheet = () => {
-    setPetRosterName("");
-    setPetRosterBreed("");
-    setPetRosterOpen(true);
-  };
-
-  const saveFuturePet = () => {
-    if (careMutationsBlocked) {
-      showCareReadOnly();
-      return;
-    }
-    const draft = buildCareTwinRosterDraft({
-      name: petRosterName,
-      breed: petRosterBreed,
-    });
-    const updated = updateCareDoc((doc) => ({
-      ...doc,
-      activePetId: "primary",
-      pets: [
-        ...(doc.pets ?? []),
-        draft,
-      ],
-    }));
-    const accepted = runAcceptedCareMutation(updated, () => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setPetRosterOpen(false);
-    });
-    if (!accepted) showCareReadOnly();
-  };
-
-  const openAccessPassSheet = () => {
-    setAccessPassName("");
-    setAccessPassKind("sitter");
-    setAccessPassOpen(true);
-  };
-
-  const saveAccessPassDraft = () => {
-    if (careMutationsBlocked) {
-      showCareReadOnly();
-      return;
-    }
-    const draft = buildAccessPassDraft({
-      holderName: accessPassName,
-      kind: accessPassKind,
-      petName,
-    });
-    const updated = updateCareDoc((doc) => ({
-      ...doc,
-      accessPasses: [
-        ...(doc.accessPasses ?? []),
-        draft,
-      ],
-    }));
-    const accepted = runAcceptedCareMutation(updated, () => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setAccessPassOpen(false);
-    });
-    if (!accepted) showCareReadOnly();
-  };
-
-  const shareAccessPassSummary = () => {
-    const pass = accessPassPlan.passes[0];
-    if (!pass) {
-      notifyDialog("Access Pass", "Create a local Access Pass draft before sharing helper instructions.");
-      return;
-    }
-    const message = [
-      `WoofWatcher Access Pass draft for ${pass.petName}`,
-      "",
-      `Helper: ${pass.holderName}`,
-      `Role: ${pass.role}`,
-      `Status: ${pass.status}`,
-      `Time: ${pass.timeLabel}`,
-      "",
-      "Allowed:",
-      ...pass.permissions.map((permission) => `- ${permission}`),
-      "",
-      "Not allowed:",
-      ...pass.blockedPermissions.map((permission) => `- ${permission}`),
-      "",
-      accessPassPlan.permissionBoundary,
-      "Provider-backed sharing is not live yet; review this before granting real access.",
-    ].join("\n");
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void shareTextPayload({ message, title: `WoofWatcher Access Pass - ${pass.holderName}` });
-  };
-
-  const submitJoin = () => {
-    const code = joinCode.trim();
-    if (!code) return;
-    joinHousehold.mutate(
-      { data: { inviteCode: code } },
-      {
-        onSuccess: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setJoinOpen(false);
-          setJoinCode("");
-          refreshMe();
-          refresh();
-        },
-        onError: () => notifyDialog("Couldn't join", "That invite code didn't match a household."),
-      },
-    );
-  };
-
-  const submitRename = () => {
-    const name = renameValue.trim();
-    if (!name) return;
-    updateHousehold.mutate(
-      { data: { name } },
-      {
-        onSuccess: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setRenameOpen(false);
-          refreshMe();
-        },
-        onError: () => notifyDialog("Couldn't rename", "Please try again."),
-      },
-    );
-  };
-
-  const submitName = () => {
-    const name = nameValue.trim();
-    if (!name) return;
-    updateMe.mutate(
-      { data: { displayName: name } },
-      {
-        onSuccess: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setNameOpen(false);
-          refreshMe();
-        },
-        onError: () => notifyDialog("Couldn't update name", "Please try again."),
-      },
-    );
-  };
 
   const openProfileEdit = () => {
     setPName(profile.name === "My Dog" ? "" : profile.name);
@@ -1443,7 +1226,7 @@ function MoreScreenContent({
     },
     {
       label: "Roster",
-      value: `${careTwinRoster.liveCount}/${careTwinRoster.pets.length}`,
+      value: `1/${1 + (state.pets?.length ?? 0)}`,
     },
   ];
 
@@ -1491,10 +1274,7 @@ function MoreScreenContent({
       tone: responsibilityTone,
       onPress: () => {
         Haptics.selectionAsync();
-        // Already on More, so jump straight to the Care Team board; the push
-        // keeps the section param (and household-focus banner) in sync.
-        scrollToAnchor("household");
-        router.push("/more?section=household" as never);
+        router.push({ pathname: "/more", params: { section: "care-team" } });
       },
     },
     {
@@ -1766,33 +1546,6 @@ function MoreScreenContent({
             </View>
           </BoardCard>
 
-          {householdFocus && (
-            <BoardCard style={[s.moreBoardCard, { borderColor: colors.sage + "66", backgroundColor: colors.sage + "10" }]}>
-              <BoardSectionHeader
-                title={
-                  consumerSurfacePolicy.householdProviderActions
-                    ? "Household focus"
-                    : "Care team focus"
-                }
-                accessory={
-                  <BoardPill
-                    label={
-                      consumerSurfacePolicy.householdProviderActions
-                        ? "Presence route"
-                        : "On this device"
-                    }
-                    tone={colors.sage}
-                  />
-                }
-              />
-              <Text style={[s.responsibilitySummary, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                {consumerSurfacePolicy.householdProviderActions
-                  ? `Review Care Team, Household Access, and Household Pulse below for who is with ${petName}, what is open, and who can help next.`
-                  : `Review ${petName}'s Care Team and Responsibility Center below for assigned routines and today's care.`}
-              </Text>
-            </BoardCard>
-          )}
-
           {/* Profile header card */}
           <View style={[s.profileCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
             <LinearGradient
@@ -1873,118 +1626,6 @@ function MoreScreenContent({
             </View>
           </View>
 
-          {consumerSurfacePolicy.futureDogPlanning ? (
-          <BoardCard style={s.moreBoardCard}>
-            <BoardSectionHeader
-              title="CareTwin Roster"
-              accessory={
-                <Pressable
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    openFuturePetSheet();
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Add future dog to CareTwin roster"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                >
-                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Add future dog</Text>
-                </Pressable>
-              }
-            />
-            <View style={[s.rosterSummary, { backgroundColor: colors.background, borderColor: colors.border }]}>
-              <View style={[s.rosterSummaryIcon, { backgroundColor: colors.primary + "16" }]}>
-                <Ionicons name="paw-outline" size={20} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.rosterSummaryTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {careTwinRoster.summary}
-                </Text>
-                <Text style={[s.rosterSummaryText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {careTwinRoster.nextStep}
-                </Text>
-              </View>
-            </View>
-            <View style={s.rosterMetrics}>
-              {[
-                { label: "Live", value: careTwinRoster.liveCount, tone: colors.sage },
-                { label: "Future", value: careTwinRoster.futureCount, tone: colors.copper },
-                { label: "Locked", value: careTwinRoster.providerGatedCount, tone: colors.amber },
-              ].map((metric) => (
-                <View key={metric.label} style={[s.rosterMetric, { backgroundColor: metric.tone + "12", borderColor: metric.tone + "26" }]}>
-                  <Text style={[s.rosterMetricValue, { color: metric.tone, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
-                  <Text style={[s.rosterMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{metric.label}</Text>
-                </View>
-              ))}
-            </View>
-            <View style={[s.rosterList, { borderTopColor: colors.border }]}>
-              {careTwinRoster.pets.map((pet, index) => {
-                const rowBorder =
-                  index < careTwinRoster.pets.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border };
-                const rowContent = (
-                  <>
-                    <View style={[s.rosterAvatar, { backgroundColor: pet.isActive ? colors.primary + "18" : colors.background, borderColor: pet.isActive ? colors.primary + "33" : colors.border }]}>
-                      <Text style={[s.rosterAvatarText, { color: pet.isActive ? colors.primary : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                        {pet.name.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <View style={s.rosterNameLine}>
-                        <Text style={[s.rosterName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{pet.name}</Text>
-                        <View style={[s.rosterBadge, { backgroundColor: pet.isActive ? colors.sage + "18" : colors.amber + "18" }]}>
-                          <Text style={[s.rosterBadgeText, { color: pet.isActive ? colors.sage : colors.amber, fontFamily: "Inter_700Bold" }]}>
-                            {pet.statusLabel}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text style={[s.rosterMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {pet.breed} - {pet.weightLabel}
-                      </Text>
-                      <Text style={[s.rosterDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {pet.detail}
-                      </Text>
-                    </View>
-                    <Ionicons name={pet.canSwitch ? "checkmark-circle-outline" : "lock-closed-outline"} size={19} color={pet.canSwitch ? colors.sage : colors.amber} />
-                  </>
-                );
-                // The live care twin row is informational: no tap action, so no
-                // button semantics for screen readers to announce. Staged slots
-                // stay pressable to explain the provider gate.
-                if (pet.canSwitch) {
-                  return (
-                    <View
-                      key={pet.id}
-                      accessibilityLabel={`${pet.name}. ${pet.statusLabel}. ${pet.detail}`}
-                      style={[s.rosterRow, rowBorder]}
-                    >
-                      {rowContent}
-                    </View>
-                  );
-                }
-                return (
-                  <Pressable
-                    key={pet.id}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      notifyDialog(
-                        "Multi-dog switching is coming soon",
-                        "This dog is saved as a planned slot. Separate logs, routines, records, and reports aren't ready yet - for now everything stays with your current dog on this device.",
-                      );
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${pet.name}. ${pet.statusLabel}. ${pet.detail}`}
-                    style={({ pressed }) => [
-                      s.rosterRow,
-                      rowBorder,
-                      { opacity: pressed ? 0.72 : 1 },
-                    ]}
-                  >
-                    {rowContent}
-                  </Pressable>
-                );
-              })}
-            </View>
-          </BoardCard>
-          ) : null}
 
           <BoardCard style={[s.moreBoardCard, { borderColor: intelligenceTone + "44" }]}>
             <BoardSectionHeader
@@ -2849,396 +2490,6 @@ function MoreScreenContent({
             </>
           ) : null}
 
-          {/* Care Team / Household */}
-          <View collapsable={false} onLayout={registerSectionAnchor("household")} />
-          <BoardCard style={s.moreBoardCard}>
-            <BoardSectionHeader
-              title="Care Team"
-              accessory={
-                consumerSurfacePolicy.householdProviderActions ? (
-                  <Pressable
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setRenameValue(household?.name ?? "");
-                      setRenameOpen(true);
-                    }}
-                    hitSlop={MOBILE_INLINE_HIT_SLOP}
-                    disabled={!household}
-                  >
-                    <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Rename</Text>
-                  </Pressable>
-                ) : (
-                  <BoardPill label="On this device" tone={colors.sage} />
-                )
-              }
-            />
-            <View style={s.inviteTop}>
-              <View style={[s.inviteIcon, { backgroundColor: colors.sage + "1A" }]}>
-                <Ionicons name="people" size={20} color={colors.sage} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.inviteHousehold, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {careTeamName}
-                </Text>
-                <Text style={[s.inviteSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {careTeamSummary}
-                </Text>
-              </View>
-            </View>
-            {consumerSurfacePolicy.householdProviderActions ? (
-              <View style={[s.codeBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                <View>
-                  <Text style={[s.codeLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>INVITE CODE</Text>
-                  <Text style={[s.codeValue, { color: colors.foreground, fontFamily: DISPLAY }]}>
-                    {householdAccess.inviteCode || "—"}
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={shareInvite}
-                  disabled={!householdAccess.canShareInvite}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share household invite"
-                  style={({ pressed }) => [s.shareBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
-                >
-                  <Ionicons name="share-outline" size={16} color={colors.primaryForeground} />
-                  <Text style={[s.shareBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Invite</Text>
-                </Pressable>
-              </View>
-            ) : null}
-
-            <View style={[s.boardDivider, { borderTopColor: colors.border }]} />
-            {householdAccess.people.length === 0 ? (
-              <View style={s.teamRow}>
-                <Text style={[s.teamRole, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Complete setup to add the first caregiver to this device.
-                </Text>
-              </View>
-            ) : (
-              householdAccess.people.map((person, i) => {
-                const cg = memberColor(i);
-                const logCount = entries.filter((e) => e.caregiver.trim().toLowerCase() === person.name.toLowerCase()).length;
-                return (
-                  <View
-                    key={person.id}
-                    style={[s.teamRow, i < householdAccess.people.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
-                  >
-                    <View style={[s.teamAvatar, { backgroundColor: cg + "1A" }]}>
-                      <Text style={[s.teamInitial, { color: cg, fontFamily: "Inter_700Bold" }]}>
-                        {person.name.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <View style={s.teamNameLine}>
-                        <Text style={[s.teamName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{person.name}</Text>
-                        {myName && person.name.toLowerCase() === myName.toLowerCase() && (
-                          <View style={[s.youBadge, { backgroundColor: colors.primary + "1A" }]}>
-                            <Text style={[s.youBadgeText, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>You</Text>
-                          </View>
-                        )}
-                      </View>
-                      <Text style={[s.teamRole, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {person.role} - {consumerSurfacePolicy.householdProviderActions
-                          ? person.needsInvite
-                            ? "Invite needed"
-                            : "Ready"
-                          : "On this device"}
-                      </Text>
-                    </View>
-                    <View style={[s.logBadge, { backgroundColor: consumerSurfacePolicy.householdProviderActions && person.needsInvite ? colors.amber + "18" : colors.background }]}>
-                      <Text style={[s.logBadgeText, { color: consumerSurfacePolicy.householdProviderActions && person.needsInvite ? colors.amber : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                        {consumerSurfacePolicy.householdProviderActions && person.needsInvite ? "Invite" : `${logCount} logs`}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })
-            )}
-          </BoardCard>
-
-          {consumerSurfacePolicy.householdProviderActions ? (
-          <>
-          <View collapsable={false} onLayout={registerSectionAnchor("access")} />
-          <BoardCard style={[s.moreBoardCard, { borderColor: accessTone + "44" }]}>
-            <BoardSectionHeader
-              title="Household Access"
-              accessory={
-                <Pressable
-                  onPress={shareInvite}
-                  disabled={!householdAccess.canShareInvite}
-                  accessibilityRole="button"
-                  accessibilityLabel="Share household invite"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                >
-                  <Text style={[s.sectionLink, { color: accessTone, fontFamily: "Inter_600SemiBold", opacity: householdAccess.canShareInvite ? 1 : 0.55 }]}>Invite</Text>
-                </Pressable>
-              }
-            />
-            <View style={s.responsibilityTop}>
-              <View style={[s.responsibilityIcon, { backgroundColor: accessTone + "18" }]}>
-                <Ionicons name="key-outline" size={21} color={accessTone} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {householdAccess.status === "ready" ? "Access is aligned" : "Access needs review"}
-                </Text>
-                <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {householdAccess.summary}
-                </Text>
-              </View>
-            </View>
-            <View style={s.responsibilityMetrics}>
-              {[
-                { label: "Ready", value: householdAccess.syncedMembers },
-                { label: "Invites", value: householdAccess.localOnlyCaregivers },
-                { label: "Routine-only", value: householdAccess.routineOnlyOwners },
-              ].map((metric) => (
-                <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
-                  <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
-                  <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
-                </View>
-              ))}
-            </View>
-            <Text style={[s.responsibilityNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-              {householdAccess.nextStep}
-            </Text>
-            {householdAccess.people.length > 0 && (
-              <View style={[s.responsibilityRoster, { borderTopColor: colors.border }]}>
-                {householdAccess.people.slice(0, 4).map((person) => (
-                  <View key={`access-${person.id}`} style={s.responsibilityMember}>
-                    <Text style={[s.responsibilityMemberName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{person.name}</Text>
-                    <Text style={[s.responsibilityMemberMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {person.permissions.slice(0, 2).join(", ")}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </BoardCard>
-
-          <BoardCard style={[s.moreBoardCard, { borderColor: colors.primary + "44" }]}>
-            <BoardSectionHeader
-              title="Access Passes"
-              accessory={
-                <Pressable
-                  onPress={openAccessPassSheet}
-                  accessibilityRole="button"
-                  accessibilityLabel="Create Access Pass draft"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                >
-                  <Text style={[s.sectionLink, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>New pass</Text>
-                </Pressable>
-              }
-            />
-            <View style={s.responsibilityTop}>
-              <View style={[s.responsibilityIcon, { backgroundColor: colors.primary + "18" }]}>
-                <Ionicons name="ticket-outline" size={21} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  {accessPassPlan.title}
-                </Text>
-                <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  {accessPassPlan.summary}
-                </Text>
-              </View>
-            </View>
-            <View style={s.responsibilityMetrics}>
-              {[
-                { label: "Active", value: accessPassPlan.activeCount },
-                { label: "Upcoming", value: accessPassPlan.upcomingCount },
-                { label: "Drafts", value: accessPassPlan.draftCount },
-              ].map((metric) => (
-                <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
-                  <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
-                  <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
-                </View>
-              ))}
-            </View>
-            <Text style={[s.responsibilityNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-              {accessPassPlan.nextStep}
-            </Text>
-            <View style={[s.passBoundary, { borderColor: colors.border, backgroundColor: colors.background }]}>
-              <Ionicons name="shield-checkmark-outline" size={16} color={colors.sage} />
-              <Text style={[s.passBoundaryText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                {accessPassPlan.permissionBoundary}
-              </Text>
-            </View>
-            {accessPassPlan.passes.length > 0 && (
-              <View style={[s.passList, { borderTopColor: colors.border }]}>
-                {accessPassPlan.passes.slice(0, 3).map((pass) => (
-                  <View key={pass.id} style={s.passRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[s.passName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{pass.holderName}</Text>
-                      <Text style={[s.passMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {pass.role} - {pass.timeLabel}
-                      </Text>
-                    </View>
-                    <View style={[s.passStatus, { backgroundColor: pass.status === "active" ? colors.sage + "1F" : colors.background }]}>
-                      <Text style={[s.passStatusText, { color: pass.status === "active" ? colors.sage : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                        {pass.status}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-            <Pressable
-              onPress={shareAccessPassSummary}
-              accessibilityRole="button"
-              accessibilityLabel="Share Access Pass draft summary"
-              style={({ pressed }) => [
-                s.passAction,
-                { backgroundColor: colors.primary, opacity: pressed ? 0.78 : 1 },
-              ]}
-            >
-              <Ionicons name="share-outline" size={16} color={colors.primaryForeground} />
-              <Text style={[s.passActionText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Share Draft Summary</Text>
-            </Pressable>
-          </BoardCard>
-          </>
-          ) : null}
-
-          <BoardCard style={[s.moreBoardCard, { borderColor: responsibilityTone + "44" }]}>
-            <BoardSectionHeader
-              title="My Care Today"
-              accessory={
-                <Pressable
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    router.push("/calendar");
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Open assigned care"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                >
-                  <Text style={[s.sectionLink, { color: responsibilityTone, fontFamily: "Inter_600SemiBold" }]}>Open</Text>
-                </Pressable>
-              }
-            />
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                router.push("/calendar");
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Open My Care Today in Plans"
-              style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}
-            >
-              <View style={s.responsibilityTop}>
-                <View style={[s.responsibilityIcon, { backgroundColor: responsibilityTone + "18" }]}>
-                  <Ionicons name="person-circle-outline" size={22} color={responsibilityTone} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    {myCareToday.title}
-                  </Text>
-                  <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {myCareToday.summary}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
-              </View>
-              <View style={s.responsibilityMetrics}>
-                {[
-                  { label: "Assigned", value: myCareToday.assignedCount },
-                  { label: "Open", value: myCareToday.openCount },
-                  { label: "Overdue", value: myCareToday.overdueCount },
-                ].map((metric) => (
-                  <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
-                    <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
-                    <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
-                  </View>
-                ))}
-              </View>
-              <Text style={[s.responsibilityNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                {myCareToday.nextStep}
-              </Text>
-              {myCareToday.items.length > 0 && (
-                <View style={[s.careTodayList, { borderTopColor: colors.border }]}>
-                  {myCareToday.items.slice(0, 3).map((item) => (
-                    <View key={item.id} style={s.careTodayRow}>
-                      <Text style={[s.careTodayTime, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{item.time}</Text>
-                      <Text style={[s.careTodayLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
-                      <Text style={[s.careTodayStatus, { color: item.status === "done" ? colors.sage : item.status === "overdue" ? colors.rose : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                        {item.status}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </Pressable>
-          </BoardCard>
-
-          {/* Household responsibility */}
-          <BoardCard style={[s.moreBoardCard, { borderColor: responsibilityTone + "44" }]}>
-            <BoardSectionHeader
-              title="Responsibility Center"
-              accessory={
-                <Pressable
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    router.push("/calendar");
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Open routine board"
-                  hitSlop={MOBILE_INLINE_HIT_SLOP}
-                >
-                  <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Open routine board</Text>
-                </Pressable>
-              }
-            />
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                router.push("/calendar");
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Open routine board"
-              style={({ pressed }) => [{ opacity: pressed ? 0.72 : 1 }]}
-            >
-              <View style={s.responsibilityTop}>
-                <View style={[s.responsibilityIcon, { backgroundColor: responsibilityTone + "18" }]}>
-                  <Ionicons name="people-circle-outline" size={22} color={responsibilityTone} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.responsibilityTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    {householdResponsibility.title}
-                  </Text>
-                  <Text style={[s.responsibilitySummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                    {householdResponsibility.summary}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
-              </View>
-              <View style={s.responsibilityMetrics}>
-                {[
-                  { label: "Open", value: householdResponsibility.openRoutines },
-                  { label: "Overdue", value: householdResponsibility.overdueRoutines },
-                  { label: "Unassigned", value: householdResponsibility.unassignedRoutines },
-                ].map((metric) => (
-                  <View key={metric.label} style={[s.responsibilityMetric, { backgroundColor: colors.background }]}>
-                    <Text style={[s.responsibilityMetricValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{metric.value}</Text>
-                    <Text style={[s.responsibilityMetricLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{metric.label}</Text>
-                  </View>
-                ))}
-              </View>
-              <Text style={[s.responsibilityNext, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                {householdResponsibility.nextStep}
-              </Text>
-              {householdResponsibility.members.length > 0 && (
-                <View style={[s.responsibilityRoster, { borderTopColor: colors.border }]}>
-                  {householdResponsibility.members.slice(0, 3).map((member) => (
-                    <View key={member.name} style={s.responsibilityMember}>
-                      <Text style={[s.responsibilityMemberName, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{member.name}</Text>
-                      <Text style={[s.responsibilityMemberMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {member.done}/{member.assigned} routines - {member.todayLogs} logs
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </Pressable>
-          </BoardCard>
 
           {/* Sync health */}
           <BoardCard style={[s.moreBoardCard, { borderColor: syncTone + "44" }]}>
@@ -3330,50 +2581,6 @@ function MoreScreenContent({
             ) : null}
           </BoardCard>
 
-          {/* Provider-backed household actions remain available for internal QA
-              but stay out of the free local-first store build. */}
-          {consumerSurfacePolicy.householdProviderActions ? (
-          <View style={[s.listCard, { backgroundColor: colors.card, shadowColor: colors.primary, marginTop: 12 }]}>
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                setNameValue(myName);
-                setNameOpen(true);
-              }}
-              style={({ pressed }) => [s.linkRow, { borderBottomWidth: 1, borderBottomColor: colors.border, opacity: pressed ? 0.6 : 1 }]}
-            >
-              <View style={[s.linkIconWrap, { backgroundColor: colors.copper + "16" }]}>
-                <Ionicons name="person-circle" size={20} color={colors.copper} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.linkLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Your display name</Text>
-                <Text numberOfLines={1} style={[s.linkSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {myName || "Set how you appear on logs"}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                setJoinCode("");
-                setJoinOpen(true);
-              }}
-              style={({ pressed }) => [s.linkRow, { opacity: pressed ? 0.6 : 1 }]}
-            >
-              <View style={[s.linkIconWrap, { backgroundColor: colors.sage + "16" }]}>
-                <Ionicons name="enter-outline" size={20} color={colors.sage} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.linkLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Join another household</Text>
-                <Text numberOfLines={1} style={[s.linkSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  Enter an invite code from a family member
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
-            </Pressable>
-          </View>
-          ) : null}
 
           {/* Links */}
           <BoardCard style={s.moreBoardCard}>
@@ -3425,166 +2632,6 @@ function MoreScreenContent({
         </Animated.View>
       </ScrollView>
 
-      {consumerSurfacePolicy.householdProviderActions ? (
-        <>
-          {/* Join household modal */}
-          <PromptModal
-            visible={joinOpen}
-            colors={colors}
-            icon="enter-outline"
-            title="Join a household"
-            subtitle="Enter the invite code shared by a family member."
-            placeholder="e.g. PHX-7QK2"
-            value={joinCode}
-            onChangeText={setJoinCode}
-            autoCapitalize="characters"
-            confirmLabel="Join"
-            loading={joinHousehold.isPending}
-            onCancel={() => setJoinOpen(false)}
-            onConfirm={submitJoin}
-          />
-
-          {/* Rename household modal */}
-          <PromptModal
-            visible={renameOpen}
-            colors={colors}
-            icon="home-outline"
-            title="Rename household"
-            subtitle="Give your care team a name everyone recognizes."
-            placeholder="The Phoenix Pack"
-            value={renameValue}
-            onChangeText={setRenameValue}
-            confirmLabel="Save"
-            loading={updateHousehold.isPending}
-            onCancel={() => setRenameOpen(false)}
-            onConfirm={submitRename}
-          />
-
-          {/* Display name modal */}
-          <PromptModal
-            visible={nameOpen}
-            colors={colors}
-            icon="person-circle-outline"
-            title="Your display name"
-            subtitle="This is how you'll appear on every care log."
-            placeholder="Alex"
-            value={nameValue}
-            onChangeText={setNameValue}
-            confirmLabel="Save"
-            loading={updateMe.isPending}
-            onCancel={() => setNameOpen(false)}
-            onConfirm={submitName}
-          />
-        </>
-      ) : null}
-
-      {consumerSurfacePolicy.futureDogPlanning ? (
-      <Modal visible={petRosterOpen} transparent animationType="slide" onRequestClose={() => setPetRosterOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setPetRosterOpen(false)}>
-          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
-            <View style={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}>
-              <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
-              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Add future dog</Text>
-              <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                This saves a planned slot for a future dog. Multi-dog logs, routines, and records are coming soon - everything stays on this device for now.
-              </Text>
-
-              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NAME</Text>
-              <TextInput
-                value={petRosterName}
-                onChangeText={setPetRosterName}
-                placeholder="e.g. London"
-                placeholderTextColor={colors.mutedForeground}
-                style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-              />
-
-              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>BREED</Text>
-              <TextInput
-                value={petRosterBreed}
-                onChangeText={setPetRosterBreed}
-                placeholder="e.g. Golden Retriever"
-                placeholderTextColor={colors.mutedForeground}
-                style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-              />
-
-              <Pressable
-                onPress={saveFuturePet}
-                accessibilityRole="button"
-                accessibilityLabel="Save future dog to CareTwin roster"
-                style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
-              >
-                <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save planned slot</Text>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
-      ) : null}
-
-      {consumerSurfacePolicy.householdProviderActions ? (
-      <Modal visible={accessPassOpen} transparent animationType="slide" onRequestClose={() => setAccessPassOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setAccessPassOpen(false)}>
-          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
-            <View style={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}>
-              <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
-              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Create Access Pass</Text>
-              <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Save helper permissions as a local draft. Remote sharing is coming soon - passes stay on this device for now.
-              </Text>
-
-              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>HELPER NAME</Text>
-              <TextInput
-                value={accessPassName}
-                onChangeText={setAccessPassName}
-                placeholder="e.g. Maya"
-                placeholderTextColor={colors.mutedForeground}
-                style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-              />
-
-              <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>ROLE</Text>
-              <View style={s.passKindGrid}>
-                {[
-                  { key: "sitter" as const, label: "Sitter" },
-                  { key: "trainer" as const, label: "Trainer" },
-                  { key: "vet" as const, label: "Vet viewer" },
-                  { key: "emergency" as const, label: "Emergency" },
-                ].map((kind) => {
-                  const selected = accessPassKind === kind.key;
-                  return (
-                    <Pressable
-                      key={kind.key}
-                      onPress={() => setAccessPassKind(kind.key)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Set Access Pass role to ${kind.label}`}
-                      style={[
-                        s.passKind,
-                        {
-                          borderColor: selected ? colors.primary : colors.border,
-                          backgroundColor: selected ? colors.primary + "18" : colors.background,
-                        },
-                      ]}
-                    >
-                      <Text style={[s.passKindText, { color: selected ? colors.primary : colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        {kind.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              <Pressable
-                onPress={saveAccessPassDraft}
-                accessibilityRole="button"
-                accessibilityLabel="Save Access Pass draft"
-                style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
-              >
-                <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save Local Draft</Text>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
-      ) : null}
 
       <Modal visible={providerSetupOpen} transparent animationType="slide" onRequestClose={() => setProviderSetupOpen(false)}>
         <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProviderSetupOpen(false)}>
@@ -3841,80 +2888,9 @@ function MoreScreenContent({
   );
 }
 
-function PromptModal({
-  visible,
-  colors,
-  icon,
-  title,
-  subtitle,
-  placeholder,
-  value,
-  onChangeText,
-  confirmLabel,
-  loading,
-  autoCapitalize = "sentences",
-  onCancel,
-  onConfirm,
-}: {
-  visible: boolean;
-  colors: ReturnType<typeof useColors>;
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  subtitle: string;
-  placeholder: string;
-  value: string;
-  onChangeText: (t: string) => void;
-  confirmLabel: string;
-  loading?: boolean;
-  autoCapitalize?: "none" | "sentences" | "words" | "characters";
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <Pressable style={s.modalBackdrop} onPress={onCancel}>
-        <Pressable style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
-          <View style={[s.modalIcon, { backgroundColor: colors.primary + "1A" }]}>
-            <Ionicons name={icon} size={22} color={colors.primary} />
-          </View>
-          <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{title}</Text>
-          <Text style={[s.modalSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{subtitle}</Text>
-          <TextInput
-            placeholder={placeholder}
-            placeholderTextColor={colors.mutedForeground}
-            value={value}
-            onChangeText={onChangeText}
-            autoCapitalize={autoCapitalize}
-            autoCorrect={false}
-            style={[s.modalInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-            returnKeyType="done"
-            onSubmitEditing={onConfirm}
-          />
-          <View style={s.modalActions}>
-            <Pressable onPress={onCancel} style={({ pressed }) => [s.modalCancel, { opacity: pressed ? 0.6 : 1 }]}>
-              <Text style={[s.modalCancelText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              onPress={onConfirm}
-              disabled={loading}
-              style={({ pressed }) => [s.modalConfirm, { backgroundColor: colors.primary, opacity: pressed || loading ? 0.7 : 1 }]}
-            >
-              <Text style={[s.modalConfirmText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{loading ? "…" : confirmLabel}</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-}
-
 const s = StyleSheet.create({
   root: { flex: 1 },
   container: { flex: 1 },
-
-  header: { marginBottom: 18 },
-  title: { fontSize: 26, letterSpacing: -0.3 },
-  subtitle: { fontSize: 14, marginTop: 3 },
   moreRouteHeader: {
     paddingHorizontal: 20,
   },
@@ -3998,37 +2974,6 @@ const s = StyleSheet.create({
     flexShrink: 1,
     fontSize: 11,
     letterSpacing: 0.2,
-  },
-  /* Legacy full-bleed stage composition, superseded by the parchment console
-     above. The blocks below stay only for the mobileReadiness launch-stage
-     style contract; delete them together with that test's stage clauses. */
-  moreCommandStage: {
-    width: "100%",
-    minHeight: 294,
-    overflow: "hidden",
-    padding: 10,
-    position: "relative",
-    justifyContent: "space-between",
-  },
-  moreCommandHud: {
-    position: "absolute",
-    left: 10,
-    right: 10,
-    bottom: 70,
-    borderRadius: 8,
-    borderWidth: 1,
-    padding: 9,
-    flexDirection: "row",
-    gap: 5,
-  },
-  moreCommandFooter: {
-    position: "absolute",
-    left: 10,
-    right: 10,
-    bottom: 10,
-    flexDirection: "row",
-    alignItems: "stretch",
-    gap: 7,
   },
 
   profileCard: {
@@ -4146,42 +3091,6 @@ const s = StyleSheet.create({
     fontSize: 11,
     lineHeight: 14,
   },
-  boardDivider: { borderTopWidth: 1, marginTop: 14 },
-
-  rosterSummary: {
-    minHeight: 78,
-    borderRadius: 8,
-    borderWidth: 1,
-    padding: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 11,
-  },
-  rosterSummaryIcon: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  rosterSummaryTitle: { fontSize: 15.5, lineHeight: 20 },
-  rosterSummaryText: { fontSize: 12.2, lineHeight: 17, marginTop: 3 },
-  rosterMetrics: { flexDirection: "row", gap: 8, marginTop: 12 },
-  rosterMetric: {
-    flex: 1,
-    minHeight: 58,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 6,
-  },
-  rosterMetricValue: { fontSize: 18, lineHeight: 21 },
-  rosterMetricLabel: { fontSize: 10.5, marginTop: 2, textTransform: "uppercase" },
-  rosterList: { borderTopWidth: 1, marginTop: 12 },
-  rosterRow: { flexDirection: "row", alignItems: "center", gap: 11, paddingVertical: 13 },
-  rosterAvatar: { width: 42, height: 42, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  rosterAvatarText: { fontSize: 17 },
-  rosterNameLine: { flexDirection: "row", alignItems: "center", gap: 7, flexWrap: "wrap" },
-  rosterName: { fontSize: 14.5, flexShrink: 1 },
-  rosterBadge: { minHeight: 22, borderRadius: 7, paddingHorizontal: 7, alignItems: "center", justifyContent: "center" },
-  rosterBadgeText: { fontSize: 9.5, textTransform: "uppercase" },
-  rosterMeta: { fontSize: 11.8, lineHeight: 16, marginTop: 3 },
-  rosterDetail: { fontSize: 11.4, lineHeight: 16, marginTop: 3 },
 
   launchBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 9 },
   launchBadgeText: { fontSize: 9.5, letterSpacing: 0.5 },
@@ -4521,58 +3430,6 @@ const s = StyleSheet.create({
   },
   launchShareText: { color: "#FFFFFF", fontSize: 13 },
 
-  listCard: {
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    elevation: 2,
-  },
-  teamRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 },
-  teamAvatar: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
-  teamInitial: { fontSize: 17 },
-  teamNameLine: { flexDirection: "row", alignItems: "center", gap: 8 },
-  teamName: { fontSize: 15.5 },
-  teamRole: { fontSize: 13, marginTop: 2 },
-  youBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7 },
-  youBadgeText: { fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.4 },
-  logBadge: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 11 },
-  logBadgeText: { fontSize: 12 },
-
-  responsibilityTop: { flexDirection: "row", alignItems: "center", gap: 12 },
-  responsibilityIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  responsibilityTitle: { fontSize: 16, letterSpacing: 0 },
-  responsibilitySummary: { fontSize: 13, lineHeight: 18, marginTop: 3 },
-  responsibilityMetrics: { flexDirection: "row", gap: 8, marginTop: 14 },
-  responsibilityMetric: { flex: 1, minHeight: 64, borderRadius: 15, alignItems: "center", justifyContent: "center", padding: 8 },
-  responsibilityMetricValue: { fontSize: 16, textAlign: "center" },
-  responsibilityMetricLabel: { fontSize: 10.5, textAlign: "center", marginTop: 3 },
-  responsibilityNext: { fontSize: 12.5, lineHeight: 18, marginTop: 12 },
-  responsibilityRoster: { borderTopWidth: 1, marginTop: 14, paddingTop: 12, gap: 8 },
-  responsibilityMember: { flexDirection: "row", justifyContent: "space-between", gap: 10 },
-  responsibilityMemberName: { fontSize: 12.5, flex: 1 },
-  responsibilityMemberMeta: { fontSize: 12, textAlign: "right" },
-
-  passBoundary: { flexDirection: "row", alignItems: "flex-start", gap: 8, borderRadius: 12, borderWidth: 1, padding: 11, marginTop: 12 },
-  passBoundaryText: { flex: 1, fontSize: 11.5, lineHeight: 16 },
-  passList: { borderTopWidth: 1, marginTop: 12, paddingTop: 10, gap: 8 },
-  passRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 5 },
-  passName: { fontSize: 13.5 },
-  passMeta: { fontSize: 12, lineHeight: 16, marginTop: 1 },
-  passStatus: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
-  passStatusText: { fontSize: 10.5, textTransform: "capitalize" },
-  passAction: { minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 8, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8, marginTop: 13 },
-  passActionText: { color: "#FFFFFF", fontSize: 13.5 },
-  passKindGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8, marginBottom: 4 },
-  passKind: { flexGrow: 1, flexBasis: "47%", minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
-  passKindText: { fontSize: 12.5 },
-  careTodayList: { borderTopWidth: 1, marginTop: 12, paddingTop: 10, gap: 8 },
-  careTodayRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  careTodayTime: { width: 68, fontSize: 11.5 },
-  careTodayLabel: { flex: 1, fontSize: 12.5 },
-  careTodayStatus: { width: 66, textAlign: "right", fontSize: 11.5, textTransform: "capitalize" },
-
   syncTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   syncIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   syncTitle: { fontSize: 16, letterSpacing: 0 },
@@ -4582,24 +3439,6 @@ const s = StyleSheet.create({
   syncMetricValue: { fontSize: 14, textAlign: "center" },
   syncMetricLabel: { fontSize: 10.5, textAlign: "center", marginTop: 3 },
   syncNextStep: { fontSize: 12.5, lineHeight: 18, marginTop: 12 },
-
-  inviteTop: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
-  inviteIcon: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  inviteHousehold: { fontSize: 16 },
-  inviteSub: { fontSize: 13, marginTop: 2 },
-  codeBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  codeLabel: { fontSize: 10.5, letterSpacing: 0.6 },
-  codeValue: { fontSize: 21, letterSpacing: 1, marginTop: 3 },
-  shareBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 13 },
-  shareBtnText: { fontSize: 14 },
 
   signOut: {
     flexDirection: "row",
@@ -4614,24 +3453,6 @@ const s = StyleSheet.create({
   signOutText: { fontSize: 15 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(15,31,36,0.45)", justifyContent: "center", paddingHorizontal: 28 },
-  modalCard: {
-    borderRadius: 26,
-    padding: 24,
-    shadowColor: "#0F1F33",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 30,
-    elevation: 8,
-  },
-  modalIcon: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 14 },
-  modalTitle: { fontSize: 19, letterSpacing: -0.2 },
-  modalSub: { fontSize: 14, marginTop: 4, lineHeight: 20 },
-  modalInput: { borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 13, fontSize: 16, marginTop: 16 },
-  modalActions: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 },
-  modalCancel: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
-  modalCancelText: { fontSize: 15 },
-  modalConfirm: { flex: 2, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  modalConfirmText: { fontSize: 15 },
 
   linkRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 15 },
   linkIconWrap: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center" },

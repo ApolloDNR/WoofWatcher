@@ -50,6 +50,14 @@ const HEALTH_SECTION_ROUTER_PATH = join(
   "health",
   "HealthSectionRouter.tsx",
 );
+const CARE_TEAM_SUPPLIES_SCREEN_PATH = join(
+  process.cwd(),
+  "artifacts",
+  "woofwatcher-mobile",
+  "components",
+  "more",
+  "CareTeamSuppliesScreen.tsx",
+);
 
 function readAppFile(path: string): string {
   return readFileSync(join(APP_DIR, path), "utf8");
@@ -89,6 +97,14 @@ function readHealthSectionRouter(): string {
     "Health must own its canonical section router",
   );
   return readFileSync(HEALTH_SECTION_ROUTER_PATH, "utf8");
+}
+
+function readCareTeamSuppliesScreen(): string {
+  assert.ok(
+    existsSync(CARE_TEAM_SUPPLIES_SCREEN_PATH),
+    "More must own one tab-safe Care Team and supplies screen",
+  );
+  return readFileSync(CARE_TEAM_SUPPLIES_SCREEN_PATH, "utf8");
 }
 
 function getStyleBlock(source: string, styleName: string): string {
@@ -624,6 +640,7 @@ test("keeps critical mobile actions accessible to screen readers", () => {
   const premium = readAppFile("premium.tsx");
   const woofGuide = readAppFile("woofguide.tsx");
   const more = readAppFile(join("(tabs)", "more.tsx"));
+  const careTeamSupplies = readCareTeamSuppliesScreen();
 
   assert.match(privacy, /accessibilityLabel="Close Privacy and Safety"/);
   assert.match(privacy, /accessibilityLabel="Export WoofWatcher care data"/);
@@ -631,6 +648,8 @@ test("keeps critical mobile actions accessible to screen readers", () => {
     privacy,
     /accessibilityLabel="Prepare account deletion request"/,
   );
+  assert.match(careTeamSupplies, /accessibilityLabel="Back to More"/);
+  assert.match(careTeamSupplies, /accessibilityLabel=\{`Edit \$\{item\.name\}`\}/);
   assert.match(
     privacy,
     /accessibilityLabel="Share WoofWatcher support runbook"/,
@@ -1199,12 +1218,13 @@ test("free production routes deferred provider flows through the shared consumer
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
   const more = readAppFile(join("(tabs)", "more.tsx"));
   const pack = readAppFile(join("(tabs)", "pack.tsx"));
+  const careTeamSupplies = readCareTeamSuppliesScreen();
   const setup = readAppFile("setup.tsx");
 
   assert.match(calendar, /consumerSurfacePolicy\.discoverEvents \? \(/);
-  assert.match(more, /consumerSurfacePolicy\.futureDogPlanning \? \(/);
+  assert.match(careTeamSupplies, /consumerSurfacePolicy\.futureDogPlanning \? \(/);
   assert.match(
-    more,
+    careTeamSupplies,
     /consumerSurfacePolicy\.householdProviderActions \? \(/,
   );
   assert.match(more, /consumerSurfacePolicy\.providerSyncControls/);
@@ -1215,12 +1235,14 @@ test("free production routes deferred provider flows through the shared consumer
   );
   assert.match(
     pack,
-    /PACK_SEGMENTS\.filter\(\(item\) => item\.key !== "access"\)/,
+    /resolveCanonicalDestination/,
   );
   assert.match(
-    pack,
+    careTeamSupplies,
     /enabled:\s*consumerSurfacePolicy\.householdProviderActions[\s\S]*isClerkEnabledForBuild[\s\S]*Boolean\(isSignedIn\)/,
   );
+  assert.match(pack, /<Redirect href=\{redirectHref\}/);
+  assert.doesNotMatch(pack, /AsyncStorage|useState|CareTeamSuppliesScreen/);
   assert.match(home, /isClerkEnabledForBuild/);
   assert.doesNotMatch(home, /\bisClerkConfigured\b/);
   assert.doesNotMatch(more, /\bisClerkConfigured\b/);
@@ -1882,6 +1904,7 @@ test("keeps Home Quick Log header action as a real route target", () => {
 test("keeps Home owner-preview section actions as real route targets", () => {
   const home = readAppFile(join("(tabs)", "index.tsx"));
   const more = readAppFile(join("(tabs)", "more.tsx"));
+  const careTeamSupplies = readCareTeamSuppliesScreen();
   const diet = readDietScreen();
   const healthRouter = readHealthSectionRouter();
 
@@ -1937,8 +1960,10 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   assert.match(home, /onPress=\{\(\) => openStatusTile\("diet"\)\}/);
   assert.match(
     more,
-    /useLocalSearchParams<\{\s*section\?: string \| string\[\];\s*\}>/,
+    /useLocalSearchParams<MoreRouteSearchParams>/,
   );
+  assert.match(more, /resolveMoreSectionRoute\(routeParams\)/);
+  assert.match(more, /target\.kind === "care-team-supplies"/);
   assert.match(
     more,
     /const sectionParam = Array\.isArray\(routeParams\.section\) \? routeParams\.section\[0\] : routeParams\.section/,
@@ -1946,13 +1971,8 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   assert.doesNotMatch(more, /<DietScreen\b/);
   assert.match(healthRouter, /<DietScreen openDetails/);
   assert.match(diet, /if \(openDetails\) setDietOpen\(true\)/);
-  assert.match(more, /const householdFocus = sectionParam === "household"/);
-  assert.match(
-    more,
-    /consumerSurfacePolicy\.householdProviderActions[\s\S]*"Household focus"[\s\S]*"Care team focus"/,
-  );
-  assert.match(more, /Presence route/);
-  assert.match(more, /On this device/);
+  assert.doesNotMatch(more, /const householdFocus = sectionParam === "household"/);
+  assert.match(careTeamSupplies, /On this device/);
   assertStyleUsesSharedTouchTarget(home, "homeHeaderAction");
 });
 
@@ -4717,9 +4737,10 @@ test("keeps household sync health visible from More", () => {
   assert.match(more, /accessibilityLabel="Refresh household sync"/);
 });
 
-test("keeps household responsibility visible in Calendar and More", () => {
+test("keeps household responsibility visible in Calendar, More directory, and Care Team", () => {
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
   const more = readAppFile(join("(tabs)", "more.tsx"));
+  const careTeamSupplies = readCareTeamSuppliesScreen();
 
   assert.match(calendar, /deriveHouseholdResponsibility/);
   assert.match(calendar, /householdResponsibility/);
@@ -4727,8 +4748,10 @@ test("keeps household responsibility visible in Calendar and More", () => {
   assert.match(calendar, /responsibility\.nextStep/);
   assert.match(more, /deriveHouseholdResponsibility/);
   assert.match(more, /householdResponsibility/);
-  assert.match(more, /Responsibility Center/);
-  assert.match(more, /Open routine board/);
+  assert.match(more, /householdResponsibility\.nextStep/);
+  assert.match(careTeamSupplies, /deriveHouseholdResponsibility/);
+  assert.match(careTeamSupplies, /Responsibility Center/);
+  assert.match(careTeamSupplies, /Open routine board/);
 });
 
 test("keeps Reminder Center visible while gating future push controls from production", () => {
@@ -4986,19 +5009,20 @@ test("keeps Log search wired across text query and type filters", () => {
   assert.match(log, /logSearch\.emptyMessage/);
 });
 
-test("keeps household access readiness visible from More", () => {
-  const more = readAppFile(join("(tabs)", "more.tsx"));
+test("keeps household access readiness visible from the Care Team owner", () => {
+  const careTeamSupplies = readCareTeamSuppliesScreen();
 
-  assert.match(more, /deriveHouseholdAccessPlan/);
-  assert.match(more, /householdAccess/);
-  assert.match(more, /Household Access/);
-  assert.match(more, /localOnlyCaregivers/);
-  assert.match(more, /routineOnlyOwners/);
-  assert.match(more, /accessibilityLabel="Share household invite"/);
+  assert.match(careTeamSupplies, /deriveHouseholdAccessPlan/);
+  assert.match(careTeamSupplies, /householdAccess/);
+  assert.match(careTeamSupplies, /Household Access/);
+  assert.match(careTeamSupplies, /localOnlyCaregivers/);
+  assert.match(careTeamSupplies, /routineOnlyOwners/);
+  assert.match(careTeamSupplies, /person\.permissions\.slice\(0, 2\)/);
+  assert.match(careTeamSupplies, /accessibilityLabel="Share household invite"/);
 });
 
-test("keeps Access Pass and My Care Today operations visible from More", () => {
-  const more = readAppFile(join("(tabs)", "more.tsx"));
+test("keeps Access Pass and My Care Today operations visible from Care Team", () => {
+  const careTeamSupplies = readCareTeamSuppliesScreen();
   const careContext = readFileSync(
     join(
       process.cwd(),
@@ -5011,14 +5035,14 @@ test("keeps Access Pass and My Care Today operations visible from More", () => {
   );
 
   assert.match(careContext, /accessPasses: AccessPass\[\]/);
-  assert.match(more, /deriveAccessPassPlan/);
-  assert.match(more, /buildAccessPassDraft/);
-  assert.match(more, /deriveMyCareToday/);
-  assert.match(more, /Access Passes/);
-  assert.match(more, /Create Access Pass/);
-  assert.match(more, /Share Draft Summary/);
-  assert.match(more, /Provider-backed sharing is not live yet/);
-  assert.match(more, /My Care Today/);
+  assert.match(careTeamSupplies, /deriveAccessPassPlan/);
+  assert.match(careTeamSupplies, /buildAccessPassDraft/);
+  assert.match(careTeamSupplies, /deriveMyCareToday/);
+  assert.match(careTeamSupplies, /Access Passes/);
+  assert.match(careTeamSupplies, /Create Access Pass/);
+  assert.match(careTeamSupplies, /Share Draft Summary/);
+  assert.match(careTeamSupplies, /Provider-backed sharing is not live yet/);
+  assert.match(careTeamSupplies, /My Care Today/);
 });
 
 test("keeps Adventure Mode routed to private real-care quests and memories", () => {
@@ -5152,7 +5176,7 @@ test("keeps Adventure Mode actions on shared mobile touch targets", () => {
 });
 
 test("keeps CareTwin roster readiness visible without fake multi-dog switching", () => {
-  const more = readAppFile(join("(tabs)", "more.tsx"));
+  const careTeamSupplies = readCareTeamSuppliesScreen();
   const careContext = readFileSync(
     join(
       process.cwd(),
@@ -5166,12 +5190,12 @@ test("keeps CareTwin roster readiness visible without fake multi-dog switching",
 
   assert.match(careContext, /activePetId/);
   assert.match(careContext, /pets: PetProfile\[\]/);
-  assert.match(more, /deriveCareTwinRoster/);
-  assert.match(more, /buildCareTwinRosterDraft/);
-  assert.match(more, /CareTwin Roster/);
-  assert.match(more, /Add future dog/);
-  assert.match(more, /stays with your current dog on this device/);
-  assert.match(more, /Multi-dog switching is coming soon/);
+  assert.match(careTeamSupplies, /deriveCareTwinRoster/);
+  assert.match(careTeamSupplies, /buildCareTwinRosterDraft/);
+  assert.match(careTeamSupplies, /CareTwin Roster/);
+  assert.match(careTeamSupplies, /Add future dog/);
+  assert.match(careTeamSupplies, /stays with your current dog on this device/);
+  assert.match(careTeamSupplies, /Multi-dog switching is coming soon/);
 });
 
 test("keeps More organized around a grouped command directory", () => {
@@ -5190,7 +5214,10 @@ test("keeps More organized around a grouped command directory", () => {
   assert.match(more, /routeVisualConsistencyTarget/);
   assert.match(more, /careIntelligence\.nextAction\.label/);
   assert.match(more, /householdResponsibility\.nextStep/);
-  assert.match(more, /router\.push\("\/more\?section=household" as never\)/);
+  assert.match(
+    more,
+    /router\.push\(\{ pathname: "\/more", params: \{ section: "care-team" \} \}\)/,
+  );
   assert.match(
     more,
     /router\.push\(\{ pathname: "\/health", params: \{ section: "records" \} \}\)/,
@@ -5214,19 +5241,9 @@ test("keeps More organized around a grouped command directory", () => {
     "More route header should keep readable side padding in web preview and native frames",
   );
   assert.match(
-    getStyleBlock(more, "moreCommandStage"),
-    /minHeight:\s*294/,
-    "More command stage should stay compact enough to reveal navigation below it",
-  );
-  assert.match(
-    getStyleBlock(more, "moreCommandHud"),
-    /position:\s*"absolute"[\s\S]*bottom:\s*70/,
-    "More stage HUD should be pinned inside the scene instead of adding vertical bulk",
-  );
-  assert.match(
-    getStyleBlock(more, "moreCommandFooter"),
-    /position:\s*"absolute"[\s\S]*bottom:\s*10/,
-    "More stage footer should stay inside the compact launch scene",
+    getStyleBlock(more, "moreCommandStageCard"),
+    /width:\s*"100%"[\s\S]*maxWidth:\s*"100%"/,
+    "More command stage should stay inside the route frame",
   );
   assert.match(
     getStyleBlock(more, "moreDirectoryRow"),
@@ -5237,6 +5254,7 @@ test("keeps More organized around a grouped command directory", () => {
 
 test("keeps More household and tools plus Health-owned diet on shared board card anatomy", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
+  const careTeamSupplies = readCareTeamSuppliesScreen();
   const diet = readDietScreen();
   const healthRouter = readHealthSectionRouter();
   const launchModel = readMobileLibFile("launchReadiness.ts");
@@ -5254,27 +5272,27 @@ test("keeps More household and tools plus Health-owned diet on shared board card
   );
 
   assert.match(
-    more,
+    careTeamSupplies,
     /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="CareTwin Roster"/,
   );
   assert.match(
-    more,
+    careTeamSupplies,
     /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Care Team"/,
   );
   assert.match(
-    more,
+    careTeamSupplies,
     /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Household Access"/,
   );
   assert.match(
-    more,
+    careTeamSupplies,
     /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Access Passes"/,
   );
   assert.match(
-    more,
+    careTeamSupplies,
     /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="My Care Today"/,
   );
   assert.match(
-    more,
+    careTeamSupplies,
     /<BoardCard[\s\S]*BoardSectionHeader[\s\S]*title="Responsibility Center"/,
   );
   assert.match(
@@ -5658,6 +5676,7 @@ test("feeds saved native QA session proof into More launch readiness", () => {
 
 test("keeps More launch and household gateway actions on shared mobile touch targets", () => {
   const more = readAppFile(join("(tabs)", "more.tsx"));
+  const careTeamSupplies = readCareTeamSuppliesScreen();
 
   for (const styleName of [
     "profileEditBtn",
@@ -5670,16 +5689,24 @@ test("keeps More launch and household gateway actions on shared mobile touch tar
     "betaNextActionButton",
     "betaHandoffShareButton",
     "launchShare",
-    "passAction",
-    "passKind",
-    "shareBtn",
-    "modalCancel",
-    "modalConfirm",
     "providerStatusPill",
     "unitPill",
     "profSaveBtn",
   ]) {
     assertStyleUsesSharedTouchTarget(more, styleName);
+  }
+  for (const styleName of [
+    "touchAction",
+    "careActionButton",
+    "inlineAction",
+    "infoAction",
+    "primaryInlineButton",
+    "passKind",
+    "modalCancel",
+    "modalConfirm",
+    "profSaveBtn",
+  ]) {
+    assertStyleUsesSharedTouchTarget(careTeamSupplies, styleName);
   }
 });
 
@@ -5755,6 +5782,7 @@ test("keeps every current care mutation surface truthful when future data is rea
   ];
   const surfaceSources = [
     ...surfacePaths.map((path) => [path, readAppFile(path)] as const),
+    ["components/more/CareTeamSuppliesScreen.tsx", readCareTeamSuppliesScreen()] as const,
     ["components/health/RecordsScreen.tsx", readRecordsScreen()] as const,
     ["components/health/DietScreen.tsx", readDietScreen()] as const,
   ];
@@ -5778,6 +5806,7 @@ test("keeps every current care mutation surface truthful when future data is rea
   const mutationFiles = [
     ...listAppFiles(),
     join(mobileRoot, "components", "WalkRouteRecorder.tsx"),
+    CARE_TEAM_SUPPLIES_SCREEN_PATH,
     RECORDS_SCREEN_PATH,
     DIET_SCREEN_PATH,
   ];
@@ -5785,7 +5814,8 @@ test("keeps every current care mutation surface truthful when future data is rea
     "app/(tabs)/calendar.tsx": { addEntry: 1, deleteEntry: 1, updateCareDoc: 6, updateEntry: 0 },
     "app/(tabs)/index.tsx": { addEntry: 2, deleteEntry: 1, updateCareDoc: 0, updateEntry: 1 },
     "app/(tabs)/log.tsx": { addEntry: 5, deleteEntry: 2, updateCareDoc: 1, updateEntry: 8 },
-    "app/(tabs)/more.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 4, updateEntry: 0 },
+    "app/(tabs)/more.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 2, updateEntry: 0 },
+    "components/more/CareTeamSuppliesScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 2, updateEntry: 0 },
     "components/health/RecordsScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 3, updateEntry: 0 },
     "components/health/DietScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
     "app/adventure.tsx": { addEntry: 2, deleteEntry: 1, updateCareDoc: 1, updateEntry: 0 },
@@ -5837,9 +5867,17 @@ test("keeps every current care mutation surface truthful when future data is rea
   assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.updateCareDoc, 0), 19);
   assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.updateEntry, 0), 10);
   assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.deleteEntry, 0), 5);
+  assert.equal(
+    Object.values(actualInventory).reduce(
+      (sum, item) => sum + item.addEntry + item.updateCareDoc + item.updateEntry + item.deleteEntry,
+      0,
+    ),
+    47,
+  );
 
   for (const [path, source, expectedAcceptedCallbacks] of [
-    [join("(tabs)", "more.tsx"), readAppFile(join("(tabs)", "more.tsx")), 4],
+    [join("(tabs)", "more.tsx"), readAppFile(join("(tabs)", "more.tsx")), 2],
+    ["components/more/CareTeamSuppliesScreen.tsx", readCareTeamSuppliesScreen(), 2],
     ["components/health/RecordsScreen.tsx", readRecordsScreen(), 3],
     ["components/health/DietScreen.tsx", readDietScreen(), 1],
     ["privacy.tsx", readAppFile("privacy.tsx"), 1],

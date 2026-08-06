@@ -14,6 +14,8 @@
 
 import type { SupplyItem } from "./packSupplies";
 
+export const TRAVEL_BAG_KEY = "woofwatcher.travelBag.v1";
+
 export type TravelBagPhase = "packing" | "active" | "complete";
 
 export interface TravelBagSession {

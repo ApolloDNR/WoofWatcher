@@ -6,12 +6,42 @@ import {
   cycleStatus,
   DEFAULT_SUPPLIES,
   isDefaultUntouched,
+  PACK_SUPPLIES_KEY,
   parseSupplies,
   removeItem,
   renameItem,
   serializeSupplies,
   type SupplyItem,
 } from "./packSupplies.ts";
+
+test("keeps the accepted supplies payload on its exact v1 storage contract", () => {
+  assert.equal(PACK_SUPPLIES_KEY, "woofwatcher.packSupplies.v1");
+  assert.deepEqual(
+    JSON.parse(
+      serializeSupplies([
+        {
+          id: "travel-water-bottle",
+          name: "Water Bottle",
+          group: "travel",
+          status: "packed",
+          updatedAt: "2026-07-21T12:00:00.000Z",
+        },
+      ]),
+    ),
+    {
+      version: 1,
+      items: [
+        {
+          id: "travel-water-bottle",
+          name: "Water Bottle",
+          group: "travel",
+          status: "packed",
+          updatedAt: "2026-07-21T12:00:00.000Z",
+        },
+      ],
+    },
+  );
+});
 
 /** Deep-frozen copy of the defaults so mutation bugs throw instead of hiding. */
 function frozenDefaults(): readonly SupplyItem[] {

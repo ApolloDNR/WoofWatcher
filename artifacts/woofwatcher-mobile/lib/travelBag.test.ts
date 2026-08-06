@@ -12,11 +12,33 @@ import {
   reopenTravelBag,
   resetTravelItems,
   serializeTravelBag,
+  TRAVEL_BAG_KEY,
   type TravelBagSession,
 } from "./travelBag.ts";
 
 const NOW = "2026-07-21T12:00:00.000Z";
 const LATER = "2026-07-21T18:30:00.000Z";
+
+test("keeps the accepted travel bag payload on its exact v1 storage contract", () => {
+  assert.equal(TRAVEL_BAG_KEY, "woofwatcher.travelBag.v1");
+  assert.deepEqual(
+    JSON.parse(
+      serializeTravelBag({
+        label: "Weekend trip",
+        phase: "complete",
+        activatedAt: NOW,
+        completedAt: LATER,
+      }),
+    ),
+    {
+      version: 1,
+      label: "Weekend trip",
+      phase: "complete",
+      activatedAt: NOW,
+      completedAt: LATER,
+    },
+  );
+});
 
 test("default bag is packing with no timestamps", () => {
   const bag = defaultTravelBag();
@@ -117,5 +139,16 @@ test("parse rejects an unknown phase or bad timestamp back to default", () => {
 test("an existing user with no stored bag defaults to packing, never auto-active", () => {
   // Migration honesty: a previously-packed checklist must NOT jump to active
   // without an owner tap.
-  assert.equal(parseTravelBag(null).phase, "packing");
+  const first = parseTravelBag(null);
+  const second = parseTravelBag(null);
+  assert.equal(first.phase, "packing");
+  assert.notEqual(first, second, "each fallback must be an independent object");
+  first.label = "Mutated locally";
+  first.phase = "active";
+  assert.deepEqual(second, {
+    label: "Travel bag",
+    phase: "packing",
+    activatedAt: null,
+    completedAt: null,
+  });
 });
