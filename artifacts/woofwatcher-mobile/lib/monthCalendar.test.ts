@@ -19,11 +19,11 @@ import {
 // zone, so local-day bucketing is deterministic regardless of host settings.
 process.env.TZ = "America/Los_Angeles";
 
-test("buildEmptyDayPrompt names the active dog and falls back without inventing one", () => {
+test("buildEmptyDayPrompt follows canonical Dog Profile identity", () => {
   assert.equal(buildEmptyDayPrompt("Luna"), "Tap the + to log Luna's first moment today.");
   assert.equal(buildEmptyDayPrompt("  Milo  "), "Tap the + to log Milo's first moment today.");
-  assert.equal(buildEmptyDayPrompt("My Dog"), "Tap the + to log your dog's first moment today.");
-  assert.equal(buildEmptyDayPrompt("   "), "Tap the + to log your dog's first moment today.");
+  assert.equal(buildEmptyDayPrompt("My Dog"), "Tap the + to log Phoenix's first moment today.");
+  assert.equal(buildEmptyDayPrompt("   "), "Tap the + to log Phoenix's first moment today.");
 });
 
 test("weekdayOfFirst matches known Gregorian dates", () => {

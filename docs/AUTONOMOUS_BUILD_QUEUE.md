@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-08-06 Calendar empty-day Dog Profile identity
+
+- DONE: Calendar month empty-day guidance now resolves the saved Dog Profile through the canonical identity boundary instead of replacing blank or `My Dog` starter profiles with generic `your dog` copy.
+- VERIFIED: Red-first month-calendar coverage failed on `your dog's` versus `Phoenix's`, then focused Calendar and identity coverage passed `22/22` after the minimal shared-boundary fix.
+- BOUNDARY: Calendar persistence, log creation, household sync, native QA, providers, store review, and launch approval are unchanged.
+- NEXT: Run broad local verification and dependency-complete branch CI. Native iOS/Android Calendar review and VoiceOver/TalkBack evidence remain required.
+
 ## 2026-08-06 WoofGuide owner-reviewed action identity
 
 - DONE: WoofGuide action cards and reviewed meal/vet-note drafts now resolve the saved Dog Profile through the canonical identity boundary instead of exposing the stored `My Dog` placeholder.

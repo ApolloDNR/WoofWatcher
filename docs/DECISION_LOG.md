@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-06: Calendar empty days follow Dog Profile identity
+
+- Decision: derive the Calendar month empty-day prompt through `resolvePetName` at the shared month-calendar boundary.
+- Reason: the Calendar is part of the real logging loop and must not switch from the product's intentional Phoenix starter identity to generic copy when storage still contains `My Dog`.
+- Boundary: Calendar math, log persistence, household sync, provider readiness, and launch gates are unchanged.
+
 ## 2026-08-06: WoofGuide reviewed actions follow Dog Profile identity
 
 - Decision: derive owner-reviewed WoofGuide action and draft identity through `resolvePetName` at the shared action boundary.

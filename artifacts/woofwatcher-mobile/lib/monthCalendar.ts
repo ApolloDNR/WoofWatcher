@@ -9,6 +9,8 @@
 // only `new Date(...)` calls parse the caller-supplied ISO timestamps of real
 // care entries, which is exactly how they must be bucketed into local days.
 
+import { resolvePetName } from "./petIdentity.ts";
+
 /** Anything with an ISO `occurredAt` can be bucketed onto a calendar day. */
 export interface DatedItem {
   occurredAt: string;
@@ -60,9 +62,7 @@ export const WEEKDAY_LABELS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] 
 
 /** Owner-facing prompt for today's empty timeline, using the saved Dog Profile. */
 export function buildEmptyDayPrompt(profileName: string | null | undefined): string {
-  const name = profileName?.trim();
-  const subject = name && name !== "My Dog" ? `${name}'s` : "your dog's";
-  return `Tap the + to log ${subject} first moment today.`;
+  return `Tap the + to log ${resolvePetName(profileName)}'s first moment today.`;
 }
 
 function isLeapYear(year: number): boolean {

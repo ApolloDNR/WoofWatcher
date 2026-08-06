@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-06 Calendar empty-day identity slice
+
+Calendar's month-day empty state now resolves Dog Profile identity canonically before inviting the owner to log the day's first moment. Red-first behavior coverage caught the stored `My Dog` placeholder producing generic `your dog` copy; renamed dogs remain trimmed and blank/placeholder profiles retain the intentional Phoenix starter identity. Calendar persistence, sync, native/provider/store evidence, and launch approval remain separate.
+
 ## 2026-08-06 WoofGuide reviewed-action identity slice
 
 WoofGuide's shared action derivation now resolves Dog Profile identity canonically before building action detail, provider-ready prompts, reviewed meal logs, and deterministic vet-note copy. Red-first behavior coverage caught the stored `My Dog` placeholder in real owner-reviewed meal copy before the minimal shared-boundary correction. Live AI remains gated, drafts remain owner-reviewed and non-diagnostic, and native/provider/store/Apollo evidence remains separate.
