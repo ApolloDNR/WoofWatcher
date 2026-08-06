@@ -67,7 +67,7 @@ test("surfaces records review for missing or expired credential records", () => 
   );
 
   const recordAction = actions.find((action) => action.id === "records-review");
-  assert.equal(recordAction?.route, "/records");
+  assert.equal(recordAction?.route, "/health?section=records");
   assert.equal(recordAction?.urgency, "alert");
   assert.equal(recordAction?.draft?.kind, "reminder");
   assert.match(recordAction?.draft?.body ?? "", /Rabies/i);
@@ -147,6 +147,33 @@ test("guides setup when diet and routines are missing", () => {
   );
 });
 
+test("routes every assistant fallback and owner action to its canonical tab section", () => {
+  assert.deepEqual(
+    WOOFGUIDE_ASSISTANT_FALLBACK_LINKS.map(({ id, route }) => ({ id, route })),
+    [
+      { id: "health", route: "/health?section=health-watch" },
+      { id: "records", route: "/health?section=records" },
+      { id: "home", route: "/" },
+    ],
+  );
+
+  const actions = deriveWoofGuideActions(
+    {
+      profile: { name: "Phoenix" },
+      dietProfile: {},
+      routines: [],
+      records: [],
+      entries: [],
+    },
+    NOW,
+  );
+
+  assert.equal(actions.find((action) => action.id === "records-review")?.route, "/health?section=records");
+  assert.equal(actions.find((action) => action.id === "diet-baseline")?.route, "/health?section=diet");
+  assert.equal(actions.find((action) => action.id === "routine-setup")?.route, "/calendar");
+  assert.equal(actions.find((action) => action.id === "care-pass")?.route, "/health?section=care-pass");
+});
+
 test("creates an owner-reviewed meal log draft when the first meal is missing", () => {
   const actions = deriveWoofGuideActions(
     {
@@ -207,7 +234,7 @@ test("keeps the assistant gated off until provider proof and an API domain exist
 test("keeps working non-assistant destinations for the gated WoofGuide state", () => {
   assert.deepEqual(
     WOOFGUIDE_ASSISTANT_FALLBACK_LINKS.map((link) => link.route),
-    ["/health", "/records", "/"],
+    ["/health?section=health-watch", "/health?section=records", "/"],
   );
   for (const link of WOOFGUIDE_ASSISTANT_FALLBACK_LINKS) {
     assert.ok(link.label.trim().length > 0);

@@ -1,4 +1,8 @@
 import type { MoreSection } from "./navigationOwnership.ts";
+import {
+  canonicalHealthRoute,
+  canonicalMoreRoute,
+} from "./canonicalRouteBuilders.ts";
 
 export type MoreDirectoryDestination =
   | Readonly<{ parent: "more"; section: Exclude<MoreSection, "root"> }>
@@ -66,5 +70,16 @@ export function searchMoreDirectory(query: string): MoreDirectoryItem[] {
   if (!normalized) return [...items];
   return items.filter((item) =>
     normalizeDirectoryQuery([item.label, item.detail, ...item.searchTerms].join(" ")).includes(normalized),
+  );
+}
+
+export function executeMoreDirectoryDestination(
+  destination: MoreDirectoryDestination,
+  navigate: (route: string) => void,
+): void {
+  navigate(
+    destination.parent === "health"
+      ? canonicalHealthRoute(destination.section)
+      : canonicalMoreRoute(destination.section),
   );
 }

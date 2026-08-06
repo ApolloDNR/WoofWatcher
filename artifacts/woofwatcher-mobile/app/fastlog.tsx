@@ -36,6 +36,7 @@ import {
   CARE_READ_ONLY_MESSAGE,
   careMutationWasAccepted,
 } from "@/lib/careWriteProtection";
+import { canonicalLogRoute } from "@/lib/canonicalRouteBuilders";
 
 /**
  * Fast-log sheet from Apollo's FINAL mock boards: a light parchment moment
@@ -170,7 +171,7 @@ export default function FastLogScreen() {
       router.back();
       return;
     }
-    router.replace("/(tabs)" as never);
+    router.replace(canonicalLogRoute() as never);
   };
 
   const close = () => {
@@ -430,7 +431,7 @@ export default function FastLogScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="View full log"
-          onPress={() => router.replace("/log" as never)}
+          onPress={() => router.replace(canonicalLogRoute() as never)}
           style={({ pressed }) => [
             s.fullLogButton,
             { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },

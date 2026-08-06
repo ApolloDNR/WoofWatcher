@@ -192,7 +192,7 @@ const payload = {
   nextActions: [
     "Install or use an environment with Android SDK platform-tools, emulator, Java, ANDROID_HOME or ANDROID_SDK_ROOT, and JAVA_HOME before Android emulator proof.",
     "Use macOS, TestFlight, Expo dev client, or a physical iOS device for iOS screenshots; this Windows shell cannot produce iOS simulator proof.",
-    "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Log, Plan, Today, Pack, Story, Health, Records, and More on iOS and Android with route-named evidence before claiming route visual proof.",
+    "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, More, Story & Progress, Records, and Care Team & Supplies on iOS and Android with route-named evidence before claiming route visual proof.",
     "Open /care-twin-qa?qaSurface=auth-setup-onboarding-proof for Auth gateway and Setup local-preview proof, and keep provider-backed auth/household creation blocked until structured Clerk, redirect/deep-link, household membership, and Apollo auth launch proof files exist.",
     "Open /care-twin-qa?qaSurface=records-local-file-handoff for Records local HTML/SVG file proof and keep generated PDF/PNG readiness blocked until native share/reopen and provider evidence are attached.",
     "Open /care-twin-qa?qaSurface=report-binary-export-proof for local Care Pass PDF and Dog ID PNG artifact proof, and keep PDF/PNG readiness blocked until file name, file size, MIME, share/reopen, renderer, iOS/Android evidence, and structured provider storage proof with bucket names, signed upload/download, household scope, retention/export/deletion, QA evidence storage, and approval booleans exist.",

@@ -72,6 +72,7 @@ import { deriveCareTwinChoreography } from "@/lib/careTwinChoreography";
 import { describeCareTwinReactionForLog } from "@/lib/careTwinReactionPolicy";
 import {
   buildHomeMissionDeck,
+  type HomeMissionRoute,
   type HomeMissionTone,
 } from "@/lib/homeMissionDeck";
 import { getHomeFirstScreenLayout } from "@/lib/homeFirstScreenLayout";
@@ -110,6 +111,12 @@ import {
   CARE_READ_ONLY_MESSAGE,
   runAcceptedCareMutation,
 } from "@/lib/careWriteProtection";
+import {
+  canonicalHealthRoute,
+  canonicalMoreRoute,
+  canonicalPlansRoute,
+} from "@/lib/canonicalRouteBuilders";
+import { executePrimaryTabTaskPath } from "@/lib/primaryTabExperience";
 
 const HOME_PROVIDER_SYNC_ENABLED =
   isClerkEnabledForBuild && getConsumerSurfacePolicy().providerSyncControls;
@@ -318,12 +325,7 @@ function HomeHeaderAction({
 }: {
   label: string;
   accessibilityLabel: string;
-  route:
-    | "/log"
-    | "/health?tab=health"
-    | "/health?tab=bile"
-    | "/calendar"
-    | "/records";
+  route: HomeMissionRoute;
 }) {
   const colors = useColors();
   const router = useRouter();
@@ -1071,11 +1073,11 @@ export default function HomeScreen() {
       return;
     }
     if (target === "health") {
-      router.push("/health?tab=health" as never);
+      router.push(canonicalHealthRoute("overview") as never);
       return;
     }
     if (target === "diet") {
-      router.push("/more?section=diet" as never);
+      router.push(canonicalHealthRoute("diet") as never);
       return;
     }
     router.push(`/log?type=play&detail=1&intent=${Date.now()}` as never);
@@ -1091,11 +1093,11 @@ export default function HomeScreen() {
   const openHomeWatchCard = (target: HomeWatchTarget) => {
     void Haptics.selectionAsync();
     if (target === "health") {
-      router.push("/health?tab=health" as never);
+      router.push(canonicalHealthRoute("overview") as never);
       return;
     }
     if (target === "bile") {
-      router.push("/health?tab=bile" as never);
+      router.push(canonicalHealthRoute("bile-watch") as never);
       return;
     }
     router.push(`/log?type=alone&detail=1&intent=${Date.now()}` as never);
@@ -1122,7 +1124,7 @@ export default function HomeScreen() {
       careIntelligence.nextAction.kind === "handle-routine" ||
       careIntelligence.nextAction.targetRoutineId
     ) {
-      router.push("/calendar");
+      router.push(canonicalPlansRoute());
       return;
     }
     if (careIntelligence.nextAction.kind === "update-meal-outcome") {
@@ -1843,7 +1845,7 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel={`${petName}. ${careStatusLabel}. Open profile`}
               accessibilityHint={`Opens ${petName}'s profile.`}
-              onPress={() => router.push({ pathname: "/more", params: { section: "dog-profile" } })}
+              onPress={() => router.push(canonicalMoreRoute("dog-profile"))}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={({ pressed }) => [s.identityWrap, { opacity: pressed ? 0.75 : 1 }]}
             >
@@ -1877,7 +1879,7 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel="Open the Pack"
               accessibilityHint="Opens pets and people who share the care."
-              onPress={() => router.push({ pathname: "/more", params: { section: "care-team-supplies" } })}
+              onPress={() => router.push(canonicalMoreRoute("care-team-supplies"))}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[
                 s.headerButton,
@@ -1894,7 +1896,7 @@ export default function HomeScreen() {
                   ? `${watchSignalCount} ${watchSignalCount === 1 ? "signal needs" : "signals need"} attention`
                   : "Upcoming care reminders"
               }
-              onPress={() => router.push("/reminders" as never)}
+              onPress={() => router.push(canonicalPlansRoute())}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[
                 s.headerButton,
@@ -2090,7 +2092,7 @@ export default function HomeScreen() {
                     accessibilityLabel="Open Trends and Insights"
                     accessibilityHint="Charts these meters over time from real logged care."
                     hitSlop={MOBILE_INLINE_HIT_SLOP}
-                    onPress={() => router.push("/trends" as never)}
+                    onPress={() => router.push(canonicalHealthRoute("trends") as never)}
                     style={({ pressed }) => [
                       s.careSenseTrendsLink,
                       { opacity: pressed ? 0.6 : 1 },
@@ -2314,9 +2316,12 @@ export default function HomeScreen() {
                   ))}
                   <PressScale
                     accessibilityRole="button"
-                    accessibilityLabel="More quick log options"
+                    accessibilityLabel="Log care"
                     accessibilityHint="Opens the fast log sheet with water, notes, and every other care lane."
-                    onPress={() => router.push("/fastlog" as never)}
+                    onPress={() => executePrimaryTabTaskPath("fast-log", {
+                      navigate: (route) => router.push(route as never),
+                      selectLogView: () => undefined,
+                    })}
                     scaleTo={0.92}
                     containerStyle={s.homeQuickTileLayout}
                     style={s.homeQuickTile}
@@ -2344,7 +2349,7 @@ export default function HomeScreen() {
                         { color: colors.navy, fontFamily: "Inter_600SemiBold" },
                       ]}
                     >
-                      More
+                      Log care
                     </Text>
                   </PressScale>
                 </View>
@@ -2627,7 +2632,7 @@ export default function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel={`Today's Story. ${todayStoryLine} Open Story.`}
             accessibilityHint={`Opens ${petName}'s living story.`}
-            onPress={() => router.push({ pathname: "/more", params: { section: "story-progress" } })}
+            onPress={() => router.push(canonicalMoreRoute("story-progress"))}
             style={({ pressed }) => [
               s.todayStoryCard,
               s.softShadow,
@@ -3381,7 +3386,7 @@ export default function HomeScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Open Adventure Mode. ${adventureQuest.title}. ${adventureMode.summary}`}
-              onPress={() => router.push({ pathname: "/more", params: { section: "adventure" } })}
+              onPress={() => router.push(canonicalMoreRoute("adventure"))}
               style={({ pressed }) => [
                 s.adventureInline,
                 {

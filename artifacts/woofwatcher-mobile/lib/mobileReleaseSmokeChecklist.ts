@@ -99,7 +99,7 @@ function buildRouteRehearsalSection(capturePlan: MobileLaunchQaCapturePlan): Mob
       {
         label: "Owner route loop",
         detail:
-          "Log, Plan, Today, Pack, Story, Health, More, Adventure, Records, Avatar Studio, and Care Pass must open without dead ends.",
+          "Home, Log, Plans, Health, More, and their named canonical Health/More children must open without dead ends.",
         proof: capturePlan.ownerPreviewProofStatus.missingEvidence.length
           ? capturePlan.ownerPreviewProofStatus.missingEvidence.join(" ")
           : "Owner Preview Core Loop proof is complete.",
@@ -317,9 +317,9 @@ export function buildMobileReleaseSmokeChecklist(
           {
             label: "Focused route visual consistency target",
             detail:
-              "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Log, Plan, Today, Pack, Story, Health, Records, and More on iOS and Android with route-named file names or URIs.",
+              "Open /care-twin-qa?qaSurface=route-visual-consistency and capture Home, Log, Plans, Health, More, Story & Progress, Records, and Care Team & Supplies on iOS and Android with route-named file names or URIs.",
             proof:
-              "Attach 8 route-named iOS screenshots and 8 route-named Android screenshots plus the QA note; examples include Log-iOS, Log-Android, Plan-iOS, Plan-Android, Today-iOS, Today-Android, Pack-iOS, Pack-Android, Story-iOS, Story-Android, Health-iOS, Health-Android, Records-iOS, Records-Android, More-iOS, and More-Android. Web preview screenshots do not replace native proof.",
+              "Attach 8 route-named iOS screenshots and 8 route-named Android screenshots plus the QA note; examples include Home-iOS, Home-Android, Log-iOS, Log-Android, Plans-iOS, Plans-Android, Health-iOS, Health-Android, More-iOS, More-Android, Story-Progress-iOS, Story-Progress-Android, Records-iOS, Records-Android, Care-Team-Supplies-iOS, and Care-Team-Supplies-Android. Web preview screenshots do not replace native proof.",
             status: "required",
           },
         ],

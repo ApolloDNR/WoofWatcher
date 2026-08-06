@@ -55,12 +55,88 @@ test("lists the launch-critical mobile QA surfaces for the next native pass", ()
   assert.ok(surfaces.every((surface) => surface.launchRisk.length > 0));
 });
 
+test("Phoenix Home QA uses only visible universal-shell navigation", () => {
+  const surface = listMobileReleaseQaSurfaces().find((item) => item.id === "phoenix-home");
+  assert.ok(surface);
+  const activeInstructions = [
+    surface.devicePrompt,
+    ...surface.setupSteps,
+    ...surface.verificationSteps,
+    ...surface.acceptanceCriteria,
+  ].join("\n");
+
+  assert.doesNotMatch(activeInstructions, /Today paw button|return to Today|floating paw nav/i);
+  assert.match(activeInstructions, /Home tab/);
+  assert.match(activeInstructions, /standard bottom navigation/i);
+  assert.match(activeInstructions, /More[\s\S]*Avatar Studio|Avatar Studio[\s\S]*More/);
+});
+
+test("the full active QA manifest names only the five-tab shell and canonical owner paths", () => {
+  const surfaces = listMobileReleaseQaSurfaces();
+  const activeInstructions = surfaces
+    .flatMap((surface) => [
+      surface.goal,
+      surface.devicePrompt,
+      ...surface.setupSteps,
+      ...surface.verificationSteps,
+      ...surface.acceptanceCriteria,
+      surface.failureEscalation,
+      ...surface.requiredEvidence,
+      ...(surface.routeChecklist ?? []).flatMap((item) => [
+        item.label,
+        item.route,
+        item.expected,
+        item.proof ?? "",
+      ]),
+    ])
+    .join("\n")
+    .replaceAll("Today's Missions", "")
+    .replaceAll("Pack pending", "")
+    .replaceAll("Story & Progress", "")
+    .replaceAll("Story-Progress", "");
+
+  assert.doesNotMatch(activeInstructions, /\bToday\b|\bPack\b|\bStory\b|paw nav|bottom-nav/);
+
+  const activeRoutes = surfaces.flatMap((surface) => [
+    surface.route,
+    ...(surface.routeChecklist ?? []).map((item) => item.route),
+  ]);
+  assert.ok(
+    activeRoutes.every(
+      (route) => !/^\/(?:pack|story|records|adventure|portrait|privacy|woofguide)(?:\?|$)/.test(route),
+    ),
+  );
+
+  const ownerLoop = surfaces.find((surface) => surface.id === "owner-preview-core-loop");
+  assert.ok(ownerLoop);
+  assert.deepEqual(ownerLoop.routeChecklist?.slice(0, 5).map(({ label, route }) => ({ label, route })), [
+    { label: "Home", route: "/" },
+    { label: "Log", route: "/log" },
+    { label: "Plans", route: "/calendar" },
+    { label: "Health", route: "/health" },
+    { label: "More", route: "/more" },
+  ]);
+  assert.deepEqual(
+    ownerLoop.routeChecklist?.slice(5).map(({ label, route }) => ({ label, route })),
+    [
+      { label: "Dog Profile", route: "/more?section=dog-profile" },
+      { label: "Privacy & Data", route: "/more?section=privacy" },
+      { label: "Care Team & Supplies", route: "/more?section=care-team-supplies" },
+      { label: "Story & Progress", route: "/more?section=story-progress" },
+      { label: "Adventure", route: "/more?section=adventure" },
+      { label: "Records", route: "/health?section=records" },
+      { label: "Avatar Studio", route: "/more?section=avatar-studio" },
+      { label: "Care Pass", route: "/health?section=care-pass" },
+    ],
+  );
+});
+
 test("adds a source-backed Avatar Sprite Production Review surface", () => {
   const surfaces = listMobileReleaseQaSurfaces();
   const surface = surfaces.find((item) => item.id === "avatar-sprite-production-review");
 
   assert.ok(surface);
-  assert.equal(surface.route, "/portrait");
+  assert.equal(surface.route, "/more?section=avatar-studio");
   assert.equal(surface.priority, "launch-critical");
   assert.match(surface.goal, /12\/12 PixelLab live template sprite packs/);
   assert.match(surface.goal, /phone-size crop, gait, anchor stability, and game feel/);
@@ -83,7 +159,7 @@ test("adds a source-backed Avatar Sprite Production Review surface", () => {
     "Avatar Studio sprite stage",
     "Care Twin State Lab",
   ]);
-  assert.equal(surface.routeChecklist?.[0]?.route, "/portrait");
+  assert.equal(surface.routeChecklist?.[0]?.route, "/more?section=avatar-studio");
   assert.equal(surface.routeChecklist?.[1]?.route, "/care-twin-qa?qaSurface=care-twin-state-lab");
   assert.match(surface.routeChecklist?.[0]?.proof ?? "", /gait\/crop note/);
   assert.match(surface.launchRisk, /video-game avatar/);
@@ -96,21 +172,21 @@ test("keeps route visual consistency as a launch-critical design QA gate", () =>
   assert.equal(surface.title, "Route Visual Consistency");
   assert.equal(surface.priority, "launch-critical");
   assert.match(surface.goal, /one planned premium neo-retro app/);
-  assert.match(surface.devicePrompt, /Log, Plan, Today, Pack, Story, Health, Records, and More/);
+  assert.match(surface.devicePrompt, /Home, Log, Plans, Health, More, Story & Progress, Records, and Care Team & Supplies/);
   assert.match(
     surface.acceptanceCriteria.join("\n"),
     /No first-screen text, card, sprite, tab, or bottom navigation element overlaps/,
   );
   assert.match(surface.failureEscalation, /Option B pixel app boards/);
   assert.deepEqual(surface.routeChecklist?.map((item) => item.label), [
+    "Home",
     "Log",
-    "Plan",
-    "Today",
-    "Pack",
-    "Story",
+    "Plans",
     "Health",
-    "Records",
     "More",
+    "Story & Progress",
+    "Records",
+    "Care Team & Supplies",
   ]);
   assert.match(
     surface.requiredEvidence.join("\n"),
@@ -118,11 +194,11 @@ test("keeps route visual consistency as a launch-critical design QA gate", () =>
   );
   assert.match(
     surface.requiredEvidence.join("\n"),
-    /iOS screenshot of Pack route top/,
+    /iOS screenshot of Story & Progress route top/,
   );
   assert.match(
     surface.requiredEvidence.join("\n"),
-    /Android screenshot of Story route top/,
+    /Android screenshot of Care Team & Supplies route top/,
   );
   assert.match(
     surface.requiredEvidence.join("\n"),
@@ -154,18 +230,18 @@ test("builds a route visual proof manifest from native screenshot evidence", () 
   assert.equal(pending.statusLabel, "Native proof blocked");
   assert.equal(pending.rows.length, 8);
   assert.deepEqual(pending.rows.map((row) => row.label), [
+    "Home",
     "Log",
-    "Plan",
-    "Today",
-    "Pack",
-    "Story",
+    "Plans",
     "Health",
-    "Records",
     "More",
+    "Story & Progress",
+    "Records",
+    "Care Team & Supplies",
   ]);
-  assert.match(pending.rows[0]?.iosStatus ?? "", /iOS Log screenshot pending/);
-  assert.match(pending.rows[0]?.androidStatus ?? "", /Android Log screenshot pending/);
-  assert.match(pending.blockers.join("\n"), /Log: iOS Log screenshot pending/);
+  assert.match(pending.rows[0]?.iosStatus ?? "", /iOS Home screenshot pending/);
+  assert.match(pending.rows[0]?.androidStatus ?? "", /Android Home screenshot pending/);
+  assert.match(pending.blockers.join("\n"), /Home: iOS Home screenshot pending/);
   assert.match(pending.blockers.join("\n"), /QA note pending/);
   assert.match(pending.webPreviewBoundary, /does not replace native iOS\/Android route screenshots/);
 
@@ -173,14 +249,14 @@ test("builds a route visual proof manifest from native screenshot evidence", () 
     surface,
     note: "No route-to-route design break found.",
     evidence: [
-      ...["log", "plan", "today", "pack", "story", "health", "records", "more"].map((route) => ({
+      ...["home", "log", "plans", "health", "more", "story-progress", "records", "care-team-supplies"].map((route) => ({
         uri: `file:///qa/${route}-ios.png`,
         fileName: `${route}-ios.png`,
         source: "library" as const,
         targetPlatform: "ios" as const,
         capturedAtIso: "2026-07-03T12:00:00.000Z",
       })),
-      ...["log", "plan", "today", "pack", "story", "health", "records", "more"].map((route) => ({
+      ...["home", "log", "plans", "health", "more", "story-progress", "records", "care-team-supplies"].map((route) => ({
         uri: `file:///qa/${route}-android.png`,
         fileName: `${route}-android.png`,
         source: "library" as const,
@@ -192,7 +268,7 @@ test("builds a route visual proof manifest from native screenshot evidence", () 
   assert.equal(complete.status, "ready");
   assert.equal(complete.statusLabel, "Native visual proof complete");
   assert.equal(complete.blockers.length, 0);
-  assert.match(complete.rows[7]?.androidStatus ?? "", /Android More screenshot attached: more-android\.png/);
+  assert.match(complete.rows[7]?.androidStatus ?? "", /Android Care Team & Supplies screenshot attached: care-team-supplies-android\.png/);
 });
 
 test("keeps route visual proof blocked until screenshots are route-named", () => {
@@ -223,10 +299,10 @@ test("keeps route visual proof blocked until screenshots are route-named", () =>
   assert.equal(manifest.attachedIosScreenshots, 8);
   assert.equal(manifest.attachedAndroidScreenshots, 8);
   assert.equal(manifest.status, "blocked");
-  assert.match(manifest.rows[2]?.iosStatus ?? "", /iOS Today screenshot pending/);
-  assert.match(manifest.rows[7]?.androidStatus ?? "", /Android More screenshot pending/);
-  assert.match(manifest.blockers.join("\n"), /Today: iOS Today screenshot pending/);
-  assert.match(manifest.blockers.join("\n"), /More: Android More screenshot pending/);
+  assert.match(manifest.rows[2]?.iosStatus ?? "", /iOS Plans screenshot pending/);
+  assert.match(manifest.rows[7]?.androidStatus ?? "", /Android Care Team & Supplies screenshot pending/);
+  assert.match(manifest.blockers.join("\n"), /Plans: iOS Plans screenshot pending/);
+  assert.match(manifest.blockers.join("\n"), /Care Team & Supplies: Android Care Team & Supplies screenshot pending/);
 });
 
 test("routes Incident Composer QA into the detail-first incident flow", () => {
@@ -252,7 +328,7 @@ test("keeps Phoenix Home long-press to Avatar Studio in native QA", () => {
   assert.match(home.acceptanceCriteria.join("\n"), /long press opens Avatar Studio/);
   assert.match(home.requiredEvidence.join("\n"), /long-press-to-Studio/);
   assert.ok(ownerLoop);
-  assert.match(ownerLoop.routeChecklist?.[2]?.expected ?? "", /long-press-to-Studio/);
+  assert.match(ownerLoop.routeChecklist?.find((item) => item.label === "Home")?.expected ?? "", /long-press-to-Studio/);
 });
 
 test("keeps the Home mission deck as a launch-critical device QA target", () => {
@@ -264,12 +340,12 @@ test("keeps the Home mission deck as a launch-critical device QA target", () => 
   assert.equal(surface.priority, "launch-critical");
   assert.match(surface.goal, /care-RPG mission deck/);
   assert.match(surface.devicePrompt, /small iOS and Android phones/);
-  assert.match(surface.devicePrompt, /floating paw nav/);
+  assert.match(surface.devicePrompt, /standard bottom navigation/);
   assert.match(surface.setupSteps.join("\n"), /Create a meal served with outcome pending/);
   assert.match(surface.setupSteps.join("\n"), /Start a walk or Alone Time session/);
   assert.match(surface.verificationSteps.join("\n"), /Tap the pending meal mission/);
   assert.match(surface.verificationSteps.join("\n"), /Adventure, Health, and Care Pass/);
-  assert.match(surface.acceptanceCriteria.join("\n"), /No mission row is hidden behind the floating paw nav/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /No mission row is hidden behind the standard bottom navigation/);
   assert.match(surface.acceptanceCriteria.join("\n"), /Every mission row routes to the named care workflow/);
   assert.match(surface.failureEscalation, /Mark Needs tune/);
   assert.match(surface.failureEscalation, /first blocked row or overflow/);
@@ -287,53 +363,44 @@ test("keeps the owner preview core loop as a launch-critical beta QA target", ()
   assert.ok(surface);
   assert.equal(surface.route, "/");
   assert.equal(surface.priority, "launch-critical");
-  assert.match(surface.goal, /main beta loop/);
-  assert.match(surface.goal, /Log, Plan, Today, Pack, Story, Health, More/);
-  assert.match(surface.goal, /Adventure/);
-  assert.match(surface.devicePrompt, /bottom-nav owner preview/);
-  assert.match(surface.devicePrompt, /Adventure Mode/);
-  assert.match(surface.devicePrompt, /Launch Readiness/);
+  assert.match(surface.goal, /five-tab beta loop/);
+  assert.match(surface.goal, /Home, Log, Plans, Health, More/);
+  assert.match(surface.devicePrompt, /standard bottom navigation/);
+  assert.match(surface.devicePrompt, /Dog Profile, Privacy & Data, Care Team & Supplies, Story & Progress/);
   assert.match(surface.setupSteps.join("\n"), /provider, payment, storage, AI, and store gates/);
-  assert.match(surface.verificationSteps.join("\n"), /Open Log, Plan, Today, Pack, and Story in order/);
+  assert.match(surface.verificationSteps.join("\n"), /Open Home, Log, Plans, Health, and More in order/);
   assert.match(surface.verificationSteps.join("\n"), /quick-log one safe care event/);
-  assert.match(surface.verificationSteps.join("\n"), /Pack links/);
+  assert.match(surface.verificationSteps.join("\n"), /visible Next Mission row/);
   assert.match(surface.verificationSteps.join("\n"), /care career, adventure trail, memories, walk story, and badges/);
   assert.match(surface.verificationSteps.join("\n"), /Health Watch and Bile Watch/);
   assert.match(surface.verificationSteps.join("\n"), /Review packet/);
   assert.match(surface.verificationSteps.join("\n"), /Draft vet questions/);
-  assert.match(surface.verificationSteps.join("\n"), /Adventure Mode/);
-  assert.match(surface.verificationSteps.join("\n"), /Records, Avatar Studio, and Care Pass/);
+  assert.match(surface.verificationSteps.join("\n"), /Dog Profile, Privacy & Data, Care Team & Supplies/);
   assert.match(surface.verificationSteps.join("\n"), /Report History storage status/);
-  assert.match(surface.acceptanceCriteria.join("\n"), /bottom-nav loop never hides the active action/);
-  assert.match(surface.acceptanceCriteria.join("\n"), /Adventure Mode/);
+  assert.match(surface.acceptanceCriteria.join("\n"), /five-tab loop never hides the active action/);
   assert.match(surface.acceptanceCriteria.join("\n"), /provider setup, store approval, payments, AI, and storage boundaries/);
   assert.match(surface.acceptanceCriteria.join("\n"), /Saved on this device/);
   assert.match(surface.acceptanceCriteria.join("\n"), /Ready to upload only after structured provider storage proof is attached/);
   assert.match(surface.failureEscalation, /keyboard\/modal overlap/);
-  assert.match(surface.failureEscalation, /Adventure/);
+  assert.match(surface.failureEscalation, /canonical route/);
   assert.match(surface.failureEscalation, /claims provider\/store\/payment\/AI\/storage readiness/);
   assert.match(surface.requiredEvidence.join("\n"), /iOS screenshot of Quick Log or Log/);
   assert.match(surface.requiredEvidence.join("\n"), /Android screenshot of Launch Readiness/);
-  assert.match(surface.requiredEvidence.join("\n"), /Adventure Mode/);
+  assert.match(surface.requiredEvidence.join("\n"), /canonical Health\/More child/);
   assert.match(surface.requiredEvidence.join("\n"), /without dead ends/);
   assert.match(surface.requiredEvidence.join("\n"), /Report History storage status/);
   assert.deepEqual(
     surface.routeChecklist?.map((item) => item.label),
-    ["Log", "Plan", "Today", "Pack", "Story", "Health", "More", "Adventure", "Records", "Avatar Studio", "Care Pass"],
+    ["Home", "Log", "Plans", "Health", "More", "Dog Profile", "Privacy & Data", "Care Team & Supplies", "Story & Progress", "Adventure", "Records", "Avatar Studio", "Care Pass"],
   );
-  assert.match(surface.routeChecklist?.[0]?.expected ?? "", /Quick-log one safe care event/);
-  assert.equal(surface.routeChecklist?.[3]?.route, "/pack");
-  assert.match(surface.routeChecklist?.[3]?.expected ?? "", /Care Pass hub/);
-  assert.equal(surface.routeChecklist?.[4]?.route, "/story");
-  assert.match(surface.routeChecklist?.[4]?.expected ?? "", /care career, adventure trail, memories, walk story, and badges/);
-  assert.match(surface.routeChecklist?.[5]?.expected ?? "", /Today's header bell or the Pack links/);
-  assert.match(surface.routeChecklist?.[6]?.expected ?? "", /Today's header menu or the Pack links/);
-  assert.match(surface.routeChecklist?.[6]?.proof ?? "", /Launch Readiness/);
-  assert.equal(surface.routeChecklist?.[7]?.route, "/adventure");
-  assert.match(surface.routeChecklist?.[7]?.expected ?? "", /private care quests/);
-  assert.match(surface.routeChecklist?.[10]?.expected ?? "", /sitter\/vet\/trainer handoff/);
-  assert.match(surface.routeChecklist?.[10]?.expected ?? "", /Report History storage status/);
-  assert.match(surface.routeChecklist?.[10]?.proof ?? "", /Care Pass Report History storage status/);
+  assert.match(surface.routeChecklist?.[1]?.expected ?? "", /Quick-log one safe care event/);
+  assert.equal(surface.routeChecklist?.[8]?.route, "/more?section=story-progress");
+  assert.match(surface.routeChecklist?.[8]?.expected ?? "", /care career, adventure trail, memories, walk story, and badges/);
+  assert.equal(surface.routeChecklist?.[9]?.route, "/more?section=adventure");
+  assert.match(surface.routeChecklist?.[9]?.expected ?? "", /private care quests/);
+  assert.match(surface.routeChecklist?.[12]?.expected ?? "", /sitter\/vet\/trainer handoff/);
+  assert.match(surface.routeChecklist?.[12]?.expected ?? "", /Report History storage status/);
+  assert.match(surface.routeChecklist?.[12]?.proof ?? "", /Care Pass Report History storage status/);
   assert.match(surface.launchRisk, /real owner beta journey/);
 });
 
@@ -397,7 +464,7 @@ test("adds a launch-critical Records local file handoff proof target", () => {
     "Records local file handoff should stay visible before broad route screenshot work",
   );
   assert.equal(surface.title, "Records Local File Handoff");
-  assert.equal(surface.route, "/records");
+  assert.equal(surface.route, "/health?section=records");
   assert.equal(surface.priority, "launch-critical");
   assert.match(surface.goal, /Care Pass Report History local HTML/);
   assert.match(surface.goal, /Dog ID local HTML and SVG/);
@@ -427,7 +494,7 @@ test("adds a launch-critical Records local file handoff proof target", () => {
     "Dog ID local HTML credential",
     "Dog ID SVG image source",
   ]);
-  assert.ok(surface.routeChecklist?.every((item) => item.route === "/records"));
+  assert.ok(surface.routeChecklist?.every((item) => item.route === "/health?section=records"));
   assert.match(surface.routeChecklist?.[0]?.proof ?? "", /iOS \+ Android share-sheet proof/);
   assert.match(surface.routeChecklist?.[1]?.proof ?? "", /Android content URI/);
   assert.match(surface.routeChecklist?.[2]?.proof ?? "", /SVG image source/);
@@ -480,8 +547,8 @@ test("adds a launch-critical report binary export proof target", () => {
     "Dog ID PNG artifact proof",
   ]);
   assert.equal(surface.routeChecklist?.[0]?.route, "/more");
-  assert.equal(surface.routeChecklist?.[1]?.route, "/records");
-  assert.equal(surface.routeChecklist?.[2]?.route, "/records");
+  assert.equal(surface.routeChecklist?.[1]?.route, "/health?section=records");
+  assert.equal(surface.routeChecklist?.[2]?.route, "/health?section=records");
   assert.match(surface.routeChecklist?.[0]?.proof ?? "", /Structured provider storage proof file/);
   assert.match(surface.routeChecklist?.[1]?.proof ?? "", /iOS and Android generated PDF proof/);
   assert.match(surface.routeChecklist?.[2]?.proof ?? "", /iOS and Android generated PNG proof/);
@@ -583,9 +650,9 @@ test("adds a launch-critical WoofGuide AI provider proof target", () => {
     "Veterinary safety and fallback handling",
   ]);
   assert.equal(surface.routeChecklist?.[0]?.route, "/more");
-  assert.equal(surface.routeChecklist?.[1]?.route, "/woofguide");
-  assert.equal(surface.routeChecklist?.[2]?.route, "/woofguide");
-  assert.equal(surface.routeChecklist?.[3]?.route, "/woofguide");
+  assert.equal(surface.routeChecklist?.[1]?.route, "/more?section=woofguide");
+  assert.equal(surface.routeChecklist?.[2]?.route, "/more?section=woofguide");
+  assert.equal(surface.routeChecklist?.[3]?.route, "/more?section=woofguide");
   assert.match(surface.routeChecklist?.[0]?.proof ?? "", /WoofGuide AI provider proof packet/);
   assert.match(surface.routeChecklist?.[1]?.proof ?? "", /OpenAI key location/);
   assert.match(surface.routeChecklist?.[2]?.proof ?? "", /owner-review write gate/);
@@ -818,7 +885,7 @@ test("adds a launch-critical support legal readiness proof target", () => {
     "Support legal readiness proof should stay visible before broad route screenshot work",
   );
   assert.equal(surface.title, "Support Legal Readiness Proof");
-  assert.equal(surface.route, "/privacy");
+  assert.equal(surface.route, "/more?section=privacy");
   assert.equal(surface.priority, "launch-critical");
   assert.match(surface.goal, /support inbox/);
   assert.match(surface.goal, /privacy policy and terms links/);
@@ -881,16 +948,16 @@ test("adds route-check proof to store screenshot QA surfaces", () => {
   const privacy = surfaces.find((item) => item.id === "store-privacy-launch-gates");
 
   assert.ok(avatar);
-  assert.equal(avatar.route, "/portrait");
+  assert.equal(avatar.route, "/more?section=avatar-studio");
   assert.deepEqual(avatar.routeChecklist?.map((item) => item.label), ["Avatar Studio store frame"]);
-  assert.equal(avatar.routeChecklist?.[0]?.route, "/portrait");
+  assert.equal(avatar.routeChecklist?.[0]?.route, "/more?section=avatar-studio");
   assert.match(avatar.routeChecklist?.[0]?.expected ?? "", /PixelLab template\/customization flow/);
   assert.match(avatar.routeChecklist?.[0]?.expected ?? "", /Template-fitted/);
   assert.match(avatar.routeChecklist?.[0]?.proof ?? "", /iOS and Android store screenshots/);
   assert.match(avatar.routeChecklist?.[0]?.proof ?? "", /store note/);
 
   assert.ok(privacy);
-  assert.equal(privacy.route, "/privacy");
+  assert.equal(privacy.route, "/more?section=privacy");
   assert.equal(privacy.priority, "launch-critical");
   assert.deepEqual(privacy.routeChecklist?.map((item) => item.label), ["Privacy & Launch Gates store frame"]);
   assert.match(privacy.routeChecklist?.[0]?.expected ?? "", /blocked launch gate visible/);
@@ -1163,9 +1230,9 @@ test("turns the store submission screenshot checklist into device QA surfaces", 
 
   assert.deepEqual(ids, ["store-phoenix-home", "store-avatar-studio", "store-health-watch", "store-privacy-launch-gates"]);
   assert.equal(surfaces[0].route, "/");
-  assert.equal(surfaces[1].route, "/portrait");
+  assert.equal(surfaces[1].route, "/more?section=avatar-studio");
   assert.equal(surfaces[2].route, "/health");
-  assert.equal(surfaces[3].route, "/privacy");
+  assert.equal(surfaces[3].route, "/more?section=privacy");
   assert.equal(surfaces[0].priority, "release-polish");
   assert.equal(surfaces[3].priority, "launch-critical");
   assert.match(surfaces[0].title, /Store: Phoenix Home/);

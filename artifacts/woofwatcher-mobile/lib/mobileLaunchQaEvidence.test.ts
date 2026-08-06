@@ -527,33 +527,34 @@ test("preserves owner preview route-loop details in the capture plan and share s
   assert.deepEqual(
     target?.routeChecklist?.map((item) => `${item.label}:${item.route}`),
     [
+      "Home:/",
       "Log:/log",
-      "Plan:/calendar",
-      "Today:/",
-      "Pack:/pack",
-      "Story:/story",
+      "Plans:/calendar",
       "Health:/health",
       "More:/more",
-      "Adventure:/adventure",
-      "Records:/records",
-      "Avatar Studio:/portrait",
-      "Care Pass:/records",
+      "Dog Profile:/more?section=dog-profile",
+      "Privacy & Data:/more?section=privacy",
+      "Care Team & Supplies:/more?section=care-team-supplies",
+      "Story & Progress:/more?section=story-progress",
+      "Adventure:/more?section=adventure",
+      "Records:/health?section=records",
+      "Avatar Studio:/more?section=avatar-studio",
+      "Care Pass:/health?section=care-pass",
     ],
   );
-  assert.match(target?.routeChecklist?.[0]?.expected ?? "", /Quick-log one safe care event/);
-  assert.match(target?.routeChecklist?.[6]?.proof ?? "", /Android Launch Readiness screenshot/);
-  assert.match(target?.routeChecklist?.[7]?.expected ?? "", /private care quests/);
+  assert.match(target?.routeChecklist?.[1]?.expected ?? "", /Quick-log one safe care event/);
+  assert.match(target?.routeChecklist?.[4]?.proof ?? "", /Android Launch Readiness screenshot/);
+  assert.match(target?.routeChecklist?.[9]?.expected ?? "", /private care quests/);
 
   const text = buildMobileLaunchQaCaptureShareText(plan, "2026-06-25T09:30:00.000Z");
 
   assert.match(text, /Route loop:/);
-  assert.match(text, /Today \(\/\): Confirm Phoenix status/);
+  assert.match(text, /Home \(\/\): Confirm Phoenix status/);
   assert.match(text, /Log \(\/log\): Quick-log one safe care event/);
-  assert.match(text, /Pack \(\/pack\): Confirm pets, people, household access/);
-  assert.match(text, /Story \(\/story\): Confirm care career, adventure trail/);
-  assert.match(text, /More \(\/more\): Open More from Today's header menu or the Pack links/);
-  assert.match(text, /Adventure \(\/adventure\): Confirm private care quests/);
-  assert.match(text, /Care Pass \(\/records\): Confirm sitter\/vet\/trainer handoff/);
+  assert.match(text, /More \(\/more\): Use the visible directory/);
+  assert.match(text, /Story & Progress \(\/more\?section=story-progress\): Confirm care career, adventure trail/);
+  assert.match(text, /Adventure \(\/more\?section=adventure\): Confirm private care quests/);
+  assert.match(text, /Care Pass \(\/health\?section=care-pass\): Confirm sitter\/vet\/trainer handoff/);
 });
 
 test("expands route visual consistency into route-by-route native screenshot proof", () => {
@@ -578,11 +579,11 @@ test("expands route visual consistency into route-by-route native screenshot pro
   assert.match(text, /Route Visual Consistency/);
   assert.match(text, /Missing: Attach 8 iOS screenshots for Route Visual Consistency\./);
   assert.match(text, /Attach 8 Android screenshots for Route Visual Consistency\./);
-  assert.match(text, /Today \(\/\): Phoenix Room/);
-  assert.match(text, /Pack \(\/pack\): Pack keeps pets, people, household access/);
-  assert.match(text, /Story \(\/story\): Story keeps care career, adventure trail/);
+  assert.match(text, /Home \(\/\): Phoenix Room/);
+  assert.match(text, /Story & Progress \(\/more\?section=story-progress\): Care career, adventure trail/);
+  assert.match(text, /Care Team & Supplies \(\/more\?section=care-team-supplies\): Household supplies and travel controls/);
   assert.match(text, /Proof: iOS \+ Android native screenshot required\./);
-  assert.match(text, /More \(\/more\): Command Directory maps the app/);
+  assert.match(text, /More \(\/more\): The visible directory maps Dog Profile/);
 });
 
 test("keeps note-required owner preview evidence open until the QA note is written", () => {

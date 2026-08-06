@@ -119,6 +119,10 @@ import {
   CARE_READ_ONLY_MESSAGE,
   careMutationWasAccepted,
 } from "@/lib/careWriteProtection";
+import {
+  canonicalHomeRoute,
+} from "@/lib/canonicalRouteBuilders";
+import { executePrimaryTabTaskPath } from "@/lib/primaryTabExperience";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -2722,19 +2726,34 @@ export default function LogScreen() {
           <BoardRouteHeader
             title="Log"
             back
-            onBack={() => router.push("/")}
-            actionIcon="notifications-outline"
-            actionLabel="Open Health Watch"
+            onBack={() => {
+              if (router.canGoBack()) router.back();
+              else router.replace(canonicalHomeRoute());
+            }}
+            actionIcon="flash-outline"
+            actionLabel="Log care"
             onAction={() => {
               Haptics.selectionAsync();
-              router.push("/health?tab=health" as never);
+              executePrimaryTabTaskPath("fast-log-from-log", {
+                navigate: (route) => router.push(route as never),
+                selectLogView: setLogView,
+              });
             }}
           />
 
           <BoardSegmentTabs
             segments={logViewSegments}
             active={view}
-            onChange={setLogView}
+            onChange={(nextView) => {
+              if (nextView === "history") {
+                executePrimaryTabTaskPath("log-history", {
+                  navigate: () => undefined,
+                  selectLogView: setLogView,
+                });
+                return;
+              }
+              setLogView(nextView);
+            }}
             style={s.logViewTabs}
           />
 

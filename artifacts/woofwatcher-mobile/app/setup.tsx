@@ -45,6 +45,10 @@ import {
   type SetupWizardHouseholdMode,
 } from "@/lib/setupWizard";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
+import {
+  canonicalHomeRoute,
+  canonicalPlansRoute,
+} from "@/lib/canonicalRouteBuilders";
 
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 // Storybook mockup: big warm serif for celebration titles (same face the
@@ -242,18 +246,18 @@ export default function SetupScreen() {
   const meetDog = () => {
     Haptics.selectionAsync();
     setSuccessMoment(null);
-    router.replace("/(tabs)");
+    router.replace(canonicalHomeRoute());
   };
 
   const reviewPlan = () => {
     Haptics.selectionAsync();
     setSuccessMoment(null);
-    router.replace("/calendar");
+    router.replace(canonicalPlansRoute());
   };
 
   const finishLater = () => {
     Haptics.selectionAsync();
-    router.replace("/(tabs)");
+    router.replace(canonicalHomeRoute());
   };
   const openAuthSetupProofMission = () => {
     Haptics.selectionAsync();

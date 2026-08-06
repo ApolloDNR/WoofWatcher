@@ -191,7 +191,7 @@ test("removes More's Health-owned Diet and Care Pass duplicates", () => {
 
   assert.match(more, /function MoreScreenContent\(\{/);
   assert.match(more, /resolveCanonicalDestination/);
-  assert.match(more, /destination\.parent === "health"/);
+  assert.match(more, /executeMoreDirectoryDestination/);
   assert.match(more, /<Redirect href=\{redirectHref\}/);
   assert.doesNotMatch(more, /import DietScreen|<DietScreen\b/);
   assert.doesNotMatch(more, /const generateCarePass =/);

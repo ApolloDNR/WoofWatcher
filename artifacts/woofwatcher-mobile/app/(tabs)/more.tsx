@@ -108,6 +108,7 @@ import {
 } from "@/lib/careCareer";
 import MoreSectionRouter from "@/components/more/MoreSectionRouter";
 import {
+  executeMoreDirectoryDestination,
   MORE_DIRECTORY_GROUPS,
   searchMoreDirectory,
   type MoreDirectoryDestination,
@@ -411,11 +412,10 @@ function MoreScreenContent({}: Record<string, never>) {
   );
   const openDirectoryDestination = (destination: MoreDirectoryDestination) => {
     Haptics.selectionAsync();
-    if (destination.parent === "health") {
-      router.push({ pathname: "/health", params: { section: "care-pass" } });
-      return;
-    }
-    openMoreSection(destination.section);
+    executeMoreDirectoryDestination(
+      destination,
+      (route) => router.push(route as never),
+    );
   };
   // Owner launch tooling renders in development/internal builds only; store
   // production builds keep More to complete device-local care surfaces.

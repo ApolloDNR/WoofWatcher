@@ -86,6 +86,7 @@ import {
   type QaScreenshotEvidence,
   type QaScreenshotEvidencePlatform,
 } from "@/lib/qaScreenshotEvidence";
+import { canonicalizeOwnedRoute } from "@/lib/canonicalRouteBuilders";
 import { buildReleasePacket } from "@/lib/releasePacket";
 import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from "@/lib/storeSubmissionPacket";
 
@@ -243,7 +244,11 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 
 function buildQaReturnRoute(target: { route: string; id?: string; surfaceId?: string; title: string }): string {
   const surfaceId = target.surfaceId ?? target.id ?? "qa-surface";
-  return buildMobileLaunchQaReturnRoute(target.route, surfaceId, target.title);
+  return buildMobileLaunchQaReturnRoute(
+    canonicalizeOwnedRoute(target.route),
+    surfaceId,
+    target.title,
+  );
 }
 
 export default function CareTwinQaScreen() {

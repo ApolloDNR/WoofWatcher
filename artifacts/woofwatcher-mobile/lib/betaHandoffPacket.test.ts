@@ -221,9 +221,9 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Attach structured support\/legal proof files before public launch/);
   assert.match(text, /Apollo launch approval\/no-launch-boundary proof with MIME, byte size, and row-specific approvals/);
   assert.match(text, /Open focused route visual target: \/care-twin-qa\?qaSurface=route-visual-consistency/);
-  assert.match(text, /Capture Log, Plan, Today, Pack, Story, Health, Records, and More on iOS and Android before claiming route visual proof/);
-  assert.match(text, /Name or save each Route Visual screenshot with the route label/);
-  assert.match(text, /Log-iOS.*Pack-iOS.*Story-Android.*More-Android/);
+  assert.match(text, /Capture Home, Log, Plans, Health, More, Story & Progress, Records, and Care Team & Supplies on iOS and Android before claiming route visual proof/);
+  assert.match(text, /Name or save each Route Visual screenshot with the canonical route label/);
+  assert.match(text, /Home-iOS.*Story-Progress-iOS.*Care-Team-Supplies-Android/);
   assert.match(text, /Save the Mission note and clear Pass pending proof in both \/care-twin-qa and More/);
   assert.match(text, /Native QA Needs tune fix brief:/);
   assert.match(text, /If any route is marked Needs tune, use More's Share Fix Brief before claiming beta proof/);

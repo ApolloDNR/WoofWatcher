@@ -44,6 +44,7 @@ import {
 } from "@/lib/mobileLayout";
 import { resolvePetName } from "@/lib/petIdentity";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
+import { buildVisibleHealthStatusControls } from "@/lib/primaryTabExperience";
 import { shareTextPayload } from "@/lib/shareText";
 import { buildTrendWindow } from "@/lib/trendsChart";
 import {
@@ -679,6 +680,16 @@ function HealthCoreScreen({
     router.push(`/log?type=${type}&detail=1&intent=${Date.now()}` as never);
   }
 
+  const visibleHealthStatusControls = buildVisibleHealthStatusControls(
+    displayHealthRows,
+    {
+      openLogDetail: ({ pathname, params }) => router.push({
+        pathname,
+        params: { ...params, intent: String(Date.now()) },
+      }),
+    },
+  );
+
   async function shareHealthReviewPacket(): Promise<void> {
     await shareTextPayload({
       message: buildHealthReviewPacketShareText(healthReviewPacket, {
@@ -947,12 +958,12 @@ function HealthCoreScreen({
                 </View>
 
                 <View style={s.healthSignalList}>
-                  {displayHealthRows.slice(0, 4).map((row) => (
+                  {visibleHealthStatusControls.map((row) => (
                     <PressScale
                       key={row.label}
                       accessibilityRole="button"
                       accessibilityLabel={`${row.label}. ${row.status}. ${row.detail}. ${row.actionLabel}`}
-                      onPress={() => openHealthStatusRoute(row.routeType)}
+                      onPress={row.onPress}
                       scaleTo={0.97}
                       style={[
                         s.healthSignalRow,

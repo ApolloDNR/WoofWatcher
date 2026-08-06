@@ -6,14 +6,19 @@ import {
   summarizeRecordVault,
 } from "../../../lib/care-domain/src/index.ts";
 import { localDateKey, todayLocalDateKey } from "./localCalendar.ts";
+import {
+  canonicalHealthRoute,
+  canonicalHomeRoute,
+  canonicalLogRoute,
+  canonicalPlansRoute,
+} from "./canonicalRouteBuilders.ts";
 
 export type WoofGuideActionUrgency = "normal" | "watch" | "alert";
 
 export type WoofGuideActionRoute =
-  | "/log"
-  | "/calendar"
-  | "/records"
-  | "/more";
+  | ReturnType<typeof canonicalHealthRoute>
+  | ReturnType<typeof canonicalLogRoute>
+  | ReturnType<typeof canonicalPlansRoute>;
 
 export type WoofGuideActionIcon =
   | "bowl"
@@ -298,7 +303,9 @@ export interface WoofGuideAssistantFallbackLink {
   id: "health" | "records" | "home";
   label: string;
   detail: string;
-  route: "/health" | "/records" | "/";
+  route:
+    | ReturnType<typeof canonicalHealthRoute>
+    | ReturnType<typeof canonicalHomeRoute>;
   icon: WoofGuideActionIcon;
 }
 
@@ -308,21 +315,21 @@ export const WOOFGUIDE_ASSISTANT_FALLBACK_LINKS: readonly WoofGuideAssistantFall
     id: "health",
     label: "Health Watch patterns",
     detail: "Non-diagnostic patterns from your own logs.",
-    route: "/health",
+    route: canonicalHealthRoute("health-watch"),
     icon: "heart",
   },
   {
     id: "records",
     label: "Records and Care Pass",
     detail: "Vaccines, documents, and shareable care summaries.",
-    route: "/records",
+    route: canonicalHealthRoute("records"),
     icon: "records",
   },
   {
     id: "home",
     label: "Today's care",
     detail: "Back to the room to log meals, potty, and walks.",
-    route: "/",
+    route: canonicalHomeRoute(),
     icon: "paw",
   },
 ];
@@ -388,7 +395,7 @@ export function deriveWoofGuideActions(
         : `Missing ${recordVault.missingCritical.join(", ").toLowerCase()}.`,
       urgency: recordAttention.some((record) => getRecordDueStatus(record, now).status === "expired") ? "alert" : "watch",
       icon: "records",
-      route: "/records",
+      route: canonicalHealthRoute("records"),
       draft: reminderDraft(state, now),
     });
   }
@@ -400,7 +407,7 @@ export function deriveWoofGuideActions(
       detail: "Food, portion, and meal schedule are needed for better feeding guidance.",
       urgency: "watch",
       icon: "bowl",
-      route: "/more",
+      route: canonicalHealthRoute("diet"),
     });
   } else if (mealsToday.length === 0) {
     actions.push({
@@ -409,7 +416,7 @@ export function deriveWoofGuideActions(
       detail: `${name} has no meal logged today.`,
       urgency: "normal",
       icon: "bowl",
-      route: "/log",
+      route: canonicalLogRoute(),
       draft: mealLogDraft(state, now),
     });
   }
@@ -421,7 +428,7 @@ export function deriveWoofGuideActions(
       detail: "Add a starter schedule so WoofGuide can watch what is due next.",
       urgency: "watch",
       icon: "calendar",
-      route: "/calendar",
+      route: canonicalPlansRoute(),
     });
   }
 
@@ -431,7 +438,7 @@ export function deriveWoofGuideActions(
     detail: "Review sitter, vet, trainer, or caregiver report sections before sharing.",
     urgency: "normal",
     icon: "spark",
-    route: "/records",
+    route: canonicalHealthRoute("care-pass"),
     draft: carePassDraft(),
   });
 

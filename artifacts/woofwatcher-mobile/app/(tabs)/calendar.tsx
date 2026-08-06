@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -74,6 +74,14 @@ import {
   CARE_READ_ONLY_MESSAGE,
   careMutationWasAccepted,
 } from "@/lib/careWriteProtection";
+import {
+  buildPlanReminderSections,
+  reminderWhenLabel,
+  resolvePlanReminderFocus,
+  runPlanReminderInteraction,
+} from "@/lib/planReminderCenter";
+import { buildNextPlanVisibleControl } from "@/lib/primaryTabExperience";
+import { canonicalMoreRoute } from "@/lib/canonicalRouteBuilders";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -281,6 +289,10 @@ export default function CalendarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const routeParams = useLocalSearchParams<Record<string, string | string[]>>();
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollContentRef = useRef<View>(null!);
+  const reminderRowRefs = useRef(new Map<string, View | null>());
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
   const ownerOps = consumerSurfacePolicy.ownerOps;
   const {
@@ -497,11 +509,19 @@ export default function CalendarScreen() {
       caregivers,
       notificationPreferences: reminderNotificationPreferenceInput,
       now,
-      limit: 4,
+      limit: 50,
     }),
     [sortedRoutines, entries, records, caregivers, reminderNotificationPreferenceInput, now],
   );
   const reminderCount = careReminderCenter.total;
+  const reminderSections = useMemo(
+    () => buildPlanReminderSections(careReminderCenter.items),
+    [careReminderCenter.items],
+  );
+  const focusedReminderId = useMemo(
+    () => resolvePlanReminderFocus(routeParams, careReminderCenter.items),
+    [careReminderCenter.items, routeParams],
+  );
   const reminderTone =
     careReminderCenter.status === "attention"
       ? colors.rose
@@ -735,28 +755,31 @@ export default function CalendarScreen() {
     router.push("/care-twin-qa?qaSurface=push-notifications-proof" as never);
   };
 
-  const openReminderLogDetailRoute = (type: string) => {
-    router.push(`/log?type=${encodeURIComponent(type)}&detail=1&intent=${Date.now()}` as never);
-  };
-
   const openReminderAction = (item: CareReminderItem) => {
     Haptics.selectionAsync();
-    const routine = item.sourceId ? routineBoard.items.find((candidate) => candidate.id === item.sourceId) : null;
-    if (item.kind === "routine" && routine) {
-      openBoardRoutine(routine);
-      return;
-    }
-    if (item.kind === "medication" && routine) {
-      openReminderLogDetailRoute("medication");
-      return;
-    }
-    if (item.kind === "grooming") {
-      openReminderLogDetailRoute("grooming");
-      return;
-    }
-    if (item.kind === "record" || item.kind === "medication") {
-      router.push("/records");
-    }
+    runPlanReminderInteraction(
+      { kind: "activate", item },
+      {
+        measureItemInScrollContent: () => false,
+        scrollTo: () => undefined,
+        navigate: (pathname, params) => router.push({
+          pathname,
+          params:
+            pathname === "/log"
+              ? { ...params, intent: String(Date.now()) }
+              : { ...params },
+        }),
+        editRoutine: (routineId) => {
+          const routine = routineBoard.items.find(
+            (candidate) => candidate.id === routineId,
+          );
+          if (routine) openBoardRoutine(routine);
+        },
+        writeCare: () => {
+          throw new Error("Reminder interactions must not write care directly.");
+        },
+      },
+    );
   };
 
   const deleteRoutine = (id: string) => {
@@ -980,36 +1003,46 @@ export default function CalendarScreen() {
   const planMissionRows: PlanMissionRow[] = [];
 
   if (nextScheduleRow) {
-    planMissionRows.push(
+    const nextPlanControl = buildNextPlanVisibleControl(
       isSampleSchedule
         ? {
-            id: "next-plan",
-            eyebrow: "Next Mission",
+            kind: "add",
             title: "Add your first routine",
             detail: "The schedule shows a sample day until you do",
-            icon: routinePixelIcon(nextScheduleRow.type),
-            tone: commandDeckTone,
             actionLabel: "Add",
-            onPress: () => {
-              Haptics.selectionAsync();
-              openNewRoutine();
-            },
           }
-        : {
-            id: "next-plan",
-            eyebrow: "Next Mission",
-            title: nextScheduleRow.label,
-            // No dangling "6:30 PM -" when the routine carries no note.
-            detail: [nextScheduleRow.time, nextScheduleRow.detail].filter(Boolean).join(" - "),
-            icon: routinePixelIcon(nextScheduleRow.type),
-            tone: commandDeckTone,
-            actionLabel: nextScheduleRoutine ? "Open" : nextScheduleStatus,
-            onPress: () => {
-              Haptics.selectionAsync();
-              if (nextScheduleRoutine) openBoardRoutine(nextScheduleRoutine);
+        : nextScheduleRoutine
+          ? {
+              kind: "edit",
+              title: nextScheduleRow.label,
+              // No dangling "6:30 PM -" when the routine carries no note.
+              detail: [nextScheduleRow.time, nextScheduleRow.detail].filter(Boolean).join(" - "),
+              actionLabel: "Open",
+              routineId: nextScheduleRoutine.id,
+            }
+          : {
+              kind: "status",
+              title: nextScheduleRow.label,
+              detail: [nextScheduleRow.time, nextScheduleRow.detail].filter(Boolean).join(" - "),
+              actionLabel: nextScheduleStatus,
             },
-          },
+      {
+        addRoutine: () => {
+          Haptics.selectionAsync();
+          openNewRoutine();
+        },
+        editRoutine: (routineId) => {
+          Haptics.selectionAsync();
+          const routine = routineBoard.items.find((item) => item.id === routineId);
+          if (routine) openBoardRoutine(routine);
+        },
+      },
     );
+    planMissionRows.push({
+      ...nextPlanControl,
+      icon: routinePixelIcon(nextScheduleRow.type),
+      tone: commandDeckTone,
+    });
   }
 
   const firstCorrectionRoutine = routineBoard.items.find(
@@ -1041,7 +1074,7 @@ export default function CalendarScreen() {
     actionLabel: responsibilityIsCovered ? "Covered" : "Review",
     onPress: () => {
       Haptics.selectionAsync();
-      router.push("/more" as never);
+      router.push(canonicalMoreRoute("care-team") as never);
     },
   });
 
@@ -1091,12 +1124,40 @@ export default function CalendarScreen() {
     ]).start();
   }, [fade, isWebRoutePreview, slide]);
 
+  useEffect(() => {
+    if (!focusedReminderId) return;
+    runPlanReminderInteraction(
+      { kind: "focus", itemId: focusedReminderId, routeTopPadding: topPadding },
+      {
+        measureItemInScrollContent: (itemId, onMeasured) => {
+          const row = reminderRowRefs.current.get(itemId);
+          const content = scrollContentRef.current;
+          if (!row || !content) return false;
+          row.measureLayout(
+            content,
+            (_x, contentY) => onMeasured(contentY),
+            () => undefined,
+          );
+          return true;
+        },
+        scrollTo: (y) => scrollRef.current?.scrollTo({ y, animated: true }),
+        navigate: () => undefined,
+        editRoutine: () => undefined,
+        writeCare: () => {
+          throw new Error("Reminder focus must not write care.");
+        },
+      },
+    );
+  }, [focusedReminderId, reminderSections, topPadding]);
+
   const dateLabel = new Date(now).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
   const H_PAD = 16;
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
+        ref={scrollRef}
+        innerViewRef={scrollContentRef}
         style={s.container}
         contentContainerStyle={{ paddingTop: topPadding, paddingBottom: bottomPadding, paddingHorizontal: H_PAD }}
         showsVerticalScrollIndicator={false}
@@ -1855,6 +1916,7 @@ export default function CalendarScreen() {
           </BoardCard>
 
           {/* Reminder Center */}
+          <View>
           <BoardCard enter={4} style={[s.plansBoardCard, { borderColor: reminderTone + "44" }]}>
             <BoardSectionHeader
               title="Reminder Center"
@@ -1893,36 +1955,62 @@ export default function CalendarScreen() {
               </View>
             ) : (
               <View style={s.reminderList}>
-                {careReminderCenter.items.map((item, index) => {
-                  const rowTone = item.urgency === "alert" ? colors.rose : item.urgency === "watch" ? colors.amber : colors.sage;
-                  return (
-                    <Pressable
-                      key={item.id}
-                      onPress={() => openReminderAction(item)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Open reminder action: ${item.label}`}
-                      style={({ pressed }) => [
-                        s.reminderRow,
-                        index < careReminderCenter.items.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 },
-                        { opacity: pressed ? 0.72 : 1 },
+                {reminderSections.map((section) => (
+                  <View
+                    key={section.key}
+                    style={s.reminderSection}
+                  >
+                    <Text
+                      style={[
+                        s.reminderSectionLabel,
+                        { color: colors.sage, fontFamily: "Inter_700Bold" },
                       ]}
                     >
-                      <View style={[s.reminderIcon, { backgroundColor: rowTone + "16" }]}>
-                        <Ionicons name={REMINDER_ICON[item.kind] ?? "alarm-outline"} size={17} color={rowTone} />
-                      </View>
-                      <View style={s.reminderMain}>
-                        <View style={s.reminderTitleLine}>
-                          <Text style={[s.reminderTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
-                          <View style={[s.reminderPill, { backgroundColor: rowTone + "16" }]}>
-                            <Text style={[s.reminderPillText, { color: rowTone, fontFamily: "Inter_700Bold" }]}>{reminderUrgencyLabel(item.urgency)}</Text>
+                      {section.label}
+                    </Text>
+                    {section.items.map((item, index) => {
+                      const rowTone = item.urgency === "alert" ? colors.rose : item.urgency === "watch" ? colors.amber : colors.sage;
+                      const focused = item.id === focusedReminderId;
+                      return (
+                        <Pressable
+                          key={item.id}
+                          ref={(row) => {
+                            reminderRowRefs.current.set(item.id, row);
+                          }}
+                          onPress={() => openReminderAction(item)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${reminderWhenLabel(item)}. Open reminder action: ${item.label}`}
+                          style={({ pressed }) => [
+                            s.reminderRow,
+                            focused && [
+                              s.focusedReminderRow,
+                              { borderColor: colors.copper, backgroundColor: colors.amberSoft },
+                            ],
+                            index < section.items.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 },
+                            { opacity: pressed ? 0.72 : 1 },
+                          ]}
+                        >
+                          <View style={[s.reminderIcon, { backgroundColor: rowTone + "16" }]}>
+                            <Ionicons name={REMINDER_ICON[item.kind] ?? "alarm-outline"} size={17} color={rowTone} />
                           </View>
-                        </View>
-                        <Text numberOfLines={2} style={[s.reminderDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{item.detail}</Text>
-                        <Text numberOfLines={2} style={[s.reminderAction, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{item.action}</Text>
-                      </View>
-                    </Pressable>
-                  );
-                })}
+                          <View style={s.reminderMain}>
+                            <Text style={[s.reminderWhen, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                              {reminderWhenLabel(item)}
+                            </Text>
+                            <View style={s.reminderTitleLine}>
+                              <Text style={[s.reminderTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
+                              <View style={[s.reminderPill, { backgroundColor: rowTone + "16" }]}>
+                                <Text style={[s.reminderPillText, { color: rowTone, fontFamily: "Inter_700Bold" }]}>{reminderUrgencyLabel(item.urgency)}</Text>
+                              </View>
+                            </View>
+                            <Text numberOfLines={2} style={[s.reminderDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>{item.detail}</Text>
+                            <Text numberOfLines={2} style={[s.reminderAction, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{item.action}</Text>
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ))}
                 {careReminderCenter.total > careReminderCenter.items.length ? (
                   <Text style={[s.reminderMore, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                     + {careReminderCenter.total - careReminderCenter.items.length} more reminder candidate{careReminderCenter.total - careReminderCenter.items.length === 1 ? "" : "s"} in records and routines.
@@ -2014,6 +2102,7 @@ export default function CalendarScreen() {
               </View>
             ) : null}
           </BoardCard>
+          </View>
 
           {/* Daily routine */}
           <BoardCard enter={5} style={s.plansBoardCard}>
@@ -3012,11 +3101,15 @@ const s = StyleSheet.create({
   removeBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 10, alignItems: "center", justifyContent: "center" },
 
   reminderList: { marginTop: 8 },
+  reminderSection: { marginTop: 10 },
+  reminderSectionLabel: { fontSize: 11, letterSpacing: 1.1, textTransform: "uppercase", marginBottom: 3 },
   reminderRow: { flexDirection: "row", gap: 11, paddingVertical: 11 },
+  focusedReminderRow: { borderWidth: 2, borderRadius: 13, paddingHorizontal: 9 },
   reminderIcon: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   reminderMain: { flex: 1, minWidth: 0 },
   reminderTitleLine: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   reminderTitle: { fontSize: 14.5, flexShrink: 1 },
+  reminderWhen: { fontSize: 11.5, lineHeight: 16, marginBottom: 2 },
   reminderPill: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
   reminderPillText: { fontSize: 9.5, textTransform: "uppercase", letterSpacing: 0.4 },
   reminderDetail: { fontSize: 12.5, lineHeight: 17, marginTop: 3 },

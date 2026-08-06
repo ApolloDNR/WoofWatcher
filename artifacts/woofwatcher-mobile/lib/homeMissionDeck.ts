@@ -1,14 +1,17 @@
+import {
+  canonicalHealthRoute,
+  canonicalMoreRoute,
+} from "./canonicalRouteBuilders.ts";
+
 export type HomeMissionTone = "sage" | "copper" | "amber" | "rose" | "navy";
 
 export type HomeMissionRoute =
-  | "/adventure"
   | "/calendar"
-  | "/health?tab=health"
-  | "/health?tab=bile"
+  | ReturnType<typeof canonicalHealthRoute>
+  | ReturnType<typeof canonicalMoreRoute>
   | "/log"
   | `/log?entry=${string}`
-  | `/log?type=${string}&detail=1&intent=${number}`
-  | "/records";
+  | `/log?type=${string}&detail=1&intent=${number}`;
 
 export type HomeMissionIcon =
   | "bile"
@@ -127,7 +130,7 @@ export function buildHomeMissionDeck(input: HomeMissionDeckInput): HomeMission[]
       statusLabel: "Care RPG",
       cta: "Start quest",
       icon: "walk",
-      route: "/adventure",
+      route: canonicalMoreRoute("adventure"),
       tone: todayXp > 0 ? "copper" : "navy",
     },
     {
@@ -138,7 +141,9 @@ export function buildHomeMissionDeck(input: HomeMissionDeckInput): HomeMission[]
       statusLabel: clean(input.health.status, input.health.needsReview ? "Review" : "Stable"),
       cta: input.health.needsReview ? "Review" : "Open health",
       icon: input.health.needsReview ? "bile" : "health",
-      route: input.health.needsReview ? "/health?tab=bile" : "/health?tab=health",
+      route: canonicalHealthRoute(
+        input.health.needsReview ? "bile-watch" : "overview",
+      ),
       tone: input.health.needsReview ? "amber" : "sage",
     },
     {
@@ -149,7 +154,7 @@ export function buildHomeMissionDeck(input: HomeMissionDeckInput): HomeMission[]
       statusLabel: input.carePass.ready ? "Ready" : "Build pass",
       cta: "Open pass",
       icon: "note",
-      route: "/records",
+      route: canonicalHealthRoute("care-pass"),
       tone: input.carePass.ready ? "sage" : "amber",
     },
   ];

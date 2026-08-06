@@ -1717,11 +1717,11 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(home, /nextUpRoute = nextPrimary\?\.route/);
   assert.match(home, /\/log\?entry=/);
   assert.match(home, /\/calendar/);
-  assert.match(home, /pathname:\s*"\/more",\s*params:\s*\{\s*section:\s*"adventure"\s*\}/);
-  assert.match(home, /\/health/);
+  assert.match(home, /canonicalMoreRoute\("adventure"\)/);
+  assert.match(home, /canonicalHealthRoute/);
 
   assert.match(missionDeck, /care-today/);
-  assert.match(missionDeck, /\/records/);
+  assert.match(missionDeck, /canonicalHealthRoute\("care-pass"\)/);
   assert.match(missionDeck, /Open loop/);
   assert.match(missionDeck, /Start quest/);
   assert.match(missionDeck, /Care Pass/);
@@ -1743,7 +1743,7 @@ test("keeps Home organized around real care-RPG missions, not decorative cards",
   assert.match(releaseQa, /home-mission-deck/);
   assert.match(releaseQa, /compact Home mission deck/);
   assert.match(releaseQa, /pending meal routes to Meal Log/);
-  assert.match(releaseQa, /floating paw nav/);
+  assert.match(releaseQa, /standard bottom navigation/);
 });
 
 test("keeps Home immediate care actions ahead of the richer mission deck", () => {
@@ -1779,11 +1779,11 @@ test("keeps Home immediate care actions ahead of the richer mission deck", () =>
   assert.match(home, /Reassign/);
   assert.match(home, /Quick Log/);
   assert.match(home, /s\.quickSectionHeader/);
-  // Mock-board Quick Log card: four core lanes plus a real More tile that
+  // Mock-board Quick Log card: four core lanes plus a visible Log care tile that
   // opens the fast-log sheet (Water, Note, and the rest live there).
   assert.match(home, /HOME_QUICK_LOG\.slice\(0,\s*4\)\.map/);
-  assert.match(home, /More quick log options/);
-  assert.match(home, /router\.push\("\/fastlog" as never\)/);
+  assert.match(home, /accessibilityLabel="Log care"/);
+  assert.match(home, /executePrimaryTabTaskPath\("fast-log"/);
   assert.match(home, /Today's Missions/);
 });
 
@@ -2023,18 +2023,19 @@ test("keeps Home owner-preview section actions as real route targets", () => {
   );
   // Home header + Care Sense route to the standalone board screens from
   // Apollo's mockups: the dog identity chip opens the Profile, the bell opens
-  // Reminders, and Care Sense links to Trends. Every target is a real route.
+  // Plans reminders, and Care Sense links to Health-owned Trends. Every
+  // target is built by the canonical owner helper.
   assert.match(
     home,
-    /accessibilityLabel=\{`\$\{petName\}\. \$\{careStatusLabel\}\. Open profile`\}[\s\S]*router\.push\(\{ pathname: "\/more", params: \{ section: "dog-profile" \} \}\)/,
+    /accessibilityLabel=\{`\$\{petName\}\. \$\{careStatusLabel\}\. Open profile`\}[\s\S]*canonicalMoreRoute\("dog-profile"\)/,
   );
   assert.match(
     home,
-    /accessibilityLabel="Open reminders"[\s\S]*router\.push\("\/reminders" as never\)/,
+    /accessibilityLabel="Open reminders"[\s\S]*canonicalPlansRoute\(\)/,
   );
   assert.match(
     home,
-    /accessibilityLabel="Open Trends and Insights"[\s\S]*router\.push\("\/trends" as never\)/,
+    /accessibilityLabel="Open Trends and Insights"[\s\S]*canonicalHealthRoute\("trends"\)/,
   );
   assert.match(
     home,
@@ -2045,8 +2046,8 @@ test("keeps Home owner-preview section actions as real route targets", () => {
     home,
     /router\.push\(\s*`\/log\?type=mood&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
   );
-  assert.match(home, /router\.push\("\/health\?tab=health" as never\)/);
-  assert.match(home, /router\.push\("\/more\?section=diet" as never\)/);
+  assert.match(home, /canonicalHealthRoute\("overview"\)/);
+  assert.match(home, /canonicalHealthRoute\("diet"\)/);
   assert.match(
     home,
     /router\.push\(\s*`\/log\?type=play&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
@@ -2151,7 +2152,7 @@ test("keeps Home watch cards deep-linked to exact care workflows", () => {
     home,
     /const openHomeWatchCard = \(target: HomeWatchTarget\) =>/,
   );
-  assert.match(home, /router\.push\("\/health\?tab=bile" as never\)/);
+  assert.match(home, /canonicalHealthRoute\("bile-watch"\)/);
   assert.match(
     home,
     /router\.push\(\s*`\/log\?type=alone&detail=1&intent=\$\{Date\.now\(\)\}` as never,?\s*\)/,
@@ -2188,11 +2189,10 @@ test("keeps Home mission health rows tab-specific", () => {
     "utf8",
   );
 
-  assert.match(homeMissionDeck, /"\/health\?tab=bile"/);
-  assert.match(homeMissionDeck, /"\/health\?tab=health"/);
+  assert.match(homeMissionDeck, /canonicalHealthRoute/);
   assert.match(
     homeMissionDeck,
-    /route: input\.health\.needsReview \? "\/health\?tab=bile" : "\/health\?tab=health"/,
+    /input\.health\.needsReview \? "bile-watch" : "overview"/,
   );
 });
 
@@ -2284,7 +2284,8 @@ test("keeps Health Watch and the Quick Care Console honest at zero data and at n
   assert.match(health, /Health Watch starts with your first log\./);
   // The signal rows ("Active daily", "Eating well") are observations, so
   // they also fall back to the first-log promise before any log exists.
-  assert.match(health, /displayHealthRows\.slice\(0, 4\)/);
+  assert.match(health, /buildVisibleHealthStatusControls/);
+  assert.match(health, /visibleHealthStatusControls\.map/);
 
   // The decorative "Under 5 sec" speed pill is removed at every width, not
   // just under 360px.
@@ -2872,8 +2873,8 @@ test("keeps Quick Log composer card boundaries separate from search controls", (
 test("keeps Quick Log polished for exact tap selection and mobile scanability", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
-  assert.match(log, /actionLabel="Open Health Watch"/);
-  assert.match(log, /router\.push\("\/health\?tab=health" as never\)/);
+  assert.match(log, /actionLabel="Log care"/);
+  assert.match(log, /executePrimaryTabTaskPath\("fast-log-from-log"/);
   assert.match(log, /launcherActionKey/);
   assert.match(log, /selectedLauncherKey === launcherActionKey\(action\)/);
   assert.match(log, /aria-selected=\{active\}/);
@@ -3175,9 +3176,9 @@ test("keeps the WoofGuide assistant honestly gated until a provider is configure
   // destinations instead of dead chat inputs.
   assert.match(guide, /ASSISTANT_GATE\.enabled \? \(/);
   assert.match(guide, /WOOFGUIDE_ASSISTANT_FALLBACK_LINKS\.map/);
-  assert.match(guideActions, /route: "\/health"/);
-  assert.match(guideActions, /route: "\/records"/);
-  assert.match(guideActions, /route: "\/",/);
+  assert.match(guideActions, /canonicalHealthRoute\("health-watch"\)/);
+  assert.match(guideActions, /canonicalHealthRoute\("records"\)/);
+  assert.match(guideActions, /canonicalHomeRoute\(\)/);
   assert.match(guide, /accessibilityLabel="Open Health Watch from guidance console"/);
   assert.match(guide, /accessibilityLabel="Open Health Watch instead of the disabled assistant"/);
 
@@ -4853,28 +4854,27 @@ test("keeps Reminder Center visible while gating future push controls from produ
     calendar,
     /\{consumerSurfacePolicy\.pushNotificationControls \? \(\s*<View style=\{\[s\.reminderNotificationPanel/,
   );
-  assert.match(reminders, /getConsumerSurfacePolicy/);
-  assert.match(reminders, /showNotificationControls/);
-  assert.match(reminders, /\{showNotificationControls \? \(/);
+  assert.match(reminders, /resolvePlanReminderDestination/);
+  assert.doesNotMatch(reminders, /getConsumerSurfacePolicy|showNotificationControls/);
 });
 
 test("routes Reminder Center rows to concrete care workflows", () => {
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
   const log = readAppFile(join("(tabs)", "log.tsx"));
+  const reminderModel = readFileSync(join(MOBILE_LIB_DIR, "planReminderCenter.ts"), "utf8");
 
   assert.match(calendar, /openReminderAction/);
-  assert.match(calendar, /openReminderLogDetailRoute/);
+  assert.match(calendar, /runPlanReminderInteraction/);
   assert.match(calendar, /openBoardRoutine\(routine\)/);
-  assert.match(calendar, /router\.push\("\/records"\)/);
   assert.match(
     calendar,
-    /router\.push\(`\/log\?type=\$\{encodeURIComponent\(type\)\}&detail=1&intent=\$\{Date\.now\(\)\}` as never\)/,
+    /pathname === "\/log"[\s\S]*intent: String\(Date\.now\(\)\)/,
   );
-  assert.match(calendar, /openReminderLogDetailRoute\("medication"\)/);
-  assert.match(calendar, /openReminderLogDetailRoute\("grooming"\)/);
+  assert.match(reminderModel, /section:\s*"medications"/);
+  assert.match(reminderModel, /section:\s*"records"/);
   assert.match(
     calendar,
-    /accessibilityLabel=\{`Open reminder action: \$\{item\.label\}`\}/,
+    /accessibilityLabel=\{`\$\{reminderWhenLabel\(item\)\}\. Open reminder action: \$\{item\.label\}`\}/,
   );
   assert.match(log, /useLocalSearchParams/);
   assert.match(log, /routeSelectedType/);
@@ -4941,6 +4941,92 @@ test("keeps Plans reminder and routine sections on shared board card anatomy", (
   assert.doesNotMatch(calendar, /reminderCard:/);
 });
 
+test("moves the full safe Reminder Center into Plans and leaves a replace-only legacy bridge", () => {
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+  const reminders = readAppFile("reminders.tsx");
+  const reminderModel = readFileSync(join(MOBILE_LIB_DIR, "planReminderCenter.ts"), "utf8");
+
+  assert.match(calendar, /useLocalSearchParams/);
+  assert.match(calendar, /buildPlanReminderSections/);
+  assert.match(calendar, /resolvePlanReminderFocus/);
+  assert.match(calendar, /runPlanReminderInteraction/);
+  assert.match(calendar, /limit:\s*50/);
+  assert.match(calendar, /focusedReminderId/);
+  assert.match(calendar, /focusedReminderRow/);
+  assert.match(calendar, /measureLayout\([\s\S]*contentY[\s\S]*scrollTo:/);
+  assert.match(reminderModel, /label: "Today"/);
+  assert.match(reminderModel, /label: "Tomorrow"/);
+  assert.match(reminderModel, /label: "Later"/);
+  assert.match(reminderModel, /label: "No date"/);
+  assert.match(reminderModel, /section:\s*"medications"/);
+  assert.match(reminderModel, /section:\s*"records"/);
+  assert.doesNotMatch(calendar, /openReminderLogDetailRoute\("medication"\)/);
+
+  assert.match(reminders, /resolvePlanReminderDestination/);
+  assert.match(reminders, /<Redirect\s+href=\{redirectHref\}\s*\/>/);
+  assert.doesNotMatch(reminders, /useCare|deriveCareReminderCenter|ScrollView|updateCareDoc|addEntry|deleteEntry|updateEntry/);
+});
+
+test("keeps visible primary-tab labels wired to the executable interaction boundary", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const plans = readAppFile(join("(tabs)", "calendar.tsx"));
+  const health = readAppFile(join("(tabs)", "health.tsx"));
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+
+  assert.match(home, /accessibilityLabel="Log care"[\s\S]{0,500}executePrimaryTabTaskPath\("fast-log"/);
+  assert.match(log, /actionLabel="Log care"[\s\S]{0,500}executePrimaryTabTaskPath\("fast-log-from-log"/);
+  assert.match(log, /label:\s*"History"/);
+  assert.match(plans, /buildNextPlanVisibleControl/);
+  assert.match(plans, /planMissionRows\.push\(\{[\s\S]*\.\.\.nextPlanControl/);
+  assert.match(health, /buildVisibleHealthStatusControls/);
+  assert.match(health, /visibleHealthStatusControls\.map/);
+  assert.match(more, /MORE_DIRECTORY_GROUPS\.map/);
+  assert.match(more, /executeMoreDirectoryDestination/);
+});
+
+test("migrates active Task 5 callers without weakening legacy route coverage", () => {
+  const activeSources = [
+    readAppFile(join("(tabs)", "index.tsx")),
+    readAppFile(join("(tabs)", "log.tsx")),
+    readAppFile(join("(tabs)", "calendar.tsx")),
+    readAppFile("fastlog.tsx"),
+    readAppFile("setup.tsx"),
+    readAppFile("care-twin-qa.tsx"),
+    readFileSync(join(MOBILE_LIB_DIR, "homeMissionDeck.ts"), "utf8"),
+    readFileSync(join(MOBILE_LIB_DIR, "woofGuideActions.ts"), "utf8"),
+  ].join("\n");
+
+  for (const staleRoute of [
+    '"/reminders"',
+    '"/records"',
+    '"/trends"',
+    '"/adventure"',
+    '"/health?tab=health"',
+    '"/health?tab=bile"',
+    '"/more?section=diet"',
+    '"/(tabs)"',
+  ]) {
+    assert.equal(activeSources.includes(staleRoute), false, staleRoute);
+  }
+
+  const notFound = readAppFile("+not-found.tsx");
+  const setup = readAppFile("setup.tsx");
+  const fastLog = readAppFile("fastlog.tsx");
+  assert.match(notFound, /router\.replace\(canonicalHomeRoute\(\)\)/);
+  assert.match(setup, /router\.replace\(canonicalHomeRoute\(\)\)/);
+  assert.match(fastLog, /router\.replace\(canonicalLogRoute\(\) as never\)/);
+  assert.doesNotMatch(activeSources, /Today tab|Pack tab|Story tab/);
+  assert.doesNotMatch(
+    readFileSync(join(MOBILE_LIB_DIR, "mobileReleaseQa.ts"), "utf8"),
+    /Today tab|Pack tab|Story tab/,
+  );
+  assert.match(
+    readAppFile("care-twin-qa.tsx"),
+    /canonicalizeOwnedRoute\(target\.route\)/,
+  );
+});
+
 test("keeps Plans schedule rooted in a live pixel command stage", () => {
   const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
 
@@ -4966,7 +5052,7 @@ test("keeps Plans organized around a mission-first mobile hierarchy", () => {
   assert.match(calendar, /Mission Schedule/);
   assert.match(calendar, /planMissionBoard/);
   assert.match(calendar, /planMissionAction/);
-  assert.match(calendar, /router\.push\("\/more" as never\)/);
+  assert.match(calendar, /canonicalMoreRoute\("care-team"\)/);
   assert.ok(
     calendar.indexOf("Mission Schedule") < calendar.indexOf("Today's Missions"),
     "Plans should put the actionable schedule before secondary mission context",
@@ -5139,7 +5225,7 @@ test("keeps Adventure Mode routed to private real-care quests and memories", () 
   assert.match(home, /deriveAdventureMode/);
   assert.match(home, /adventureMode/);
   assert.match(home, /Adventure Mode/);
-  assert.match(home, /router\.push\(\{ pathname: "\/more", params: \{ section: "adventure" \} \}\)/);
+  assert.match(home, /canonicalMoreRoute\("adventure"\)/);
   assert.match(adventure, /deriveAdventureMode/);
   assert.match(adventure, /buildAdventureMemoryDraft/);
   assert.match(adventure, /buildQuickLogEntry/);
@@ -6754,7 +6840,7 @@ test("emits machine-readable mobile beta doctor status for Replit and native hel
     payload.nextActions?.some(
       (action) =>
         action.includes("/care-twin-qa?qaSurface=route-visual-consistency") &&
-        action.includes("Log, Plan, Today, Pack, Story, Health, Records, and More") &&
+        action.includes("Home, Log, Plans, Health, More, Story & Progress, Records, and Care Team & Supplies") &&
         action.includes("iOS and Android") &&
         action.includes("route-named"),
     ),

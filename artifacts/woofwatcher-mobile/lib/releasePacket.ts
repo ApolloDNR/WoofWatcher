@@ -143,7 +143,7 @@ function betaNextActions(status: ReleasePacketBetaShipStatus, plan: LaunchReadin
   if (status === "ready") {
     return [
       "Share the Expo/PWA beta with the owner/tester group.",
-      "Collect feedback on Log, Plan, Today, Pack, Story, Health, More, Adventure, Care Pass, Avatar Studio, and WoofGuide.",
+      "Collect feedback on Home, Log, Plans, Health, More, and the named canonical Health/More children.",
       "Keep public store, provider sync, payments, AI, and storage claims gated until approved.",
     ];
   }
