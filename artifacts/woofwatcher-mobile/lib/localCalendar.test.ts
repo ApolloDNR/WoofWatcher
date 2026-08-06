@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   addLocalCalendarDays,
   localDateKey,
+  localDateKeyFromParts,
   parseLocalDateKey,
   todayLocalDateKey,
   type LocalCalendarPartsResolver,
@@ -58,6 +59,21 @@ test("addLocalCalendarDays rolls years and preserves leap days", () => {
   assert.equal(addLocalCalendarDays("2025-12-31", 1), "2026-01-01");
   assert.equal(addLocalCalendarDays("2024-02-28", 1), "2024-02-29");
   assert.equal(addLocalCalendarDays("2024-02-29", 1), "2024-03-01");
+});
+
+test("localDateKeyFromParts emits one validated padded key", () => {
+  assert.equal(localDateKeyFromParts({ year: 2026, month: 1, day: 2 }), "2026-01-02");
+  assert.equal(localDateKeyFromParts({ year: 2024, month: 2, day: 29 }), "2024-02-29");
+  assert.throws(() => localDateKeyFromParts({ year: 2026, month: 2, day: 31 }), RangeError);
+});
+
+test("local Today and Tomorrow keys cross year boundaries without UTC arithmetic", () => {
+  const localNoon = new Date(0);
+  localNoon.setFullYear(2025, 11, 31);
+  localNoon.setHours(12, 0, 0, 0);
+  const today = todayLocalDateKey(localNoon);
+  assert.equal(today, "2025-12-31");
+  assert.equal(addLocalCalendarDays(today, 1), "2026-01-01");
 });
 
 test("parseLocalDateKey accepts only canonical real Gregorian dates", () => {

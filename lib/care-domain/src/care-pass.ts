@@ -7,6 +7,7 @@ import { deriveHealthWatch, type CareHealthEntry } from "./health.ts";
 import { deriveIncidentWatch, type IncidentWatchItem } from "./incident-watch.ts";
 import { deriveGroomingCare, type GroomingCareItem } from "./grooming-care.ts";
 import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medication.ts";
+import { recordDueNeedsCorrection } from "./record-vault.ts";
 import { resolvePetName } from "./pet-identity.ts";
 import { derivePottyHealth } from "./potty-health.ts";
 import { deriveTrainingProgress, type TrainingProgressItem } from "./training-progress.ts";
@@ -55,6 +56,7 @@ export interface CarePassRecord {
   title: string;
   due?: string;
   note?: string;
+  correctionIssues?: readonly unknown[];
 }
 
 export interface CarePassInput {
@@ -1035,7 +1037,7 @@ export function buildCarePass(input: CarePassInput): CarePass {
       : null,
     input.audience === "vet"
       ? section("Records", records.slice(0, 6).map((record) => (
-          `${record.title}${record.due ? ` due ${record.due}` : ""}${record.note ? ` - ${record.note}` : ""}`
+          `${record.title}${recordDueNeedsCorrection(record) ? " - date needs correction" : record.due ? ` due ${record.due}` : ""}${record.note ? ` - ${record.note}` : ""}`
         )))
       : null,
   ].filter((item): item is CarePassSection => item !== null);

@@ -63,7 +63,7 @@ import {
   type RecordKind,
 } from "@workspace/care-domain";
 import { useAppViewport } from "@/context/AppViewportContext";
-import { useCare, Entry } from "@/context/CareContext";
+import { useCare, Entry, type Record as CareRecord } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import {
   getKeyboardAvoidingVerticalOffset,
@@ -102,6 +102,13 @@ import { resolvePetName } from "@/lib/petIdentity";
 import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
 import { shareTextPayload } from "@/lib/shareText";
 import { persistPickedMedia } from "@/lib/durablePickedMedia";
+import {
+  getCareCorrectionPresentation,
+  mergeValidatedRecordEdit,
+  orderCareItemsCorrectionsLast,
+  validateRecordDueDraft,
+} from "@/lib/careWorkflowValidation";
+import { addLocalCalendarDays, localDateKey, todayLocalDateKey } from "@/lib/localCalendar";
 import {
   CARE_READ_ONLY_MESSAGE,
   runAcceptedCareMutation,
@@ -168,14 +175,14 @@ const RECORD_OPTIONS: {
   icon: IoniconName;
   dueLabel: string;
 }[] = [
-  { kind: "vaccine", label: "Vaccine", detail: "Shots and boosters", icon: "shield-checkmark-outline", dueLabel: "Due date or expiry" },
-  { kind: "vet", label: "Vet Visit", detail: "Visits and exam notes", icon: "medkit-outline", dueLabel: "Visit date" },
-  { kind: "receipt", label: "Receipt", detail: "Bills and purchases", icon: "receipt-outline", dueLabel: "Receipt date or amount" },
-  { kind: "insurance", label: "Insurance", detail: "Policy and card details", icon: "card-outline", dueLabel: "Policy number or renewal" },
-  { kind: "microchip", label: "Microchip", detail: "Chip and registry info", icon: "scan-outline", dueLabel: "Chip number" },
-  { kind: "medication", label: "Medication", detail: "Prescriptions and doses", icon: "bandage-outline", dueLabel: "Dose or refill date" },
-  { kind: "weight", label: "Weight", detail: "Weigh-ins and targets", icon: "scale-outline", dueLabel: "Date or value" },
-  { kind: "document", label: "Document", detail: "Certificates and files", icon: "document-text-outline", dueLabel: "Date or reference" },
+  { kind: "vaccine", label: "Vaccine", detail: "Shots and boosters", icon: "shield-checkmark-outline", dueLabel: "Due date or expiry (YYYY-MM-DD)" },
+  { kind: "vet", label: "Vet Visit", detail: "Visits and exam notes", icon: "medkit-outline", dueLabel: "Visit date (YYYY-MM-DD)" },
+  { kind: "receipt", label: "Receipt", detail: "Bills and purchases", icon: "receipt-outline", dueLabel: "Receipt date (YYYY-MM-DD)" },
+  { kind: "insurance", label: "Insurance", detail: "Policy and card details", icon: "card-outline", dueLabel: "Renewal date (YYYY-MM-DD)" },
+  { kind: "microchip", label: "Microchip", detail: "Chip and registry info", icon: "scan-outline", dueLabel: "Registration date (YYYY-MM-DD)" },
+  { kind: "medication", label: "Medication", detail: "Prescriptions and doses", icon: "bandage-outline", dueLabel: "Refill date (YYYY-MM-DD)" },
+  { kind: "weight", label: "Weight", detail: "Weigh-ins and targets", icon: "scale-outline", dueLabel: "Weigh-in date (YYYY-MM-DD)" },
+  { kind: "document", label: "Document", detail: "Certificates and files", icon: "document-text-outline", dueLabel: "Document date (YYYY-MM-DD)" },
 ];
 
 const MEDICATION_OUTCOME_FILTERS: { id: MedicationHistoryOutcomeFilter; label: string }[] = [
@@ -268,11 +275,14 @@ export default function RecordsScreen() {
 
   const [period, setPeriod] = useState<number>(30);
   const [recordOpen, setRecordOpen] = useState(false);
+  const [recordEditId, setRecordEditId] = useState<string | null>(null);
   const [recordType, setRecordType] = useState<RecordKind>("vaccine");
   const [recordTitle, setRecordTitle] = useState("");
   const [recordDue, setRecordDue] = useState("");
+  const [recordDueError, setRecordDueError] = useState<string | null>(null);
   const [recordNote, setRecordNote] = useState("");
   const [recordAttachmentUri, setRecordAttachmentUri] = useState("");
+  const [recordAttachmentName, setRecordAttachmentName] = useState("");
   const [carePassPreview, setCarePassPreview] = useState<CarePass | null>(null);
   const [medicationSearch, setMedicationSearch] = useState("");
   const [medicationOutcomeFilter, setMedicationOutcomeFilter] = useState<MedicationHistoryOutcomeFilter>("all");
@@ -484,11 +494,31 @@ export default function RecordsScreen() {
   );
 
   const openRecordForm = (kind: RecordKind = "vaccine") => {
+    setRecordEditId(null);
     setRecordType(kind);
     setRecordTitle("");
     setRecordDue("");
+    setRecordDueError(null);
     setRecordNote("");
     setRecordAttachmentUri("");
+    setRecordAttachmentName("");
+    setRecordOpen(true);
+    Haptics.selectionAsync();
+  };
+
+  const openEditRecord = (record: CareRecord) => {
+    const dueCorrection = getCareCorrectionPresentation(record, "due");
+    setRecordEditId(record.id);
+    setRecordType(record.type as RecordKind);
+    setRecordTitle(record.title);
+    setRecordDue(
+      dueCorrection?.preservedValue ??
+        (typeof record.due === "string" ? record.due : ""),
+    );
+    setRecordDueError(null);
+    setRecordNote(record.note);
+    setRecordAttachmentUri(record.attachmentUri ?? "");
+    setRecordAttachmentName(record.attachmentName ?? "");
     setRecordOpen(true);
     Haptics.selectionAsync();
   };
@@ -526,6 +556,11 @@ export default function RecordsScreen() {
           return;
         }
         setRecordAttachmentUri(persistedAttachment.uri);
+        setRecordAttachmentName(
+          asset.fileName?.trim() ||
+            persistedAttachment.uri.split(/[\\/]/).pop()?.split(/[?#]/, 1)[0] ||
+            `${recordOption.label} attachment`,
+        );
       }
     } catch {
       notifyDialog("Attachment unavailable", "Choose the file details manually for now.");
@@ -538,29 +573,39 @@ export default function RecordsScreen() {
       notifyDialog("Add a title", `Name this ${recordOption.label.toLowerCase()} record.`);
       return;
     }
+    const dueValidation = validateRecordDueDraft(recordDue);
+    if (!dueValidation.ok) {
+      setRecordDueError(dueValidation.message);
+      return;
+    }
     if (careMutationsBlocked) {
       showCareReadOnly();
       return;
     }
-    const id = `record_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    setRecordDueError(null);
+    const id = recordEditId ?? `record_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const draft: CareRecord = {
+      id,
+      type: recordType,
+      title,
+      due: dueValidation.value,
+      note: recordNote.trim(),
+      ...(recordAttachmentUri
+        ? {
+            attachmentUri: recordAttachmentUri,
+            attachmentName: recordAttachmentName || `${recordOption.label} attachment`,
+          }
+        : {}),
+    };
     const updated = updateCareDoc((doc) => ({
       ...doc,
-      records: [
-        ...doc.records,
-        {
-          id,
-          type: recordType,
-          title,
-          due: recordDue.trim(),
-          note: recordNote.trim(),
-          ...(recordAttachmentUri
-            ? {
-                attachmentUri: recordAttachmentUri,
-                attachmentName: `${recordOption.label} attachment`,
-              }
-            : {}),
-        },
-      ],
+      records: recordEditId
+        ? doc.records.map((record) =>
+            record.id === recordEditId
+              ? mergeValidatedRecordEdit(record, draft)
+              : record,
+          )
+        : [...doc.records, draft],
     }));
     const accepted = runAcceptedCareMutation(updated, () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -880,14 +925,18 @@ export default function RecordsScreen() {
   const incidentMax = Math.max(1, incident7, incident30, incident90);
 
   const streak = useMemo(() => {
-    const days = new Set(state.entries.map((e) => e.occurredAt.slice(0, 10)));
+    const days = new Set(
+      state.entries.flatMap((entry) => {
+        const occurredAt = new Date(entry.occurredAt);
+        return Number.isFinite(occurredAt.getTime()) ? [localDateKey(occurredAt)] : [];
+      }),
+    );
     let s = 0;
-    let d = new Date(now);
+    let key = todayLocalDateKey(new Date(now));
     for (let i = 0; i < 365; i++) {
-      const key = d.toISOString().slice(0, 10);
       if (!days.has(key)) break;
       s++;
-      d = new Date(d.getTime() - 86400000);
+      key = addLocalCalendarDays(key, -1);
     }
     return s;
   }, [state.entries, now]);
@@ -917,7 +966,10 @@ export default function RecordsScreen() {
   const recordSections = recordVault.sections.filter((section) =>
     ["vaccine", "vet", "receipt", "insurance", "microchip", "document"].includes(section.kind),
   );
-  const recordList = recordVault.priorityRecords;
+  const recordList = orderCareItemsCorrectionsLast(
+    recordVault.priorityRecords,
+    (record) => getCareCorrectionPresentation(record, "due") !== null,
+  );
   const filedRecordSections = recordSections.filter((section) => section.count > 0).length;
   // One readiness number per measure, each verifiable on this screen:
   // - Vault readiness is filed-section coverage, matching the Record Vault
@@ -2945,13 +2997,16 @@ export default function RecordsScreen() {
               recordList.map((r, i) => {
                 const option = RECORD_OPTIONS.find((item) => item.kind === r.type) ?? RECORD_OPTIONS[7];
                 const tone = r.type === "receipt" ? colors.copper : r.type === "insurance" || r.type === "microchip" ? colors.primary : colors.sage;
-                const dueStatus = getRecordDueStatus(r, now);
+                const correction = getCareCorrectionPresentation(r, "due");
+                const dueStatus = correction ? null : getRecordDueStatus(r, now);
                 const statusTone =
-                  dueStatus.status === "expired"
-                    ? colors.rose
-                    : dueStatus.status === "due_soon"
+                  correction
+                    ? colors.amber
+                    : dueStatus?.status === "expired"
+                      ? colors.rose
+                    : dueStatus?.status === "due_soon"
                       ? colors.amber
-                      : dueStatus.status === "current"
+                      : dueStatus?.status === "current"
                         ? colors.sage
                         : colors.mutedForeground;
                 return (
@@ -2967,20 +3022,45 @@ export default function RecordsScreen() {
                       {hasAttachment(r) ? (
                         <Text style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Attachment saved</Text>
                       ) : null}
-                    </View>
-                    <View style={s.recordStatusStack}>
-                      <View style={[s.duePill, { backgroundColor: statusTone + "16" }]}>
-                        <Text numberOfLines={1} style={[s.dueText, { color: statusTone, fontFamily: "Inter_700Bold" }]}>{dueStatus.label}</Text>
-                      </View>
-                      {r.due ? (
-                        <Text numberOfLines={1} style={[s.recordDueRef, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                          {dueStatus.date ?? r.due}
+                      {correction ? (
+                        <Text style={[s.rowMeta, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
+                          {correction.label} · Saved value: {correction.preservedValue}
                         </Text>
                       ) : null}
                     </View>
-                    <Pressable onPress={() => deleteRecord(r.id, r.title)} hitSlop={MOBILE_INLINE_HIT_SLOP} style={s.deleteRecordBtn}>
-                      <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
-                    </Pressable>
+                    <View style={s.recordStatusStack}>
+                      <View style={[s.duePill, { backgroundColor: statusTone + "16" }]}>
+                        <Text numberOfLines={1} style={[s.dueText, { color: statusTone, fontFamily: "Inter_700Bold" }]}>{correction?.label ?? dueStatus?.label}</Text>
+                      </View>
+                      {r.due && !correction ? (
+                        <Text numberOfLines={1} style={[s.recordDueRef, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                          {dueStatus?.date ?? r.due}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <View style={s.recordActions}>
+                      {r.id ? (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Edit ${r.title}`}
+                          onPress={() => {
+                            const source = state.records.find((record) => record.id === r.id);
+                            if (source) openEditRecord(source);
+                          }}
+                          style={s.deleteRecordBtn}
+                        >
+                          <Ionicons name="pencil-outline" size={15} color={colors.primary} />
+                        </Pressable>
+                      ) : null}
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Delete ${r.title}`}
+                        onPress={() => deleteRecord(r.id, r.title)}
+                        style={s.deleteRecordBtn}
+                      >
+                        <Ionicons name="trash-outline" size={15} color={colors.mutedForeground} />
+                      </Pressable>
+                    </View>
                   </View>
                 );
               })
@@ -3053,7 +3133,7 @@ export default function RecordsScreen() {
                   <Ionicons name={recordOption.icon} size={19} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Add {recordOption.label}</Text>
+                  <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{recordEditId ? `Edit ${recordOption.label}` : `Add ${recordOption.label}`}</Text>
                   <Text style={[s.sheetSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{recordOption.detail}</Text>
                 </View>
               </View>
@@ -3094,11 +3174,17 @@ export default function RecordsScreen() {
               <Text style={[s.editFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>{recordOption.dueLabel.toUpperCase()}</Text>
               <TextInput
                 value={recordDue}
-                onChangeText={setRecordDue}
-                placeholder={recordOption.dueLabel}
+                onChangeText={(value) => { setRecordDue(value); setRecordDueError(null); }}
+                placeholder="YYYY-MM-DD (optional)"
                 placeholderTextColor={colors.mutedForeground}
-                style={[s.recordInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                maxLength={10}
+                style={[s.recordInput, { backgroundColor: colors.background, borderColor: recordDueError ? colors.rose : colors.border, color: recordDueError ? colors.rose : colors.foreground, fontFamily: "Inter_500Medium" }]}
               />
+              {recordDueError ? (
+                <Text aria-live="polite" style={[s.sheetSub, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
+                  {recordDueError}
+                </Text>
+              ) : null}
               <Text style={[s.editFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NOTES</Text>
               <TextInput
                 value={recordNote}
@@ -3128,7 +3214,7 @@ export default function RecordsScreen() {
                   onPress={saveRecord}
                   style={({ pressed }) => [s.sheetSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                 >
-                  <Text style={[s.sheetSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save record</Text>
+                  <Text style={[s.sheetSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{recordEditId ? "Save changes" : "Save record"}</Text>
                 </Pressable>
               </View>
             </Pressable>
@@ -3641,6 +3727,7 @@ const s = StyleSheet.create({
   duePill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
   dueText: { fontSize: 11.5 },
   recordDueRef: { fontSize: 10.5, maxWidth: 96 },
+  recordActions: { flexDirection: "row", alignItems: "center" },
   deleteRecordBtn: {
     minWidth: MIN_MOBILE_TOUCH_TARGET,
     minHeight: MIN_MOBILE_TOUCH_TARGET,

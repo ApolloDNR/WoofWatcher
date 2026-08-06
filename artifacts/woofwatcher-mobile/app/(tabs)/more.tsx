@@ -106,6 +106,8 @@ import {
   CARE_READ_ONLY_MESSAGE,
   runAcceptedCareMutation,
 } from "@/lib/careWriteProtection";
+import { validateProfileWeightDraft } from "@/lib/careWorkflowValidation";
+import { addLocalCalendarDays, localDateKey, todayLocalDateKey } from "@/lib/localCalendar";
 import {
   deriveCareCareer,
   deriveCareerWeek,
@@ -435,21 +437,28 @@ export default function MoreScreen() {
   );
 
   const streak = useMemo(() => {
-    const days = new Set(entries.map((e) => e.occurredAt.slice(0, 10)));
+    const days = new Set(
+      entries.flatMap((entry) => {
+        const occurredAt = new Date(entry.occurredAt);
+        return Number.isFinite(occurredAt.getTime()) ? [localDateKey(occurredAt)] : [];
+      }),
+    );
     let s = 0;
-    let d = new Date(now);
+    let key = todayLocalDateKey(new Date(now));
     for (let i = 0; i < 365; i++) {
-      const key = d.toISOString().slice(0, 10);
       if (!days.has(key)) break;
       s++;
-      d = new Date(d.getTime() - 86400000);
+      key = addLocalCalendarDays(key, -1);
     }
     return s;
   }, [entries, now]);
 
   const todayLogCount = useMemo(() => {
-    const today = new Date(now).toISOString().slice(0, 10);
-    return entries.filter((e) => e.occurredAt.startsWith(today)).length;
+    const today = todayLocalDateKey(new Date(now));
+    return entries.filter((entry) => {
+      const occurredAt = new Date(entry.occurredAt);
+      return Number.isFinite(occurredAt.getTime()) && localDateKey(occurredAt) === today;
+    }).length;
   }, [entries, now]);
 
   const latestCareUpdate = useMemo(
@@ -740,6 +749,7 @@ export default function MoreScreen() {
   const [pName, setPName] = useState("");
   const [pBreed, setPBreed] = useState("");
   const [pWeight, setPWeight] = useState("");
+  const [pWeightError, setPWeightError] = useState<string | null>(null);
   const [pWeightUnit, setPWeightUnit] = useState<"lb" | "kg">("lb");
   const [pFocus, setPFocus] = useState("");
   const [pMicrochip, setPMicrochip] = useState("");
@@ -962,6 +972,7 @@ export default function MoreScreen() {
     setPName(profile.name === "My Dog" ? "" : profile.name);
     setPBreed(profile.breed);
     setPWeight(profile.weight.current > 0 ? String(profile.weight.current) : "");
+    setPWeightError(null);
     setPWeightUnit((profile.weight.unit as "lb" | "kg") || "lb");
     setPFocus(profile.careFocus);
     setPMicrochip(profile.microchipNumber ?? "");
@@ -973,12 +984,18 @@ export default function MoreScreen() {
   };
 
   const saveProfile = () => {
+    const weightValidation = validateProfileWeightDraft(pWeight);
+    if (!weightValidation.ok) {
+      setPWeightError(weightValidation.message);
+      return;
+    }
     if (careMutationsBlocked) {
       showCareReadOnly();
       return;
     }
+    setPWeightError(null);
     const name = pName.trim() || "Phoenix";
-    const w = parseFloat(pWeight);
+    const weight = weightValidation.value;
     const updated = updateCareDoc((doc) => ({
       ...doc,
       profile: {
@@ -994,7 +1011,7 @@ export default function MoreScreen() {
         insurancePolicy: pInsurancePolicy.trim(),
         weight: {
           ...doc.profile.weight,
-          current: Number.isFinite(w) && w > 0 ? w : doc.profile.weight.current,
+          current: weight ?? doc.profile.weight.current,
           unit: pWeightUnit,
         },
       },
@@ -3901,12 +3918,17 @@ export default function MoreScreen() {
                 <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>WEIGHT</Text>
                 <TextInput
                   value={pWeight}
-                  onChangeText={setPWeight}
+                  onChangeText={(value) => { setPWeight(value); setPWeightError(null); }}
                   placeholder="0.0"
                   placeholderTextColor={colors.mutedForeground}
                   keyboardType="decimal-pad"
-                  style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                  style={[s.profField, { backgroundColor: colors.background, color: pWeightError ? colors.rose : colors.foreground, borderWidth: pWeightError ? 1 : 0, borderColor: pWeightError ? colors.rose : "transparent", fontFamily: "Inter_500Medium" }]}
                 />
+                {pWeightError ? (
+                  <Text aria-live="polite" style={[s.profFieldLabel, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
+                    {pWeightError}
+                  </Text>
+                ) : null}
               </View>
               <View>
                 <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>UNIT</Text>

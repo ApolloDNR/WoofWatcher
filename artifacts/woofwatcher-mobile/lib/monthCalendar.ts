@@ -7,7 +7,13 @@
 // Grid geometry (weekday of the 1st, days in month) is computed with plain
 // integer arithmetic so it does not depend on the host time zone at all; the
 // only `new Date(...)` calls parse the caller-supplied ISO timestamps of real
-// care entries, which is exactly how they must be bucketed into local days.
+// care entries, which are then bucketed through the canonical local calendar.
+
+import {
+  localDateKey,
+  localDateKeyFromParts,
+  parseLocalDateKey,
+} from "./localCalendar.ts";
 
 /** Anything with an ISO `occurredAt` can be bucketed onto a calendar day. */
 export interface DatedItem {
@@ -18,7 +24,7 @@ export interface DatedItem {
 export interface MonthDayCell {
   /** 1-based day of month, or null for a leading/trailing pad cell. */
   day: number | null;
-  /** Local day key (`${year}-${month0}-${day}`), or null for pad cells. */
+  /** Canonical local day key (`YYYY-MM-DD`), or null for pad cells. */
   dateKey: string | null;
   /** True for real days of the visible month, false for pad cells. */
   inMonth: boolean;
@@ -80,28 +86,27 @@ export function weekdayOfFirst(year: number, month: number): number {
   return (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m1 - 1] + 1) % 7;
 }
 
-/** Local day key for a Date: `${fullYear}-${month0}-${date}` (not padded). */
+/** Canonical local day key for a Date. */
 export function dateKeyOf(date: Date): string {
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  return localDateKey(date);
 }
 
 /** Local day key from explicit calendar parts (month is 0-indexed). */
 export function dateKeyForYmd(year: number, month: number, day: number): string {
-  return `${year}-${month}-${day}`;
+  return localDateKeyFromParts({ year, month: month + 1, day });
 }
 
-/** Parse a `${year}-${month0}-${day}` key back into its parts, or null. */
+/** Parse a canonical key back into zero-indexed month parts, or null. */
 export function parseDateKey(key: string): { year: number; month: number; day: number } | null {
-  const match = /^(-?\d+)-(\d+)-(\d+)$/.exec(key);
-  if (!match) return null;
-  return { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
+  const parts = parseLocalDateKey(key);
+  return parts ? { year: parts.year, month: parts.month - 1, day: parts.day } : null;
 }
 
 /** A sortable integer stamp for a day key (year*10000 + month*100 + day). */
 export function dateKeyStamp(key: string): number {
   const parts = parseDateKey(key);
   if (!parts) return Number.NaN;
-  return parts.year * 10000 + parts.month * 100 + parts.day;
+  return parts.year * 10000 + (parts.month + 1) * 100 + parts.day;
 }
 
 export function formatMonthTitle(year: number, month: number): string {

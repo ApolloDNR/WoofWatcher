@@ -98,6 +98,12 @@ import {
 import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
+import { localDateKey, todayLocalDateKey } from "@/lib/localCalendar";
+import {
+  parseStrictNonNegativeDecimal,
+  parseStrictNonNegativeInteger,
+  validateMealAmounts,
+} from "@/lib/inputValidation";
 import { persistPickedMedia } from "@/lib/durablePickedMedia";
 import { TrailMap } from "@/components/TrailMap";
 import { useWalkRouteCaptureStatus } from "@/components/WalkRouteRecorder";
@@ -907,13 +913,6 @@ function formatCareAmount(value: number | null, unit: string): string {
   return `${text} ${unitText}`;
 }
 
-function parseNonNegativeNumber(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const parsed = Number.parseFloat(trimmed);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
-}
-
 function mealCompletionLabel(value: string): string {
   if (value === "served") return "outcome pending";
   if (value === "grazing") return "still grazing";
@@ -1418,7 +1417,7 @@ export default function LogScreen() {
     let numericValue: number | null = null;
     if (config.numeric) {
       const trimmed = numeric.trim();
-      const n = parseNonNegativeNumber(trimmed);
+      const n = parseStrictNonNegativeDecimal(trimmed);
       if (!trimmed && config.numeric.optional) {
         amount = undefined;
       } else if (n == null || (n <= 0 && config.type !== "meal")) {
@@ -1438,12 +1437,19 @@ export default function LogScreen() {
       const unit = dietProgress.unit;
       const completion = choices.mealCompletion ?? "served";
       const expected = expectedPortion.trim() || state.dietProfile.normalPortion.trim();
-      const eaten = parseNonNegativeNumber(eatenAmount);
-
-      if (eatenAmount.trim() && eaten == null) {
-        notifyDialog("Check eaten amount", "Enter a valid eaten amount, or leave it blank.");
+      const mealAmounts = validateMealAmounts({
+        completed: completion === "complete" || completion === "partial",
+        served: numeric,
+        servedUnit: unit,
+        eaten: eatenAmount,
+        eatenUnit: unit,
+      });
+      if (!mealAmounts.ok) {
+        notifyDialog(mealAmounts.field === "served" ? "Check served amount" : "Check eaten amount", mealAmounts.message);
         return null;
       }
+      const eaten = mealAmounts.eaten;
+      numericValue = mealAmounts.served;
 
       if (mealOutcomeNeedsEatenAmount(completion) && eaten == null) {
         notifyDialog(
@@ -1516,8 +1522,8 @@ export default function LogScreen() {
     if (config.type === "walk") {
       const routeName = walkRouteName.trim();
       const socialOutcome = walkSocialOutcome.trim();
-      const distance = parseNonNegativeNumber(walkDistanceMiles);
-      const interactionCount = parseNonNegativeNumber(walkDogInteractions);
+      const distance = parseStrictNonNegativeDecimal(walkDistanceMiles);
+      const interactionCount = parseStrictNonNegativeInteger(walkDogInteractions);
 
       if (walkDistanceMiles.trim() && distance == null) {
         notifyDialog("Check distance", "Enter a valid distance, or leave it blank.");
@@ -1536,7 +1542,7 @@ export default function LogScreen() {
       }
       if (distance != null) details.distanceMiles = distance;
       if (interactionCount != null) {
-        dogInteractions = Math.round(interactionCount);
+        dogInteractions = interactionCount;
         details.dogInteractions = dogInteractions;
         if (dogInteractions > 0) {
           parts.push(`${dogInteractions} dog ${dogInteractions === 1 ? "interaction" : "interactions"}`);
@@ -1573,7 +1579,7 @@ export default function LogScreen() {
     if (config.type === "alone") {
       const trigger = aloneTrigger.trim();
       const support = calmingSupport.trim();
-      const recovery = parseNonNegativeNumber(recoveryMinutes);
+      const recovery = parseStrictNonNegativeInteger(recoveryMinutes);
 
       if (recoveryMinutes.trim() && recovery == null) {
         notifyDialog("Check recovery time", "Enter recovery minutes as a number, or leave it blank.");
@@ -1583,7 +1589,7 @@ export default function LogScreen() {
       details.householdVisible = householdVisible;
       if (trigger) details.aloneTrigger = trigger;
       if (support) details.calmingSupport = support;
-      if (recovery != null) details.recoveryMinutes = Math.round(recovery);
+      if (recovery != null) details.recoveryMinutes = recovery;
     }
 
     if (config.type === "grooming") {
@@ -1722,8 +1728,8 @@ export default function LogScreen() {
 
     // Weight logs also update the living profile weight.
     if (entry.type === "weight" && entry.amount != null) {
-      const w = parseFloat(entry.amount);
-      if (!Number.isNaN(w)) {
+      const w = parseStrictNonNegativeDecimal(entry.amount);
+      if (w != null && w > 0) {
         const profileUpdated = updateCareDoc((doc) => ({
           ...doc,
           profile: { ...doc.profile, weight: { ...doc.profile.weight, current: w } },
@@ -2187,8 +2193,11 @@ export default function LogScreen() {
 
   // Today's snapshot: total count and per-type counts
   const todaySnapshot = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const todayEntries = state.entries.filter((e) => e.occurredAt.startsWith(today));
+    const today = todayLocalDateKey();
+    const todayEntries = state.entries.filter((entry) => {
+      const occurredAt = new Date(entry.occurredAt);
+      return Number.isFinite(occurredAt.getTime()) && localDateKey(occurredAt) === today;
+    });
     const counts: Record<string, number> = {};
     for (const e of todayEntries) {
       const type = normalizeCareEventType(e.type, e.details);
@@ -2488,7 +2497,7 @@ export default function LogScreen() {
   const handleReturnHome = useCallback(
     (outcome: AloneTimeReturnOutcome) => {
       if (!openAloneSession?.id) return;
-      const recovery = returnRecoveryMinutes.trim() ? parseNonNegativeNumber(returnRecoveryMinutes) : null;
+      const recovery = returnRecoveryMinutes.trim() ? parseStrictNonNegativeInteger(returnRecoveryMinutes) : null;
       if (returnRecoveryMinutes.trim() && recovery == null) {
         notifyDialog("Check recovery time", "Enter recovery minutes as a number, or leave it blank.");
         return;
@@ -2564,8 +2573,8 @@ export default function LogScreen() {
 
   const handleFinishWalk = useCallback(() => {
     if (!openWalkSession?.id) return;
-    const distance = walkFinishDistanceMiles.trim() ? parseNonNegativeNumber(walkFinishDistanceMiles) : null;
-    const dogCount = walkFinishDogInteractions.trim() ? parseNonNegativeNumber(walkFinishDogInteractions) : null;
+    const distance = walkFinishDistanceMiles.trim() ? parseStrictNonNegativeDecimal(walkFinishDistanceMiles) : null;
+    const dogCount = walkFinishDogInteractions.trim() ? parseStrictNonNegativeInteger(walkFinishDogInteractions) : null;
 
     if (walkFinishDistanceMiles.trim() && distance == null) {
       notifyDialog("Check distance", "Enter a valid distance, or leave it blank.");
@@ -2586,7 +2595,7 @@ export default function LogScreen() {
       now,
       ...(walkFinishRouteName.trim() ? { routeName: walkFinishRouteName.trim() } : {}),
       ...(distance != null ? { distanceMiles: distance } : {}),
-      ...(dogCount != null ? { dogInteractions: Math.round(dogCount) } : {}),
+      ...(dogCount != null ? { dogInteractions: dogCount } : {}),
       ...(walkFinishSocialOutcome.trim() ? { socialOutcome: walkFinishSocialOutcome.trim() } : {}),
       ...(walkFinishNote.trim() ? { note: walkFinishNote.trim() } : {}),
     });

@@ -44,6 +44,10 @@ function keyFromParts(parts: LocalCalendarParts): string {
   return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+export function localDateKeyFromParts(parts: LocalCalendarParts): string {
+  return keyFromParts(parts);
+}
+
 function localNoon({ year, month, day }: LocalCalendarParts): Date {
   const date = new Date(0);
   date.setFullYear(year, month - 1, day);

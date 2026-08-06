@@ -179,6 +179,42 @@ test("treats non-date record references as reference values", () => {
   });
 });
 
+test("quarantines correction-marked due values without dropping the record", () => {
+  const now = new Date("2026-02-20T12:00:00.000Z").getTime();
+  const corrected = {
+    id: "legacy-rabies",
+    type: "vaccine",
+    title: "Legacy rabies",
+    due: "2026-02-31",
+    correctionIssues: [
+      {
+        field: "due",
+        rawValue: "2026-02-31",
+        message: "Enter a valid record date.",
+      },
+      {
+        field: "future-record-codec",
+        rawValue: { version: 3 },
+        message: "Owned by a future client.",
+      },
+    ],
+  };
+
+  assert.deepEqual(getRecordDueStatus(corrected, now), {
+    status: "reference",
+    label: "Reference",
+  });
+  assert.ok(
+    deriveRecordReminders([corrected], { now }).every(
+      (reminder) => reminder.recordId !== corrected.id,
+    ),
+  );
+
+  const vault = summarizeRecordVault([corrected]);
+  assert.equal(vault.total, 1, "quarantine must not delete an owner's record");
+  assert.equal(vault.priorityRecords[0]?.id, corrected.id);
+});
+
 test("derives record reminders for expired, due-soon, and missing critical records", () => {
   const now = new Date("2026-06-06T12:00:00.000Z").getTime();
   const reminders = deriveRecordReminders(

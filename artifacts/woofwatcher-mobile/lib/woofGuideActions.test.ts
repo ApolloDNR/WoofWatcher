@@ -7,6 +7,7 @@ import {
   resolveWoofGuideAssistantGate,
   WOOFGUIDE_ASSISTANT_FALLBACK_LINKS,
 } from "./woofGuideActions.ts";
+import { todayLocalDateKey } from "./localCalendar.ts";
 
 const NOW = new Date("2026-06-06T15:00:00-07:00").getTime();
 
@@ -71,6 +72,61 @@ test("surfaces records review for missing or expired credential records", () => 
   assert.equal(recordAction?.draft?.kind, "reminder");
   assert.match(recordAction?.draft?.body ?? "", /Rabies/i);
   assert.equal(recordAction?.draft?.calendarEvent?.source, "woofguide");
+});
+
+test("does not claim a correction-marked record is due", () => {
+  const actions = deriveWoofGuideActions(
+    {
+      profile: { name: "Phoenix" },
+      dietProfile: {
+        primaryFood: "Sensitive kibble",
+        normalPortion: "1 cup",
+        mealSchedule: "7 AM and 6 PM",
+      },
+      routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
+      records: [
+        { id: "chip", type: "microchip", title: "HomeAgain", due: "985112003004551" },
+        { id: "insurance", type: "insurance", title: "Lemonade", due: "Jun 1, 2027" },
+        {
+          id: "rabies",
+          type: "vaccine",
+          title: "Rabies",
+          due: "2026-02-31",
+          correctionIssues: [
+            { field: "due", rawValue: "2026-02-31", message: "Enter a valid record date." },
+          ],
+        },
+      ],
+      entries: [],
+    },
+    NOW,
+  );
+
+  assert.equal(actions.some((action) => action.id === "records-review"), false);
+});
+
+test("uses the caregiver's local date for reviewed reminder drafts", () => {
+  const localLateEvening = new Date(0);
+  localLateEvening.setFullYear(2026, 5, 6);
+  localLateEvening.setHours(23, 30, 0, 0);
+  const now = localLateEvening.getTime();
+  const actions = deriveWoofGuideActions(
+    {
+      profile: { name: "Phoenix" },
+      dietProfile: {
+        primaryFood: "Sensitive kibble",
+        normalPortion: "1 cup",
+        mealSchedule: "7 AM and 6 PM",
+      },
+      routines: [{ id: "walk", type: "walk", label: "Walk", time: "8:00 AM" }],
+      records: [{ id: "rabies", type: "vaccine", title: "Rabies", due: "2026-05-01" }],
+      entries: [],
+    },
+    now,
+  );
+
+  const reminderDate = actions.find((action) => action.id === "records-review")?.draft?.calendarEvent?.date;
+  assert.equal(reminderDate, todayLocalDateKey(localLateEvening));
 });
 
 test("guides setup when diet and routines are missing", () => {

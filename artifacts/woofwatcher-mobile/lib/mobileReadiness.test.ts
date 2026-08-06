@@ -5763,6 +5763,104 @@ test("keeps every current care mutation surface truthful when future data is rea
   assert.match(plans, /routineBoard\.correctionCount/);
 });
 
+test("wires strict workflow validation and canonical local care dates through every affected route", () => {
+  const calendar = readAppFile(join("(tabs)", "calendar.tsx"));
+  const log = readAppFile(join("(tabs)", "log.tsx"));
+  const records = readAppFile(join("(tabs)", "records.tsx"));
+  const more = readAppFile(join("(tabs)", "more.tsx"));
+  const month = readAppFile("calendar-month.tsx");
+  const guide = readAppFile("woofguide.tsx");
+  const guideActions = readMobileLibFile("woofGuideActions.ts");
+
+  assert.match(calendar, /validateRoutineDraft/);
+  assert.match(calendar, /validateCalendarEventDraft/);
+  assert.match(calendar, /todayLocalDateKey/);
+  assert.match(calendar, /addLocalCalendarDays/);
+  assert.match(calendar, /getCareCorrectionPresentation/);
+  assert.match(calendar, /mergeValidatedCalendarEventEdit/);
+  assert.match(calendar, /mergeValidatedRoutineEdit/);
+  assert.match(calendar, /compareCalendarEventsBySchedule/);
+  assert.match(calendar, /orderCareItemsCorrectionsLast/);
+  assert.match(calendar, /Saved value/);
+  assert.match(calendar, /typeof event\.date === "string"/);
+  assert.match(calendar, /typeof event\.time === "string"/);
+  assert.match(calendar, /routineTimeCorrection\?\.preservedValue/);
+  assert.match(calendar, /eventDateCorrection\?\.preservedValue/);
+  assert.match(calendar, /eventTimeCorrection\?\.preservedValue/);
+  assert.match(calendar, /setEvTitleError\(validation\.message\)/);
+  assert.match(calendar, /setRLabelError\(validation\.message\)/);
+  assert.match(calendar, /aria-live="polite"[\s\S]{0,220}\{evTitleError\}/);
+  assert.match(calendar, /aria-live="polite"[\s\S]{0,220}\{rLabelError\}/);
+  assert.match(
+    calendar,
+    /if \(!validation\.ok\) \{[\s\S]{0,320}return;[\s\S]{0,500}setAddOpen\(false\)/,
+    "invalid events must return with the editor open and only close after an accepted save",
+  );
+  assert.match(
+    calendar,
+    /if \(!validation\.ok\) \{[\s\S]{0,320}return;[\s\S]{0,900}setRoutineOpen\(false\)/,
+    "invalid routines must return with the editor open and only close after an accepted save",
+  );
+
+  assert.match(log, /parseStrictNonNegativeDecimal/);
+  assert.match(log, /parseStrictNonNegativeInteger/);
+  assert.match(log, /validateMealAmounts/);
+  assert.match(log, /localDateKey/);
+  assert.match(log, /todayLocalDateKey/);
+  assert.doesNotMatch(log, /function parseNonNegativeNumber/);
+
+  assert.match(records, /localDateKey/);
+  assert.match(records, /todayLocalDateKey/);
+  assert.match(records, /addLocalCalendarDays/);
+  assert.match(records, /getCareCorrectionPresentation/);
+  assert.match(records, /mergeValidatedRecordEdit/);
+  assert.match(records, /orderCareItemsCorrectionsLast/);
+  assert.match(records, /const \[recordAttachmentName, setRecordAttachmentName\]/);
+  assert.match(records, /setRecordAttachmentName\(record\.attachmentName \?\? ""\)/);
+  assert.match(records, /setRecordAttachmentName\(\s*asset\.fileName\?\.trim\(\) \|\|/);
+  assert.match(records, /attachmentName:\s*recordAttachmentName/);
+  assert.match(records, /validateRecordDueDraft/);
+  assert.match(records, /setRecordDueError\(dueValidation\.message\)/);
+  assert.match(records, /aria-live="polite"[\s\S]{0,220}\{recordDueError\}/);
+  assert.match(records, /typeof record\.due === "string"/);
+  assert.match(records, /dueCorrection\?\.preservedValue/);
+  assert.match(records, /const dueStatus = correction\s*\?\s*null\s*:\s*getRecordDueStatus/);
+  assert.match(records, /Saved value/);
+  const health = readAppFile(join("(tabs)", "health.tsx"));
+  assert.match(health, /recordDueNeedsCorrection/);
+  assert.match(health, /value:\s*"Needs correction"/);
+  assert.doesNotMatch(calendar, /correctionIssues:\s*undefined/);
+  assert.doesNotMatch(calendar, /\.localeCompare\(b\.time/);
+  assert.doesNotMatch(calendar, /function scheduleBandForTime[\s\S]{0,300}RegExp|function scheduleBandForTime[\s\S]{0,300}\.exec\(/);
+
+  assert.match(more, /localDateKey/);
+  assert.match(more, /todayLocalDateKey/);
+  assert.match(more, /addLocalCalendarDays/);
+  assert.match(more, /validateProfileWeightDraft/);
+  assert.doesNotMatch(more, /parseFloat\(pWeight\)/);
+
+  assert.match(month, /dateKeyForYmd/);
+  assert.match(guide, /localDateKey/);
+  assert.match(guide, /todayLocalDateKey/);
+  assert.match(guideActions, /localDateKey/);
+  assert.match(guideActions, /todayLocalDateKey/);
+
+  for (const [path, source] of Object.entries({
+    calendar,
+    log,
+    records,
+    more,
+    guide,
+    guideActions,
+  })) {
+    assert.doesNotMatch(
+      source,
+      /toISOString\(\)\.slice\(0,\s*10\)|occurredAt\.slice\(0,\s*10\)|occurredAt\.startsWith\(today\)/,
+      `${path} must not bucket user-facing care days through UTC text`,
+    );
+  }
+});
+
 test("keeps Home scheduling consumers on the canonical strict clock parser", () => {
   const todayCommand = readFileSync(
     join(process.cwd(), "artifacts", "woofwatcher-mobile", "lib", "todayCommand.ts"),

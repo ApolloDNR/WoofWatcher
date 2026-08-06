@@ -10,6 +10,7 @@ import {
   deriveWeightTrend,
   getRecordDueStatus,
   normalizeCareEventType,
+  recordDueNeedsCorrection,
   summarizeRecordVault,
 } from "@workspace/care-domain";
 
@@ -330,6 +331,9 @@ export default function HealthScreen() {
       return { value: dated[0].status.date ?? dated[0].record.due ?? "", detail: dated[0].record.title };
     }
     const first = vetRecords[0];
+    if (recordDueNeedsCorrection(first)) {
+      return { value: "Needs correction", detail: first.title };
+    }
     return { value: first.due?.trim() || first.title, detail: first.due?.trim() ? first.title : "Visit record on file" };
   }, [vetSection, now]);
 

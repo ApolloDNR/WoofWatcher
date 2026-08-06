@@ -5,6 +5,7 @@ import {
   normalizeCareEventType,
   summarizeRecordVault,
 } from "../../../lib/care-domain/src/index.ts";
+import { localDateKey, todayLocalDateKey } from "./localCalendar.ts";
 
 export type WoofGuideActionUrgency = "normal" | "watch" | "alert";
 
@@ -48,6 +49,7 @@ export interface WoofGuideActionRecord {
   title: string;
   due?: string;
   note?: string;
+  correctionIssues?: readonly unknown[];
 }
 
 export interface WoofGuideActionDiet {
@@ -118,8 +120,7 @@ export interface WoofGuideActionCard {
 
 function isToday(iso: string, now: number): boolean {
   const d = new Date(iso);
-  const n = new Date(now);
-  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+  return Number.isFinite(d.getTime()) && localDateKey(d) === todayLocalDateKey(new Date(now));
 }
 
 function dogName(state: WoofGuideActionState): string {
@@ -128,10 +129,6 @@ function dogName(state: WoofGuideActionState): string {
 
 function hasDietBaseline(diet?: WoofGuideActionDiet): boolean {
   return Boolean(diet?.primaryFood?.trim() && diet.normalPortion?.trim() && diet.mealSchedule?.trim());
-}
-
-function localDateKey(now: number): string {
-  return new Date(now).toISOString().slice(0, 10);
 }
 
 function caregiverName(state: WoofGuideActionState): string {
@@ -216,7 +213,7 @@ function reminderDraft(
     calendarEvent: {
       title: reminder.label,
       type: reminder.section ?? "document",
-      date: localDateKey(now),
+      date: todayLocalDateKey(new Date(now)),
       note: `${reminder.detail} ${reminder.action}`,
       source: "woofguide",
     },

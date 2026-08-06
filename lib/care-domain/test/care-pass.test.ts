@@ -377,6 +377,35 @@ test("care pass includes medication adherence and follow-up language", () => {
   assert.match(pass.message, /Apoquel refill due soon/);
 });
 
+test("care pass preserves a corrected record without claiming its invalid date is due", () => {
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "vet",
+    now: new Date("2026-02-20T12:00:00.000Z").getTime(),
+    records: [
+      {
+        id: "legacy-refill",
+        type: "medication",
+        title: "Legacy refill",
+        due: "2026-02-31",
+        note: "Preserve this record",
+        correctionIssues: [
+          {
+            field: "due",
+            rawValue: "2026-02-31",
+            message: "Enter a valid record date.",
+          },
+        ],
+      },
+    ],
+  });
+
+  const records = pass.sections.find((section) => section.title === "Records");
+  assert.ok(records?.lines.some((line) => /Legacy refill/.test(line)));
+  assert.ok(records?.lines.some((line) => /date needs correction/i.test(line)));
+  assert.doesNotMatch(pass.message, /Legacy refill (?:is )?due|Legacy refill overdue/i);
+});
+
 test("care pass includes daily hydration language", () => {
   const pass = buildCarePass({
     ...baseInput(),

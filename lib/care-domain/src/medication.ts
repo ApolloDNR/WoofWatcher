@@ -73,7 +73,10 @@ export interface MedicationAdherence {
   summary: string;
 }
 
-export type MedicationRecord = Pick<CareRecord, "id" | "type" | "title" | "due" | "note">;
+export type MedicationRecord = Pick<
+  CareRecord,
+  "id" | "type" | "title" | "due" | "note" | "correctionIssues"
+>;
 
 export interface MedicationFollowUp {
   id: string;

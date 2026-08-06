@@ -22,6 +22,7 @@ import {
 } from "@/lib/mobileLayout";
 import {
   buildMonthView,
+  dateKeyForYmd,
   dateKeyStamp,
   entriesForDayKey,
   dateKeyOf,
@@ -169,7 +170,7 @@ export default function CalendarMonthScreen() {
       // current month, otherwise select the 1st of the month now on screen.
       const todayParts = parseDateKey(todayKey);
       const isCurrentMonth = todayParts?.year === next.year && todayParts?.month === next.month;
-      setSelectedKey(isCurrentMonth ? todayKey : `${next.year}-${next.month}-1`);
+      setSelectedKey(isCurrentMonth ? todayKey : dateKeyForYmd(next.year, next.month, 1));
     },
     [view.year, view.month, todayKey],
   );

@@ -143,6 +143,31 @@ test("derives medication follow-ups for missed doses and refill records", () => 
   assert.match(followUps[2].action, /refill/i);
 });
 
+test("does not turn a correction-marked medication date into a refill", () => {
+  const followUps = deriveMedicationFollowUps({
+    now: new Date("2026-02-20T12:00:00.000Z").getTime(),
+    routines: [],
+    entries: [],
+    records: [
+      {
+        id: "legacy-refill",
+        type: "medication",
+        title: "Legacy refill",
+        due: "2026-02-31",
+        correctionIssues: [
+          {
+            field: "due",
+            rawValue: "2026-02-31",
+            message: "Enter a valid record date.",
+          },
+        ],
+      },
+    ],
+  });
+
+  assert.deepEqual(followUps, []);
+});
+
 test("derives visible medication history with dose, outcome, caregiver, and notes", () => {
   const history = deriveMedicationHistory({
     now: new Date("2026-06-06T20:00:00-07:00").getTime(),

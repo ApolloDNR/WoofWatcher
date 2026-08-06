@@ -4,6 +4,8 @@ import { test } from "node:test";
 import {
   parseClockTime,
   parseStrictNonNegativeDecimal,
+  parseStrictNonNegativeInteger,
+  parseStrictPositiveAmountWithUnit,
   validateMealAmounts,
 } from "./inputValidation.ts";
 
@@ -48,6 +50,55 @@ test("parseStrictNonNegativeDecimal accepts complete non-negative decimal values
 test("parseStrictNonNegativeDecimal rejects signs, exponents, non-finite values, and trailing text", () => {
   for (const value of ["1abc", "-1", "+1", "1e3", "NaN", "Infinity", "1.2.3"]) {
     assert.equal(parseStrictNonNegativeDecimal(value), null, value);
+  }
+});
+
+test("parseStrictNonNegativeInteger rejects fractional counts and trailing input", () => {
+  assert.equal(parseStrictNonNegativeInteger("0"), 0);
+  assert.equal(parseStrictNonNegativeInteger(" 12 "), 12);
+  for (const value of ["1.5", "1e2", "2 dogs", "-1", ""]) {
+    assert.equal(parseStrictNonNegativeInteger(value), null, value);
+  }
+});
+
+test("parseStrictPositiveAmountWithUnit accepts complete decimals, fractions, and mixed fractions", () => {
+  assert.deepEqual(parseStrictPositiveAmountWithUnit("1.5 cups"), { amount: 1.5, unit: "cup" });
+  assert.deepEqual(parseStrictPositiveAmountWithUnit("3/4 cup"), { amount: 0.75, unit: "cup" });
+  assert.deepEqual(parseStrictPositiveAmountWithUnit("1 1/2 cups"), { amount: 1.5, unit: "cup" });
+  assert.deepEqual(parseStrictPositiveAmountWithUnit("2 tablespoons"), { amount: 2, unit: "tbsp" });
+  assert.deepEqual(parseStrictPositiveAmountWithUnit("4 oz"), { amount: 4, unit: "oz" });
+});
+
+test("parseStrictPositiveAmountWithUnit rejects unsafe integer components", () => {
+  assert.deepEqual(parseStrictPositiveAmountWithUnit("9007199254740991 cups"), {
+    amount: Number.MAX_SAFE_INTEGER,
+    unit: "cup",
+  });
+
+  for (const value of [
+    "9007199254740992 cups",
+    "9007199254740993 cups",
+    "9007199254740992/9007199254740993 cups",
+    "9007199254740992 1/2 cups",
+    "1 9007199254740992/9007199254740993 cups",
+  ]) {
+    assert.equal(parseStrictPositiveAmountWithUnit(value), null, value);
+  }
+});
+
+test("parseStrictPositiveAmountWithUnit rejects ambiguous, unknown, and suffix input", () => {
+  for (const value of [
+    "0 cups",
+    "1-2 cups",
+    "1 to 2 cups",
+    "about 1 cup",
+    "1 cup trailing",
+    "1 mystery",
+    "1/0 cup",
+    "1 2/2 cups",
+    "cups 1",
+  ]) {
+    assert.equal(parseStrictPositiveAmountWithUnit(value), null, value);
   }
 });
 

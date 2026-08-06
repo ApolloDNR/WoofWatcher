@@ -14,6 +14,7 @@ export interface CareRecord {
   title: string;
   due?: string;
   note?: string;
+  correctionIssues?: readonly unknown[];
 }
 
 export interface RecordVaultSection {
@@ -262,11 +263,32 @@ function formatDueDate(ms: number): string {
   });
 }
 
+export function recordDueNeedsCorrection(
+  record: Pick<CareRecord, "correctionIssues">,
+): boolean {
+  if (!Array.isArray(record.correctionIssues)) return false;
+  return Boolean(
+    record.correctionIssues.some(
+      (issue) =>
+        issue !== null &&
+        typeof issue === "object" &&
+        !Array.isArray(issue) &&
+        (issue as { field?: unknown }).field === "due",
+    ),
+  );
+}
+
 export function getRecordDueStatus(
-  record: CareRecord | Pick<CareRecord, "due">,
+  record: CareRecord | Pick<CareRecord, "due" | "correctionIssues">,
   now: number = Date.now(),
   dueSoonDays = 45,
 ): RecordDueStatus {
+  if (recordDueNeedsCorrection(record)) {
+    return {
+      status: "reference",
+      label: "Reference",
+    };
+  }
   const dueMs = parseDueDateMs(record.due);
   if (dueMs == null) {
     return {

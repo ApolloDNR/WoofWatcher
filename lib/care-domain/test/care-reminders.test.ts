@@ -141,6 +141,37 @@ test("omits an invalid-time routine from reminder calculations", async () => {
   assert.equal(center.nextStep, "Correct Legacy care's saved time in Plans.");
 });
 
+test("omits correction-marked record dates from reminder calculations", async () => {
+  const deriveCareReminderCenter = await loadReminderCenter();
+  const center = deriveCareReminderCenter({
+    now: new Date("2026-02-20T12:00:00.000Z").getTime(),
+    routines: [],
+    entries: [],
+    records: [
+      {
+        id: "legacy-refill",
+        type: "medication",
+        title: "Legacy refill",
+        due: "2026-02-31",
+        correctionIssues: [
+          {
+            field: "due",
+            rawValue: "2026-02-31",
+            message: "Enter a valid record date.",
+          },
+        ],
+      },
+      { id: "rabies", type: "vaccine", title: "Rabies", due: "May 2030" },
+      { id: "insurance", type: "insurance", title: "Lemonade", due: "Policy WW-1042" },
+      { id: "chip", type: "microchip", title: "HomeAgain", due: "985112003004551" },
+    ],
+  });
+
+  assert.equal(center.medicationCount, 0);
+  assert.equal(center.recordCount, 0);
+  assert.ok(center.items.every((item) => item.sourceId !== "legacy-refill"));
+});
+
 test("clears visible routine reminders only when matching household-visible logs satisfy them", async () => {
   const deriveCareReminderCenter = await loadReminderCenter();
 

@@ -63,6 +63,31 @@ test("meal quick log starts an outcome-pending served meal lifecycle", () => {
   });
 });
 
+test("meal quick log accepts a complete mixed-fraction configured portion", () => {
+  const entry = buildQuickLogEntry(
+    { type: "meal", title: "Meal" },
+    state({ dietProfile: { normalPortion: "1 1/2 cups" } }),
+    { caregiver: "Apollo", now: NOW },
+  );
+
+  assert.equal(entry.amount, "1.5");
+  assert.equal(entry.details?.servedAmount, 1.5);
+  assert.equal(entry.details?.servedUnit, "cup");
+});
+
+test("meal quick log preserves but does not parse configured portion suffix garbage", () => {
+  const entry = buildQuickLogEntry(
+    { type: "meal", title: "Meal" },
+    state({ dietProfile: { normalPortion: "1 cup trailing" } }),
+    { caregiver: "Apollo", now: NOW },
+  );
+
+  assert.equal(entry.details?.expectedPortion, "1 cup trailing");
+  assert.equal(entry.amount, undefined);
+  assert.equal(entry.details?.servedAmount, undefined);
+  assert.equal(entry.details?.servedUnit, undefined);
+});
+
 test("kid quick logs stay household-visible but require adult confirmation", () => {
   const entry = buildQuickLogEntry(
     { type: "meal", title: "Meal" },

@@ -37,7 +37,16 @@ import { PressScale, ProgressFill } from "@/components/motion/GameFeel";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { deriveCareStreak } from "@/lib/careCareer";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
-import { parseLocalDate } from "@/lib/time";
+import {
+  compareCalendarEventsBySchedule,
+  getCareCorrectionPresentation,
+  mergeValidatedCalendarEventEdit,
+  mergeValidatedRoutineEdit,
+  orderCareItemsCorrectionsLast,
+  validateCalendarEventDraft,
+  validateRoutineDraft,
+} from "@/lib/careWorkflowValidation";
+import { addLocalCalendarDays, localDateKey, todayLocalDateKey } from "@/lib/localCalendar";
 import { resolvePetName } from "@/lib/petIdentity";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
@@ -159,10 +168,6 @@ function routineMinutes(time: string): number {
   return parseClockTime(time)?.minutesSinceMidnight ?? Number.POSITIVE_INFINITY;
 }
 
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 /**
  * Next full clock hour as "7:00 AM"-style text. Used to prefill the free-text
  * time fields with a real, immediately-submittable value instead of a grey
@@ -190,15 +195,10 @@ const WEEK_DAY_NAMES = [
   "Sunday",
 ] as const;
 
-/** Local-calendar day key, matching deriveCareStreak's day bucketing. */
-function localDayKey(date: Date): string {
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-}
-
 function dayLabel(iso: string): string {
   const d = new Date(`${iso}T12:00:00`);
-  const today = todayISO();
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const today = todayLocalDateKey();
+  const tomorrow = addLocalCalendarDays(today, 1);
   if (iso === today) return "Today";
   if (iso === tomorrow) return "Tomorrow";
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
@@ -232,12 +232,10 @@ function routineBoardPillTone(status: RoutineBoardStatus): BoardStatusPillTone {
 
 /** Time-of-day band for grouping the schedule like a real day planner. */
 function scheduleBandForTime(time: string): "Morning" | "Afternoon" | "Evening" | "Anytime" {
-  const match = /(\d+):(\d+)\s*(AM|PM)/i.exec(time);
-  if (!match) return "Anytime";
-  let hour = parseInt(match[1], 10) % 12;
-  if (/pm/i.test(match[3])) hour += 12;
-  if (hour < 12) return "Morning";
-  if (hour < 17) return "Afternoon";
+  const parsed = parseClockTime(time);
+  if (!parsed) return "Anytime";
+  if (parsed.minutesSinceMidnight < 12 * 60) return "Morning";
+  if (parsed.minutesSinceMidnight < 17 * 60) return "Afternoon";
   return "Evening";
 }
 
@@ -321,16 +319,20 @@ export default function CalendarScreen() {
     bottomInset: insets.bottom,
   });
   const now = Date.now();
-  const today = todayISO();
+  const today = todayLocalDateKey(new Date(now));
   const [scheduleTab, setScheduleTab] = useState<"day" | "week" | "month">("day");
 
   // Add-event modal
   const [addOpen, setAddOpen] = useState(false);
+  const [eventEditId, setEventEditId] = useState<string | null>(null);
   const [evTitle, setEvTitle] = useState("");
   const [evType, setEvType] = useState<string>("event");
   const [evDate, setEvDate] = useState(today);
   const [evTime, setEvTime] = useState("");
   const [evLocation, setEvLocation] = useState("");
+  const [evTitleError, setEvTitleError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [evTimeError, setEvTimeError] = useState<string | null>(null);
 
   // Routine editor
   const [routineOpen, setRoutineOpen] = useState(false);
@@ -340,6 +342,7 @@ export default function CalendarScreen() {
   const [rTime, setRTime] = useState("");
   const [rOwner, setROwner] = useState("");
   const [rNote, setRNote] = useState("");
+  const [rLabelError, setRLabelError] = useState<string | null>(null);
   const [rTimeError, setRTimeError] = useState<string | null>(null);
   const [routineFeedback, setRoutineFeedback] = useState<{ id: string; title: string; type: string } | null>(null);
   const routineFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -393,6 +396,7 @@ export default function CalendarScreen() {
       detail: string;
       status: RoutineBoardStatus;
       owner?: string;
+      correctionValue?: string;
     }[] = [
       { id: "breakfast", label: "Breakfast", type: "meal", time: "7:00 AM", detail: "1 1/4 cups", status: "done" as RoutineBoardStatus },
       { id: "walk-am", label: "Walk", type: "walk", time: "8:00 AM", detail: "45 min", status: "done" as RoutineBoardStatus },
@@ -403,18 +407,25 @@ export default function CalendarScreen() {
       { id: "snack", label: "Bedtime Snack", type: "meal", time: "9:00 PM", detail: "small", status: "upcoming" as RoutineBoardStatus },
     ];
     const rows = routineBoard.items.length
-      ? routineBoard.items.map((item) => ({
+      ? routineBoard.items.map((item) => {
+          const correction = getCareCorrectionPresentation(
+            routines.find((routine) => routine.id === item.id),
+            "time",
+          );
+          return {
           id: item.id,
           label: item.label,
           type: item.normalizedType,
-          time: item.status === "needs-correction" ? "Needs correction" : item.time,
+          time: correction?.label ?? item.time,
+          correctionValue: correction?.preservedValue,
           owner: item.owner || "",
           detail: item.note || "",
           status: item.status,
-        }))
+          };
+        })
       : fallback;
     return rows;
-  }, [routineBoard.items]);
+  }, [routineBoard.items, routines]);
 
   // Monday-start week containing today, for the mockup M T W T F S S dots.
   const weekDays = useMemo(() => {
@@ -427,7 +438,7 @@ export default function CalendarScreen() {
       return day;
     });
   }, [now]);
-  const todayWeekIndex = weekDays.findIndex((day) => localDayKey(day) === localDayKey(new Date(now)));
+  const todayWeekIndex = weekDays.findIndex((day) => localDateKey(day) === todayLocalDateKey(new Date(now)));
 
   // Week-board dot fills reuse the exact routine board derivation the Today
   // tab shows: deriveRoutineBoard scoped to each past day of this week marks
@@ -436,9 +447,9 @@ export default function CalendarScreen() {
   // column reads straight from the live routineBoard; future days can hold
   // no logs yet, so they never fill.
   const weeklyRoutineDots = useMemo(() => {
-    const todayKey = localDayKey(new Date(now));
+    const todayKey = todayLocalDateKey(new Date(now));
     return weekDays.map((day) => {
-      const dayKey = localDayKey(day);
+      const dayKey = localDateKey(day);
       if (dayKey === todayKey) {
         return new Map(
           routineBoard.items
@@ -464,9 +475,9 @@ export default function CalendarScreen() {
     for (const entry of entries) {
       const occurred = Date.parse(entry.occurredAt ?? "");
       if (!Number.isFinite(occurred) || occurred > now) continue;
-      loggedDays.add(localDayKey(new Date(occurred)));
+      loggedDays.add(localDateKey(new Date(occurred)));
     }
-    return weekDays.filter((day) => loggedDays.has(localDayKey(day))).length;
+    return weekDays.filter((day) => loggedDays.has(localDateKey(day))).length;
   }, [entries, weekDays, now]);
   const careStreak = useMemo(() => deriveCareStreak(entries, now), [entries, now]);
 
@@ -546,14 +557,22 @@ export default function CalendarScreen() {
 
   // Group upcoming one-off events by date.
   const upcoming = useMemo(() => {
-    const future = [...calendarEvents]
-      .filter((e) => e.date >= today)
-      .sort((a, b) => (a.date === b.date ? (a.time ?? "").localeCompare(b.time ?? "") : a.date.localeCompare(b.date)));
+    const isCorrection = (event: CalendarEvent) =>
+        getCareCorrectionPresentation(event, "date") !== null ||
+        getCareCorrectionPresentation(event, "time") !== null;
+    const ordered = orderCareItemsCorrectionsLast(
+      calendarEvents.filter(
+        (event) => isCorrection(event) || event.date >= today,
+      ),
+      isCorrection,
+      compareCalendarEventsBySchedule,
+    );
     const groups: { date: string; events: CalendarEvent[] }[] = [];
-    for (const e of future) {
-      const g = groups.find((x) => x.date === e.date);
+    for (const e of ordered) {
+      const groupDate = isCorrection(e) ? "needs-correction" : e.date;
+      const g = groups.find((x) => x.date === groupDate);
       if (g) g.events.push(e);
-      else groups.push({ date: e.date, events: [e] });
+      else groups.push({ date: groupDate, events: [e] });
     }
     return groups;
   }, [calendarEvents, today]);
@@ -563,10 +582,16 @@ export default function CalendarScreen() {
       showCareReadOnly();
       return false;
     }
-    const id = `event_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const id = eventEditId ?? `event_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     return updateCareDoc((doc) => ({
       ...doc,
-      calendarEvents: [...doc.calendarEvents, { id, ...ev }],
+      calendarEvents: eventEditId
+        ? doc.calendarEvents.map((event) =>
+            event.id === eventEditId
+              ? mergeValidatedCalendarEventEdit(event, ev)
+              : event,
+          )
+        : [...doc.calendarEvents, { id, ...ev }],
     }));
   };
 
@@ -586,32 +611,57 @@ export default function CalendarScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const [dateError, setDateError] = useState<string | null>(null);
-
   const openAddEvent = () => {
     // Prefill real, submittable defaults (today + next round hour) so the
     // sheet never opens with grey placeholders that look like filled values.
-    if (!parseLocalDate(evDate)) setEvDate(todayISO());
-    if (!evTime.trim()) setEvTime(nextRoundHourLabel());
+    setEventEditId(null);
+    setEvTitle("");
+    setEvType("event");
+    setEvDate(todayLocalDateKey());
+    setEvLocation("");
+    setEvTime(nextRoundHourLabel());
+    setEvTitleError(null);
     setDateError(null);
+    setEvTimeError(null);
+    setAddOpen(true);
+  };
+
+  const openEditEvent = (event: CalendarEvent) => {
+    const eventDateCorrection = getCareCorrectionPresentation(event, "date");
+    const eventTimeCorrection = getCareCorrectionPresentation(event, "time");
+    setEventEditId(event.id);
+    setEvTitle(event.title);
+    setEvType(event.type);
+    setEvDate(eventDateCorrection?.preservedValue ?? (typeof event.date === "string" ? event.date : ""));
+    setEvTime(eventTimeCorrection?.preservedValue ?? (typeof event.time === "string" ? event.time : ""));
+    setEvLocation(event.location ?? "");
+    setEvTitleError(null);
+    setDateError(null);
+    setEvTimeError(null);
     setAddOpen(true);
   };
 
   const submitEvent = () => {
-    if (!evTitle.trim()) return;
-    if (!parseLocalDate(evDate)) {
-      setDateError("Enter a valid date (YYYY-MM-DD)");
+    const validation = validateCalendarEventDraft({
+      title: evTitle,
+      type: evType,
+      date: evDate,
+      time: evTime,
+      location: evLocation,
+      source: "manual",
+    });
+    setEvTitleError(null);
+    setDateError(null);
+    setEvTimeError(null);
+    if (!validation.ok) {
+      if (validation.field === "title") setEvTitleError(validation.message);
+      if (validation.field === "date") setDateError(validation.message);
+      if (validation.field === "time") setEvTimeError(validation.message);
       return;
     }
     setDateError(null);
-    const added = addEvent({
-      title: evTitle.trim(),
-      type: evType,
-      date: evDate,
-      time: evTime.trim() || undefined,
-      location: evLocation.trim() || undefined,
-      source: "manual",
-    });
+    setEvTimeError(null);
+    const added = addEvent(validation.value);
     if (!added) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setEvTitle("");
@@ -619,6 +669,7 @@ export default function CalendarScreen() {
     setEvLocation("");
     setEvType("event");
     setEvDate(today);
+    setEventEditId(null);
     setAddOpen(false);
   };
 
@@ -631,23 +682,27 @@ export default function CalendarScreen() {
     setRTime(nextRoundHourLabel());
     setROwner("");
     setRNote("");
+    setRLabelError(null);
     setRTimeError(null);
     setRoutineOpen(true);
   };
 
   const openEditRoutine = (r: Routine) => {
+    const routineTimeCorrection = getCareCorrectionPresentation(r, "time");
     setRoutineEditId(r.id);
     setRLabel(r.label);
     setRType(r.type);
-    setRTime(typeof r.time === "string" ? r.time : "");
+    setRTime(routineTimeCorrection?.preservedValue ?? (typeof r.time === "string" ? r.time : ""));
     setROwner(r.owner ?? "");
     setRNote(r.note ?? "");
+    setRLabelError(null);
     setRTimeError(null);
     setRoutineOpen(true);
   };
 
   const openBoardRoutine = (routine: RoutineBoardItem) => {
-    openEditRoutine({
+    const sourceRoutine = routines.find((candidate) => candidate.id === routine.id);
+    openEditRoutine(sourceRoutine ?? {
       id: routine.id,
       label: routine.label,
       type: routine.type,
@@ -734,9 +789,18 @@ export default function CalendarScreen() {
   };
 
   const submitRoutine = () => {
-    if (!rLabel.trim()) return;
-    if (!parseClockTime(rTime)) {
-      setRTimeError("Enter an exact time (e.g. 7:00 AM)");
+    const validation = validateRoutineDraft({
+      label: rLabel,
+      type: rType,
+      time: rTime,
+      owner: rOwner,
+      note: rNote,
+    });
+    setRLabelError(null);
+    setRTimeError(null);
+    if (!validation.ok) {
+      if (validation.field === "label") setRLabelError(validation.message);
+      if (validation.field === "time") setRTimeError(validation.message);
       return;
     }
     if (careMutationsBlocked) {
@@ -744,13 +808,14 @@ export default function CalendarScreen() {
       return;
     }
     setRTimeError(null);
+    const draft = validation.value;
     let updated: boolean;
     if (routineEditId) {
       updated = updateCareDoc((doc) => ({
         ...doc,
         routines: doc.routines.map((r) =>
           r.id === routineEditId
-            ? { ...r, label: rLabel.trim(), type: rType, time: rTime, owner: rOwner.trim(), note: rNote.trim() }
+            ? mergeValidatedRoutineEdit(r, draft)
             : r,
         ),
       }));
@@ -758,7 +823,7 @@ export default function CalendarScreen() {
       const id = `routine_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
       updated = updateCareDoc((doc) => ({
         ...doc,
-        routines: [...doc.routines, { id, label: rLabel.trim(), type: rType, time: rTime, owner: rOwner.trim(), note: rNote.trim() }],
+        routines: [...doc.routines, { id, ...draft }],
       }));
     }
     if (!careMutationWasAccepted(updated)) {
@@ -1257,6 +1322,17 @@ export default function CalendarScreen() {
                                 {routine.status === "needs-correction" ? "Needs correction" : routine.time}
                               </Text>
                             </View>
+                            {getCareCorrectionPresentation(
+                              routines.find((candidate) => candidate.id === routine.id),
+                              "time",
+                            ) ? (
+                              <Text style={[s.scheduleDetail, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
+                                Saved value: {getCareCorrectionPresentation(
+                                  routines.find((candidate) => candidate.id === routine.id),
+                                  "time",
+                                )?.preservedValue}
+                              </Text>
+                            ) : null}
                             <View style={s.weekDotRow}>
                               {WEEK_DAY_LETTERS.map((letter, dayIndex) => {
                                 const filled = dotFills[dayIndex];
@@ -1481,6 +1557,11 @@ export default function CalendarScreen() {
                           {row.detail}
                         </Text>
                       ) : null}
+                      {row.correctionValue ? (
+                        <Text style={[s.scheduleDetail, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
+                          Saved value: {row.correctionValue}
+                        </Text>
+                      ) : null}
                       {showRowPill ? (
                         <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
                       ) : null}
@@ -1698,11 +1779,26 @@ export default function CalendarScreen() {
             ) : (
               upcoming.map((group) => (
                 <View key={group.date} style={{ marginBottom: 18 }}>
-                  <Text style={[s.dayHeading, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>{dayLabel(group.date)}</Text>
+                  <Text style={[s.dayHeading, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                    {group.date === "needs-correction" ? "Needs correction" : dayLabel(group.date)}
+                  </Text>
                   {group.events.map((e) => {
                     const icon = EVENT_ICON[e.type] ?? "calendar";
-                    const daysUntil = Math.round((new Date(`${e.date}T12:00:00`).getTime() - Date.now()) / 86400000);
-                    const countdownLabel = daysUntil === 0 ? "Today" : daysUntil === 1 ? "Tomorrow" : daysUntil <= 7 ? `${daysUntil}d away` : null;
+                    const correction =
+                      getCareCorrectionPresentation(e, "date") ??
+                      getCareCorrectionPresentation(e, "time");
+                    const daysUntil = correction
+                      ? null
+                      : Math.round((new Date(`${e.date}T12:00:00`).getTime() - Date.now()) / 86400000);
+                    const countdownLabel = daysUntil === null
+                      ? null
+                      : daysUntil === 0
+                        ? "Today"
+                        : daysUntil === 1
+                          ? "Tomorrow"
+                          : daysUntil <= 7
+                            ? `${daysUntil}d away`
+                            : null;
                     return (
                       <View key={e.id} style={[s.eventPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
                         <View style={[s.eventIcon, { backgroundColor: colors.sage + "16" }]}>
@@ -1724,21 +1820,32 @@ export default function CalendarScreen() {
                             )}
                           </View>
                           <Text style={[s.eventMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                            {[e.time, e.location].filter(Boolean).join(" - ") || "All day"}
+                            {correction
+                              ? `${correction.label} · Saved value: ${correction.preservedValue}`
+                              : [e.time, e.location].filter(Boolean).join(" - ") || "All day"}
                           </Text>
                           {e.note ? (
                             <Text numberOfLines={2} style={[s.eventNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{e.note}</Text>
                           ) : null}
                         </View>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={`Remove ${e.title}`}
-                          onPress={() => removeEvent(e.id)}
-                          hitSlop={MOBILE_INLINE_HIT_SLOP}
-                          style={s.removeBtn}
-                        >
-                          <Ionicons name="close" size={16} color={colors.mutedForeground} />
-                        </Pressable>
+                        <View style={s.eventActions}>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Edit ${e.title}`}
+                            onPress={() => openEditEvent(e)}
+                            style={s.removeBtn}
+                          >
+                            <Ionicons name="pencil" size={15} color={colors.primary} />
+                          </Pressable>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Remove ${e.title}`}
+                            onPress={() => removeEvent(e.id)}
+                            style={s.removeBtn}
+                          >
+                            <Ionicons name="close" size={16} color={colors.mutedForeground} />
+                          </Pressable>
+                        </View>
                       </View>
                     );
                   })}
@@ -2061,6 +2168,17 @@ export default function CalendarScreen() {
                           <Text style={[s.routineTime, { color: done ? colors.sage : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                             {r.status === "needs-correction" ? "Needs correction" : r.time}
                           </Text>
+                          {getCareCorrectionPresentation(
+                            routines.find((candidate) => candidate.id === r.id),
+                            "time",
+                          ) ? (
+                            <Text style={[s.routineTime, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
+                              Saved value: {getCareCorrectionPresentation(
+                                routines.find((candidate) => candidate.id === r.id),
+                                "time",
+                              )?.preservedValue}
+                            </Text>
+                          ) : null}
                           <Pressable
                             onPress={(event) => {
                               event.stopPropagation?.();
@@ -2158,11 +2276,16 @@ export default function CalendarScreen() {
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>LABEL</Text>
             <TextInput
               value={rLabel}
-              onChangeText={setRLabel}
+              onChangeText={(value) => { setRLabel(value); setRLabelError(null); }}
               placeholder="Morning walk"
               placeholderTextColor={colors.mutedForeground}
-              style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+              style={[s.field, { backgroundColor: colors.background, color: rLabelError ? colors.rose : colors.foreground, borderWidth: rLabelError ? 1 : 0, borderColor: rLabelError ? colors.rose : "transparent", fontFamily: "Inter_500Medium" }]}
             />
+            {rLabelError ? (
+              <Text aria-live="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
+                {rLabelError}
+              </Text>
+            ) : null}
             {(ROUTINE_LABEL_SUGGESTIONS[rType] ?? []).length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.ownerQuickRow}>
                 {(ROUTINE_LABEL_SUGGESTIONS[rType] ?? []).map((sug) => (
@@ -2170,7 +2293,7 @@ export default function CalendarScreen() {
                     key={sug}
                     accessibilityRole="button"
                     accessibilityLabel={`Use label ${sug}`}
-                    onPress={() => { Haptics.selectionAsync(); setRLabel(sug); }}
+                    onPress={() => { Haptics.selectionAsync(); setRLabel(sug); setRLabelError(null); }}
                     style={[s.ownerQuickChip, { backgroundColor: colors.background, borderColor: colors.border }]}
                   >
                     <Text style={[s.ownerQuickText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{sug}</Text>
@@ -2269,12 +2392,12 @@ export default function CalendarScreen() {
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
 
-            <Pressable onPress={submitRoutine} disabled={!rLabel.trim()} style={[s.saveBtn, { backgroundColor: rLabel.trim() ? colors.primary : colors.border }]}>
-              <Text style={[s.saveBtnText, { color: rLabel.trim() ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
+            <Pressable onPress={submitRoutine} style={[s.saveBtn, { backgroundColor: colors.primary }]}>
+              <Text style={[s.saveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
             </Pressable>
             {/* Validation feedback lives next to the submit button so the
                 sheet never looks silently broken when a field above is off. */}
-            {!rLabel.trim() ? (
+            {rLabelError ? null : !rLabel.trim() ? (
               <Text style={[s.sheetSubmitHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 Add a label above to save this routine.
               </Text>
@@ -2299,16 +2422,21 @@ export default function CalendarScreen() {
         <Pressable accessible={false} style={s.modalBackdrop} onPress={() => setAddOpen(false)}>
           <Pressable accessible={false} accessibilityViewIsModal style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
             <View style={s.modalHandle} />
-            <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>New Event</Text>
+            <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>{eventEditId ? "Edit Event" : "New Event"}</Text>
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TITLE</Text>
             <TextInput
               value={evTitle}
-              onChangeText={setEvTitle}
+              onChangeText={(value) => { setEvTitle(value); setEvTitleError(null); }}
               placeholder="Beach day, vet visit, hike..."
               placeholderTextColor={colors.mutedForeground}
-              style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+              style={[s.field, { backgroundColor: colors.background, color: evTitleError ? colors.rose : colors.foreground, borderWidth: evTitleError ? 1 : 0, borderColor: evTitleError ? colors.rose : "transparent", fontFamily: "Inter_500Medium" }]}
             />
+            {evTitleError ? (
+              <Text aria-live="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
+                {evTitleError}
+              </Text>
+            ) : null}
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TYPE</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
@@ -2351,11 +2479,14 @@ export default function CalendarScreen() {
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TIME</Text>
                 <TextInput
                   value={evTime}
-                  onChangeText={setEvTime}
+                  onChangeText={(value) => { setEvTime(value); setEvTimeError(null); }}
                   placeholder="9:00 AM"
                   placeholderTextColor={colors.mutedForeground}
-                  style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
+                  style={[s.field, { backgroundColor: colors.background, color: evTimeError ? colors.rose : colors.foreground, borderWidth: evTimeError ? 1 : 0, borderColor: evTimeError ? colors.rose : "transparent", fontFamily: "Inter_500Medium" }]}
                 />
+                {evTimeError ? (
+                  <Text style={{ color: colors.rose, fontSize: 12, marginTop: 4, fontFamily: "Inter_500Medium" }}>{evTimeError}</Text>
+                ) : null}
               </View>
             </View>
 
@@ -2368,18 +2499,18 @@ export default function CalendarScreen() {
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
 
-            <Pressable onPress={submitEvent} disabled={!evTitle.trim()} style={[s.saveBtn, { backgroundColor: evTitle.trim() ? colors.primary : colors.border }]}>
-              <Text style={[s.saveBtnText, { color: evTitle.trim() ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Add to Calendar</Text>
+            <Pressable onPress={submitEvent} style={[s.saveBtn, { backgroundColor: colors.primary }]}>
+              <Text style={[s.saveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{eventEditId ? "Save Changes" : "Add to Calendar"}</Text>
             </Pressable>
             {/* Validation feedback lives next to the submit button so the
                 sheet never looks silently broken when a field above is off. */}
-            {!evTitle.trim() ? (
+            {evTitleError ? null : !evTitle.trim() ? (
               <Text style={[s.sheetSubmitHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                 Add a title above to save this event.
               </Text>
-            ) : dateError ? (
+            ) : dateError || evTimeError ? (
               <Text aria-live="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
-                {dateError}
+                {dateError ?? evTimeError}
               </Text>
             ) : null}
           </Pressable>
@@ -2877,6 +3008,7 @@ const s = StyleSheet.create({
   tagText: { fontSize: 9, letterSpacing: 0.3 },
   eventMeta: { fontSize: 12.5, marginTop: 3 },
   eventNote: { fontSize: 12.5, lineHeight: 17, marginTop: 4 },
+  eventActions: { alignItems: "center" },
   removeBtn: { minWidth: MIN_MOBILE_TOUCH_TARGET, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 10, alignItems: "center", justifyContent: "center" },
 
   reminderList: { marginTop: 8 },

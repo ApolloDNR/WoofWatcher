@@ -49,6 +49,7 @@ import {
   type WoofGuideActionIcon,
 } from "@/lib/woofGuideActions";
 import { notifyDialog } from "@/lib/confirmDialog";
+import { localDateKey, todayLocalDateKey } from "@/lib/localCalendar";
 import {
   CARE_READ_ONLY_MESSAGE,
   careMutationWasAccepted,
@@ -90,9 +91,12 @@ const ASSISTANT_GATE = resolveWoofGuideAssistantGate({
 });
 
 function buildAssistantContext(state: CareState) {
-  const today = new Date().toISOString().slice(0, 10);
   const now = Date.now();
-  const todayEntries = state.entries.filter((e) => e.occurredAt.startsWith(today));
+  const today = todayLocalDateKey(new Date(now));
+  const todayEntries = state.entries.filter((entry) => {
+    const occurredAt = new Date(entry.occurredAt);
+    return Number.isFinite(occurredAt.getTime()) && localDateKey(occurredAt) === today;
+  });
   const normalizedType = (entry: CareState["entries"][number]) =>
     normalizeCareEventType(entry.type, entry.details);
   const sortedEntries = [...state.entries].sort(
