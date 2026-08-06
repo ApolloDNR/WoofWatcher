@@ -4,6 +4,8 @@
 
 Calendar's month-day empty state now resolves Dog Profile identity canonically before inviting the owner to log the day's first moment. Red-first behavior coverage caught the stored `My Dog` placeholder producing generic `your dog` copy; renamed dogs remain trimmed and blank/placeholder profiles retain the intentional Phoenix starter identity. Calendar persistence, sync, native/provider/store evidence, and launch approval remain separate.
 
+Dependency-complete `WoofWatcher Verify` run `31099739581`, job `92610149569`, passed implementation/docs commit `11ffd72f`, including pinned dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit before treating the final branch tip as current.
+
 ## 2026-08-06 WoofGuide reviewed-action identity slice
 
 WoofGuide's shared action derivation now resolves Dog Profile identity canonically before building action detail, provider-ready prompts, reviewed meal logs, and deterministic vet-note copy. Red-first behavior coverage caught the stored `My Dog` placeholder in real owner-reviewed meal copy before the minimal shared-boundary correction. Live AI remains gated, drafts remain owner-reviewed and non-diagnostic, and native/provider/store/Apollo evidence remains separate.
