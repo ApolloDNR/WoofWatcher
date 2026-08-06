@@ -101,7 +101,6 @@ import {
   CARE_READ_ONLY_MESSAGE,
   runAcceptedCareMutation,
 } from "@/lib/careWriteProtection";
-import { validateProfileWeightDraft } from "@/lib/careWorkflowValidation";
 import { addLocalCalendarDays, localDateKey, todayLocalDateKey } from "@/lib/localCalendar";
 import {
   deriveCareCareer,
@@ -703,19 +702,6 @@ function MoreScreenContent({
     bottomInset: insets.bottom,
   });
 
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [pName, setPName] = useState("");
-  const [pBreed, setPBreed] = useState("");
-  const [pWeight, setPWeight] = useState("");
-  const [pWeightError, setPWeightError] = useState<string | null>(null);
-  const [pWeightUnit, setPWeightUnit] = useState<"lb" | "kg">("lb");
-  const [pFocus, setPFocus] = useState("");
-  const [pMicrochip, setPMicrochip] = useState("");
-  const [pPrimaryVet, setPPrimaryVet] = useState("");
-  const [pEmergencyContact, setPEmergencyContact] = useState("");
-  const [pInsuranceProvider, setPInsuranceProvider] = useState("");
-  const [pInsurancePolicy, setPInsurancePolicy] = useState("");
-
   const [savedNativeQaSummary, setSavedNativeQaSummary] =
     useState<LaunchReadinessNativeQaSummary | null>(null);
   const [nativeQaCapturePlan, setNativeQaCapturePlan] =
@@ -756,61 +742,6 @@ function MoreScreenContent({
       };
     }, []),
   );
-
-  const openProfileEdit = () => {
-    setPName(profile.name === "My Dog" ? "" : profile.name);
-    setPBreed(profile.breed);
-    setPWeight(profile.weight.current > 0 ? String(profile.weight.current) : "");
-    setPWeightError(null);
-    setPWeightUnit((profile.weight.unit as "lb" | "kg") || "lb");
-    setPFocus(profile.careFocus);
-    setPMicrochip(profile.microchipNumber ?? "");
-    setPPrimaryVet(profile.primaryVet ?? "");
-    setPEmergencyContact(profile.emergencyContact ?? "");
-    setPInsuranceProvider(profile.insuranceProvider ?? "");
-    setPInsurancePolicy(profile.insurancePolicy ?? "");
-    setProfileOpen(true);
-  };
-
-  const saveProfile = () => {
-    const weightValidation = validateProfileWeightDraft(pWeight);
-    if (!weightValidation.ok) {
-      setPWeightError(weightValidation.message);
-      return;
-    }
-    if (careMutationsBlocked) {
-      showCareReadOnly();
-      return;
-    }
-    setPWeightError(null);
-    const name = pName.trim() || "Phoenix";
-    const weight = weightValidation.value;
-    const updated = updateCareDoc((doc) => ({
-      ...doc,
-      profile: {
-        ...doc.profile,
-        name,
-        publicLabel: name,
-        breed: pBreed.trim(),
-        careFocus: pFocus.trim(),
-        microchipNumber: pMicrochip.trim(),
-        primaryVet: pPrimaryVet.trim(),
-        emergencyContact: pEmergencyContact.trim(),
-        insuranceProvider: pInsuranceProvider.trim(),
-        insurancePolicy: pInsurancePolicy.trim(),
-        weight: {
-          ...doc.profile.weight,
-          current: weight ?? doc.profile.weight.current,
-          unit: pWeightUnit,
-        },
-      },
-    }));
-    const accepted = runAcceptedCareMutation(updated, () => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setProfileOpen(false);
-    });
-    if (!accepted) showCareReadOnly();
-  };
 
   const confirmSignOut = () => {
     confirmThroughSteps(
@@ -1555,10 +1486,13 @@ function MoreScreenContent({
               style={s.profileBanner}
             />
             <Pressable
-              onPress={openProfileEdit}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push("/profile");
+              }}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
               accessibilityRole="button"
-              accessibilityLabel="Edit dog profile"
+              accessibilityLabel="Open dog profile"
               style={[s.profileEditBtn, { backgroundColor: colors.ivory }]}
             >
               <Ionicons name="pencil" size={14} color={colors.forest} />
@@ -2745,145 +2679,6 @@ function MoreScreenContent({
         </Pressable>
       </Modal>
 
-      {/* Dog profile edit modal */}
-      <Modal visible={profileOpen} transparent animationType="slide" onRequestClose={() => setProfileOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProfileOpen(false)}>
-          <Pressable
-            style={[s.profileModal, { backgroundColor: colors.card }]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
-              bounces={false}
-            >
-            <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
-            <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Dog Profile</Text>
-
-            <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NAME</Text>
-            <TextInput
-              value={pName}
-              onChangeText={setPName}
-              placeholder="e.g. Luna"
-              placeholderTextColor={colors.mutedForeground}
-              style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-            />
-
-            <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>BREED</Text>
-            <TextInput
-              value={pBreed}
-              onChangeText={setPBreed}
-              placeholder="e.g. Golden Retriever mix"
-              placeholderTextColor={colors.mutedForeground}
-              style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-            />
-
-            <View style={s.profWeightRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>WEIGHT</Text>
-                <TextInput
-                  value={pWeight}
-                  onChangeText={(value) => { setPWeight(value); setPWeightError(null); }}
-                  placeholder="0.0"
-                  placeholderTextColor={colors.mutedForeground}
-                  keyboardType="decimal-pad"
-                  style={[s.profField, { backgroundColor: colors.background, color: pWeightError ? colors.rose : colors.foreground, borderWidth: pWeightError ? 1 : 0, borderColor: pWeightError ? colors.rose : "transparent", fontFamily: "Inter_500Medium" }]}
-                />
-                {pWeightError ? (
-                  <Text aria-live="polite" style={[s.profFieldLabel, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
-                    {pWeightError}
-                  </Text>
-                ) : null}
-              </View>
-              <View>
-                <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>UNIT</Text>
-                <View style={s.unitRow}>
-                  {(["lb", "kg"] as const).map((u) => (
-                    <Pressable
-                      key={u}
-                      onPress={() => { Haptics.selectionAsync(); setPWeightUnit(u); }}
-                      style={[s.unitPill, { backgroundColor: pWeightUnit === u ? colors.primary : colors.background, borderColor: pWeightUnit === u ? colors.primary : colors.border }]}
-                    >
-                      <Text style={[s.unitText, { color: pWeightUnit === u ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{u}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            </View>
-
-            <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>CARE FOCUS (OPTIONAL)</Text>
-            <TextInput
-              value={pFocus}
-              onChangeText={setPFocus}
-              placeholder="e.g. Maintain healthy weight, ease anxiety"
-              placeholderTextColor={colors.mutedForeground}
-              multiline
-              style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_400Regular", minHeight: 60, textAlignVertical: "top" }]}
-            />
-
-            <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>MICROCHIP NUMBER</Text>
-            <TextInput
-              value={pMicrochip}
-              onChangeText={setPMicrochip}
-              placeholder="985112..."
-              placeholderTextColor={colors.mutedForeground}
-              autoCapitalize="none"
-              style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-            />
-
-            <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>PRIMARY VET</Text>
-            <TextInput
-              value={pPrimaryVet}
-              onChangeText={setPPrimaryVet}
-              placeholder="Clinic or veterinarian"
-              placeholderTextColor={colors.mutedForeground}
-              style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-            />
-
-            <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>EMERGENCY CONTACT</Text>
-            <TextInput
-              value={pEmergencyContact}
-              onChangeText={setPEmergencyContact}
-              placeholder="Name and phone"
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType="phone-pad"
-              style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-            />
-
-            <View style={s.profWeightRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>INSURANCE</Text>
-                <TextInput
-                  value={pInsuranceProvider}
-                  onChangeText={setPInsuranceProvider}
-                  placeholder="Provider"
-                  placeholderTextColor={colors.mutedForeground}
-                  style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.profFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>POLICY</Text>
-                <TextInput
-                  value={pInsurancePolicy}
-                  onChangeText={setPInsurancePolicy}
-                  placeholder="Policy #"
-                  placeholderTextColor={colors.mutedForeground}
-                  autoCapitalize="characters"
-                  style={[s.profField, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
-                />
-              </View>
-            </View>
-
-            <Pressable
-              onPress={saveProfile}
-              style={({ pressed }) => [s.profSaveBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
-            >
-              <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save profile</Text>
-            </Pressable>
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -3525,10 +3320,6 @@ const s = StyleSheet.create({
   providerChecklistSub: { fontSize: 11.2, lineHeight: 16, marginTop: 2 },
   profFieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 16 },
   profField: { borderRadius: 13, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
-  profWeightRow: { flexDirection: "row", alignItems: "flex-end", gap: 12 },
-  unitRow: { flexDirection: "row", gap: 8, paddingBottom: 1 },
-  unitPill: { minHeight: MIN_MOBILE_TOUCH_TARGET, paddingHorizontal: 16, paddingVertical: 11, borderRadius: 13, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  unitText: { fontSize: 14 },
   profSaveBtn: { marginTop: 24, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, paddingVertical: 15, alignItems: "center", justifyContent: "center" },
   profSaveBtnText: { fontSize: 15.5 },
 });

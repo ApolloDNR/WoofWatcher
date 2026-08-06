@@ -249,8 +249,8 @@ test("dispatches only the extracted Care Team target and removes its duplicate M
   assert.match(more, /section=\{resolved\.target\.section\}/);
   assert.match(more, /itemId=\{resolved\.itemId\}/);
   assert.match(more, /<MoreScreenContent/);
-  assert.equal(mutationCount(more, "updateCareDoc"), 2);
-  assert.equal(mutationCount(more, "runAcceptedCareMutation"), 2);
+  assert.equal(mutationCount(more, "updateCareDoc"), 1);
+  assert.equal(mutationCount(more, "runAcceptedCareMutation"), 1);
 
   for (const movedAction of [
     "shareInvite",
