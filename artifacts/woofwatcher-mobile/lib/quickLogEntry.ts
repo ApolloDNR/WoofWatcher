@@ -1,6 +1,7 @@
 import {
   deriveRoutineBoard,
   normalizeCareEventType,
+  resolvePetName,
   type CareEventType,
   type RoutineBoardItem,
 } from "../../../lib/care-domain/src/index.ts";
@@ -318,7 +319,7 @@ export function describeQuickLogDetailSheet(
 ): QuickLogDetailSheetPresentation {
   const policy = getQuickLogPolicy(type);
   const safeLabel = clean(label) || policy.type;
-  const safePetName = clean(petName) || "Phoenix";
+  const safePetName = resolvePetName(petName);
   const title = `${safeLabel} details`;
   const canQuickLog = policy.tapBehavior === "quick-log";
   const interactionRail: QuickLogInteractionRailItem[] = [

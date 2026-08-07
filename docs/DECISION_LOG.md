@@ -3313,3 +3313,11 @@ The shared caregiver assignment summary is owner-facing care-loop identity and
 must use `resolvePetName`. Blank and `My Dog` starter profiles read as Phoenix;
 renamed dogs retain their trimmed saved name. This changes no routine matching,
 log persistence, provider sharing, or launch boundary.
+
+## 2026-08-07: Quick Log meal guidance enforces identity at the shared boundary
+
+The shared detail-sheet presenter is an owner-facing care-loop boundary and must
+resolve Dog Profile identity even when its caller already supplies a display
+name. This prevents direct or future callers from leaking `My Dog`; blank and
+placeholder profiles read as Phoenix, and renamed dogs retain their trimmed
+name. Meal lifecycle, persistence, and launch boundaries are unchanged.

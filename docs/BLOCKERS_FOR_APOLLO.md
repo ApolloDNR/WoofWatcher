@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-07 Quick Log shared meal identity status
+
+Source-level served-to-outcome guidance now enforces canonical Dog Profile identity at the shared presentation boundary. Native iOS/Android meal-flow review, VoiceOver/TalkBack traversal, route-named evidence, store review, and Apollo approval remain open; no logging, provider, payment, live-AI, or launch capability was enabled.
+
 ## 2026-08-07 Home accessibility identity status
 
 Source-level Home room announcements now follow canonical Dog Profile identity while intentional Phoenix asset/template identifiers remain unchanged. Native iOS/Android Home review, VoiceOver/TalkBack traversal, route-named evidence, store review, and Apollo approval remain open; no provider, payment, live-AI, or launch capability was enabled.

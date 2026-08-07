@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-08-07 Quick Log shared meal identity slice
+
+The shared Quick Log detail presentation now resolves Dog Profile identity before building served-to-outcome meal guidance. Red-first coverage caught `what My Dog ate`; placeholder profiles now retain Phoenix and whitespace-padded renamed dogs use their trimmed name. Meal lifecycle, persistence, household sync, providers, native/store evidence, and launch approval remain unchanged.
+
+Local and dependency-complete verification must pass before this source correction is treated as branch-current proof.
+
 ## 2026-08-07 Home care-twin accessibility identity slice
 
 Home's full-room interaction now builds its accessibility label through the canonical Dog Profile identity boundary. Red-first behavior coverage caught the contradictory `Luna Room. Phoenix Shepherd care twin` announcement; renamed dogs now receive one consistent identity and blank/`My Dog` profiles retain the intentional Phoenix starter fallback. Internal asset/template identifiers, care state, room motion, providers, native/store evidence, and launch approval remain unchanged.

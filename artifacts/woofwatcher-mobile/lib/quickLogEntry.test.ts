@@ -339,6 +339,17 @@ test("meal detail sheet names the active dog in pending-outcome guidance", () =>
   );
 });
 
+test("meal detail sheet keeps the canonical starter identity", () => {
+  assert.equal(
+    describeQuickLogDetailSheet("meal", "Meal", "My Dog").quickSummary,
+    "Quick tap serves the usual meal and keeps the meal outcome pending until someone confirms what Phoenix ate.",
+  );
+  assert.match(
+    describeQuickLogDetailSheet("meal", "Meal", "  Mochi  ").quickSummary,
+    /what Mochi ate\.$/,
+  );
+});
+
 test("quick-log dedupe window treats a rapid same-type second tap as the same intent", () => {
   const saved = {
     id: "temp_1",

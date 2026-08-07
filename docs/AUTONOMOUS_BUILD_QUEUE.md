@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-08-07 Quick Log shared meal identity
+
+- DONE: The shared meal detail presentation now resolves Dog Profile identity itself, so direct or future callers cannot expose the stored `My Dog` placeholder in served-to-outcome guidance.
+- VERIFIED: Red-first Quick Log coverage reproduced `what My Dog ate`; Phoenix fallback and a trimmed Mochi rename are now covered while meal lifecycle behavior stays unchanged.
+- BOUNDARY: Meal logging, persistence, household sync, native VoiceOver/TalkBack proof, providers, store review, and Apollo approval are unchanged.
+- NEXT: Run strongest local verification and dependency-complete branch CI, then retain native meal-flow review as an external gate.
+
 ## 2026-08-07 Home care-twin accessibility identity
 
 - DONE: Home's full-room interaction now builds its screen-reader label from canonical Dog Profile identity instead of announcing a renamed dog's room as a Phoenix care twin.
