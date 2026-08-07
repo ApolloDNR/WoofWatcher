@@ -4,7 +4,9 @@
 
 The shared avatar-motion model now resolves Dog Profile identity before building its in-progress walk status. Red-first coverage caught `Phoenix keeps moving` for a renamed Luna profile; placeholder profiles retain Phoenix and whitespace-padded renamed dogs use their trimmed name. Walk lifecycle, route evidence, persistence, household sync, animation gait, providers, native/store evidence, and launch approval remain unchanged.
 
-Focused avatar-motion, identity, and mobile-readiness coverage passed `202/202`; the broad partial-checkout suite passed `785/787` with only the known unresolved `@workspace/care-domain` links in `careCareer` and `careSync`; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. Local TypeScript remained dependency-blocked on missing `@tanstack/react-query` and `zod`, while the JSON doctor kept source-backed guards passing and remained blocked on exact pnpm/Expo availability. Dependency-complete branch CI is pending.
+Focused avatar-motion, identity, and mobile-readiness coverage passed `202/202`; the broad partial-checkout suite passed `785/787` with only the known unresolved `@workspace/care-domain` links in `careCareer` and `careSync`; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. Local TypeScript remained dependency-blocked on missing `@tanstack/react-query` and `zod`, while the JSON doctor kept source-backed guards passing and remained blocked on exact pnpm/Expo availability.
+
+Dependency-complete `WoofWatcher Verify` run `31219238448`, job `92999836202`, passed implementation/docs commit `b47b12d2` in `2m5s` with pinned dependency install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit before treating final-tip proof as current.
 
 ## 2026-08-07 Setup breed-matched twin identity slice
 

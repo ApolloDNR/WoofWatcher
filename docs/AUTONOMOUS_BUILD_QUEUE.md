@@ -4,8 +4,9 @@
 
 - DONE: The shared avatar-motion model now resolves Dog Profile identity before building the live active-walk status line.
 - VERIFIED: Red-first coverage reproduced `Phoenix keeps moving` for a renamed Luna profile; trimmed renamed dogs now stay consistent while blank/`My Dog` profiles retain Phoenix.
+- CI: Dependency-complete `WoofWatcher Verify` run `31219238448`, job `92999836202`, passed implementation/docs commit `b47b12d2` with pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all green.
 - BOUNDARY: Walk lifecycle, route capture, persistence, household sync, sprite gait, providers, and launch gates are unchanged.
-- NEXT: Run strongest local verification and dependency-complete branch CI, then retain route-named iOS/Android active-walk and VoiceOver/TalkBack proof as external gates.
+- NEXT: Rerun branch CI after this proof-record commit, then retain route-named iOS/Android active-walk and VoiceOver/TalkBack proof as external gates.
 
 ## 2026-08-07 Setup breed-matched twin identity
 
