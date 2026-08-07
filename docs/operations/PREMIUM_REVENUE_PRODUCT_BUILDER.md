@@ -4,7 +4,9 @@
 
 Setup's shared breed-template plan and avatar patch now resolve Dog Profile identity before building the saved-twin confirmation or persisting the avatar name. Red-first coverage caught `My Dog's twin is ready`; placeholder profiles now retain Phoenix and whitespace-padded renamed dogs use their trimmed name. Breed matching, avatar appearance, care persistence, providers, native/store evidence, and launch approval remain unchanged.
 
-Focused breed-template, identity, and mobile-readiness coverage passed `202/202`. Dependency-complete branch CI is still required before this slice is treated as final-tip proof.
+Focused breed-template, identity, and mobile-readiness coverage passed `202/202`; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. The broad partial-checkout suite passed `785/787` with only the known unresolved `@workspace/care-domain` links in `careCareer` and `careSync`; local TypeScript remained blocked on missing `@tanstack/react-query` and `zod`.
+
+Dependency-complete `WoofWatcher Verify` run `31205892648`, job `92956733717`, passed implementation/docs commit `bcad4c54` with pinned dependency install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit before treating final-tip proof as current.
 
 ## 2026-08-07 Quick Log shared meal identity slice
 
