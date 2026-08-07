@@ -181,3 +181,30 @@ test("applies the matched template with Avatar Studio's template-picker patch", 
   // The original config object is not mutated.
   assert.equal(base.templateId, "shepherd");
 });
+
+test("keeps Setup breed matching aligned with Dog Profile display identity", () => {
+  const base = createDefaultAvatarConfig("Phoenix", "2026-08-07T00:00:00.000Z");
+  const placeholderPlan = deriveSetupTwinPlan({
+    breed: "Dachshund",
+    dogName: "My Dog",
+    currentTemplateId: "shepherd",
+    hasConfiguredAvatar: false,
+    matchTwinToBreed: true,
+  });
+  const placeholderConfig = applyBreedTemplateToAvatarConfig(
+    base,
+    "dachshund",
+    "My Dog",
+  );
+  const renamedPlan = deriveSetupTwinPlan({
+    breed: "Dachshund",
+    dogName: "  Luna  ",
+    currentTemplateId: "shepherd",
+    hasConfiguredAvatar: false,
+    matchTwinToBreed: true,
+  });
+
+  assert.equal(placeholderPlan.successLine, "Phoenix's twin is ready - a Dachshund.");
+  assert.equal(placeholderConfig.petName, "Phoenix");
+  assert.equal(renamedPlan.successLine, "Luna's twin is ready - a Dachshund.");
+});

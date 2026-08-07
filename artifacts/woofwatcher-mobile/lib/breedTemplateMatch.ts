@@ -3,6 +3,7 @@ import {
   type AvatarTemplateId,
   type PetAvatarConfig,
 } from "./avatarStudio.ts";
+import { resolvePetName } from "./petIdentity.ts";
 
 /**
  * Maps free-text breed input ("Dachshund", "golden mix", "GSD") to the
@@ -168,7 +169,7 @@ export function deriveSetupTwinPlan(input: SetupTwinPlanInput): SetupTwinPlan {
   const currentLabel = getAvatarTemplate(input.currentTemplateId).label;
   const breedText = normalizeBreedText(input.breed);
   const match = breedText ? matchBreedToTemplate(input.breed) : null;
-  const dogName = String(input.dogName ?? "").trim() || "Your dog";
+  const dogName = resolvePetName(input.dogName);
 
   const swapAvailable =
     !input.hasConfiguredAvatar &&
@@ -216,7 +217,7 @@ export function applyBreedTemplateToAvatarConfig(
   const template = getAvatarTemplate(templateId);
   return {
     ...config,
-    petName: String(petName ?? "").trim() || config.petName,
+    petName: resolvePetName(petName, config.petName),
     templateId: template.id,
     earTypeId: template.defaultEarTypeId,
     muzzleTypeId: template.defaultMuzzleTypeId,

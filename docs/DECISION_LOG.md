@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-07: Setup breed matching follows Dog Profile identity
+
+- Decision: resolve the dog name inside both shared breed-template planning and avatar-config patching instead of trusting Setup callers to pre-normalize profile state.
+- Reason: the owner-reviewed success moment and saved care twin must not reintroduce the `My Dog` storage placeholder after Setup has adopted the canonical Phoenix starter identity.
+- Boundary: breed selection, avatar appearance, care-document persistence, providers, native approval, and launch gates are unchanged.
+
 ## 2026-08-07: Home care-twin announcements follow Dog Profile identity
 
 - Decision: build the Home room interaction label at the canonical pet-identity boundary instead of combining a resolved room name with a hardcoded Phoenix care-twin name.

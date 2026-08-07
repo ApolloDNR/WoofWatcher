@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-08-07 Setup breed-matched twin identity
+
+- DONE: Setup's shared breed-template plan and saved avatar patch now resolve Dog Profile identity before building confirmation copy or persisting the care-twin name.
+- VERIFIED: Red-first coverage reproduced `My Dog's twin is ready`; placeholder profiles now retain Phoenix and whitespace-padded renamed dogs use their trimmed name.
+- BOUNDARY: Breed matching, avatar styling, care persistence, provider sync, native accessibility, store review, and Apollo approval are unchanged.
+- NEXT: Run dependency-complete branch CI, then retain route-named iOS/Android Setup and Avatar Studio review as external gates.
+
 ## 2026-08-07 Quick Log shared meal identity
 
 - DONE: The shared meal detail presentation now resolves Dog Profile identity itself, so direct or future callers cannot expose the stored `My Dog` placeholder in served-to-outcome guidance.

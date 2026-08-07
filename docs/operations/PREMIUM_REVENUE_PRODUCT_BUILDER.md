@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-08-07 Setup breed-matched twin identity slice
+
+Setup's shared breed-template plan and avatar patch now resolve Dog Profile identity before building the saved-twin confirmation or persisting the avatar name. Red-first coverage caught `My Dog's twin is ready`; placeholder profiles now retain Phoenix and whitespace-padded renamed dogs use their trimmed name. Breed matching, avatar appearance, care persistence, providers, native/store evidence, and launch approval remain unchanged.
+
+Focused breed-template, identity, and mobile-readiness coverage passed `202/202`. Dependency-complete branch CI is still required before this slice is treated as final-tip proof.
+
 ## 2026-08-07 Quick Log shared meal identity slice
 
 The shared Quick Log detail presentation now resolves Dog Profile identity before building served-to-outcome meal guidance. Red-first coverage caught `what My Dog ate`; placeholder profiles now retain Phoenix and whitespace-padded renamed dogs use their trimmed name. Meal lifecycle, persistence, household sync, providers, native/store evidence, and launch approval remain unchanged.
