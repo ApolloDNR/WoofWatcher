@@ -4,7 +4,9 @@
 
 Home's full-room interaction now builds its accessibility label through the canonical Dog Profile identity boundary. Red-first behavior coverage caught the contradictory `Luna Room. Phoenix Shepherd care twin` announcement; renamed dogs now receive one consistent identity and blank/`My Dog` profiles retain the intentional Phoenix starter fallback. Internal asset/template identifiers, care state, room motion, providers, native/store evidence, and launch approval remain unchanged.
 
-Focused identity/readiness coverage passed `192/192`. Run broad local checks and dependency-complete branch CI before treating this slice as release proof.
+Focused identity/readiness coverage passed `192/192`; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. The broad local partial-dependency run failed only the known unresolved `express` and `@workspace/care-domain` package links, while the JSON doctor kept all source-backed guards passing and remained locally blocked on exact pnpm/Expo availability.
+
+Dependency-complete `WoofWatcher Verify` run `31164789517`, job `92823244744`, passed implementation/docs commit `53ebcf1d` with pinned dependency install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit before treating the final branch tip as current.
 
 ## 2026-08-06 Setup confirmation identity slice
 

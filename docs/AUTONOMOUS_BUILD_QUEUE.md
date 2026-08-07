@@ -4,8 +4,9 @@
 
 - DONE: Home's full-room interaction now builds its screen-reader label from canonical Dog Profile identity instead of announcing a renamed dog's room as a Phoenix care twin.
 - VERIFIED: Red-first identity coverage failed on the missing shared builder, then focused identity/readiness coverage passed `192/192`; Luna and the intentional Phoenix starter fallback are covered.
+- CI: Dependency-complete `WoofWatcher Verify` run `31164789517`, job `92823244744`, passed implementation/docs commit `53ebcf1d` with pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all green.
 - BOUNDARY: Internal Phoenix asset/template names, care state, room motion, native VoiceOver/TalkBack proof, providers, store review, and Apollo approval are unchanged.
-- NEXT: Run the broad local checks and dependency-complete branch CI, then capture route-named native Home traversal when device tooling is available.
+- NEXT: Rerun branch CI after this proof-record commit, then capture route-named native Home traversal when device tooling is available.
 
 ## 2026-08-07 Avatar config Dog Profile identity
 
