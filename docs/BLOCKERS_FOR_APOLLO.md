@@ -788,3 +788,10 @@ Source tests now prove the floating Today paw announces canonical Dog Profile
 identity instead of the stored `My Dog` placeholder. Native VoiceOver/TalkBack
 traversal, route-named iOS/Android bottom-navigation evidence, and Apollo
 accessibility approval remain required.
+
+## 2026-08-07 Avatar configuration identity proof remains open
+
+Source coverage now proves default and restored avatar configurations cannot
+expose the `My Dog` placeholder. Native VoiceOver/TalkBack traversal,
+route-named iOS/Android Avatar Studio evidence, final asset review, and Apollo
+approval remain required; source tests do not clear those gates.

@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-08-07 Avatar config Dog Profile identity
+
+- DONE: Default and restored avatar configurations now use the canonical Dog Profile display rule, so the stored `My Dog` placeholder cannot reappear in care-twin descriptions or persisted avatar state.
+- VERIFIED: Red-first Avatar Studio coverage reproduced `My Dog`, then focused avatar/identity coverage passed `21/21` after the shared config boundary was corrected.
+- BOUNDARY: Avatar assets, provider sync, native screen-reader/visual QA, store review, and Apollo approval are unchanged.
+- NEXT: Run broad local verification and dependency-complete branch CI, then capture route-named iOS/Android Avatar Studio proof when device tooling is available.
+
 ## 2026-08-06 Setup confirmation Dog Profile identity
 
 - DONE: The final owner-reviewed Setup confirmation now resolves the Dog Profile through the canonical identity boundary instead of exposing the stored `My Dog` placeholder in device-save and household-foundation copy.

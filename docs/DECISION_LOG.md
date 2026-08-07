@@ -3286,3 +3286,11 @@ The shared floating Today paw is an owner-facing Dog Profile identity boundary.
 Its non-Home screen-reader hint resolves renamed, blank, and `My Dog` values
 through `resolvePetName`; the on-Today action remains the identity-free
 `Opens the fast log sheet` instruction.
+
+## 2026-08-07: Avatar configuration follows canonical Dog Profile identity
+
+Avatar configuration is a persisted owner-facing care-twin identity boundary.
+Default creation and cache normalization must use `resolvePetName`, preventing
+blank or `My Dog` starter values from diverging from the intentional Phoenix
+display identity. Internal Phoenix asset, template, and emote-pack names stay
+unchanged.

@@ -81,6 +81,21 @@ test("creates and normalizes a Phoenix-first avatar config", () => {
   assert.equal(normalizeAvatarConfig({ templateId: "bully", emotePackId: "bully-starter" }, "Tank").emotePackId, "bully-starter");
 });
 
+test("keeps the starter avatar identity aligned with Dog Profile display rules", () => {
+  const created = createDefaultAvatarConfig("My Dog", "2026-08-07T00:00:00.000Z");
+  const normalized = normalizeAvatarConfig(
+    {
+      ...created,
+      petName: "My Dog",
+    },
+    "My Dog",
+  );
+
+  assert.equal(created.petName, "Phoenix");
+  assert.equal(normalized.petName, "Phoenix");
+  assert.doesNotMatch(describeAvatarConfig(normalized), /My Dog/);
+});
+
 test("keeps template-scan copy truthful and owner-approved", () => {
   const suggestion = buildTemplateScanSuggestion("Phoenix", "2026-06-17T12:00:00.000Z");
 

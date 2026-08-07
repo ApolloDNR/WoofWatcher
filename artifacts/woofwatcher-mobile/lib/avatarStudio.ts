@@ -1,3 +1,5 @@
+import { resolvePetName } from "./petIdentity.ts";
+
 export type PetAvatarStyle = "pixel";
 
 export type AvatarTemplateId =
@@ -349,7 +351,7 @@ export function summarizeAvatarAccessoryFits(templateId: AvatarTemplateId): stri
 export function createDefaultAvatarConfig(petName = "Phoenix", now = new Date().toISOString()): PetAvatarConfig {
   return {
     version: 1,
-    petName,
+    petName: resolvePetName(petName),
     templateId: "shepherd",
     style: "pixel",
     coatPrimary: "#1B1714",
@@ -373,7 +375,8 @@ export function createDefaultAvatarConfig(petName = "Phoenix", now = new Date().
 }
 
 export function normalizeAvatarConfig(input: unknown, petName = "Phoenix"): PetAvatarConfig {
-  const fallback = createDefaultAvatarConfig(petName);
+  const fallbackPetName = resolvePetName(petName);
+  const fallback = createDefaultAvatarConfig(fallbackPetName);
   if (!input || typeof input !== "object" || Array.isArray(input)) return fallback;
 
   const data = input as Partial<PetAvatarConfig>;
@@ -384,7 +387,7 @@ export function normalizeAvatarConfig(input: unknown, petName = "Phoenix"): PetA
 
   return {
     version: 1,
-    petName: typeof data.petName === "string" && data.petName.trim() ? data.petName.trim() : petName,
+    petName: resolvePetName(data.petName, fallbackPetName),
     templateId: template,
     style: "pixel",
     coatPrimary: typeof data.coatPrimary === "string" ? data.coatPrimary : fallback.coatPrimary,

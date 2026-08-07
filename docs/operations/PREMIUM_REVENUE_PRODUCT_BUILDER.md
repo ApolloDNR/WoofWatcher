@@ -5538,3 +5538,11 @@ the shared non-Home navigation hint. Red-first source coverage reproduces the
 old `My Dog` announcement and protects trimmed renamed dogs plus the Phoenix
 starter fallback. Native screen-reader traversal, route-named device proof,
 and Apollo accessibility approval remain open.
+
+## 2026-08-07 Avatar configuration Dog Profile identity slice
+
+Default and restored avatar configuration now resolve canonical Dog Profile
+identity before persisting or describing the care twin. Red-first behavior
+coverage reproduced the `My Dog` leak and protects the intentional Phoenix
+starter fallback. Internal asset/template names, native proof, provider/store
+readiness, and Apollo approval remain separate gates.
