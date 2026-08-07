@@ -5546,3 +5546,9 @@ identity before persisting or describing the care twin. Red-first behavior
 coverage reproduced the `My Dog` leak and protects the intentional Phoenix
 starter fallback. Internal asset/template names, native proof, provider/store
 readiness, and Apollo approval remain separate gates.
+
+Dependency-complete `WoofWatcher Verify` run `31143459306`, job `92757994210`,
+passed implementation/docs commit `e660637a` with pinned dependency install,
+JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps,
+and Complete job. Rerun after this proof-record commit before treating the
+final branch tip as current.

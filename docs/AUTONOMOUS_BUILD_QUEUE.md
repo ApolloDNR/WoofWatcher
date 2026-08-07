@@ -4,8 +4,9 @@
 
 - DONE: Default and restored avatar configurations now use the canonical Dog Profile display rule, so the stored `My Dog` placeholder cannot reappear in care-twin descriptions or persisted avatar state.
 - VERIFIED: Red-first Avatar Studio coverage reproduced `My Dog`, then focused avatar/identity coverage passed `21/21` after the shared config boundary was corrected.
+- CI: Dependency-complete `WoofWatcher Verify` run `31143459306`, job `92757994210`, passed implementation/docs commit `e660637a` with pinned install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job all green.
 - BOUNDARY: Avatar assets, provider sync, native screen-reader/visual QA, store review, and Apollo approval are unchanged.
-- NEXT: Run broad local verification and dependency-complete branch CI, then capture route-named iOS/Android Avatar Studio proof when device tooling is available.
+- NEXT: Rerun branch CI after this proof-record commit, then capture route-named iOS/Android Avatar Studio proof when device tooling is available.
 
 ## 2026-08-06 Setup confirmation Dog Profile identity
 

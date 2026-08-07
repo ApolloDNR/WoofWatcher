@@ -795,3 +795,7 @@ Source coverage now proves default and restored avatar configurations cannot
 expose the `My Dog` placeholder. Native VoiceOver/TalkBack traversal,
 route-named iOS/Android Avatar Studio evidence, final asset review, and Apollo
 approval remain required; source tests do not clear those gates.
+
+Dependency-complete `WoofWatcher Verify` run `31143459306`, job `92757994210`,
+passed implementation/docs commit `e660637a`. This does not clear native,
+provider, store, or Apollo approval gates.
