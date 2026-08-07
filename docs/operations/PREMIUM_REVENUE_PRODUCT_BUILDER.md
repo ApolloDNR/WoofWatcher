@@ -5559,3 +5559,8 @@ building fallback next-care, Adventure, and Care Pass titles. Red-first
 coverage reproduced the `My Dog` leak and protects the intentional Phoenix
 starter fallback. Native accessibility/device proof, provider/store proof, and
 Apollo approval remain separate gates.
+
+Dependency-complete `WoofWatcher Verify` run `31152905541`, job `92786114029`,
+passed implementation/docs commit `ba648a38` with dependency install, JSON
+doctor, focused behavior tests, typecheck plus CI-safe builds, and Complete job.
+Rerun after this proof-record commit before treating final-tip proof as current.

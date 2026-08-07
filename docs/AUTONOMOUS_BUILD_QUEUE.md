@@ -2343,3 +2343,6 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   passed with Phoenix while preserving trimmed renamed-dog identity.
 - NEXT: Require dependency-complete branch CI. Route-named iOS/Android Home
   evidence, native screen-reader traversal, and Apollo approval remain open.
+- CI: Dependency-complete `WoofWatcher Verify` run `31152905541`, job
+  `92786114029`, passed implementation/docs commit `ba648a38` with pinned
+  dependencies, doctor, focused tests, typecheck, and CI-safe builds.
