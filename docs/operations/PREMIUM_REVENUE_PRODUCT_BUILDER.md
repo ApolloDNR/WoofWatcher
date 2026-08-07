@@ -5580,3 +5580,9 @@ building its assigned-routine summary. Red-first coverage reproduced the
 `handled for My Dog` leak and protects the intentional Phoenix starter fallback.
 Provider-backed household sync, native accessibility/device proof, and Apollo
 approval remain separate gates.
+
+Dependency-complete `WoofWatcher Verify` run `31177106651`, job `92861410116`,
+passed implementation/docs commit `c1cb24e9` with pinned dependency install,
+JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps,
+and Complete job. Rerun after this proof-record commit before treating the final
+branch tip as current.
