@@ -799,3 +799,9 @@ approval remain required; source tests do not clear those gates.
 Dependency-complete `WoofWatcher Verify` run `31143459306`, job `92757994210`,
 passed implementation/docs commit `e660637a`. This does not clear native,
 provider, store, or Apollo approval gates.
+## 2026-08-07 Home mission identity proof remains open
+
+Source coverage now proves Home mission fallback titles cannot expose the
+stored `My Dog` placeholder. Native VoiceOver/TalkBack traversal, route-named
+iOS/Android Home evidence, and Apollo approval remain required; source and CI
+do not clear those gates.

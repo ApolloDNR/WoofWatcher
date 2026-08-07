@@ -101,3 +101,38 @@ test("keeps mission copy useful when the day has no urgent open loop", () => {
   assert.equal(missions[2].statusLabel, "Stable");
   assert.equal(missions[3].statusLabel, "Build pass");
 });
+
+test("uses canonical Dog Profile identity in fallback mission titles", () => {
+  const missions = buildHomeMissionDeck({
+    petName: "My Dog",
+    caregiverName: "Apollo",
+    nextCare: {
+      label: "",
+      detail: "",
+      icon: "meal",
+      route: "/calendar",
+      openLoop: false,
+    },
+    adventure: {
+      title: "",
+      level: 1,
+      todayXp: 0,
+      memoriesCount: 0,
+    },
+    health: {
+      label: "Health Watch",
+      status: "Stable",
+      detail: "All good right now",
+      needsReview: false,
+    },
+    carePass: {
+      label: "",
+      detail: "",
+      ready: false,
+    },
+  });
+
+  assert.equal(missions[0].title, "Phoenix's next care");
+  assert.equal(missions[1].title, "Phoenix's next quest");
+  assert.equal(missions[3].title, "Phoenix's Care Pass");
+});

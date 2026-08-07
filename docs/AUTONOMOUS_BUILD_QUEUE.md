@@ -2334,3 +2334,12 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Require dependency-complete branch CI. Native VoiceOver/TalkBack
   traversal and route-named iOS/Android bottom-navigation evidence remain open;
   source coverage does not replace device or Apollo approval.
+## 2026-08-07 Home mission deck Dog Profile identity
+
+- DONE: Shared Home mission fallback titles now resolve canonical Dog Profile
+  identity, so persisted `My Dog` starter state cannot surface in next-care,
+  Adventure, or Care Pass mission cards.
+- VERIFIED: Red-first behavior coverage reproduced `My Dog's next care`, then
+  passed with Phoenix while preserving trimmed renamed-dog identity.
+- NEXT: Require dependency-complete branch CI. Route-named iOS/Android Home
+  evidence, native screen-reader traversal, and Apollo approval remain open.

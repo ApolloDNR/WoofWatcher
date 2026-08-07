@@ -3294,3 +3294,9 @@ Default creation and cache normalization must use `resolvePetName`, preventing
 blank or `My Dog` starter values from diverging from the intentional Phoenix
 display identity. Internal Phoenix asset, template, and emote-pack names stay
 unchanged.
+## 2026-08-07: Home mission fallbacks follow Dog Profile identity
+
+Home mission fallback titles are owner-facing care-loop identity and must use
+`resolvePetName`. Blank and `My Dog` starter profiles therefore read as Phoenix,
+while renamed dogs retain their trimmed saved name. This changes no care data,
+provider, payment, AI, or launch boundary.

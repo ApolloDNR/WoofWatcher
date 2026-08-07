@@ -5552,3 +5552,10 @@ passed implementation/docs commit `e660637a` with pinned dependency install,
 JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps,
 and Complete job. Rerun after this proof-record commit before treating the
 final branch tip as current.
+## 2026-08-07 Home mission Dog Profile identity slice
+
+The shared Home mission deck now canonicalizes Dog Profile identity before
+building fallback next-care, Adventure, and Care Pass titles. Red-first
+coverage reproduced the `My Dog` leak and protects the intentional Phoenix
+starter fallback. Native accessibility/device proof, provider/store proof, and
+Apollo approval remain separate gates.
