@@ -5572,3 +5572,11 @@ Dependency-complete `WoofWatcher Verify` run `31152905541`, job `92786114029`,
 passed implementation/docs commit `ba648a38` with dependency install, JSON
 doctor, focused behavior tests, typecheck plus CI-safe builds, and Complete job.
 Rerun after this proof-record commit before treating final-tip proof as current.
+
+## 2026-08-07 My Care Today Dog Profile identity slice
+
+The shared caregiver dashboard now canonicalizes Dog Profile identity before
+building its assigned-routine summary. Red-first coverage reproduced the
+`handled for My Dog` leak and protects the intentional Phoenix starter fallback.
+Provider-backed household sync, native accessibility/device proof, and Apollo
+approval remain separate gates.

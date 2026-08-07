@@ -2354,3 +2354,13 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - CI: Dependency-complete `WoofWatcher Verify` run `31152905541`, job
   `92786114029`, passed implementation/docs commit `ba648a38` with pinned
   dependencies, doctor, focused tests, typecheck, and CI-safe builds.
+
+## 2026-08-07 My Care Today Dog Profile identity
+
+- DONE: The shared caregiver dashboard now resolves Dog Profile identity before
+  summarizing assigned routines, so persisted `My Dog` starter state reads as
+  Phoenix and renamed dogs retain their trimmed name.
+- VERIFIED: Red-first domain coverage reproduced `handled for My Dog`, then
+  passed with the canonical Phoenix fallback.
+- NEXT: Require dependency-complete branch CI. Provider-backed caregiver sync,
+  native accessibility/device evidence, and Apollo approval remain open.

@@ -296,7 +296,7 @@ function nextOpen(items: readonly RoutineBoardItem[]): RoutineBoardItem | null {
 export function deriveMyCareToday(input: MyCareTodayInput): MyCareToday {
   const now = input.now ?? Date.now();
   const personName = clean(input.personName) || "You";
-  const petName = clean(input.petName) || "Phoenix";
+  const petName = resolvePetName(input.petName);
   const board = deriveRoutineBoard({
     routines: input.routines,
     entries: input.entries,

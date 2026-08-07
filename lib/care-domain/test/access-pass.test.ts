@@ -155,3 +155,20 @@ test("derives My Care Today from assigned routines and visible logs", () => {
     ],
   );
 });
+
+test("My Care Today resolves the Dog Profile starter placeholder", () => {
+  const today = deriveMyCareToday({
+    now: NOW,
+    personName: "  Maya  ",
+    petName: "My Dog",
+    routines: [
+      { id: "dinner", label: "Dinner", type: "meal", time: "6:00 PM", owner: "Maya" },
+    ],
+    entries: [],
+  });
+
+  assert.equal(today.personName, "Maya");
+  assert.equal(today.petName, "Phoenix");
+  assert.match(today.summary, /handled for Phoenix/);
+  assert.doesNotMatch(today.summary, /My Dog/);
+});

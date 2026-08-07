@@ -3306,3 +3306,10 @@ Home mission fallback titles are owner-facing care-loop identity and must use
 `resolvePetName`. Blank and `My Dog` starter profiles therefore read as Phoenix,
 while renamed dogs retain their trimmed saved name. This changes no care data,
 provider, payment, AI, or launch boundary.
+
+## 2026-08-07: My Care Today follows Dog Profile identity
+
+The shared caregiver assignment summary is owner-facing care-loop identity and
+must use `resolvePetName`. Blank and `My Dog` starter profiles read as Phoenix;
+renamed dogs retain their trimmed saved name. This changes no routine matching,
+log persistence, provider sharing, or launch boundary.

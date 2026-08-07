@@ -809,3 +809,10 @@ Source coverage now proves Home mission fallback titles cannot expose the
 stored `My Dog` placeholder. Native VoiceOver/TalkBack traversal, route-named
 iOS/Android Home evidence, and Apollo approval remain required; source and CI
 do not clear those gates.
+
+## 2026-08-07 My Care Today identity proof remains open
+
+Source coverage proves the caregiver assignment summary cannot expose the
+stored `My Dog` placeholder. Provider-backed caregiver sync, native
+VoiceOver/TalkBack and route-named iOS/Android evidence, and Apollo approval
+remain required; source tests do not clear those gates.
