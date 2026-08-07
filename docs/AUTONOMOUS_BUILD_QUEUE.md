@@ -4,8 +4,9 @@
 
 - DONE: The final owner-reviewed Setup confirmation now resolves the Dog Profile through the canonical identity boundary instead of exposing the stored `My Dog` placeholder in device-save and household-foundation copy.
 - VERIFIED: Red-first Setup Wizard coverage reproduced `My Dog's profile`, then passed `6/6` after the shared confirmation boundary was corrected; trimmed renamed dogs also produce a matching household name and care-home summary.
+- CI: Dependency-complete `WoofWatcher Verify` run `31133518710`, job `92727670900`, passed implementation/docs commit `b4ab3f62` with pinned install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job all green.
 - BOUNDARY: Setup persistence, Clerk configuration, remote household creation/invites, native accessibility, store review, and launch approval are unchanged.
-- NEXT: Require fresh dependency-complete branch CI, then capture route-named iOS/Android Setup confirmation and VoiceOver/TalkBack proof when device/provider tooling is available.
+- NEXT: Rerun branch CI after this proof-record commit, then capture route-named iOS/Android Setup confirmation and VoiceOver/TalkBack proof when device/provider tooling is available.
 
 ## 2026-08-06 Mainline Home scene reconciliation
 

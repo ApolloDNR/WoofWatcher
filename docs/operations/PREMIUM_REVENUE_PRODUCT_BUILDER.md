@@ -4,6 +4,8 @@
 
 The shared Setup Wizard confirmation now resolves Dog Profile identity before building owner-reviewed device-save, join, local, and household-foundation summaries. Red-first behavior coverage caught `My Dog's profile` in the final confirmation; placeholder profiles now retain Phoenix and whitespace-padded renamed dogs produce a matching trimmed household name. Setup persistence, remote invites, provider sync, native/store evidence, and launch approval remain separate gates.
 
+Dependency-complete `WoofWatcher Verify` run `31133518710`, job `92727670900`, passed implementation/docs commit `b4ab3f62` with pinned dependency install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit before treating the final branch tip as current.
+
 ## 2026-08-06 Mainline Home scene reconciliation
 
 The automation branch now incorporates the latest mainline Home scene architecture: fixed hero anchoring, compact-web viewport measurement, active-walk motion, hardened fallback behavior, and the replacement hard-pixel walk strip. Conflict resolution retained the automation branch's canonical Dog Profile identity dependency, themed fixed light/dark surfaces, and decorative backdrop accessibility semantics. This is source integration only until fresh local checks and final-tip branch CI pass; it does not replace native safe-area, crop, gait, touch, VoiceOver/TalkBack, store, or Apollo review.
