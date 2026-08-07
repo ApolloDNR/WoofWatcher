@@ -75,10 +75,13 @@ import {
   careMutationWasAccepted,
 } from "@/lib/careWriteProtection";
 import {
+  buildPlanReminderFocusRequestKey,
   buildPlanReminderSections,
+  createPlanReminderFocusLifecycle,
   reminderWhenLabel,
   resolvePlanReminderFocus,
   runPlanReminderInteraction,
+  type PlanReminderFocusAttempt,
 } from "@/lib/planReminderCenter";
 import { buildNextPlanVisibleControl } from "@/lib/primaryTabExperience";
 import { canonicalMoreRoute } from "@/lib/canonicalRouteBuilders";
@@ -90,6 +93,10 @@ const DISPLAY_SEMI = "Fredoka_600SemiBold";
 const PLANS_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
 const PLANS_COMMAND_STAGE_SPRITE = getCareTwinSpriteAsset("idle-breathe");
 const PLANS_COMMAND_STAGE_TRACK = CARE_TWIN_SPRITE_MANIFEST["idle-breathe"];
+const REMINDER_FOCUS_FRAME_SCHEDULER = {
+  request: (callback: () => void) => requestAnimationFrame(() => callback()),
+  cancel: (handle: unknown) => cancelAnimationFrame(Number(handle)),
+};
 
 // Potty carries a green tint here (its glyph is drawn from the shared pixel
 // "pee" leaf at render time, matching every care timeline); the blue "drop"
@@ -293,6 +300,17 @@ export default function CalendarScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const scrollContentRef = useRef<View>(null!);
   const reminderRowRefs = useRef(new Map<string, View | null>());
+  const activeReminderFocusRef = useRef<PlanReminderFocusAttempt | null>(null);
+  const consumedReminderFocusKeyRef = useRef<string | null>(null);
+  const reminderFocusLifecycleRef = useRef<ReturnType<
+    typeof createPlanReminderFocusLifecycle
+  > | null>(null);
+  if (!reminderFocusLifecycleRef.current) {
+    reminderFocusLifecycleRef.current = createPlanReminderFocusLifecycle(
+      REMINDER_FOCUS_FRAME_SCHEDULER,
+    );
+  }
+  const reminderFocusLifecycle = reminderFocusLifecycleRef.current;
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
   const ownerOps = consumerSurfacePolicy.ownerOps;
   const {
@@ -522,6 +540,20 @@ export default function CalendarScreen() {
     () => resolvePlanReminderFocus(routeParams, careReminderCenter.items),
     [careReminderCenter.items, routeParams],
   );
+  const reminderFocusRequest = focusedReminderId
+    ? {
+        itemId: focusedReminderId,
+        routeTopPadding: topPadding,
+        sections: reminderSections,
+        summary: careReminderCenter.summary,
+        alertCount: careReminderCenter.alertCount,
+        watchCount: careReminderCenter.watchCount,
+        totalCount: careReminderCenter.total,
+      }
+    : undefined;
+  const reminderFocusRequestKey = reminderFocusRequest
+    ? buildPlanReminderFocusRequestKey(reminderFocusRequest)
+    : "";
   const reminderTone =
     careReminderCenter.status === "attention"
       ? colors.rose
@@ -1125,18 +1157,21 @@ export default function CalendarScreen() {
   }, [fade, isWebRoutePreview, slide]);
 
   useEffect(() => {
-    if (!focusedReminderId) return;
-    runPlanReminderInteraction(
-      { kind: "focus", itemId: focusedReminderId, routeTopPadding: topPadding },
-      {
-        measureItemInScrollContent: (itemId, onMeasured) => {
+    reminderFocusLifecycle.update({
+      request: reminderFocusRequest,
+      tracker: {
+        active: activeReminderFocusRef,
+        consumed: consumedReminderFocusKeyRef,
+      },
+      effects: {
+        measureItemInScrollContent: (itemId, onMeasured, onMeasureFailed) => {
           const row = reminderRowRefs.current.get(itemId);
           const content = scrollContentRef.current;
           if (!row || !content) return false;
           row.measureLayout(
             content,
             (_x, contentY) => onMeasured(contentY),
-            () => undefined,
+            () => onMeasureFailed?.(),
           );
           return true;
         },
@@ -1147,8 +1182,9 @@ export default function CalendarScreen() {
           throw new Error("Reminder focus must not write care.");
         },
       },
-    );
-  }, [focusedReminderId, reminderSections, topPadding]);
+    });
+  }, [reminderFocusRequestKey]);
+  useEffect(() => () => reminderFocusLifecycle.dispose(), [reminderFocusLifecycle]);
 
   const dateLabel = new Date(now).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
   const H_PAD = 16;

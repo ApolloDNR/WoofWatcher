@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import {
   buildHealthReviewPacketShareText,
   deriveBileWatchStatus,
   deriveHealthReviewPacket,
+  resolveHealthReviewPacketActionHref,
   type HealthReviewPacketInput,
 } from "./healthReviewPacket.ts";
 import { deriveHealthWatch } from "../../../lib/care-domain/src/index.ts";
@@ -26,14 +26,7 @@ const baseInput: HealthReviewPacketInput = {
   bedtimeSnackLabel: "1 small bedtime snack",
 };
 
-test("keeps packet route ownership canonical without inventing an action", () => {
-  const source = readFileSync(
-    new URL("./healthReviewPacket.ts", import.meta.url),
-    "utf8",
-  );
-  assert.match(source, /"\/health\?section=records"/);
-  assert.doesNotMatch(source, /\| "\/records"/);
-
+test("routes packet actions through canonical owners and preserves only a validated WoofGuide prompt", () => {
   const packet = deriveHealthReviewPacket(baseInput);
   assert.deepEqual(packet.primaryAction, {
     label: "Log health detail",
@@ -41,9 +34,52 @@ test("keeps packet route ownership canonical without inventing an action", () =>
   });
   assert.deepEqual(packet.secondaryAction, {
     label: "Draft vet questions",
-    route: "/woofguide",
+    route: "/more?section=woofguide",
     params: { prompt: "health-review" },
   });
+  assert.deepEqual(resolveHealthReviewPacketActionHref(packet.secondaryAction), {
+    pathname: "/more",
+    params: { section: "woofguide", prompt: "health-review" },
+  });
+  assert.deepEqual(
+    resolveHealthReviewPacketActionHref({
+      label: "Untrusted prompt",
+      route: "/more?section=woofguide",
+      params: {
+        prompt: "\u202ehidden",
+        extra: "must-not-leak",
+        section: "privacy",
+      },
+    }),
+    {
+      pathname: "/more",
+      params: { section: "woofguide" },
+    },
+  );
+  assert.deepEqual(
+    resolveHealthReviewPacketActionHref({
+      label: "Repeated prompt",
+      route: "/more?section=woofguide",
+      params: {
+        prompt: ["health-review", "ignored"],
+      } as unknown as Record<string, string>,
+    }),
+    {
+      pathname: "/more",
+      params: { section: "woofguide" },
+    },
+  );
+  assert.deepEqual(
+    resolveHealthReviewPacketActionHref({
+      label: "Inherited prompt",
+      route: "/more?section=woofguide",
+      params: Object.create({ prompt: "health-review" }) as Record<string, string>,
+    }),
+    {
+      pathname: "/more",
+      params: { section: "woofguide" },
+    },
+  );
 });
 
 test("keeps a non-urgent 14-day yellow-bile pattern at Watch", () => {
@@ -218,7 +254,7 @@ test("builds a steady non-diagnostic Health Review Packet", () => {
   });
   assert.deepEqual(packet.secondaryAction, {
     label: "Draft vet questions",
-    route: "/woofguide",
+    route: "/more?section=woofguide",
     params: { prompt: "health-review" },
   });
 });

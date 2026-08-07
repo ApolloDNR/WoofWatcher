@@ -207,7 +207,7 @@ test("vomit watch event creates health watch urgency", () => {
   );
 
   assert.equal(command.primaryAction.kind, "health");
-  assert.equal(command.primaryAction.route, "/health?tab=bile");
+  assert.equal(command.primaryAction.route, "/health?section=bile-watch");
   assert.equal(command.primaryAction.urgency, "watch");
   assert.equal(command.health.urgency, "watch");
   assert.match(command.health.detail, /vomit/i);
@@ -231,7 +231,7 @@ test("non-vomit health alerts route to Health Watch instead of Records", () => {
   );
 
   assert.equal(command.primaryAction.kind, "health");
-  assert.equal(command.primaryAction.route, "/health?tab=health");
+  assert.equal(command.primaryAction.route, "/health?section=health-watch");
   assert.equal(command.primaryAction.urgency, "watch");
   assert.match(command.primaryAction.detail, /health signal/i);
 });

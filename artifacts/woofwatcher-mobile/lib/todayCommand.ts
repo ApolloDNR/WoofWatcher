@@ -8,6 +8,10 @@ import {
   type RoutineBoardItem,
 } from "../../../lib/care-domain/src/index.ts";
 
+import {
+  canonicalHealthRoute,
+  type CanonicalHealthRoute,
+} from "./canonicalRouteBuilders.ts";
 import { resolvePetName } from "./petIdentity.ts";
 
 export type TodayCommandUrgency = "normal" | "watch" | "alert";
@@ -17,10 +21,7 @@ export type TodayCommandRoute =
   | `/log?entry=${string}`
   | `/log?type=${string}&detail=1&intent=${string}`
   | "/calendar"
-  | "/health?tab=health"
-  | "/health?tab=bile"
-  | "/records"
-  | "/woofguide"
+  | CanonicalHealthRoute
   | "/more";
 
 export type TodayCommandIcon =
@@ -445,7 +446,9 @@ export function deriveTodayCommand(
 
   if (health.urgency !== "normal" || dayStatus.healthAlert) {
     const healthRoute: TodayCommandRoute =
-      vomitEntries.length > 0 ? "/health?tab=bile" : "/health?tab=health";
+      vomitEntries.length > 0
+        ? canonicalHealthRoute("bile-watch")
+        : canonicalHealthRoute("health-watch");
     return {
       primaryAction: {
         kind: "health",

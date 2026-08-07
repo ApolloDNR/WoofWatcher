@@ -34,6 +34,7 @@ import {
   buildHealthReviewPacketShareText,
   deriveBileWatchStatus,
   deriveHealthReviewPacket,
+  resolveHealthReviewPacketActionHref,
   type HealthReviewPacketAction,
 } from "@/lib/healthReviewPacket";
 import {
@@ -665,15 +666,7 @@ function HealthCoreScreen({
   });
 
   function openHealthReviewAction(action: HealthReviewPacketAction): void {
-    if (action.route.startsWith("/log?")) {
-      router.push(action.route as never);
-      return;
-    }
-    if (action.route === "/woofguide") {
-      router.push({ pathname: "/woofguide", params: action.params ?? {} } as never);
-      return;
-    }
-    router.push(action.route);
+    router.push(resolveHealthReviewPacketActionHref(action) as never);
   }
 
   function openHealthStatusRoute(type: string): void {

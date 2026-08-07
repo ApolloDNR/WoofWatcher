@@ -2455,8 +2455,11 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
     health,
     /shareTextPayload\(\{[\s\S]*message:\s*buildHealthReviewPacketShareText\(healthReviewPacket/,
   );
-  assert.match(health, /action\.route\.startsWith\("\/log\?"\)/);
-  assert.match(health, /router\.push\(action\.route as never\)/);
+  assert.match(health, /resolveHealthReviewPacketActionHref/);
+  assert.match(
+    health,
+    /router\.push\(resolveHealthReviewPacketActionHref\(action\) as never\)/,
+  );
   assert.doesNotMatch(
     health,
     /router\.push\(\{ pathname: "\/log", params: action\.params \?\? \{\} \}\)/,
@@ -4960,6 +4963,16 @@ test("moves the full safe Reminder Center into Plans and leaves a replace-only l
   assert.match(calendar, /limit:\s*50/);
   assert.match(calendar, /focusedReminderId/);
   assert.match(calendar, /focusedReminderRow/);
+  assert.match(calendar, /buildPlanReminderFocusRequestKey/);
+  assert.match(calendar, /createPlanReminderFocusLifecycle/);
+  assert.match(
+    calendar,
+    /useEffect\(\(\) => \{[\s\S]*reminderFocusLifecycle\.update[\s\S]*\}, \[reminderFocusRequestKey\]\);/,
+  );
+  assert.match(
+    calendar,
+    /useEffect\(\(\) => \(\) => reminderFocusLifecycle\.dispose\(\), \[reminderFocusLifecycle\]\);/,
+  );
   assert.match(calendar, /measureLayout\([\s\S]*contentY[\s\S]*scrollTo:/);
   assert.match(reminderModel, /label: "Today"/);
   assert.match(reminderModel, /label: "Tomorrow"/);
@@ -5000,7 +5013,10 @@ test("migrates active Task 5 callers without weakening legacy route coverage", (
     readAppFile("fastlog.tsx"),
     readAppFile("setup.tsx"),
     readAppFile("care-twin-qa.tsx"),
+    readAppFile(join("(tabs)", "health.tsx")),
     readFileSync(join(MOBILE_LIB_DIR, "homeMissionDeck.ts"), "utf8"),
+    readFileSync(join(MOBILE_LIB_DIR, "todayCommand.ts"), "utf8"),
+    readFileSync(join(MOBILE_LIB_DIR, "healthReviewPacket.ts"), "utf8"),
     readFileSync(join(MOBILE_LIB_DIR, "woofGuideActions.ts"), "utf8"),
   ].join("\n");
 
@@ -5009,6 +5025,7 @@ test("migrates active Task 5 callers without weakening legacy route coverage", (
     '"/records"',
     '"/trends"',
     '"/adventure"',
+    '"/woofguide"',
     '"/health?tab=health"',
     '"/health?tab=bile"',
     '"/more?section=diet"',

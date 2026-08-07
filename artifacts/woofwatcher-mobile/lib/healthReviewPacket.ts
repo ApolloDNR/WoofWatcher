@@ -3,6 +3,12 @@ import type {
   CareHealthStatus,
 } from "@workspace/care-domain";
 
+import {
+  canonicalMoreRoute,
+  type CanonicalMoreRoute,
+} from "./canonicalRouteBuilders.ts";
+import { resolveCanonicalDestination } from "./navigationOwnership.ts";
+
 export type BileWatchStatus = "Low Risk" | "Watch" | "Review";
 
 export interface BileWatchStatusInput {
@@ -30,13 +36,23 @@ export function deriveBileWatchStatus({
   return "Low Risk";
 }
 
-export type HealthReviewPacketRoute = `/log?type=${string}&detail=1&intent=${string}` | "/woofguide" | "/health?section=records";
+export type HealthReviewPacketRoute =
+  | `/log?type=${string}&detail=1&intent=${string}`
+  | CanonicalMoreRoute
+  | "/health?section=records";
 
 export interface HealthReviewPacketAction {
   label: string;
   route: HealthReviewPacketRoute;
   params?: Record<string, string>;
 }
+
+export type HealthReviewPacketActionHref =
+  | HealthReviewPacketRoute
+  | Readonly<{
+      pathname: "/more";
+      params: Readonly<Record<string, string>>;
+    }>;
 
 export interface HealthReviewPacketInput {
   dogName: string;
@@ -163,9 +179,31 @@ export function deriveHealthReviewPacket(input: HealthReviewPacketInput): Health
     },
     secondaryAction: {
       label: "Draft vet questions",
-      route: "/woofguide",
+      route: canonicalMoreRoute("woofguide"),
       params: { prompt: "health-review" },
     },
+  };
+}
+
+export function resolveHealthReviewPacketActionHref(
+  action: HealthReviewPacketAction,
+): HealthReviewPacketActionHref {
+  if (action.route !== canonicalMoreRoute("woofguide")) return action.route;
+
+  const promptValue: unknown =
+    action.params && Object.prototype.hasOwnProperty.call(action.params, "prompt")
+      ? action.params.prompt
+      : undefined;
+  const destination = resolveCanonicalDestination({
+    pathname: "/more",
+    params: {
+      section: "woofguide",
+      ...(typeof promptValue === "string" ? { prompt: promptValue } : {}),
+    },
+  });
+  return {
+    pathname: "/more",
+    params: destination.params ?? { section: "woofguide" },
   };
 }
 
