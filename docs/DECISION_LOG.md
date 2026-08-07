@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-07: Home care-twin announcements follow Dog Profile identity
+
+- Decision: build the Home room interaction label at the canonical pet-identity boundary instead of combining a resolved room name with a hardcoded Phoenix care-twin name.
+- Reason: a screen-reader user must hear one consistent dog identity after renaming the Dog Profile.
+- Boundary: Phoenix asset/template identifiers, room behavior, providers, native approval, and launch gates are unchanged.
+
 ## 2026-08-06: Setup confirmation follows Dog Profile identity
 
 - Decision: resolve the dog name at the shared Setup Wizard confirmation boundary before building device-save, join, local, or household-foundation copy.

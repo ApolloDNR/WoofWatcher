@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-08-07 Home care-twin accessibility identity
+
+- DONE: Home's full-room interaction now builds its screen-reader label from canonical Dog Profile identity instead of announcing a renamed dog's room as a Phoenix care twin.
+- VERIFIED: Red-first identity coverage failed on the missing shared builder, then focused identity/readiness coverage passed `192/192`; Luna and the intentional Phoenix starter fallback are covered.
+- BOUNDARY: Internal Phoenix asset/template names, care state, room motion, native VoiceOver/TalkBack proof, providers, store review, and Apollo approval are unchanged.
+- NEXT: Run the broad local checks and dependency-complete branch CI, then capture route-named native Home traversal when device tooling is available.
+
 ## 2026-08-07 Avatar config Dog Profile identity
 
 - DONE: Default and restored avatar configurations now use the canonical Dog Profile display rule, so the stored `My Dog` placeholder cannot reappear in care-twin descriptions or persisted avatar state.

@@ -7,12 +7,24 @@ import {
   buildAuthGatewayIdentityCopy,
   buildCareTwinAwayIdentityCopy,
   buildCareTwinLiveTitle,
+  buildHomeCareTwinAccessibilityLabel,
   buildCareTwinPetActionLabel,
   buildCareTwinQaIdentityCopy,
   buildNotFoundIdentityCopy,
   buildSetupHouseholdPlaceholder,
   buildWoofGuideComposerPlaceholder,
 } from "./petIdentity.ts";
+
+test("names the active dog once in the Home care-twin accessibility label", () => {
+  assert.equal(
+    buildHomeCareTwinAccessibilityLabel("  Luna  ", "Shepherd", "Happy"),
+    "Luna's room. Shepherd care twin. Happy.",
+  );
+  assert.equal(
+    buildHomeCareTwinAccessibilityLabel("My Dog", "Shepherd", "Calm"),
+    "Phoenix's room. Shepherd care twin. Calm.",
+  );
+});
 
 test("names the active dog in the setup household hint", () => {
   assert.equal(buildSetupHouseholdPlaceholder("  Luna  "), "Luna House");

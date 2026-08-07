@@ -2010,7 +2010,7 @@ test("wires Home to the living Phoenix room and avatar motion model", () => {
     /deriveCareTwinChoreography\(deriveCareTwinScene\(avatarMotion\)\)/,
   );
   assert.match(home, /avatarMotion\.line/);
-  assert.match(home, /\$\{petName\} Room/);
+  assert.match(home, /buildHomeCareTwinAccessibilityLabel/);
   assert.match(home, /heroStudioButton/);
   assert.match(home, /const openAvatarStudio/);
   assert.match(home, /onPress=\{openAvatarStudio\}/);
@@ -5935,6 +5935,21 @@ test("keeps Living Phoenix room rasters inside its labeled controls", () => {
     room,
     /<Animated\.Image[\s\S]*?key={`roam-(?:underlay|overlay)-\$\{layer\.id\}`}[\s\S]*?accessible=\{false\}[\s\S]*?source=\{layer\.source\}/,
     "roaming accessory layers must stay decorative parts of the labeled pet control",
+  );
+});
+
+test("keeps the Home care-twin control aligned with Dog Profile identity", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+
+  assert.match(
+    home,
+    /accessibilityLabel=\{buildHomeCareTwinAccessibilityLabel\([\s\S]*?petName,[\s\S]*?avatarTemplate\.label,[\s\S]*?avatarMotion\.label,[\s\S]*?\)\}/,
+    "Home must not announce a renamed dog's room as a Phoenix care twin",
+  );
+  assert.doesNotMatch(
+    home,
+    /accessibilityLabel=\{`\$\{petName\} Room\. Phoenix/,
+    "Home must not reintroduce the hardcoded Phoenix identity in its room control",
   );
 });
 

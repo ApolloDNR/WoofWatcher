@@ -64,6 +64,14 @@ export function buildCareTwinPetActionLabel(name: string | null | undefined): st
   return `Pet ${resolvePetName(name)}`;
 }
 
+export function buildHomeCareTwinAccessibilityLabel(
+  name: string | null | undefined,
+  templateLabel: string,
+  motionLabel: string,
+): string {
+  return `${resolvePetName(name)}'s room. ${templateLabel} care twin. ${motionLabel}.`;
+}
+
 export function buildCareTwinQaIdentityCopy(name: string | null | undefined): {
   menuDetail: string;
   routeSubtitle: string;

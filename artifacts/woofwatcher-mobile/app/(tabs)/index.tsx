@@ -102,7 +102,10 @@ import {
   findOpenWalkSession,
 } from "@/lib/walkSession";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
-import { resolvePetName } from "@/lib/petIdentity";
+import {
+  buildHomeCareTwinAccessibilityLabel,
+  resolvePetName,
+} from "@/lib/petIdentity";
 import { deriveTodayCommand, findPendingMealOutcome } from "@/lib/todayCommand";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 
@@ -1961,7 +1964,11 @@ export default function HomeScreen() {
           >
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${petName} Room. Phoenix ${avatarTemplate.label} care twin. ${avatarMotion.label}.`}
+              accessibilityLabel={buildHomeCareTwinAccessibilityLabel(
+                petName,
+                avatarTemplate.label,
+                avatarMotion.label,
+              )}
               accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
               onPress={tapPhoenixRoom}
               onLongPress={openAvatarStudio}

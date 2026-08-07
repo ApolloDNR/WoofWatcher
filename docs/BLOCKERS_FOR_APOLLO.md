@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-07 Home accessibility identity status
+
+Source-level Home room announcements now follow canonical Dog Profile identity while intentional Phoenix asset/template identifiers remain unchanged. Native iOS/Android Home review, VoiceOver/TalkBack traversal, route-named evidence, store review, and Apollo approval remain open; no provider, payment, live-AI, or launch capability was enabled.
+
 ## 2026-08-06 Setup confirmation identity status
 
 Source-level final Setup confirmation copy now follows canonical Dog Profile identity, including the intentional Phoenix starter fallback. Native iOS/Android Setup review, VoiceOver/TalkBack traversal, real Clerk/household provider evidence, store review, and Apollo approval remain open; no account, invite, sync, payment, or launch capability was enabled.

@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-08-07 Home care-twin accessibility identity slice
+
+Home's full-room interaction now builds its accessibility label through the canonical Dog Profile identity boundary. Red-first behavior coverage caught the contradictory `Luna Room. Phoenix Shepherd care twin` announcement; renamed dogs now receive one consistent identity and blank/`My Dog` profiles retain the intentional Phoenix starter fallback. Internal asset/template identifiers, care state, room motion, providers, native/store evidence, and launch approval remain unchanged.
+
+Focused identity/readiness coverage passed `192/192`. Run broad local checks and dependency-complete branch CI before treating this slice as release proof.
+
 ## 2026-08-06 Setup confirmation identity slice
 
 The shared Setup Wizard confirmation now resolves Dog Profile identity before building owner-reviewed device-save, join, local, and household-foundation summaries. Red-first behavior coverage caught `My Dog's profile` in the final confirmation; placeholder profiles now retain Phoenix and whitespace-padded renamed dogs produce a matching trimmed household name. Setup persistence, remote invites, provider sync, native/store evidence, and launch approval remain separate gates.
