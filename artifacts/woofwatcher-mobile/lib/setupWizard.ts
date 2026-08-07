@@ -1,3 +1,5 @@
+import { resolvePetName } from "./petIdentity.ts";
+
 export interface SetupWizardWeightInfo {
   current: number;
   goal?: string;
@@ -235,7 +237,7 @@ export function buildSetupWizardConfirmation(
   doc: SetupWizardCareDoc,
   options: SetupWizardConfirmationOptions = {},
 ): SetupWizardConfirmation {
-  const dogName = clean(doc.profile.name) || "your dog";
+  const dogName = resolvePetName(doc.profile.name);
   const setup = doc.householdSetup;
   const mode = normalizeHouseholdMode(setup?.mode);
   const householdName = clean(setup?.householdName) || defaultHouseholdName(dogName);

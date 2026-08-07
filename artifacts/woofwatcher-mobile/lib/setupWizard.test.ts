@@ -233,3 +233,38 @@ test("normalizes production setup to a polished device-only care record", () => 
     /preview|coming soon|join invite/i,
   );
 });
+
+test("uses canonical Dog Profile identity in the owner-reviewed setup confirmation", () => {
+  const placeholderConfirmation = buildSetupWizardConfirmation(defaultDoc(), {
+    consumerRelease: true,
+  });
+
+  assert.equal(
+    placeholderConfirmation.detail,
+    "Phoenix's profile, routines, and care history will be saved on this device.",
+  );
+
+  const renamedConfirmation = buildSetupWizardConfirmation(
+    {
+      ...defaultDoc(),
+      profile: {
+        ...defaultDoc().profile,
+        name: "  Luna  ",
+        publicLabel: "  Luna  ",
+      },
+      householdSetup: {
+        mode: "create",
+        householdName: "",
+        inviteCode: "",
+        providerStatus: "local-only",
+      },
+    },
+    { isClerkConfigured: false },
+  );
+
+  assert.equal(
+    renamedConfirmation.detail,
+    "Luna's Household becomes Luna's care home base for routines, logs, handoffs, and reports.",
+  );
+  assert.equal(renamedConfirmation.householdLabel, "Luna's Household - create household");
+});

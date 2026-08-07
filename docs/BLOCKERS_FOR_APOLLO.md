@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-06 Setup confirmation identity status
+
+Source-level final Setup confirmation copy now follows canonical Dog Profile identity, including the intentional Phoenix starter fallback. Native iOS/Android Setup review, VoiceOver/TalkBack traversal, real Clerk/household provider evidence, store review, and Apollo approval remain open; no account, invite, sync, payment, or launch capability was enabled.
+
 ## 2026-08-06 Mainline Home scene reconciliation status
 
 Source integration can preserve fixed hero positioning, active-walk gait, themed surfaces, and accessibility boundaries, but it cannot approve the result on real phones. Route-named iOS/Android Home screenshots, compact-phone safe-area/crop/touch review, VoiceOver/TalkBack traversal, store evidence, and Apollo visual approval remain open.

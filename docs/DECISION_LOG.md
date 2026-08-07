@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-06: Setup confirmation follows Dog Profile identity
+
+- Decision: resolve the dog name at the shared Setup Wizard confirmation boundary before building device-save, join, local, or household-foundation copy.
+- Reason: the final owner-reviewed onboarding step must not expose the `My Dog` storage placeholder or derive a placeholder household name after the rest of Setup has adopted the canonical identity rule.
+- Boundary: care-document writes, provider enablement, household sync, and launch gates are unchanged.
+
 ## 2026-08-06: Reconcile mainline Home scene work before new automation scope
 
 - Decision: merge `origin/main` into `automation/premium-revenue-product-builder` with a normal merge commit before starting another Home identity slice.
