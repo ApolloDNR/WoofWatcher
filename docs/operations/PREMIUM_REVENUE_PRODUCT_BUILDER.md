@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-08-07 Active-walk Dog Profile identity slice
+
+The shared avatar-motion model now resolves Dog Profile identity before building its in-progress walk status. Red-first coverage caught `Phoenix keeps moving` for a renamed Luna profile; placeholder profiles retain Phoenix and whitespace-padded renamed dogs use their trimmed name. Walk lifecycle, route evidence, persistence, household sync, animation gait, providers, native/store evidence, and launch approval remain unchanged.
+
+Focused avatar-motion, identity, and mobile-readiness coverage passed `202/202`; the broad partial-checkout suite passed `785/787` with only the known unresolved `@workspace/care-domain` links in `careCareer` and `careSync`; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. Local TypeScript remained dependency-blocked on missing `@tanstack/react-query` and `zod`, while the JSON doctor kept source-backed guards passing and remained blocked on exact pnpm/Expo availability. Dependency-complete branch CI is pending.
+
 ## 2026-08-07 Setup breed-matched twin identity slice
 
 Setup's shared breed-template plan and avatar patch now resolve Dog Profile identity before building the saved-twin confirmation or persisting the avatar name. Red-first coverage caught `My Dog's twin is ready`; placeholder profiles now retain Phoenix and whitespace-padded renamed dogs use their trimmed name. Breed matching, avatar appearance, care persistence, providers, native/store evidence, and launch approval remain unchanged.

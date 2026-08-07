@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-07: Active-walk status follows Dog Profile identity
+
+- Decision: resolve the dog name inside the shared avatar-motion model before building the active-walk status line.
+- Reason: an in-progress walk is live household care state and must not relabel a renamed dog as Phoenix.
+- Boundary: walk lifecycle, logging, sync, animation behavior, providers, native approval, and launch gates are unchanged.
+
 ## 2026-08-07: Setup breed matching follows Dog Profile identity
 
 - Decision: resolve the dog name inside both shared breed-template planning and avatar-config patching instead of trusting Setup callers to pre-normalize profile state.

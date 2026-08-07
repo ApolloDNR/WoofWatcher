@@ -303,6 +303,7 @@ function openRoutineMotion(
 
 export function deriveAvatarMotion(input: AvatarMotionInput): AvatarMotionModel {
   const now = input.now ?? Date.now();
+  const petName = resolvePetName(input.petName);
   const health = deriveHealthWatch({
     entries: input.entries,
     routines: input.routines,
@@ -334,7 +335,7 @@ export function deriveAvatarMotion(input: AvatarMotionInput): AvatarMotionModel 
       intensity: "high",
       label: "Walking",
       speech: "Out exploring.",
-      line: "Walk in progress. Phoenix keeps moving until the session is finished.",
+      line: `Walk in progress. ${petName} keeps moving until the session is finished.`,
       route: "/log",
     };
   }

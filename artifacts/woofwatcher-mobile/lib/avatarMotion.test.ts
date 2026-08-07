@@ -172,6 +172,7 @@ test("an open walk remains authoritative after reload even when its start log pr
   const motion = deriveAvatarMotion({
     now: NOW,
     activeWalk: true,
+    petName: "  Luna  ",
     reactionsSince: NOW - 60_000,
     entries: [
       {
@@ -192,4 +193,17 @@ test("an open walk remains authoritative after reload even when its start log pr
   assert.equal(motion.state, "walking");
   assert.equal(motion.cue, "walk-cycle");
   assert.equal(motion.speech, "Out exploring.");
+  assert.equal(motion.line, "Walk in progress. Luna keeps moving until the session is finished.");
+});
+
+test("keeps the Phoenix starter identity for an active walk with a placeholder profile", () => {
+  const motion = deriveAvatarMotion({
+    now: NOW,
+    activeWalk: true,
+    petName: "My Dog",
+    entries: [],
+    routines: [],
+  });
+
+  assert.equal(motion.line, "Walk in progress. Phoenix keeps moving until the session is finished.");
 });

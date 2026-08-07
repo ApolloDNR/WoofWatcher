@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-08-07 Active-walk Dog Profile identity
+
+- DONE: The shared avatar-motion model now resolves Dog Profile identity before building the live active-walk status line.
+- VERIFIED: Red-first coverage reproduced `Phoenix keeps moving` for a renamed Luna profile; trimmed renamed dogs now stay consistent while blank/`My Dog` profiles retain Phoenix.
+- BOUNDARY: Walk lifecycle, route capture, persistence, household sync, sprite gait, providers, and launch gates are unchanged.
+- NEXT: Run strongest local verification and dependency-complete branch CI, then retain route-named iOS/Android active-walk and VoiceOver/TalkBack proof as external gates.
+
 ## 2026-08-07 Setup breed-matched twin identity
 
 - DONE: Setup's shared breed-template plan and saved avatar patch now resolve Dog Profile identity before building confirmation copy or persisting the care-twin name.

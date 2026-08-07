@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-07 Active-walk identity status
+
+Source-level active-walk guidance now follows canonical Dog Profile identity while preserving the intentional Phoenix starter fallback. Native iOS/Android active-walk review, VoiceOver/TalkBack traversal, route-named evidence, provider/store proof, and Apollo approval remain open; no logging, sync, payment, live-AI, or launch capability was enabled.
+
 ## 2026-08-07 Setup breed-twin identity status
 
 Source-level Setup breed matching now keeps confirmation and persisted avatar identity aligned with the canonical Dog Profile rule. Native iOS/Android Setup and Avatar Studio review, VoiceOver/TalkBack traversal, provider/store proof, and Apollo approval remain open; no provider, payment, live-AI, or launch capability was enabled.
