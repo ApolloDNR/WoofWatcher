@@ -4,8 +4,9 @@
 
 - DONE: The shared meal detail presentation now resolves Dog Profile identity itself, so direct or future callers cannot expose the stored `My Dog` placeholder in served-to-outcome guidance.
 - VERIFIED: Red-first Quick Log coverage reproduced `what My Dog ate`; Phoenix fallback and a trimmed Mochi rename are now covered while meal lifecycle behavior stays unchanged.
+- CI: Dependency-complete `WoofWatcher Verify` run `31191283296`, job `92908446204`, passed implementation/docs commit `d24ed223` with pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all green.
 - BOUNDARY: Meal logging, persistence, household sync, native VoiceOver/TalkBack proof, providers, store review, and Apollo approval are unchanged.
-- NEXT: Run strongest local verification and dependency-complete branch CI, then retain native meal-flow review as an external gate.
+- NEXT: Rerun branch CI after this proof-record commit, then retain native meal-flow review as an external gate.
 
 ## 2026-08-07 Home care-twin accessibility identity
 

@@ -4,7 +4,9 @@
 
 The shared Quick Log detail presentation now resolves Dog Profile identity before building served-to-outcome meal guidance. Red-first coverage caught `what My Dog ate`; placeholder profiles now retain Phoenix and whitespace-padded renamed dogs use their trimmed name. Meal lifecycle, persistence, household sync, providers, native/store evidence, and launch approval remain unchanged.
 
-Local and dependency-complete verification must pass before this source correction is treated as branch-current proof.
+Focused Quick Log, identity, and mobile-readiness coverage passed `208/208`; the broad partial-checkout suite passed `784/786` with only the known unresolved `@workspace/care-domain` links in `careCareer` and `careSync`; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed.
+
+Dependency-complete `WoofWatcher Verify` run `31191283296`, job `92908446204`, passed implementation/docs commit `d24ed223` with pinned dependency install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit before treating the final branch tip as current.
 
 ## 2026-08-07 Home care-twin accessibility identity slice
 
