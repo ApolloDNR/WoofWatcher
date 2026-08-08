@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-08-07 Alone Time log identity
+
+- DONE: The shared Alone Time start builder now resolves Dog Profile identity before persisting the household-visible timeline title.
+- VERIFIED: Red-first coverage reproduced `My Dog home alone`; placeholder profiles now retain Phoenix and whitespace-padded renamed dogs use their trimmed name.
+- BOUNDARY: Alone Time lifecycle, return outcomes, audit history, persistence, household sync, providers, and launch gates are unchanged.
+- NEXT: Run dependency-complete branch CI, then retain native route-named Alone Time and VoiceOver/TalkBack proof as external gates.
+
 ## 2026-08-07 Active-walk Dog Profile identity
 
 - DONE: The shared avatar-motion model now resolves Dog Profile identity before building the live active-walk status line.

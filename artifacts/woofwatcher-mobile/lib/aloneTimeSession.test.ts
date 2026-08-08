@@ -34,6 +34,14 @@ test("starts an open home-alone session with household-visible lifecycle details
   });
 });
 
+test("uses canonical Dog Profile identity in the household-visible start entry", () => {
+  const placeholder = buildAloneTimeStartEntry({ caregiver: "Apollo", petName: "My Dog", now: START });
+  const renamed = buildAloneTimeStartEntry({ caregiver: "Apollo", petName: "  Mochi  ", now: START });
+
+  assert.equal(placeholder.title, "Alone Time - Phoenix home alone");
+  assert.equal(renamed.title, "Alone Time - Mochi home alone");
+});
+
 test("finds the newest active alone-time session and ignores completed or private sessions", () => {
   const open = buildAloneTimeStartEntry({ caregiver: "Emma", now: START + 60000 });
   const completed = buildAloneTimeReturnPatch(open, { caregiver: "Apollo", outcome: "calm", now: RETURN });

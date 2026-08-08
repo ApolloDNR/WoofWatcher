@@ -1,4 +1,5 @@
 import { appendCareAuditEvent } from "../../../lib/care-domain/src/index.ts";
+import { resolvePetName } from "./petIdentity.ts";
 
 export type AloneTimeReturnOutcome =
   | "calm"
@@ -115,7 +116,7 @@ export function getAloneTimeReturnOptions(): AloneTimeReturnOption[] {
 export function buildAloneTimeStartEntry(options: AloneTimeStartOptions): AloneTimeBuiltEntry {
   const occurredAt = iso(options.now);
   const caregiver = clean(options.caregiver) || "Care team";
-  const petName = clean(options.petName) || "Your dog";
+  const petName = resolvePetName(options.petName);
   return {
     type: "alone",
     title: `Alone Time - ${petName} home alone`,

@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-07 Alone Time identity status
+
+Source-level Alone Time timeline titles now follow canonical Dog Profile identity while preserving the intentional Phoenix starter fallback. Native iOS/Android Alone Time review, VoiceOver/TalkBack traversal, route-named evidence, provider-backed household sync, store proof, and Apollo approval remain open; no provider, payment, live-AI, or launch capability was enabled.
+
 ## 2026-08-07 Active-walk identity status
 
 Source-level active-walk guidance now follows canonical Dog Profile identity while preserving the intentional Phoenix starter fallback. Native iOS/Android active-walk review, VoiceOver/TalkBack traversal, route-named evidence, provider/store proof, and Apollo approval remain open; no logging, sync, payment, live-AI, or launch capability was enabled.

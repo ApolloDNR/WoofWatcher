@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-07 Alone Time identity slice
+
+The shared Alone Time start builder now resolves Dog Profile identity before persisting the household-visible timeline title. Red-first behavior coverage caught `My Dog home alone`; placeholder profiles now retain Phoenix and whitespace-padded renamed dogs use their trimmed name. Alone Time lifecycle, audit history, persistence, household sync, provider/native/store evidence, and launch approval remain unchanged.
+
 ## 2026-08-07 Active-walk Dog Profile identity slice
 
 The shared avatar-motion model now resolves Dog Profile identity before building its in-progress walk status. Red-first coverage caught `Phoenix keeps moving` for a renamed Luna profile; placeholder profiles retain Phoenix and whitespace-padded renamed dogs use their trimmed name. Walk lifecycle, route evidence, persistence, household sync, animation gait, providers, native/store evidence, and launch approval remain unchanged.

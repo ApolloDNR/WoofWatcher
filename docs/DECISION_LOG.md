@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-07: Alone Time logs follow Dog Profile identity
+
+- Decision: resolve the dog name inside the shared Alone Time start builder before creating its household-visible timeline title.
+- Reason: durable care history must not preserve the `My Dog` storage placeholder after the product has adopted the canonical Phoenix starter identity.
+- Boundary: session lifecycle, return outcomes, audit history, persistence, provider sync, and launch gates are unchanged.
+
 ## 2026-08-07: Active-walk status follows Dog Profile identity
 
 - Decision: resolve the dog name inside the shared avatar-motion model before building the active-walk status line.
