@@ -5049,6 +5049,12 @@ before announcing the production room. Red-first coverage reproduced the
 renamed dogs. Native screen-reader/device proof and Apollo approval remain
 separate gates.
 
+Dependency-complete `WoofWatcher Verify` run `31229495920`, job `93030332784`,
+passed implementation/docs commit `965cf134` with pinned dependency install,
+JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps,
+and Complete job. Rerun after this proof-record commit before treating the final
+branch tip as current.
+
 ## 2026-08-03 Health Review Packet dog identity slice
 
 Watch-state factual-note guidance now uses the packet's active Dog Profile name

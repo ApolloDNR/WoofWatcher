@@ -835,3 +835,7 @@ Source coverage now proves the production room label cannot announce the
 stored `My Dog` placeholder. Native VoiceOver/TalkBack traversal, route-named
 iOS/Android room evidence, and Apollo accessibility approval remain required;
 source and CI do not clear those gates.
+
+Dependency-complete `WoofWatcher Verify` run `31229495920`, job `93030332784`,
+passed implementation/docs commit `965cf134`. This does not clear the native
+accessibility/device or Apollo approval gates above.
