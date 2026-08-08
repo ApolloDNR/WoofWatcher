@@ -1,3 +1,5 @@
+import { resolvePetName } from "./pet-identity.ts";
+
 export type RecordKind =
   | "vaccine"
   | "vet"
@@ -403,7 +405,7 @@ export function buildPetCredential(input: PetCredentialInput = {}): PetCredentia
   const profile = input.profile ?? {};
   const records = input.records ?? [];
   const generatedAt = input.generatedAt ?? new Date().toISOString();
-  const name = clean(profile.name) || "Dog";
+  const name = resolvePetName(profile.name);
   const breed = clean(profile.breed) || "Breed not set";
   const weight =
     profile.weight?.current != null && profile.weight.current > 0

@@ -2436,3 +2436,15 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - VERIFIED: Dependency-complete `WoofWatcher Verify` run `31256945083`, job
   `93101652112`, passed implementation commit `698d5d88` with install, JSON
   doctor, focused tests, typecheck, and CI-safe builds green.
+
+## 2026-08-08 Dog ID credential identity boundary
+
+- DONE: Route the shared `buildPetCredential` boundary through
+  `resolvePetName`, so printable and shareable Dog ID artifacts cannot retain
+  the stored `My Dog` placeholder.
+- VERIFIED: Red-first domain coverage reproduced `My Dog Dog ID`; focused
+  Record Vault, identity, and mobile-readiness coverage passes with Phoenix for
+  placeholder profiles and trimmed Luna for renamed profiles.
+- NEXT: Require dependency-complete branch CI. Native iOS/Android Dog ID
+  share/reopen proof, provider storage, store review, and Apollo approval remain
+  open.

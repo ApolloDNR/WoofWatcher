@@ -56,6 +56,23 @@ test("builds a shareable pet credential from profile and records", () => {
   assert.match(credential.message, /Apollo/);
 });
 
+test("normalizes Dog Profile identity in durable pet credentials", () => {
+  const placeholderCredential = buildPetCredential({
+    profile: { name: "My Dog" },
+    generatedAt: "2026-06-06T18:00:00.000Z",
+  });
+  const renamedCredential = buildPetCredential({
+    profile: { name: "  Luna  " },
+    generatedAt: "2026-06-06T18:00:00.000Z",
+  });
+
+  assert.equal(placeholderCredential.name, "Phoenix");
+  assert.match(placeholderCredential.message, /^Phoenix Dog ID/m);
+  assert.doesNotMatch(placeholderCredential.message, /My Dog/);
+  assert.equal(renamedCredential.name, "Luna");
+  assert.match(renamedCredential.message, /^Luna Dog ID/m);
+});
+
 test("uses dog profile credential fields when records are not uploaded yet", () => {
   const credential = buildPetCredential({
     profile: {

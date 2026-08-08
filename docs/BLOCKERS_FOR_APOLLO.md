@@ -855,3 +855,10 @@ accessibility/device or Apollo approval gates above.
 - Still blocked: route-named iOS/Android profile-edit evidence,
   VoiceOver/TalkBack traversal, provider-backed household propagation, store
   review, and Apollo approval. Source and CI proof do not clear those gates.
+
+## 2026-08-08 Dog ID native artifact proof remains open
+
+Source coverage now proves the shared Dog ID credential normalizes blank and
+`My Dog` profiles to Phoenix before printable HTML, SVG, or share text is
+derived. Real iOS/Android file generation, share-sheet and reopen evidence,
+provider storage proof, store review, and Apollo approval remain required.

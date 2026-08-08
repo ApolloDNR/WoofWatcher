@@ -3361,3 +3361,10 @@ both `profile.name` and `profile.publicLabel`. Blank or literal `My Dog` input
 therefore retains Phoenix, while renamed dogs retain their trimmed name. This
 keeps Dog Profile authoritative instead of relying on every downstream care,
 accessibility, report, and provider boundary to repair placeholder data.
+
+## 2026-08-08: Dog ID credentials resolve identity at the artifact boundary
+
+`buildPetCredential` is a durable owner/caregiver/vet handoff boundary and must
+apply `resolvePetName` itself. Blank and stored `My Dog` profiles therefore
+produce Phoenix credentials, while renamed dogs retain their trimmed Dog
+Profile identity. Native binary generation and provider storage remain gated.

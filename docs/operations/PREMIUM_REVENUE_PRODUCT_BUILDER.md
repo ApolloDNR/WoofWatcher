@@ -5649,3 +5649,11 @@ boundary. Native, provider, store, and Apollo release proof remain open.
 Dependency-complete `WoofWatcher Verify` run `31256945083`, job `93101652112`,
 passed implementation commit `698d5d88` with dependency install, JSON doctor,
 focused behavior tests, typecheck, and CI-safe builds green.
+
+## 2026-08-08 Dog ID credential identity slice
+
+The shared Record Vault credential builder now resolves Dog Profile identity
+before deriving Dog ID copy and downstream printable/shareable artifacts. This
+closes the durable `My Dog Dog ID` seam while preserving trimmed renamed-dog
+identity. Red-first domain coverage and focused identity/mobile readiness pass;
+native file/share, provider, store, and Apollo proof remain separate gates.
