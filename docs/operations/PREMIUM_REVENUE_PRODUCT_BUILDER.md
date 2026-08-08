@@ -4,7 +4,9 @@
 
 The shared Health Review Packet and exported vet-share text now resolve Dog Profile identity at their own boundary. Red-first coverage caught `My Dog's Health Review Packet`; placeholder profiles retain Phoenix and whitespace-padded renamed dogs use their trimmed name. Health/Bile derivation, non-diagnostic guidance, sharing transport, providers, native/store evidence, and launch approval remain unchanged.
 
-Focused Health Review Packet, identity, and mobile-readiness coverage passed `201/201`. Broad verification, PixelLab verification, and dependency-complete branch CI remain to be recorded for this implementation tip.
+Focused Health Review Packet, identity, and mobile-readiness coverage passed `201/201`; the broad partial-checkout suite passed `788/790` with only the known unresolved `@workspace/care-domain` links in `careCareer` and `careSync`; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed.
+
+Dependency-complete `WoofWatcher Verify` run `31250221021`, job `93085310461`, passed implementation/docs commit `b79d5a4b` in `1m39s` with pinned dependency install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete job. Rerun after this proof-record commit before treating the final branch tip as current.
 
 ## 2026-08-07 Alone Time identity slice
 
