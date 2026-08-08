@@ -2,6 +2,7 @@ import type {
   CareHealthSignal,
   CareHealthStatus,
 } from "@workspace/care-domain";
+import { resolvePetName } from "./petIdentity.ts";
 
 export type BileWatchStatus = "Low Risk" | "Watch" | "Review";
 
@@ -143,19 +144,20 @@ function buildChecklist(input: HealthReviewPacketInput): string[] {
 }
 
 export function deriveHealthReviewPacket(input: HealthReviewPacketInput): HealthReviewPacket {
-  const languagePill = languagePillFor(input);
+  const resolvedInput = { ...input, dogName: resolvePetName(input.dogName) };
+  const languagePill = languagePillFor(resolvedInput);
   const vetShareLanguage =
-    input.healthStatus === "good"
+    resolvedInput.healthStatus === "good"
       ? "Save this as calm household context."
       : "Consider sharing with your vet if the pattern repeats, worsens, or appears with other concerning signs.";
 
   return {
     title: "Review packet",
-    statusLabel: statusLabelFor(input.healthStatus),
+    statusLabel: statusLabelFor(resolvedInput.healthStatus),
     languagePill,
-    summary: buildSummary(input, languagePill),
-    prompts: buildPrompts(input),
-    vetShareChecklist: buildChecklist(input),
+    summary: buildSummary(resolvedInput, languagePill),
+    prompts: buildPrompts(resolvedInput),
+    vetShareChecklist: buildChecklist(resolvedInput),
     boundary: `${vetShareLanguage} Not veterinary advice.`,
     primaryAction: {
       label: "Log health detail",
@@ -183,7 +185,7 @@ export function buildHealthReviewPacketShareText(
   return [
     "WoofWatcher Health Review Packet",
     `Generated: ${generatedAtIso}`,
-    `Dog: ${options.dogName}`,
+    `Dog: ${resolvePetName(options.dogName)}`,
     `Status: ${packet.statusLabel}`,
     `Language: ${packet.languagePill}`,
     "",

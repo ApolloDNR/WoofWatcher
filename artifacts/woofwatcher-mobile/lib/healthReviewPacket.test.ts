@@ -299,3 +299,26 @@ test("formats a shareable Health Review Packet without medical certainty", () =>
   assert.doesNotMatch(text, /\bdiagnose[sd]?\b/i);
   assert.doesNotMatch(text, /\btreat(?:ment|s|ed|ing)?\b/i);
 });
+
+test("uses canonical Dog Profile identity in the packet and shared handoff", () => {
+  const placeholderPacket = deriveHealthReviewPacket({
+    ...baseInput,
+    dogName: "My Dog",
+  });
+  const renamedPacket = deriveHealthReviewPacket({
+    ...baseInput,
+    dogName: "  Luna  ",
+  });
+
+  assert.match(placeholderPacket.summary, /Phoenix's Health Review Packet/);
+  assert.doesNotMatch(placeholderPacket.summary, /My Dog/);
+  assert.match(renamedPacket.summary, /Luna's Health Review Packet/);
+
+  const text = buildHealthReviewPacketShareText(placeholderPacket, {
+    dogName: "My Dog",
+    generatedAtIso: "2026-08-08T16:00:00.000Z",
+  });
+
+  assert.match(text, /Dog: Phoenix/);
+  assert.doesNotMatch(text, /My Dog/);
+});

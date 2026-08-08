@@ -3346,3 +3346,11 @@ The production care-twin room label is an owner-facing accessibility boundary
 and must use `resolvePetName`. Blank and `My Dog` starter profiles are announced
 as Phoenix; renamed dogs retain their trimmed saved name. Internal Phoenix
 asset/template identifiers and care-twin behavior remain unchanged.
+
+## 2026-08-08: Health Review Packet handoffs follow Dog Profile identity
+
+Health Review Packet copy and exported vet-share text are durable owner-facing
+handoff boundaries and must resolve Dog Profile identity independently of their
+screen caller. Blank and `My Dog` starter profiles read as Phoenix; renamed dogs
+retain their trimmed saved name. Health derivation and non-diagnostic safety
+boundaries remain unchanged.
