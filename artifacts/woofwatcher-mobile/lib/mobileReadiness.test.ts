@@ -90,6 +90,16 @@ test("routes More identity through the canonical Dog Profile name", () => {
     /placeholder="The Phoenix Pack"/,
     "renamed-dog households should not receive a hardcoded Phoenix household suggestion",
   );
+  assert.match(
+    more,
+    /const name = resolvePetName\(pName\)/,
+    "Dog Profile saves must normalize the starter placeholder at the source-of-truth boundary",
+  );
+  assert.doesNotMatch(
+    more,
+    /const name = pName\.trim\(\) \|\| "Phoenix"/,
+    "saving My Dog must not persist the placeholder as the canonical profile name",
+  );
 });
 
 test("routes Setup household guidance through Dog Profile identity", () => {

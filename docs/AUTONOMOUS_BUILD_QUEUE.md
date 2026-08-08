@@ -2422,3 +2422,14 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   `93030332784`, passed implementation/docs commit `965cf134` with pinned
   dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds,
   post steps, and Complete job all green.
+## 2026-08-08 Dog Profile save identity boundary
+
+- DONE: Route the More profile editor's persisted `name` and `publicLabel`
+  through `resolvePetName`, so blank or literal `My Dog` input preserves the
+  canonical Phoenix starter identity at the source of truth.
+- VERIFIED: Red-first mobile readiness coverage reproduces the raw-save seam
+  and guards the canonical save path. Renamed dogs still persist their trimmed
+  Dog Profile name.
+- NEXT: Require dependency-complete branch CI. Native profile-edit and
+  VoiceOver/TalkBack proof, provider-backed sync, store review, and Apollo
+  approval remain open.

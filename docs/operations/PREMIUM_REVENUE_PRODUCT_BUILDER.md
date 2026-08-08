@@ -5638,3 +5638,10 @@ passed implementation/docs commit `c1cb24e9` with pinned dependency install,
 JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps,
 and Complete job. Rerun after this proof-record commit before treating the final
 branch tip as current.
+## 2026-08-08 Dog Profile save identity slice
+
+The More profile editor now uses the shared canonical identity resolver when
+saving `profile.name` and `profile.publicLabel`. This prevents blank or literal
+`My Dog` input from becoming durable source data while preserving trimmed
+renamed-dog identity. Red-first mobile readiness coverage guards the save
+boundary. Native, provider, store, and Apollo release proof remain open.

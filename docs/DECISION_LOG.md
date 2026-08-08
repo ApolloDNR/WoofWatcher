@@ -3354,3 +3354,10 @@ handoff boundaries and must resolve Dog Profile identity independently of their
 screen caller. Blank and `My Dog` starter profiles read as Phoenix; renamed dogs
 retain their trimmed saved name. Health derivation and non-diagnostic safety
 boundaries remain unchanged.
+## 2026-08-08: Dog Profile saves enforce canonical identity
+
+The More profile editor now resolves the entered dog name before persisting
+both `profile.name` and `profile.publicLabel`. Blank or literal `My Dog` input
+therefore retains Phoenix, while renamed dogs retain their trimmed name. This
+keeps Dog Profile authoritative instead of relying on every downstream care,
+accessibility, report, and provider boundary to repair placeholder data.

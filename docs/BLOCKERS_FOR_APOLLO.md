@@ -847,3 +847,11 @@ source and CI do not clear those gates.
 Dependency-complete `WoofWatcher Verify` run `31229495920`, job `93030332784`,
 passed implementation/docs commit `965cf134`. This does not clear the native
 accessibility/device or Apollo approval gates above.
+## 2026-08-08 Dog Profile save identity proof remains open
+
+- Source coverage now proves the local profile editor normalizes blank and
+  `My Dog` values to Phoenix before persisting the canonical profile/public
+  label.
+- Still blocked: route-named iOS/Android profile-edit evidence,
+  VoiceOver/TalkBack traversal, provider-backed household propagation, store
+  review, and Apollo approval. Source and CI proof do not clear those gates.

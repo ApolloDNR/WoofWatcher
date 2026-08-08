@@ -952,7 +952,7 @@ export default function MoreScreen() {
   };
 
   const saveProfile = () => {
-    const name = pName.trim() || "Phoenix";
+    const name = resolvePetName(pName);
     const w = parseFloat(pWeight);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     updateCareDoc((doc) => ({
