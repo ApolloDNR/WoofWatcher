@@ -5041,6 +5041,14 @@ focused behavior tests, typecheck plus CI-safe builds, post steps, and Complete
 job all passed. Rerun after this proof-record commit before treating the final
 branch tip as current.
 
+## 2026-08-07 Care-twin room accessibility identity slice
+
+`buildCareTwinRoomAccessibilityLabel` now canonicalizes Dog Profile identity
+before announcing the production room. Red-first coverage reproduced the
+`My Dog's room` leak and protects the Phoenix starter fallback plus trimmed
+renamed dogs. Native screen-reader/device proof and Apollo approval remain
+separate gates.
+
 ## 2026-08-03 Health Review Packet dog identity slice
 
 Watch-state factual-note guidance now uses the packet's active Dog Profile name

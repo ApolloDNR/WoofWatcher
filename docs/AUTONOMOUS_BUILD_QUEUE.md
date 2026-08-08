@@ -2392,3 +2392,13 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   `92861410116`, passed implementation/docs commit `c1cb24e9` with pinned
   dependency install, JSON doctor, focused tests, typecheck plus CI-safe builds,
   post steps, and Complete job all green.
+
+## 2026-08-07 Care-twin room accessibility identity
+
+- DONE: The shared production care-twin room label now resolves Dog Profile
+  identity, so the stored `My Dog` starter placeholder is announced as Phoenix
+  and renamed dogs retain their trimmed name.
+- VERIFIED: Red-first behavior coverage reproduced `My Dog's room` before the
+  accessibility boundary was corrected.
+- NEXT: Require dependency-complete branch CI. Native VoiceOver/TalkBack room
+  traversal, route-named iOS/Android evidence, and Apollo approval remain open.

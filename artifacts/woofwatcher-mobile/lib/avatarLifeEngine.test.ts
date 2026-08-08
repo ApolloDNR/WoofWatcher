@@ -37,13 +37,23 @@ test("names the active dog in the care-twin room accessibility label", () => {
   );
   assert.equal(
     buildCareTwinRoomAccessibilityLabel({
-      petName: "   ",
+      petName: " My Dog ",
       templateLabel: "Shepherd",
       motionLabel: "Calm",
-      tapVerb: "Pet your dog",
+      tapVerb: "Pet Phoenix",
       speech: "All settled.",
     }),
-    "Your dog's room. Shepherd care twin. Calm. Pet your dog. All settled.",
+    "Phoenix's room. Shepherd care twin. Calm. Pet Phoenix. All settled.",
+  );
+  assert.equal(
+    buildCareTwinRoomAccessibilityLabel({
+      petName: " Luna ",
+      templateLabel: "Shepherd",
+      motionLabel: "Calm",
+      tapVerb: "Pet Luna",
+      speech: "All settled.",
+    }),
+    "Luna's room. Shepherd care twin. Calm. Pet Luna. All settled.",
   );
 });
 

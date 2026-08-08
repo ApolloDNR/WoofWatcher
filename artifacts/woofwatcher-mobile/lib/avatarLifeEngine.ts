@@ -511,6 +511,6 @@ export function buildCareTwinRoomAccessibilityLabel(input: {
   tapVerb: string;
   speech: string;
 }): string {
-  const roomOwner = input.petName?.trim();
-  return `${roomOwner ? `${roomOwner}'s` : "Your dog's"} room. ${input.templateLabel} care twin. ${input.motionLabel}. ${input.tapVerb}. ${input.speech}`;
+  const roomOwner = resolvePetName(input.petName);
+  return `${roomOwner}'s room. ${input.templateLabel} care twin. ${input.motionLabel}. ${input.tapVerb}. ${input.speech}`;
 }

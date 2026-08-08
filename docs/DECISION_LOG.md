@@ -3333,3 +3333,10 @@ resolve Dog Profile identity even when its caller already supplies a display
 name. This prevents direct or future callers from leaking `My Dog`; blank and
 placeholder profiles read as Phoenix, and renamed dogs retain their trimmed
 name. Meal lifecycle, persistence, and launch boundaries are unchanged.
+
+## 2026-08-07: Care-twin room accessibility follows Dog Profile identity
+
+The production care-twin room label is an owner-facing accessibility boundary
+and must use `resolvePetName`. Blank and `My Dog` starter profiles are announced
+as Phoenix; renamed dogs retain their trimmed saved name. Internal Phoenix
+asset/template identifiers and care-twin behavior remain unchanged.

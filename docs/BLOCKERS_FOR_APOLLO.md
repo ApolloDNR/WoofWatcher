@@ -828,3 +828,10 @@ Source coverage proves the caregiver assignment summary cannot expose the
 stored `My Dog` placeholder. Provider-backed caregiver sync, native
 VoiceOver/TalkBack and route-named iOS/Android evidence, and Apollo approval
 remain required; source tests do not clear those gates.
+
+## 2026-08-07 Care-twin room accessibility proof remains open
+
+Source coverage now proves the production room label cannot announce the
+stored `My Dog` placeholder. Native VoiceOver/TalkBack traversal, route-named
+iOS/Android room evidence, and Apollo accessibility approval remain required;
+source and CI do not clear those gates.
