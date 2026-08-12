@@ -10,8 +10,13 @@
 - BOUNDARY: Hosted delivery remains disabled without structured provider proof,
   caregiver consent, privacy controls, native delivery evidence, and Apollo
   approval. No notification was scheduled or sent.
-- NEXT: Require dependency-complete branch CI. Native notification delivery,
-  provider evidence, store review, and Apollo approval remain separate gates.
+- CI: Dependency-complete `WoofWatcher Verify` run `31625493819`, job
+  `94210709492`, passed implementation/docs commit `a0073022` with pinned
+  install, JSON doctor, focused tests, typecheck plus CI-safe builds, post
+  steps, and Complete job all green.
+- NEXT: Rerun branch CI after this proof-record commit. Native notification
+  delivery, provider evidence, store review, and Apollo approval remain
+  separate gates.
 
 ## 2026-08-12 PWA WoofGuide vet-note identity boundary
 
