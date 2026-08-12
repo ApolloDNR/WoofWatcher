@@ -3414,3 +3414,11 @@ backup key remain unchanged.
 - Decision: Treat `buildBackendSeedDraft` as a durable provider-bound identity boundary and resolve Dog Profile identity there rather than trusting normalized UI callers.
 - Reason: Review packages can outlive the current screen and must never encode the starter `My Dog` placeholder as a real household or pet identity.
 - Boundary: The builder remains review-only and performs no external writes or sync activation.
+## 2026-08-12: Scoped PWA Care Passes canonicalize Dog Profile identity
+
+Decision: `buildScopedCarePass` resolves the exported dog identity at the
+durable handoff boundary and uses it for both `petName` and embedded profile
+labels. A stored placeholder such as `My Dog` must not reach a sitter, trainer,
+vet, emergency, or weekend Care Pass.
+
+Revisit trigger: none; this is a permanent Dog Profile identity invariant.

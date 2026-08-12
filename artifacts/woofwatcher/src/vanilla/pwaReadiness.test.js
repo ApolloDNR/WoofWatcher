@@ -8,7 +8,7 @@ import {
   buildReportArtifact,
   buildWoofGuideVetNoteDraft,
 } from "./woof-operations.js";
-import { buildCloudSyncPlan } from "./woof-privacy-cloud.js";
+import { buildCloudSyncPlan, buildScopedCarePass } from "./woof-privacy-cloud.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
@@ -53,6 +53,25 @@ test("keeps the Dog Profile identity canonical in PWA vet-note handoffs", () => 
   assert.match(placeholder, /^Phoenix vet note draft/);
   assert.doesNotMatch(placeholder, /My Dog/);
   assert.match(renamed, /^Mochi vet note draft/);
+});
+
+test("keeps the Dog Profile identity canonical in scoped PWA Care Pass handoffs", () => {
+  const placeholder = buildScopedCarePass(
+    { profile: { name: "My Dog", publicLabel: "My Dog" } },
+    { audience: "sitter" },
+  );
+  const renamed = buildScopedCarePass(
+    { profile: { name: "  Mochi  ", publicLabel: "  Mochi  " } },
+    { audience: "trainer" },
+  );
+
+  assert.equal(placeholder.petName, "Phoenix");
+  assert.equal(placeholder.profile.name, "Phoenix");
+  assert.equal(placeholder.profile.publicLabel, "Phoenix");
+  assert.doesNotMatch(JSON.stringify(placeholder), /My Dog/);
+  assert.equal(renamed.petName, "Mochi");
+  assert.equal(renamed.profile.name, "Mochi");
+  assert.equal(renamed.profile.publicLabel, "Mochi");
 });
 
 function extractConstArray(source, name) {

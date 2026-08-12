@@ -901,3 +901,9 @@ clear them.
 
 - Source-level blocker closed: review-only backend seed drafts no longer persist the starter `My Dog` placeholder into household, pet, embedded profile, or audit identity fields.
 - Still blocked externally: no database rows were written and provider selection, reviewed seed data, household scoping/RLS proof, migration execution, rollback approval, and Apollo launch approval remain required.
+## 2026-08-12 PWA scoped Care Pass identity status
+
+Scoped PWA Care Pass exports now canonicalize Dog Profile identity inside the
+handoff builder, including the embedded profile. This source-level slice does
+not prove browser/native sharing, provider delivery, recipient review, store
+approval, or public launch; those external gates remain open.

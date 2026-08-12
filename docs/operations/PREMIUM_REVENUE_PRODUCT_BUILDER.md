@@ -5741,3 +5741,10 @@ the final branch tip as current.
 - Proof: Red-first `woof-backend-schema.test.js` covers the `My Dog` -> Phoenix fallback and trimmed `Mochi` rename path.
 - CI proof: `WoofWatcher Verify` run `31580890116` passed commit `b8bba7c4` with dependency install, doctor, focused tests, typecheck, and CI-safe builds.
 - Release boundary: No provider/database write, RLS validation, native proof, store approval, public launch, or Apollo approval is claimed.
+## 2026-08-12 PWA scoped Care Pass identity slice
+
+The PWA Care Pass export boundary now resolves Dog Profile identity before
+building any audience package. Placeholder identity remains Phoenix, renamed
+dogs retain their trimmed name, and the canonical name is carried in both the
+top-level handoff and embedded profile. This does not activate provider
+delivery or prove browser/native sharing, recipient review, or public launch.

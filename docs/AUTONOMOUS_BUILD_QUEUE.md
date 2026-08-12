@@ -2535,3 +2535,13 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - CI: Dependency-complete `WoofWatcher Verify` run `31580890116` passed implementation commit `b8bba7c4`, including focused tests, typecheck, and CI-safe builds.
 - BOUNDARY: This does not apply database writes, enable provider sync, change household authorization, or prove migration/RLS/native/store readiness.
 - NEXT: Retain real provider seed review, household/RLS proof, migration approval, and Apollo approval as external gates.
+## 2026-08-12 PWA scoped Care Pass identity boundary
+
+- DONE: `buildScopedCarePass` now resolves Dog Profile identity inside the
+  export builder and writes the canonical name into both `petName` and the
+  embedded profile for sitter, trainer, vet, emergency, and weekend handoffs.
+- DONE: Red-first PWA readiness coverage proved literal `My Dog` previously
+  crossed this durable handoff boundary; placeholder identity now remains
+  Phoenix and whitespace-padded renamed dogs remain trimmed.
+- STILL REQUIRED: live browser download/share review, native iOS/Android
+  share-and-reopen proof, provider delivery, store review, and Apollo approval.

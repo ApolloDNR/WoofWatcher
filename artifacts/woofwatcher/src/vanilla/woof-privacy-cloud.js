@@ -86,6 +86,12 @@ export const CARE_PASS_VARIANTS = [
 
 export function buildScopedCarePass(input = {}, options = {}, now = new Date().toISOString()) {
   const state = normalizeState(input, now);
+  const petName = resolvePetName(state.profile.name);
+  const profile = {
+    ...state.profile,
+    name: petName,
+    publicLabel: petName
+  };
   const audience = normalizeVariant(options.audience || options.variant || "sitter");
   const common = {
     packageType: "woofwatcher.care-pass",
@@ -93,8 +99,8 @@ export function buildScopedCarePass(input = {}, options = {}, now = new Date().t
     audience,
     label: CARE_PASS_VARIANTS.find((variant) => variant.id === audience)?.label || "Care Pass",
     createdAt: now,
-    petName: state.profile.name,
-    profile: state.profile,
+    petName,
+    profile,
     dietProfile: state.dietProfile,
     householdPulse: getHouseholdPulse(state, now),
     boundary: "This Care Pass is pattern tracking and caregiver context. It is not a diagnosis or veterinary advice.",
@@ -339,4 +345,9 @@ function compactObject(value) {
 
 function cleanText(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function resolvePetName(value) {
+  const cleaned = cleanText(value);
+  return !cleaned || cleaned.toLowerCase() === "my dog" ? "Phoenix" : cleaned;
 }
