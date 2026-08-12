@@ -2480,5 +2480,6 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 
 - DONE: The review-only legacy PWA backend seed builder now resolves Dog Profile identity before deriving pet ids or emitting household, pet, profile JSON, and audit rows.
 - VERIFIED: Red-first coverage reproduced a durable `My Dog` pet row, then passed for the Phoenix fallback and a whitespace-padded renamed `Mochi` profile.
+- CI: Dependency-complete `WoofWatcher Verify` run `31580890116` passed implementation commit `b8bba7c4`, including focused tests, typecheck, and CI-safe builds.
 - BOUNDARY: This does not apply database writes, enable provider sync, change household authorization, or prove migration/RLS/native/store readiness.
-- NEXT: Require broad local verification and dependency-complete branch CI; real provider seed review and Apollo approval remain external gates.
+- NEXT: Retain real provider seed review, household/RLS proof, migration approval, and Apollo approval as external gates.

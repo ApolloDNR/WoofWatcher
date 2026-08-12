@@ -5688,4 +5688,5 @@ the final branch tip as current.
 
 - Changed: Canonical Dog Profile identity now feeds the review-only backend seed pet id, household row/label, pet row, embedded profile JSON, and audit summary.
 - Proof: Red-first `woof-backend-schema.test.js` covers the `My Dog` -> Phoenix fallback and trimmed `Mochi` rename path.
+- CI proof: `WoofWatcher Verify` run `31580890116` passed commit `b8bba7c4` with dependency install, doctor, focused tests, typecheck, and CI-safe builds.
 - Release boundary: No provider/database write, RLS validation, native proof, store approval, public launch, or Apollo approval is claimed.
