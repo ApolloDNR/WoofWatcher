@@ -9,6 +9,10 @@
   trimmed identity.
 - BOUNDARY: Legacy entry privacy, demo-data filtering, backup retention,
   providers, payments, AI, and launch gates are unchanged.
+- CI: Dependency-complete `WoofWatcher Verify` run `31568373244`, job
+  `94024877911`, passed implementation/docs commit `f6c89161` with pinned
+  install, JSON doctor, focused tests, typecheck plus CI-safe builds, post
+  steps, and Complete job all green.
 - NEXT: Require dependency-complete branch CI. Legacy web migration smoke,
   provider sync, native device evidence, store review, and Apollo approval
   remain separate gates.

@@ -5678,3 +5678,9 @@ adopting it into the v2 care document. Red-first coverage reproduced the
 durable `My Dog` leak and protects the Phoenix starter fallback plus trimmed
 renamed-dog identity. Legacy backup/import behavior, provider state, native
 proof, store review, and Apollo approval remain separate gates.
+
+Dependency-complete `WoofWatcher Verify` run `31568373244`, job `94024877911`,
+passed implementation/docs commit `f6c89161` with pinned dependency install,
+JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps,
+and Complete job all green. Rerun after this proof-record commit before treating
+the final branch tip as current.
