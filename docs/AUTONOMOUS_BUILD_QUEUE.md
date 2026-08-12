@@ -5,7 +5,8 @@
 - DONE: The shared Setup save path now resolves Dog Profile identity before persisting `profile.name` and `profile.publicLabel`.
 - VERIFIED: Red-first coverage reproduced a durable `My Dog` profile; placeholder input now retains Phoenix and whitespace-padded renamed dogs use their trimmed name.
 - BOUNDARY: Setup's diet, routine, caregiver, household mode, local persistence, providers, and launch gates are unchanged.
-- NEXT: Require dependency-complete branch CI. Native iOS/Android Setup save, VoiceOver/TalkBack, provider sync, store review, and Apollo approval remain external gates.
+- CI: Dependency-complete `WoofWatcher Verify` run `31558729045`, job `93996425449`, passed implementation/docs commit `7c759461` with pinned install, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all green.
+- NEXT: Rerun branch CI after this proof-record commit. Native iOS/Android Setup save, VoiceOver/TalkBack, provider sync, store review, and Apollo approval remain external gates.
 
 ## 2026-08-08 Health Review Packet identity
 
