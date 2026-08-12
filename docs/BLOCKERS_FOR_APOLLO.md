@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-11 Setup save identity status
+
+Source-level Setup saves now preserve canonical Dog Profile identity instead of persisting the `My Dog` placeholder. Native iOS/Android Setup review, VoiceOver/TalkBack traversal, provider-backed profile sync, store proof, and Apollo approval remain open; no provider, payment, live-AI, or launch capability was enabled.
+
 ## 2026-08-08 Health Review Packet identity status
 
 Source-level Health Review Packet copy and exported vet-share text now follow canonical Dog Profile identity while preserving the intentional Phoenix starter fallback. Native iOS/Android share-sheet review, route-named evidence, provider-backed report delivery, veterinary-safety review, store proof, and Apollo approval remain open; no diagnosis, provider, payment, live-AI, or launch capability was enabled.

@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-08-11 Setup save identity slice
+
+The shared Setup Wizard save boundary now resolves the selected draft-or-existing dog name before persisting Dog Profile `name` and `publicLabel`. Red-first coverage caught a durable `My Dog` profile; placeholder input retains Phoenix and whitespace-padded renamed dogs use their trimmed name. Diet, routines, caregivers, household mode, local persistence, providers, native/store evidence, and launch approval remain unchanged.
+
+Focused Setup, identity, and mobile-readiness coverage passed `199/199`; the broad partial-checkout suite passed `790/792` with only the known unresolved `@workspace/care-domain` links in `careCareer` and `careSync`; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. Local TypeScript retained the known missing `@tanstack/react-query` and `zod` dependency blockers. The JSON doctor kept source-backed guards passing while remaining blocked on exact pnpm 10.24.0 and installed Expo availability.
+
 ## 2026-08-08 Health Review Packet identity slice
 
 The shared Health Review Packet and exported vet-share text now resolve Dog Profile identity at their own boundary. Red-first coverage caught `My Dog's Health Review Packet`; placeholder profiles retain Phoenix and whitespace-padded renamed dogs use their trimmed name. Health/Bile derivation, non-diagnostic guidance, sharing transport, providers, native/store evidence, and launch approval remain unchanged.

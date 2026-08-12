@@ -104,6 +104,27 @@ test("applies first-run setup draft while preserving existing care document data
   assert.equal(next.records.length, 1);
 });
 
+test("persists canonical Dog Profile identity from setup", () => {
+  const placeholderDraft = createSetupWizardDraft(defaultDoc());
+  const placeholder = applySetupWizardDraft(
+    defaultDoc(),
+    { ...placeholderDraft, dogName: "My Dog" },
+    NOW,
+  );
+
+  assert.equal(placeholder.profile.name, "Phoenix");
+  assert.equal(placeholder.profile.publicLabel, "Phoenix");
+
+  const renamed = applySetupWizardDraft(
+    defaultDoc(),
+    { ...placeholderDraft, dogName: "  Luna  " },
+    NOW,
+  );
+
+  assert.equal(renamed.profile.name, "Luna");
+  assert.equal(renamed.profile.publicLabel, "Luna");
+});
+
 test("creates an editable setup draft from current care state", () => {
   const draft = createSetupWizardDraft({
     ...defaultDoc(),

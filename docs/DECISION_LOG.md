@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-11: Setup saves canonical Dog Profile identity
+
+- Decision: resolve the chosen Setup draft-or-existing dog name inside `applySetupWizardDraft` before persisting profile identity or deriving household defaults.
+- Reason: Setup is a Dog Profile source-of-truth write boundary and must not make the stored `My Dog` placeholder durable.
+- Boundary: diet, routines, caregivers, household mode, provider sync, native approval, and launch gates are unchanged.
+
 ## 2026-08-07: Alone Time logs follow Dog Profile identity
 
 - Decision: resolve the dog name inside the shared Alone Time start builder before creating its household-visible timeline title.

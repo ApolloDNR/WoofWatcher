@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-08-11 Setup save identity boundary
+
+- DONE: The shared Setup save path now resolves Dog Profile identity before persisting `profile.name` and `profile.publicLabel`.
+- VERIFIED: Red-first coverage reproduced a durable `My Dog` profile; placeholder input now retains Phoenix and whitespace-padded renamed dogs use their trimmed name.
+- BOUNDARY: Setup's diet, routine, caregiver, household mode, local persistence, providers, and launch gates are unchanged.
+- NEXT: Require dependency-complete branch CI. Native iOS/Android Setup save, VoiceOver/TalkBack, provider sync, store review, and Apollo approval remain external gates.
+
 ## 2026-08-08 Health Review Packet identity
 
 - DONE: The shared Health Review Packet and exported vet-share text now resolve Dog Profile identity instead of trusting raw profile text.

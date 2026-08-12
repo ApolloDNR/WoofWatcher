@@ -153,7 +153,7 @@ export function applySetupWizardDraft<TDoc extends SetupWizardCareDoc>(
   draft: SetupWizardDraft,
   nowIso: string = new Date().toISOString(),
 ): TDoc {
-  const dogName = clean(draft.dogName) || doc.profile.name;
+  const dogName = resolvePetName(clean(draft.dogName) || doc.profile.name);
   const weight = Number.parseFloat(clean(draft.weight));
   const caregiverName = clean(draft.caregiverName);
   const caregiverRole = clean(draft.caregiverRole) || "Caregiver";
