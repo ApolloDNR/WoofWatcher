@@ -1,5 +1,13 @@
 # Blockers For Apollo
 
+## 2026-08-12 PWA hosted-nudge identity status
+
+Source-level hosted-nudge packages now preserve canonical Dog Profile identity
+at the future provider boundary. Real push/email/SMS delivery remains blocked
+on structured provider proof, caregiver consent, privacy and quiet-hours rules,
+native delivery evidence, store review, and Apollo approval; no notification
+delivery was enabled.
+
 ## 2026-08-12 PWA WoofGuide vet-note identity proof
 
 - Source/test proof now canonicalizes Dog Profile identity inside the legacy

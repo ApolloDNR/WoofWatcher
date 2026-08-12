@@ -121,6 +121,15 @@ export function buildTalkToLogDraft(text = "", options = {}, now = new Date().to
 
 export function buildHostedNudgePlan(input = {}, options = {}, now = new Date().toISOString()) {
   const state = normalizeState(input, now);
+  const petName = resolvePetName(state.profile.name);
+  const providerState = {
+    ...state,
+    profile: {
+      ...state.profile,
+      name: petName,
+      publicLabel: petName
+    }
+  };
   const reminders = getReminderCenter(state, now);
   const notifications = getNotificationCenter(state, now, {
     supported: true,
@@ -152,7 +161,7 @@ export function buildHostedNudgePlan(input = {}, options = {}, now = new Date().
     .sort(sortNudgeCandidates);
   const jobs = blockers.length || remainingToday === 0
     ? []
-    : candidates.slice(0, remainingToday).map((item) => buildNudgeJob(item, state, { householdId, quietNow }, now));
+    : candidates.slice(0, remainingToday).map((item) => buildNudgeJob(item, providerState, { householdId, quietNow }, now));
 
   return {
     packageType: "woofwatcher.hosted-nudge-plan",
@@ -168,7 +177,7 @@ export function buildHostedNudgePlan(input = {}, options = {}, now = new Date().
             ? "quiet_hold"
             : "ready_to_schedule",
     householdId,
-    petName: state.profile.name,
+    petName,
     delivery: {
       backendConfigured,
       pushProviderConfigured,

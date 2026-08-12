@@ -307,6 +307,22 @@ test("keeps PWA hosted nudges gated behind structured delivery proof", () => {
   assert.notEqual(readyPlan.status, "provider_proof_pending");
 });
 
+test("keeps Dog Profile identity canonical at the hosted nudge provider boundary", () => {
+  const placeholder = buildHostedNudgePlan(
+    { profile: { name: "My Dog", publicLabel: "My Dog" } },
+    {},
+    "2026-08-12T15:00:00.000Z",
+  );
+  const renamed = buildHostedNudgePlan(
+    { profile: { name: "  Mochi  ", publicLabel: "  Mochi  " } },
+    {},
+    "2026-08-12T15:00:00.000Z",
+  );
+
+  assert.equal(placeholder.petName, "Phoenix");
+  assert.equal(renamed.petName, "Mochi");
+});
+
 test("keeps records and reports tools directly routable in the PWA", () => {
   assert.match(appEntry, /records: "records"/);
   assert.match(appEntry, /reports: "reports"/);

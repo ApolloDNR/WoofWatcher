@@ -1,5 +1,18 @@
 # Autonomous Build Queue
 
+## 2026-08-12 PWA hosted-nudge identity boundary
+
+- DONE: The provider-bound hosted-nudge plan now resolves Dog Profile identity
+  before exporting its pet name or building any future delivery job message.
+- VERIFIED: Red-first PWA coverage reproduced `My Dog` at the provider boundary;
+  placeholder profiles now retain Phoenix and whitespace-padded renamed dogs
+  use their trimmed identity.
+- BOUNDARY: Hosted delivery remains disabled without structured provider proof,
+  caregiver consent, privacy controls, native delivery evidence, and Apollo
+  approval. No notification was scheduled or sent.
+- NEXT: Require dependency-complete branch CI. Native notification delivery,
+  provider evidence, store review, and Apollo approval remain separate gates.
+
 ## 2026-08-12 PWA WoofGuide vet-note identity boundary
 
 - DONE: The legacy PWA's owner-reviewed veterinarian note builder now resolves

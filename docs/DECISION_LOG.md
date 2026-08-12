@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-08-12: Hosted nudges canonicalize Dog Profile identity
+
+- Decision: resolve the dog name inside `buildHostedNudgePlan` and use the
+  canonicalized profile for any future provider delivery job.
+- Reason: a restored `My Dog` placeholder must not cross a notification
+  provider boundary or appear in caregiver-facing reminder copy.
+- Boundary: provider proof, consent, privacy controls, delivery, native/store
+  approval, and public launch remain unchanged.
+
 ## 2026-08-12: PWA WoofGuide vet notes canonicalize Dog Profile identity
 
 - Decision: build owner-reviewed veterinarian note text inside the shared PWA

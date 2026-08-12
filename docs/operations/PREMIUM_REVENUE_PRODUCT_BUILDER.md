@@ -1,5 +1,15 @@
 # Premium Revenue Product Builder
 
+## 2026-08-12 PWA hosted-nudge identity slice
+
+- Changed: the provider-bound hosted-nudge package now exports canonical Dog
+  Profile identity and uses the same identity for future delivery job copy.
+- Proof: red-first PWA readiness coverage caught `My Dog` at the provider
+  boundary and protects the Phoenix fallback plus a trimmed Mochi rename.
+- Release boundary: hosted delivery is still proof-gated; no provider call,
+  automatic action, notification delivery, payment, live AI, store action, or
+  public launch was enabled.
+
 ## 2026-08-12 PWA WoofGuide vet-note identity slice
 
 - Changed: the PWA's owner-reviewed vet-note draft now consumes canonical Dog
