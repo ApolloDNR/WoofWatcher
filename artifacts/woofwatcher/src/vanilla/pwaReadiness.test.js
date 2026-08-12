@@ -8,7 +8,11 @@ import {
   buildReportArtifact,
   buildWoofGuideVetNoteDraft,
 } from "./woof-operations.js";
-import { buildCloudSyncPlan, buildScopedCarePass } from "./woof-privacy-cloud.js";
+import {
+  buildCaregiverAccessModel,
+  buildCloudSyncPlan,
+  buildScopedCarePass,
+} from "./woof-privacy-cloud.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
@@ -72,6 +76,25 @@ test("keeps the Dog Profile identity canonical in scoped PWA Care Pass handoffs"
   assert.equal(renamed.petName, "Mochi");
   assert.equal(renamed.profile.name, "Mochi");
   assert.equal(renamed.profile.publicLabel, "Mochi");
+});
+
+test("keeps the Dog Profile identity canonical at PWA household sync boundaries", () => {
+  const now = "2026-08-12T12:00:00.000Z";
+  const placeholderState = { profile: { name: "My Dog", publicLabel: "My Dog" } };
+  const renamedState = { profile: { name: "  Mochi  ", publicLabel: "  Mochi  " } };
+  const placeholderAccess = buildCaregiverAccessModel(placeholderState, now);
+  const renamedAccess = buildCaregiverAccessModel(renamedState, now);
+  const placeholderSync = buildCloudSyncPlan(placeholderState, {}, now);
+  const phoenixSync = buildCloudSyncPlan({ profile: { name: "Phoenix" } }, {}, now);
+  const renamedSync = buildCloudSyncPlan(renamedState, {}, now);
+  const trimmedSync = buildCloudSyncPlan({ profile: { name: "Mochi" } }, {}, now);
+
+  assert.equal(placeholderAccess.household.petName, "Phoenix");
+  assert.equal(renamedAccess.household.petName, "Mochi");
+  assert.equal(placeholderSync.localStateFingerprint, phoenixSync.localStateFingerprint);
+  assert.equal(renamedSync.localStateFingerprint, trimmedSync.localStateFingerprint);
+  assert.equal(placeholderSync.status, "local_only");
+  assert.equal(renamedSync.status, "local_only");
 });
 
 function extractConstArray(source, name) {

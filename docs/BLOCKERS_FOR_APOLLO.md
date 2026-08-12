@@ -1,5 +1,13 @@
 # Blockers For Apollo
 
+## 2026-08-12 PWA household sync identity status
+
+Source/test proof now keeps canonical Dog Profile identity in the local
+caregiver access package and future cloud-sync fingerprint. Real provider sync
+remains blocked on approved backend/household setup, migration and active-
+household RLS evidence, retention/export/deletion policy, native full-refresh
+proof, store review, and Apollo approval; no remote write was enabled.
+
 ## 2026-08-12 PWA hosted-nudge identity status
 
 Source-level hosted-nudge packages now preserve canonical Dog Profile identity

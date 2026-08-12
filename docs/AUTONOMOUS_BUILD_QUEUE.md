@@ -1,5 +1,18 @@
 # Autonomous Build Queue
 
+## 2026-08-12 PWA household sync identity boundary
+
+- DONE: The local caregiver access model and future cloud-sync fingerprint now
+  resolve Dog Profile identity at their shared household/provider boundary.
+- VERIFIED: Red-first PWA coverage reproduced `My Dog` in the household access
+  package; placeholder profiles now match Phoenix fingerprints and
+  whitespace-padded renamed dogs match their trimmed identity.
+- BOUNDARY: Cross-device sync remains local-only or provider-proof-pending
+  until backend, household, RLS, migration, retention, native refresh, and
+  Apollo evidence is approved. No provider write or sync activation occurred.
+- NEXT: Require dependency-complete branch CI, then retain provider migration,
+  RLS, native full-refresh, store review, and Apollo approval as separate gates.
+
 ## 2026-08-12 PWA hosted-nudge identity boundary
 
 - DONE: The provider-bound hosted-nudge plan now resolves Dog Profile identity

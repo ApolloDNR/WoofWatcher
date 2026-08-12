@@ -1,5 +1,15 @@
 # WoofWatcher Decision Log
 
+## 2026-08-12: PWA household sync uses canonical Dog Profile identity
+
+- Decision: resolve the active dog name inside both the caregiver access model
+  and cloud-sync plan before exporting household identity or calculating the
+  local-state fingerprint.
+- Reason: a placeholder profile must not diverge from Phoenix in caregiver
+  access packages or future provider reconciliation identifiers.
+- Boundary: backend configuration, provider proof, sync activation, RLS,
+  migration, retention, native verification, and launch approval are unchanged.
+
 ## 2026-08-12: Hosted nudges canonicalize Dog Profile identity
 
 - Decision: resolve the dog name inside `buildHostedNudgePlan` and use the

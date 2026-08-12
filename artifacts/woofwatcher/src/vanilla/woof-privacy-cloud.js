@@ -183,11 +183,12 @@ export function createCaregiverInviteDraft(input = {}, now = new Date().toISOStr
 
 export function buildCaregiverAccessModel(input = {}, now = new Date().toISOString()) {
   const state = normalizeState(input, now);
+  const petName = resolvePetName(state.profile.name);
   return {
     generatedAt: now,
     household: {
       status: "local_only",
-      petName: state.profile.name,
+      petName,
       recommendedNextStep: "Choose private local-only, protected preview, or account-backed cloud sync before inviting external caregivers."
     },
     roles: CAREGIVER_ROLES,
@@ -209,6 +210,7 @@ export function buildCaregiverAccessModel(input = {}, now = new Date().toISOStri
 
 export function buildCloudSyncPlan(input = {}, options = {}, now = new Date().toISOString()) {
   const state = normalizeState(input, now);
+  const petName = resolvePetName(state.profile.name);
   const householdId = cleanText(options.householdId);
   const backendConfigured = Boolean(options.backendConfigured || cleanText(options.backendUrl));
   const providerEvidence = options.providerEvidence || options.cloudSyncProviderEvidence || null;
@@ -235,7 +237,7 @@ export function buildCloudSyncPlan(input = {}, options = {}, now = new Date().to
     },
     localStateFingerprint: stableFingerprint({
       updatedAt: state.updatedAt,
-      profile: state.profile.name,
+      profile: petName,
       routines: state.routines?.length || 0,
       entries: state.entries?.length || 0,
       records: state.records?.length || 0,

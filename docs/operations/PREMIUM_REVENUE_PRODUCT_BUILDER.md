@@ -1,5 +1,16 @@
 # Premium Revenue Product Builder
 
+## 2026-08-12 PWA household sync identity slice
+
+- Changed: caregiver access packages and future cloud-sync fingerprints now
+  consume canonical Dog Profile identity at their shared persistence/provider
+  boundary.
+- Proof: red-first PWA readiness coverage reproduced a `My Dog` household
+  package and now protects Phoenix plus a whitespace-padded Mochi rename.
+- Release boundary: cloud sync remains local-only/provider-proof-pending; no
+  backend write, RLS claim, migration, provider activation, payment, live AI,
+  store action, public launch, or Apollo approval is claimed.
+
 ## 2026-08-12 PWA hosted-nudge identity slice
 
 - Changed: the provider-bound hosted-nudge package now exports canonical Dog
