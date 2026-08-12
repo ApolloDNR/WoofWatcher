@@ -20,6 +20,12 @@ Local TypeScript retained the known missing `@tanstack/react-query` and `zod`
 dependency blockers. The JSON doctor kept source-backed guards passing while
 remaining blocked on exact pnpm 10.24.0 and installed Expo availability.
 
+Dependency-complete `WoofWatcher Verify` run `31594359708`, job `94106269596`,
+passed implementation/docs commit `aac1d676` in `2m17s` with pinned dependency
+install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds,
+post steps, and Complete job. Rerun after this proof-record commit before
+treating the final branch tip as current.
+
 ## 2026-08-11 Setup save identity slice
 
 The shared Setup Wizard save boundary now resolves the selected draft-or-existing dog name before persisting Dog Profile `name` and `publicLabel`. Red-first coverage caught a durable `My Dog` profile; placeholder input retains Phoenix and whitespace-padded renamed dogs use their trimmed name. Diet, routines, caregivers, household mode, local persistence, providers, native/store evidence, and launch approval remain unchanged.

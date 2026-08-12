@@ -9,7 +9,11 @@
   use their trimmed identity.
 - BOUNDARY: Report contents, PDF rendering, sharing transport, providers,
   payments, AI, and launch gates are unchanged.
-- NEXT: Require dependency-complete branch CI. Live report download/print,
+- CI: Dependency-complete `WoofWatcher Verify` run `31594359708`, job
+  `94106269596`, passed implementation/docs commit `aac1d676` with pinned
+  install, JSON doctor, focused tests, typecheck plus CI-safe builds, post
+  steps, and Complete job all green.
+- NEXT: Rerun branch CI after this proof-record commit. Live report download/print,
   native share/reopen, provider delivery, store review, and Apollo approval
   remain separate gates.
 
