@@ -907,3 +907,5 @@ Scoped PWA Care Pass exports now canonicalize Dog Profile identity inside the
 handoff builder, including the embedded profile. This source-level slice does
 not prove browser/native sharing, provider delivery, recipient review, store
 approval, or public launch; those external gates remain open.
+Implementation/docs commit `38fcc53b` passed dependency-complete
+`WoofWatcher Verify` run `31640401711`, job `94261170352`.
