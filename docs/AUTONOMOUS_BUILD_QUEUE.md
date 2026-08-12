@@ -9,7 +9,11 @@
   dogs use their trimmed identity.
 - BOUNDARY: Health/Bile context, owner review, sharing transport, live AI,
   providers, diagnosis, and launch gates are unchanged.
-- NEXT: Require focused/broad verification and dependency-complete branch CI.
+- CI: Dependency-complete `WoofWatcher Verify` run `31609999229`, job
+  `94158598756`, passed implementation/docs commit `0cefbfc6` with pinned
+  install, JSON doctor, focused tests, typecheck plus CI-safe builds, post
+  steps, and Complete job all green.
+- NEXT: Rerun branch CI after this proof-record commit.
   Live browser copy/share, native vet handoff, provider delivery, store review,
   and Apollo approval remain separate gates.
 

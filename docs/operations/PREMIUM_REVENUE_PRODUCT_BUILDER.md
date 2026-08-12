@@ -6,6 +6,9 @@
   Profile identity from a shared, directly tested operations builder.
 - Proof: red-first PWA readiness coverage protects the `My Dog` to Phoenix
   fallback and a whitespace-padded Mochi rename.
+- CI proof: `WoofWatcher Verify` run `31609999229`, job `94158598756`, passed
+  implementation/docs commit `0cefbfc6` with dependency install, doctor,
+  focused tests, typecheck, and CI-safe builds green.
 - Release boundary: no live AI, automatic action, provider delivery, diagnosis,
   native proof, store approval, public launch, or Apollo approval is claimed.
 
