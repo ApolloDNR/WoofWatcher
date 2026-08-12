@@ -3382,3 +3382,8 @@ apply `resolvePetName` to both imported profile identity fields. A legacy blank
 or `My Dog` profile therefore retains Phoenix, while a renamed dog retains its
 trimmed name. Demo filtering, private-log visibility, and the preserved legacy
 backup key remain unchanged.
+## 2026-08-12 - Canonicalize identity inside PWA backend seed drafts
+
+- Decision: Treat `buildBackendSeedDraft` as a durable provider-bound identity boundary and resolve Dog Profile identity there rather than trusting normalized UI callers.
+- Reason: Review packages can outlive the current screen and must never encode the starter `My Dog` placeholder as a real household or pet identity.
+- Boundary: The builder remains review-only and performs no external writes or sync activation.

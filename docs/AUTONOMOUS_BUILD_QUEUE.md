@@ -2476,3 +2476,9 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - VERIFIED: Dependency-complete `WoofWatcher Verify` run `31264178482`, job
   `93119546727`, passed implementation/docs commit `081bb120` with pinned
   install, JSON doctor, focused tests, typecheck, and CI-safe builds green.
+## 2026-08-12 PWA backend seed identity boundary
+
+- DONE: The review-only legacy PWA backend seed builder now resolves Dog Profile identity before deriving pet ids or emitting household, pet, profile JSON, and audit rows.
+- VERIFIED: Red-first coverage reproduced a durable `My Dog` pet row, then passed for the Phoenix fallback and a whitespace-padded renamed `Mochi` profile.
+- BOUNDARY: This does not apply database writes, enable provider sync, change household authorization, or prove migration/RLS/native/store readiness.
+- NEXT: Require broad local verification and dependency-complete branch CI; real provider seed review and Apollo approval remain external gates.

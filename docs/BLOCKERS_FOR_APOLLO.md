@@ -874,3 +874,7 @@ literal `My Dog` placeholder into the v2 Dog Profile. A live legacy-web
 migration smoke, provider-backed propagation, native device evidence, store
 review, and Apollo approval remain separate gates; source and CI proof do not
 clear them.
+## 2026-08-12 PWA backend seed Dog Profile identity
+
+- Source-level blocker closed: review-only backend seed drafts no longer persist the starter `My Dog` placeholder into household, pet, embedded profile, or audit identity fields.
+- Still blocked externally: no database rows were written and provider selection, reviewed seed data, household scoping/RLS proof, migration execution, rollback approval, and Apollo launch approval remain required.

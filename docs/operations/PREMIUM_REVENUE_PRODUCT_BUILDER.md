@@ -5684,3 +5684,8 @@ passed implementation/docs commit `f6c89161` with pinned dependency install,
 JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps,
 and Complete job all green. Rerun after this proof-record commit before treating
 the final branch tip as current.
+## 2026-08-12 PWA backend seed identity hardening
+
+- Changed: Canonical Dog Profile identity now feeds the review-only backend seed pet id, household row/label, pet row, embedded profile JSON, and audit summary.
+- Proof: Red-first `woof-backend-schema.test.js` covers the `My Dog` -> Phoenix fallback and trimmed `Mochi` rename path.
+- Release boundary: No provider/database write, RLS validation, native proof, store approval, public launch, or Apollo approval is claimed.

@@ -188,8 +188,14 @@ export function buildBackendSchemaPlan(options = {}, now = new Date().toISOStrin
 
 export function buildBackendSeedDraft(input = {}, options = {}, now = new Date().toISOString()) {
   const state = normalizeState(input, now);
+  const petName = resolvePetName(state.profile.name);
+  const profile = {
+    ...state.profile,
+    name: petName,
+    publicLabel: petName
+  };
   const householdId = cleanText(options.householdId, 120);
-  const petId = cleanText(options.petId, 120) || `pet_${slugify(state.profile.name || "phoenix")}`;
+  const petId = cleanText(options.petId, 120) || `pet_${slugify(petName)}`;
   const actor = cleanText(options.actor, 80) || "local_caregiver";
   const generatedAt = normalizeTimestamp(now);
   const blockers = [];
@@ -202,7 +208,7 @@ export function buildBackendSeedDraft(input = {}, options = {}, now = new Date()
         households: [
           {
             id: householdId,
-            name: `${state.profile.name} household`,
+            name: `${petName} household`,
             privacy_mode: "private_phoenix",
             timezone: cleanText(options.timezone, 80) || "America/Los_Angeles",
             created_at: normalizeTimestamp(state.createdAt || now),
@@ -223,9 +229,9 @@ export function buildBackendSeedDraft(input = {}, options = {}, now = new Date()
           {
             id: petId,
             household_id: householdId,
-            name: state.profile.name,
-            breed: state.profile.breed,
-            profile_json: state.profile,
+            name: petName,
+            breed: profile.breed,
+            profile_json: profile,
             diet_profile_json: state.dietProfile,
             created_at: normalizeTimestamp(state.createdAt || now),
             updated_at: generatedAt
@@ -294,7 +300,7 @@ export function buildBackendSeedDraft(input = {}, options = {}, now = new Date()
       actor,
       summary: blockers.length
         ? "Backend seed draft blocked until household id exists"
-        : `Prepared backend seed draft for ${state.profile.name}`,
+        : `Prepared backend seed draft for ${petName}`,
       privacyLevel: "system_private",
       metadata: {
         status: blockers.length ? "blocked" : "ready_to_review",
@@ -317,11 +323,11 @@ export function buildBackendSeedDraft(input = {}, options = {}, now = new Date()
     applied: false,
     household: {
       id: householdId,
-      label: householdId ? `${state.profile.name} household` : ""
+      label: householdId ? `${petName} household` : ""
     },
     pet: {
       id: blockers.length ? "" : petId,
-      name: state.profile.name
+      name: petName
     },
     rowCounts,
     rows,
@@ -400,4 +406,9 @@ function slugify(value) {
 function cleanText(value, maxLength = 500) {
   if (value === null || value === undefined) return "";
   return String(value).replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+
+function resolvePetName(value) {
+  const name = cleanText(value, 120);
+  return !name || name.toLowerCase() === "my dog" ? "Phoenix" : name;
 }
