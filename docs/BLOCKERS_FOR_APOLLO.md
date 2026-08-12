@@ -1,5 +1,12 @@
 # Blockers For Apollo
 
+## 2026-08-12 PWA WoofGuide vet-note identity proof
+
+- Source/test proof now canonicalizes Dog Profile identity inside the legacy
+  PWA's owner-reviewed veterinarian note builder.
+- This does not prove live browser copy/share, native handoff review, provider
+  delivery, veterinary approval, store review, or public launch readiness.
+
 ## 2026-08-12 PWA report artifact identity status
 
 Source-level PWA report artifacts now preserve canonical Dog Profile identity

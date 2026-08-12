@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-08-12: PWA WoofGuide vet notes canonicalize Dog Profile identity
+
+- Decision: build owner-reviewed veterinarian note text inside the shared PWA
+  operations boundary and resolve Dog Profile identity there.
+- Reason: a durable veterinarian handoff must not preserve the `My Dog` storage
+  placeholder even when stale or imported state reaches the UI.
+- Boundary: health pattern derivation, live AI, owner review, sharing,
+  providers, diagnosis, and launch gates are unchanged.
+
 ## 2026-08-12: PWA report artifacts canonicalize Dog Profile identity
 
 - Decision: resolve the dog name inside `buildReportArtifact` before building

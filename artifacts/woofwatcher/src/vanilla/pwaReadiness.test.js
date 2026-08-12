@@ -3,7 +3,11 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildHostedNudgePlan, buildReportArtifact } from "./woof-operations.js";
+import {
+  buildHostedNudgePlan,
+  buildReportArtifact,
+  buildWoofGuideVetNoteDraft,
+} from "./woof-operations.js";
 import { buildCloudSyncPlan } from "./woof-privacy-cloud.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -29,6 +33,26 @@ test("keeps the Dog Profile identity canonical in durable PWA report artifacts",
   assert.doesNotMatch(JSON.stringify(placeholder), /My Dog/);
   assert.match(renamed.sourceText, /^Mochi Care Report/);
   assert.equal(renamed.filename, "woofwatcher-mochi-report-2026-08-12.txt");
+});
+
+test("keeps the Dog Profile identity canonical in PWA vet-note handoffs", () => {
+  const context = {
+    healthWatch: { signals: ["Appetite changed this week."] },
+    bileWatch: { signals: ["One yellow-bile event is recorded."] },
+    latest: [],
+  };
+  const placeholder = buildWoofGuideVetNoteDraft(
+    { profile: { name: "My Dog" } },
+    context,
+  );
+  const renamed = buildWoofGuideVetNoteDraft(
+    { profile: { name: "  Mochi  " } },
+    context,
+  );
+
+  assert.match(placeholder, /^Phoenix vet note draft/);
+  assert.doesNotMatch(placeholder, /My Dog/);
+  assert.match(renamed, /^Mochi vet note draft/);
 });
 
 function extractConstArray(source, name) {
@@ -156,7 +180,8 @@ test("keeps WoofGuide wired to owner-reviewed action routing", () => {
   assert.match(appEntry, /data-action="woofguide-open-care-pass"/);
   assert.match(appEntry, /data-action="woofguide-open-records"/);
   assert.match(appEntry, /data-action="woofguide-draft-vet-note"/);
-  assert.match(appEntry, /function buildWoofGuideVetNoteDraft/);
+  assert.match(appEntry, /import \{ buildWoofGuideVetNoteDraft \} from "\.\/woof-operations\.js"/);
+  assert.match(appEntry, /buildWoofGuideVetNoteDraft\(\s*state,/);
   assert.match(appEntry, /owner-reviewed/);
 });
 

@@ -267,6 +267,37 @@ export function buildReportArtifact(input = {}, options = {}, now = new Date().t
   };
 }
 
+export function buildWoofGuideVetNoteDraft(input = {}, context = {}, options = {}) {
+  const state = normalizeState(input);
+  const petName = resolvePetName(state.profile.name);
+  const latest = Array.isArray(context.latest) ? context.latest : [];
+  const healthSignals = Array.isArray(context.healthWatch?.signals) ? context.healthWatch.signals : [];
+  const bileSignals = Array.isArray(context.bileWatch?.signals) ? context.bileWatch.signals : [];
+  const formatEntryDate = typeof options.formatDateTime === "function"
+    ? options.formatDateTime
+    : (value) => normalizeTimestamp(value);
+  const lines = [
+    `${petName} vet note draft`,
+    "",
+    "Reason for review:",
+    healthSignals[0] || "Owner is organizing recent care context for veterinarian review.",
+    "",
+    "Bile Watch:",
+    bileSignals[0] || "No bile-watch signal available in local context.",
+    "",
+    "Recent owner-entered logs:",
+    ...latest.map((entry) => `- ${formatEntryDate(entry.occurredAt)} | ${entry.type} | ${entry.title} | ${entry.caregiver}${entry.note ? ` | ${entry.note}` : ""}`),
+    "",
+    "Questions to ask:",
+    "- Is this pattern worth an appointment or continued tracking?",
+    "- What details should we log next time?",
+    "- Are food gaps, appetite, stool, hydration, or energy relevant here?",
+    "",
+    "Boundary: This is owner-entered pattern context for a veterinarian. It is not a diagnosis, treatment plan, or emergency triage."
+  ];
+  return lines.join("\n");
+}
+
 function buildNudgeJob(item, state, options, now) {
   const scheduledFor = typeof item.minutesUntil === "number"
     ? new Date(new Date(now).getTime() + item.minutesUntil * 60000).toISOString()

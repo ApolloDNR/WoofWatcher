@@ -33,6 +33,7 @@ import {
   buildScopedCarePass,
   CARE_PASS_VARIANTS
 } from "./woof-privacy-cloud.js";
+import { buildWoofGuideVetNoteDraft } from "./woof-operations.js";
 
 import phoenixHappy from "../assets/phoenix/phoenix-happy.png";
 import phoenixExcited from "../assets/phoenix/phoenix-excited.png";
@@ -3124,33 +3125,6 @@ function renderWoofGuideActionButton(dataAction, label, tone) {
   return `<button class="button ${buttonClass}" data-action="woofguide-draft-vet-note">${escapeHtml(label)}</button>`;
 }
 
-function buildWoofGuideVetNoteDraft(context = getAssistantContext(state, "")) {
-  const latest = context.latest || [];
-  const healthSignals = context.healthWatch?.signals || [];
-  const bileSignals = context.bileWatch?.signals || [];
-  const petName = state.profile?.name || "Phoenix";
-  const lines = [
-    `${petName} vet note draft`,
-    "",
-    "Reason for review:",
-    healthSignals[0] || "Owner is organizing recent care context for veterinarian review.",
-    "",
-    "Bile Watch:",
-    bileSignals[0] || "No bile-watch signal available in local context.",
-    "",
-    "Recent owner-entered logs:",
-    ...latest.map((entry) => `- ${formatDateTime(entry.occurredAt)} | ${entry.type} | ${entry.title} | ${entry.caregiver}${entry.note ? ` | ${entry.note}` : ""}`),
-    "",
-    "Questions to ask:",
-    "- Is this pattern worth an appointment or continued tracking?",
-    "- What details should we log next time?",
-    "- Are food gaps, appetite, stool, hydration, or energy relevant here?",
-    "",
-    "Boundary: This is owner-entered pattern context for a veterinarian. It is not a diagnosis, treatment plan, or emergency triage."
-  ];
-  return lines.join("\n");
-}
-
 function renderHealthTab(health, bileWatch) {
   return `
     <div class="dashboard-grid">
@@ -3794,7 +3768,11 @@ async function handleAction(action, button) {
   }
 
   if (action === "woofguide-draft-vet-note") {
-    assistantAnswer = buildWoofGuideVetNoteDraft();
+    assistantAnswer = buildWoofGuideVetNoteDraft(
+      state,
+      getAssistantContext(state, ""),
+      { formatDateTime },
+    );
     activeTab = "woofguide";
     history.replaceState(null, "", "?tab=woofguide#vet-note");
     render();

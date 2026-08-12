@@ -1,5 +1,18 @@
 # Autonomous Build Queue
 
+## 2026-08-12 PWA WoofGuide vet-note identity boundary
+
+- DONE: The legacy PWA's owner-reviewed veterinarian note builder now resolves
+  Dog Profile identity before creating shareable handoff text.
+- VERIFIED: Red-first coverage failed because the canonical builder did not
+  exist; placeholder profiles now retain Phoenix and whitespace-padded renamed
+  dogs use their trimmed identity.
+- BOUNDARY: Health/Bile context, owner review, sharing transport, live AI,
+  providers, diagnosis, and launch gates are unchanged.
+- NEXT: Require focused/broad verification and dependency-complete branch CI.
+  Live browser copy/share, native vet handoff, provider delivery, store review,
+  and Apollo approval remain separate gates.
+
 ## 2026-08-12 PWA report artifact identity boundary
 
 - DONE: The legacy PWA report artifact builder now resolves Dog Profile

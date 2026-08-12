@@ -1,5 +1,14 @@
 # Premium Revenue Product Builder
 
+## 2026-08-12 PWA WoofGuide vet-note identity slice
+
+- Changed: the PWA's owner-reviewed vet-note draft now consumes canonical Dog
+  Profile identity from a shared, directly tested operations builder.
+- Proof: red-first PWA readiness coverage protects the `My Dog` to Phoenix
+  fallback and a whitespace-padded Mochi rename.
+- Release boundary: no live AI, automatic action, provider delivery, diagnosis,
+  native proof, store approval, public launch, or Apollo approval is claimed.
+
 ## 2026-08-12 PWA report artifact identity slice
 
 The legacy PWA report artifact boundary now resolves Dog Profile identity
