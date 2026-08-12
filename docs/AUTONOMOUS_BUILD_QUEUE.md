@@ -1,5 +1,18 @@
 # Autonomous Build Queue
 
+## 2026-08-12 PWA report artifact identity boundary
+
+- DONE: The legacy PWA report artifact builder now resolves Dog Profile
+  identity before generating report text, filenames, checksums, and audit copy.
+- VERIFIED: Red-first coverage reproduced a durable `My Dog Care Report`;
+  placeholder profiles now retain Phoenix and whitespace-padded renamed dogs
+  use their trimmed identity.
+- BOUNDARY: Report contents, PDF rendering, sharing transport, providers,
+  payments, AI, and launch gates are unchanged.
+- NEXT: Require dependency-complete branch CI. Live report download/print,
+  native share/reopen, provider delivery, store review, and Apollo approval
+  remain separate gates.
+
 ## 2026-08-12 Legacy profile import identity boundary
 
 - DONE: The one-time legacy PWA importer now resolves `profile.name` and

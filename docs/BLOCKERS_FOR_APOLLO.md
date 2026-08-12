@@ -1,5 +1,13 @@
 # Blockers For Apollo
 
+## 2026-08-12 PWA report artifact identity status
+
+Source-level PWA report artifacts now preserve canonical Dog Profile identity
+in exported text, filenames, checksums, and audit copy. Live browser print and
+download review, native share/reopen proof, provider-backed report delivery,
+store proof, and Apollo approval remain open; no provider, payment, live-AI,
+diagnosis, or launch capability was enabled.
+
 ## 2026-08-11 Setup save identity status
 
 Source-level Setup saves now preserve canonical Dog Profile identity instead of persisting the `My Dog` placeholder. Native iOS/Android Setup review, VoiceOver/TalkBack traversal, provider-backed profile sync, store proof, and Apollo approval remain open; no provider, payment, live-AI, or launch capability was enabled.

@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-08-12: PWA report artifacts canonicalize Dog Profile identity
+
+- Decision: resolve the dog name inside `buildReportArtifact` before building
+  report text, filenames, checksums, or audit events.
+- Reason: durable caregiver and veterinarian handoffs must not preserve the
+  `My Dog` storage placeholder, even when a caller passes unnormalized state.
+- Boundary: report derivation, PDF generation, sharing, providers, native
+  approval, and launch gates are unchanged.
+
 ## 2026-08-11: Setup saves canonical Dog Profile identity
 
 - Decision: resolve the chosen Setup draft-or-existing dog name inside `applySetupWizardDraft` before persisting profile identity or deriving household defaults.

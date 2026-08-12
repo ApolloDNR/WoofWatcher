@@ -218,11 +218,20 @@ export function isHostedNudgeProviderProofReady(evidence = {}) {
 
 export function buildReportArtifact(input = {}, options = {}, now = new Date().toISOString()) {
   const state = normalizeState(input, now);
+  const petName = resolvePetName(state.profile.name);
+  const reportState = {
+    ...state,
+    profile: {
+      ...state.profile,
+      name: petName,
+      publicLabel: petName
+    }
+  };
   const format = normalizeChoice(options.format, ["text", "print_pdf"], "text");
-  const reportText = buildReportText(state, now);
-  const content = `${state.profile.name} Care Report\n\n${reportText}`;
+  const reportText = buildReportText(reportState, now);
+  const content = `${petName} Care Report\n\n${reportText}`;
   const dateKey = formatDateKey(now);
-  const petSlug = slugify(state.profile.name || "phoenix");
+  const petSlug = slugify(petName);
   const extension = format === "print_pdf" ? "pdf" : "txt";
 
   return {
@@ -234,7 +243,7 @@ export function buildReportArtifact(input = {}, options = {}, now = new Date().t
     mimeType: format === "print_pdf" ? "application/pdf" : "text/plain;charset=utf-8",
     content: format === "print_pdf" ? "" : content,
     sourceText: content,
-    checksum: stableFingerprint({ content, format, pet: state.profile.name, dateKey }),
+    checksum: stableFingerprint({ content, format, pet: petName, dateKey }),
     printInstructions:
       format === "print_pdf"
         ? "Render sourceText in the report view and use browser or server PDF generation. Do not include raw local state in the PDF payload."
@@ -250,7 +259,7 @@ export function buildReportArtifact(input = {}, options = {}, now = new Date().t
         resourceType: "report",
         resourceId: `report_${dateKey}`,
         actor: cleanText(options.actor, 80) || "local_caregiver",
-        summary: `Built ${format} monthly care report for ${state.profile.name}`,
+        summary: `Built ${format} monthly care report for ${petName}`,
         metadata: { format, filename: `woofwatcher-${petSlug}-report-${dateKey}.${extension}` }
       },
       now
@@ -465,6 +474,11 @@ function clampWholeNumber(value, fallback = 0) {
 function cleanText(value, maxLength = 500) {
   if (value === null || value === undefined) return "";
   return String(value).replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+
+function resolvePetName(value) {
+  const name = cleanText(value, 120);
+  return !name || name.toLowerCase() === "my dog" ? "Phoenix" : name;
 }
 
 function stableFingerprint(value) {

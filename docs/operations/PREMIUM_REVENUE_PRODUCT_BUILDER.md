@@ -1,5 +1,25 @@
 # Premium Revenue Product Builder
 
+## 2026-08-12 PWA report artifact identity slice
+
+The legacy PWA report artifact boundary now resolves Dog Profile identity
+before generating exported report text, filenames, checksums, and audit copy.
+Red-first coverage caught `My Dog Care Report`; placeholder profiles retain
+Phoenix and whitespace-padded renamed dogs use their trimmed identity. Report
+content derivation, PDF rendering, sharing transport, providers, native/store
+evidence, and launch approval remain unchanged.
+
+Focused PWA readiness coverage passed `18/18`; the broad partial-checkout suite
+passed `811/813` with only the known unresolved `@workspace/care-domain` links
+in `careCareer` and `careSync`; PixelLab passed
+`ok=150 missing=0 invalid=0`; and `git diff --check` passed. Typecheck, doctor,
+and dependency-complete branch CI remain required before this branch tip is
+treated as current release proof.
+
+Local TypeScript retained the known missing `@tanstack/react-query` and `zod`
+dependency blockers. The JSON doctor kept source-backed guards passing while
+remaining blocked on exact pnpm 10.24.0 and installed Expo availability.
+
 ## 2026-08-11 Setup save identity slice
 
 The shared Setup Wizard save boundary now resolves the selected draft-or-existing dog name before persisting Dog Profile `name` and `publicLabel`. Red-first coverage caught a durable `My Dog` profile; placeholder input retains Phoenix and whitespace-padded renamed dogs use their trimmed name. Diet, routines, caregivers, household mode, local persistence, providers, native/store evidence, and launch approval remain unchanged.

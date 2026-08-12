@@ -3,13 +3,33 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildHostedNudgePlan } from "./woof-operations.js";
+import { buildHostedNudgePlan, buildReportArtifact } from "./woof-operations.js";
 import { buildCloudSyncPlan } from "./woof-privacy-cloud.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
 const productViewModel = readFileSync(join(here, "woof-product-view-model.js"), "utf8");
 const core = readFileSync(join(here, "woof-core.js"), "utf8");
+
+test("keeps the Dog Profile identity canonical in durable PWA report artifacts", () => {
+  const placeholder = buildReportArtifact(
+    { profile: { name: "My Dog", publicLabel: "My Dog" } },
+    { format: "text" },
+    "2026-08-12T12:00:00.000Z",
+  );
+  const renamed = buildReportArtifact(
+    { profile: { name: "  Mochi  ", publicLabel: "  Mochi  " } },
+    { format: "text" },
+    "2026-08-12T12:00:00.000Z",
+  );
+
+  assert.match(placeholder.sourceText, /^Phoenix Care Report/);
+  assert.equal(placeholder.filename, "woofwatcher-phoenix-report-2026-08-12.txt");
+  assert.match(placeholder.auditEvent.summary, /Phoenix/);
+  assert.doesNotMatch(JSON.stringify(placeholder), /My Dog/);
+  assert.match(renamed.sourceText, /^Mochi Care Report/);
+  assert.equal(renamed.filename, "woofwatcher-mochi-report-2026-08-12.txt");
+});
 
 function extractConstArray(source, name) {
   const match = source.match(new RegExp(`const ${name} = \\[([\\s\\S]*?)\\];`));
