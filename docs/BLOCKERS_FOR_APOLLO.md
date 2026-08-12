@@ -866,3 +866,11 @@ Source coverage now proves the shared Dog ID credential normalizes blank and
 `My Dog` profiles to Phoenix before printable HTML, SVG, or share text is
 derived. Real iOS/Android file generation, share-sheet and reopen evidence,
 provider storage proof, store review, and Apollo approval remain required.
+
+## 2026-08-12 Legacy profile migration proof remains open
+
+Source coverage now proves the one-time legacy PWA importer cannot adopt a
+literal `My Dog` placeholder into the v2 Dog Profile. A live legacy-web
+migration smoke, provider-backed propagation, native device evidence, store
+review, and Apollo approval remain separate gates; source and CI proof do not
+clear them.

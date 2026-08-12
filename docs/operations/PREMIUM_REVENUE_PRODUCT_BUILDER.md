@@ -5670,3 +5670,11 @@ Dependency-complete `WoofWatcher Verify` run `31264178482`, job `93119546727`,
 passed implementation/docs commit `081bb120` with pinned dependency install,
 JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps,
 and Complete job all green.
+
+## 2026-08-12 Legacy profile import identity slice
+
+The one-time legacy PWA migration now canonicalizes Dog Profile identity before
+adopting it into the v2 care document. Red-first coverage reproduced the
+durable `My Dog` leak and protects the Phoenix starter fallback plus trimmed
+renamed-dog identity. Legacy backup/import behavior, provider state, native
+proof, store review, and Apollo approval remain separate gates.

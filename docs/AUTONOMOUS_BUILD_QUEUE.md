@@ -1,5 +1,18 @@
 # Autonomous Build Queue
 
+## 2026-08-12 Legacy profile import identity boundary
+
+- DONE: The one-time legacy PWA importer now resolves `profile.name` and
+  `profile.publicLabel` before adopting them into the v2 Dog Profile.
+- VERIFIED: Red-first coverage reproduced a durable `My Dog` import; placeholder
+  profiles now retain Phoenix and whitespace-padded renamed dogs use their
+  trimmed identity.
+- BOUNDARY: Legacy entry privacy, demo-data filtering, backup retention,
+  providers, payments, AI, and launch gates are unchanged.
+- NEXT: Require dependency-complete branch CI. Legacy web migration smoke,
+  provider sync, native device evidence, store review, and Apollo approval
+  remain separate gates.
+
 ## 2026-08-11 Setup save identity boundary
 
 - DONE: The shared Setup save path now resolves Dog Profile identity before persisting `profile.name` and `profile.publicLabel`.

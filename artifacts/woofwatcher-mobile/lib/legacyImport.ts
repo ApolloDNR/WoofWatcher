@@ -19,6 +19,8 @@
  *   original data stays as its own backup.
  */
 
+import { resolvePetName } from "./petIdentity.ts";
+
 export interface LegacyImportEntry {
   id: string;
   type: string;
@@ -262,9 +264,10 @@ function convertRecords(input: unknown): LegacyImportDocPatch["records"] {
 function convertProfile(input: unknown): LegacyImportDocPatch["profile"] {
   if (!isObject(input)) return undefined;
   const weight = isObject(input.weight) ? input.weight : {};
+  const name = resolvePetName(clean(input.name));
   const profile = {
-    name: clean(input.name),
-    publicLabel: clean(input.publicLabel) || clean(input.name),
+    name,
+    publicLabel: resolvePetName(clean(input.publicLabel), name),
     breed: clean(input.breed),
     background: clean(input.background),
     careFocus: clean(input.careFocus),
@@ -281,7 +284,7 @@ function convertProfile(input: unknown): LegacyImportDocPatch["profile"] {
     profile.careFocus === DEMO_PROFILE.careFocus &&
     profile.weight.current === DEMO_PROFILE.weightCurrent &&
     profile.weight.goal === DEMO_PROFILE.weightGoal;
-  if (untouched || !profile.name) return undefined;
+  if (untouched || !clean(input.name)) return undefined;
   return profile;
 }
 

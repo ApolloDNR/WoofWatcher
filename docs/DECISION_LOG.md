@@ -3374,3 +3374,11 @@ accessibility, report, and provider boundary to repair placeholder data.
 apply `resolvePetName` itself. Blank and stored `My Dog` profiles therefore
 produce Phoenix credentials, while renamed dogs retain their trimmed Dog
 Profile identity. Native binary generation and provider storage remain gated.
+
+## 2026-08-12: Legacy profile migration enforces canonical identity
+
+The one-time legacy PWA importer is a durable persistence boundary and must
+apply `resolvePetName` to both imported profile identity fields. A legacy blank
+or `My Dog` profile therefore retains Phoenix, while a renamed dog retains its
+trimmed name. Demo filtering, private-log visibility, and the preserved legacy
+backup key remain unchanged.

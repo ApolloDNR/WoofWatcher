@@ -93,6 +93,28 @@ test("real owner data imports; demo rows around it are filtered", () => {
   assert.equal(result.docPatch.caregivers, undefined);
 });
 
+test("legacy profile import keeps the canonical Dog Profile identity", () => {
+  const placeholder = factoryState();
+  placeholder.profile.name = "My Dog";
+  placeholder.profile.publicLabel = "  My Dog  ";
+  placeholder.profile.breed = "Cattle dog mix";
+
+  const placeholderResult = convertLegacyState(placeholder);
+  assert.ok(placeholderResult);
+  assert.equal(placeholderResult.docPatch.profile?.name, "Phoenix");
+  assert.equal(placeholderResult.docPatch.profile?.publicLabel, "Phoenix");
+
+  const renamed = factoryState();
+  renamed.profile.name = "  Luna  ";
+  renamed.profile.publicLabel = "  Luna  ";
+  renamed.profile.breed = "Cattle dog mix";
+
+  const renamedResult = convertLegacyState(renamed);
+  assert.ok(renamedResult);
+  assert.equal(renamedResult.docPatch.profile?.name, "Luna");
+  assert.equal(renamedResult.docPatch.profile?.publicLabel, "Luna");
+});
+
 test("legacy Private visibility survives as details.householdVisible=false", () => {
   const legacy = factoryState();
   legacy.entries = [
