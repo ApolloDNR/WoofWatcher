@@ -1,9 +1,9 @@
 # WoofWatcher V1 Release Status
 
 - Integration branch: `release/woofwatcher-v1`
-- Last verified implementation checkpoint: `f6a5a22b3e9b2224b275b43f29afee525e841cf1`
-- Verified implementation tree: `72aa44cb48bc68ce437136ea0a0b032f4bba5b15`
-- Checkpoint CI: [WoofWatcher Verify #977 — PASS](https://github.com/ApolloDNR/WoofWatcher/actions/runs/31746688906)
+- Last verified implementation checkpoint: `05e9bc14b1f4e00a92b7966211dfcb8e8b5db285`
+- Verified implementation tree: `f0bf1d37fb92132fcca1254cc58ae387223d28bc`
+- Checkpoint CI: [WoofWatcher Verify #979 — PASS](https://github.com/ApolloDNR/WoofWatcher/actions/runs/31751735301)
 - Durable baseline: `0f1107b170b0a9c89548a51f5cdeb664ba98246f`
 - Baseline code commit: `b6934f7a`
 - Main at recovery start: `47234396`
@@ -13,9 +13,26 @@
 
 ## Current milestone
 
-M1 — Serialized Care Snapshot Persistence: COMPLETE
+M2A — Coordinated Local Reset Core: COMPLETE
 
-Next: M2 — Coordinated Privacy Export and Local Reset
+Next: M2B — App-Wide Privacy Export and Local Reset Integration
+
+## M2A durable checkpoint
+
+- Remote branch and exact tree equality: PASS
+- Independent adversarial review: PASS; zero critical, important, or minor findings
+- Opaque generation permits revoke old asynchronous work and reject foreign/forged tokens: PASS
+- Two-phase participants prepare deterministically before the transactional commit barrier: PASS
+- Preparation failure performs zero destructive commits and preserves the current generation: PASS
+- Concurrent and re-entrant reset/export callers coalesce onto exact in-flight promises: PASS
+- Removable storage writes are FIFO, admission-aware, permit-checked, and drainable: PASS
+- Immutable export capture and export/reset mutual exclusion: PASS
+- New reset-core tests: 42/42 PASS
+- Focused tests: 1,089/1,089 PASS
+- Mobile beta doctor, store-material validation, TypeScript, and CI-safe builds: PASS
+- Native release verdict: unchanged at PENDING NATIVE
+
+M2 is not complete. The core is now durable and independently proved, but production providers and screens have not yet been moved onto it. M2B must register Care, Avatar, app-owned files, web runtime caches, and live walk capture; migrate every removable `woofwatcher*` writer; drain active file operations; remove all three owned directories including `WoofWatcherCredentials`; and replace Privacy's parallel catch-and-ignore wipe with honest complete/partial-failure UI.
 
 ## M1 durable checkpoint
 
@@ -64,5 +81,7 @@ The first M0 run exposed a `pnpm/action-setup` v6.0.1 bootstrap regression, not 
 ## Active risks
 
 - Physical iOS/Android, VoiceOver/TalkBack, large text, Back/deep-link history, safe areas, touch targets, haptics, permissions, and native sharing remain unproved.
-- Recovery-key and legacy-import writes remain outside coordinated reset and can race owner-key removal; M2 owns this release blocker.
+- Care recovery/import, Avatar, Home, supplies/travel, and QA storage writes remain outside the coordinated removable lane; M2B owns this release blocker.
+- In-flight attachment, report, and Dog ID credential writes can recreate deleted directories; M2B must drain them and delete all three owned directories before reporting success.
+- Web runtime caches can retain same-origin API responses until service-worker bypass and reset-cache cleanup are integrated in M2B.
 - Later local-only hardening commits were pruned and are being reconstructed from tests and documented behavior.
