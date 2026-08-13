@@ -970,3 +970,5 @@ No new Apollo decision is required for the source fix. Real closed-app reminder 
 ## 2026-08-13 PWA Household Pulse identity status
 
 Source coverage now proves Household Pulse summary and fallback owner copy use canonical Dog Profile identity. Provider-backed household sync, live browser/native review, VoiceOver/TalkBack traversal, store review, and Apollo approval remain separate gates.
+
+Dependency-complete `WoofWatcher Verify` run `31744066020`, job `94594216641`, passed implementation/docs commit `b460a08f`; this does not clear the external gates above.
