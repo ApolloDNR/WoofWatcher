@@ -10,7 +10,11 @@
 - BOUNDARY: Live AI remains disabled without approved provider, model,
   citation, privacy, veterinary-safety, native, store, and Apollo proof. No
   request was sent and no unsupervised action was enabled.
-- NEXT: Require dependency-complete branch CI. Live provider review, native
+- CI: Dependency-complete `WoofWatcher Verify` run `31662582276`, job
+  `94330312944`, passed implementation/docs commit `4b69b438` with pinned
+  install, JSON doctor, focused tests, typecheck plus CI-safe builds, post
+  steps, and Complete job all green.
+- NEXT: Rerun branch CI after this proof-record commit. Live provider review, native
   owner-review evidence, store review, and Apollo approval remain separate
   gates.
 

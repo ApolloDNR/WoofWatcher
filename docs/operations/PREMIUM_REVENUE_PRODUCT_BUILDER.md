@@ -10,6 +10,12 @@ renamed dogs use their trimmed identity. The veterinarian boundary remains
 intact. Live AI, external requests, automatic actions, providers, native/store
 evidence, and launch approval remain disabled or separately gated.
 
+Dependency-complete `WoofWatcher Verify` run `31662582276`, job `94330312944`,
+passed implementation/docs commit `4b69b438` with pinned dependency install,
+JSON doctor, focused behavior tests, typecheck plus CI-safe builds, post steps,
+and Complete job. Rerun after this proof-record commit before treating final-tip
+dependency proof as current.
+
 ## 2026-08-12 PWA household sync identity slice
 
 - Changed: caregiver access packages and future cloud-sync fingerprints now
