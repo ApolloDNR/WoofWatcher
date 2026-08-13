@@ -6,6 +6,8 @@
   identity-bearing provider-plan copy.
 - Automated: `  Mochi  ` produces Mochi in the pet resource, missing-household
   blocker, and invite-only privacy checklist, with no Phoenix leak.
+- Dependency-complete CI: `WoofWatcher Verify` run `31728975160`, job
+  `94544332246`, passed implementation/docs commit `2f1401d6`.
 - Manual/provider remaining: Supabase project proof, migration/backfill, RLS,
   retention/export/deletion, iOS/Android full refresh, store review, and Apollo
   approval. Source tests do not activate cloud sync.

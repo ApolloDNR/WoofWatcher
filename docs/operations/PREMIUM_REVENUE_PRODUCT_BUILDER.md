@@ -7,7 +7,10 @@ provider-facing pet resource, missing-household blocker, privacy checklist,
 and existing fingerprint. Red-first PWA coverage protects `My Dog` -> Phoenix
 and whitespace-trimmed renamed identity. Cloud sync remains gated behind the
 existing structured provider proof; no backend write, migration, RLS change,
-native delivery, store action, or launch approval is claimed.
+native delivery, store action, or launch approval is claimed. Dependency-
+complete `WoofWatcher Verify` run `31728975160`, job `94544332246`, passed
+implementation/docs commit `2f1401d6`; rerun after this proof-record commit for
+final-tip authority.
 
 ## 2026-08-12 PWA base report and care-room transfer identity slice
 

@@ -10,7 +10,9 @@
   trimmed throughout the exported plan.
 - BOUNDARY: No backend write, sync activation, migration, RLS change, provider
   approval, native refresh, store action, or public launch was enabled.
-- NEXT: Require dependency-complete branch CI. Real provider, migration/RLS,
+- CI: Dependency-complete `WoofWatcher Verify` run `31728975160`, job
+  `94544332246`, passed implementation/docs commit `2f1401d6` end to end.
+- NEXT: Rerun branch CI after this proof-record commit. Real provider, migration/RLS,
   retention, native full-refresh, store, and Apollo evidence remain separate
   gates.
 

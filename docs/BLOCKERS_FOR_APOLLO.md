@@ -4,6 +4,8 @@
 
 - Source blocker cleared: gated cloud-sync plan copy now follows canonical Dog
   Profile identity for Phoenix fallback and trimmed renamed dogs.
+- Dependency-complete proof: `WoofWatcher Verify` run `31728975160`, job
+  `94544332246`, passed implementation/docs commit `2f1401d6`.
 - Still blocked: approved Supabase project, migration/backfill and active-
   household RLS proof, retention/export/deletion policy, dependency-complete
   CI, native full-refresh sign-off, store review, and Apollo approval.
