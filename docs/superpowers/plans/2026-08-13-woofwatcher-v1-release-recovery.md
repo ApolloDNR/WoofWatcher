@@ -143,7 +143,7 @@ concurrency:
   cancel-in-progress: true
 ```
 
-Pin checkout to `de0fac2e4500dabe0009e67214ff5f5447ce83dd`, pnpm setup to `ebd50bdde86241dd1b03a5b0a54a71aee9a1ca80`, and Node setup to `395ad3262231945c25e8478fd5baf05154b1d79f`. Add `node docs/release/tools/validate-store-materials.mjs` after the beta doctor and before focused tests.
+Pin checkout to `de0fac2e4500dabe0009e67214ff5f5447ce83dd`, pnpm setup to `0977fd99725f1db4007ccb2928dbb4e90d06cc86`, and Node setup to `395ad3262231945c25e8478fd5baf05154b1d79f`. Assert `pnpm --version` is exactly `10.24.0` before installing. Add `node docs/release/tools/validate-store-materials.mjs` after the beta doctor and before focused tests.
 
 - [ ] **Step 6: Make the new status ledger the first current-status source in `AGENTS.md`**
 

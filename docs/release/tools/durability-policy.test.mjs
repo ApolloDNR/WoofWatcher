@@ -21,9 +21,47 @@ test("durable workflow forbids local-only completion and history rewrites", () =
 
 test("GitHub verification runs on release pushes with least privilege and store validation", () => {
   const workflow = read(".github/workflows/verify.yml");
+  const actionLines = workflow
+    .split("\n")
+    .filter((line) => /^\s*uses:/.test(line));
   assert.match(workflow, /release\/\*\*/);
   assert.match(workflow, /permissions:\s*\n\s*contents: read/);
   assert.match(workflow, /concurrency:/);
   assert.match(workflow, /validate-store-materials\.mjs/);
-  assert.doesNotMatch(workflow, /uses:\s+[^\n]+@v\d+\s*$/m);
+  assert.ok(actionLines.length > 0, "workflow must use at least one action");
+  for (const line of actionLines) {
+    assert.match(
+      line,
+      /^\s*uses:\s+\S+@[0-9a-f]{40}(?:[ \t]+#.*)?[ \t]*$/,
+      `${line.trim()} must use a full commit SHA`,
+    );
+  }
+});
+
+test("GitHub verification uses the repaired pnpm bootstrap and proves the exact toolchain", () => {
+  const workflow = read(".github/workflows/verify.yml");
+  const plan = read(
+    "docs/superpowers/plans/2026-08-13-woofwatcher-v1-release-recovery.md",
+  );
+  assert.match(
+    workflow,
+    /pnpm\/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86/,
+  );
+  assert.match(workflow, /name: Setup pnpm[\s\S]*?version: 10\.24\.0/);
+  assert.match(workflow, /name: Setup Node[\s\S]*?node-version: 24/);
+  assert.match(workflow, /test "\$\(pnpm --version\)" = "10\.24\.0"/);
+  assert.match(workflow, /pnpm install --frozen-lockfile/);
+  assert.match(plan, /pnpm setup to `0977fd99725f1db4007ccb2928dbb4e90d06cc86`/);
+  assert.doesNotMatch(
+    `${workflow}\n${plan}`,
+    /ebd50bdde86241dd1b03a5b0a54a71aee9a1ca80/,
+  );
+
+  const nodeSetup = workflow.indexOf("node-version: 24");
+  const toolchainProof = workflow.indexOf('test "$(pnpm --version)" = "10.24.0"');
+  const frozenInstall = workflow.indexOf("pnpm install --frozen-lockfile");
+  assert.ok(
+    nodeSetup >= 0 && nodeSetup < toolchainProof && toolchainProof < frozenInstall,
+    "Node setup and exact pnpm proof must precede the frozen install",
+  );
 });
