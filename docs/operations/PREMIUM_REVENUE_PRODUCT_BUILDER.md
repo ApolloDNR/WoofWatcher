@@ -5805,3 +5805,13 @@ top-level handoff and embedded profile. This does not activate provider
 delivery or prove browser/native sharing, recipient review, or public launch.
 Dependency-complete `WoofWatcher Verify` run `31640401711`, job `94261170352`,
 passed implementation/docs commit `38fcc53b` end to end.
+
+## 2026-08-13 PWA assistant and caregiver-handoff identity slice
+
+The shared PWA assistant context now resolves Dog Profile identity before
+building its profile, derived care context, and local non-diagnostic answer.
+The caregiver-handoff message builder consumes the same resolved name, closing
+the renamed-dog `Next Phoenix care` leak across assistant, Household Pulse,
+Care Room transfer, and report consumers. Red-first PWA readiness coverage
+protects placeholder and whitespace-padded rename behavior. Live AI, external
+actions, provider delivery, veterinary review, and launch remain gated.

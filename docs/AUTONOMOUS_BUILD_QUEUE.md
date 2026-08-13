@@ -2606,3 +2606,17 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
   doctor, focused tests, typecheck, CI-safe builds, post steps, and completion.
 - STILL REQUIRED: live browser download/share review, native iOS/Android
   share-and-reopen proof, provider delivery, store review, and Apollo approval.
+
+## 2026-08-13 PWA assistant and caregiver-handoff identity boundary
+
+- DONE: `getAssistantContext` now canonicalizes Dog Profile identity before
+  deriving its profile, care summaries, and owner-facing local answer.
+- DONE: The shared caregiver handoff builder uses that same resolved identity,
+  so a renamed dog no longer receives `Next Phoenix care` inside WoofGuide,
+  Household Pulse, Care Room transfers, or reports.
+- VERIFIED LOCALLY: Red-first PWA readiness coverage reproduced the durable
+  `My Dog` context and renamed-dog Phoenix handoff leak, then passed for the
+  Phoenix fallback and whitespace-padded `Mochi` identity.
+- STILL REQUIRED: live browser review, native owner-review and recipient
+  handoff proof, provider-backed AI/sync evidence, veterinary safety review,
+  store approval, and Apollo approval.

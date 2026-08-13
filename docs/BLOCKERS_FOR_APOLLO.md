@@ -941,3 +941,11 @@ not prove browser/native sharing, provider delivery, recipient review, store
 approval, or public launch; those external gates remain open.
 Implementation/docs commit `38fcc53b` passed dependency-complete
 `WoofWatcher Verify` run `31640401711`, job `94261170352`.
+
+## 2026-08-13 PWA assistant and caregiver-handoff identity status
+
+Source coverage now proves the shared PWA assistant context and embedded
+caregiver handoff canonicalize blank/`My Dog` identity to Phoenix and preserve
+trimmed renamed-dog identity. Live browser and native owner-review evidence,
+recipient handoff review, approved AI/provider configuration, veterinary
+safety review, store approval, and Apollo approval remain separate gates.

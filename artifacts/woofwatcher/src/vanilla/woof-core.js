@@ -674,6 +674,7 @@ export function getNotificationCenter(state, now = new Date().toISOString(), opt
 }
 
 export function getCaregiverHandoff(state, now = new Date().toISOString()) {
+  const petName = resolvePetName(state.profile?.name);
   const plan = getTodayPlan(state, now);
   const todayEntries = entriesForLocalDay(state.entries || [], now).sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
   const lastMeal = todayEntries.find((entry) => entry.type === "meal") || null;
@@ -701,7 +702,7 @@ export function getCaregiverHandoff(state, now = new Date().toISOString()) {
     lastWalk,
     followUps,
     caregiverLoad,
-    message: buildHandoffMessage({ nextRoutine, lastMeal, lastWalk, followUps })
+    message: buildHandoffMessage({ petName, nextRoutine, lastMeal, lastWalk, followUps })
   };
 }
 
@@ -1208,19 +1209,28 @@ export function buildCareRoomTransfer(state, now = new Date().toISOString()) {
 }
 
 export function getAssistantContext(state, question = "", now = new Date().toISOString()) {
-  const summary = getMonthlySummary(state, now);
-  const healthWatch = getHealthWatch(state, now);
-  const bileWatch = getBileWatch(state, now);
-  const todayPlan = getTodayPlan(state, now);
-  const handoff = getCaregiverHandoff(state, now);
-  const reminders = getReminderCenter(state, now);
-  const latest = [...(state.entries || [])]
+  const petName = resolvePetName(state.profile?.name);
+  const assistantState = {
+    ...state,
+    profile: {
+      ...(state.profile || {}),
+      name: petName,
+      publicLabel: petName,
+    },
+  };
+  const summary = getMonthlySummary(assistantState, now);
+  const healthWatch = getHealthWatch(assistantState, now);
+  const bileWatch = getBileWatch(assistantState, now);
+  const todayPlan = getTodayPlan(assistantState, now);
+  const handoff = getCaregiverHandoff(assistantState, now);
+  const reminders = getReminderCenter(assistantState, now);
+  const latest = [...(assistantState.entries || [])]
     .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt))
     .slice(0, 5);
 
   return {
     question: cleanText(question),
-    profile: state.profile,
+    profile: assistantState.profile,
     summary,
     healthWatch,
     bileWatch,
@@ -1228,18 +1238,18 @@ export function getAssistantContext(state, question = "", now = new Date().toISO
     reminders,
     handoff,
     latest,
-    localAnswer: buildLocalAssistantAnswer({ question, summary, healthWatch, bileWatch, todayPlan, reminders, handoff, latest })
+    localAnswer: buildLocalAssistantAnswer({ petName, question, summary, healthWatch, bileWatch, todayPlan, reminders, handoff, latest })
   };
 }
 
-function buildLocalAssistantAnswer({ question, summary, healthWatch, bileWatch, todayPlan, reminders, handoff, latest }) {
+function buildLocalAssistantAnswer({ petName, question, summary, healthWatch, bileWatch, todayPlan, reminders, handoff, latest }) {
   const asksVomiting = /vomit|throw|bile|yellow|nausea/i.test(question);
   const lines = [];
 
   if (asksVomiting) {
-    lines.push("Phoenix has a vomit pattern worth tracking closely. Yellow bile often appears when a dog has an empty stomach, but WoofWatcher should treat it as a pattern for vet review, not a diagnosis.");
+    lines.push(`${petName} has a vomit pattern worth tracking closely. Yellow bile often appears when a dog has an empty stomach, but WoofWatcher should treat it as a pattern for vet review, not a diagnosis.`);
   } else {
-    lines.push("Phoenix's care picture is built from today's routine, logged meals, walks, training, social exposure, and health notes.");
+    lines.push(`${petName}'s care picture is built from today's routine, logged meals, walks, training, social exposure, and health notes.`);
   }
 
   lines.push(`This month: ${summary.meals} meals, ${summary.walks} walks, ${summary.trainingSessions} training sessions, ${summary.vomitIncidents} vomit incidents.`);
@@ -1447,12 +1457,12 @@ function entryMatchesCaregiver(entry, caregiverName) {
   return entryCaregiver === name || entryCaregiver === "both";
 }
 
-function buildHandoffMessage({ nextRoutine, lastMeal, lastWalk, followUps }) {
+function buildHandoffMessage({ petName, nextRoutine, lastMeal, lastWalk, followUps }) {
   const lines = [];
   if (nextRoutine) {
-    lines.push(`Next Phoenix care: ${nextRoutine.label} at ${nextRoutine.time} (${nextRoutine.owner}).`);
+    lines.push(`Next ${petName} care: ${nextRoutine.label} at ${nextRoutine.time} (${nextRoutine.owner}).`);
   } else {
-    lines.push("Next Phoenix care: today's routine is covered.");
+    lines.push(`Next ${petName} care: today's routine is covered.`);
   }
 
   if (lastMeal) {

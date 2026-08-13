@@ -3450,3 +3450,13 @@ labels. A stored placeholder such as `My Dog` must not reach a sitter, trainer,
 vet, emergency, or weekend Care Pass.
 
 Revisit trigger: none; this is a permanent Dog Profile identity invariant.
+
+## 2026-08-13: PWA assistant and caregiver handoffs follow Dog Profile
+
+Decision: Canonicalize profile identity inside `getAssistantContext` and pass
+the resolved name into the shared caregiver-handoff message builder. Local
+WoofGuide answers, Household Pulse, Care Room transfers, and reports must not
+return `My Dog` or describe a renamed dog as Phoenix.
+
+Boundary: This changes local, owner-reviewed presentation only. It does not
+enable live AI, automatic actions, provider delivery, diagnosis, or launch.
