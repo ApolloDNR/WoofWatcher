@@ -2623,3 +2623,9 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - STILL REQUIRED: live browser review, native owner-review and recipient
   handoff proof, provider-backed AI/sync evidence, veterinary safety review,
   store approval, and Apollo approval.
+## 2026-08-13 PWA Notification Identity
+
+- DONE: Canonicalized Dog Profile identity inside the shared PWA Notification Center. Browser-blocked guidance, due-reminder guidance, and notification titles now use `Phoenix` for blank/`My Dog` profile identity and the trimmed current Dog Profile name for renamed dogs.
+- VERIFIED: Red-first PWA coverage observed renamed-dog guidance still saying `Phoenix`; focused PWA behavior then passed `26/26` after the shared builder fix.
+- BOUNDARY: This improves local app-open reminder identity only. It does not enable closed-app push, configure Expo/APNs/FCM, prove native delivery, or approve notification privacy/legal copy.
+- NEXT: Capture real browser/device notification review and native route evidence when tooling is available; otherwise continue bounded Dog Profile identity auditing at shared display, accessibility, persistence, durable-export, and provider seams.

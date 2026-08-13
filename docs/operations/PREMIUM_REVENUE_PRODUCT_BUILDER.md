@@ -5817,3 +5817,6 @@ protects placeholder and whitespace-padded rename behavior. Live AI, external
 actions, provider delivery, veterinary review, and launch remain gated.
 Dependency-complete `WoofWatcher Verify` run `31684892387`, job `94398549158`,
 passed implementation/docs commit `171003c3` end to end.
+## 2026-08-13 PWA Notification Identity Slice
+
+The shared PWA Notification Center now resolves Dog Profile identity before building browser-blocked guidance, due-reminder guidance, and notification titles. `My Dog` falls back to `Phoenix`; renamed dog identity is trimmed and retained. This is local app-open reminder source proof only, not hosted push configuration or native delivery proof.

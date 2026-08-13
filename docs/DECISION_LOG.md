@@ -3460,3 +3460,12 @@ return `My Dog` or describe a renamed dog as Phoenix.
 
 Boundary: This changes local, owner-reviewed presentation only. It does not
 enable live AI, automatic actions, provider delivery, diagnosis, or launch.
+### 2026-08-13: PWA Notification Copy Resolves Dog Profile Identity
+
+Decision: The shared Notification Center owns Dog Profile canonicalization for local guidance and notification titles rather than trusting callers or using a Phoenix literal.
+
+Reason: Local reminders are household-visible care guidance. A renamed dog must not receive Phoenix-branded alerts, while blank and `My Dog` starter identity must remain the canonical Phoenix fallback.
+
+Consequences: Notification copy resolves identity at the shared builder boundary. Hosted push, native delivery, provider setup, privacy/legal approval, store review, and Apollo sign-off remain gated.
+
+Owner: Codex.

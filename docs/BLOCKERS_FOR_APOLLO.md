@@ -952,3 +952,6 @@ safety review, store approval, and Apollo approval remain separate gates.
 Dependency-complete `WoofWatcher Verify` run `31684892387`, job `94398549158`,
 passed implementation/docs commit `171003c3`; this source/CI proof does not
 clear those external gates.
+## PWA Notification Identity Follow-up (2026-08-13)
+
+No new Apollo decision is required for the source fix. Real closed-app reminder delivery still requires the existing provider, native delivery, privacy/legal, store, and Apollo approval evidence; local source/test proof must not be treated as push-delivery proof.

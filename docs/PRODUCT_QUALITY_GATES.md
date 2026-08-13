@@ -735,3 +735,7 @@ screen-reader traversal and route-named device proof remain open gates.
 
 - CI: Dependency-complete `WoofWatcher Verify` run `30893971949`, job `91942353828`, passed implementation/docs commit `7cec621f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+## PWA Notification Dog Profile Identity (2026-08-13)
+
+- PASS (source/test): shared Notification Center copy and notification titles resolve Dog Profile identity at the builder boundary.
+- OPEN (runtime/provider): browser permission review, native iOS/Android notification rendering, Expo/APNs/FCM delivery, privacy/legal approval, and Apollo sign-off.

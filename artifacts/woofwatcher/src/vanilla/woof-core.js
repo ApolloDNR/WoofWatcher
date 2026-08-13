@@ -590,6 +590,7 @@ export function getReminderCenter(state, now = new Date().toISOString()) {
 }
 
 export function getNotificationCenter(state, now = new Date().toISOString(), options = {}) {
+  const petName = resolvePetName(state.profile?.name);
   const supported = options.supported !== false;
   const permission = cleanText(options.permission || "default") || "default";
   const reminders = getReminderCenter(state, now);
@@ -615,7 +616,7 @@ export function getNotificationCenter(state, now = new Date().toISOString(), opt
       shouldNotifyNow: false,
       dueReminderCount: dueReminders.length,
       notificationKey,
-      nextNotification: buildNotificationPayload(nextReminder, dueReminders),
+      nextNotification: buildNotificationPayload(nextReminder, dueReminders, petName),
       deliveryBoundary,
       message: "This browser does not support local care notifications. Reminder Center still shows due care."
     };
@@ -632,9 +633,9 @@ export function getNotificationCenter(state, now = new Date().toISOString(), opt
       shouldNotifyNow: false,
       dueReminderCount: dueReminders.length,
       notificationKey,
-      nextNotification: buildNotificationPayload(nextReminder, dueReminders),
+      nextNotification: buildNotificationPayload(nextReminder, dueReminders, petName),
       deliveryBoundary,
-      message: "Notifications are blocked in this browser. Use device settings or the Reminder Center for Phoenix care."
+      message: `Notifications are blocked in this browser. Use device settings or the Reminder Center for ${petName} care.`
     };
   }
 
@@ -649,10 +650,10 @@ export function getNotificationCenter(state, now = new Date().toISOString(), opt
       shouldNotifyNow: dueReminders.length > 0,
       dueReminderCount: dueReminders.length,
       notificationKey,
-      nextNotification: buildNotificationPayload(nextReminder, dueReminders),
+      nextNotification: buildNotificationPayload(nextReminder, dueReminders, petName),
       deliveryBoundary,
       message: dueReminders.length
-        ? `App-open alerts are enabled. ${dueReminders.length} Phoenix reminder${dueReminders.length === 1 ? "" : "s"} need attention.`
+        ? `App-open alerts are enabled. ${dueReminders.length} ${petName} reminder${dueReminders.length === 1 ? "" : "s"} need attention.`
         : `App-open alerts are enabled. ${nextReminder ? `Next: ${nextReminder.label} at ${nextReminder.time}.` : "Scheduled care is covered."}`
     };
   }
@@ -667,7 +668,7 @@ export function getNotificationCenter(state, now = new Date().toISOString(), opt
     shouldNotifyNow: false,
     dueReminderCount: dueReminders.length,
     notificationKey,
-    nextNotification: buildNotificationPayload(nextReminder, dueReminders),
+    nextNotification: buildNotificationPayload(nextReminder, dueReminders, petName),
     deliveryBoundary,
     message: "Enable alerts to let WoofWatcher nudge you while the app is open. Closed-app push needs a hosted notification service."
   };
@@ -1534,12 +1535,12 @@ function buildReminderMessage({ items, nextReminder }) {
   return "Today's scheduled care is covered.";
 }
 
-function buildNotificationPayload(nextReminder, dueReminders = []) {
+function buildNotificationPayload(nextReminder, dueReminders = [], petName = "Phoenix") {
   if (!nextReminder) return null;
   const isDue = dueReminders.length > 0;
   const owner = nextReminder.owner || "Either caregiver";
   return {
-    title: isDue ? "Phoenix care due" : "Next Phoenix care",
+    title: isDue ? `${petName} care due` : `Next ${petName} care`,
     body: `${nextReminder.label} at ${nextReminder.time} (${owner}). ${nextReminder.note || "Check WoofWatcher before assuming care is covered."}`,
     tag: `woofwatcher-${nextReminder.id}`
   };

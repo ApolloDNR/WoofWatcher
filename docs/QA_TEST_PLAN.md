@@ -2940,3 +2940,8 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 
 - CI: Dependency-complete `WoofWatcher Verify` run `30893971949`, job `91942353828`, passed implementation/docs commit `7cec621f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+## 2026-08-13 PWA Notification Identity Check
+
+- Set Dog Profile to `My Dog`, deny browser notification permission, and confirm Reminder Center guidance says `Phoenix care` without exposing the placeholder.
+- Rename Dog Profile to a whitespace-padded name such as `  Mochi  ` and confirm blocked guidance and the next notification title say `Mochi care`, never `Phoenix`.
+- Treat this as source/test proof for local app-open notification copy. Closed-app push and native delivery remain separate provider/device gates.

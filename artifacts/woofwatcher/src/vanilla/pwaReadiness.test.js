@@ -18,7 +18,12 @@ import {
   buildCareHelperInstructions,
   compactAssistantContext,
 } from "./openai-care-helper.js";
-import { buildCareRoomTransfer, buildReportText, getAssistantContext } from "./woof-core.js";
+import {
+  buildCareRoomTransfer,
+  buildReportText,
+  getAssistantContext,
+  getNotificationCenter,
+} from "./woof-core.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
@@ -43,6 +48,30 @@ test("keeps the Dog Profile identity canonical in durable PWA report artifacts",
   assert.doesNotMatch(JSON.stringify(placeholder), /My Dog/);
   assert.match(renamed.sourceText, /^Mochi Care Report/);
   assert.equal(renamed.filename, "woofwatcher-mochi-report-2026-08-12.txt");
+});
+
+test("keeps Dog Profile identity canonical in PWA notification guidance", () => {
+  const placeholder = getNotificationCenter(
+    { profile: { name: "My Dog" } },
+    "2026-08-13T12:00:00.000Z",
+    { permission: "denied" },
+  );
+  const renamed = getNotificationCenter(
+    {
+      profile: { name: "  Mochi  " },
+      routines: [{ id: "routine_lunch", label: "Lunch", type: "meal", time: "12:00 PM" }],
+      entries: [],
+    },
+    "2026-08-13T12:00:00.000Z",
+    { permission: "denied" },
+  );
+
+  assert.match(placeholder.message, /Phoenix care/);
+  assert.doesNotMatch(placeholder.message, /My Dog/);
+  assert.match(renamed.message, /Mochi care/);
+  assert.doesNotMatch(renamed.message, /Phoenix/);
+  assert.match(renamed.nextNotification.title, /Mochi care/);
+  assert.doesNotMatch(renamed.nextNotification.title, /Phoenix/);
 });
 
 test("keeps Dog Profile identity canonical in the shared PWA assistant context", () => {
