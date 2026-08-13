@@ -5815,3 +5815,5 @@ the renamed-dog `Next Phoenix care` leak across assistant, Household Pulse,
 Care Room transfer, and report consumers. Red-first PWA readiness coverage
 protects placeholder and whitespace-padded rename behavior. Live AI, external
 actions, provider delivery, veterinary review, and launch remain gated.
+Dependency-complete `WoofWatcher Verify` run `31684892387`, job `94398549158`,
+passed implementation/docs commit `171003c3` end to end.

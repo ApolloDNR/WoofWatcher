@@ -949,3 +949,6 @@ caregiver handoff canonicalize blank/`My Dog` identity to Phoenix and preserve
 trimmed renamed-dog identity. Live browser and native owner-review evidence,
 recipient handoff review, approved AI/provider configuration, veterinary
 safety review, store approval, and Apollo approval remain separate gates.
+Dependency-complete `WoofWatcher Verify` run `31684892387`, job `94398549158`,
+passed implementation/docs commit `171003c3`; this source/CI proof does not
+clear those external gates.
