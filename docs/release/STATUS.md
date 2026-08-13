@@ -1,9 +1,9 @@
 # WoofWatcher V1 Release Status
 
 - Integration branch: `release/woofwatcher-v1`
-- Last verified implementation checkpoint: `05e9bc14b1f4e00a92b7966211dfcb8e8b5db285`
-- Verified implementation tree: `f0bf1d37fb92132fcca1254cc58ae387223d28bc`
-- Checkpoint CI: [WoofWatcher Verify #979 — PASS](https://github.com/ApolloDNR/WoofWatcher/actions/runs/31751735301)
+- Last verified implementation checkpoint: `c50411a401e915c28b24dd7e6d988bd0ac5f1bb6`
+- Verified implementation tree: `a035ffcb4e30cca0acf0dd0d6662f93f0123fda3`
+- Checkpoint CI: [WoofWatcher Verify #981 — PASS](https://github.com/ApolloDNR/WoofWatcher/actions/runs/31753986345)
 - Durable baseline: `0f1107b170b0a9c89548a51f5cdeb664ba98246f`
 - Baseline code commit: `b6934f7a`
 - Main at recovery start: `47234396`
@@ -13,9 +13,26 @@
 
 ## Current milestone
 
-M2A — Coordinated Local Reset Core: COMPLETE
+M2B1 — Root Local Reset Runtime: COMPLETE
 
-Next: M2B — App-Wide Privacy Export and Local Reset Integration
+Next: M2B2 — Storage and State Owner Integration
+
+## M2B1 durable checkpoint
+
+- Remote branch and exact tree equality: PASS
+- Independent adversarial review: PASS; zero remaining critical, important, or minor findings
+- Root reset provider is mounted above Care and Avatar: PASS
+- Required Care and Avatar participant slots fail closed when unattached: PASS
+- Accepted non-storage work is permit-aware, drainable, and re-entrancy safe: PASS
+- Shared removable-storage and tracked-work drains complete before permit invalidation: PASS
+- Runtime operation state catches up after passive subscription attachment: PASS
+- Reset settlement epoch is deduplicated by exact reset Promise: PASS
+- New B1 tests: 30/30 PASS
+- Combined M2A+B1 tests: 72/72 PASS
+- Focused tests: 1,119/1,119 PASS
+- Mobile beta doctor, store-material validation, TypeScript, and CI-safe builds: PASS
+
+This is inert infrastructure, not a completed deletion flow. Care and Avatar have not attached their destructive delegates, so the new runtime deliberately returns partial failure instead of success. Privacy remains on the legacy path until storage/state owners, files/caches/walk, and truthful export/reset UI are integrated in later M2B slices.
 
 ## M2A durable checkpoint
 
