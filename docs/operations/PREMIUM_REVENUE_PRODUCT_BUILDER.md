@@ -19,6 +19,12 @@ blocked on missing `@tanstack/react-query` and `zod`; and the JSON doctor
 remains blocked on pnpm 11.19.0 versus pinned 10.24.0 plus missing Expo.
 Dependency-complete branch CI is required before this tip is release proof.
 
+Dependency-complete `WoofWatcher Verify` run `31672493415`, job `94359902180`,
+passed implementation/docs commit `81694191` in `2m13s` with pinned dependency
+install, JSON doctor, focused behavior tests, typecheck plus CI-safe builds,
+post steps, and Complete job. Rerun after this proof-record commit before
+treating the final branch tip as current.
+
 ## 2026-08-12 PWA AI context identity slice
 
 The legacy PWA's owner-reviewed AI provider package now resolves Dog Profile

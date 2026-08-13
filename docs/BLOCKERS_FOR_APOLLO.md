@@ -7,6 +7,9 @@ report text and local care-room transfer packages, including embedded profile
 state. Live browser download/import review, native share/reopen proof,
 provider-backed delivery, store review, and Apollo approval remain open; no
 provider, payment, live-AI, diagnosis, or launch capability was enabled.
+Dependency-complete `WoofWatcher Verify` run `31672493415`, job `94359902180`,
+passed implementation/docs commit `81694191`; final-tip proof requires a rerun
+after the proof-record commit.
 
 ## 2026-08-12 PWA AI context identity status
 

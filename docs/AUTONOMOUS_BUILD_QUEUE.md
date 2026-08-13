@@ -15,8 +15,12 @@
   suite passed `847/847`; PixelLab passed `ok=150 missing=0 invalid=0`; and
   `git diff --check` passed. Three dependency-bound tests, local TypeScript,
   Expo export, and the JSON doctor remain blocked by the partial checkout.
-- NEXT: Require dependency-complete branch CI, then retain browser/native
-  handoff proof as separate gates.
+- CI: Dependency-complete `WoofWatcher Verify` run `31672493415`, job
+  `94359902180`, passed implementation/docs commit `81694191` with pinned
+  install, JSON doctor, focused tests, typecheck plus CI-safe builds, post
+  steps, and Complete job all green.
+- NEXT: Rerun branch CI after this proof-record commit, then retain browser/
+  native handoff proof as separate gates.
 
 ## 2026-08-12 PWA AI context identity boundary
 
