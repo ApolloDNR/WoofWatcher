@@ -1,5 +1,14 @@
 # Premium Revenue Product Builder
 
+## 2026-08-13 PWA cloud-sync plan identity slice
+
+`buildCloudSyncPlan` now carries canonical Dog Profile identity through its
+provider-facing pet resource, missing-household blocker, privacy checklist,
+and existing fingerprint. Red-first PWA coverage protects `My Dog` -> Phoenix
+and whitespace-trimmed renamed identity. Cloud sync remains gated behind the
+existing structured provider proof; no backend write, migration, RLS change,
+native delivery, store action, or launch approval is claimed.
+
 ## 2026-08-12 PWA base report and care-room transfer identity slice
 
 The base PWA monthly report and care-room transfer builders now resolve Dog

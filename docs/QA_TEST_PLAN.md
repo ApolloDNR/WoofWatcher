@@ -1,5 +1,15 @@
 # QA Test Plan
 
+## 2026-08-13 PWA cloud-sync plan identity
+
+- Automated: `My Dog` produces Phoenix in the local-state fingerprint and all
+  identity-bearing provider-plan copy.
+- Automated: `  Mochi  ` produces Mochi in the pet resource, missing-household
+  blocker, and invite-only privacy checklist, with no Phoenix leak.
+- Manual/provider remaining: Supabase project proof, migration/backfill, RLS,
+  retention/export/deletion, iOS/Android full refresh, store review, and Apollo
+  approval. Source tests do not activate cloud sync.
+
 ## 2026-08-04 Today Command setup identity
 
 - With no routines or logs, save the active dog as `  Luna  ` and confirm Home says `Set up Luna`.

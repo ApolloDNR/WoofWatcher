@@ -195,6 +195,11 @@ test("keeps the Dog Profile identity canonical at PWA household sync boundaries"
   assert.equal(renamedSync.localStateFingerprint, trimmedSync.localStateFingerprint);
   assert.equal(placeholderSync.status, "local_only");
   assert.equal(renamedSync.status, "local_only");
+  assert.match(placeholderSync.resources.find((resource) => resource.name === "pets").description, /^Phoenix profile/);
+  assert.match(renamedSync.resources.find((resource) => resource.name === "pets").description, /^Mochi profile/);
+  assert.match(renamedSync.blockers.join(" "), /shared Mochi data/);
+  assert.match(renamedSync.privacyChecklist.join(" "), /sharing Mochi data/);
+  assert.doesNotMatch(JSON.stringify(renamedSync), /Phoenix/);
 });
 
 test("keeps Dog Profile identity canonical in owner-reviewed PWA AI context", () => {

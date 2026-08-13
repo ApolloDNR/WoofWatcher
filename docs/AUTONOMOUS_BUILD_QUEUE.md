@@ -1,5 +1,19 @@
 # Autonomous Build Queue
 
+## 2026-08-13 PWA cloud-sync plan identity boundary
+
+- DONE: The gated cloud-sync plan now resolves Dog Profile identity in the
+  provider-facing pet resource, missing-household blocker, and invite-only
+  privacy checklist.
+- VERIFIED: Red-first PWA coverage reproduced `Phoenix profile` inside a
+  renamed Mochi plan; placeholder profiles retain Phoenix and renamed dogs are
+  trimmed throughout the exported plan.
+- BOUNDARY: No backend write, sync activation, migration, RLS change, provider
+  approval, native refresh, store action, or public launch was enabled.
+- NEXT: Require dependency-complete branch CI. Real provider, migration/RLS,
+  retention, native full-refresh, store, and Apollo evidence remain separate
+  gates.
+
 ## 2026-08-12 PWA base report and care-room transfer identity boundary
 
 - DONE: Base monthly report text and local care-room transfer packages now

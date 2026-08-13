@@ -1,5 +1,15 @@
 # WoofWatcher Decision Log
 
+## 2026-08-13: Resolve Dog Profile identity inside cloud-sync plan exports
+
+- Decision: `buildCloudSyncPlan` owns canonical Dog Profile identity for every
+  identity-bearing resource, blocker, checklist item, and fingerprint it
+  exports.
+- Reason: Provider-bound plans must not leak the Phoenix starter name after a
+  household renames its dog, even while provider activation remains gated.
+- Boundary: This is source/local-plan hardening only; it does not prove or
+  authorize backend writes, RLS, migration, sync delivery, or launch.
+
 ## 2026-08-12: Base PWA reports and care-room transfers own canonical identity
 
 - Decision: resolve Dog Profile identity inside `buildReportText` and

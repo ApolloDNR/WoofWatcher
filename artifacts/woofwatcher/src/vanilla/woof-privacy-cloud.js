@@ -222,7 +222,7 @@ export function buildCloudSyncPlan(input = {}, options = {}, now = new Date().to
       "Attach structured cloud sync provider proof covering Supabase project id, migration/backfill, active-household RLS, retention/export/deletion, dependency build, mobile full-refresh sign-off, and Apollo approval before enabling cross-device sync.",
     );
   }
-  if (!householdId) blockers.push("Create a household id before writing shared Phoenix data.");
+  if (!householdId) blockers.push(`Create a household id before writing shared ${petName} data.`);
 
   return {
     generatedAt: now,
@@ -253,7 +253,7 @@ export function buildCloudSyncPlan(input = {}, options = {}, now = new Date().to
     resources: [
       syncResource("households", "Household account and privacy settings", true),
       syncResource("members", "Invited humans and roles", true),
-      syncResource("pets", "Phoenix profile and non-secret care focus", true),
+      syncResource("pets", `${petName} profile and non-secret care focus`, true),
       syncResource("care_entries", "Meals, walks, training, vomit, health, notes", true),
       syncResource("routines", "Plans, meals, walks, bedtime snack, reminders", true),
       syncResource("records", "Vet, vaccine, medication, microchip, instructions", true),
@@ -265,7 +265,7 @@ export function buildCloudSyncPlan(input = {}, options = {}, now = new Date().to
     privacyChecklist: [
       "Keep repository private until demo/private split is decided.",
       "Do not store OpenAI keys in client JavaScript.",
-      "Use invite-only access before sharing Phoenix data.",
+      `Use invite-only access before sharing ${petName} data.`,
       "Keep Care Pass scoped unless this is same-household device transfer.",
       "Log destructive changes in audit_events."
     ],

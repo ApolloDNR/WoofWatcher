@@ -1,5 +1,14 @@
 # Blockers For Apollo
 
+## 2026-08-13 PWA cloud-sync plan identity boundary
+
+- Source blocker cleared: gated cloud-sync plan copy now follows canonical Dog
+  Profile identity for Phoenix fallback and trimmed renamed dogs.
+- Still blocked: approved Supabase project, migration/backfill and active-
+  household RLS proof, retention/export/deletion policy, dependency-complete
+  CI, native full-refresh sign-off, store review, and Apollo approval.
+- No cloud sync or provider write is enabled by this source change.
+
 ## 2026-08-12 PWA base report and care-room transfer identity status
 
 Source/test proof now keeps canonical Dog Profile identity in base monthly
