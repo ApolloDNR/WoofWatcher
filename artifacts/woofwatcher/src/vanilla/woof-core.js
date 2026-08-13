@@ -715,6 +715,7 @@ export function getCaregiverHandoff(state, now = new Date().toISOString()) {
 }
 
 export function getHouseholdPulse(state, now = new Date().toISOString()) {
+  const petName = resolvePetName(state?.profile?.name);
   const plan = getTodayPlan(state, now);
   const handoff = getCaregiverHandoff(state, now);
   const health = getHealthWatch(state, now);
@@ -732,13 +733,13 @@ export function getHouseholdPulse(state, now = new Date().toISOString()) {
     label: "Routine covered",
     type: "note",
     time: "Today",
-    owner: "Phoenix's humans",
+    owner: `${petName}'s humans`,
     note: "No scheduled care is currently waiting."
   };
   const latest = timeline[0];
   const summary = latest
-    ? `Phoenix has ${plan.completedCount}/${plan.totalCount} routine items covered. Latest: ${latest.title} by ${latest.caregiver}.`
-    : `Phoenix has ${plan.completedCount}/${plan.totalCount} routine items covered. Start with the next planned care item.`;
+    ? `${petName} has ${plan.completedCount}/${plan.totalCount} routine items covered. Latest: ${latest.title} by ${latest.caregiver}.`
+    : `${petName} has ${plan.completedCount}/${plan.totalCount} routine items covered. Start with the next planned care item.`;
 
   return {
     label: "Household Pulse",

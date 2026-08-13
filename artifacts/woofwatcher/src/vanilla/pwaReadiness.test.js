@@ -23,6 +23,8 @@ import {
   buildImportReviewMessage,
   buildReportText,
   getAssistantContext,
+  getDefaultState,
+  getHouseholdPulse,
   getNotificationCenter,
 } from "./woof-core.js";
 
@@ -342,6 +344,27 @@ test("keeps WoofGuide wired to owner-reviewed action routing", () => {
   assert.match(appEntry, /import \{ buildWoofGuideVetNoteDraft \} from "\.\/woof-operations\.js"/);
   assert.match(appEntry, /buildWoofGuideVetNoteDraft\(\s*state,/);
   assert.match(appEntry, /owner-reviewed/);
+});
+
+test("keeps Dog Profile identity canonical in Household Pulse", () => {
+  const now = "2026-08-13T12:00:00.000Z";
+  const placeholderState = getDefaultState(now);
+  placeholderState.profile.name = "My Dog";
+  placeholderState.profile.publicLabel = "My Dog";
+  placeholderState.routines = [];
+  placeholderState.entries = [];
+  const renamedState = structuredClone(placeholderState);
+  renamedState.profile.name = "  Mochi  ";
+  renamedState.profile.publicLabel = "  Mochi  ";
+
+  const placeholder = getHouseholdPulse(placeholderState, now);
+  const renamed = getHouseholdPulse(renamedState, now);
+
+  assert.match(placeholder.summary, /^Phoenix has 0\/0 routine items covered/);
+  assert.equal(placeholder.nextAction.owner, "Phoenix's humans");
+  assert.match(renamed.summary, /^Mochi has 0\/0 routine items covered/);
+  assert.equal(renamed.nextAction.owner, "Mochi's humans");
+  assert.doesNotMatch(JSON.stringify(renamed), /Phoenix|My Dog/);
 });
 
 test("keeps PWA WoofGuide live AI gated behind structured provider proof", () => {

@@ -959,6 +959,14 @@ Reason: Medication is safety-sensitive household care. Owners need one trusted s
 
 Owner: Codex.
 
+### 2026-08-13: Household Pulse follows Dog Profile identity
+
+Decision: Resolve Dog Profile identity inside `getHouseholdPulse` before building household-visible summaries and fallback ownership copy.
+
+Reason: Household Pulse is a shared care-trust boundary; renamed households must not receive Phoenix-specific coordination copy, while blank and `My Dog` starter identity remains Phoenix.
+
+Boundary: This is local source behavior and does not claim provider delivery, native refresh, accessibility, store, or Apollo approval.
+
 ### 2026-08-13: PWA Import Review Uses Imported Dog Profile
 
 Decision: Normalize an imported backup or Care Room transfer once, persist that normalized state, and derive post-import safety guidance from its canonical Dog Profile identity.

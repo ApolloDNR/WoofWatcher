@@ -966,3 +966,7 @@ clear those external gates.
 ## PWA Notification Identity Follow-up (2026-08-13)
 
 No new Apollo decision is required for the source fix. Real closed-app reminder delivery still requires the existing provider, native delivery, privacy/legal, store, and Apollo approval evidence; local source/test proof must not be treated as push-delivery proof.
+
+## 2026-08-13 PWA Household Pulse identity status
+
+Source coverage now proves Household Pulse summary and fallback owner copy use canonical Dog Profile identity. Provider-backed household sync, live browser/native review, VoiceOver/TalkBack traversal, store review, and Apollo approval remain separate gates.

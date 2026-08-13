@@ -5840,3 +5840,7 @@ Dependency-complete branch CI passed implementation commit `9f69a23e` in `WoofWa
 Backup and Care Room transfer imports now normalize state once, persist that normalized state, and build post-import safety guidance from its canonical Dog Profile identity. Red-first PWA coverage protects the Phoenix starter fallback and whitespace-padded renamed identity. This does not prove live browser import, cross-device transfer, provider sync, native share/reopen behavior, recipient review, or launch approval.
 
 Dependency-complete `WoofWatcher Verify` run `31713497155`, job `94492214748`, passed implementation/docs commit `474a0a64` end to end. Rerun after this proof-record commit before treating final-tip dependency proof as current.
+
+## 2026-08-13 PWA Household Pulse identity slice
+
+The shared Household Pulse now canonicalizes Dog Profile identity before building routine-coverage summaries and its no-next-routine owner fallback. Red-first PWA coverage protects the Phoenix starter fallback and whitespace-padded renamed identity. This does not enable provider sync or prove browser/native household refresh, accessibility traversal, store readiness, or launch approval.
