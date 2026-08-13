@@ -949,6 +949,14 @@ Reason: Medication is safety-sensitive household care. Owners need one trusted s
 
 Owner: Codex.
 
+### 2026-08-13: PWA Import Review Uses Imported Dog Profile
+
+Decision: Normalize an imported backup or Care Room transfer once, persist that normalized state, and derive post-import safety guidance from its canonical Dog Profile identity.
+
+Reason: Recovery guidance is a household trust surface. A renamed dog must not be described as Phoenix after import, while blank and `My Dog` identity must retain the Phoenix starter fallback.
+
+Consequences: Local import review copy follows the restored dog. Browser file handling, cross-device transfer, provider sync, recipient review, native share/reopen proof, and launch approval remain separate gates.
+
 Revisit trigger: Medication reminders, refill tracking, role-based permissions, or vet/pharmacy integrations require stricter schedule and dosage schemas.
 
 ### 2026-06-11: Medication Follow-Ups Are Domain Rules Before Push Delivery

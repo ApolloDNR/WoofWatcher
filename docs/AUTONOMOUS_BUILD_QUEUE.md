@@ -2630,3 +2630,10 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - BOUNDARY: This improves local app-open reminder identity only. It does not enable closed-app push, configure Expo/APNs/FCM, prove native delivery, or approve notification privacy/legal copy.
 - NEXT: Capture real browser/device notification review and native route evidence when tooling is available; otherwise continue bounded Dog Profile identity auditing at shared display, accessibility, persistence, durable-export, and provider seams.
 - CI PROOF: `WoofWatcher Verify` run `31698409617`, job `94441403080`, passed implementation commit `9f69a23e` with pinned dependency install, JSON mobile beta doctor, focused behavior tests, typecheck and CI-safe builds, post steps, and Complete job.
+
+## 2026-08-13 PWA import review identity
+
+- DONE: Backup and Care Room transfer imports now build post-import review guidance from the normalized Dog Profile identity instead of hardcoding Phoenix.
+- VERIFIED: Red-first PWA coverage reproduced renamed Mochi receiving Phoenix review guidance, then passed with the Phoenix starter fallback and trimmed renamed identity.
+- BOUNDARY: This changes local recovery guidance only. It does not prove live browser file import, cross-device transfer, provider sync, recipient review, native share/reopen behavior, or launch approval.
+- NEXT: Capture live browser backup/transfer import review when tooling is available; otherwise continue bounded Dog Profile identity auditing at shared display, accessibility, persistence, durable-export, and provider seams.

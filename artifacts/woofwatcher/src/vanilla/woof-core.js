@@ -249,6 +249,13 @@ export function normalizeState(input = {}, now = new Date().toISOString()) {
   };
 }
 
+export function buildImportReviewMessage(input = {}) {
+  const petName = resolvePetName(input.profile?.name);
+  return input.packageType === CARE_ROOM_TRANSFER_TYPE
+    ? `Care room transfer imported. Review ${petName}'s handoff and latest timeline before continuing care.`
+    : `Backup imported. Review ${petName}'s latest care timeline before acting on any old notes.`;
+}
+
 export function normalizeCaregiverInput(input = {}) {
   return normalizeCaregiver(input);
 }

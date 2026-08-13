@@ -2946,3 +2946,9 @@ underlying care-state action, room motion, or long-press Avatar Studio route.
 - Rename Dog Profile to a whitespace-padded name such as `  Mochi  ` and confirm blocked guidance and the next notification title say `Mochi care`, never `Phoenix`.
 - Treat this as source/test proof for local app-open notification copy. Closed-app push and native delivery remain separate provider/device gates.
 - Dependency-complete branch proof: `WoofWatcher Verify` run `31698409617`, job `94441403080`, passed commit `9f69a23e` including install, doctor, focused tests, typecheck, and CI-safe builds.
+
+## 2026-08-13 PWA Import Review Identity Check
+
+- Import a Care Room transfer whose Dog Profile is `My Dog`; confirm the review guidance names Phoenix and never exposes the placeholder.
+- Import a backup whose Dog Profile is `  Mochi  `; confirm the review guidance names Mochi and never Phoenix.
+- Confirm the normalized imported state is the same state persisted before guidance is built. Treat automated coverage as source proof; live browser file import, cross-device transfer, and native share/reopen review remain open.

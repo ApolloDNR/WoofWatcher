@@ -20,6 +20,7 @@ import {
 } from "./openai-care-helper.js";
 import {
   buildCareRoomTransfer,
+  buildImportReviewMessage,
   buildReportText,
   getAssistantContext,
   getNotificationCenter,
@@ -72,6 +73,21 @@ test("keeps Dog Profile identity canonical in PWA notification guidance", () => 
   assert.doesNotMatch(renamed.message, /Phoenix/);
   assert.match(renamed.nextNotification.title, /Mochi care/);
   assert.doesNotMatch(renamed.nextNotification.title, /Phoenix/);
+});
+
+test("keeps imported Dog Profile identity canonical in recovery review guidance", () => {
+  const placeholder = buildImportReviewMessage({
+    packageType: "woofwatcher.care-room-transfer",
+    profile: { name: "My Dog" },
+  });
+  const renamed = buildImportReviewMessage({
+    profile: { name: "  Mochi  " },
+  });
+
+  assert.match(placeholder, /Review Phoenix's handoff/);
+  assert.doesNotMatch(placeholder, /My Dog/);
+  assert.match(renamed, /Review Mochi's latest care timeline/);
+  assert.doesNotMatch(renamed, /Phoenix/);
 });
 
 test("keeps Dog Profile identity canonical in the shared PWA assistant context", () => {

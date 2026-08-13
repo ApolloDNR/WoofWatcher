@@ -1,5 +1,6 @@
 import {
   buildCareRoomTransfer,
+  buildImportReviewMessage,
   buildReportText,
   createEntry,
   getBileWatch,
@@ -1899,11 +1900,13 @@ async function handleImportFile(event) {
 
   try {
     const imported = JSON.parse(await file.text());
-    saveState(normalizeState(imported));
+    const normalized = normalizeState(imported);
+    saveState(normalized);
     activeTab = "phoenix";
-    assistantAnswer = imported.packageType === "woofwatcher.care-room-transfer"
-      ? "Care room transfer imported. Review Phoenix's handoff and latest timeline before continuing care."
-      : "Backup imported. Review Phoenix's latest care timeline before acting on any old notes.";
+    assistantAnswer = buildImportReviewMessage({
+      packageType: imported.packageType,
+      profile: normalized.profile,
+    });
     render();
   } catch {
     window.alert("WoofWatcher could not import that file. Choose a JSON backup or care room transfer exported from this app.");

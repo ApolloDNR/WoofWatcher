@@ -5822,3 +5822,7 @@ passed implementation/docs commit `171003c3` end to end.
 The shared PWA Notification Center now resolves Dog Profile identity before building browser-blocked guidance, due-reminder guidance, and notification titles. `My Dog` falls back to `Phoenix`; renamed dog identity is trimmed and retained. This is local app-open reminder source proof only, not hosted push configuration or native delivery proof.
 
 Dependency-complete branch CI passed implementation commit `9f69a23e` in `WoofWatcher Verify` run `31698409617`, job `94441403080`. Final-tip proof remains required after this proof record is committed.
+
+## 2026-08-13 PWA import review identity slice
+
+Backup and Care Room transfer imports now normalize state once, persist that normalized state, and build post-import safety guidance from its canonical Dog Profile identity. Red-first PWA coverage protects the Phoenix starter fallback and whitespace-padded renamed identity. This does not prove live browser import, cross-device transfer, provider sync, native share/reopen behavior, recipient review, or launch approval.
