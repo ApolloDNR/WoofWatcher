@@ -7,6 +7,9 @@ caregiver access package and future cloud-sync fingerprint. Real provider sync
 remains blocked on approved backend/household setup, migration and active-
 household RLS evidence, retention/export/deletion policy, native full-refresh
 proof, store review, and Apollo approval; no remote write was enabled.
+Dependency-complete `WoofWatcher Verify` run `31652871087`, job `94300815763`,
+passed source and docs commit `c88a35a0`; final-tip proof still requires a
+rerun after the proof-record commit.
 
 ## 2026-08-12 PWA hosted-nudge identity status
 

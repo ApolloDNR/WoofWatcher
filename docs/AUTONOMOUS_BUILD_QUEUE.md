@@ -10,8 +10,13 @@
 - BOUNDARY: Cross-device sync remains local-only or provider-proof-pending
   until backend, household, RLS, migration, retention, native refresh, and
   Apollo evidence is approved. No provider write or sync activation occurred.
-- NEXT: Require dependency-complete branch CI, then retain provider migration,
-  RLS, native full-refresh, store review, and Apollo approval as separate gates.
+- CI: Dependency-complete `WoofWatcher Verify` run `31652871087`, job
+  `94300815763`, passed implementation/docs commit `c88a35a0` with pinned
+  install, JSON doctor, focused tests, typecheck plus CI-safe builds, post
+  steps, and Complete job all green.
+- NEXT: Rerun branch CI after this proof-record commit. Provider migration,
+  RLS, native full-refresh, store review, and Apollo approval remain separate
+  gates.
 
 ## 2026-08-12 PWA hosted-nudge identity boundary
 
