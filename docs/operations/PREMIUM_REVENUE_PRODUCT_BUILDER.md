@@ -1,5 +1,24 @@
 # Premium Revenue Product Builder
 
+## 2026-08-12 PWA base report and care-room transfer identity slice
+
+The base PWA monthly report and care-room transfer builders now resolve Dog
+Profile identity at their own durable boundary. Red-first coverage caught
+`My Dog - August 2026`; placeholder exports now use Phoenix,
+whitespace-padded renamed dogs use their trimmed identity, and transfer
+packages keep top-level identity, embedded profile state, monthly report, and
+import guidance aligned. Report math, import behavior, sharing transport,
+providers, native/store evidence, and launch approval remain unchanged.
+
+Focused PWA behavior passed `26/26`; the dependency-runnable API/mobile/PWA/
+care-domain suite passed `847/847`; PixelLab passed
+`ok=150 missing=0 invalid=0`; and `git diff --check` passed. The partial local
+checkout still cannot resolve Express for one API route test or
+`@workspace/care-domain` for `careCareer`/`careSync`; TypeScript remains
+blocked on missing `@tanstack/react-query` and `zod`; and the JSON doctor
+remains blocked on pnpm 11.19.0 versus pinned 10.24.0 plus missing Expo.
+Dependency-complete branch CI is required before this tip is release proof.
+
 ## 2026-08-12 PWA AI context identity slice
 
 The legacy PWA's owner-reviewed AI provider package now resolves Dog Profile

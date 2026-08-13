@@ -1124,6 +1124,7 @@ export function getAchievementReview(state, now = new Date().toISOString()) {
 
 export function buildReportText(state, now = new Date().toISOString()) {
   const profile = state.profile || { name: "Phoenix" };
+  const petName = resolvePetName(profile.name);
   const summary = getMonthlySummary(state, now);
   const healthWatch = getHealthWatch(state, now);
   const bileWatch = getBileWatch(state, now);
@@ -1135,7 +1136,7 @@ export function buildReportText(state, now = new Date().toISOString()) {
 
   return [
     "WoofWatcher Monthly Report",
-    `${profile.name} - ${summary.monthLabel}`,
+    `${petName} - ${summary.monthLabel}`,
     "",
     "Summary",
     `Meals logged: ${summary.meals}`,
@@ -1181,13 +1182,22 @@ export function buildReportText(state, now = new Date().toISOString()) {
 }
 
 export function buildCareRoomTransfer(state, now = new Date().toISOString()) {
-  const normalized = normalizeState(state, now);
+  const normalizedState = normalizeState(state, now);
+  const petName = resolvePetName(normalizedState.profile.name);
+  const normalized = {
+    ...normalizedState,
+    profile: {
+      ...normalizedState.profile,
+      name: petName,
+      publicLabel: petName,
+    },
+  };
   return {
     packageType: CARE_ROOM_TRANSFER_TYPE,
     version: 1,
     createdAt: now,
-    petName: normalized.profile.name,
-    importNote: "Import this file in WoofWatcher to continue Phoenix care from the same local state.",
+    petName,
+    importNote: `Import this file in WoofWatcher to continue ${petName} care from the same local state.`,
     handoff: getCaregiverHandoff(normalized, now),
     monthlySummary: getMonthlySummary(normalized, now),
     healthWatch: getHealthWatch(normalized, now),
@@ -1260,6 +1270,11 @@ function avatarState({ mood, urgency, scene, speech, suggestedAction, evidence =
 
 function cleanText(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function resolvePetName(value) {
+  const name = cleanText(value);
+  return !name || name.toLowerCase() === "my dog" ? "Phoenix" : name;
 }
 
 function titleCase(value) {

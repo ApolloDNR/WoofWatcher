@@ -1,5 +1,13 @@
 # Blockers For Apollo
 
+## 2026-08-12 PWA base report and care-room transfer identity status
+
+Source/test proof now keeps canonical Dog Profile identity in base monthly
+report text and local care-room transfer packages, including embedded profile
+state. Live browser download/import review, native share/reopen proof,
+provider-backed delivery, store review, and Apollo approval remain open; no
+provider, payment, live-AI, diagnosis, or launch capability was enabled.
+
 ## 2026-08-12 PWA AI context identity status
 
 Source/test proof now keeps canonical Dog Profile identity in the legacy PWA's

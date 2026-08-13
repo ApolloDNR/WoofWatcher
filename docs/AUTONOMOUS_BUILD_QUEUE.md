@@ -1,5 +1,23 @@
 # Autonomous Build Queue
 
+## 2026-08-12 PWA base report and care-room transfer identity boundary
+
+- DONE: Base monthly report text and local care-room transfer packages now
+  resolve Dog Profile identity at their own durable export boundary.
+- VERIFIED: Red-first PWA coverage reproduced `My Dog - August 2026`;
+  placeholder exports now use Phoenix, renamed dogs are trimmed, and transfer
+  packages canonicalize both top-level and embedded profile identity.
+- BOUNDARY: Browser download/import smoke, recipient review, native share and
+  reopen proof, provider delivery, store review, and Apollo approval remain
+  separate gates. No provider, payment, AI, diagnosis, or launch action was
+  enabled.
+- VERIFIED: Focused PWA behavior passed `26/26`; the dependency-runnable broad
+  suite passed `847/847`; PixelLab passed `ok=150 missing=0 invalid=0`; and
+  `git diff --check` passed. Three dependency-bound tests, local TypeScript,
+  Expo export, and the JSON doctor remain blocked by the partial checkout.
+- NEXT: Require dependency-complete branch CI, then retain browser/native
+  handoff proof as separate gates.
+
 ## 2026-08-12 PWA AI context identity boundary
 
 - DONE: The owner-reviewed PWA AI provider package now resolves Dog Profile

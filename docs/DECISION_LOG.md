@@ -1,5 +1,15 @@
 # WoofWatcher Decision Log
 
+## 2026-08-12: Base PWA reports and care-room transfers own canonical identity
+
+- Decision: resolve Dog Profile identity inside `buildReportText` and
+  `buildCareRoomTransfer`, including the transfer's embedded profile and import
+  guidance.
+- Reason: direct callers and restored local state must not preserve `My Dog`
+  or whitespace-padded identity in durable owner/caregiver exports.
+- Boundary: report math, import mechanics, sharing transport, providers,
+  native/store proof, and launch approval are unchanged.
+
 ## 2026-08-12: PWA AI request context follows Dog Profile identity
 
 - Decision: resolve Dog Profile identity inside the owner-reviewed AI provider

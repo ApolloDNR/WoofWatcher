@@ -18,6 +18,7 @@ import {
   buildCareHelperInstructions,
   compactAssistantContext,
 } from "./openai-care-helper.js";
+import { buildCareRoomTransfer, buildReportText } from "./woof-core.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
@@ -42,6 +43,34 @@ test("keeps the Dog Profile identity canonical in durable PWA report artifacts",
   assert.doesNotMatch(JSON.stringify(placeholder), /My Dog/);
   assert.match(renamed.sourceText, /^Mochi Care Report/);
   assert.equal(renamed.filename, "woofwatcher-mochi-report-2026-08-12.txt");
+});
+
+test("keeps Dog Profile identity canonical in base PWA reports and care-room transfers", () => {
+  const now = "2026-08-12T12:00:00.000Z";
+  const placeholder = {
+    profile: { name: "My Dog", publicLabel: "My Dog" },
+    entries: [],
+  };
+  const renamed = {
+    profile: { name: "  Mochi  ", publicLabel: "  Mochi  " },
+    entries: [],
+  };
+
+  const placeholderReport = buildReportText(placeholder, now);
+  const renamedReport = buildReportText(renamed, now);
+  const placeholderTransfer = buildCareRoomTransfer(placeholder, now);
+  const renamedTransfer = buildCareRoomTransfer(renamed, now);
+
+  assert.match(placeholderReport, /\nPhoenix - August 2026\n/);
+  assert.doesNotMatch(placeholderReport, /My Dog/);
+  assert.match(renamedReport, /\nMochi - August 2026\n/);
+  assert.equal(placeholderTransfer.petName, "Phoenix");
+  assert.equal(placeholderTransfer.state.profile.name, "Phoenix");
+  assert.equal(placeholderTransfer.state.profile.publicLabel, "Phoenix");
+  assert.doesNotMatch(JSON.stringify(placeholderTransfer), /My Dog/);
+  assert.equal(renamedTransfer.petName, "Mochi");
+  assert.equal(renamedTransfer.state.profile.name, "Mochi");
+  assert.equal(renamedTransfer.state.profile.publicLabel, "Mochi");
 });
 
 test("keeps the Dog Profile identity canonical in PWA vet-note handoffs", () => {
