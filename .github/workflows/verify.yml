@@ -5,7 +5,15 @@ on:
   push:
     branches:
       - main
+      - "release/**"
   pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: woofwatcher-verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify:
@@ -15,15 +23,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@ebd50bdde86241dd1b03a5b0a54a71aee9a1ca80
         with:
           version: 10.24.0
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
         with:
           node-version: 24
           cache: pnpm
@@ -33,6 +41,9 @@ jobs:
 
       - name: Run mobile beta doctor
         run: pnpm run doctor:mobile-beta:json
+
+      - name: Validate store materials
+        run: node docs/release/tools/validate-store-materials.mjs
 
       - name: Run focused behavior tests
         run: pnpm run test:focused
