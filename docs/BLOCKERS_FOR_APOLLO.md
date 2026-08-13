@@ -1,5 +1,13 @@
 # Blockers For Apollo
 
+## 2026-08-12 PWA AI context identity status
+
+Source/test proof now keeps canonical Dog Profile identity in the legacy PWA's
+owner-reviewed AI request context, instructions, and input. Live AI remains
+blocked on approved provider/model, citations, privacy, veterinary-safety,
+native review, store review, and Apollo approval; no external request or
+unsupervised action was enabled.
+
 ## 2026-08-12 PWA household sync identity status
 
 Source/test proof now keeps canonical Dog Profile identity in the local

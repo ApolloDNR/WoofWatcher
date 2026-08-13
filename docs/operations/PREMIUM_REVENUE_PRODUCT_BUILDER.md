@@ -1,5 +1,15 @@
 # Premium Revenue Product Builder
 
+## 2026-08-12 PWA AI context identity slice
+
+The legacy PWA's owner-reviewed AI provider package now resolves Dog Profile
+identity before compacting profile context or composing provider instructions
+and input. Red-first coverage caught the durable `My Dog` placeholder in the
+request package; placeholder profiles now use Phoenix and whitespace-padded
+renamed dogs use their trimmed identity. The veterinarian boundary remains
+intact. Live AI, external requests, automatic actions, providers, native/store
+evidence, and launch approval remain disabled or separately gated.
+
 ## 2026-08-12 PWA household sync identity slice
 
 - Changed: caregiver access packages and future cloud-sync fingerprints now

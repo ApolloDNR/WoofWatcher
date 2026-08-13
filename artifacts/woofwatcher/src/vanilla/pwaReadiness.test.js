@@ -13,6 +13,11 @@ import {
   buildCloudSyncPlan,
   buildScopedCarePass,
 } from "./woof-privacy-cloud.js";
+import {
+  buildCareHelperInput,
+  buildCareHelperInstructions,
+  compactAssistantContext,
+} from "./openai-care-helper.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
@@ -95,6 +100,18 @@ test("keeps the Dog Profile identity canonical at PWA household sync boundaries"
   assert.equal(renamedSync.localStateFingerprint, trimmedSync.localStateFingerprint);
   assert.equal(placeholderSync.status, "local_only");
   assert.equal(renamedSync.status, "local_only");
+});
+
+test("keeps Dog Profile identity canonical in owner-reviewed PWA AI context", () => {
+  const placeholder = { profile: { name: "My Dog", breed: "Shepherd mix" } };
+  const renamed = { profile: { name: "  Mochi  ", breed: "Shepherd mix" } };
+
+  assert.equal(compactAssistantContext(placeholder).profile.name, "Phoenix");
+  assert.doesNotMatch(buildCareHelperInput({ question: "Review today", context: placeholder }), /My Dog/);
+  assert.match(buildCareHelperInput({ question: "Review today", context: placeholder }), /Phoenix context:/);
+  assert.match(buildCareHelperInstructions(renamed), /Care Helper for Mochi/);
+  assert.match(buildCareHelperInput({ question: "Review today", context: renamed }), /Mochi context:/);
+  assert.doesNotMatch(buildCareHelperInstructions(renamed), /Care Helper for Phoenix/);
 });
 
 function extractConstArray(source, name) {

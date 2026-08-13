@@ -1,5 +1,19 @@
 # Autonomous Build Queue
 
+## 2026-08-12 PWA AI context identity boundary
+
+- DONE: The owner-reviewed PWA AI provider package now resolves Dog Profile
+  identity before compacting profile context or building instructions/input.
+- VERIFIED: Red-first PWA coverage reproduced `My Dog` in the provider context;
+  placeholder profiles now use Phoenix and whitespace-padded renamed dogs use
+  their trimmed identity throughout the request package.
+- BOUNDARY: Live AI remains disabled without approved provider, model,
+  citation, privacy, veterinary-safety, native, store, and Apollo proof. No
+  request was sent and no unsupervised action was enabled.
+- NEXT: Require dependency-complete branch CI. Live provider review, native
+  owner-review evidence, store review, and Apollo approval remain separate
+  gates.
+
 ## 2026-08-12 PWA household sync identity boundary
 
 - DONE: The local caregiver access model and future cloud-sync fingerprint now

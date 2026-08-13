@@ -1,5 +1,13 @@
 # WoofWatcher Decision Log
 
+## 2026-08-12: PWA AI request context follows Dog Profile identity
+
+- Decision: resolve Dog Profile identity inside the owner-reviewed AI provider
+  boundary before compacting profile data or composing instructions and input.
+- Rule: blank or `My Dog` identity uses Phoenix; valid renamed dogs are trimmed.
+- Boundary: this source rule does not enable live AI or clear provider,
+  privacy, veterinary-safety, native, store, or Apollo gates.
+
 ## 2026-08-12: PWA household sync uses canonical Dog Profile identity
 
 - Decision: resolve the active dog name inside both the caregiver access model
