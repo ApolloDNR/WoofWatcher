@@ -991,3 +991,5 @@ Dependency-complete `WoofWatcher Verify` run `31744066020`, job `94594216641`, p
 ## 2026-08-13 PWA profile-card identity status
 
 Source coverage now proves both vanilla PWA profile cards consume canonical Dog Profile identity. Live browser rendering, screen-reader traversal, native profile evidence, provider sync, store review, and Apollo approval remain separate gates.
+
+Dependency-complete `WoofWatcher Verify` run `31775219339`, job `94689152045`, passed implementation/docs commit `136fae60`; this source/CI proof does not clear those external gates.

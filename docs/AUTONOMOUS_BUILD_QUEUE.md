@@ -2491,6 +2491,8 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - VERIFIED LOCALLY: Red-first source coverage failed on raw `state.profile.name`, then passed with `My Dog` retaining Phoenix and renamed identity using the shared trimmed name.
 - BOUNDARY: This is local display-source proof only. It does not prove live browser rendering, screen-reader traversal, provider sync, native behavior, store review, or launch approval.
 - NEXT: Require dependency-complete branch CI, then capture browser/native profile-card and accessibility evidence when tooling is available.
+- CI PROOF: `WoofWatcher Verify` run `31775219339`, job `94689152045`, passed implementation/docs commit `136fae60` through pinned install, JSON doctor, focused tests, typecheck, CI-safe builds, post steps, and completion.
+- NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
 
 ## 2026-08-04 Avatar Studio Dog Profile identity
 
