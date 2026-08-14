@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-14 PWA product contract resolves identity once
+
+Decision: Canonicalize Dog Profile identity at the top of `buildProductViewModel` so every nested consumer receives the same profile name and public label. Health and WoofGuide safety boundaries use that resolved name; blank and `My Dog` retain Phoenix while renamed identity is trimmed.
+
+Boundary: Internal Phoenix route/asset names remain unchanged. This does not enable live AI, provider writes, external delivery, diagnosis, payments, or launch approval.
+
 ## 2026-08-14 PWA caregiver invite privacy follows Dog Profile
 
 Decision: Resolve Dog Profile identity before building household invite drafts, and carry that identity into every sitter, veterinarian, and trainer privacy notice. Blank and `My Dog` profiles retain Phoenix; renamed identity is trimmed.

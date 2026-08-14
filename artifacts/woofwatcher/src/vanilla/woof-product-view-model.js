@@ -1,5 +1,6 @@
 import {
   buildCareRoomTransfer,
+  buildHomeIdentityCopy,
   buildReportText,
   getAssistantContext,
   getAvatarState,
@@ -109,7 +110,16 @@ const EVENT_DETAIL_FIELDS = {
 };
 
 export function buildProductViewModel(input = getDefaultState(), now = new Date().toISOString()) {
-  const state = normalizeState(input, now);
+  const normalizedState = normalizeState(input, now);
+  const petName = buildHomeIdentityCopy(normalizedState).petName;
+  const state = {
+    ...normalizedState,
+    profile: {
+      ...normalizedState.profile,
+      name: petName,
+      publicLabel: petName
+    }
+  };
   const summary = getMonthlySummary(state, now);
   const plan = getTodayPlan(state, now);
   const reminders = getReminderCenter(state, now);
@@ -164,7 +174,7 @@ export function buildProductViewModel(input = getDefaultState(), now = new Date(
     health: {
       watch: health,
       bileWatch,
-      boundary: "This is pattern support, not a diagnosis. Use it to decide what to track, what to share, and when Phoenix needs a veterinarian."
+      boundary: `This is pattern support, not a diagnosis. Use it to decide what to track, what to share, and when ${petName} needs a veterinarian.`
     },
     more: {
       dietProfile: state.dietProfile,
@@ -186,7 +196,7 @@ export function buildProductViewModel(input = getDefaultState(), now = new Date(
       woofGuide: {
         status: "local-first",
         localAnswer: assistantContext.localAnswer,
-        boundary: "WoofGuide can organize Phoenix's logs and caregiver notes. It does not diagnose, replace a veterinarian, or decide urgent care."
+        boundary: `WoofGuide can organize ${petName}'s logs and caregiver notes. It does not diagnose, replace a veterinarian, or decide urgent care.`
       }
     },
     access,

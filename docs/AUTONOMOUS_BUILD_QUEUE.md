@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-08-14 PWA product-contract identity boundary
+
+- DONE: The shared PWA product view model now canonicalizes Dog Profile identity before building its nested profile, health, WoofGuide, reports, handoffs, notification, access, sync, and backend-draft contracts.
+- VERIFIED: Red-first coverage reproduced the durable `My Dog` profile leak, then passed for `My Dog` -> Phoenix and a whitespace-trimmed Mochi rename.
+- BOUNDARY: This is local source/test proof only. Live browser/native rendering, screen-reader traversal, provider delivery, store review, and Apollo approval remain gated.
+- NEXT: Run the strongest local suite and branch CI, then record proof at the final branch tip.
+
 ## 2026-08-14 PWA caregiver invite identity boundary
 
 - DONE: Household access now carries canonical Dog Profile identity into sitter, veterinarian, and trainer invite privacy copy.

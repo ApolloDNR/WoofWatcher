@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-08-14 PWA product-contract identity slice
+
+The shared PWA product view model now resolves Dog Profile identity once before composing its nested profile, care, report, handoff, access, sync, and review-only backend contracts. Placeholder identity remains Phoenix; whitespace-padded renamed identity is trimmed; health and WoofGuide boundaries follow the same dog. Red-first coverage reproduced the `My Dog` leak and then passed. Live rendering, accessibility, provider, recipient, store, and Apollo proof remain gated.
+
+Local verification: vanilla PWA behavior passed `35/35`; root TypeScript passed; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. The broad partial-checkout run passed `826/828`, retaining only the established `careCareer`/`careSync` failures from unresolved `@workspace/care-domain`.
+
 ## 2026-08-14 PWA caregiver invite identity slice
 
 Household Access now passes canonical Dog Profile identity into its local sitter, veterinarian, and trainer invite drafts. Placeholder identity remains Phoenix and whitespace-padded renamed identity is trimmed in recipient-facing privacy copy. The drafts remain unsent and do not create auth tokens or activate provider delivery; recipient, browser/native, accessibility, store, and Apollo approval proof remain gated.

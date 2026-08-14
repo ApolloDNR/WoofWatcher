@@ -30,12 +30,34 @@ import {
   getHouseholdPulse,
   getNotificationCenter,
 } from "./woof-core.js";
+import { buildProductViewModel } from "./woof-product-view-model.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
 const app = readFileSync(join(here, "app.js"), "utf8");
 const productViewModel = readFileSync(join(here, "woof-product-view-model.js"), "utf8");
 const core = readFileSync(join(here, "woof-core.js"), "utf8");
+
+test("keeps Dog Profile identity canonical in the shared PWA product contract", () => {
+  const placeholder = buildProductViewModel(
+    { profile: { name: "My Dog", publicLabel: "My Dog" } },
+    "2026-08-14T12:00:00.000Z",
+  );
+  const renamed = buildProductViewModel(
+    { profile: { name: "  Mochi  ", publicLabel: "  Mochi  " } },
+    "2026-08-14T12:00:00.000Z",
+  );
+
+  assert.equal(placeholder.phoenix.profile.name, "Phoenix");
+  assert.equal(placeholder.phoenix.profile.publicLabel, "Phoenix");
+  assert.doesNotMatch(JSON.stringify(placeholder), /My Dog/);
+  assert.equal(renamed.phoenix.profile.name, "Mochi");
+  assert.equal(renamed.phoenix.profile.publicLabel, "Mochi");
+  assert.match(renamed.health.boundary, /Mochi needs a veterinarian/);
+  assert.match(renamed.more.woofGuide.boundary, /Mochi's logs/);
+  assert.doesNotMatch(renamed.health.boundary, /Phoenix/);
+  assert.doesNotMatch(renamed.more.woofGuide.boundary, /Phoenix/);
+});
 
 test("keeps Dog Profile identity canonical in the PWA Home five-second answer", () => {
   const placeholder = buildHomeIdentityCopy(

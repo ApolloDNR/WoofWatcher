@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-14 PWA product-contract identity boundary
+
+Source/tests clear raw placeholder and padded renamed identity from the shared PWA product contract and its health/WoofGuide safety copy. Live browser/native rendering, VoiceOver/TalkBack review, provider/recipient proof, store review, and Apollo approval remain open.
+
 ## 2026-08-14 PWA caregiver invite identity boundary
 
 Source/tests clear the renamed-dog identity leak in local sitter, veterinarian, and trainer invite privacy copy. Real account credentials, provider-backed delivery, recipient/browser/native review, accessibility traversal, store review, and Apollo approval remain open.
