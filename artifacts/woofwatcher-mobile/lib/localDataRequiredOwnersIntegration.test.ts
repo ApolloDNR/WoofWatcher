@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -16,6 +16,18 @@ const avatarResetSource = readFileSync(
   join(mobileRoot, "lib", "avatarLocalDataReset.ts"),
   "utf8",
 );
+const queryCacheContextSource = readFileSync(
+  join(mobileRoot, "context", "QueryCacheLocalDataResetContext.tsx"),
+  "utf8",
+);
+const queryCacheResetSource = readFileSync(
+  join(mobileRoot, "lib", "queryCacheLocalDataReset.ts"),
+  "utf8",
+);
+const careTeamSuppliesSource = readFileSync(
+  join(mobileRoot, "components", "more", "CareTeamSuppliesScreen.tsx"),
+  "utf8",
+);
 const privacySource = readFileSync(
   join(mobileRoot, "components", "more", "PrivacyDataScreen.tsx"),
   "utf8",
@@ -28,6 +40,81 @@ function sourceSlice(source: string, start: string, end: string): string {
   assert.notEqual(endIndex, -1, `missing source marker: ${end}`);
   return source.slice(startIndex, endIndex);
 }
+
+function productionTypeScriptFiles(root: string): string[] {
+  return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(root, entry.name);
+    if (entry.isDirectory()) {
+      return entry.name === "node_modules" ? [] : productionTypeScriptFiles(path);
+    }
+    return /\.(?:ts|tsx)$/.test(entry.name) && !/\.test\.(?:ts|tsx)$/.test(entry.name)
+      ? [path]
+      : [];
+  });
+}
+
+test("Query cache attaches one identity-safe stable required owner", () => {
+  assert.match(queryCacheContextSource, /useQueryClient\(\)/);
+  assert.match(queryCacheContextSource, /useWoofAuth\(\)/);
+  assert.match(
+    queryCacheContextSource,
+    /identityRef\.current = \{[\s\S]*isLoaded:\s*Boolean\(isLoaded\),[\s\S]*userId:\s*userId \?\? null,[\s\S]*sessionId:\s*sessionId \?\? null,/,
+  );
+  assert.match(
+    queryCacheContextSource,
+    /getIdentity:\s*\(\) => identityRef\.current/,
+  );
+  assert.match(
+    queryCacheContextSource,
+    /useRef<QueryCacheLocalDataResetController \| null>\(null\)/,
+  );
+  assert.match(
+    queryCacheContextSource,
+    /attachRequiredParticipant\(\s*"query-cache",\s*controller\.participant,?\s*\)/,
+  );
+  assert.match(
+    queryCacheContextSource,
+    /queryClient\.cancelQueries\(undefined, \{ revert: true, silent: true \}\)/,
+  );
+  assert.match(queryCacheContextSource, /queryClient\.clear\(\)/);
+  assert.match(queryCacheResetSource, /Object\.freeze\(\{[\s\S]*userId:[\s\S]*sessionId:/);
+  assert.doesNotMatch(queryCacheResetSource, /removeQueries|resetQueries|invalidateQueries|signOut/);
+  assert.doesNotMatch(queryCacheContextSource, /removeQueries|resetQueries|invalidateQueries|signOut/);
+});
+
+test("all generated queries forward AbortSignal and all TanStack mutation starts are tracked", () => {
+  const generated = readFileSync(
+    join(process.cwd(), "lib", "api-client-react", "src", "generated", "api.ts"),
+    "utf8",
+  );
+  const queryFunctions = generated.match(/const queryFn: QueryFunction</g)?.length ?? 0;
+  const signalConsumers = generated.match(/= \(\{ signal \}\) =>/g)?.length ?? 0;
+  assert.ok(queryFunctions > 0);
+  assert.equal(signalConsumers, queryFunctions);
+
+  const mutationStarts = productionTypeScriptFiles(mobileRoot).flatMap((path) => {
+    const source = readFileSync(path, "utf8");
+    return [...source.matchAll(/\.(mutate|mutateAsync)\(/g)].map((match) => ({
+      path,
+      method: match[1],
+    }));
+  });
+  assert.deepEqual(
+    mutationStarts.map(({ path, method }) => ({
+      path: path.slice(mobileRoot.length + 1),
+      method,
+    })),
+    [
+      { path: "components/more/CareTeamSuppliesScreen.tsx", method: "mutateAsync" },
+      { path: "components/more/CareTeamSuppliesScreen.tsx", method: "mutateAsync" },
+      { path: "components/more/CareTeamSuppliesScreen.tsx", method: "mutateAsync" },
+    ],
+  );
+  assert.equal(
+    careTeamSuppliesSource.match(/runTrackedLocalDataWork\(async \(scope\) =>/g)?.length,
+    3,
+  );
+});
 
 test("Care attaches the required owner while root admission blocks only new mutations", () => {
   assert.match(

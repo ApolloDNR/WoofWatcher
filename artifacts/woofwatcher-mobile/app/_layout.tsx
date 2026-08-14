@@ -37,6 +37,7 @@ import { AvatarProvider } from "@/context/AvatarContext";
 import { AppViewportProvider } from "@/context/AppViewportContext";
 import { DevicePreferencesProvider } from "@/context/DevicePreferencesContext";
 import { LocalDataResetProvider } from "@/context/LocalDataResetContext";
+import { QueryCacheLocalDataResetProvider } from "@/context/QueryCacheLocalDataResetContext";
 import { useColors } from "@/hooks/useColors";
 import {
   clerkProxyUrl,
@@ -360,22 +361,24 @@ export default function RootLayout() {
         <ErrorBoundary>
           <QueryClientProvider client={queryClient}>
             <LocalDataResetProvider>
-              <DevicePreferencesProvider>
-                <AuthBridge />
-                <CareProvider>
-                  {/* Follows the shared walk lifecycle: starts route capture when
-                      any surface opens a walk session, persists it on finish. */}
-                  <WalkRouteRecorderBridge />
-                  <AvatarProvider>
-                    <GestureHandlerRootView style={{ flex: 1 }}>
-                      <KeyboardProvider>
-                        <StatusBar style={Platform.OS !== "web" && scheme === "dark" ? "light" : "dark"} />
-                        <AppFrame />
-                      </KeyboardProvider>
-                    </GestureHandlerRootView>
-                  </AvatarProvider>
-                </CareProvider>
-              </DevicePreferencesProvider>
+              <QueryCacheLocalDataResetProvider>
+                <DevicePreferencesProvider>
+                  <AuthBridge />
+                  <CareProvider>
+                    {/* Follows the shared walk lifecycle: starts route capture when
+                        any surface opens a walk session, persists it on finish. */}
+                    <WalkRouteRecorderBridge />
+                    <AvatarProvider>
+                      <GestureHandlerRootView style={{ flex: 1 }}>
+                        <KeyboardProvider>
+                          <StatusBar style={Platform.OS !== "web" && scheme === "dark" ? "light" : "dark"} />
+                          <AppFrame />
+                        </KeyboardProvider>
+                      </GestureHandlerRootView>
+                    </AvatarProvider>
+                  </CareProvider>
+                </DevicePreferencesProvider>
+              </QueryCacheLocalDataResetProvider>
             </LocalDataResetProvider>
           </QueryClientProvider>
         </ErrorBoundary>

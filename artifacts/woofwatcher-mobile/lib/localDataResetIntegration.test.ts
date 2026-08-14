@@ -63,38 +63,44 @@ test("the provider catches up state after attaching its passive subscription", (
   );
 });
 
-test("the reset provider owns the preference store above Auth, Care, and Avatar", () => {
+test("the reset provider owns query cache and preferences above Auth, Care, and Avatar", () => {
   const layout = readMobileSource("app", "_layout.tsx");
   const queryOpen = layout.indexOf("<QueryClientProvider client={queryClient}>");
   const resetOpen = layout.indexOf("<LocalDataResetProvider>");
+  const queryCacheOpen = layout.indexOf("<QueryCacheLocalDataResetProvider>");
   const preferencesOpen = layout.indexOf("<DevicePreferencesProvider>");
   const auth = layout.indexOf("<AuthBridge />");
   const careOpen = layout.indexOf("<CareProvider>");
   const avatarOpen = layout.indexOf("<AvatarProvider>");
   const preferencesClose = layout.indexOf("</DevicePreferencesProvider>");
+  const queryCacheClose = layout.indexOf("</QueryCacheLocalDataResetProvider>");
   const resetClose = layout.indexOf("</LocalDataResetProvider>");
   const queryClose = layout.indexOf("</QueryClientProvider>");
 
   for (const [name, index] of [
     ["QueryClientProvider", queryOpen],
     ["LocalDataResetProvider", resetOpen],
+    ["QueryCacheLocalDataResetProvider", queryCacheOpen],
     ["DevicePreferencesProvider", preferencesOpen],
     ["AuthBridge", auth],
     ["CareProvider", careOpen],
     ["AvatarProvider", avatarOpen],
     ["DevicePreferencesProvider close", preferencesClose],
+    ["QueryCacheLocalDataResetProvider close", queryCacheClose],
     ["LocalDataResetProvider close", resetClose],
     ["QueryClientProvider close", queryClose],
   ] as const) {
     assert.ok(index >= 0, `missing ${name}`);
   }
   assert.ok(queryOpen < resetOpen);
-  assert.ok(resetOpen < preferencesOpen);
+  assert.ok(resetOpen < queryCacheOpen);
+  assert.ok(queryCacheOpen < preferencesOpen);
   assert.ok(preferencesOpen < auth);
   assert.ok(auth < careOpen);
   assert.ok(careOpen < avatarOpen);
   assert.ok(avatarOpen < preferencesClose);
-  assert.ok(preferencesClose < resetClose);
+  assert.ok(preferencesClose < queryCacheClose);
+  assert.ok(queryCacheClose < resetClose);
   assert.ok(resetClose < queryClose);
 });
 

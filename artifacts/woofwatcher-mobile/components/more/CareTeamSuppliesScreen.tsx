@@ -40,6 +40,7 @@ import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { PressScale } from "@/components/motion/GameFeel";
 import { useCare } from "@/context/CareContext";
 import { useDevicePreferences } from "@/context/DevicePreferencesContext";
+import { useLocalDataReset } from "@/context/LocalDataResetContext";
 import { useColors } from "@/hooks/useColors";
 import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
@@ -562,6 +563,7 @@ export function CareTeamSuppliesScreen({
   const insets = useSafeAreaInsets();
   const { state, careMutationsBlocked, refresh, updateCareDoc } = useCare();
   const { store, operationSettledEpoch } = useDevicePreferences();
+  const { runTrackedLocalDataWork } = useLocalDataReset();
   const { isSignedIn } = useWoofAuth();
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
   const queryClient = useQueryClient();
@@ -1150,56 +1152,69 @@ export function CareTeamSuppliesScreen({
   const submitJoin = () => {
     const code = joinCode.trim();
     if (!code) return;
-    joinHousehold.mutate(
-      { data: { inviteCode: code } },
-      {
-        onSuccess: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setJoinOpen(false);
-          setJoinCode("");
-          refreshMe();
-          refresh();
-        },
-        onError: () =>
-          notifyDialog(
-            "Couldn't join",
-            "That invite code didn't match a household.",
-          ),
-      },
-    );
+    void runTrackedLocalDataWork(async (scope) => {
+      try {
+        await joinHousehold.mutateAsync({ data: { inviteCode: code } });
+      } catch {
+        if (!scope.isCurrent()) return;
+        notifyDialog(
+          "Couldn't join",
+          "That invite code didn't match a household.",
+        );
+        return;
+      }
+      if (!scope.isCurrent()) return;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setJoinOpen(false);
+      setJoinCode("");
+      refreshMe();
+      refresh();
+    }).catch((error: unknown) => {
+      if (error instanceof LocalDataResetInProgressError) return;
+      notifyDialog("Couldn't join", "That invite code didn't match a household.");
+    });
   };
 
   const submitRename = () => {
     const name = renameValue.trim();
     if (!name) return;
-    updateHousehold.mutate(
-      { data: { name } },
-      {
-        onSuccess: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setRenameOpen(false);
-          refreshMe();
-        },
-        onError: () => notifyDialog("Couldn't rename", "Please try again."),
-      },
-    );
+    void runTrackedLocalDataWork(async (scope) => {
+      try {
+        await updateHousehold.mutateAsync({ data: { name } });
+      } catch {
+        if (!scope.isCurrent()) return;
+        notifyDialog("Couldn't rename", "Please try again.");
+        return;
+      }
+      if (!scope.isCurrent()) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setRenameOpen(false);
+      refreshMe();
+    }).catch((error: unknown) => {
+      if (error instanceof LocalDataResetInProgressError) return;
+      notifyDialog("Couldn't rename", "Please try again.");
+    });
   };
 
   const submitName = () => {
     const name = nameValue.trim();
     if (!name) return;
-    updateMe.mutate(
-      { data: { displayName: name } },
-      {
-        onSuccess: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setNameOpen(false);
-          refreshMe();
-        },
-        onError: () =>
-          notifyDialog("Couldn't update name", "Please try again."),
-      },
-    );
+    void runTrackedLocalDataWork(async (scope) => {
+      try {
+        await updateMe.mutateAsync({ data: { displayName: name } });
+      } catch {
+        if (!scope.isCurrent()) return;
+        notifyDialog("Couldn't update name", "Please try again.");
+        return;
+      }
+      if (!scope.isCurrent()) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setNameOpen(false);
+      refreshMe();
+    }).catch((error: unknown) => {
+      if (error instanceof LocalDataResetInProgressError) return;
+      notifyDialog("Couldn't update name", "Please try again.");
+    });
   };
 
   const memberColor = (index: number) => {

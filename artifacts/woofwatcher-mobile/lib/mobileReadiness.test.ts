@@ -621,6 +621,10 @@ test("keeps local Clerk placeholders from blanking the web preview", () => {
     auth,
     /useWoofAuth = isClerkEnabledForBuild[\s\S]*\?\s*useClerkAuth[\s\S]*:\s*useLocalAuth/,
   );
+  assert.match(
+    auth,
+    /const localAuth = \{[\s\S]*userId:\s*null,[\s\S]*sessionId:\s*null,/,
+  );
 });
 
 test("keeps auth deep links local-only when Clerk is disabled for the build", () => {

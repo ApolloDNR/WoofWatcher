@@ -151,6 +151,14 @@ test("moves the two accepted Care Team writes and their truthful provider bounda
     /enabled:\s*consumerSurfacePolicy\.householdProviderActions[\s\S]*isClerkEnabledForBuild[\s\S]*Boolean\(isSignedIn\)/,
   );
   assert.match(component, /invalidateQueries\(\{ queryKey: getGetMeQueryKey\(\) \}\)/);
+  assert.match(
+    component,
+    /const \{ runTrackedLocalDataWork \} = useLocalDataReset\(\);/,
+  );
+  assert.equal(component.match(/runTrackedLocalDataWork\(async \(scope\) =>/g)?.length, 3);
+  assert.equal(component.match(/\.mutateAsync\(/g)?.length, 3);
+  assert.equal(component.match(/\.mutate\(/g)?.length ?? 0, 0);
+  assert.equal(component.match(/if \(!scope\.isCurrent\(\)\) return;/g)?.length, 6);
 
   for (const action of [
     "shareInvite",
