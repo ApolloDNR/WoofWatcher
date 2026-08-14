@@ -754,6 +754,51 @@ export function getHouseholdPulse(state, now = new Date().toISOString()) {
   };
 }
 
+export function buildHomeIdentityCopy(state = {}, input = {}) {
+  const petName = resolvePetName(state.profile?.name);
+  const avatar = input.avatar || {};
+  const pulse = input.pulse || {};
+  const activeHuman = (pulse.humans || []).find((human) => human.todayLogs > 0);
+  const caregiverName = cleanText(input.caregiverName);
+  const presenceLabel = avatar.mood === "home-alone"
+    ? `${petName} is home alone`
+    : activeHuman?.name
+      ? `${petName} is with ${cleanText(activeHuman.name)}`
+      : caregiverName
+        ? `${petName} is with ${caregiverName}`
+        : `${petName} status unknown`;
+
+  let room;
+  if (input.openMeal) {
+    room = {
+      speech: `${input.openMeal.title} is waiting for an outcome.`,
+      detail: `A meal was served. Confirm whether ${petName} ate all, ate some, refused, or is still grazing so the household record stays accurate.`,
+    };
+  } else if (avatar.mood === "home-alone") {
+    room = {
+      speech: `${petName} is home alone. Timer is active.`,
+      detail: `The room is in watch mode until someone returns and logs how ${petName} did.`,
+    };
+  } else if (input.health?.status === "review" || input.bileWatch?.status === "review") {
+    room = {
+      speech: "Pattern noticed. Review calmly.",
+      detail: "Health Watch or Bile Watch has enough evidence to review timing, appetite, energy, and notes before deciding what to share with a veterinarian.",
+    };
+  } else if ((pulse.completedCount || 0) < (pulse.totalCount || 0)) {
+    room = {
+      speech: `${pulse.nextAction?.label || "Next care"} is next.`,
+      detail: `${petName} has ${pulse.completedCount || 0}/${pulse.totalCount || 0} routine items covered. Keep the next step simple and log what actually happens.`,
+    };
+  } else {
+    room = {
+      speech: avatar.suggestedAction || "Care rhythm looks steady.",
+      detail: avatar.speech || `${petName}'s day is covered. Keep using quick logs for meals, walks, potty, mood, and notes.`,
+    };
+  }
+
+  return { petName, presenceLabel, room };
+}
+
 export function getAvatarState(state, now = new Date().toISOString()) {
   const normalized = normalizeState(state, now);
   const reminders = getReminderCenter(normalized, now);

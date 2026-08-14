@@ -1,5 +1,9 @@
 # WoofWatcher Decision Log
 
+## 2026-08-14: Resolve Dog Profile identity once for the PWA Home answer
+
+The PWA shell/Home renderer consumes a shared `buildHomeIdentityCopy` result for dog name, presence, and room guidance rather than reading raw profile text or hardcoding Phoenix. Internal Phoenix route and asset names stay unchanged. Native/provider/store proof remains a separate release gate.
+
 ## 2026-08-13: Resolve Dog Profile identity inside Bile Watch guidance
 
 - Decision: `getBileWatch` resolves identity at its shared health-presentation

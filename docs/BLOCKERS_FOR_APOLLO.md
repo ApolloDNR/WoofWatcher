@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-14 PWA Home identity proof boundary
+
+Source/tests prove canonical placeholder and renamed-dog copy in the PWA Home contract. They do not prove live browser rendering, native iOS/Android Home behavior, VoiceOver/TalkBack traversal, provider sync, store review, or Apollo launch approval; those evidence gates remain open.
+
 ## 2026-08-13 PWA Bile Watch identity boundary
 
 - Source blocker cleared: shared food-gap evidence and snack guidance now use

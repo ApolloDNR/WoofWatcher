@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-08-14 PWA Home identity boundary
+
+- DONE: The PWA shell and Home five-second answer now resolve Dog Profile identity for presence, room and meal guidance, hero identity, portrait accessibility text, and caregiver encouragement.
+- VERIFIED: Red-first PWA coverage reproduced the missing shared builder; placeholder identity retains Phoenix and padded renamed identity is trimmed across visible Home copy.
+- BOUNDARY: Care derivation, provider sync, native rendering, screen-reader traversal, store review, and launch approval are unchanged.
+- NEXT: Run the strongest local verification and dependency-complete branch CI.
+
 ## 2026-08-13 PWA Bile Watch identity boundary
 
 - DONE: Shared Bile Watch food-gap evidence and snack guidance now resolve

@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-14 PWA Home identity slice
+
+Added a shared PWA Home identity contract and wired the shell/Home five-second answer through it. Placeholder `My Dog` renders as Phoenix; renamed dogs keep their trimmed identity across presence, room/meal guidance, hero and portrait accessibility copy, and caregiver encouragement. No provider, payment, AI, diagnosis, native, store, or launch gate was enabled.
+
 ## 2026-08-13 PWA Bile Watch identity slice
 
 Shared Bile Watch food-gap evidence and snack guidance now consume canonical

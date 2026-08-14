@@ -20,6 +20,7 @@ import {
 } from "./openai-care-helper.js";
 import {
   buildCareRoomTransfer,
+  buildHomeIdentityCopy,
   buildImportReviewMessage,
   buildReportText,
   getAssistantContext,
@@ -33,6 +34,40 @@ const here = dirname(fileURLToPath(import.meta.url));
 const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
 const productViewModel = readFileSync(join(here, "woof-product-view-model.js"), "utf8");
 const core = readFileSync(join(here, "woof-core.js"), "utf8");
+
+test("keeps Dog Profile identity canonical in the PWA Home five-second answer", () => {
+  const placeholder = buildHomeIdentityCopy(
+    { profile: { name: "My Dog" } },
+    {
+      avatar: { mood: "home-alone", speech: "Waiting for the household." },
+      pulse: { completedCount: 1, totalCount: 3, humans: [] },
+      caregiverName: "friend",
+    },
+  );
+  const renamed = buildHomeIdentityCopy(
+    { profile: { name: "  Mochi  " } },
+    {
+      avatar: { mood: "settled", speech: "Care rhythm looks steady." },
+      pulse: {
+        completedCount: 1,
+        totalCount: 3,
+        humans: [{ name: "Emma", todayLogs: 2 }],
+        nextAction: { label: "Evening walk" },
+      },
+      openMeal: { title: "Dinner" },
+      caregiverName: "friend",
+    },
+  );
+
+  assert.equal(placeholder.petName, "Phoenix");
+  assert.equal(placeholder.presenceLabel, "Phoenix is home alone");
+  assert.match(placeholder.room.speech, /Phoenix is home alone/);
+  assert.doesNotMatch(JSON.stringify(placeholder), /My Dog/);
+  assert.equal(renamed.petName, "Mochi");
+  assert.equal(renamed.presenceLabel, "Mochi is with Emma");
+  assert.match(renamed.room.detail, /whether Mochi ate all/);
+  assert.doesNotMatch(JSON.stringify(renamed), /Phoenix|My Dog/);
+});
 
 test("keeps Dog Profile identity canonical in Bile Watch guidance", () => {
   const now = "2026-08-13T12:00:00.000Z";

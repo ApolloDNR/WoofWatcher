@@ -1,5 +1,6 @@
 import {
   buildCareRoomTransfer,
+  buildHomeIdentityCopy,
   buildImportReviewMessage,
   buildReportText,
   createEntry,
@@ -415,7 +416,8 @@ function render() {
   });
 
   const caregiverName = (state.caregivers && state.caregivers[0] && state.caregivers[0].name) || "there";
-  const presenceLabel = getPresenceLabel(pulse, avatar, caregiverName);
+  const shellHomeCopy = buildHomeIdentityCopy(state, { avatar, pulse, caregiverName });
+  const presenceLabel = shellHomeCopy.presenceLabel;
   const clock = new Date();
   const hour = clock.getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -432,7 +434,7 @@ function render() {
         <header class="dash-topbar">
           <div class="greeting-block">
             <h1 class="greeting">${greeting}, ${escapeHtml(caregiverName)}! <span>${greetIcon}</span></h1>
-            <p class="greeting-sub">${escapeHtml(state.profile.name)} is ready for an adventure.</p>
+            <p class="greeting-sub">${escapeHtml(shellHomeCopy.petName)} is ready for an adventure.</p>
           </div>
           <div class="top-right">
             <form class="top-search" data-form="top-search" role="search">
@@ -1335,17 +1337,18 @@ function renderPhoenixTab(context) {
   const energy = energyPct(health.status);
   const recent = (state.entries || []).slice(0, 4);
   const caregiverName = (state.caregivers && state.caregivers[0] && state.caregivers[0].name) || "friend";
-  const presenceLabel = getPresenceLabel(pulse, avatar, caregiverName);
   const openMeal = getOpenMealOutcomeTask();
-  const roomCopy = buildPhoenixRoomCopy({ avatar, pulse, health, bileWatch, openMeal });
+  const homeCopy = buildHomeIdentityCopy(state, { avatar, pulse, health, bileWatch, openMeal, caregiverName });
+  const presenceLabel = homeCopy.presenceLabel;
+  const roomCopy = buildPhoenixRoomCopy({ homeCopy });
 
   return `
     <div class="dash">
       <div class="dash-col">
         <section class="card hero">
           <div class="dog-scene ${dogMoodClass(avatar.mood)}">
-            ${renderDogScene(avatar.mood)}
-            <span class="hero-name">${escapeHtml(state.profile.name)}</span>
+            ${renderDogScene(avatar.mood, homeCopy.petName)}
+            <span class="hero-name">${escapeHtml(homeCopy.petName)}</span>
             <span class="hero-speech">${escapeHtml(roomCopy.speech)}</span>
             <span class="hero-mood">${mood.emoji} ${escapeHtml(mood.label)}</span>
           </div>
@@ -1406,7 +1409,7 @@ function renderPhoenixTab(context) {
       <div class="dash-col">
         <section class="card assistant-card">
           <div class="assist-head">${ICONS.spark}<h3>Woof Assistant</h3></div>
-          <p class="assist-msg">You're doing great, ${escapeHtml(caregiverName)}! ${escapeHtml(state.profile.name)} is one lucky pup.</p>
+          <p class="assist-msg">You're doing great, ${escapeHtml(caregiverName)}! ${escapeHtml(homeCopy.petName)} is one lucky pup.</p>
           <div class="assist-suggestions">
             ${renderAssistChip("Try a puzzle toy", "For mental stimulation")}
             ${renderAssistChip("Hydration check", "Fresh water top-up")}
@@ -1421,39 +1424,8 @@ function renderPhoenixTab(context) {
   `;
 }
 
-function buildPhoenixRoomCopy({ avatar, pulse, health, bileWatch, openMeal }) {
-  if (openMeal) {
-    return {
-      speech: `${openMeal.title} is waiting for an outcome.`,
-      detail: "A meal was served. Confirm whether Phoenix ate all, ate some, refused, or is still grazing so the household record stays accurate."
-    };
-  }
-
-  if (avatar.mood === "home-alone") {
-    return {
-      speech: "Phoenix is home alone. Timer is active.",
-      detail: "The room is in watch mode until someone returns and logs how Phoenix did."
-    };
-  }
-
-  if (health.status === "review" || bileWatch.status === "review") {
-    return {
-      speech: "Pattern noticed. Review calmly.",
-      detail: "Health Watch or Bile Watch has enough evidence to review timing, appetite, energy, and notes before deciding what to share with a veterinarian."
-    };
-  }
-
-  if (pulse.completedCount < pulse.totalCount) {
-    return {
-      speech: `${pulse.nextAction.label || "Next care"} is next.`,
-      detail: `Phoenix has ${pulse.completedCount}/${pulse.totalCount} routine items covered. Keep the next step simple and log what actually happens.`
-    };
-  }
-
-  return {
-    speech: avatar.suggestedAction || "Care rhythm looks steady.",
-    detail: avatar.speech || "Phoenix's day is covered. Keep using quick logs for meals, walks, potty, mood, and notes."
-  };
+function buildPhoenixRoomCopy({ homeCopy }) {
+  return homeCopy.room;
 }
 
 function renderPhoenixStatusCard({ presenceLabel, mood, nextReminder, avatar, openMeal }) {
@@ -1621,9 +1593,9 @@ function dogMoodClass(mood) {
   return "m-happy";
 }
 
-function renderDogScene(mood) {
+function renderDogScene(mood, petName = state.profile.name) {
   return `
-    <img class="dog-art" src="${phoenixArt(mood)}" alt="Painted portrait of ${escapeAttribute(state.profile.name)} reflecting their current mood" />
+    <img class="dog-art" src="${phoenixArt(mood)}" alt="Painted portrait of ${escapeAttribute(petName)} reflecting their current mood" />
   `;
 }
 
