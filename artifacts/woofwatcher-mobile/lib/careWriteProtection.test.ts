@@ -44,6 +44,65 @@ test("a future-document generation blocks a deferred mutation continuation", asy
   assert.equal(protection.isBlocked(), false);
 });
 
+test("unblocked invalidation revokes earlier captures without blocking fresh work", () => {
+  const protection = createCareWriteProtection();
+  const staleGeneration = protection.capture();
+
+  const invalidatedGeneration = protection.invalidate();
+  const freshGeneration = protection.capture();
+
+  assert.equal(invalidatedGeneration, staleGeneration + 1);
+  assert.equal(freshGeneration, invalidatedGeneration);
+  assert.equal(protection.isBlocked(), false);
+  assert.equal(protection.canContinue(staleGeneration), false);
+  assert.equal(protection.canContinue(freshGeneration), true);
+});
+
+test("blocked invalidation revokes captures without reopening protection", () => {
+  const protection = createCareWriteProtection();
+  const protectedGeneration = protection.protect();
+
+  const invalidatedGeneration = protection.invalidate();
+
+  assert.equal(invalidatedGeneration, protectedGeneration + 1);
+  assert.equal(protection.capture(), invalidatedGeneration);
+  assert.equal(protection.isBlocked(), true);
+  assert.equal(protection.canContinue(protectedGeneration), false);
+  assert.equal(protection.canContinue(invalidatedGeneration), false);
+});
+
+test("repeated invalidation revokes every earlier unblocked capture", () => {
+  const protection = createCareWriteProtection();
+  const originalGeneration = protection.capture();
+  const firstInvalidation = protection.invalidate();
+  const betweenInvalidations = protection.capture();
+
+  const secondInvalidation = protection.invalidate();
+  const freshGeneration = protection.capture();
+
+  assert.equal(firstInvalidation, originalGeneration + 1);
+  assert.equal(secondInvalidation, firstInvalidation + 1);
+  assert.equal(protection.isBlocked(), false);
+  assert.equal(protection.canContinue(originalGeneration), false);
+  assert.equal(protection.canContinue(betweenInvalidations), false);
+  assert.equal(protection.canContinue(freshGeneration), true);
+});
+
+test("reset after blocked invalidation reopens only a fresh generation", () => {
+  const protection = createCareWriteProtection();
+  const originalGeneration = protection.capture();
+  protection.protect();
+  const invalidatedGeneration = protection.invalidate();
+
+  const resetGeneration = protection.reset();
+
+  assert.equal(resetGeneration, invalidatedGeneration + 1);
+  assert.equal(protection.isBlocked(), false);
+  assert.equal(protection.canContinue(originalGeneration), false);
+  assert.equal(protection.canContinue(invalidatedGeneration), false);
+  assert.equal(protection.canContinue(resetGeneration), true);
+});
+
 test("every deferred callback boundary stops side effects after protection flips", async () => {
   for (const protectAfter of [0, 1, 2]) {
     const protection = createCareWriteProtection();

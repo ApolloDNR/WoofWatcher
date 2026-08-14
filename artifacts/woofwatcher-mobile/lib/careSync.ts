@@ -839,6 +839,7 @@ export function restoreEntryAfterDeleteFailure<T extends SyncableEntry>(
 
 export interface SerializedCareSyncWriter<T> {
   enqueue: (value: T) => Promise<void>;
+  drain: () => Promise<void>;
 }
 
 export function createSerializedCareSyncWriter<T>(
@@ -850,6 +851,7 @@ export function createSerializedCareSyncWriter<T>(
     reject: (error: unknown) => void;
   };
   const pending: PendingWrite[] = [];
+  const acceptedWrites = new Set<Promise<void>>();
   let active = false;
 
   const pump = () => {
@@ -878,10 +880,25 @@ export function createSerializedCareSyncWriter<T>(
 
   return {
     enqueue(value) {
-      return new Promise<void>((resolve, reject) => {
-        pending.push({ value, resolve, reject });
-        pump();
-      });
+      let resolve!: () => void;
+      let reject!: (error: unknown) => void;
+      const acceptedWrite = new Promise<void>(
+        (resolvePromise, rejectPromise) => {
+          resolve = resolvePromise;
+          reject = rejectPromise;
+        },
+      );
+      pending.push({ value, resolve, reject });
+      acceptedWrites.add(acceptedWrite);
+      void acceptedWrite.then(
+        () => acceptedWrites.delete(acceptedWrite),
+        () => acceptedWrites.delete(acceptedWrite),
+      );
+      pump();
+      return acceptedWrite;
+    },
+    async drain() {
+      await Promise.allSettled([...acceptedWrites]);
     },
   };
 }

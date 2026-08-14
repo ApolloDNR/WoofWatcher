@@ -12,6 +12,7 @@ export interface CareWriteProtection {
   capture(): number;
   isBlocked(): boolean;
   canContinue(generation: number): boolean;
+  invalidate(): number;
   protect(): number;
   reset(): number;
 }
@@ -24,6 +25,10 @@ export function createCareWriteProtection(): CareWriteProtection {
     isBlocked: () => blocked,
     canContinue: (capturedGeneration) =>
       !blocked && capturedGeneration === generation,
+    invalidate: () => {
+      generation += 1;
+      return generation;
+    },
     protect: () => {
       generation += 1;
       blocked = true;
