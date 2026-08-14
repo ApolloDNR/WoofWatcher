@@ -1054,7 +1054,11 @@ test("registers the care twin native QA route for device review", () => {
     /BoardSectionHeader\s+title="Device Review Matrix"[\s\S]*<BoardPill\s+label=\{`\$\{scenarios\.length\} scenes`\}/,
   );
   assert.match(qaRoute, /Share store packet/);
-  assert.match(qaRoute, /AsyncStorage/);
+  assert.doesNotMatch(qaRoute, /\bAsyncStorage\b/);
+  assert.match(qaRoute, /useDevicePreferences/);
+  assert.match(qaRoute, /store\s*\.\s*hydrate\(MOBILE_QA_SESSION_STORAGE_KEY/);
+  assert.match(qaRoute, /store\s*\.\s*save\(MOBILE_QA_SESSION_STORAGE_KEY/);
+  assert.match(qaRoute, /LocalDataResetInProgressError/);
   assert.match(qaRoute, /MOBILE_QA_SESSION_STORAGE_KEY/);
   assert.match(qaRoute, /parseMobileQaSessionSnapshot/);
   assert.match(qaRoute, /buildMobileQaSessionSnapshot/);
@@ -1486,6 +1490,17 @@ test("wires Home to the Phoenix status model", () => {
   assert.match(home, /status\.mood/);
   assert.match(home, /status\.energy/);
   assert.match(home, /status\.counts/);
+});
+
+test("keeps Home welcome persistence on the reset-aware device store", () => {
+  const home = readAppFile(join("(tabs)", "index.tsx"));
+
+  assert.match(home, /useDevicePreferences/);
+  assert.doesNotMatch(home, /\bAsyncStorage\b/);
+  assert.match(home, /store\s*\.\s*hydrate\(HOME_WELCOME_DISMISSED_KEY/);
+  assert.match(home, /apply:\s*\(raw\)\s*=>\s*setWelcomeDismissed\(raw === "true"\)/);
+  assert.match(home, /store\s*\.\s*save\(HOME_WELCOME_DISMISSED_KEY,\s*"true"\)/);
+  assert.match(home, /LocalDataResetInProgressError/);
 });
 
 test("wires Home to the living Phoenix room and avatar motion model", () => {
@@ -5724,7 +5739,10 @@ test("feeds saved native QA session proof into More launch readiness", () => {
   const careTwinQaRoute = readAppFile("care-twin-qa.tsx");
   const qaEvidence = readMobileLibFile("mobileLaunchQaEvidence.ts");
 
-  assert.match(more, /AsyncStorage/);
+  assert.doesNotMatch(more, /\bAsyncStorage\b/);
+  assert.match(more, /useDevicePreferences/);
+  assert.match(more, /store\s*\.\s*hydrate\(MOBILE_QA_SESSION_STORAGE_KEY/);
+  assert.match(more, /LocalDataResetInProgressError/);
   assert.match(more, /MOBILE_QA_SESSION_STORAGE_KEY/);
   assert.match(more, /parseMobileQaSessionSnapshot/);
   assert.match(more, /buildMobileQaSessionProofManifest/);

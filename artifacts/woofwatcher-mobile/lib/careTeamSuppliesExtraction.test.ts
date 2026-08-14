@@ -62,10 +62,13 @@ test("keeps both accepted v1 stores and every inventory/travel action in the com
   assert.doesNotMatch(component, /"woofwatcher\.travelBag\.v1"/);
   assert.match(component, /useState<SupplyItem\[\]\s*\|\s*null>\(null\)/);
   assert.match(component, /let cancelled = false/);
-  assert.match(component, /AsyncStorage\.getItem\(PACK_SUPPLIES_KEY\)/);
+  assert.match(component, /useDevicePreferences/);
+  assert.doesNotMatch(component, /\bAsyncStorage\b/);
+  assert.match(component, /store\s*\.\s*hydrate\(PACK_SUPPLIES_KEY/);
   assert.match(component, /setSupplies\(parseSupplies\(null\)\)/);
-  assert.match(component, /AsyncStorage\.getItem\(TRAVEL_BAG_KEY\)/);
+  assert.match(component, /store\s*\.\s*hydrate\(TRAVEL_BAG_KEY/);
   assert.match(component, /setTravelBag\(defaultTravelBag\(\)\)/);
+  assert.match(component, /LocalDataResetInProgressError/);
 
   for (const action of [
     "commitSupplies",
@@ -96,6 +99,8 @@ test("keeps both accepted v1 stores and every inventory/travel action in the com
   assert.match(component, /resetTravelItems\(\s*supplies\s*\)/);
   assert.match(component, /renameTravelBag\(\s*travelBag,\s*bagLabelDraft\s*\)/);
   assert.match(component, /setSupplies\(\(current\)\s*=>/);
+  assert.match(component, /store\s*\.\s*save\(PACK_SUPPLIES_KEY/);
+  assert.match(component, /store\s*\.\s*save\(TRAVEL_BAG_KEY/);
   assert.match(component, /serializeSupplies\(next\)/);
   assert.match(component, /serializeTravelBag\(next\)/);
 });

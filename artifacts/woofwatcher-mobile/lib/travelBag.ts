@@ -13,7 +13,7 @@
 
 import type { SupplyItem } from "./packSupplies";
 
-export const TRAVEL_BAG_KEY = "woofwatcher.travelBag.v1";
+export { TRAVEL_BAG_KEY } from "./devicePreferences.ts";
 
 export type TravelBagPhase = "packing" | "active" | "complete";
 

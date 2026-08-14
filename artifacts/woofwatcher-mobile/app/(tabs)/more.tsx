@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
@@ -36,6 +35,7 @@ import {
 import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
 import { useAvatar } from "@/context/AvatarContext";
+import { useDevicePreferences } from "@/context/DevicePreferencesContext";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
@@ -119,6 +119,7 @@ import {
   resolveMoreSectionRoute,
 } from "@/lib/moreSectionRouting";
 import type { MoreSection } from "@/lib/navigationOwnership";
+import { LocalDataResetInProgressError } from "@/lib/removableLocalDataStorage";
 
 // resolveCanonicalDestination stays encapsulated by resolveMoreSectionRoute;
 // this route must not call or re-parse the canonical ownership boundary.
@@ -424,6 +425,7 @@ function MoreScreenContent({}: Record<string, never>) {
   const providerSyncEnabled =
     consumerSurfacePolicy.providerSyncControls && isClerkEnabledForBuild;
   const { state, careMutationsBlocked, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
+  const { store } = useDevicePreferences();
   const showCareReadOnly = () =>
     notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   const { profile, entries, routines, caregivers } = state;
@@ -692,30 +694,38 @@ function MoreScreenContent({}: Record<string, never>) {
     React.useCallback(() => {
       let cancelled = false;
 
-      AsyncStorage.getItem(MOBILE_QA_SESSION_STORAGE_KEY)
-        .then((raw) => {
-          if (cancelled) return;
-          const savedSession = parseMobileQaSessionSnapshot(raw);
-          setSavedNativeQaSummary(deriveNativeQaSummaryFromMobileQaSession(savedSession));
-          setNativeQaCapturePlan(buildMobileLaunchQaCapturePlan(savedSession));
-          setSavedQaProofManifest(
-            savedSession
-              ? buildMobileQaSessionProofManifest(buildMobileQaSessionSnapshot(savedSession, savedSession.savedAtIso))
-              : null,
-          );
+      void store
+        .hydrate(MOBILE_QA_SESSION_STORAGE_KEY, {
+          isCancelled: () => cancelled,
+          apply: (raw) => {
+            const savedSession = parseMobileQaSessionSnapshot(raw);
+            setSavedNativeQaSummary(
+              deriveNativeQaSummaryFromMobileQaSession(savedSession),
+            );
+            setNativeQaCapturePlan(buildMobileLaunchQaCapturePlan(savedSession));
+            setSavedQaProofManifest(
+              savedSession
+                ? buildMobileQaSessionProofManifest(
+                    buildMobileQaSessionSnapshot(
+                      savedSession,
+                      savedSession.savedAtIso,
+                    ),
+                  )
+                : null,
+            );
+          },
         })
-        .catch(() => {
-          if (!cancelled) {
-            setSavedNativeQaSummary(null);
-            setNativeQaCapturePlan(buildMobileLaunchQaCapturePlan(null));
-            setSavedQaProofManifest(null);
-          }
+        .catch((error) => {
+          if (cancelled || error instanceof LocalDataResetInProgressError) return;
+          setSavedNativeQaSummary(null);
+          setNativeQaCapturePlan(buildMobileLaunchQaCapturePlan(null));
+          setSavedQaProofManifest(null);
         });
 
       return () => {
         cancelled = true;
       };
-    }, []),
+    }, [store]),
   );
 
   const confirmSignOut = () => {

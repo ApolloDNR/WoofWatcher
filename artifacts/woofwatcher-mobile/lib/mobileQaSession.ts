@@ -6,7 +6,7 @@ import type {
 import type { QaScreenshotEvidence } from "./qaScreenshotEvidence.ts";
 import { cleanQaScreenshotEvidence } from "./qaScreenshotEvidence.ts";
 
-export const MOBILE_QA_SESSION_STORAGE_KEY = "woofwatcher.mobileReleaseQaSession.v1";
+export { MOBILE_QA_SESSION_STORAGE_KEY } from "./devicePreferences.ts";
 
 export interface MobileQaSessionInput {
   careTwinStatusById: Record<string, CareTwinQaReviewStatus>;

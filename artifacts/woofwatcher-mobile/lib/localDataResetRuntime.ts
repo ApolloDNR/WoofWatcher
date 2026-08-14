@@ -24,7 +24,10 @@ import {
   type TrackedLocalDataWork,
 } from "./trackedLocalDataWork.ts";
 
-export type RequiredLocalDataParticipantId = "care" | "avatar";
+export type RequiredLocalDataParticipantId =
+  | "care"
+  | "avatar"
+  | "device-preferences";
 
 export interface LocalDataResetRuntime {
   operations: LocalDataOperations;
@@ -64,10 +67,12 @@ export function createLocalDataResetRuntime(
   > = {
     care: createRequiredParticipantSlot("care"),
     avatar: createRequiredParticipantSlot("avatar"),
+    "device-preferences": createRequiredParticipantSlot("device-preferences"),
   };
 
   resetCoordinator.register(requiredSlots.care.participant);
   resetCoordinator.register(requiredSlots.avatar.participant);
+  resetCoordinator.register(requiredSlots["device-preferences"].participant);
   resetCoordinator.register({
     id: "work-drain",
     prepare() {

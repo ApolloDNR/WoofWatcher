@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
@@ -40,6 +39,7 @@ import {
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { PressScale } from "@/components/motion/GameFeel";
 import { useCare } from "@/context/CareContext";
+import { useDevicePreferences } from "@/context/DevicePreferencesContext";
 import { useColors } from "@/hooks/useColors";
 import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
@@ -89,6 +89,7 @@ import { resolvePetName } from "@/lib/petIdentity";
 import type { CareTeamSection } from "@/lib/moreSectionRouting";
 import { shareTextPayload } from "@/lib/shareText";
 import { relativeTime } from "@/lib/time";
+import { LocalDataResetInProgressError } from "@/lib/removableLocalDataStorage";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -479,6 +480,7 @@ export function CareTeamSuppliesScreen({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { state, careMutationsBlocked, refresh, updateCareDoc } = useCare();
+  const { store } = useDevicePreferences();
   const { isSignedIn } = useWoofAuth();
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
   const queryClient = useQueryClient();
@@ -528,24 +530,28 @@ export function CareTeamSuppliesScreen({
 
   useEffect(() => {
     let cancelled = false;
-    AsyncStorage.getItem(PACK_SUPPLIES_KEY)
-      .then((raw) => {
-        if (!cancelled) setSupplies(parseSupplies(raw));
+    void store
+      .hydrate(PACK_SUPPLIES_KEY, {
+        isCancelled: () => cancelled,
+        apply: (raw) => setSupplies(parseSupplies(raw)),
       })
-      .catch(() => {
-        if (!cancelled) setSupplies(parseSupplies(null));
+      .catch((error) => {
+        if (cancelled || error instanceof LocalDataResetInProgressError) return;
+        setSupplies(parseSupplies(null));
       });
-    AsyncStorage.getItem(TRAVEL_BAG_KEY)
-      .then((raw) => {
-        if (!cancelled) setTravelBag(parseTravelBag(raw));
+    void store
+      .hydrate(TRAVEL_BAG_KEY, {
+        isCancelled: () => cancelled,
+        apply: (raw) => setTravelBag(parseTravelBag(raw)),
       })
-      .catch(() => {
-        if (!cancelled) setTravelBag(defaultTravelBag());
+      .catch((error) => {
+        if (cancelled || error instanceof LocalDataResetInProgressError) return;
+        setTravelBag(defaultTravelBag());
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [store]);
 
   const household = me.data?.household;
   const members: HouseholdMemberSummary[] = me.data?.members ?? [];
@@ -700,16 +706,20 @@ export function CareTeamSuppliesScreen({
   /** Save on every change, fire-and-forget like the Home welcome flag. */
   const commitSupplies = (next: SupplyItem[]) => {
     setSupplies(next);
-    AsyncStorage.setItem(PACK_SUPPLIES_KEY, serializeSupplies(next)).catch(
-      () => {},
-    );
+    void store
+      .save(PACK_SUPPLIES_KEY, serializeSupplies(next))
+      .catch((error) => {
+        if (error instanceof LocalDataResetInProgressError) return;
+      });
   };
 
   const commitTravelBag = (next: TravelBagSession) => {
     setTravelBag(next);
-    AsyncStorage.setItem(TRAVEL_BAG_KEY, serializeTravelBag(next)).catch(
-      () => {},
-    );
+    void store
+      .save(TRAVEL_BAG_KEY, serializeTravelBag(next))
+      .catch((error) => {
+        if (error instanceof LocalDataResetInProgressError) return;
+      });
   };
 
   const activateBag = () => {
@@ -835,10 +845,11 @@ export function CareTeamSuppliesScreen({
         setSupplies((current) => {
           if (!current) return current;
           const next = removeItem(current, item.id);
-          AsyncStorage.setItem(
-            PACK_SUPPLIES_KEY,
-            serializeSupplies(next),
-          ).catch(() => {});
+          void store
+            .save(PACK_SUPPLIES_KEY, serializeSupplies(next))
+            .catch((error) => {
+              if (error instanceof LocalDataResetInProgressError) return;
+            });
           return next;
         });
         closeSupplyEditor();

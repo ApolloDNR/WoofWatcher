@@ -63,32 +63,38 @@ test("the provider catches up state after attaching its passive subscription", (
   );
 });
 
-test("the reset provider is inside QueryClient and above Auth, Care, and Avatar", () => {
+test("the reset provider owns the preference store above Auth, Care, and Avatar", () => {
   const layout = readMobileSource("app", "_layout.tsx");
   const queryOpen = layout.indexOf("<QueryClientProvider client={queryClient}>");
   const resetOpen = layout.indexOf("<LocalDataResetProvider>");
+  const preferencesOpen = layout.indexOf("<DevicePreferencesProvider>");
   const auth = layout.indexOf("<AuthBridge />");
   const careOpen = layout.indexOf("<CareProvider>");
   const avatarOpen = layout.indexOf("<AvatarProvider>");
+  const preferencesClose = layout.indexOf("</DevicePreferencesProvider>");
   const resetClose = layout.indexOf("</LocalDataResetProvider>");
   const queryClose = layout.indexOf("</QueryClientProvider>");
 
   for (const [name, index] of [
     ["QueryClientProvider", queryOpen],
     ["LocalDataResetProvider", resetOpen],
+    ["DevicePreferencesProvider", preferencesOpen],
     ["AuthBridge", auth],
     ["CareProvider", careOpen],
     ["AvatarProvider", avatarOpen],
+    ["DevicePreferencesProvider close", preferencesClose],
     ["LocalDataResetProvider close", resetClose],
     ["QueryClientProvider close", queryClose],
   ] as const) {
     assert.ok(index >= 0, `missing ${name}`);
   }
   assert.ok(queryOpen < resetOpen);
-  assert.ok(resetOpen < auth);
+  assert.ok(resetOpen < preferencesOpen);
+  assert.ok(preferencesOpen < auth);
   assert.ok(auth < careOpen);
   assert.ok(careOpen < avatarOpen);
-  assert.ok(avatarOpen < resetClose);
+  assert.ok(avatarOpen < preferencesClose);
+  assert.ok(preferencesClose < resetClose);
   assert.ok(resetClose < queryClose);
 });
 

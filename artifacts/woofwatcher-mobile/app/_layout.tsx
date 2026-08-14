@@ -35,6 +35,7 @@ import { WebDialogHost } from "@/components/WebDialogHost";
 import { CareProvider } from "@/context/CareContext";
 import { AvatarProvider } from "@/context/AvatarContext";
 import { AppViewportProvider } from "@/context/AppViewportContext";
+import { DevicePreferencesProvider } from "@/context/DevicePreferencesContext";
 import { LocalDataResetProvider } from "@/context/LocalDataResetContext";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -359,20 +360,22 @@ export default function RootLayout() {
         <ErrorBoundary>
           <QueryClientProvider client={queryClient}>
             <LocalDataResetProvider>
-              <AuthBridge />
-              <CareProvider>
-                {/* Follows the shared walk lifecycle: starts route capture when
-                    any surface opens a walk session, persists it on finish. */}
-                <WalkRouteRecorderBridge />
-                <AvatarProvider>
-                  <GestureHandlerRootView style={{ flex: 1 }}>
-                    <KeyboardProvider>
-                      <StatusBar style={Platform.OS !== "web" && scheme === "dark" ? "light" : "dark"} />
-                      <AppFrame />
-                    </KeyboardProvider>
-                  </GestureHandlerRootView>
-                </AvatarProvider>
-              </CareProvider>
+              <DevicePreferencesProvider>
+                <AuthBridge />
+                <CareProvider>
+                  {/* Follows the shared walk lifecycle: starts route capture when
+                      any surface opens a walk session, persists it on finish. */}
+                  <WalkRouteRecorderBridge />
+                  <AvatarProvider>
+                    <GestureHandlerRootView style={{ flex: 1 }}>
+                      <KeyboardProvider>
+                        <StatusBar style={Platform.OS !== "web" && scheme === "dark" ? "light" : "dark"} />
+                        <AppFrame />
+                      </KeyboardProvider>
+                    </GestureHandlerRootView>
+                  </AvatarProvider>
+                </CareProvider>
+              </DevicePreferencesProvider>
             </LocalDataResetProvider>
           </QueryClientProvider>
         </ErrorBoundary>

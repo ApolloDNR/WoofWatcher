@@ -49,6 +49,15 @@ function attachCareNoOp(runtime: ReturnType<typeof createLocalDataResetRuntime>)
   });
 }
 
+function attachDevicePreferencesNoOp(
+  runtime: ReturnType<typeof createLocalDataResetRuntime>,
+) {
+  return runtime.attachRequiredParticipant("device-preferences", {
+    prepare: async () => {},
+    commit: async () => {},
+  });
+}
+
 function createHydrationField<T>({
   value,
   read = async () => "raw",
@@ -326,6 +335,7 @@ test("an accepted mutation released during reset preparation rejects without app
   const persistence = deferred<void>();
   let applied = 0;
   attachCareNoOp(runtime);
+  attachDevicePreferencesNoOp(runtime);
   runtime.attachRequiredParticipant("avatar", {
     prepare: async () => {},
     commit: async () => {},
@@ -358,6 +368,7 @@ test("accepted removable storage and tracked verification both hold reset prepar
     removeItem: async () => {},
   });
   attachCareNoOp(runtime);
+  attachDevicePreferencesNoOp(runtime);
   const controller = createAvatarLocalDataResetController({
     removeItem: async (key) => {
       events.push(`remove:${key}`);
@@ -407,6 +418,7 @@ test("peer preparation failure performs zero Avatar destruction and a fresh run 
     },
   });
   runtime.attachRequiredParticipant("avatar", controller.participant);
+  attachDevicePreferencesNoOp(runtime);
 
   assert.equal((await runtime.operations.runReset()).status, "partial-failure");
   assert.equal(removals, 0);
@@ -1033,6 +1045,7 @@ test("partial-reset mixed truth applies only after both reload reads succeed", a
 test("detaching the required Avatar delegate makes the next root reset fail closed", async () => {
   const runtime = createLocalDataResetRuntime(createStorageAdapter());
   attachCareNoOp(runtime);
+  attachDevicePreferencesNoOp(runtime);
   let removals = 0;
   const controller = createAvatarLocalDataResetController({
     removeItem: async () => {

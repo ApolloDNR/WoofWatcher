@@ -18,7 +18,7 @@ export type EssentialsSupplyStatus = "plenty" | "low" | "out";
 export type TravelSupplyStatus = "packed" | "unpacked";
 export type SupplyStatus = EssentialsSupplyStatus | TravelSupplyStatus;
 
-export const PACK_SUPPLIES_KEY = "woofwatcher.packSupplies.v1";
+export { PACK_SUPPLIES_KEY } from "./devicePreferences.ts";
 
 export interface SupplyItem {
   id: string;

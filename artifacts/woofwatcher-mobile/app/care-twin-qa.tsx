@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -13,6 +12,7 @@ import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { LivingPhoenixRoom, type PhoenixRoomStat } from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useCare } from "@/context/CareContext";
+import { useDevicePreferences } from "@/context/DevicePreferencesContext";
 import { useColors } from "@/hooks/useColors";
 import {
   evaluateCareTwinRuntimeQaScenario,
@@ -89,6 +89,7 @@ import {
 import { canonicalizeOwnedRoute } from "@/lib/canonicalRouteBuilders";
 import { buildReleasePacket } from "@/lib/releasePacket";
 import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from "@/lib/storeSubmissionPacket";
+import { LocalDataResetInProgressError } from "@/lib/removableLocalDataStorage";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -265,6 +266,7 @@ function CareTwinQaScreenBody() {
   const routeParams = useLocalSearchParams<{ qaSurface?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const { state } = useCare();
+  const { store } = useDevicePreferences();
   const [selectedEvidencePlatform, setSelectedEvidencePlatform] = useState<QaScreenshotEvidencePlatform>(() =>
     qaScreenshotPlatformForRuntime(),
   );
@@ -589,36 +591,39 @@ function CareTwinQaScreenBody() {
 
   useEffect(() => {
     let cancelled = false;
-
-    const loadSavedSession = async () => {
-      try {
-        const raw = await AsyncStorage.getItem(MOBILE_QA_SESSION_STORAGE_KEY);
-        const savedSession = parseMobileQaSessionSnapshot(raw);
-        if (!cancelled && savedSession) {
-          setQaStatusById(savedSession.careTwinStatusById);
-          setQaNotes(savedSession.careTwinNotes);
-          setQaEvidenceById(savedSession.careTwinEvidenceById);
-          setSurfaceStatusById(savedSession.surfaceStatusById);
-          setSurfaceNotes(savedSession.surfaceNotes);
-          setSurfaceEvidenceById(savedSession.surfaceEvidenceById);
-          setQaSessionSavedAt(savedSession.savedAtIso);
-        }
-      } catch {
-        // QA session recovery should never block the internal route.
-      } finally {
-        if (!cancelled) setQaSessionLoaded(true);
-      }
-    };
-
-    loadSavedSession();
+    void store
+      .hydrate(MOBILE_QA_SESSION_STORAGE_KEY, {
+        isCancelled: () => cancelled,
+        apply: (raw) => {
+          const savedSession = parseMobileQaSessionSnapshot(raw);
+          if (savedSession) {
+            setQaStatusById(savedSession.careTwinStatusById);
+            setQaNotes(savedSession.careTwinNotes);
+            setQaEvidenceById(savedSession.careTwinEvidenceById);
+            setSurfaceStatusById(savedSession.surfaceStatusById);
+            setSurfaceNotes(savedSession.surfaceNotes);
+            setSurfaceEvidenceById(savedSession.surfaceEvidenceById);
+            setQaSessionSavedAt(savedSession.savedAtIso);
+          }
+        },
+      })
+      .then((result) => {
+        if (!cancelled && result === "applied") setQaSessionLoaded(true);
+      })
+      .catch((error) => {
+        if (cancelled || error instanceof LocalDataResetInProgressError) return;
+        // An unrelated storage failure must not block the internal QA route.
+        setQaSessionLoaded(true);
+      });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [store]);
 
   useEffect(() => {
     if (!qaSessionLoaded) return;
+    let cancelled = false;
 
     const snapshot = buildMobileQaSessionSnapshot({
       careTwinStatusById: qaStatusById,
@@ -628,9 +633,18 @@ function CareTwinQaScreenBody() {
       surfaceNotes,
       surfaceEvidenceById,
     });
-    setQaSessionSavedAt(snapshot.savedAtIso);
-    AsyncStorage.setItem(MOBILE_QA_SESSION_STORAGE_KEY, JSON.stringify(snapshot)).catch(() => {});
-  }, [qaEvidenceById, qaNotes, qaSessionLoaded, qaStatusById, surfaceEvidenceById, surfaceNotes, surfaceStatusById]);
+    void store
+      .save(MOBILE_QA_SESSION_STORAGE_KEY, JSON.stringify(snapshot))
+      .then(() => {
+        if (!cancelled) setQaSessionSavedAt(snapshot.savedAtIso);
+      })
+      .catch((error) => {
+        if (error instanceof LocalDataResetInProgressError) return;
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [qaEvidenceById, qaNotes, qaSessionLoaded, qaStatusById, store, surfaceEvidenceById, surfaceNotes, surfaceStatusById]);
 
   const markScenario = (scenarioId: string, status: CareTwinQaReviewStatus) => {
     if (Platform.OS !== "web") {

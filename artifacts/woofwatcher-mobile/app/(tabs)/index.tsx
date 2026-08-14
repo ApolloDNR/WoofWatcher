@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
@@ -54,6 +53,7 @@ import { BoardMedallion, hasMedallion } from "@/components/BoardMedallion";
 import { useAvatar } from "@/context/AvatarContext";
 import { useAppViewport } from "@/context/AppViewportContext";
 import { useCare, type Entry } from "@/context/CareContext";
+import { useDevicePreferences } from "@/context/DevicePreferencesContext";
 import { announce } from "@/lib/announce";
 import { isClerkEnabledForBuild } from "@/lib/auth";
 import { useColors } from "@/hooks/useColors";
@@ -117,6 +117,8 @@ import {
   canonicalPlansRoute,
 } from "@/lib/canonicalRouteBuilders";
 import { executePrimaryTabTaskPath } from "@/lib/primaryTabExperience";
+import { HOME_WELCOME_DISMISSED_KEY } from "@/lib/devicePreferences";
+import { LocalDataResetInProgressError } from "@/lib/removableLocalDataStorage";
 
 const HOME_PROVIDER_SYNC_ENABLED =
   isClerkEnabledForBuild && getConsumerSurfacePolicy().providerSyncControls;
@@ -177,11 +179,6 @@ const HOME_IMMERSIVE_ROOM_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-
 // visibly walks it - the room returns when the walk is finished.
 const HOME_IMMERSIVE_PARK_DAY = require("@/assets/avatar/rooms/home-fullbleed-park-day.png");
 const HOME_IMMERSIVE_PARK_NIGHT = require("@/assets/avatar/rooms/home-fullbleed-park-night.png");
-
-// Device-local flag so the first-run welcome card stays dismissed across
-// reloads. It keeps the "woofwatcher" key prefix so the privacy
-// erase-all-data flow removes it with every other WoofWatcher key.
-const HOME_WELCOME_DISMISSED_KEY = "woofwatcher.homeWelcomeDismissed.v1";
 
 export function homeImmersiveRoomIsNight(hour: number): boolean {
   return hour >= 20 || hour < 6;
@@ -546,25 +543,32 @@ export default function HomeScreen() {
   // the app - guest/preview mode stays fully usable behind the card.
   // `null` means the persisted flag has not hydrated yet, so the card never
   // flashes for someone who already dismissed it.
+  const { store } = useDevicePreferences();
   const [welcomeDismissed, setWelcomeDismissed] = useState<boolean | null>(
     null,
   );
   useEffect(() => {
     let cancelled = false;
-    AsyncStorage.getItem(HOME_WELCOME_DISMISSED_KEY)
-      .then((raw) => {
-        if (!cancelled) setWelcomeDismissed(raw === "true");
+    void store
+      .hydrate(HOME_WELCOME_DISMISSED_KEY, {
+        isCancelled: () => cancelled,
+        apply: (raw) => setWelcomeDismissed(raw === "true"),
       })
-      .catch(() => {
-        if (!cancelled) setWelcomeDismissed(false);
+      .catch((error) => {
+        if (cancelled || error instanceof LocalDataResetInProgressError) return;
+        setWelcomeDismissed(false);
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [store]);
   const dismissWelcome = () => {
     setWelcomeDismissed(true);
-    AsyncStorage.setItem(HOME_WELCOME_DISMISSED_KEY, "true").catch(() => {});
+    void store
+      .save(HOME_WELCOME_DISMISSED_KEY, "true")
+      .catch((error) => {
+        if (error instanceof LocalDataResetInProgressError) return;
+      });
   };
   const isFreshStart =
     !hasCaregivers &&
