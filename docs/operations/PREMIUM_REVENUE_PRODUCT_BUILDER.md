@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-08-14 PWA caregiver invite identity slice
+
+Household Access now passes canonical Dog Profile identity into its local sitter, veterinarian, and trainer invite drafts. Placeholder identity remains Phoenix and whitespace-padded renamed identity is trimmed in recipient-facing privacy copy. The drafts remain unsent and do not create auth tokens or activate provider delivery; recipient, browser/native, accessibility, store, and Apollo approval proof remain gated.
+
+Verification: red-first PWA coverage failed on renamed invite privacy copy and then passed `32/32` after implementation.
+
 ## 2026-08-14 PWA report privacy identity slice
 
 Durable PWA report artifacts now use canonical Dog Profile identity in their privacy boundary as well as their content, filename, checksum, and audit summary. Placeholder identity remains Phoenix and whitespace-padded renamed identity is trimmed. Report generation remains local and owner-reviewed; recipient, browser/native share, provider, veterinary, store, and Apollo approval proof remain gated.

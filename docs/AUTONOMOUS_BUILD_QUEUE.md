@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-08-14 PWA caregiver invite identity boundary
+
+- DONE: Household access now carries canonical Dog Profile identity into sitter, veterinarian, and trainer invite privacy copy.
+- VERIFIED: Red-first PWA coverage reproduced Phoenix recipient copy for renamed Mochi, then passed for `My Dog` -> Phoenix and the trimmed rename.
+- BOUNDARY: Invites remain local drafts; auth tokens, delivery, provider sync, recipient review, and launch approval remain gated.
+- NEXT: Run dependency-complete branch CI, then retain live recipient and screen-reader review as external gates.
+
 ## 2026-08-14 PWA Alone Time identity boundary
 
 - DONE: Leaving Home now resolves Dog Profile identity before persisting its household-visible note, and empty return guidance uses the same canonical identity.

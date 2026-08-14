@@ -1,5 +1,9 @@
 # Quality Gates
 
+## 2026-08-14 PWA caregiver invite identity source gate
+
+Local sitter, veterinarian, and trainer invite drafts now use canonical Dog Profile identity in their privacy notice. Provider delivery and recipient review remain separate gates.
+
 ## 2026-08-14 PWA Alone Time identity source gate
 
 Household-visible Leaving Home history now canonicalizes Dog Profile identity at the shared entry-builder boundary. Provider-backed household sync and live browser/native proof remain separate gates.

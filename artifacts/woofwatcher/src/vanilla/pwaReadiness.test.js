@@ -265,6 +265,9 @@ test("keeps the Dog Profile identity canonical at PWA household sync boundaries"
 
   assert.equal(placeholderAccess.household.petName, "Phoenix");
   assert.equal(renamedAccess.household.petName, "Mochi");
+  assert.match(placeholderAccess.inviteDrafts[0].privacyNotice, /private Phoenix care context/);
+  assert.match(renamedAccess.inviteDrafts[0].privacyNotice, /private Mochi care context/);
+  assert.doesNotMatch(JSON.stringify(renamedAccess.inviteDrafts), /Phoenix/);
   assert.equal(placeholderSync.localStateFingerprint, phoenixSync.localStateFingerprint);
   assert.equal(renamedSync.localStateFingerprint, trimmedSync.localStateFingerprint);
   assert.equal(placeholderSync.status, "local_only");

@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-14 PWA caregiver invite privacy follows Dog Profile
+
+Decision: Resolve Dog Profile identity before building household invite drafts, and carry that identity into every sitter, veterinarian, and trainer privacy notice. Blank and `My Dog` profiles retain Phoenix; renamed identity is trimmed.
+
+Boundary: The drafts remain local and unsent. This does not create credentials, activate provider delivery, or prove recipient, native, store, or launch readiness.
+
 ## 2026-08-14 PWA Alone Time history follows Dog Profile
 
 Decision: Build Leaving Home entries through a shared boundary that resolves Dog Profile identity before creating the household-visible log. The timeline must never persist `My Dog` or substitute Phoenix for a renamed dog.

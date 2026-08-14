@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-14 PWA caregiver invite identity boundary
+
+Source/tests clear the renamed-dog identity leak in local sitter, veterinarian, and trainer invite privacy copy. Real account credentials, provider-backed delivery, recipient/browser/native review, accessibility traversal, store review, and Apollo approval remain open.
+
 ## 2026-08-14 PWA Alone Time identity boundary
 
 Source/tests clear the durable placeholder/renamed-dog identity leak in local Leaving Home history. Live browser return-flow review, provider-backed household sync, native recipient proof, accessibility traversal, store review, and Apollo approval remain open.

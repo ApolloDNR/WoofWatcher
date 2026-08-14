@@ -1,5 +1,10 @@
 # WoofWatcher Product Quality Gates
 
+## 2026-08-14 PWA caregiver invite identity
+
+- PASS (source/test): invite drafts and household privacy copy use Phoenix for placeholder identity and trimmed active identity for renamed dogs.
+- OPEN: provider-backed invitations, auth tokens, recipient/browser/native review, accessibility traversal, store evidence, and Apollo approval.
+
 ## 2026-08-14 PWA Alone Time identity
 
 - PASS (source/test): household-visible Leaving Home notes use canonical Dog Profile identity and preserve pending-return semantics.
