@@ -1,10 +1,21 @@
-import React, { createContext, useContext, useMemo, useRef } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 
 import { useLocalDataReset } from "@/context/LocalDataResetContext";
 import {
   createDevicePreferencesStore,
   type DevicePreferencesStore,
 } from "@/lib/devicePreferences";
+import {
+  createDevicePreferencesLocalDataResetController,
+  type DevicePreferencesLocalDataResetController,
+} from "@/lib/devicePreferencesLocalDataReset";
 
 export interface DevicePreferencesContextValue {
   store: DevicePreferencesStore;
@@ -20,6 +31,7 @@ export function DevicePreferencesProvider({
   children: React.ReactNode;
 }): React.JSX.Element {
   const {
+    attachRequiredParticipant,
     removableStorage,
     operationSettledEpoch,
     runTrackedLocalDataWork,
@@ -31,6 +43,26 @@ export function DevicePreferencesProvider({
     });
   }
   const store = storeRef.current;
+  const devicePreferencesLocalDataResetControllerRef =
+    useRef<DevicePreferencesLocalDataResetController | null>(null);
+  if (devicePreferencesLocalDataResetControllerRef.current === null) {
+    devicePreferencesLocalDataResetControllerRef.current =
+      createDevicePreferencesLocalDataResetController({
+        removeItem: (key) => AsyncStorage.removeItem(key),
+      });
+  }
+  const devicePreferencesLocalDataResetController =
+    devicePreferencesLocalDataResetControllerRef.current;
+
+  useEffect(
+    () =>
+      attachRequiredParticipant(
+        "device-preferences",
+        devicePreferencesLocalDataResetController.participant,
+      ),
+    [attachRequiredParticipant, devicePreferencesLocalDataResetController],
+  );
+
   const value = useMemo<DevicePreferencesContextValue>(
     () => ({ store, operationSettledEpoch }),
     [operationSettledEpoch, store],

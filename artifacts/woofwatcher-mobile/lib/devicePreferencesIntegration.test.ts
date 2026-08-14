@@ -43,7 +43,7 @@ function relativeMobile(path: string): string {
   return relative(MOBILE_ROOT, path).replaceAll("\\", "/");
 }
 
-test("closes mobile production storage behind the three approved root owners", () => {
+test("closes mobile production storage behind the four approved root owners", () => {
   const files = productionTypeScriptFiles();
   const routeBypasses = files
     .filter((path) => /^(app|components)\//.test(relativeMobile(path)))
@@ -61,6 +61,7 @@ test("closes mobile production storage behind the three approved root owners", (
   assert.deepEqual(asyncStorageImports, [
     "context/AvatarContext.tsx",
     "context/CareContext.tsx",
+    "context/DevicePreferencesContext.tsx",
     "context/LocalDataResetContext.tsx",
   ]);
 });
@@ -123,17 +124,19 @@ test("records the legacy PWA and fixture carveouts without widening the mobile s
   assert.deepEqual(directFixtureOwners, ["scripts/qa-seed-populated.mjs"]);
 });
 
-test("mounts one tracked root preference store and deliberately leaves its required reset slot unattached", () => {
+test("mounts one tracked preference store and one identity-safe raw reset owner", () => {
   const context = readMobile("context", "DevicePreferencesContext.tsx");
+  const resetOwner = readMobile(
+    "lib",
+    "devicePreferencesLocalDataReset.ts",
+  );
   const layout = readMobile("app", "_layout.tsx");
-  const production = productionTypeScriptFiles()
-    .map((path) => readFileSync(path, "utf8"))
-    .join("\n");
 
   assert.match(context, /useLocalDataReset\(\)/);
   assert.match(context, /removableStorage/);
   assert.match(context, /operationSettledEpoch/);
   assert.match(context, /runTrackedLocalDataWork/);
+  assert.match(context, /attachRequiredParticipant/);
   assert.match(
     context,
     /const storeRef = useRef<DevicePreferencesStore \| null>\(null\);/,
@@ -143,7 +146,30 @@ test("mounts one tracked root preference store and deliberately leaves its requi
     /if \(storeRef\.current === null\) \{\s*storeRef\.current = createDevicePreferencesStore\(\s*removableStorage,\s*\{\s*runTrackedHydration:\s*runTrackedLocalDataWork,\s*\},?\s*\);\s*\}/,
   );
   assert.doesNotMatch(context, /useRef\(createDevicePreferencesStore\(/);
-  assert.doesNotMatch(context, /AsyncStorage|attachRequiredParticipant/);
+  assert.match(
+    context,
+    /const devicePreferencesLocalDataResetControllerRef\s*=\s*useRef<DevicePreferencesLocalDataResetController \| null>\(null\);/,
+  );
+  assert.match(
+    context,
+    /if \(devicePreferencesLocalDataResetControllerRef\.current === null\) \{\s*devicePreferencesLocalDataResetControllerRef\.current\s*=\s*createDevicePreferencesLocalDataResetController\(\{\s*removeItem:\s*\(key\)\s*=>\s*AsyncStorage\.removeItem\(key\),?\s*\}\);\s*\}/,
+  );
+  assert.doesNotMatch(
+    context,
+    /useRef\(createDevicePreferencesLocalDataResetController\(/,
+  );
+  assert.match(
+    context,
+    /useEffect\(\s*\(\)\s*=>\s*attachRequiredParticipant\(\s*["']device-preferences["'],\s*devicePreferencesLocalDataResetController\.participant,?\s*\),\s*\[attachRequiredParticipant,\s*devicePreferencesLocalDataResetController\],?\s*\);/,
+  );
+  assert.doesNotMatch(
+    context,
+    /(?:getAllKeys|multiRemove|\.clear\(|AsyncStorage\.(?:getItem|setItem)|removableStorage\.removeItem)/,
+  );
+  assert.doesNotMatch(
+    resetOwner,
+    /(?:AsyncStorage|removableStorage|getAllKeys|multiRemove|\.clear\(|\.getItem\(|\.setItem\(|finalize|setWelcomeDismissed|setQa|setSupplies|setTravelBag)/,
+  );
 
   const resetOpen = layout.indexOf("<LocalDataResetProvider>");
   const preferencesOpen = layout.indexOf("<DevicePreferencesProvider>");
@@ -169,10 +195,6 @@ test("mounts one tracked root preference store and deliberately leaves its requi
   assert.ok(careOpen < avatarOpen);
   assert.ok(avatarOpen < preferencesClose);
   assert.ok(preferencesClose < resetClose);
-  assert.doesNotMatch(
-    production,
-    /attachRequiredParticipant\(\s*["']device-preferences["']/,
-  );
 });
 
 test("migrates Home, QA, More, and Supplies normal I/O to the shared store", () => {
