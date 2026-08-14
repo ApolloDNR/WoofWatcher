@@ -889,6 +889,7 @@ export function getHealthWatch(state, now = new Date().toISOString()) {
 
 export function getBileWatch(state, now = new Date().toISOString()) {
   const target = new Date(now);
+  const petName = resolvePetName(state.profile?.name);
   const recent = entriesWithinDays(state.entries || [], now, 14);
   const recentFood = entriesWithinDays(state.entries || [], now, 3)
     .filter(isFoodEntry)
@@ -911,7 +912,7 @@ export function getBileWatch(state, now = new Date().toISOString()) {
   const actions = [];
 
   if (latestFood) {
-    signals.push(`${hoursSinceLastFood} hours since Phoenix last logged food (${latestFood.title}).`);
+    signals.push(`${hoursSinceLastFood} hours since ${petName} last logged food (${latestFood.title}).`);
   } else {
     signals.push("No meal or snack has been logged in the last 3 days.");
   }
@@ -931,7 +932,7 @@ export function getBileWatch(state, now = new Date().toISOString()) {
   }
 
   if (emptyStomachWindow) {
-    actions.push("Offer a small calm snack if Phoenix is willing and it fits her normal routine.");
+    actions.push(`Offer a small calm snack if ${petName} is willing and it fits their normal routine.`);
   }
 
   if (!bedtimeSnackLogged) {

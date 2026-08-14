@@ -23,6 +23,7 @@ import {
   buildImportReviewMessage,
   buildReportText,
   getAssistantContext,
+  getBileWatch,
   getDefaultState,
   getHouseholdPulse,
   getNotificationCenter,
@@ -32,6 +33,29 @@ const here = dirname(fileURLToPath(import.meta.url));
 const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
 const productViewModel = readFileSync(join(here, "woof-product-view-model.js"), "utf8");
 const core = readFileSync(join(here, "woof-core.js"), "utf8");
+
+test("keeps Dog Profile identity canonical in Bile Watch guidance", () => {
+  const now = "2026-08-13T12:00:00.000Z";
+  const placeholderState = getDefaultState(now);
+  placeholderState.profile.name = "My Dog";
+  placeholderState.entries = [{
+    id: "meal-1",
+    type: "meal",
+    title: "Breakfast",
+    occurredAt: "2026-08-13T01:00:00.000Z",
+  }];
+  const renamedState = structuredClone(placeholderState);
+  renamedState.profile.name = "  Mochi  ";
+
+  const placeholder = getBileWatch(placeholderState, now);
+  const renamed = getBileWatch(renamedState, now);
+
+  assert.match(placeholder.signals.join(" "), /Phoenix last logged food/);
+  assert.match(placeholder.actions.join(" "), /Phoenix is willing/);
+  assert.match(renamed.signals.join(" "), /Mochi last logged food/);
+  assert.match(renamed.actions.join(" "), /Mochi is willing/);
+  assert.doesNotMatch(JSON.stringify(renamed), /Phoenix|My Dog/);
+});
 
 test("keeps the Dog Profile identity canonical in durable PWA report artifacts", () => {
   const placeholder = buildReportArtifact(

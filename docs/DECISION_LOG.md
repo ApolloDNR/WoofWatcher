@@ -1,5 +1,14 @@
 # WoofWatcher Decision Log
 
+## 2026-08-13: Resolve Dog Profile identity inside Bile Watch guidance
+
+- Decision: `getBileWatch` resolves identity at its shared health-presentation
+  boundary before formatting food-gap evidence or caregiver actions.
+- Reason: Renamed households must not receive Phoenix-specific health-review
+  copy, while blank and `My Dog` starter profiles deliberately retain Phoenix.
+- Boundary: Risk derivation, non-diagnostic language, veterinarian escalation,
+  persistence, providers, payments, and launch gates are unchanged.
+
 ## 2026-08-13: Resolve Dog Profile identity inside cloud-sync plan exports
 
 - Decision: `buildCloudSyncPlan` owns canonical Dog Profile identity for every

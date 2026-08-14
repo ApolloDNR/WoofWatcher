@@ -1,5 +1,22 @@
 # Autonomous Build Queue
 
+## 2026-08-13 PWA Bile Watch identity boundary
+
+- DONE: Shared Bile Watch food-gap evidence and snack guidance now resolve
+  Dog Profile identity instead of hardcoding Phoenix.
+- VERIFIED: Red-first PWA coverage reproduced Phoenix guidance for renamed
+  Mochi, then passed for the Phoenix starter fallback and trimmed rename.
+- BOUNDARY: Risk thresholds and non-diagnostic veterinary guidance are
+  unchanged. Browser/native review, provider delivery, store review, and
+  Apollo approval remain separate gates.
+- VERIFIED: Focused PWA behavior passed `29/29`; broad partial-checkout
+  execution passed `822/824` with only the established `careCareer`/
+  `careSync` unresolved workspace-link failures; root TypeScript passed;
+  PixelLab passed `ok=150 missing=0 invalid=0`; `git diff --check` passed.
+- NEXT: Run dependency-complete branch CI, then record final-tip proof.
+  Otherwise continue bounded identity/accessibility auditing without enabling
+  providers, diagnosis, payments, or launch.
+
 ## 2026-08-13 PWA cloud-sync plan identity boundary
 
 - DONE: The gated cloud-sync plan now resolves Dog Profile identity in the

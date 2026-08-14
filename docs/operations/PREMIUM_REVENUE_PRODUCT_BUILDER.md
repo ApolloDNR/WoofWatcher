@@ -1,5 +1,21 @@
 # Premium Revenue Product Builder
 
+## 2026-08-13 PWA Bile Watch identity slice
+
+Shared Bile Watch food-gap evidence and snack guidance now consume canonical
+Dog Profile identity. Red-first PWA coverage protects the Phoenix starter
+fallback and whitespace-trimmed renamed identity. Health risk thresholds,
+non-diagnostic veterinary guidance, browser/native proof, provider/store
+readiness, and Apollo approval remain unchanged or separately gated.
+
+Focused PWA behavior passed `29/29`; broad partial-checkout execution passed
+`822/824` with only the established `careCareer`/`careSync` unresolved
+workspace-link failures; root TypeScript passed; PixelLab passed
+`ok=150 missing=0 invalid=0`; and `git diff --check` passed. The JSON doctor
+kept source guards passing while remaining blocked on local pnpm 11.19.0
+versus pinned 10.24.0 plus missing Expo. Dependency-complete branch CI remains
+required before this tip is release proof.
+
 ## 2026-08-13 PWA cloud-sync plan identity slice
 
 `buildCloudSyncPlan` now carries canonical Dog Profile identity through its

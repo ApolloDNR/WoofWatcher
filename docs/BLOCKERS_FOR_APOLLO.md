@@ -1,5 +1,14 @@
 # Blockers For Apollo
 
+## 2026-08-13 PWA Bile Watch identity boundary
+
+- Source blocker cleared: shared food-gap evidence and snack guidance now use
+  canonical Dog Profile identity for Phoenix fallback and renamed dogs.
+- Still blocked: live browser/native Bile Watch review, screen-reader and
+  route-named device evidence, provider/store proof, and Apollo approval.
+- Health thresholds and veterinary boundaries are unchanged; this source
+  change does not diagnose, deliver advice, or authorize external action.
+
 ## 2026-08-13 PWA cloud-sync plan identity boundary
 
 - Source blocker cleared: gated cloud-sync plan copy now follows canonical Dog
