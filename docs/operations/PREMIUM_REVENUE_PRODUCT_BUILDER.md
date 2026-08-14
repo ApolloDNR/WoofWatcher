@@ -4,6 +4,8 @@
 
 Durable PWA report artifacts now use canonical Dog Profile identity in their privacy boundary as well as their content, filename, checksum, and audit summary. Placeholder identity remains Phoenix and whitespace-padded renamed identity is trimmed. Report generation remains local and owner-reviewed; recipient, browser/native share, provider, veterinary, store, and Apollo approval proof remain gated.
 
+Verification: red-first PWA coverage failed on the renamed privacy boundary, then passed `32/32`; root TypeScript passed; PixelLab passed `ok=150 missing=0 invalid=0`; the broad partial-checkout run remained at `825/827` with only the established unresolved `@workspace/care-domain` failures. Dependency-complete WoofWatcher Verify run `31799022606`, job `94762394283`, passed implementation/docs commit `6ed93c4a` through pinned install, doctor, focused tests, typecheck, and CI-safe builds.
+
 ## 2026-08-14 PWA Alone Time identity slice
 
 The PWA Leaving Home workflow now builds its household-visible entry through a canonical Dog Profile identity boundary. Placeholder identity becomes Phoenix, renamed identity is trimmed, and owner notes keep the pending-return contract. Live browser/native return review, provider sync, accessibility, store review, and Apollo approval remain gated.

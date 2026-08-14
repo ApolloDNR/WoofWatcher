@@ -2711,4 +2711,5 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 ## 2026-08-14 PWA report privacy identity
 
 - DONE: Canonical Dog Profile identity now reaches durable report privacy copy; `My Dog` remains Phoenix and padded renamed identity is trimmed.
+- PROOF: WoofWatcher Verify run `31799022606`, job `94762394283`, passed implementation/docs commit `6ed93c4a`.
 - OPEN: Real browser/native download, share/reopen, recipient review, provider storage, veterinary review, store, and Apollo evidence remain required.
