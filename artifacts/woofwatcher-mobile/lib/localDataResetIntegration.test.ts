@@ -51,7 +51,12 @@ test("the provider subscribes to truthful operation state and exposes fail-close
     /isWriteAdmissionOpen: runtime\.operations\.isWriteAdmissionOpen/,
   );
   assert.match(source, /removableStorage: runtime\.removableStorage/);
-  assert.match(source, /generationAuthority: runtime\.generationAuthority/);
+  assert.doesNotMatch(source, /generationAuthority: GenerationPermitAuthority/);
+  assert.equal(
+    source.match(/generationAuthority: runtime\.generationAuthority/g)?.length,
+    1,
+  );
+  assert.doesNotMatch(source, /\.invalidate\(/);
 });
 
 test("the provider catches up state after attaching its passive subscription", () => {
@@ -63,10 +68,33 @@ test("the provider catches up state after attaching its passive subscription", (
   );
 });
 
-test("the reset provider owns query cache and preferences above Auth, Care, and Avatar", () => {
+test("the reset provider constructs one stable local-data intent authority and delegates it", () => {
+  const source = readMobileSource("context", "LocalDataResetContext.tsx");
+
+  assert.match(
+    source,
+    /const intentAuthorityRef = useRef<LocalDataIntentAuthority \| null>\(null\);/,
+  );
+  assert.match(
+    source,
+    /intentAuthorityRef\.current = createLocalDataIntentAuthority\(/,
+  );
+  assert.match(
+    source,
+    /captureLocalDataIntent: intentAuthority\.capture/,
+  );
+  assert.match(
+    source,
+    /isLocalDataIntentCurrent: intentAuthority\.isCurrent/,
+  );
+  assert.match(source, /runWithLocalDataIntent/);
+});
+
+test("the reset provider owns the file facade, query cache, and preferences above consumers", () => {
   const layout = readMobileSource("app", "_layout.tsx");
   const queryOpen = layout.indexOf("<QueryClientProvider client={queryClient}>");
   const resetOpen = layout.indexOf("<LocalDataResetProvider>");
+  const filesOpen = layout.indexOf("<AppFileSystemProvider>");
   const queryCacheOpen = layout.indexOf("<QueryCacheLocalDataResetProvider>");
   const preferencesOpen = layout.indexOf("<DevicePreferencesProvider>");
   const auth = layout.indexOf("<AuthBridge />");
@@ -74,12 +102,14 @@ test("the reset provider owns query cache and preferences above Auth, Care, and 
   const avatarOpen = layout.indexOf("<AvatarProvider>");
   const preferencesClose = layout.indexOf("</DevicePreferencesProvider>");
   const queryCacheClose = layout.indexOf("</QueryCacheLocalDataResetProvider>");
+  const filesClose = layout.indexOf("</AppFileSystemProvider>");
   const resetClose = layout.indexOf("</LocalDataResetProvider>");
   const queryClose = layout.indexOf("</QueryClientProvider>");
 
   for (const [name, index] of [
     ["QueryClientProvider", queryOpen],
     ["LocalDataResetProvider", resetOpen],
+    ["AppFileSystemProvider", filesOpen],
     ["QueryCacheLocalDataResetProvider", queryCacheOpen],
     ["DevicePreferencesProvider", preferencesOpen],
     ["AuthBridge", auth],
@@ -87,21 +117,49 @@ test("the reset provider owns query cache and preferences above Auth, Care, and 
     ["AvatarProvider", avatarOpen],
     ["DevicePreferencesProvider close", preferencesClose],
     ["QueryCacheLocalDataResetProvider close", queryCacheClose],
+    ["AppFileSystemProvider close", filesClose],
     ["LocalDataResetProvider close", resetClose],
     ["QueryClientProvider close", queryClose],
   ] as const) {
     assert.ok(index >= 0, `missing ${name}`);
   }
   assert.ok(queryOpen < resetOpen);
-  assert.ok(resetOpen < queryCacheOpen);
+  assert.ok(resetOpen < filesOpen);
+  assert.ok(filesOpen < queryCacheOpen);
   assert.ok(queryCacheOpen < preferencesOpen);
   assert.ok(preferencesOpen < auth);
   assert.ok(auth < careOpen);
   assert.ok(careOpen < avatarOpen);
   assert.ok(avatarOpen < preferencesClose);
   assert.ok(preferencesClose < queryCacheClose);
-  assert.ok(queryCacheClose < resetClose);
+  assert.ok(queryCacheClose < filesClose);
+  assert.ok(filesClose < resetClose);
   assert.ok(resetClose < queryClose);
+});
+
+test("the file facade provider constructs one stable instance without attaching the required owner", () => {
+  const source = readMobileSource("context", "AppFileSystemContext.tsx");
+
+  assert.match(
+    source,
+    /const fileSystemRef = useRef<AppFileSystem \| null>\(null\);/,
+  );
+  assert.match(
+    source,
+    /if \(fileSystemRef\.current === null\) \{[\s\S]*fileSystemRef\.current = createAppFileSystem\(/,
+  );
+  assert.doesNotMatch(source, /useRef\(createAppFileSystem\(/);
+  assert.doesNotMatch(source, /attachRequiredParticipant/);
+  assert.doesNotMatch(source, /["']files["']/);
+});
+
+test("the file facade provider delegates root intent and tracked-work authority", () => {
+  const source = readMobileSource("context", "AppFileSystemContext.tsx");
+
+  assert.match(source, /captureLocalDataIntent/);
+  assert.match(source, /isLocalDataIntentCurrent/);
+  assert.match(source, /runTrackedLocalDataWork/);
+  assert.match(source, /createExpoAppFileSystemAdapter/);
 });
 
 test("the inert provider owns no Care, Avatar, or Privacy implementation", () => {

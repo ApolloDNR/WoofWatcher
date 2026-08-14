@@ -1,3 +1,8 @@
+import {
+  isInsideOwnedAttachmentDirectory,
+  isSafeAppDocumentDirectory,
+} from "./appOwnedFileInventory.ts";
+
 export const DURABLE_ATTACHMENT_DIRECTORY_NAME = "woofwatcher-attachments";
 
 export interface DurablePickedMediaFileSystem {
@@ -18,12 +23,14 @@ export interface PersistPickedMediaOptions {
   filePrefix?: string;
   now?: () => number;
   randomToken?: () => string;
+  isCurrent?: () => boolean;
 }
 
 export type PersistPickedMediaFailureReason =
   | "missing-source-uri"
   | "durable-storage-unavailable"
-  | "durable-copy-failed";
+  | "durable-copy-failed"
+  | "reset-in-progress";
 
 export type PersistPickedMediaResult =
   | {
@@ -94,6 +101,10 @@ function defaultRandomToken(): string {
 export async function persistPickedMedia(
   options: PersistPickedMediaOptions,
 ): Promise<PersistPickedMediaResult> {
+  const isCurrent = options.isCurrent ?? (() => true);
+  if (!isCurrent()) {
+    return { ok: false, reason: "reset-in-progress" };
+  }
   const sourceUri = options.sourceUri.trim();
   if (!sourceUri) {
     return { ok: false, reason: "missing-source-uri" };
@@ -103,13 +114,13 @@ export async function persistPickedMedia(
     return { ok: true, uri: sourceUri, storage: "web-reference" };
   }
 
-  const documentDirectory = options.fileSystem.documentDirectory?.trim();
-  if (!documentDirectory) {
+  const documentDirectory = options.fileSystem.documentDirectory;
+  if (!isSafeAppDocumentDirectory(documentDirectory)) {
     return { ok: false, reason: "durable-storage-unavailable" };
   }
 
   const durableRoot = withoutTrailingSlash(documentDirectory);
-  if (sourceUri.startsWith(`${durableRoot}/`)) {
+  if (isInsideOwnedAttachmentDirectory(sourceUri, documentDirectory)) {
     return { ok: true, uri: sourceUri, storage: "app-document" };
   }
 
@@ -127,10 +138,16 @@ export async function persistPickedMedia(
     await options.fileSystem.makeDirectoryAsync(directoryUri, {
       intermediates: true,
     });
+    if (!isCurrent()) {
+      return { ok: false, reason: "reset-in-progress" };
+    }
     await options.fileSystem.copyAsync({
       from: sourceUri,
       to: durableUri,
     });
+    if (!isCurrent()) {
+      return { ok: false, reason: "reset-in-progress" };
+    }
   } catch {
     return { ok: false, reason: "durable-copy-failed" };
   }

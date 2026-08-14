@@ -161,6 +161,68 @@ test("reuses an already durable native URI without copying it again", async () =
   assert.deepEqual(calls, []);
 });
 
+test("copies a native URI elsewhere under Documents into the owned attachment directory", async () => {
+  const copies: Array<{ from: string; to: string }> = [];
+  const sourceUri = "file:///var/mobile/Documents/Imported/picked.jpg";
+  const result = await persistPickedMedia({
+    platform: "ios",
+    sourceUri,
+    now: () => 44,
+    randomToken: () => "relocated",
+    fileSystem: buildFileSystem({
+      async copyAsync(options) {
+        copies.push(options);
+      },
+    }),
+  });
+
+  assert.deepEqual(result, {
+    ok: true,
+    uri: "file:///var/mobile/Documents/woofwatcher-attachments/attachment_44_relocated.jpg",
+    storage: "app-document",
+  });
+  assert.deepEqual(copies, [{
+    from: sourceUri,
+    to: "file:///var/mobile/Documents/woofwatcher-attachments/attachment_44_relocated.jpg",
+  }]);
+});
+
+test("revocation before persistence starts performs zero work", async () => {
+  const calls: string[] = [];
+  const result = await persistPickedMedia({
+    platform: "ios",
+    sourceUri: "file:///var/mobile/Library/Caches/picked.jpg",
+    isCurrent: () => false,
+    fileSystem: buildFileSystem({
+      async makeDirectoryAsync() { calls.push("mkdir"); },
+      async copyAsync() { calls.push("copy"); },
+    }),
+  });
+
+  assert.deepEqual(result, { ok: false, reason: "reset-in-progress" });
+  assert.deepEqual(calls, []);
+});
+
+test("revocation after directory creation suppresses the copy", async () => {
+  let current = true;
+  const calls: string[] = [];
+  const result = await persistPickedMedia({
+    platform: "ios",
+    sourceUri: "file:///var/mobile/Library/Caches/picked.jpg",
+    isCurrent: () => current,
+    fileSystem: buildFileSystem({
+      async makeDirectoryAsync() {
+        calls.push("mkdir");
+        current = false;
+      },
+      async copyAsync() { calls.push("copy"); },
+    }),
+  });
+
+  assert.deepEqual(result, { ok: false, reason: "reset-in-progress" });
+  assert.deepEqual(calls, ["mkdir"]);
+});
+
 test("returns no URI when native durable storage is unavailable", async () => {
   const result = await persistPickedMedia({
     platform: "ios",
@@ -173,6 +235,37 @@ test("returns no URI when native durable storage is unavailable", async () => {
     reason: "durable-storage-unavailable",
   });
   assert.equal("uri" in result, false);
+});
+
+test("rejects unsafe native document roots before mkdir or copy", async () => {
+  for (const documentDirectory of [
+    "file:///",
+    "file:////",
+    "file:///var//mobile/Documents/",
+    "file:///var/mobile/../Documents/",
+    "content://documents/",
+    "https://example.test/Documents/",
+    " file:///var/mobile/Documents/",
+    "file:///var/mobile/Documents/ ",
+  ]) {
+    const calls: string[] = [];
+    const result = await persistPickedMedia({
+      platform: "ios",
+      sourceUri: "file:///var/mobile/Library/Caches/picked.jpg",
+      fileSystem: buildFileSystem({
+        documentDirectory,
+        async makeDirectoryAsync() { calls.push("mkdir"); },
+        async copyAsync() { calls.push("copy"); },
+      }),
+    });
+
+    assert.deepEqual(
+      result,
+      { ok: false, reason: "durable-storage-unavailable" },
+      documentDirectory,
+    );
+    assert.deepEqual(calls, [], documentDirectory);
+  }
 });
 
 test("returns no cache URI when the native copy fails", async () => {

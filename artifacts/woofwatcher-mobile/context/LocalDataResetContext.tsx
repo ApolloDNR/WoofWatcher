@@ -9,7 +9,13 @@ import React, {
   useState,
 } from "react";
 
-import type { GenerationPermitAuthority } from "@/lib/generationPermit";
+import {
+  createLocalDataIntentAuthority,
+  runWithLocalDataIntent,
+  type LocalDataIntent,
+  type LocalDataIntentAuthority,
+  type LocalDataIntentInteractionResult,
+} from "@/lib/localDataIntent";
 import type {
   LocalDataOperationState,
   LocalDataOperations,
@@ -39,9 +45,13 @@ export interface LocalDataResetContextValue {
     id: RequiredLocalDataParticipantId,
     delegate: Omit<LocalDataResetParticipant, "id">,
   ): () => void;
-  generationAuthority: GenerationPermitAuthority;
   removableStorage: RemovableLocalDataStorage;
   runTrackedLocalDataWork: TrackedLocalDataWork["run"];
+  captureLocalDataIntent(): LocalDataIntent | null;
+  isLocalDataIntentCurrent(intent: LocalDataIntent): boolean;
+  runWithLocalDataIntent<T>(
+    interact: () => Promise<T>,
+  ): Promise<LocalDataIntentInteractionResult<T>>;
 }
 
 const LocalDataResetContext = createContext<LocalDataResetContextValue | null>(
@@ -58,6 +68,14 @@ export function LocalDataResetProvider({
     runtimeRef.current = createLocalDataResetRuntime(AsyncStorage);
   }
   const runtime = runtimeRef.current;
+  const intentAuthorityRef = useRef<LocalDataIntentAuthority | null>(null);
+  if (intentAuthorityRef.current === null) {
+    intentAuthorityRef.current = createLocalDataIntentAuthority({
+      generationAuthority: runtime.generationAuthority,
+      isAdmissionOpen: runtime.operations.isWriteAdmissionOpen,
+    });
+  }
+  const intentAuthority = intentAuthorityRef.current;
   const [operationState, setOperationState] = useState<LocalDataOperationState>(
     () => runtime.operations.getState(),
   );
@@ -83,6 +101,11 @@ export function LocalDataResetProvider({
     }
     return resetPromise;
   }, [runtime]);
+  const runLocalDataIntentInteraction = useCallback(
+    <T,>(interact: () => Promise<T>) =>
+      runWithLocalDataIntent(intentAuthority, interact),
+    [intentAuthority],
+  );
 
   const value = useMemo<LocalDataResetContextValue>(
     () => ({
@@ -95,11 +118,20 @@ export function LocalDataResetProvider({
       isWriteAdmissionOpen: runtime.operations.isWriteAdmissionOpen,
       registerParticipant: runtime.registerParticipant,
       attachRequiredParticipant: runtime.attachRequiredParticipant,
-      generationAuthority: runtime.generationAuthority,
       removableStorage: runtime.removableStorage,
       runTrackedLocalDataWork: runtime.trackedWork.run,
+      captureLocalDataIntent: intentAuthority.capture,
+      isLocalDataIntentCurrent: intentAuthority.isCurrent,
+      runWithLocalDataIntent: runLocalDataIntentInteraction,
     }),
-    [operationSettledEpoch, operationState, runReset, runtime],
+    [
+      intentAuthority,
+      operationSettledEpoch,
+      operationState,
+      runLocalDataIntentInteraction,
+      runReset,
+      runtime,
+    ],
   );
 
   return (
