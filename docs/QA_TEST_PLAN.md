@@ -4,6 +4,7 @@
 
 - Automated: `My Dog` persists `Phoenix is home alone`; `  Mochi  ` persists trimmed Mochi identity with no Phoenix leak.
 - Automated: owner notes are trimmed and appended without changing Alone Time trust, visibility, or pending-return semantics.
+- Dependency-complete CI: `WoofWatcher Verify` run `31787077962`, job `94725292941`, passed implementation/docs commit `26ec7070`.
 - Manual remaining: live browser Household Pulse, return outcome, screen-reader traversal, provider sync, native handoff, and Apollo approval.
 
 ## 2026-08-13 PWA cloud-sync plan identity

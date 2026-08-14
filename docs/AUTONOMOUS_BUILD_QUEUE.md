@@ -4,8 +4,9 @@
 
 - DONE: Leaving Home now resolves Dog Profile identity before persisting its household-visible note, and empty return guidance uses the same canonical identity.
 - VERIFIED: Red-first PWA coverage failed on the missing shared builder, then passed for `My Dog` -> Phoenix and trimmed renamed-dog history.
+- CI: `WoofWatcher Verify` run `31787077962`, job `94725292941`, passed implementation/docs commit `26ec7070` end to end.
 - BOUNDARY: Provider sync, live browser/native interaction, screen-reader traversal, store review, and Apollo approval remain unchanged.
-- NEXT: Run aggregate local verification and dependency-complete branch CI; retain live Household Pulse and recipient review as external gates.
+- NEXT: Rerun branch CI after this proof-record commit; retain live Household Pulse and recipient review as external gates.
 
 ## 2026-08-14 PWA Home identity boundary
 

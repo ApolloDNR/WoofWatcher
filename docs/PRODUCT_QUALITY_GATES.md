@@ -3,6 +3,7 @@
 ## 2026-08-14 PWA Alone Time identity
 
 - PASS (source/test): household-visible Leaving Home notes use canonical Dog Profile identity and preserve pending-return semantics.
+- PASS (CI): `WoofWatcher Verify` run `31787077962`, job `94725292941`, passed dependency install, doctor, focused tests, typecheck, and CI-safe builds for `26ec7070`.
 - OPEN: live browser return flow, provider-backed household refresh, native handoff, accessibility traversal, store evidence, and Apollo approval.
 
 ## 2026-08-04 Today Command setup identity

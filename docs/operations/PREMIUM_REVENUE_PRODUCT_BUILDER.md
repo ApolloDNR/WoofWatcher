@@ -4,6 +4,8 @@
 
 The PWA Leaving Home workflow now builds its household-visible entry through a canonical Dog Profile identity boundary. Placeholder identity becomes Phoenix, renamed identity is trimmed, and owner notes keep the pending-return contract. Live browser/native return review, provider sync, accessibility, store review, and Apollo approval remain gated.
 
+Dependency-complete `WoofWatcher Verify` run `31787077962`, job `94725292941`, passed implementation/docs commit `26ec7070` end to end. Rerun after this proof-record commit before treating final-tip dependency proof as current.
+
 ## 2026-08-14 PWA Home identity slice
 
 Added a shared PWA Home identity contract and wired the shell/Home five-second answer through it. Placeholder `My Dog` renders as Phoenix; renamed dogs keep their trimmed identity across presence, room/meal guidance, hero and portrait accessibility copy, and caregiver encouragement. No provider, payment, AI, diagnosis, native, store, or launch gate was enabled.
