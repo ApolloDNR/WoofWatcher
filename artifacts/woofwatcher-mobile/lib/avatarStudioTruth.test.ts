@@ -15,6 +15,7 @@ const PATHS = {
   model: join(MOBILE_ROOT, "lib", "avatarStudio.ts"),
   breed: join(MOBILE_ROOT, "lib", "breedTemplateMatch.ts"),
   context: join(MOBILE_ROOT, "context", "AvatarContext.tsx"),
+  localData: join(MOBILE_ROOT, "lib", "avatarLocalDataReset.ts"),
 } as const;
 
 function read(path: string): string {
@@ -91,18 +92,30 @@ test("keeps a picked photo local, ephemeral, and unable to mutate the draft", ()
 test("backward-reads old v1 config and rewrites only clean v1 objects on Save or Reset", () => {
   const model = read(PATHS.model);
   const context = read(PATHS.context);
-  const load = between(context, "const load = async", "const getAvatarSource = useCallback");
+  const localData = read(PATHS.localData);
+  const load = between(
+    context,
+    "useEffect(() => {\n    let cancelled = false;",
+    "const getAvatarSource = useCallback",
+  );
   const save = between(context, "const saveAvatarConfig = useCallback", "const resetAvatarConfig = useCallback");
   const reset = between(context, "const resetAvatarConfig = useCallback", "const hasCustomAvatar");
 
-  assert.match(context, /const AVATAR_CONFIG_KEY = "woofwatcher\.petAvatarConfig\.v1"/);
-  assert.match(context, /const AVATAR_KEY = "woofwatcher\.avatarSet\.v1"/);
-  assert.match(load, /normalizeAvatarConfig\(JSON\.parse\(rawConfig\), "Phoenix"\)/);
-  assert.doesNotMatch(load, /AsyncStorage\.setItem\(AVATAR_CONFIG_KEY/);
+  assert.match(localData, /AVATAR_CONFIG_KEY = "woofwatcher\.petAvatarConfig\.v1"/);
+  assert.match(localData, /AVATAR_KEY = "woofwatcher\.avatarSet\.v1"/);
+  assert.doesNotMatch(context, /const AVATAR_(?:CONFIG_)?KEY\s*=/);
+  assert.match(load, /normalizeAvatarConfig\(JSON\.parse\(raw(?:Config)?\), "Phoenix"\)/);
+  assert.doesNotMatch(load, /AsyncStorage/);
   assert.match(save, /const clean = normalizeAvatarConfig/);
-  assert.match(save, /AsyncStorage\.setItem\(AVATAR_CONFIG_KEY, JSON\.stringify\(clean\)\)/);
+  assert.match(
+    save,
+    /removableStorage\.setItem\(\s*AVATAR_CONFIG_KEY,\s*JSON\.stringify\(clean\),?\s*\)/,
+  );
   assert.match(reset, /const clean = createDefaultAvatarConfig\(petName\)/);
-  assert.match(reset, /AsyncStorage\.setItem\(AVATAR_CONFIG_KEY, JSON\.stringify\(clean\)\)/);
+  assert.match(
+    reset,
+    /removableStorage\.setItem\(\s*AVATAR_CONFIG_KEY,\s*JSON\.stringify\(clean\),?\s*\)/,
+  );
   assert.match(context, /hasManualAvatarConfiguration\(avatarConfig\)/);
   assert.match(model, /export function hasManualAvatarConfiguration\(/);
 });

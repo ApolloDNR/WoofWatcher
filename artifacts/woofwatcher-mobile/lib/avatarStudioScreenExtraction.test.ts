@@ -160,12 +160,16 @@ test("keeps Portrait as one small replace-only bridge and moves focused QA navig
 
 test("leaves Avatar model, context keys, and registries as the persistence owners", () => {
   const context = read(join(MOBILE_ROOT, "context", "AvatarContext.tsx"));
+  const localData = read(join(MOBILE_ROOT, "lib", "avatarLocalDataReset.ts"));
   const model = read(join(MOBILE_ROOT, "lib", "avatarStudio.ts"));
   const assets = read(join(MOBILE_ROOT, "lib", "avatarTemplateAssets.ts"));
   const sprites = read(join(MOBILE_ROOT, "lib", "avatarTemplateSpriteAssets.ts"));
 
-  assert.match(context, /woofwatcher\.avatarSet\.v1/);
-  assert.match(context, /woofwatcher\.petAvatarConfig\.v1/);
+  assert.match(localData, /woofwatcher\.avatarSet\.v1/);
+  assert.match(localData, /woofwatcher\.petAvatarConfig\.v1/);
+  assert.match(context, /AVATAR_KEY/);
+  assert.match(context, /AVATAR_CONFIG_KEY/);
+  assert.doesNotMatch(context, /woofwatcher\.(?:avatarSet|petAvatarConfig)\.v1/);
   assert.match(context, /normalizeAvatarConfig/);
   assert.match(model, /createDefaultAvatarConfig/);
   assert.match(model, /normalizeAvatarConfig/);

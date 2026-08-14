@@ -8,6 +8,14 @@ const careContextSource = readFileSync(
   join(mobileRoot, "context", "CareContext.tsx"),
   "utf8",
 );
+const avatarContextSource = readFileSync(
+  join(mobileRoot, "context", "AvatarContext.tsx"),
+  "utf8",
+);
+const avatarResetSource = readFileSync(
+  join(mobileRoot, "lib", "avatarLocalDataReset.ts"),
+  "utf8",
+);
 const privacySource = readFileSync(
   join(mobileRoot, "components", "more", "PrivacyDataScreen.tsx"),
   "utf8",
@@ -349,4 +357,152 @@ test("failed coordinated commits recover pending entries while successful commit
   );
   assert.doesNotMatch(finalization, /\bawait\b|\bthrow\b/);
   assert.match(finalization, /suppressNextSettledSnapshotRef\.current = true/);
+});
+
+test("Avatar attaches one stable required owner with exact raw commit removal", () => {
+  assert.match(
+    avatarContextSource,
+    /import \{ useLocalDataReset \} from "@\/context\/LocalDataResetContext";/,
+  );
+  assert.match(
+    avatarContextSource,
+    /attachRequiredParticipant,[\s\S]*operationSettledEpoch,[\s\S]*removableStorage,[\s\S]*runTrackedLocalDataWork,[\s\S]*= useLocalDataReset\(\);/,
+  );
+  assert.match(
+    avatarContextSource,
+    /useRef<AvatarLocalDataResetController \| null>\(null\)/,
+  );
+  assert.match(
+    avatarContextSource,
+    /createAvatarLocalDataResetController\(\{[\s\S]*removeItem:\s*\(key\) => AsyncStorage\.removeItem\(key\),[\s\S]*finalizeSuccessfulCommit:/,
+  );
+  assert.match(
+    avatarContextSource,
+    /attachRequiredParticipant\(\s*"avatar",\s*avatarLocalDataResetController\.participant,?\s*\)/,
+  );
+  assert.match(
+    avatarContextSource,
+    /useEffect\(\s*\(\) =>\s*attachRequiredParticipant\(\s*"avatar",\s*avatarLocalDataResetController\.participant,?\s*\),\s*\[attachRequiredParticipant, avatarLocalDataResetController\],?\s*\)/,
+  );
+  assert.match(
+    avatarContextSource,
+    /\[attachRequiredParticipant, avatarLocalDataResetController\]/,
+  );
+  assert.match(
+    avatarContextSource,
+    /setAvatarSet\(null\)[\s\S]*setAvatarConfig\(createDefaultAvatarConfig\("Phoenix"\)\)[\s\S]*setIsLoaded\(true\)/,
+  );
+  const finalizer = sourceSlice(
+    avatarContextSource,
+    "finalizeSuccessfulCommit: () => {",
+    "        },\n      });",
+  );
+  assert.doesNotMatch(
+    finalizer,
+    /\bawait\b|\bthrow\b|AsyncStorage|removableStorage/,
+  );
+  assert.doesNotMatch(avatarResetSource, /multiRemove|getAllKeys|FileSystem|deleteAsync/);
+  assert.doesNotMatch(avatarContextSource, /deleteAsync/);
+});
+
+test("Avatar hydration and repair stay tracked, cancellable, revision-current, and retryable", () => {
+  const hydration = sourceSlice(
+    avatarContextSource,
+    "useEffect(() => {\n    let cancelled = false;",
+    "const getAvatarSource = useCallback",
+  );
+
+  assert.match(hydration, /runAvatarHydrationAttempt\(\{/);
+  assert.match(
+    hydration,
+    /drainPendingWrites:\s*removableStorage\.drain/,
+  );
+  assert.match(hydration, /read:\s*\(\) => removableStorage\.getItem\(AVATAR_KEY\)/);
+  assert.match(
+    hydration,
+    /read:\s*\(\) => removableStorage\.getItem\(AVATAR_CONFIG_KEY\)/,
+  );
+  assert.match(hydration, /resolve:\s*async \(raw\)[\s\S]*verifyAvatarSet/);
+  assert.match(
+    hydration,
+    /removableStorage\.(?:setItem|removeItem)\(AVATAR_KEY/,
+  );
+  assert.match(hydration, /avatarSetHydrationRevisionRef\.current/);
+  assert.match(hydration, /avatarConfigHydrationRevisionRef\.current/);
+  assert.match(hydration, /markAvatarSetLoaded/);
+  assert.match(hydration, /markAvatarConfigLoaded/);
+  assert.match(hydration, /cancelled/);
+  assert.match(hydration, /requestHydrationRetry/);
+  assert.match(hydration, /operationSettledEpoch/);
+  assert.match(hydration, /hydrationReloadNonce/);
+  assert.match(hydration, /\.catch\(/);
+  assert.doesNotMatch(hydration, /AsyncStorage\.(?:getItem|setItem|removeItem)/);
+
+  const loaded = sourceSlice(
+    hydration,
+    "markLoaded: () => {",
+    "requestRetry: requestHydrationRetry",
+  );
+  assert.doesNotMatch(
+    loaded,
+    /clearTimeout/,
+    "a failed superseding mutation owns its scheduled retry even if stale hydration marks loaded",
+  );
+
+  const markSetLoaded = sourceSlice(
+    avatarContextSource,
+    "const markAvatarSetLoaded = useCallback(",
+    "const markAvatarConfigLoaded = useCallback(",
+  );
+  const markConfigLoaded = sourceSlice(
+    avatarContextSource,
+    "const markAvatarConfigLoaded = useCallback(",
+    "useEffect(",
+  );
+  assert.match(
+    markSetLoaded,
+    /avatarSetLoadedRef\.current = true[\s\S]*avatarConfigLoadedRef\.current/,
+  );
+  assert.match(
+    markConfigLoaded,
+    /avatarConfigLoadedRef\.current = true[\s\S]*avatarSetLoadedRef\.current/,
+  );
+  assert.doesNotMatch(markSetLoaded, /resetHydrationRetry\(\)/);
+  assert.doesNotMatch(markConfigLoaded, /resetHydrationRetry\(\)/);
+
+  assert.match(
+    avatarContextSource,
+    /useEffect\(\s*\(\) => \{\s*hydrationRetryScheduler\.activate\(\);\s*return \(\) => hydrationRetryScheduler\.deactivate\(\);\s*\},\s*\[hydrationRetryScheduler\],?\s*\)/,
+  );
+});
+
+test("Avatar public mutations use the removable lane and persist before applying memory", () => {
+  const methods = sourceSlice(
+    avatarContextSource,
+    "const saveAvatarSet = useCallback",
+    "const hasCustomAvatar",
+  );
+
+  assert.equal(methods.match(/runTrackedAvatarMutation\(\{/g)?.length ?? 0, 4);
+  assert.match(
+    methods,
+    /beginCurrentMutation:\s*\(\) => \{\s*avatarSetHydrationRevisionRef\.current \+= 1;\s*avatarSetLoadedRef\.current = false;\s*setIsLoaded\(false\)/,
+  );
+  assert.match(
+    methods,
+    /beginCurrentMutation:\s*\(\) => \{\s*avatarConfigHydrationRevisionRef\.current \+= 1;\s*avatarConfigLoadedRef\.current = false;\s*setIsLoaded\(false\)/,
+  );
+  assert.match(methods, /removableStorage\.setItem\(AVATAR_KEY/);
+  assert.match(methods, /removableStorage\.removeItem\(AVATAR_KEY\)/);
+  assert.match(methods, /removableStorage\.setItem\(\s*AVATAR_CONFIG_KEY/);
+  assert.doesNotMatch(methods, /AsyncStorage/);
+  assert.match(methods, /requestHydrationRetry/);
+  assert.match(methods, /markAvatarSetLoaded/);
+  assert.match(methods, /markAvatarConfigLoaded/);
+
+  assert.match(
+    privacySource,
+    /Promise\.all\(\[eraseAllLocalData\(\), clearAvatarSet\(\), resetAvatarConfig\(\)\]\)/,
+  );
+  assert.doesNotMatch(privacySource, /\brunReset\b/);
 });
