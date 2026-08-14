@@ -24,10 +24,18 @@ import {
   type TrackedLocalDataWork,
 } from "./trackedLocalDataWork.ts";
 
+export const REQUIRED_LOCAL_DATA_PARTICIPANT_IDS = Object.freeze([
+  "avatar",
+  "care",
+  "device-preferences",
+  "files",
+  "query-cache",
+  "walk-capture",
+  "web-runtime",
+] as const);
+
 export type RequiredLocalDataParticipantId =
-  | "care"
-  | "avatar"
-  | "device-preferences";
+  (typeof REQUIRED_LOCAL_DATA_PARTICIPANT_IDS)[number];
 
 export interface LocalDataResetRuntime {
   operations: LocalDataOperations;
@@ -65,14 +73,18 @@ export function createLocalDataResetRuntime(
     RequiredLocalDataParticipantId,
     RequiredParticipantSlot
   > = {
-    care: createRequiredParticipantSlot("care"),
     avatar: createRequiredParticipantSlot("avatar"),
+    care: createRequiredParticipantSlot("care"),
     "device-preferences": createRequiredParticipantSlot("device-preferences"),
+    files: createRequiredParticipantSlot("files"),
+    "query-cache": createRequiredParticipantSlot("query-cache"),
+    "walk-capture": createRequiredParticipantSlot("walk-capture"),
+    "web-runtime": createRequiredParticipantSlot("web-runtime"),
   };
 
-  resetCoordinator.register(requiredSlots.care.participant);
-  resetCoordinator.register(requiredSlots.avatar.participant);
-  resetCoordinator.register(requiredSlots["device-preferences"].participant);
+  for (const id of REQUIRED_LOCAL_DATA_PARTICIPANT_IDS) {
+    resetCoordinator.register(requiredSlots[id].participant);
+  }
   resetCoordinator.register({
     id: "work-drain",
     prepare() {

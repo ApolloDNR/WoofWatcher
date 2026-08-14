@@ -58,6 +58,22 @@ function attachDevicePreferencesNoOp(
   });
 }
 
+function attachFutureRequiredNoOps(
+  runtime: ReturnType<typeof createLocalDataResetRuntime>,
+) {
+  for (const id of [
+    "files",
+    "query-cache",
+    "walk-capture",
+    "web-runtime",
+  ] as const) {
+    runtime.attachRequiredParticipant(id, {
+      prepare: async () => {},
+      commit: async () => {},
+    });
+  }
+}
+
 function createHydrationField<T>({
   value,
   read = async () => "raw",
@@ -336,6 +352,7 @@ test("an accepted mutation released during reset preparation rejects without app
   let applied = 0;
   attachCareNoOp(runtime);
   attachDevicePreferencesNoOp(runtime);
+  attachFutureRequiredNoOps(runtime);
   runtime.attachRequiredParticipant("avatar", {
     prepare: async () => {},
     commit: async () => {},
@@ -369,6 +386,7 @@ test("accepted removable storage and tracked verification both hold reset prepar
   });
   attachCareNoOp(runtime);
   attachDevicePreferencesNoOp(runtime);
+  attachFutureRequiredNoOps(runtime);
   const controller = createAvatarLocalDataResetController({
     removeItem: async (key) => {
       events.push(`remove:${key}`);
@@ -419,6 +437,7 @@ test("peer preparation failure performs zero Avatar destruction and a fresh run 
   });
   runtime.attachRequiredParticipant("avatar", controller.participant);
   attachDevicePreferencesNoOp(runtime);
+  attachFutureRequiredNoOps(runtime);
 
   assert.equal((await runtime.operations.runReset()).status, "partial-failure");
   assert.equal(removals, 0);
@@ -1046,6 +1065,7 @@ test("detaching the required Avatar delegate makes the next root reset fail clos
   const runtime = createLocalDataResetRuntime(createStorageAdapter());
   attachCareNoOp(runtime);
   attachDevicePreferencesNoOp(runtime);
+  attachFutureRequiredNoOps(runtime);
   let removals = 0;
   const controller = createAvatarLocalDataResetController({
     removeItem: async () => {

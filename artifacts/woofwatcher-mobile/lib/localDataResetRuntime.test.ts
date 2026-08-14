@@ -7,7 +7,10 @@ import {
   HOME_WELCOME_DISMISSED_KEY,
   createDevicePreferencesStore,
 } from "./devicePreferences.ts";
-import { createLocalDataResetRuntime } from "./localDataResetRuntime.ts";
+import {
+  REQUIRED_LOCAL_DATA_PARTICIPANT_IDS,
+  createLocalDataResetRuntime,
+} from "./localDataResetRuntime.ts";
 
 function deferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
@@ -37,7 +40,9 @@ function createStorageAdapter(): LocalDataStorageAdapter & {
   };
 }
 
-function attachRequiredNoOps(runtime: ReturnType<typeof createLocalDataResetRuntime>) {
+function attachImplementedRequiredNoOps(
+  runtime: ReturnType<typeof createLocalDataResetRuntime>,
+) {
   runtime.attachRequiredParticipant("care", {
     prepare: async () => {},
     commit: async () => {},
@@ -52,18 +57,91 @@ function attachRequiredNoOps(runtime: ReturnType<typeof createLocalDataResetRunt
   });
 }
 
+function attachFutureRequiredNoOps(
+  runtime: ReturnType<typeof createLocalDataResetRuntime>,
+) {
+  for (const id of [
+    "files",
+    "query-cache",
+    "walk-capture",
+    "web-runtime",
+  ] as const) {
+    runtime.attachRequiredParticipant(id, {
+      prepare: async () => {},
+      commit: async () => {},
+    });
+  }
+}
+
+function attachAllRequiredNoOps(
+  runtime: ReturnType<typeof createLocalDataResetRuntime>,
+) {
+  attachImplementedRequiredNoOps(runtime);
+  attachFutureRequiredNoOps(runtime);
+}
+
+test("exports the exact frozen required-owner manifest", () => {
+  const requiredParticipantIds = REQUIRED_LOCAL_DATA_PARTICIPANT_IDS;
+
+  assert.deepEqual(requiredParticipantIds, [
+    "avatar",
+    "care",
+    "device-preferences",
+    "files",
+    "query-cache",
+    "walk-capture",
+    "web-runtime",
+  ]);
+  assert.equal(Object.isFrozen(requiredParticipantIds), true);
+});
+
+test("missing future required owners fail closed with zero commits", async () => {
+  const runtime = createLocalDataResetRuntime(createStorageAdapter());
+  const oldPermit = runtime.generationAuthority.capture();
+  let destructiveCommits = 0;
+  attachImplementedRequiredNoOps(runtime);
+  runtime.registerParticipant({
+    id: "destructive-proof",
+    prepare: async () => {},
+    commit: async () => {
+      destructiveCommits += 1;
+    },
+  });
+
+  const result = await runtime.operations.runReset();
+
+  assert.deepEqual(result, {
+    status: "partial-failure",
+    committedParticipantIds: [],
+    failedParticipantIds: [
+      "files",
+      "query-cache",
+      "walk-capture",
+      "web-runtime",
+    ],
+  });
+  assert.equal(destructiveCommits, 0);
+  assert.equal(runtime.generationAuthority.isValid(oldPermit), true);
+  assert.equal(runtime.operations.isWriteAdmissionOpen(), true);
+});
+
 test("missing required device-preferences owner fails closed with zero commits", async () => {
   const runtime = createLocalDataResetRuntime(createStorageAdapter());
   const oldPermit = runtime.generationAuthority.capture();
   let destructiveCommits = 0;
-  runtime.attachRequiredParticipant("care", {
-    prepare: async () => {},
-    commit: async () => {},
-  });
-  runtime.attachRequiredParticipant("avatar", {
-    prepare: async () => {},
-    commit: async () => {},
-  });
+  for (const id of [
+    "avatar",
+    "care",
+    "files",
+    "query-cache",
+    "walk-capture",
+    "web-runtime",
+  ] as const) {
+    runtime.attachRequiredParticipant(id, {
+      prepare: async () => {},
+      commit: async () => {},
+    });
+  }
   runtime.registerParticipant({
     id: "destructive-proof",
     prepare: async () => {},
@@ -84,10 +162,54 @@ test("missing required device-preferences owner fails closed with zero commits",
   assert.equal(runtime.operations.isWriteAdmissionOpen(), true);
 });
 
-test("all three attached required owners reset in deterministic participant order", async () => {
+test("detaching files fails closed without invalidating or committing", async () => {
+  const runtime = createLocalDataResetRuntime(createStorageAdapter());
+  const oldPermit = runtime.generationAuthority.capture();
+  let destructiveCommits = 0;
+  attachImplementedRequiredNoOps(runtime);
+  const detachFiles = runtime.attachRequiredParticipant("files", {
+    prepare: async () => {},
+    commit: async () => {},
+  });
+  for (const id of ["query-cache", "walk-capture", "web-runtime"] as const) {
+    runtime.attachRequiredParticipant(id, {
+      prepare: async () => {},
+      commit: async () => {},
+    });
+  }
+  runtime.registerParticipant({
+    id: "destructive-proof",
+    prepare: async () => {},
+    commit: async () => {
+      destructiveCommits += 1;
+    },
+  });
+  detachFiles();
+
+  const result = await runtime.operations.runReset();
+
+  assert.deepEqual(result, {
+    status: "partial-failure",
+    committedParticipantIds: [],
+    failedParticipantIds: ["files"],
+  });
+  assert.equal(destructiveCommits, 0);
+  assert.equal(runtime.generationAuthority.isValid(oldPermit), true);
+  assert.equal(runtime.operations.isWriteAdmissionOpen(), true);
+});
+
+test("all seven attached required owners reset in deterministic participant order", async () => {
   const runtime = createLocalDataResetRuntime(createStorageAdapter());
   const events: string[] = [];
-  for (const id of ["care", "avatar", "device-preferences"] as const) {
+  for (const id of [
+    "avatar",
+    "care",
+    "device-preferences",
+    "files",
+    "query-cache",
+    "walk-capture",
+    "web-runtime",
+  ] as const) {
     runtime.attachRequiredParticipant(id, {
       prepare: async () => {
         events.push(`prepare:${id}`);
@@ -97,15 +219,6 @@ test("all three attached required owners reset in deterministic participant orde
       },
     });
   }
-  runtime.registerParticipant({
-    id: "files",
-    prepare: async () => {
-      events.push("prepare:files");
-    },
-    commit: async () => {
-      events.push("commit:files");
-    },
-  });
 
   const result = await runtime.operations.runReset();
 
@@ -114,10 +227,16 @@ test("all three attached required owners reset in deterministic participant orde
     "prepare:care",
     "prepare:device-preferences",
     "prepare:files",
+    "prepare:query-cache",
+    "prepare:walk-capture",
+    "prepare:web-runtime",
     "commit:avatar",
     "commit:care",
     "commit:device-preferences",
     "commit:files",
+    "commit:query-cache",
+    "commit:walk-capture",
+    "commit:web-runtime",
   ]);
   assert.deepEqual(result, {
     status: "complete",
@@ -126,6 +245,9 @@ test("all three attached required owners reset in deterministic participant orde
       "care",
       "device-preferences",
       "files",
+      "query-cache",
+      "walk-capture",
+      "web-runtime",
       "work-drain",
     ],
     failedParticipantIds: [],
@@ -159,6 +281,7 @@ test("required attachment uses identity-safe stale detach behavior", async () =>
     prepare: async () => {},
     commit: async () => {},
   });
+  attachFutureRequiredNoOps(runtime);
 
   detachOld();
   const result = await runtime.operations.runReset();
@@ -181,7 +304,7 @@ test("work-drain waits for accepted storage and tracked work before invalidation
   });
   const oldPermit = runtime.generationAuthority.capture();
   const commitValidity: boolean[] = [];
-  for (const id of ["care", "avatar", "device-preferences"] as const) {
+  for (const id of REQUIRED_LOCAL_DATA_PARTICIPANT_IDS) {
     runtime.attachRequiredParticipant(id, {
       prepare: async () => {},
       commit: async () => {
@@ -210,7 +333,15 @@ test("work-drain waits for accepted storage and tracked work before invalidation
   assert.equal(storageResult, undefined);
   assert.deepEqual(workResult, { status: "complete", value: "file saved" });
   assert.deepEqual(physicalWrites, ["snapshot"]);
-  assert.deepEqual(commitValidity, [false, false, false]);
+  assert.deepEqual(commitValidity, [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
 });
 
 test("shared removable storage rejects new work as soon as reset is queued", async () => {
@@ -229,6 +360,7 @@ test("shared removable storage rejects new work as soon as reset is queued", asy
     prepare: async () => {},
     commit: async () => {},
   });
+  attachFutureRequiredNoOps(runtime);
 
   const reset = runtime.operations.runReset();
   const blocked = runtime.removableStorage.setItem("late", "resurrection");
@@ -255,6 +387,7 @@ test("concurrent reset callers receive the exact runtime operation promise", asy
     prepare: async () => {},
     commit: async () => {},
   });
+  attachFutureRequiredNoOps(runtime);
 
   const first = runtime.operations.runReset();
   const second = runtime.operations.runReset();
@@ -276,7 +409,7 @@ test("an accepted preference save holds prepare open and a late save is rejected
     },
     removeItem: async () => {},
   });
-  attachRequiredNoOps(runtime);
+  attachAllRequiredNoOps(runtime);
   const store = createDevicePreferencesStore(runtime.removableStorage);
   const permit = runtime.generationAuthority.capture();
   const accepted = store.save(HOME_WELCOME_DISMISSED_KEY, "accepted");
@@ -323,7 +456,7 @@ test("tracked preference hydration cannot apply after reset admission closes in 
     async removeItem() {},
   };
   runtime = createLocalDataResetRuntime(adapter);
-  attachRequiredNoOps(runtime);
+  attachAllRequiredNoOps(runtime);
   const store = createDevicePreferencesStore(runtime.removableStorage, {
     runTrackedHydration: runtime.trackedWork.run,
   });
@@ -352,7 +485,7 @@ test("root work-drain waits for a deferred tracked preference read without deadl
     async setItem() {},
     async removeItem() {},
   });
-  attachRequiredNoOps(runtime);
+  attachAllRequiredNoOps(runtime);
   const store = createDevicePreferencesStore(runtime.removableStorage, {
     runTrackedHydration: runtime.trackedWork.run,
   });
@@ -383,7 +516,7 @@ test("root work-drain waits for a deferred tracked preference read without deadl
 
 test("runtime delegates participant registration and tracked work through stable functions", async () => {
   const runtime = createLocalDataResetRuntime(createStorageAdapter());
-  attachRequiredNoOps(runtime);
+  attachAllRequiredNoOps(runtime);
   let customCommit = 0;
   const unregister = runtime.registerParticipant({
     id: "custom",

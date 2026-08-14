@@ -64,6 +64,23 @@ function attachPeerNoOps(
     prepare: async () => {},
     commit: async () => {},
   });
+  attachFutureRequiredNoOps(runtime);
+}
+
+function attachFutureRequiredNoOps(
+  runtime: ReturnType<typeof createLocalDataResetRuntime>,
+) {
+  for (const id of [
+    "files",
+    "query-cache",
+    "walk-capture",
+    "web-runtime",
+  ] as const) {
+    runtime.attachRequiredParticipant(id, {
+      prepare: async () => {},
+      commit: async () => {},
+    });
+  }
 }
 
 test("owns the exact frozen five-key destructive manifest in removal order", async () => {
@@ -511,13 +528,21 @@ test("peer commit failures do not skip preference removals", async () => {
     "device-preferences",
     controller.participant,
   );
+  attachFutureRequiredNoOps(runtime);
 
   const result = await runtime.operations.runReset();
 
   assert.deepEqual(removals, [...DEVICE_PREFERENCE_RESET_KEYS]);
   assert.deepEqual(result, {
     status: "partial-failure",
-    committedParticipantIds: ["device-preferences", "work-drain"],
+    committedParticipantIds: [
+      "device-preferences",
+      "files",
+      "query-cache",
+      "walk-capture",
+      "web-runtime",
+      "work-drain",
+    ],
     failedParticipantIds: ["avatar", "care"],
   });
 });
@@ -553,12 +578,20 @@ test("preference failure remains visible without hiding peer commit results", as
     "device-preferences",
     controller.participant,
   );
+  attachFutureRequiredNoOps(runtime);
 
   const result = await runtime.operations.runReset();
 
   assert.deepEqual(result, {
     status: "partial-failure",
-    committedParticipantIds: ["care", "work-drain"],
+    committedParticipantIds: [
+      "care",
+      "files",
+      "query-cache",
+      "walk-capture",
+      "web-runtime",
+      "work-drain",
+    ],
     failedParticipantIds: ["avatar", "device-preferences"],
   });
 });
@@ -632,7 +665,15 @@ for (const rejectionMode of ["retain", "delete"] as const) {
 
     assert.deepEqual(result, {
       status: "partial-failure",
-      committedParticipantIds: ["avatar", "care", "work-drain"],
+      committedParticipantIds: [
+        "avatar",
+        "care",
+        "files",
+        "query-cache",
+        "walk-capture",
+        "web-runtime",
+        "work-drain",
+      ],
       failedParticipantIds: ["device-preferences"],
     });
     assert.equal(hydration, "applied");
