@@ -5925,7 +5925,11 @@ test("keeps future care documents read-only across every persistence and sync bo
 
   assert.match(careContext, /futureCareDocRef/);
   assert.match(careContext, /futureCareCacheRawRef/);
-  assert.match(careContext, /futureCareCacheRawRef\.current = raw/);
+  assert.match(careContext, /futureRaw = raw/);
+  assert.match(
+    careContext,
+    /futureCareCacheRawRef\.current = staged\.futureRaw/,
+  );
   assert.match(careContext, /futureCareCacheRawRef\.current = null/);
   assert.match(careContext, /isFutureCareDocDataVersion/);
   assert.ok((careContext.match(/preserveFutureCareDoc\(/g) ?? []).length >= 4,

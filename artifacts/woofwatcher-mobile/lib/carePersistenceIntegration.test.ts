@@ -33,7 +33,9 @@ test("CareContext serializes primary snapshots and keeps owner wipe barriers ord
   );
   assert.match(careContextSource, /carePersistenceWriter\s*\.enqueue\(\{/);
   assert.equal(
-    careContextSource.match(/AsyncStorage\.setItem\(STORAGE_KEY,/g)?.length,
+    careContextSource.match(
+      /AsyncStorage\.setItem\(CARE_PRIMARY_LOCAL_DATA_KEY,/g,
+    )?.length,
     1,
   );
   const wipe = sourceSlice(
@@ -74,4 +76,49 @@ test("CareContext serializes primary snapshots and keeps owner wipe barriers ord
     (hydration.match(/hydrationCanContinue\(\)/g)?.length ?? 0) >= 4,
   );
   assert.match(hydration, /if \(!hydrationCanContinue\(\)\) return;/);
+});
+
+test("CareContext pauses snapshot enqueue during prepare without skipping accepted physical writes", () => {
+  const physicalPrimaryWrite = sourceSlice(
+    "createCarePersistenceWriter<CarePersistenceSnapshot>(",
+    "const carePersistenceWriter = carePersistenceWriterRef.current;",
+  );
+  assert.doesNotMatch(physicalPrimaryWrite, /snapshotPersistencePausedRef/);
+
+  const persistence = sourceSlice(
+    "// Persist the offline cache whenever synced state changes.",
+    "const pushDoc = useCallback",
+  );
+  assert.match(
+    persistence,
+    /!isWriteAdmissionOpen\(\)/,
+  );
+  assert.match(persistence, /operationSettledEpoch/);
+});
+
+test("CareContext supplies nondestructive prepare drains and commit-only invalidation", () => {
+  const hooks = sourceSlice(
+    "createCareLocalDataResetController({",
+    "const careLocalDataResetController =",
+  );
+
+  assert.match(
+    hooks,
+    /canPrepare:\s*\(\) =>\s*hydratedRef\.current && !legacyOwnerWipeInProgressRef\.current/,
+  );
+  assert.match(
+    hooks,
+    /drainPrimarySnapshots:\s*\(\) => carePersistenceWriter\.drain\(\)/,
+  );
+  assert.match(
+    hooks,
+    /drainCleanupLedger:\s*\(\) => discardedServerEntryWriter\.drain\(\)/,
+  );
+  assert.match(
+    hooks,
+    /invalidateAndDrainPrimarySnapshots:\s*\(\) =>\s*carePersistenceWriter\.invalidateAndDrain\(\)/,
+  );
+  assert.match(hooks, /persistCleanupIntent:\s*persistCareResetCleanupIntent/);
+  assert.match(hooks, /finalizeSuccessfulCommit:\s*finalizeSuccessfulCareReset/);
+  assert.match(hooks, /endCommit:\s*endCoordinatedCareReset/);
 });

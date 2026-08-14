@@ -84,6 +84,18 @@ import {
   createCarePersistenceWriter,
   type CarePersistenceWriter,
 } from "@/lib/carePersistenceWriter";
+import {
+  CARE_PRESERVED_LOCAL_DATA_KEY,
+  CARE_PRIMARY_LOCAL_DATA_KEY,
+  createCareHydrationAttemptAuthority,
+  createCareLocalDataResetController,
+  getCarePristineSnapshotPersistenceDecision,
+  hasInterruptedCareEntryMutationsToRecover,
+  type CareHydrationAttemptAuthority,
+  type CareLocalDataResetController,
+} from "@/lib/careLocalDataReset";
+import { useLocalDataReset } from "@/context/LocalDataResetContext";
+import { LocalDataResetInProgressError } from "@/lib/removableLocalDataStorage";
 import { useWoofAuth } from "@/lib/auth";
 import {
   normalizeReminderNotificationPreferences,
@@ -98,10 +110,6 @@ import {
   type LegacyImportResult,
 } from "@/lib/legacyImport";
 import type { SupportLegalReadinessProofEvidence } from "@/lib/supportRunbook";
-
-const STORAGE_KEY = "woofwatcher.v2.state";
-const DISCARDED_SERVER_ENTRY_IDS_KEY =
-  "woofwatcher.v2.discarded-server-entry-ids";
 
 interface CarePersistenceSnapshot {
   raw: string;
@@ -666,6 +674,12 @@ const CareContext = createContext<CareContextValue | null>(null);
 export function CareProvider({ children }: { children: React.ReactNode }) {
   const { isSignedIn, isLoaded: clerkLoaded } = useWoofAuth();
   const queryClient = useQueryClient();
+  const {
+    attachRequiredParticipant,
+    isWriteAdmissionOpen,
+    operationSettledEpoch,
+    removableStorage,
+  } = useLocalDataReset();
 
   const [doc, setDoc] = useState<CareDoc>(getDefaultDoc);
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -684,6 +698,12 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const signedInRef = useRef(false);
   const syncingRef = useRef(false);
   const hydratedRef = useRef(false);
+  const careHydrationAttemptAuthorityRef =
+    useRef<CareHydrationAttemptAuthority | null>(null);
+  if (!careHydrationAttemptAuthorityRef.current) {
+    careHydrationAttemptAuthorityRef.current =
+      createCareHydrationAttemptAuthority();
+  }
   const careWriteProtectionRef = useRef(createCareWriteProtection());
   const ownerWipeInProgressRef = useRef(false);
   const setCareStorageWarning = useCallback((warning: CareStorageWarning) => {
@@ -711,8 +731,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const careDocWritesBlocked = useCallback(
     (): boolean =>
       ownerWipeInProgressRef.current ||
+      !isWriteAdmissionOpen() ||
       careWriteProtectionRef.current.isBlocked(),
-    [],
+    [isWriteAdmissionOpen],
   );
   const careWriteCanContinue = useCallback(
     (generation: number): boolean =>
@@ -737,7 +758,19 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     useRef<CarePersistenceWriter<CarePersistenceSnapshot> | null>(null);
   const latestCareSnapshotRef = useRef(0);
   const snapshotPersistencePausedRef = useRef(false);
+  const suppressNextSettledSnapshotRef = useRef(false);
+  const currentOperationSettledEpochRef = useRef(operationSettledEpoch);
+  currentOperationSettledEpochRef.current = operationSettledEpoch;
+  const successfulResetStartedAtEpochRef = useRef(-1);
+  const suppressedPristineSnapshotRef = useRef<{
+    doc: CareDoc;
+    entries: Entry[];
+    serverVersion: number;
+  } | null>(null);
   const eraseAllLocalDataInFlightRef = useRef<Promise<void> | null>(null);
+  const legacyOwnerWipeInProgressRef = useRef(false);
+  const stagedCareResetTempIdsRef = useRef<Set<string>>(new Set());
+  const stagedCareResetCleanupLedgerRef = useRef<string[]>([]);
   const entryUpdateQueueRef =
     useRef<SerializedCareEntryMutationQueue<Entry> | null>(null);
   const entryWriteGenerationRef = useRef<Map<string, number>>(new Map());
@@ -750,13 +783,12 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       createCarePersistenceWriter<CarePersistenceSnapshot>(
         async ({ raw, writeGeneration, eraseGeneration }) => {
           if (
-            snapshotPersistencePausedRef.current ||
             eraseGeneration !== eraseGenerationRef.current ||
             !careWriteProtectionRef.current.canContinue(writeGeneration)
           ) {
             return;
           }
-          await AsyncStorage.setItem(STORAGE_KEY, raw);
+          await AsyncStorage.setItem(CARE_PRIMARY_LOCAL_DATA_KEY, raw);
         },
       );
   }
@@ -767,12 +799,12 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       createSerializedCareSyncWriter<string[] | null>(async (entryIds) => {
         if (entryIds && entryIds.length > 0) {
           await AsyncStorage.setItem(
-            DISCARDED_SERVER_ENTRY_IDS_KEY,
+            CARE_PRESERVED_LOCAL_DATA_KEY,
             JSON.stringify(entryIds),
           );
           return;
         }
-        await AsyncStorage.removeItem(DISCARDED_SERVER_ENTRY_IDS_KEY);
+        await AsyncStorage.removeItem(CARE_PRESERVED_LOCAL_DATA_KEY);
       });
   }
   const discardedServerEntryWriter =
@@ -942,194 +974,264 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   // completed - otherwise the persist effect overwrites intact stored data
   // with in-memory defaults.
   useEffect(() => {
+    if (hydratedRef.current) return;
+    const hydrationAttempt =
+      careHydrationAttemptAuthorityRef.current!.begin(
+        isWriteAdmissionOpen(),
+      );
+    if (!hydrationAttempt) return;
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
     const hydrationEraseGeneration = eraseGenerationRef.current;
     const hydrationCanContinue = () =>
+      !cancelled &&
+      hydrationAttempt.isCurrent() &&
       !ownerWipeInProgressRef.current &&
       eraseGenerationRef.current === hydrationEraseGeneration;
     if (!hydrationCanContinue()) return;
 
-    // Returns whether the store is pristine (no cache, or a cache holding
-    // zero entries and a never-edited doc) - the only state the legacy web
-    // import below is allowed to write into.
-    const applyRaw = (raw: string | null): boolean => {
-      if (!raw) return true;
+    interface StagedCareHydration {
+      cachedDoc: CareDoc | null;
+      cachedEntries: Entry[] | null;
+      cachedServerVersion: number | null;
+      discardedServerEntryIds: string[];
+      futureDoc: object | null;
+      futureRaw: string | null;
+      legacySummary: LegacyImportResult["summary"] | null;
+      warning: CareStorageWarning;
+    }
+
+    const persistRecoveryEvidence = async (key: string, raw: string) => {
       try {
-        const parsed = JSON.parse(raw);
-        if (parsed?.doc) {
-          if (preserveFutureCareDoc(parsed.doc)) {
-            futureCareCacheRawRef.current = raw;
-            return false;
-          } else {
-            const cachedDoc = mergeDoc(parsed.doc);
-            docRef.current = cachedDoc;
-            setDoc(cachedDoc);
-          }
-        }
-        let cachedEntries: Entry[] = [];
-        if (Array.isArray(parsed?.entries)) {
-          // Drop malformed rows (an id-less entry crashes outbox derivation
-          // on every launch - an unrecoverable boot loop, since the persist
-          // effect never gets a chance to repair the cache).
-          cachedEntries = recoverInterruptedCareEntryMutations(
-            parsed.entries.filter(
-              (entry: unknown): entry is Entry =>
-                !!entry && typeof (entry as Entry).id === "string",
-            ),
-          );
-          entriesRef.current = cachedEntries;
-          setEntries(cachedEntries);
-        }
-        if (typeof parsed?.serverVersion === "number") {
-          versionRef.current = parsed.serverVersion;
-          setServerVersion(parsed.serverVersion);
-        }
-        const docUpdatedAt = typeof parsed?.doc?.updatedAt === "string" ? parsed.doc.updatedAt : "";
-        return (
-          cachedEntries.length === 0 &&
-          (!docUpdatedAt || docUpdatedAt === new Date(0).toISOString())
-        );
-      } catch {
-        // Corrupt cache: preserve the evidence under a recovery key BEFORE
-        // the persist effect overwrites the primary key with defaults, and
-        // tell the owner instead of silently resetting.
-        AsyncStorage.setItem(`${STORAGE_KEY}.recovery`, raw).catch(() => {});
-        setCareStorageWarning("reset");
-        return false;
+        await removableStorage.setItem(key, raw);
+      } catch (error) {
+        if (error instanceof LocalDataResetInProgressError) throw error;
+        // Recovery evidence is best-effort for a failing device store. The
+        // visible warning remains staged with the rest of hydration.
       }
     };
-    const applyDiscardedRaw = (raw: string | null) => {
-      try {
-        const cachedDiscardedServerEntryIds =
-          normalizeDiscardedServerEntryIds([
-            ...(raw ? JSON.parse(raw) : []),
-            // A cancellation may occur while the two storage reads are in
-            // flight. Union it instead of letting the older disk snapshot
-            // erase the newer in-memory deletion intent.
-            ...discardedServerEntryIdsRef.current,
-          ]);
-        discardedServerEntryIdsRef.current = new Set(
-          cachedDiscardedServerEntryIds,
-        );
-      } catch {
-        // Keep corrupt deletion metadata for support/recovery while refusing
-        // to let it delay hydration indefinitely.
-        if (raw) {
-          AsyncStorage.setItem(
-            `${DISCARDED_SERVER_ENTRY_IDS_KEY}.recovery`,
-            raw,
-          ).catch(() => {});
-        }
-        // Preserve any cancellation recorded in this live session even when
-        // the older on-disk ledger is corrupt.
-        setCareStorageWarning("reset");
-      }
-    };
-    // One-time adoption of the legacy web PWA's data (see lib/legacyImport).
-    // Runs only into a pristine store; the legacy key is left in place as
-    // its own backup (the owner wipe removes every woofwatcher* key).
-    const maybeImportLegacyState = async () => {
-      try {
-        const [flag, legacyRaw] = await Promise.all([
-          AsyncStorage.getItem(LEGACY_IMPORT_FLAG_KEY),
-          AsyncStorage.getItem(LEGACY_STATE_KEY),
-        ]);
-        if (!hydrationCanContinue()) return;
-        if (flag || !legacyRaw) return;
-        const stamp = (payload: object) =>
-          AsyncStorage.setItem(
-            LEGACY_IMPORT_FLAG_KEY,
-            JSON.stringify({ at: new Date().toISOString(), ...payload }),
-          ).catch(() => {});
-        const result = convertLegacyState(parseLegacyState(legacyRaw));
-        if (!result) {
-          if (!hydrationCanContinue()) return;
-          await stamp({ status: "nothing-to-import" });
-          return;
-        }
-        if (!hydrationCanContinue()) return;
-        if (Object.keys(result.docPatch).length) {
-          const importedAt = new Date().toISOString();
-          const previous = docRef.current;
-          const importedDoc = mergeDoc({
-            ...previous,
-            ...result.docPatch,
-            profile: result.docPatch.profile
-              ? {
-                  ...previous.profile,
-                  ...result.docPatch.profile,
-                  weight: {
-                    ...previous.profile.weight,
-                    ...result.docPatch.profile.weight,
-                  },
-                }
-              : previous.profile,
-            dietProfile: result.docPatch.dietProfile
-              ? {
-                  ...previous.dietProfile,
-                  ...result.docPatch.dietProfile,
-                }
-              : previous.dietProfile,
-            // A real import is a real edit: the doc must not stay pristine
-            // or reconciliation could discard the adopted data.
-            updatedAt: importedAt,
-          });
-          docRef.current = importedDoc;
-          setDoc(importedDoc);
-        }
-        if (result.entries.length) {
-          const importedEntries = [
-            ...entriesRef.current,
-            ...result.entries,
-          ];
-          entriesRef.current = importedEntries;
-          setEntries(importedEntries);
-        }
-        setLegacyImport(result.summary);
-        if (!hydrationCanContinue()) return;
-        await stamp({ status: "imported", summary: result.summary });
-      } catch {
-        // A legacy read must never break boot; the store stays as hydrated.
-      }
-    };
-    const readCacheAndDeletionLedger = () =>
-      Promise.all([
-        AsyncStorage.getItem(STORAGE_KEY),
-        AsyncStorage.getItem(DISCARDED_SERVER_ENTRY_IDS_KEY),
+
+    const stageCareHydration = async (): Promise<StagedCareHydration> => {
+      const [raw, discardedRaw] = await Promise.all([
+        AsyncStorage.getItem(CARE_PRIMARY_LOCAL_DATA_KEY),
+        AsyncStorage.getItem(CARE_PRESERVED_LOCAL_DATA_KEY),
       ]);
-    const finishHydration = async ([raw, discardedRaw]: [
-      string | null,
-      string | null,
-    ]) => {
-      if (!hydrationCanContinue()) return;
-      // Both reads finish before provider sync is enabled. Otherwise a
-      // refresh can briefly revive a row whose deletion ledger is still
-      // waiting on storage.
-      applyDiscardedRaw(discardedRaw);
-      if (applyRaw(raw)) await maybeImportLegacyState();
-      if (!hydrationCanContinue()) return;
+      if (!hydrationCanContinue()) {
+        throw new LocalDataResetInProgressError();
+      }
+
+      let warning: CareStorageWarning = null;
+      let discardedServerEntryIds: string[] = [];
+      try {
+        discardedServerEntryIds = normalizeDiscardedServerEntryIds(
+          discardedRaw ? JSON.parse(discardedRaw) : [],
+        );
+      } catch {
+        warning = "reset";
+        if (discardedRaw) {
+          await persistRecoveryEvidence(
+            `${CARE_PRESERVED_LOCAL_DATA_KEY}.recovery`,
+            discardedRaw,
+          );
+        }
+      }
+
+      let cachedDoc: CareDoc | null = null;
+      let cachedEntries: Entry[] | null = null;
+      let cachedServerVersion: number | null = null;
+      let futureDoc: object | null = null;
+      let futureRaw: string | null = null;
+      let primaryIsPristine = !raw;
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed?.doc && isFutureCareDocDataVersion(parsed.doc)) {
+            futureDoc = parsed.doc;
+            futureRaw = raw;
+            primaryIsPristine = false;
+          } else {
+            if (parsed?.doc) cachedDoc = mergeDoc(parsed.doc);
+            if (Array.isArray(parsed?.entries)) {
+              cachedEntries = recoverInterruptedCareEntryMutations(
+                parsed.entries.filter(
+                  (entry: unknown): entry is Entry =>
+                    !!entry && typeof (entry as Entry).id === "string",
+                ),
+              );
+            }
+            if (typeof parsed?.serverVersion === "number") {
+              cachedServerVersion = parsed.serverVersion;
+            }
+            const docUpdatedAt =
+              typeof parsed?.doc?.updatedAt === "string"
+                ? parsed.doc.updatedAt
+                : "";
+            primaryIsPristine =
+              (cachedEntries?.length ?? 0) === 0 &&
+              (!docUpdatedAt || docUpdatedAt === new Date(0).toISOString());
+          }
+        } catch {
+          warning = "reset";
+          primaryIsPristine = false;
+          await persistRecoveryEvidence(
+            `${CARE_PRIMARY_LOCAL_DATA_KEY}.recovery`,
+            raw,
+          );
+        }
+      }
+
+      let legacySummary: LegacyImportResult["summary"] | null = null;
+      if (primaryIsPristine) {
+        try {
+          const [flag, legacyRaw] = await Promise.all([
+            removableStorage.getItem(LEGACY_IMPORT_FLAG_KEY),
+            removableStorage.getItem(LEGACY_STATE_KEY),
+          ]);
+          if (!hydrationCanContinue()) {
+            throw new LocalDataResetInProgressError();
+          }
+          if (!flag && legacyRaw) {
+            const result = convertLegacyState(parseLegacyState(legacyRaw));
+            if (result) {
+              const previous = cachedDoc ?? docRef.current;
+              const importedDoc = Object.keys(result.docPatch).length
+                ? mergeDoc({
+                    ...previous,
+                    ...result.docPatch,
+                    profile: result.docPatch.profile
+                      ? {
+                          ...previous.profile,
+                          ...result.docPatch.profile,
+                          weight: {
+                            ...previous.profile.weight,
+                            ...result.docPatch.profile.weight,
+                          },
+                        }
+                      : previous.profile,
+                    dietProfile: result.docPatch.dietProfile
+                      ? {
+                          ...previous.dietProfile,
+                          ...result.docPatch.dietProfile,
+                        }
+                      : previous.dietProfile,
+                    updatedAt: new Date().toISOString(),
+                  })
+                : previous;
+              const importedEntries = [
+                ...(cachedEntries ?? entriesRef.current),
+                ...result.entries,
+              ];
+              const writeGeneration =
+                careWriteProtectionRef.current.capture();
+              await carePersistenceWriter.enqueue({
+                raw: JSON.stringify({
+                  doc: importedDoc,
+                  entries: importedEntries,
+                  serverVersion:
+                    cachedServerVersion ?? versionRef.current,
+                }),
+                writeGeneration,
+                eraseGeneration: hydrationEraseGeneration,
+              });
+              if (!hydrationCanContinue()) {
+                throw new LocalDataResetInProgressError();
+              }
+              cachedDoc = importedDoc;
+              cachedEntries = importedEntries;
+              legacySummary = result.summary;
+            }
+            const stampPayload = result
+              ? { status: "imported", summary: result.summary }
+              : { status: "nothing-to-import" };
+            await removableStorage.setItem(
+              LEGACY_IMPORT_FLAG_KEY,
+              JSON.stringify({
+                at: new Date().toISOString(),
+                ...stampPayload,
+              }),
+            );
+            if (!hydrationCanContinue()) {
+              throw new LocalDataResetInProgressError();
+            }
+          }
+        } catch (error) {
+          if (error instanceof LocalDataResetInProgressError) throw error;
+          // A legacy storage failure never blocks the primary cache. Because
+          // memory was only staged after the durable stamp, no partial import
+          // can leak into this attempt.
+        }
+      }
+
+      return {
+        cachedDoc,
+        cachedEntries,
+        cachedServerVersion,
+        discardedServerEntryIds,
+        futureDoc,
+        futureRaw,
+        legacySummary,
+        warning,
+      };
+    };
+
+    const applyStagedCareHydration = (staged: StagedCareHydration) => {
+      discardedServerEntryIdsRef.current = new Set(
+        normalizeDiscardedServerEntryIds([
+          ...staged.discardedServerEntryIds,
+          ...discardedServerEntryIdsRef.current,
+        ]),
+      );
+      if (staged.futureDoc) {
+        preserveFutureCareDoc(staged.futureDoc);
+        futureCareCacheRawRef.current = staged.futureRaw;
+      } else if (staged.cachedDoc) {
+        docRef.current = staged.cachedDoc;
+        setDoc(staged.cachedDoc);
+      }
+      if (staged.cachedEntries) {
+        entriesRef.current = staged.cachedEntries;
+        setEntries(staged.cachedEntries);
+      }
+      if (staged.cachedServerVersion !== null) {
+        versionRef.current = staged.cachedServerVersion;
+        setServerVersion(staged.cachedServerVersion);
+      }
+      if (staged.legacySummary) setLegacyImport(staged.legacySummary);
+      if (staged.warning) setCareStorageWarning(staged.warning);
       hydratedRef.current = true;
       setHydrated(true);
     };
-    readCacheAndDeletionLedger()
-      .then(finishHydration)
-      .catch(() => {
+
+    const hydrate = async (allowRetry: boolean) => {
+      if (!hydrationCanContinue() || !isWriteAdmissionOpen()) return;
+      try {
+        const stagedHydration = await stageCareHydration();
         if (!hydrationCanContinue()) return;
-        // The read itself failed (transient storage error). Retry once;
-        // if it still fails, stay un-hydrated so persistence is paused for
-        // the session - in-memory care still works, but we never clobber
-        // the stored data we couldn't read.
-        setTimeout(() => {
-          if (!hydrationCanContinue()) return;
-          readCacheAndDeletionLedger()
-            .then(finishHydration)
-            .catch(() => {
-              if (hydrationCanContinue()) {
-                setCareStorageWarning("read-failed");
-              }
-            });
-        }, 1500);
-      });
-  }, [preserveFutureCareDoc, setCareStorageWarning]);
+        applyStagedCareHydration(stagedHydration);
+      } catch (error) {
+        if (!hydrationCanContinue()) return;
+        if (error instanceof LocalDataResetInProgressError) return;
+        if (allowRetry) {
+          retryTimer = setTimeout(() => void hydrate(false), 1500);
+          return;
+        }
+        setCareStorageWarning("read-failed");
+      }
+    };
+    void hydrate(true);
+    return () => {
+      cancelled = true;
+      hydrationAttempt.cancel();
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+  }, [
+    isWriteAdmissionOpen,
+    operationSettledEpoch,
+    carePersistenceWriter,
+    preserveFutureCareDoc,
+    removableStorage,
+    setCareStorageWarning,
+  ]);
 
   // Persist the offline cache whenever synced state changes. A failing
   // device store is a data risk in a local-first app, so surface it instead
@@ -1137,10 +1239,28 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (
       !hydrated ||
+      !isWriteAdmissionOpen() ||
       careDocWritesBlocked() ||
       snapshotPersistencePausedRef.current
     ) {
       return;
+    }
+    if (suppressNextSettledSnapshotRef.current) {
+      const suppressed = suppressedPristineSnapshotRef.current;
+      if (suppressed) {
+        const decision = getCarePristineSnapshotPersistenceDecision({
+          current: { doc, entries, serverVersion },
+          pristine: suppressed,
+          operationSettledEpoch,
+          resetStartedAtEpoch: successfulResetStartedAtEpochRef.current,
+        });
+        if (decision === "wait") return;
+        suppressNextSettledSnapshotRef.current = false;
+        suppressedPristineSnapshotRef.current = null;
+        if (decision === "suppress") return;
+      } else {
+        suppressNextSettledSnapshotRef.current = false;
+      }
     }
     const writeGeneration = careWriteProtectionRef.current.capture();
     const eraseGeneration = eraseGenerationRef.current;
@@ -1186,6 +1306,8 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     entries,
     serverVersion,
     hydrated,
+    operationSettledEpoch,
+    isWriteAdmissionOpen,
     carePersistenceWriter,
     careDocWritesBlocked,
     careWriteCanContinue,
@@ -2066,6 +2188,134 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const syncOutbox = useMemo(() => deriveCareSyncOutbox(entries), [entries]);
 
+  const beginCoordinatedCareReset = useCallback(() => {
+    stagedCareResetTempIdsRef.current.clear();
+    stagedCareResetCleanupLedgerRef.current = [];
+    ownerWipeInProgressRef.current = true;
+    eraseGenerationRef.current += 1;
+    latestCareSnapshotRef.current += 1;
+    careWriteProtectionRef.current.invalidate();
+    entryUpdateQueue.cancelAll();
+  }, [entryUpdateQueue]);
+
+  const endCoordinatedCareReset = useCallback(
+    ({ committed }: { committed: boolean }) => {
+      if (
+        !committed &&
+        hasInterruptedCareEntryMutationsToRecover(entriesRef.current)
+      ) {
+        const recoveredEntries = recoverInterruptedCareEntryMutations(
+          entriesRef.current,
+        );
+        entriesRef.current = recoveredEntries;
+        setEntries(recoveredEntries);
+      }
+      stagedCareResetTempIdsRef.current.clear();
+      stagedCareResetCleanupLedgerRef.current = [];
+      ownerWipeInProgressRef.current = false;
+    },
+    [],
+  );
+
+  const persistCareResetCleanupIntent = useCallback(async () => {
+    const tempIdsNeedingRemoteCleanup = normalizeDiscardedServerEntryIds([
+      ...creatingTempEntries.current,
+      ...entriesRef.current
+        .filter(
+          (entry) =>
+            entry.id.startsWith("temp_") &&
+            (creatingTempEntries.current.has(entry.id) ||
+              entry.syncStatus === "pending" ||
+              entry.syncStatus === "failed"),
+        )
+        .map((entry) => entry.id),
+    ]);
+    const cleanupLedger = normalizeDiscardedServerEntryIds([
+      ...discardedServerEntryIdsRef.current,
+      ...tempIdsNeedingRemoteCleanup,
+    ]);
+
+    if (cleanupLedger.length > 0) {
+      await discardedServerEntryWriter.enqueue(cleanupLedger);
+    }
+    stagedCareResetCleanupLedgerRef.current = cleanupLedger;
+    stagedCareResetTempIdsRef.current = new Set(
+      tempIdsNeedingRemoteCleanup,
+    );
+  }, [discardedServerEntryWriter]);
+
+  const finalizeSuccessfulCareReset = useCallback(() => {
+    for (const tempId of stagedCareResetTempIdsRef.current) {
+      cancelledTempEntries.current.add(tempId);
+    }
+    discardedServerEntryIdsRef.current = new Set(
+      stagedCareResetCleanupLedgerRef.current,
+    );
+    stagedCareResetTempIdsRef.current.clear();
+    futureCareDocRef.current = null;
+    futureCareCacheRawRef.current = null;
+    careWriteProtectionRef.current.reset();
+    realIdByTemp.current.clear();
+    pendingPatch.current.clear();
+    creatingTempEntries.current.clear();
+    entryWriteGenerationRef.current.clear();
+    entryUpdateQueue.cancelAll();
+    syncingRef.current = false;
+
+    const defaultDoc = getDefaultDoc();
+    const emptyEntries: Entry[] = [];
+    docRef.current = defaultDoc;
+    entriesRef.current = emptyEntries;
+    versionRef.current = 0;
+    hydratedRef.current = true;
+    suppressNextSettledSnapshotRef.current = true;
+    successfulResetStartedAtEpochRef.current =
+      currentOperationSettledEpochRef.current;
+    suppressedPristineSnapshotRef.current = {
+      doc: defaultDoc,
+      entries: emptyEntries,
+      serverVersion: 0,
+    };
+
+    setDoc(defaultDoc);
+    setEntries(emptyEntries);
+    setServerVersion(0);
+    setHydrated(true);
+    setIsSyncing(false);
+    setStorageWarning(null);
+    setLegacyImport(null);
+  }, [entryUpdateQueue]);
+
+  const careLocalDataResetControllerRef =
+    useRef<CareLocalDataResetController | null>(null);
+  if (!careLocalDataResetControllerRef.current) {
+    careLocalDataResetControllerRef.current =
+      createCareLocalDataResetController({
+        canPrepare: () =>
+          hydratedRef.current && !legacyOwnerWipeInProgressRef.current,
+        drainPrimarySnapshots: () => carePersistenceWriter.drain(),
+        drainCleanupLedger: () => discardedServerEntryWriter.drain(),
+        beginCommit: beginCoordinatedCareReset,
+        endCommit: endCoordinatedCareReset,
+        invalidateAndDrainPrimarySnapshots: () =>
+          carePersistenceWriter.invalidateAndDrain(),
+        persistCleanupIntent: persistCareResetCleanupIntent,
+        removeItem: (key) => AsyncStorage.removeItem(key),
+        finalizeSuccessfulCommit: finalizeSuccessfulCareReset,
+      });
+  }
+  const careLocalDataResetController =
+    careLocalDataResetControllerRef.current;
+
+  useEffect(
+    () =>
+      attachRequiredParticipant(
+        "care",
+        careLocalDataResetController.participant,
+      ),
+    [attachRequiredParticipant, careLocalDataResetController],
+  );
+
   const performOwnerWipe = useCallback(async () => {
     // Stop accepting snapshots, settle the active write, preserve any opaque
     // remote-cleanup identifiers, and remove owner keys before installing the
@@ -2116,7 +2366,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         const keys = await AsyncStorage.getAllKeys();
         const owned = selectWoofWatcherKeysForOwnerWipe(
           keys,
-          DISCARDED_SERVER_ENTRY_IDS_KEY,
+          CARE_PRESERVED_LOCAL_DATA_KEY,
         );
         if (owned.length) {
           await AsyncStorage.multiRemove(owned);
@@ -2157,14 +2407,21 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     if (eraseAllLocalDataInFlightRef.current) {
       return eraseAllLocalDataInFlightRef.current;
     }
+    if (!isWriteAdmissionOpen()) {
+      return Promise.reject(
+        new Error("A coordinated local data reset is already in progress."),
+      );
+    }
+    legacyOwnerWipeInProgressRef.current = true;
     const wipe = performOwnerWipe().finally(() => {
+      legacyOwnerWipeInProgressRef.current = false;
       if (eraseAllLocalDataInFlightRef.current === wipe) {
         eraseAllLocalDataInFlightRef.current = null;
       }
     });
     eraseAllLocalDataInFlightRef.current = wipe;
     return wipe;
-  }, [performOwnerWipe]);
+  }, [isWriteAdmissionOpen, performOwnerWipe]);
 
   const careMutationsBlocked = careDocWritesBlocked();
   const value = useMemo<CareContextValue>(
