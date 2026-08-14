@@ -2485,6 +2485,13 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - CI: Dependency-complete `WoofWatcher Verify` run `30893971949`, job `91942353828`, passed implementation/docs commit `7cec621f`; checkout, pinned dependencies, JSON doctor, focused tests, typecheck plus CI-safe builds, post steps, and Complete job all passed.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
 
+## 2026-08-13 PWA profile-card identity
+
+- DONE: Both PWA entry points now render the prominent profile-card name through the shared canonical Dog Profile identity boundary.
+- VERIFIED LOCALLY: Red-first source coverage failed on raw `state.profile.name`, then passed with `My Dog` retaining Phoenix and renamed identity using the shared trimmed name.
+- BOUNDARY: This is local display-source proof only. It does not prove live browser rendering, screen-reader traversal, provider sync, native behavior, store review, or launch approval.
+- NEXT: Require dependency-complete branch CI, then capture browser/native profile-card and accessibility evidence when tooling is available.
+
 ## 2026-08-04 Avatar Studio Dog Profile identity
 
 - DONE: Avatar Studio Customize guidance now names the active Dog Profile instead of hardcoding Phoenix; trimmed renamed dogs are honored and blank/`My Dog` starter profiles intentionally retain Phoenix.

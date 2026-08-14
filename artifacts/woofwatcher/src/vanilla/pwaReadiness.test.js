@@ -32,6 +32,7 @@ import {
 
 const here = dirname(fileURLToPath(import.meta.url));
 const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
+const app = readFileSync(join(here, "app.js"), "utf8");
 const productViewModel = readFileSync(join(here, "woof-product-view-model.js"), "utf8");
 const core = readFileSync(join(here, "woof-core.js"), "utf8");
 
@@ -67,6 +68,14 @@ test("keeps Dog Profile identity canonical in the PWA Home five-second answer", 
   assert.equal(renamed.presenceLabel, "Mochi is with Emma");
   assert.match(renamed.room.detail, /whether Mochi ate all/);
   assert.doesNotMatch(JSON.stringify(renamed), /Phoenix|My Dog/);
+});
+
+test("keeps Dog Profile identity canonical in both PWA profile cards", () => {
+  for (const source of [app, appEntry]) {
+    assert.match(source, /const profileCopy = buildHomeIdentityCopy\(state, \{ avatar \}\)/);
+    assert.match(source, /<h2>\$\{escapeHtml\(profileCopy\.petName\)\}<\/h2>/);
+    assert.doesNotMatch(source, /<h2>\$\{escapeHtml\(state\.profile\.name\)\}<\/h2>/);
+  }
 });
 
 test("keeps Dog Profile identity canonical in Bile Watch guidance", () => {

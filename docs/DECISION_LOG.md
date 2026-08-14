@@ -972,6 +972,16 @@ Reason: Medication is safety-sensitive household care. Owners need one trusted s
 
 Owner: Codex.
 
+### 2026-08-13: PWA Profile Cards Use Shared Dog Identity
+
+Decision: Both vanilla PWA entry points derive the profile-card heading from `buildHomeIdentityCopy` instead of rendering stored profile identity directly.
+
+Reason: Restored placeholder data and whitespace-padded renames can reach display code even when normal saves are canonical. The prominent care-profile heading must follow the same Phoenix fallback and rename rules as Home.
+
+Consequences: Display identity is consistent without changing stored care data, provider behavior, health logic, or launch gates. Live browser and assistive-technology proof remain required.
+
+Owner: Codex.
+
 ### 2026-08-13: Household Pulse follows Dog Profile identity
 
 Decision: Resolve Dog Profile identity inside `getHouseholdPulse` before building household-visible summaries and fallback ownership copy.

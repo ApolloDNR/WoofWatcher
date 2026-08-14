@@ -5874,3 +5874,7 @@ Dependency-complete `WoofWatcher Verify` run `31713497155`, job `94492214748`, p
 The shared Household Pulse now canonicalizes Dog Profile identity before building routine-coverage summaries and its no-next-routine owner fallback. Red-first PWA coverage protects the Phoenix starter fallback and whitespace-padded renamed identity. This does not enable provider sync or prove browser/native household refresh, accessibility traversal, store readiness, or launch approval.
 
 Dependency-complete `WoofWatcher Verify` run `31744066020`, job `94594216641`, passed implementation/docs commit `b460a08f` end to end. Rerun after this proof-record commit before treating final-tip dependency proof as current.
+
+## 2026-08-13 PWA profile-card identity slice
+
+Both vanilla PWA entry points now route the care-profile heading through the shared Home identity builder. Red-first source coverage protects the Phoenix starter fallback, trimmed renamed identity, and removal of direct raw-name rendering. This does not prove live browser output, accessibility traversal, native behavior, provider sync, store readiness, or launch approval.

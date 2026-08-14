@@ -1,5 +1,6 @@
 import {
   buildCareRoomTransfer,
+  buildHomeIdentityCopy,
   buildImportReviewMessage,
   buildReportText,
   createEntry,
@@ -210,12 +211,13 @@ function render() {
 }
 
 function renderProfileCard(health, avatar) {
+  const profileCopy = buildHomeIdentityCopy(state, { avatar });
   return `
     <section class="panel profile-card">
       <div class="profile-heading">
         <div>
           <p class="micro">Care profile</p>
-          <h2>${escapeHtml(state.profile.name)}</h2>
+          <h2>${escapeHtml(profileCopy.petName)}</h2>
           <p>${escapeHtml(state.profile.breed)}</p>
         </div>
         <span class="status-chip ${health.status}">${escapeHtml(health.label)}</span>
