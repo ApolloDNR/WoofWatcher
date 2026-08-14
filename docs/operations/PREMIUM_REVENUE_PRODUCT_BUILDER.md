@@ -6,6 +6,8 @@ The shared PWA product view model now resolves Dog Profile identity once before 
 
 Local verification: vanilla PWA behavior passed `35/35`; root TypeScript passed; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. The broad partial-checkout run passed `826/828`, retaining only the established `careCareer`/`careSync` failures from unresolved `@workspace/care-domain`.
 
+Dependency-complete `WoofWatcher Verify` run `31827460847`, job `94854847564`, passed implementation/docs commit `957c6863` through pinned install, doctor, focused tests, typecheck, CI-safe builds, post steps, and Complete job.
+
 ## 2026-08-14 PWA caregiver invite identity slice
 
 Household Access now passes canonical Dog Profile identity into its local sitter, veterinarian, and trainer invite drafts. Placeholder identity remains Phoenix and whitespace-padded renamed identity is trimmed in recipient-facing privacy copy. The drafts remain unsent and do not create auth tokens or activate provider delivery; recipient, browser/native, accessibility, store, and Apollo approval proof remain gated.

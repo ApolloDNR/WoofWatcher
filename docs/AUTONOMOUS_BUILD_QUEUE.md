@@ -4,8 +4,9 @@
 
 - DONE: The shared PWA product view model now canonicalizes Dog Profile identity before building its nested profile, health, WoofGuide, reports, handoffs, notification, access, sync, and backend-draft contracts.
 - VERIFIED: Red-first coverage reproduced the durable `My Dog` profile leak, then passed for `My Dog` -> Phoenix and a whitespace-trimmed Mochi rename.
+- CI: `WoofWatcher Verify` run `31827460847`, job `94854847564`, passed implementation/docs commit `957c6863` end to end.
 - BOUNDARY: This is local source/test proof only. Live browser/native rendering, screen-reader traversal, provider delivery, store review, and Apollo approval remain gated.
-- NEXT: Run the strongest local suite and branch CI, then record proof at the final branch tip.
+- NEXT: Rerun branch CI after this proof-record commit; retain live browser/native and screen-reader review as external gates.
 
 ## 2026-08-14 PWA caregiver invite identity boundary
 
