@@ -2708,3 +2708,7 @@ Stop only for missing secrets, destructive data risk, app-store approval, legal/
 - NEXT: Require dependency-complete branch CI, then capture browser/native Household Pulse review when tooling is available; otherwise continue bounded shared display/accessibility identity auditing.
 - CI PROOF: Dependency-complete `WoofWatcher Verify` run `31744066020`, job `94594216641`, passed implementation/docs commit `b460a08f` through pinned install, JSON doctor, focused tests, typecheck, CI-safe builds, post steps, and completion.
 - NEXT: Rerun branch CI after this proof-record commit before treating final-tip dependency proof as current.
+## 2026-08-14 PWA report privacy identity
+
+- DONE: Canonical Dog Profile identity now reaches durable report privacy copy; `My Dog` remains Phoenix and padded renamed identity is trimmed.
+- OPEN: Real browser/native download, share/reopen, recipient review, provider storage, veterinary review, store, and Apollo evidence remain required.

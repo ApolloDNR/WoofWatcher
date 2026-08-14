@@ -1,5 +1,9 @@
 # Premium Revenue Product Builder
 
+## 2026-08-14 PWA report privacy identity slice
+
+Durable PWA report artifacts now use canonical Dog Profile identity in their privacy boundary as well as their content, filename, checksum, and audit summary. Placeholder identity remains Phoenix and whitespace-padded renamed identity is trimmed. Report generation remains local and owner-reviewed; recipient, browser/native share, provider, veterinary, store, and Apollo approval proof remain gated.
+
 ## 2026-08-14 PWA Alone Time identity slice
 
 The PWA Leaving Home workflow now builds its household-visible entry through a canonical Dog Profile identity boundary. Placeholder identity becomes Phoenix, renamed identity is trimmed, and owner notes keep the pending-return contract. Live browser/native return review, provider sync, accessibility, store review, and Apollo approval remain gated.

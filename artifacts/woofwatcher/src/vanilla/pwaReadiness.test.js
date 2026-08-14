@@ -117,9 +117,12 @@ test("keeps the Dog Profile identity canonical in durable PWA report artifacts",
   assert.match(placeholder.sourceText, /^Phoenix Care Report/);
   assert.equal(placeholder.filename, "woofwatcher-phoenix-report-2026-08-12.txt");
   assert.match(placeholder.auditEvent.summary, /Phoenix/);
+  assert.match(placeholder.privacy.boundary, /Phoenix care context/);
   assert.doesNotMatch(JSON.stringify(placeholder), /My Dog/);
   assert.match(renamed.sourceText, /^Mochi Care Report/);
   assert.equal(renamed.filename, "woofwatcher-mochi-report-2026-08-12.txt");
+  assert.match(renamed.privacy.boundary, /Mochi care context/);
+  assert.doesNotMatch(renamed.privacy.boundary, /Phoenix/);
 });
 
 test("keeps Dog Profile identity canonical in PWA notification guidance", () => {

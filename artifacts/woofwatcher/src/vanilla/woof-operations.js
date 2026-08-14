@@ -260,7 +260,7 @@ export function buildReportArtifact(input = {}, options = {}, now = new Date().t
     privacy: {
       includesRawState: false,
       containsPrivateCareContext: true,
-      boundary: "Report artifacts contain Phoenix care context. Share only with trusted caregivers or a veterinarian."
+      boundary: `Report artifacts contain ${petName} care context. Share only with trusted caregivers or a veterinarian.`
     },
     auditEvent: createAuditEvent(
       {

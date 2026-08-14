@@ -3524,3 +3524,7 @@ Reason: Local reminders are household-visible care guidance. A renamed dog must 
 Consequences: Notification copy resolves identity at the shared builder boundary. Hosted push, native delivery, provider setup, privacy/legal approval, store review, and Apollo sign-off remain gated.
 
 Owner: Codex.
+## 2026-08-14 - Durable report privacy copy follows Dog Profile identity
+
+- Decision: Resolve identity inside `buildReportArtifact` and use that canonical value in every owner/recipient-visible artifact field, including the privacy boundary.
+- Boundary: This does not prove file download, native sharing, recipient review, provider storage, veterinary acceptance, or launch approval.
