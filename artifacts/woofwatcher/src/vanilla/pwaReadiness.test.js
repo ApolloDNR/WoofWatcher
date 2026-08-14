@@ -25,6 +25,7 @@ import {
   buildImportReviewMessage,
   buildReportText,
   getAssistantContext,
+  getAvatarState,
   getBileWatch,
   getDefaultState,
   getHouseholdPulse,
@@ -37,6 +38,27 @@ const appEntry = readFileSync(join(here, "app-entry.js"), "utf8");
 const app = readFileSync(join(here, "app.js"), "utf8");
 const productViewModel = readFileSync(join(here, "woof-product-view-model.js"), "utf8");
 const core = readFileSync(join(here, "woof-core.js"), "utf8");
+
+test("keeps Dog Profile identity canonical in the PWA avatar next-moment fallback", () => {
+  const recentMeal = {
+    id: "meal_recent",
+    type: "meal",
+    title: "Breakfast",
+    occurredAt: "2026-08-14T11:30:00.000Z",
+    householdVisible: true,
+  };
+  const placeholder = getAvatarState(
+    { profile: { name: "My Dog" }, routines: [], entries: [recentMeal] },
+    "2026-08-14T12:00:00.000Z",
+  );
+  const renamed = getAvatarState(
+    { profile: { name: "  Mochi  " }, routines: [], entries: [recentMeal] },
+    "2026-08-14T12:00:00.000Z",
+  );
+
+  assert.equal(placeholder.suggestedAction, "Log Phoenix's next moment");
+  assert.equal(renamed.suggestedAction, "Log Mochi's next moment");
+});
 
 test("keeps Dog Profile identity canonical in the shared PWA product contract", () => {
   const placeholder = buildProductViewModel(

@@ -801,6 +801,7 @@ export function buildHomeIdentityCopy(state = {}, input = {}) {
 
 export function getAvatarState(state, now = new Date().toISOString()) {
   const normalized = normalizeState(state, now);
+  const petName = resolvePetName(normalized.profile?.name);
   const reminders = getReminderCenter(normalized, now);
   const plan = getTodayPlan(normalized, now);
   const health = getHealthWatch(normalized, now);
@@ -899,7 +900,7 @@ export function getAvatarState(state, now = new Date().toISOString()) {
     urgency: "steady",
     scene: "morning-yard",
     speech: "Let's make today amazing.",
-    suggestedAction: plan.nextItems[0] ? `${plan.nextItems[0].label} at ${plan.nextItems[0].time}` : "Log Phoenix's next moment",
+    suggestedAction: plan.nextItems[0] ? `${plan.nextItems[0].label} at ${plan.nextItems[0].time}` : `Log ${petName}'s next moment`,
     evidence: [plan.nextItems[0] ? `Next planned care: ${plan.nextItems[0].label}` : "No urgent care signals"]
   });
 }

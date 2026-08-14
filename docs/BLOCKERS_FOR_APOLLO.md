@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-14 PWA avatar next-moment identity boundary
+
+Source/tests clear the renamed-dog leak in the shared avatar's empty-plan recommendation. Live browser/native avatar rendering, VoiceOver/TalkBack review, provider/store proof, and Apollo approval remain open.
+
 ## 2026-08-14 PWA product-contract identity boundary
 
 Source/tests clear raw placeholder and padded renamed identity from the shared PWA product contract and its health/WoofGuide safety copy. Live browser/native rendering, VoiceOver/TalkBack review, provider/recipient proof, store review, and Apollo approval remain open.

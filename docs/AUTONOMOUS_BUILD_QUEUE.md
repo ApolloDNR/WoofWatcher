@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-08-14 PWA avatar next-moment identity boundary
+
+- DONE: The shared avatar state now resolves Dog Profile identity before formatting its empty-plan next-moment action.
+- VERIFIED: Red-first coverage reproduced `Log Phoenix's next moment` for renamed Mochi, then passed for `My Dog` -> Phoenix and the trimmed rename.
+- VERIFIED: Focused PWA behavior passed `34/34`; broad partial-checkout execution passed `827/829` with only the established `careCareer`/`careSync` unresolved workspace-link failures; PixelLab passed `ok=150 missing=0 invalid=0`; `git diff --check` passed. Local TypeScript retained the established missing `@tanstack/react-query` and `zod` dependency blockers.
+- BOUNDARY: Avatar assets and internal Phoenix route names are unchanged. Live browser/native rendering, screen-reader traversal, provider/store proof, and Apollo approval remain gated.
+- NEXT: Run dependency-complete branch CI after the implementation/docs commit; then record final-tip proof.
+
 ## 2026-08-14 PWA product-contract identity boundary
 
 - DONE: The shared PWA product view model now canonicalizes Dog Profile identity before building its nested profile, health, WoofGuide, reports, handoffs, notification, access, sync, and backend-draft contracts.

@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-08-14 PWA avatar next-moment identity slice
+
+The shared PWA avatar state now uses canonical Dog Profile identity in its empty-plan next-moment recommendation. Placeholder identity remains Phoenix and whitespace-padded renamed identity is trimmed. Red-first coverage reproduced the renamed-dog Phoenix leak and then passed. Live browser/native avatar rendering, accessibility, provider/store proof, and Apollo approval remain gated.
+
+Local verification: focused PWA behavior passed `34/34`; broad partial-checkout execution passed `827/829` with only the established `careCareer`/`careSync` unresolved `@workspace/care-domain` failures; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. Local TypeScript retained the established missing `@tanstack/react-query` and `zod` blockers.
+
 ## 2026-08-14 PWA product-contract identity slice
 
 The shared PWA product view model now resolves Dog Profile identity once before composing its nested profile, care, report, handoff, access, sync, and review-only backend contracts. Placeholder identity remains Phoenix; whitespace-padded renamed identity is trimmed; health and WoofGuide boundaries follow the same dog. Red-first coverage reproduced the `My Dog` leak and then passed. Live rendering, accessibility, provider, recipient, store, and Apollo proof remain gated.
