@@ -4,8 +4,9 @@
 
 - DONE: Household access now carries canonical Dog Profile identity into sitter, veterinarian, and trainer invite privacy copy.
 - VERIFIED: Red-first PWA coverage reproduced Phoenix recipient copy for renamed Mochi, then passed for `My Dog` -> Phoenix and the trimmed rename.
+- CI: `WoofWatcher Verify` run `31813101663`, job `94808211594`, passed implementation/docs commit `4ab600a7` end to end.
 - BOUNDARY: Invites remain local drafts; auth tokens, delivery, provider sync, recipient review, and launch approval remain gated.
-- NEXT: Run dependency-complete branch CI, then retain live recipient and screen-reader review as external gates.
+- NEXT: Rerun branch CI after this proof-record commit; retain live recipient and screen-reader review as external gates.
 
 ## 2026-08-14 PWA Alone Time identity boundary
 

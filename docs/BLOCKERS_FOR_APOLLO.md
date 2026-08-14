@@ -4,6 +4,8 @@
 
 Source/tests clear the renamed-dog identity leak in local sitter, veterinarian, and trainer invite privacy copy. Real account credentials, provider-backed delivery, recipient/browser/native review, accessibility traversal, store review, and Apollo approval remain open.
 
+Dependency-complete `WoofWatcher Verify` run `31813101663`, job `94808211594`, passed implementation/docs commit `4ab600a7` end to end.
+
 ## 2026-08-14 PWA Alone Time identity boundary
 
 Source/tests clear the durable placeholder/renamed-dog identity leak in local Leaving Home history. Live browser return-flow review, provider-backed household sync, native recipient proof, accessibility traversal, store review, and Apollo approval remain open.

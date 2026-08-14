@@ -3,6 +3,7 @@
 ## 2026-08-14 PWA caregiver invite identity
 
 - PASS (source/test): invite drafts and household privacy copy use Phoenix for placeholder identity and trimmed active identity for renamed dogs.
+- PASS (CI): `WoofWatcher Verify` run `31813101663`, job `94808211594`, passed dependency install, doctor, focused tests, typecheck, and CI-safe builds for `4ab600a7`.
 - OPEN: provider-backed invitations, auth tokens, recipient/browser/native review, accessibility traversal, store evidence, and Apollo approval.
 
 ## 2026-08-14 PWA Alone Time identity

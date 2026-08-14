@@ -4,7 +4,7 @@
 
 Household Access now passes canonical Dog Profile identity into its local sitter, veterinarian, and trainer invite drafts. Placeholder identity remains Phoenix and whitespace-padded renamed identity is trimmed in recipient-facing privacy copy. The drafts remain unsent and do not create auth tokens or activate provider delivery; recipient, browser/native, accessibility, store, and Apollo approval proof remain gated.
 
-Verification: red-first PWA coverage failed on renamed invite privacy copy and then passed `32/32` after implementation.
+Verification: red-first PWA coverage failed on renamed invite privacy copy and then passed after implementation; the full vanilla PWA suite passed `34/34`, PixelLab passed `ok=150 missing=0 invalid=0`, and `git diff --check` passed. Local root TypeScript retained the known partial-checkout missing `@tanstack/react-query` and `zod` blockers. Dependency-complete `WoofWatcher Verify` run `31813101663`, job `94808211594`, passed implementation/docs commit `4ab600a7` through pinned install, doctor, focused tests, typecheck, and CI-safe builds.
 
 ## 2026-08-14 PWA report privacy identity slice
 
