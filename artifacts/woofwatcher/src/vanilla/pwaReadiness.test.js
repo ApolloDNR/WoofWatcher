@@ -20,6 +20,7 @@ import {
 } from "./openai-care-helper.js";
 import {
   buildCareRoomTransfer,
+  buildLeavingHomeEntry,
   buildHomeIdentityCopy,
   buildImportReviewMessage,
   buildReportText,
@@ -412,6 +413,27 @@ test("keeps WoofGuide wired to owner-reviewed action routing", () => {
   assert.match(appEntry, /import \{ buildWoofGuideVetNoteDraft \} from "\.\/woof-operations\.js"/);
   assert.match(appEntry, /buildWoofGuideVetNoteDraft\(\s*state,/);
   assert.match(appEntry, /owner-reviewed/);
+});
+
+test("keeps Dog Profile identity canonical in PWA Alone Time history", () => {
+  const now = "2026-08-14T12:00:00.000Z";
+  const placeholder = buildLeavingHomeEntry({
+    profile: { name: "My Dog" },
+    caregiver: "Apollo",
+    note: "  Music is on.  ",
+    occurredAt: now,
+  });
+  const renamed = buildLeavingHomeEntry({
+    profile: { name: "  Mochi  " },
+    caregiver: "Apollo",
+    occurredAt: now,
+  });
+
+  assert.equal(placeholder.title, "Leaving Home");
+  assert.equal(placeholder.note, "Phoenix is home alone. Music is on.");
+  assert.doesNotMatch(JSON.stringify(placeholder), /My Dog/);
+  assert.equal(renamed.note, "Mochi is home alone. Return outcome pending.");
+  assert.doesNotMatch(JSON.stringify(renamed), /Phoenix|My Dog/);
 });
 
 test("keeps Dog Profile identity canonical in Household Pulse", () => {

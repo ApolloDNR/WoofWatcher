@@ -1,5 +1,12 @@
 # Autonomous Build Queue
 
+## 2026-08-14 PWA Alone Time identity boundary
+
+- DONE: Leaving Home now resolves Dog Profile identity before persisting its household-visible note, and empty return guidance uses the same canonical identity.
+- VERIFIED: Red-first PWA coverage failed on the missing shared builder, then passed for `My Dog` -> Phoenix and trimmed renamed-dog history.
+- BOUNDARY: Provider sync, live browser/native interaction, screen-reader traversal, store review, and Apollo approval remain unchanged.
+- NEXT: Run aggregate local verification and dependency-complete branch CI; retain live Household Pulse and recipient review as external gates.
+
 ## 2026-08-14 PWA Home identity boundary
 
 - DONE: The PWA shell and Home five-second answer now resolve Dog Profile identity for presence, room and meal guidance, hero identity, portrait accessibility text, and caregiver encouragement.

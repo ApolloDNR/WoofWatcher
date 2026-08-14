@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-08-14 PWA Alone Time identity
+
+- Automated: `My Dog` persists `Phoenix is home alone`; `  Mochi  ` persists trimmed Mochi identity with no Phoenix leak.
+- Automated: owner notes are trimmed and appended without changing Alone Time trust, visibility, or pending-return semantics.
+- Manual remaining: live browser Household Pulse, return outcome, screen-reader traversal, provider sync, native handoff, and Apollo approval.
+
 ## 2026-08-13 PWA cloud-sync plan identity
 
 - Automated: `My Dog` produces Phoenix in the local-state fingerprint and all

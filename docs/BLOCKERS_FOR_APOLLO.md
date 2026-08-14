@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-14 PWA Alone Time identity boundary
+
+Source/tests clear the durable placeholder/renamed-dog identity leak in local Leaving Home history. Live browser return-flow review, provider-backed household sync, native recipient proof, accessibility traversal, store review, and Apollo approval remain open.
+
 ## 2026-08-14 PWA Home identity proof boundary
 
 Source/tests prove canonical placeholder and renamed-dog copy in the PWA Home contract. They do not prove live browser rendering, native iOS/Android Home behavior, VoiceOver/TalkBack traversal, provider sync, store review, or Apollo launch approval; those evidence gates remain open.

@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-14 PWA Alone Time history follows Dog Profile
+
+Decision: Build Leaving Home entries through a shared boundary that resolves Dog Profile identity before creating the household-visible log. The timeline must never persist `My Dog` or substitute Phoenix for a renamed dog.
+
+Boundary: This preserves local-first Alone Time behavior only. It does not activate provider sync, external delivery, native evidence, store review, or launch approval.
+
 ## 2026-08-14: Resolve Dog Profile identity once for the PWA Home answer
 
 The PWA shell/Home renderer consumes a shared `buildHomeIdentityCopy` result for dog name, presence, and room guidance rather than reading raw profile text or hardcoding Phoenix. Internal Phoenix route and asset names stay unchanged. Native/provider/store proof remains a separate release gate.

@@ -1297,6 +1297,23 @@ export function getAssistantContext(state, question = "", now = new Date().toISO
   };
 }
 
+export function buildLeavingHomeEntry(input = {}) {
+  const petName = resolvePetName(input.profile?.name);
+  const note = cleanText(input.note);
+  return createEntry({
+    type: "alone",
+    title: "Leaving Home",
+    caregiver: cleanText(input.caregiver) || "Unassigned",
+    occurredAt: input.occurredAt,
+    trustState: "Confirmed",
+    visibility: "Household",
+    moodAfter: "Home alone",
+    note: note
+      ? `${petName} is home alone. ${note}`
+      : `${petName} is home alone. Return outcome pending.`,
+  });
+}
+
 function buildLocalAssistantAnswer({ petName, question, summary, healthWatch, bileWatch, todayPlan, reminders, handoff, latest }) {
   const asksVomiting = /vomit|throw|bile|yellow|nausea/i.test(question);
   const lines = [];

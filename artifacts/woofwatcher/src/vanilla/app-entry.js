@@ -1,5 +1,6 @@
 import {
   buildCareRoomTransfer,
+  buildLeavingHomeEntry,
   buildHomeIdentityCopy,
   buildImportReviewMessage,
   buildReportText,
@@ -670,7 +671,8 @@ function renderCaregiverOptionList() {
 
 function renderReturnHomeForm(activeAlone) {
   if (!activeAlone) {
-    return `<p class="quick-flow-empty">No active alone timer. Use Leaving Home when Phoenix is actually home alone.</p>`;
+    const petName = buildHomeIdentityCopy(state).petName;
+    return `<p class="quick-flow-empty">No active alone timer. Use Leaving Home when ${escapeHtml(petName)} is actually home alone.</p>`;
   }
   return `
     <form class="household-flow-form" data-form="return-home">
@@ -3595,15 +3597,11 @@ function startLeavingHome({ caregiver = "Unassigned", note = "" } = {}) {
   const active = getActiveAloneEntry();
   if (active) return active;
   const now = new Date().toISOString();
-  const entry = createEntry({
-    type: "alone",
-    title: "Leaving Home",
+  const entry = buildLeavingHomeEntry({
+    profile: state.profile,
     caregiver,
     occurredAt: now,
-    trustState: "Confirmed",
-    visibility: "Household",
-    moodAfter: "Home alone",
-    note: note ? `Phoenix is home alone. ${note}` : "Phoenix is home alone. Return outcome pending."
+    note,
   });
   saveState({ ...state, entries: [entry, ...(state.entries || [])] });
   return entry;

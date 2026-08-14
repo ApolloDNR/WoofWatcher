@@ -1,5 +1,9 @@
 # WoofWatcher Ultimate Release Plan
 
+## 2026-08-14 PWA Alone Time identity status
+
+The local-first PWA now preserves canonical Dog Profile identity in durable Leaving Home history and empty return guidance. This does not activate provider sync or clear live browser, native, accessibility, store, or Apollo gates.
+
 ## 2026-07-28 Story care-waypoint contrast status
 
 Source-level dark-mode hardening now keeps real-care markers visibly bounded on
