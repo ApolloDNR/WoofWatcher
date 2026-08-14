@@ -77,6 +77,7 @@ import {
   parseMobileQaSessionSnapshot,
   type MobileQaSessionProofManifest,
 } from "@/lib/mobileQaSession";
+import { createDevicePreferenceHydrationRetryScheduler } from "@/lib/devicePreferences";
 import { buildReleasePacket, buildReleasePacketShareText } from "@/lib/releasePacket";
 import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from "@/lib/storeSubmissionPacket";
 import { deriveSupportRunbookPlan } from "@/lib/supportRunbook";
@@ -425,7 +426,7 @@ function MoreScreenContent({}: Record<string, never>) {
   const providerSyncEnabled =
     consumerSurfacePolicy.providerSyncControls && isClerkEnabledForBuild;
   const { state, careMutationsBlocked, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
-  const { store } = useDevicePreferences();
+  const { store, operationSettledEpoch } = useDevicePreferences();
   const showCareReadOnly = () =>
     notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   const { profile, entries, routines, caregivers } = state;
@@ -685,6 +686,14 @@ function MoreScreenContent({}: Record<string, never>) {
     useState<MobileLaunchQaCapturePlan>(() => buildMobileLaunchQaCapturePlan(null));
   const [savedQaProofManifest, setSavedQaProofManifest] =
     useState<MobileQaSessionProofManifest | null>(null);
+  const qaProofHydrationRetryRef = useRef<ReturnType<
+    typeof createDevicePreferenceHydrationRetryScheduler
+  > | null>(null);
+  if (qaProofHydrationRetryRef.current === null) {
+    qaProofHydrationRetryRef.current =
+      createDevicePreferenceHydrationRetryScheduler();
+  }
+  const hydrationRetry = qaProofHydrationRetryRef.current;
   const [providerSetupOpen, setProviderSetupOpen] = useState(false);
   const [providerDraft, setProviderDraft] = useState<LaunchProviderProfile>(() =>
     normalizeLaunchProviderProfile(state.launchProviderProfile),
@@ -693,39 +702,48 @@ function MoreScreenContent({}: Record<string, never>) {
   useFocusEffect(
     React.useCallback(() => {
       let cancelled = false;
+      hydrationRetry.activate();
+      hydrationRetry.reset();
 
-      void store
-        .hydrate(MOBILE_QA_SESSION_STORAGE_KEY, {
-          isCancelled: () => cancelled,
-          apply: (raw) => {
-            const savedSession = parseMobileQaSessionSnapshot(raw);
-            setSavedNativeQaSummary(
-              deriveNativeQaSummaryFromMobileQaSession(savedSession),
-            );
-            setNativeQaCapturePlan(buildMobileLaunchQaCapturePlan(savedSession));
-            setSavedQaProofManifest(
-              savedSession
-                ? buildMobileQaSessionProofManifest(
-                    buildMobileQaSessionSnapshot(
-                      savedSession,
-                      savedSession.savedAtIso,
-                    ),
-                  )
-                : null,
-            );
-          },
-        })
-        .catch((error) => {
-          if (cancelled || error instanceof LocalDataResetInProgressError) return;
-          setSavedNativeQaSummary(null);
-          setNativeQaCapturePlan(buildMobileLaunchQaCapturePlan(null));
-          setSavedQaProofManifest(null);
-        });
+      function hydrateQaProof() {
+        void store
+          .hydrate(MOBILE_QA_SESSION_STORAGE_KEY, {
+            isCancelled: () => cancelled,
+            apply: (raw) => {
+              const savedSession = parseMobileQaSessionSnapshot(raw);
+              setSavedNativeQaSummary(
+                deriveNativeQaSummaryFromMobileQaSession(savedSession),
+              );
+              setNativeQaCapturePlan(buildMobileLaunchQaCapturePlan(savedSession));
+              setSavedQaProofManifest(
+                savedSession
+                  ? buildMobileQaSessionProofManifest(
+                      buildMobileQaSessionSnapshot(
+                        savedSession,
+                        savedSession.savedAtIso,
+                      ),
+                    )
+                  : null,
+              );
+            },
+          })
+          .then((result) => {
+            if (cancelled || result === "cancelled") return;
+            hydrationRetry.reset();
+          })
+          .catch((error) => {
+            if (cancelled || error instanceof LocalDataResetInProgressError) return;
+            hydrationRetry.request(hydrateQaProof);
+          });
+      }
+
+      hydrateQaProof();
 
       return () => {
         cancelled = true;
+        hydrationRetry.deactivate();
       };
-    }, [store]),
+    }, [hydrationRetry, operationSettledEpoch, store]),
   );
 
   const confirmSignOut = () => {

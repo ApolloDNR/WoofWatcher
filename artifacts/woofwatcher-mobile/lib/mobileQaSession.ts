@@ -28,6 +28,30 @@ export interface MobileQaSessionState extends MobileQaSessionInput {
   savedAtIso?: string;
 }
 
+export interface MobileQaSessionHydrationTicket {
+  readonly generation: number;
+  readonly editRevision: number;
+}
+
+export type MobileQaSessionHydrationApplyResult = "applied" | "stale";
+export type MobileQaSessionAutosaveDecision = "suppress-hydration" | "save";
+
+export interface MobileQaSessionPersistenceGate {
+  beginHydration(): Readonly<MobileQaSessionHydrationTicket>;
+  isHydrationCurrent(
+    ticket: Readonly<MobileQaSessionHydrationTicket>,
+  ): boolean;
+  markRealEdit(): void;
+  applyHydrationIfCurrent(
+    ticket: Readonly<MobileQaSessionHydrationTicket>,
+    state: MobileQaSessionState,
+    apply: (state: MobileQaSessionState) => void,
+  ): MobileQaSessionHydrationApplyResult;
+  consumeAutosaveDecision(
+    input: MobileQaSessionInput,
+  ): MobileQaSessionAutosaveDecision;
+}
+
 export interface MobileQaSessionProofSummary {
   totalReviews: number;
   passed: number;
@@ -81,6 +105,92 @@ function stableStringify(value: unknown): string {
     .filter((key) => record[key] !== undefined)
     .map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
     .join(",")}}`;
+}
+
+function copyEvidenceById(
+  source: Readonly<Record<string, readonly QaScreenshotEvidence[]>>,
+): Record<string, QaScreenshotEvidence[]> {
+  return Object.fromEntries(
+    Object.entries(source).map(([id, evidence]) => [
+      id,
+      evidence.map((item) => ({ ...item })),
+    ]),
+  );
+}
+
+function copyMobileQaSessionState(
+  state: MobileQaSessionState,
+): MobileQaSessionState {
+  return {
+    careTwinStatusById: { ...state.careTwinStatusById },
+    careTwinNotes: { ...state.careTwinNotes },
+    careTwinEvidenceById: copyEvidenceById(state.careTwinEvidenceById),
+    surfaceStatusById: { ...state.surfaceStatusById },
+    surfaceNotes: { ...state.surfaceNotes },
+    surfaceEvidenceById: copyEvidenceById(state.surfaceEvidenceById),
+    savedAtIso: state.savedAtIso,
+  };
+}
+
+function mobileQaSessionContentSignature(input: MobileQaSessionInput): string {
+  return stableStringify({
+    careTwinStatusById: input.careTwinStatusById,
+    careTwinNotes: input.careTwinNotes,
+    careTwinEvidenceById: input.careTwinEvidenceById,
+    surfaceStatusById: input.surfaceStatusById,
+    surfaceNotes: input.surfaceNotes,
+    surfaceEvidenceById: input.surfaceEvidenceById,
+  });
+}
+
+export function createEmptyMobileQaSessionState(): MobileQaSessionState {
+  return {
+    careTwinStatusById: {},
+    careTwinNotes: {},
+    careTwinEvidenceById: {},
+    surfaceStatusById: {},
+    surfaceNotes: {},
+    surfaceEvidenceById: {},
+  };
+}
+
+export function createMobileQaSessionPersistenceGate(): MobileQaSessionPersistenceGate {
+  let generation = 0;
+  let editRevision = 0;
+  let hydratedContentSignature: string | null = null;
+
+  const isHydrationCurrent = (
+    ticket: Readonly<MobileQaSessionHydrationTicket>,
+  ) =>
+    ticket.generation === generation &&
+    ticket.editRevision === editRevision;
+
+  return {
+    beginHydration() {
+      generation += 1;
+      return Object.freeze({ generation, editRevision });
+    },
+    isHydrationCurrent,
+    markRealEdit() {
+      editRevision += 1;
+      hydratedContentSignature = null;
+    },
+    applyHydrationIfCurrent(ticket, state, apply) {
+      if (!isHydrationCurrent(ticket)) return "stale";
+      const copiedState = copyMobileQaSessionState(state);
+      hydratedContentSignature = mobileQaSessionContentSignature(copiedState);
+      apply(copiedState);
+      return "applied";
+    },
+    consumeAutosaveDecision(input) {
+      const expectedSignature = hydratedContentSignature;
+      hydratedContentSignature = null;
+      return expectedSignature !== null &&
+        expectedSignature === mobileQaSessionContentSignature(input)
+        ? "suppress-hydration"
+        : "save";
+    },
+  };
 }
 
 function proofFingerprint(snapshot: MobileQaSessionSnapshot): string {

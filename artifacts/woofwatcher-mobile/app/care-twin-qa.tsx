@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -61,9 +61,12 @@ import {
   buildMobileQaSessionProofManifest,
   buildMobileQaSessionProofManifestShareText,
   buildMobileQaSessionSnapshot,
+  createEmptyMobileQaSessionState,
+  createMobileQaSessionPersistenceGate,
   MOBILE_QA_SESSION_STORAGE_KEY,
   parseMobileQaSessionSnapshot,
 } from "@/lib/mobileQaSession";
+import { createDevicePreferenceHydrationRetryScheduler } from "@/lib/devicePreferences";
 import {
   buildMobileLaunchQaCapturePlan,
   buildMobileLaunchQaCaptureShareText,
@@ -266,18 +269,60 @@ function CareTwinQaScreenBody() {
   const routeParams = useLocalSearchParams<{ qaSurface?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const { state } = useCare();
-  const { store } = useDevicePreferences();
+  const { store, operationSettledEpoch } = useDevicePreferences();
   const [selectedEvidencePlatform, setSelectedEvidencePlatform] = useState<QaScreenshotEvidencePlatform>(() =>
     qaScreenshotPlatformForRuntime(),
   );
-  const [qaStatusById, setQaStatusById] = useState<Record<string, CareTwinQaReviewStatus>>({});
-  const [qaNotes, setQaNotes] = useState<Record<string, string>>({});
-  const [qaEvidenceById, setQaEvidenceById] = useState<Record<string, QaScreenshotEvidence[]>>({});
-  const [surfaceStatusById, setSurfaceStatusById] = useState<Record<string, MobileReleaseQaReviewStatus>>({});
-  const [surfaceNotes, setSurfaceNotes] = useState<Record<string, string>>({});
-  const [surfaceEvidenceById, setSurfaceEvidenceById] = useState<Record<string, QaScreenshotEvidence[]>>({});
+  const [qaStatusById, setQaStatusByIdFromHydration] = useState<Record<string, CareTwinQaReviewStatus>>({});
+  const [qaNotes, setQaNotesFromHydration] = useState<Record<string, string>>({});
+  const [qaEvidenceById, setQaEvidenceByIdFromHydration] = useState<Record<string, QaScreenshotEvidence[]>>({});
+  const [surfaceStatusById, setSurfaceStatusByIdFromHydration] = useState<Record<string, MobileReleaseQaReviewStatus>>({});
+  const [surfaceNotes, setSurfaceNotesFromHydration] = useState<Record<string, string>>({});
+  const [surfaceEvidenceById, setSurfaceEvidenceByIdFromHydration] = useState<Record<string, QaScreenshotEvidence[]>>({});
   const [qaSessionLoaded, setQaSessionLoaded] = useState(false);
   const [qaSessionSavedAt, setQaSessionSavedAt] = useState<string | undefined>();
+  const qaSessionPersistenceGateRef = useRef<ReturnType<
+    typeof createMobileQaSessionPersistenceGate
+  > | null>(null);
+  if (qaSessionPersistenceGateRef.current === null) {
+    qaSessionPersistenceGateRef.current =
+      createMobileQaSessionPersistenceGate();
+  }
+  const qaSessionPersistenceGate = qaSessionPersistenceGateRef.current;
+  const qaSessionHydrationRetryRef = useRef<ReturnType<
+    typeof createDevicePreferenceHydrationRetryScheduler
+  > | null>(null);
+  if (qaSessionHydrationRetryRef.current === null) {
+    qaSessionHydrationRetryRef.current =
+      createDevicePreferenceHydrationRetryScheduler();
+  }
+  const hydrationRetry = qaSessionHydrationRetryRef.current;
+  const qaEditAdmissionRef = useRef(false);
+  const qaAutosavePendingRef = useRef(false);
+  const applyRealQaEdit = (apply: () => void) => {
+    if (!qaEditAdmissionRef.current) return;
+    qaAutosavePendingRef.current = true;
+    qaSessionPersistenceGate.markRealEdit();
+    apply();
+  };
+  const setQaStatusById: typeof setQaStatusByIdFromHydration = (next) => {
+    applyRealQaEdit(() => setQaStatusByIdFromHydration(next));
+  };
+  const setQaNotes: typeof setQaNotesFromHydration = (next) => {
+    applyRealQaEdit(() => setQaNotesFromHydration(next));
+  };
+  const setQaEvidenceById: typeof setQaEvidenceByIdFromHydration = (next) => {
+    applyRealQaEdit(() => setQaEvidenceByIdFromHydration(next));
+  };
+  const setSurfaceStatusById: typeof setSurfaceStatusByIdFromHydration = (next) => {
+    applyRealQaEdit(() => setSurfaceStatusByIdFromHydration(next));
+  };
+  const setSurfaceNotes: typeof setSurfaceNotesFromHydration = (next) => {
+    applyRealQaEdit(() => setSurfaceNotesFromHydration(next));
+  };
+  const setSurfaceEvidenceById: typeof setSurfaceEvidenceByIdFromHydration = (next) => {
+    applyRealQaEdit(() => setSurfaceEvidenceByIdFromHydration(next));
+  };
   const scenarios = useMemo(
     () => listCareTwinRuntimeQaScenarios().map(evaluateCareTwinRuntimeQaScenario),
     [],
@@ -591,48 +636,90 @@ function CareTwinQaScreenBody() {
 
   useEffect(() => {
     let cancelled = false;
-    void store
-      .hydrate(MOBILE_QA_SESSION_STORAGE_KEY, {
-        isCancelled: () => cancelled,
-        apply: (raw) => {
-          const savedSession = parseMobileQaSessionSnapshot(raw);
-          if (savedSession) {
-            setQaStatusById(savedSession.careTwinStatusById);
-            setQaNotes(savedSession.careTwinNotes);
-            setQaEvidenceById(savedSession.careTwinEvidenceById);
-            setSurfaceStatusById(savedSession.surfaceStatusById);
-            setSurfaceNotes(savedSession.surfaceNotes);
-            setSurfaceEvidenceById(savedSession.surfaceEvidenceById);
-            setQaSessionSavedAt(savedSession.savedAtIso);
+    hydrationRetry.activate();
+    hydrationRetry.reset();
+
+    function hydrateQaSession() {
+      const ticket = qaSessionPersistenceGate.beginHydration();
+      let appliedHydration = false;
+      void store
+        .hydrate(MOBILE_QA_SESSION_STORAGE_KEY, {
+          isCancelled: () => cancelled,
+          apply: (raw) => {
+            const savedSession =
+              parseMobileQaSessionSnapshot(raw) ??
+              createEmptyMobileQaSessionState();
+            appliedHydration =
+              qaSessionPersistenceGate.applyHydrationIfCurrent(
+                ticket,
+                savedSession,
+                (state) => {
+                  setQaStatusByIdFromHydration(state.careTwinStatusById);
+                  setQaNotesFromHydration(state.careTwinNotes);
+                  setQaEvidenceByIdFromHydration(state.careTwinEvidenceById);
+                  setSurfaceStatusByIdFromHydration(state.surfaceStatusById);
+                  setSurfaceNotesFromHydration(state.surfaceNotes);
+                  setSurfaceEvidenceByIdFromHydration(state.surfaceEvidenceById);
+                  setQaSessionSavedAt(state.savedAtIso);
+                },
+              ) === "applied";
+          },
+        })
+        .then((result) => {
+          if (cancelled || result === "cancelled") return;
+          if (!appliedHydration) {
+            hydrationRetry.request(hydrateQaSessionWhenAutosaveAdmitted);
+            return;
           }
-        },
-      })
-      .then((result) => {
-        if (!cancelled && result === "applied") setQaSessionLoaded(true);
-      })
-      .catch((error) => {
-        if (cancelled || error instanceof LocalDataResetInProgressError) return;
-        // An unrelated storage failure must not block the internal QA route.
-        setQaSessionLoaded(true);
-      });
+          hydrationRetry.reset();
+          qaEditAdmissionRef.current = true;
+          setQaSessionLoaded(true);
+        })
+        .catch((error) => {
+          if (cancelled || error instanceof LocalDataResetInProgressError) return;
+          if (!qaSessionPersistenceGate.isHydrationCurrent(ticket)) {
+            hydrationRetry.request(hydrateQaSessionWhenAutosaveAdmitted);
+            return;
+          }
+          qaEditAdmissionRef.current = false;
+          setQaSessionLoaded(false);
+          hydrationRetry.request(hydrateQaSessionWhenAutosaveAdmitted);
+        });
+    }
+
+    function hydrateQaSessionWhenAutosaveAdmitted() {
+      if (qaAutosavePendingRef.current) {
+        hydrationRetry.request(hydrateQaSessionWhenAutosaveAdmitted);
+        return;
+      }
+      hydrateQaSession();
+    }
+
+    hydrateQaSessionWhenAutosaveAdmitted();
 
     return () => {
       cancelled = true;
+      hydrationRetry.deactivate();
     };
-  }, [store]);
+  }, [hydrationRetry, operationSettledEpoch, qaSessionPersistenceGate, store]);
 
   useEffect(() => {
-    if (!qaSessionLoaded) return;
+    if (!qaSessionLoaded || !qaEditAdmissionRef.current) return;
     let cancelled = false;
 
-    const snapshot = buildMobileQaSessionSnapshot({
+    const qaSessionInput = {
       careTwinStatusById: qaStatusById,
       careTwinNotes: qaNotes,
       careTwinEvidenceById: qaEvidenceById,
       surfaceStatusById,
       surfaceNotes,
       surfaceEvidenceById,
-    });
+    };
+    const autosaveDecision =
+      qaSessionPersistenceGate.consumeAutosaveDecision(qaSessionInput);
+    if (autosaveDecision === "suppress-hydration") return;
+    const snapshot = buildMobileQaSessionSnapshot(qaSessionInput);
+    qaAutosavePendingRef.current = false;
     void store
       .save(MOBILE_QA_SESSION_STORAGE_KEY, JSON.stringify(snapshot))
       .then(() => {
@@ -644,7 +731,7 @@ function CareTwinQaScreenBody() {
     return () => {
       cancelled = true;
     };
-  }, [qaEvidenceById, qaNotes, qaSessionLoaded, qaStatusById, store, surfaceEvidenceById, surfaceNotes, surfaceStatusById]);
+  }, [qaEvidenceById, qaNotes, qaSessionLoaded, qaSessionPersistenceGate, qaStatusById, store, surfaceEvidenceById, surfaceNotes, surfaceStatusById]);
 
   const markScenario = (scenarioId: string, status: CareTwinQaReviewStatus) => {
     if (Platform.OS !== "web") {

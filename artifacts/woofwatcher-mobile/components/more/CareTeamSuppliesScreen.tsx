@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Modal,
   Platform,
@@ -90,6 +90,7 @@ import type { CareTeamSection } from "@/lib/moreSectionRouting";
 import { shareTextPayload } from "@/lib/shareText";
 import { relativeTime } from "@/lib/time";
 import { LocalDataResetInProgressError } from "@/lib/removableLocalDataStorage";
+import { createDevicePreferenceHydrationRetryScheduler } from "@/lib/devicePreferences";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -106,6 +107,86 @@ const CARE_TEAM_SECTIONS: readonly { key: CareTeamSection; label: string }[] = [
   { key: "care-team", label: "Care Team" },
   { key: "care-team-supplies", label: "Supplies & Travel" },
 ];
+
+function parseStoredObject(raw: string | null): Record<string, unknown> | null {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function storedSuppliesProjectionIsMissingOrCorrupt(raw: string | null): boolean {
+  const payload = parseStoredObject(raw);
+  if (!payload || payload.version !== 1 || !Array.isArray(payload.items)) {
+    return true;
+  }
+  const ids = new Set<string>();
+  const names = new Set<string>();
+  for (const candidate of payload.items) {
+    if (
+      candidate === null ||
+      typeof candidate !== "object" ||
+      Array.isArray(candidate)
+    ) {
+      return true;
+    }
+    const item = candidate as Record<string, unknown>;
+    const id = typeof item.id === "string" ? item.id.trim() : "";
+    const name = typeof item.name === "string" ? item.name.trim() : "";
+    const group = item.group;
+    const status = item.status;
+    const updatedAt = item.updatedAt;
+    if (!id || !name || (group !== "essentials" && group !== "travel")) {
+      return true;
+    }
+    if (
+      (group === "essentials" &&
+        status !== "plenty" &&
+        status !== "low" &&
+        status !== "out") ||
+      (group === "travel" && status !== "packed" && status !== "unpacked")
+    ) {
+      return true;
+    }
+    if (
+      updatedAt !== null &&
+      (typeof updatedAt !== "string" || !Number.isFinite(Date.parse(updatedAt)))
+    ) {
+      return true;
+    }
+    const nameKey = `${group}:${name.toLowerCase()}`;
+    if (ids.has(id) || names.has(nameKey)) return true;
+    ids.add(id);
+    names.add(nameKey);
+  }
+  return false;
+}
+
+function storedTravelBagProjectionIsMissingOrCorrupt(raw: string | null): boolean {
+  const payload = parseStoredObject(raw);
+  if (!payload || payload.version !== 1) return true;
+  if (
+    payload.phase !== "packing" &&
+    payload.phase !== "active" &&
+    payload.phase !== "complete"
+  ) {
+    return true;
+  }
+  for (const stamp of [payload.activatedAt, payload.completedAt]) {
+    if (
+      stamp !== null &&
+      (typeof stamp !== "string" || !Number.isFinite(Date.parse(stamp)))
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /** Mockup icon language for the starter items; custom items stay neutral. */
 const SUPPLY_ICONS: Record<string, PixelIconName> = {
@@ -480,7 +561,7 @@ export function CareTeamSuppliesScreen({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { state, careMutationsBlocked, refresh, updateCareDoc } = useCare();
-  const { store } = useDevicePreferences();
+  const { store, operationSettledEpoch } = useDevicePreferences();
   const { isSignedIn } = useWoofAuth();
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
   const queryClient = useQueryClient();
@@ -527,31 +608,111 @@ export function CareTeamSuppliesScreen({
   const [accessPassName, setAccessPassName] = useState("");
   const [accessPassKind, setAccessPassKind] =
     useState<AccessPassKind>("sitter");
+  const suppliesHydrationRetryRef = useRef<ReturnType<
+    typeof createDevicePreferenceHydrationRetryScheduler
+  > | null>(null);
+  if (suppliesHydrationRetryRef.current === null) {
+    suppliesHydrationRetryRef.current =
+      createDevicePreferenceHydrationRetryScheduler();
+  }
+  const hydrationRetry = suppliesHydrationRetryRef.current;
 
   useEffect(() => {
     let cancelled = false;
-    void store
-      .hydrate(PACK_SUPPLIES_KEY, {
-        isCancelled: () => cancelled,
-        apply: (raw) => setSupplies(parseSupplies(raw)),
-      })
-      .catch((error) => {
-        if (cancelled || error instanceof LocalDataResetInProgressError) return;
-        setSupplies(parseSupplies(null));
-      });
-    void store
-      .hydrate(TRAVEL_BAG_KEY, {
-        isCancelled: () => cancelled,
-        apply: (raw) => setTravelBag(parseTravelBag(raw)),
-      })
-      .catch((error) => {
-        if (cancelled || error instanceof LocalDataResetInProgressError) return;
-        setTravelBag(defaultTravelBag());
-      });
+    let suppliesHydrated = false;
+    let travelBagHydrated = false;
+    let suppliesNeedsRetry = false;
+    let travelBagNeedsRetry = false;
+    hydrationRetry.activate();
+    hydrationRetry.reset();
+
+    function clearSuppliesDrafts() {
+      setEditingSupplyId(null);
+      setEditSupplyName("");
+      setAddSupplyOpen(false);
+      setAddSupplyName("");
+      setAddSupplyGroup("essentials");
+    }
+
+    function clearTravelBagDrafts() {
+      setEditingBagLabel(false);
+      setBagLabelDraft("");
+    }
+
+    function resetRetryAfterBothHydrated() {
+      if (suppliesHydrated && travelBagHydrated) {
+        hydrationRetry.reset();
+      }
+    }
+
+    function retryFailedHydrations() {
+      if (suppliesNeedsRetry) {
+        suppliesNeedsRetry = false;
+        hydrateSupplies();
+      }
+      if (travelBagNeedsRetry) {
+        travelBagNeedsRetry = false;
+        hydrateTravelBag();
+      }
+    }
+
+    function hydrateSupplies() {
+      void store
+        .hydrate(PACK_SUPPLIES_KEY, {
+          isCancelled: () => cancelled,
+          apply: (raw) => {
+            const next = parseSupplies(raw);
+            setSupplies(next);
+            if (storedSuppliesProjectionIsMissingOrCorrupt(raw)) {
+              clearSuppliesDrafts();
+            }
+          },
+        })
+        .then((result) => {
+          if (cancelled || result === "cancelled") return;
+          suppliesHydrated = true;
+          suppliesNeedsRetry = false;
+          resetRetryAfterBothHydrated();
+        })
+        .catch((error) => {
+          if (cancelled || error instanceof LocalDataResetInProgressError) return;
+          suppliesNeedsRetry = true;
+          hydrationRetry.request(retryFailedHydrations);
+        });
+    }
+
+    function hydrateTravelBag() {
+      void store
+        .hydrate(TRAVEL_BAG_KEY, {
+          isCancelled: () => cancelled,
+          apply: (raw) => {
+            const next = parseTravelBag(raw);
+            setTravelBag(next);
+            if (storedTravelBagProjectionIsMissingOrCorrupt(raw)) {
+              clearTravelBagDrafts();
+            }
+          },
+        })
+        .then((result) => {
+          if (cancelled || result === "cancelled") return;
+          travelBagHydrated = true;
+          travelBagNeedsRetry = false;
+          resetRetryAfterBothHydrated();
+        })
+        .catch((error) => {
+          if (cancelled || error instanceof LocalDataResetInProgressError) return;
+          travelBagNeedsRetry = true;
+          hydrationRetry.request(retryFailedHydrations);
+        });
+    }
+
+    hydrateSupplies();
+    hydrateTravelBag();
     return () => {
       cancelled = true;
+      hydrationRetry.deactivate();
     };
-  }, [store]);
+  }, [hydrationRetry, operationSettledEpoch, store]);
 
   const household = me.data?.household;
   const members: HouseholdMemberSummary[] = me.data?.members ?? [];

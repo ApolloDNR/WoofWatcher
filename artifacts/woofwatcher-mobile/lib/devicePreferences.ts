@@ -48,6 +48,100 @@ export interface DevicePreferencesStoreOptions {
   runTrackedHydration?: TrackedLocalDataWork["run"];
 }
 
+export interface DevicePreferenceHydrationRetryScheduler {
+  request(run: () => void): void;
+  reset(): void;
+  activate(): void;
+  deactivate(): void;
+}
+
+const DEVICE_PREFERENCE_HYDRATION_RETRY_DELAYS_MS = Object.freeze([
+  250,
+  500,
+  1000,
+  2000,
+  4000,
+  8000,
+  16000,
+  30000,
+] as const);
+
+export function createDevicePreferenceHydrationRetryScheduler(options: {
+  schedule?: (run: () => void, delayMs: number) => unknown;
+  cancel?: (handle: unknown) => void;
+} = {}): DevicePreferenceHydrationRetryScheduler {
+  const schedule =
+    options.schedule ??
+    ((run: () => void, delayMs: number) => setTimeout(run, delayMs));
+  const cancel =
+    options.cancel ??
+    ((handle: unknown) => clearTimeout(handle as ReturnType<typeof setTimeout>));
+  let active = true;
+  let generation = 0;
+  let retryIndex = 0;
+  let nextRequestId = 0;
+  let pendingRequestId: number | null = null;
+  let pendingHandle: unknown;
+
+  const cancelPending = () => {
+    if (pendingRequestId === null) return;
+    const handle = pendingHandle;
+    pendingRequestId = null;
+    pendingHandle = undefined;
+    cancel(handle);
+  };
+
+  const restart = () => {
+    generation += 1;
+    cancelPending();
+    retryIndex = 0;
+  };
+
+  return {
+    request(run) {
+      if (!active || pendingRequestId !== null) return;
+      const requestGeneration = generation;
+      const requestId = ++nextRequestId;
+      const delayMs =
+        DEVICE_PREFERENCE_HYDRATION_RETRY_DELAYS_MS[
+          Math.min(
+            retryIndex,
+            DEVICE_PREFERENCE_HYDRATION_RETRY_DELAYS_MS.length - 1,
+          )
+        ];
+      retryIndex += 1;
+      pendingRequestId = requestId;
+      pendingHandle = undefined;
+      const handle = schedule(() => {
+        if (
+          !active ||
+          generation !== requestGeneration ||
+          pendingRequestId !== requestId
+        ) {
+          return;
+        }
+        pendingRequestId = null;
+        pendingHandle = undefined;
+        run();
+      }, delayMs);
+      if (pendingRequestId === requestId) pendingHandle = handle;
+    },
+    reset() {
+      restart();
+    },
+    activate() {
+      if (active) return;
+      active = true;
+      restart();
+    },
+    deactivate() {
+      if (!active) return;
+      active = false;
+      restart();
+    },
+  };
+}
+
 function assertDevicePreferenceKey(key: string): asserts key is DevicePreferenceKey {
   if (!(DEVICE_PREFERENCE_KEYS as readonly string[]).includes(key)) {
     throw new Error(`Unknown device preference key: ${key}`);

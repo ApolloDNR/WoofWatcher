@@ -65,10 +65,33 @@ test("keeps both accepted v1 stores and every inventory/travel action in the com
   assert.match(component, /useDevicePreferences/);
   assert.doesNotMatch(component, /\bAsyncStorage\b/);
   assert.match(component, /store\s*\.\s*hydrate\(PACK_SUPPLIES_KEY/);
-  assert.match(component, /setSupplies\(parseSupplies\(null\)\)/);
   assert.match(component, /store\s*\.\s*hydrate\(TRAVEL_BAG_KEY/);
-  assert.match(component, /setTravelBag\(defaultTravelBag\(\)\)/);
   assert.match(component, /LocalDataResetInProgressError/);
+  assert.match(component, /operationSettledEpoch/);
+  assert.match(component, /createDevicePreferenceHydrationRetryScheduler/);
+  assert.match(component, /hydrateSupplies\(\);\s*hydrateTravelBag\(\);/);
+  assert.match(component, /suppliesNeedsRetry/);
+  assert.match(component, /travelBagNeedsRetry/);
+  assert.match(
+    component,
+    /if \(suppliesHydrated && travelBagHydrated\)\s*\{\s*hydrationRetry\.reset\(\)/,
+  );
+  assert.doesNotMatch(
+    component,
+    /\.catch\(\(error\)\s*=>\s*\{[\s\S]{0,260}setSupplies\(parseSupplies\(null\)\)/,
+  );
+  assert.doesNotMatch(
+    component,
+    /\.catch\(\(error\)\s*=>\s*\{[\s\S]{0,260}setTravelBag\(defaultTravelBag\(\)\)/,
+  );
+  assert.match(component, /clearSuppliesDrafts\(\)/);
+  assert.match(component, /clearTravelBagDrafts\(\)/);
+  assert.match(component, /storedSuppliesProjectionIsMissingOrCorrupt/);
+  assert.match(component, /storedTravelBagProjectionIsMissingOrCorrupt/);
+  assert.doesNotMatch(
+    component,
+    /JSON\.stringify\(JSON\.parse\(raw\)\)\s*!==\s*normalizedRaw/,
+  );
 
   for (const action of [
     "commitSupplies",

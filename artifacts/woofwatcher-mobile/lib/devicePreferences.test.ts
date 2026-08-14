@@ -10,6 +10,7 @@ import {
   MOBILE_QA_SESSION_STORAGE_KEY,
   PACK_SUPPLIES_KEY,
   TRAVEL_BAG_KEY,
+  createDevicePreferenceHydrationRetryScheduler,
   createDevicePreferencesStore,
   type DevicePreferenceKey,
 } from "./devicePreferences.ts";
@@ -465,4 +466,114 @@ test("synchronous adapter throws become rejected store promises", async () => {
     });
     await assert.rejects(operation, (error) => error === syncFailure);
   }
+});
+
+test("preference hydration retries coalesce and follow the capped backoff sequence", () => {
+  const scheduled: Array<{ delayMs: number; run: () => void }> = [];
+  const scheduler = createDevicePreferenceHydrationRetryScheduler({
+    schedule(run, delayMs) {
+      scheduled.push({ delayMs, run });
+      return scheduled.length;
+    },
+    cancel() {},
+  });
+  let runs = 0;
+  const retry = () => {
+    runs += 1;
+    scheduler.request(retry);
+  };
+
+  scheduler.request(retry);
+  scheduler.request(() => assert.fail("a coalesced request must not replace the first callback"));
+  assert.deepEqual(scheduled.map((entry) => entry.delayMs), [250]);
+
+  for (let index = 0; index < 9; index += 1) {
+    scheduled[index].run();
+  }
+
+  assert.equal(runs, 9);
+  assert.deepEqual(
+    scheduled.map((entry) => entry.delayMs),
+    [250, 500, 1000, 2000, 4000, 8000, 16000, 30000, 30000, 30000],
+  );
+});
+
+test("preference hydration retry reset cancels stale work and restarts at 250 ms", () => {
+  const scheduled: Array<{ handle: number; delayMs: number; run: () => void }> = [];
+  const cancelled: number[] = [];
+  const scheduler = createDevicePreferenceHydrationRetryScheduler({
+    schedule(run, delayMs) {
+      const handle = scheduled.length + 1;
+      scheduled.push({ handle, delayMs, run });
+      return handle;
+    },
+    cancel(handle) {
+      cancelled.push(handle as number);
+    },
+  });
+  let runs = 0;
+
+  scheduler.request(() => {
+    scheduler.request(() => {
+      runs += 1;
+    });
+  });
+  scheduled[0].run();
+  const stale = scheduled[1];
+  assert.equal(stale.delayMs, 500);
+  scheduler.reset();
+  scheduler.request(() => {
+    runs += 1;
+  });
+  const replacement = scheduled[2];
+  stale.run();
+  scheduler.request(() => assert.fail("stale work must not clear the replacement timer"));
+
+  assert.deepEqual(cancelled, [stale.handle]);
+  assert.equal(runs, 0);
+  assert.deepEqual(scheduled.map((entry) => entry.delayMs), [250, 500, 250]);
+  replacement.run();
+  assert.equal(runs, 1);
+});
+
+test("preference hydration retry deactivation ignores stale callbacks until reactivated", () => {
+  const scheduled: Array<{ handle: number; delayMs: number; run: () => void }> = [];
+  const cancelled: number[] = [];
+  const scheduler = createDevicePreferenceHydrationRetryScheduler({
+    schedule(run, delayMs) {
+      const handle = scheduled.length + 1;
+      scheduled.push({ handle, delayMs, run });
+      return handle;
+    },
+    cancel(handle) {
+      cancelled.push(handle as number);
+    },
+  });
+  let runs = 0;
+
+  scheduler.request(() => {
+    scheduler.request(() => {
+      runs += 1;
+    });
+  });
+  scheduled[0].run();
+  const stale = scheduled[1];
+  assert.equal(stale.delayMs, 500);
+  scheduler.deactivate();
+  scheduler.request(() => assert.fail("inactive schedulers must ignore requests"));
+  assert.equal(runs, 0);
+  assert.equal(scheduled.length, 2);
+
+  scheduler.activate();
+  scheduler.activate();
+  scheduler.request(() => {
+    runs += 1;
+  });
+  const replacement = scheduled[2];
+  stale.run();
+  scheduler.request(() => assert.fail("stale work must not clear the reactivated timer"));
+  assert.deepEqual(cancelled, [stale.handle]);
+  assert.deepEqual(scheduled.map((entry) => entry.delayMs), [250, 500, 250]);
+  replacement.run();
+  assert.equal(runs, 1);
 });

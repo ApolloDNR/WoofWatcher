@@ -217,6 +217,82 @@ test("migrates Home, QA, More, and Supplies normal I/O to the shared store", () 
   assert.match(supplies, /LocalDataResetInProgressError/);
 });
 
+test("mounted preference projections follow reset epochs and bounded retry lifetimes", () => {
+  const home = readMobile("app", "(tabs)", "index.tsx");
+  const qa = readMobile("app", "care-twin-qa.tsx");
+  const more = readMobile("app", "(tabs)", "more.tsx");
+  const supplies = readMobile(
+    "components",
+    "more",
+    "CareTeamSuppliesScreen.tsx",
+  );
+
+  for (const [name, source] of [
+    ["Home", home],
+    ["QA", qa],
+    ["More", more],
+    ["Supplies", supplies],
+  ] as const) {
+    assert.match(source, /operationSettledEpoch/, `${name} ignores reset settlement`);
+    assert.match(
+      source,
+      /createDevicePreferenceHydrationRetryScheduler/,
+      `${name} lacks bounded hydration retry`,
+    );
+    assert.match(source, /hydrationRetry\.activate\(\)/, `${name} does not activate retry`);
+    assert.match(source, /hydrationRetry\.deactivate\(\)/, `${name} leaks retry after cleanup`);
+  }
+
+  assert.doesNotMatch(
+    home,
+    /\.catch\(\(error\)\s*=>\s*\{[\s\S]{0,260}setWelcomeDismissed\(false\)/,
+  );
+  assert.match(home, /hydrationRetry\.request\(hydrateWelcomePreference\)/);
+
+  assert.match(more, /useFocusEffect/);
+  assert.match(more, /hydrationRetry\.request\(hydrateQaProof\)/);
+  assert.doesNotMatch(
+    more,
+    /\.catch\(\(error\)\s*=>\s*\{[\s\S]{0,420}setSavedNativeQaSummary\(null\)/,
+  );
+
+  assert.match(qa, /createMobileQaSessionPersistenceGate/);
+  assert.match(qa, /createEmptyMobileQaSessionState/);
+  assert.match(qa, /applyHydrationIfCurrent/);
+  assert.match(qa, /consumeAutosaveDecision/);
+  assert.match(qa, /qaEditAdmissionRef\.current/);
+  assert.match(qa, /qaSessionPersistenceGate\.markRealEdit\(\)/);
+  assert.match(
+    qa,
+    /hydrationRetry\.request\(hydrateQaSessionWhenAutosaveAdmitted\)/,
+  );
+  for (const setter of [
+    "setQaStatusById",
+    "setQaNotes",
+    "setQaEvidenceById",
+    "setSurfaceStatusById",
+    "setSurfaceNotes",
+    "setSurfaceEvidenceById",
+  ]) {
+    assert.match(qa, new RegExp(`${setter}FromHydration`));
+    assert.match(qa, new RegExp(`const ${setter}[^=]*=`));
+  }
+
+  assert.match(supplies, /hydrateSupplies\(\);\s*hydrateTravelBag\(\);/);
+  assert.match(
+    supplies,
+    /if \(suppliesHydrated && travelBagHydrated\)\s*\{\s*hydrationRetry\.reset\(\)/,
+  );
+  assert.doesNotMatch(
+    supplies,
+    /\.catch\(\(error\)\s*=>\s*\{[\s\S]{0,260}setSupplies\(parseSupplies\(null\)\)/,
+  );
+  assert.doesNotMatch(
+    supplies,
+    /\.catch\(\(error\)\s*=>\s*\{[\s\S]{0,260}setTravelBag\(defaultTravelBag\(\)\)/,
+  );
+});
+
 test("preserves the legacy Privacy bypass until the later coordinator cutover", () => {
   const privacy = readMobile("components", "more", "PrivacyDataScreen.tsx");
 

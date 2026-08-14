@@ -117,7 +117,10 @@ import {
   canonicalPlansRoute,
 } from "@/lib/canonicalRouteBuilders";
 import { executePrimaryTabTaskPath } from "@/lib/primaryTabExperience";
-import { HOME_WELCOME_DISMISSED_KEY } from "@/lib/devicePreferences";
+import {
+  HOME_WELCOME_DISMISSED_KEY,
+  createDevicePreferenceHydrationRetryScheduler,
+} from "@/lib/devicePreferences";
 import { LocalDataResetInProgressError } from "@/lib/removableLocalDataStorage";
 
 const HOME_PROVIDER_SYNC_ENABLED =
@@ -543,25 +546,45 @@ export default function HomeScreen() {
   // the app - guest/preview mode stays fully usable behind the card.
   // `null` means the persisted flag has not hydrated yet, so the card never
   // flashes for someone who already dismissed it.
-  const { store } = useDevicePreferences();
+  const { store, operationSettledEpoch } = useDevicePreferences();
   const [welcomeDismissed, setWelcomeDismissed] = useState<boolean | null>(
     null,
   );
+  const welcomeHydrationRetryRef = useRef<ReturnType<
+    typeof createDevicePreferenceHydrationRetryScheduler
+  > | null>(null);
+  if (welcomeHydrationRetryRef.current === null) {
+    welcomeHydrationRetryRef.current =
+      createDevicePreferenceHydrationRetryScheduler();
+  }
+  const hydrationRetry = welcomeHydrationRetryRef.current;
   useEffect(() => {
     let cancelled = false;
-    void store
-      .hydrate(HOME_WELCOME_DISMISSED_KEY, {
-        isCancelled: () => cancelled,
-        apply: (raw) => setWelcomeDismissed(raw === "true"),
-      })
-      .catch((error) => {
-        if (cancelled || error instanceof LocalDataResetInProgressError) return;
-        setWelcomeDismissed(false);
-      });
+    hydrationRetry.activate();
+    hydrationRetry.reset();
+
+    function hydrateWelcomePreference() {
+      void store
+        .hydrate(HOME_WELCOME_DISMISSED_KEY, {
+          isCancelled: () => cancelled,
+          apply: (raw) => setWelcomeDismissed(raw === "true"),
+        })
+        .then((result) => {
+          if (cancelled || result === "cancelled") return;
+          hydrationRetry.reset();
+        })
+        .catch((error) => {
+          if (cancelled || error instanceof LocalDataResetInProgressError) return;
+          hydrationRetry.request(hydrateWelcomePreference);
+        });
+    }
+
+    hydrateWelcomePreference();
     return () => {
       cancelled = true;
+      hydrationRetry.deactivate();
     };
-  }, [store]);
+  }, [hydrationRetry, operationSettledEpoch, store]);
   const dismissWelcome = () => {
     setWelcomeDismissed(true);
     void store

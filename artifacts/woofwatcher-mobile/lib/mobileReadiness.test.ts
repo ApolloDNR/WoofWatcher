@@ -1501,6 +1501,51 @@ test("keeps Home welcome persistence on the reset-aware device store", () => {
   assert.match(home, /apply:\s*\(raw\)\s*=>\s*setWelcomeDismissed\(raw === "true"\)/);
   assert.match(home, /store\s*\.\s*save\(HOME_WELCOME_DISMISSED_KEY,\s*"true"\)/);
   assert.match(home, /LocalDataResetInProgressError/);
+  assert.match(home, /operationSettledEpoch/);
+  assert.match(home, /createDevicePreferenceHydrationRetryScheduler/);
+  assert.match(home, /hydrationRetry\.request\(hydrateWelcomePreference\)/);
+  assert.doesNotMatch(
+    home,
+    /\.catch\(\(error\)\s*=>\s*\{[\s\S]{0,260}setWelcomeDismissed\(false\)/,
+  );
+});
+
+test("keeps mobile QA hydration edit-aware and absent-key safe", () => {
+  const qa = readAppFile("care-twin-qa.tsx");
+
+  assert.match(qa, /operationSettledEpoch/);
+  assert.match(qa, /createMobileQaSessionPersistenceGate/);
+  assert.match(qa, /createEmptyMobileQaSessionState/);
+  assert.match(qa, /qaEditAdmissionRef\.current/);
+  assert.match(qa, /qaAutosavePendingRef = useRef\(false\)/);
+  assert.match(
+    qa,
+    /qaAutosavePendingRef\.current = true;\s*qaSessionPersistenceGate\.markRealEdit\(\);\s*apply\(\)/,
+  );
+  assert.match(qa, /qaSessionPersistenceGate\.markRealEdit\(\)/);
+  assert.match(qa, /qaSessionPersistenceGate\.applyHydrationIfCurrent/);
+  assert.match(
+    qa,
+    /qaSessionPersistenceGate\.consumeAutosaveDecision\(qaSessionInput\)/,
+  );
+  assert.match(qa, /if \(autosaveDecision === "suppress-hydration"\) return/);
+  assert.match(
+    qa,
+    /function hydrateQaSessionWhenAutosaveAdmitted\(\)\s*\{\s*if \(qaAutosavePendingRef\.current\)\s*\{\s*hydrationRetry\.request\(hydrateQaSessionWhenAutosaveAdmitted\);\s*return;\s*\}\s*hydrateQaSession\(\);\s*\}/,
+  );
+  assert.match(
+    qa,
+    /\.catch\(\(error\)\s*=>\s*\{[\s\S]{0,220}if \(!qaSessionPersistenceGate\.isHydrationCurrent\(ticket\)\)\s*\{\s*hydrationRetry\.request\(hydrateQaSessionWhenAutosaveAdmitted\);\s*return;\s*\}[\s\S]{0,180}qaEditAdmissionRef\.current = false/,
+  );
+  assert.match(
+    qa,
+    /if \(!appliedHydration\)\s*\{\s*hydrationRetry\.request\(hydrateQaSessionWhenAutosaveAdmitted\);\s*return;\s*\}\s*hydrationRetry\.reset\(\)/,
+  );
+  assert.match(qa, /setQaSessionLoaded\(false\)[\s\S]{0,180}hydrationRetry\.request\(hydrateQaSessionWhenAutosaveAdmitted\)/);
+  assert.match(
+    qa,
+    /qaAutosavePendingRef\.current = false;\s*void store\s*\.save\(MOBILE_QA_SESSION_STORAGE_KEY/,
+  );
 });
 
 test("wires Home to the living Phoenix room and avatar motion model", () => {
