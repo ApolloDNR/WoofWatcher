@@ -5,7 +5,9 @@
 - DONE: The PWA shell and Home five-second answer now resolve Dog Profile identity for presence, room and meal guidance, hero identity, portrait accessibility text, and caregiver encouragement.
 - VERIFIED: Red-first PWA coverage reproduced the missing shared builder; placeholder identity retains Phoenix and padded renamed identity is trimmed across visible Home copy.
 - BOUNDARY: Care derivation, provider sync, native rendering, screen-reader traversal, store review, and launch approval are unchanged.
-- NEXT: Run the strongest local verification and dependency-complete branch CI.
+- VERIFIED: Focused PWA behavior passed `30/30`; broad partial-checkout execution passed `823/825` with only the established `careCareer`/`careSync` unresolved workspace-link failures; PixelLab passed `ok=150 missing=0 invalid=0`; `git diff --check` passed. Local TypeScript retained the established missing `@tanstack/react-query` and `zod` dependency blockers.
+- CI: Dependency-complete `WoofWatcher Verify` run `31765985509`, job `94661905974`, passed implementation/docs commit `f881b5c7` end to end.
+- NEXT: Rerun branch CI after this proof-record commit. Live browser/native Home and screen-reader review remain separate gates.
 
 ## 2026-08-13 PWA Bile Watch identity boundary
 
