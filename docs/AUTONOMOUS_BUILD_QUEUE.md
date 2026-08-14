@@ -13,9 +13,11 @@
   execution passed `822/824` with only the established `careCareer`/
   `careSync` unresolved workspace-link failures; root TypeScript passed;
   PixelLab passed `ok=150 missing=0 invalid=0`; `git diff --check` passed.
-- NEXT: Run dependency-complete branch CI, then record final-tip proof.
-  Otherwise continue bounded identity/accessibility auditing without enabling
-  providers, diagnosis, payments, or launch.
+- CI: Dependency-complete `WoofWatcher Verify` run `31756363118`, job
+  `94632825772`, passed implementation/docs commit `7e9587b7` end to end.
+- NEXT: Rerun branch CI after this proof-record commit. Otherwise continue
+  bounded identity/accessibility auditing without enabling providers,
+  diagnosis, payments, or launch.
 
 ## 2026-08-13 PWA cloud-sync plan identity boundary
 

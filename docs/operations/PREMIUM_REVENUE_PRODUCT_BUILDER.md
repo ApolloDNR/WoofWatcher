@@ -16,6 +16,12 @@ kept source guards passing while remaining blocked on local pnpm 11.19.0
 versus pinned 10.24.0 plus missing Expo. Dependency-complete branch CI remains
 required before this tip is release proof.
 
+Dependency-complete `WoofWatcher Verify` run `31756363118`, job `94632825772`,
+passed implementation/docs commit `7e9587b7` with pinned install, JSON doctor,
+focused tests, typecheck plus CI-safe builds, post steps, and Complete job all
+green. Rerun after this proof-record commit before treating final-tip proof as
+current.
+
 ## 2026-08-13 PWA cloud-sync plan identity slice
 
 `buildCloudSyncPlan` now carries canonical Dog Profile identity through its

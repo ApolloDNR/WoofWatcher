@@ -4,6 +4,8 @@
 
 - Source blocker cleared: shared food-gap evidence and snack guidance now use
   canonical Dog Profile identity for Phoenix fallback and renamed dogs.
+- Dependency-complete proof: `WoofWatcher Verify` run `31756363118`, job
+  `94632825772`, passed implementation/docs commit `7e9587b7`.
 - Still blocked: live browser/native Bile Watch review, screen-reader and
   route-named device evidence, provider/store proof, and Apollo approval.
 - Health thresholds and veterinary boundaries are unchanged; this source
