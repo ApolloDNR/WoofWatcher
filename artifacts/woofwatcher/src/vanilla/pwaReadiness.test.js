@@ -20,6 +20,7 @@ import {
 } from "./openai-care-helper.js";
 import {
   buildCareRoomTransfer,
+  buildHouseholdPresenceStatus,
   buildLeavingHomeEntry,
   buildHomeIdentityCopy,
   buildImportReviewMessage,
@@ -112,6 +113,30 @@ test("keeps Dog Profile identity canonical in the PWA Home five-second answer", 
   assert.equal(renamed.petName, "Mochi");
   assert.equal(renamed.presenceLabel, "Mochi is with Emma");
   assert.match(renamed.room.detail, /whether Mochi ate all/);
+  assert.doesNotMatch(JSON.stringify(renamed), /Phoenix|My Dog/);
+});
+
+test("keeps Dog Profile identity canonical in Household Pulse presence status", () => {
+  const now = "2026-08-14T12:00:00.000Z";
+  const placeholder = buildHouseholdPresenceStatus(
+    {
+      profile: { name: "My Dog" },
+      entries: [{ caregiver: "Emma", occurredAt: "2026-08-14T11:00:00.000Z" }],
+    },
+    null,
+    now,
+  );
+  const renamed = buildHouseholdPresenceStatus(
+    { profile: { name: "  Mochi  " }, entries: [] },
+    { caregiver: "Noah", occurredAt: "2026-08-14T11:30:00.000Z" },
+    now,
+  );
+
+  assert.equal(placeholder.label, "Phoenix is with Emma");
+  assert.match(placeholder.detail, /Phoenix is supervised/);
+  assert.doesNotMatch(JSON.stringify(placeholder), /My Dog/);
+  assert.equal(renamed.label, "Mochi is home alone");
+  assert.equal(renamed.timerMinutes, 30);
   assert.doesNotMatch(JSON.stringify(renamed), /Phoenix|My Dog/);
 });
 

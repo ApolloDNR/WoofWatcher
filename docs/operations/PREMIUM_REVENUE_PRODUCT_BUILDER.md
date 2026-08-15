@@ -1,5 +1,11 @@
 # Premium Revenue Product Builder
 
+## 2026-08-14 PWA Household Pulse presence identity slice
+
+The live Household Pulse presence card now consumes a shared, deterministic status builder instead of reading raw Dog Profile text in the renderer. Placeholder identity becomes Phoenix, renamed identity is trimmed, and supervised/home-alone copy stays aligned with the source of truth. Provider sync, live browser/native interaction, accessibility proof, store evidence, and Apollo approval remain gated.
+
+Red-first coverage failed because the shared boundary did not exist, then focused PWA behavior passed `35/35` after implementation. Broad partial-checkout execution passed `828/830`, retaining only the established `careCareer`/`careSync` failures from unresolved `@workspace/care-domain`; root TypeScript passed; PixelLab passed `ok=150 missing=0 invalid=0`; and `git diff --check` passed. Dependency-complete branch CI follows before closeout.
+
 ## 2026-08-14 PWA avatar next-moment identity slice
 
 The shared PWA avatar state now uses canonical Dog Profile identity in its empty-plan next-moment recommendation. Placeholder identity remains Phoenix and whitespace-padded renamed identity is trimmed. Red-first coverage reproduced the renamed-dog Phoenix leak and then passed. Live browser/native avatar rendering, accessibility, provider/store proof, and Apollo approval remain gated.

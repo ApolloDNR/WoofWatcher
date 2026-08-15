@@ -1,5 +1,9 @@
 # Blockers For Apollo
 
+## 2026-08-14 PWA Household Pulse presence identity boundary
+
+Source/tests clear raw placeholder and padded renamed identity from supervised and home-alone Household Pulse status. Live browser/native interaction, provider-backed household refresh, VoiceOver/TalkBack review, store evidence, and Apollo approval remain open.
+
 ## 2026-08-14 PWA avatar next-moment identity boundary
 
 Source/tests clear the renamed-dog leak in the shared avatar's empty-plan recommendation. Live browser/native avatar rendering, VoiceOver/TalkBack review, provider/store proof, and Apollo approval remain open.

@@ -1,5 +1,13 @@
 # Autonomous Build Queue
 
+## 2026-08-14 PWA Household Pulse presence identity boundary
+
+- DONE: The live Household Pulse presence status now resolves Dog Profile identity before rendering supervised and home-alone states.
+- VERIFIED: Red-first coverage failed on the missing shared boundary, then focused PWA behavior passed `35/35` for `My Dog` -> Phoenix and a whitespace-trimmed Mochi rename, including deterministic alone-timer state.
+- VERIFIED: Broad partial-checkout execution passed `828/830`, retaining only the established `careCareer`/`careSync` failures from unresolved `@workspace/care-domain`; root TypeScript passed; PixelLab passed `ok=150 missing=0 invalid=0`; `git diff --check` passed.
+- BOUNDARY: This is local source/test proof. Provider-backed household refresh, live browser/native interaction, screen-reader traversal, store evidence, and Apollo approval remain gated.
+- NEXT: Run the strongest local checks and dependency-complete branch CI; retain real recipient/device review as an external gate.
+
 ## 2026-08-14 PWA avatar next-moment identity boundary
 
 - DONE: The shared avatar state now resolves Dog Profile identity before formatting its empty-plan next-moment action.

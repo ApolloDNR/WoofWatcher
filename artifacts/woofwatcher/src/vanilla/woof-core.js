@@ -799,6 +799,60 @@ export function buildHomeIdentityCopy(state = {}, input = {}) {
   return { petName, presenceLabel, room };
 }
 
+export function buildHouseholdPresenceStatus(state = {}, activeAlone = null, now = new Date().toISOString(), options = {}) {
+  const petName = resolvePetName(state.profile?.name);
+  const formatTimestamp = typeof options.formatTimestamp === "function"
+    ? options.formatTimestamp
+    : (value) => value || "Unknown";
+  const formatMinutes = typeof options.formatMinutes === "function"
+    ? options.formatMinutes
+    : (value) => `${value} min`;
+
+  if (!activeAlone) {
+    const human = (state.entries || []).find((entry) => entry.caregiver && entry.caregiver !== "Unassigned")?.caregiver
+      || cleanText(options.fallbackCaregiver)
+      || (state.caregivers || []).map((caregiver) => cleanText(caregiver.name || caregiver)).find(Boolean)
+      || "household";
+    return {
+      label: `${petName} is with ${human}`,
+      detail: `Manual household state says ${petName} is supervised. Use Leaving Home when the last human leaves.`,
+      statusLabel: "With human",
+      className: "steady",
+      supervisedBy: human,
+      sinceLabel: "Current",
+      timerLabel: "No active timer",
+      timerMinutes: 0,
+    };
+  }
+
+  const started = new Date(activeAlone.occurredAt);
+  const minutes = Math.max(0, Math.round((new Date(now).getTime() - started.getTime()) / 60000));
+  const stale = !Number.isFinite(minutes) || minutes > 720;
+  if (stale) {
+    return {
+      label: "Status unknown",
+      detail: "The last alone timer is stale or unclear. Confirm who is home before relying on this state.",
+      statusLabel: "Unknown",
+      className: "review",
+      supervisedBy: "Unknown",
+      sinceLabel: activeAlone.occurredAt ? formatTimestamp(activeAlone.occurredAt) : "Unknown",
+      timerLabel: "Needs review",
+      timerMinutes: null,
+    };
+  }
+
+  return {
+    label: `${petName} is home alone`,
+    detail: `Alone timer started by ${activeAlone.caregiver || "Unassigned"}. Log the return outcome when someone comes home.`,
+    statusLabel: "Home alone",
+    className: "watch",
+    supervisedBy: "Home alone",
+    sinceLabel: formatTimestamp(activeAlone.occurredAt),
+    timerLabel: formatMinutes(minutes),
+    timerMinutes: minutes,
+  };
+}
+
 export function getAvatarState(state, now = new Date().toISOString()) {
   const normalized = normalizeState(state, now);
   const petName = resolvePetName(normalized.profile?.name);

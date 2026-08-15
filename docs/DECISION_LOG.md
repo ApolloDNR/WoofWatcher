@@ -1,5 +1,11 @@
 # WoofWatcher Decision Log
 
+## 2026-08-14 PWA Household Pulse presence follows Dog Profile
+
+Decision: Move supervised, unknown, and home-alone presence presentation into a shared builder that resolves Dog Profile identity and accepts an explicit clock. Blank and `My Dog` retain Phoenix; renamed identity is trimmed.
+
+Boundary: This preserves the local manual-presence workflow. It does not enable provider sync, external actions, payments, diagnosis, native/store proof, or launch approval.
+
 ## 2026-08-14 PWA avatar fallback follows Dog Profile
 
 Decision: Resolve Dog Profile identity inside `getAvatarState` before building the empty-plan next-moment action. Blank and `My Dog` retain Phoenix; renamed identity is trimmed.

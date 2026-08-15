@@ -1,5 +1,11 @@
 # QA Test Plan
 
+## 2026-08-14 PWA Household Pulse presence identity
+
+- Automated: `My Dog` renders as Phoenix in supervised presence copy; `  Mochi  ` renders as trimmed Mochi in home-alone status with deterministic timer minutes.
+- Source wiring: the live Household Pulse renderer delegates status formatting to the shared builder.
+- Manual remaining: browser and native Leaving Home/return interaction, provider refresh, screen-reader traversal, recipient review, store evidence, and Apollo approval.
+
 ## 2026-08-14 PWA Alone Time identity
 
 - Automated: `My Dog` persists `Phoenix is home alone`; `  Mochi  ` persists trimmed Mochi identity with no Phoenix leak.

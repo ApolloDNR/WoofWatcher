@@ -1,6 +1,7 @@
 import {
   buildCareRoomTransfer,
   buildLeavingHomeEntry,
+  buildHouseholdPresenceStatus,
   buildHomeIdentityCopy,
   buildImportReviewMessage,
   buildReportText,
@@ -726,42 +727,11 @@ function getActiveAloneEntry() {
 }
 
 function getHouseholdPresenceStatus(activeAlone) {
-  const name = state.profile?.name || "Phoenix";
-  if (!activeAlone) {
-    const human = (state.entries || []).find((entry) => entry.caregiver && entry.caregiver !== "Unassigned")?.caregiver || getCaregiverOptions()[0] || "household";
-    return {
-      label: `${name} is with ${human}`,
-      detail: "Manual household state says Phoenix is supervised. Use Leaving Home when the last human leaves.",
-      statusLabel: "With human",
-      className: "steady",
-      supervisedBy: human,
-      sinceLabel: "Current",
-      timerLabel: "No active timer"
-    };
-  }
-  const started = new Date(activeAlone.occurredAt);
-  const minutes = Math.max(0, Math.round((Date.now() - started.getTime()) / 60000));
-  const stale = !Number.isFinite(minutes) || minutes > 720;
-  if (stale) {
-    return {
-      label: "Status unknown",
-      detail: "The last alone timer is stale or unclear. Confirm who is home before relying on this state.",
-      statusLabel: "Unknown",
-      className: "review",
-      supervisedBy: "Unknown",
-      sinceLabel: activeAlone.occurredAt ? formatDateTime(activeAlone.occurredAt) : "Unknown",
-      timerLabel: "Needs review"
-    };
-  }
-  return {
-    label: `${name} is home alone`,
-    detail: `Alone timer started by ${activeAlone.caregiver || "Unassigned"}. Log the return outcome when someone comes home.`,
-    statusLabel: "Home alone",
-    className: "watch",
-    supervisedBy: "Home alone",
-    sinceLabel: formatDateTime(activeAlone.occurredAt),
-    timerLabel: formatDuration(minutes)
-  };
+  return buildHouseholdPresenceStatus(state, activeAlone, new Date().toISOString(), {
+    formatTimestamp: formatDateTime,
+    formatMinutes: formatDuration,
+    fallbackCaregiver: getCaregiverOptions()[0],
+  });
 }
 
 function formatDuration(minutes) {
