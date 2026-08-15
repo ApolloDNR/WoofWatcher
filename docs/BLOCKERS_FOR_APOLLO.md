@@ -4,6 +4,8 @@
 
 Source/tests clear raw placeholder and padded renamed identity from supervised and home-alone Household Pulse status. Live browser/native interaction, provider-backed household refresh, VoiceOver/TalkBack review, store evidence, and Apollo approval remain open.
 
+Dependency-complete `WoofWatcher Verify` run `31853009867`, job `94932302203`, passed implementation/docs commit `4fdee59d` end to end.
+
 ## 2026-08-14 PWA avatar next-moment identity boundary
 
 Source/tests clear the renamed-dog leak in the shared avatar's empty-plan recommendation. Live browser/native avatar rendering, VoiceOver/TalkBack review, provider/store proof, and Apollo approval remain open.

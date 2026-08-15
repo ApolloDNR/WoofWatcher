@@ -4,7 +4,8 @@
 
 - PASS (source/test): supervised and home-alone presence status uses canonical Dog Profile identity and a deterministic clock boundary.
 - PASS (local): focused PWA behavior `35/35`, root TypeScript, PixelLab `150/150`, and diff hygiene; broad partial-checkout execution is `828/830` with only the established unresolved workspace-link failures.
-- OPEN: dependency-complete branch CI, live browser/native Household Pulse interaction, provider refresh, accessibility traversal, store evidence, and Apollo approval.
+- PASS (CI): `WoofWatcher Verify` run `31853009867`, job `94932302203`, passed dependency install, doctor, focused tests, typecheck, and CI-safe builds for `4fdee59d`.
+- OPEN: live browser/native Household Pulse interaction, provider refresh, accessibility traversal, store evidence, and Apollo approval.
 
 ## 2026-08-14 PWA caregiver invite identity
 
