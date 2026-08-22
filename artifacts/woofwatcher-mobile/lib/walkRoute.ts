@@ -352,14 +352,21 @@ export function projectRoutePoint(
 /* Platform-safe recorder (singleton)                                  */
 /* ------------------------------------------------------------------ */
 
-type StopWatchFn = () => void;
+export type WalkRouteStopWatch = () => void;
+
+export interface WalkRouteWatchAdapter {
+  start(
+    onPoint: (point: WalkRoutePoint) => void,
+    onDenied: () => void,
+  ): Promise<WalkRouteStopWatch | null>;
+}
 
 interface CaptureState {
   status: WalkRouteCaptureStatus;
   sessionKey: string | null;
   points: WalkRoutePoint[];
   generation: number;
-  stopWatch: StopWatchFn | null;
+  stopWatch: WalkRouteStopWatch | null;
 }
 
 const capture: CaptureState = {
@@ -372,6 +379,7 @@ const capture: CaptureState = {
 
 const listeners = new Set<() => void>();
 const pendingCaptureStarts = new Set<Promise<void>>();
+const retainedStopHandles = new Set<WalkRouteStopWatch>();
 let snapshot: WalkRouteCaptureSnapshot = {
   status: "idle",
   sessionKey: null,
@@ -407,12 +415,18 @@ function setStatus(status: WalkRouteCaptureStatus): void {
   publish();
 }
 
+function attemptStopWatch(stop: WalkRouteStopWatch): void {
+  retainedStopHandles.add(stop);
+  stop();
+  retainedStopHandles.delete(stop);
+}
+
 function stopActiveWatch(reportFailure = false): void {
   const stop = capture.stopWatch;
   capture.stopWatch = null;
   if (stop) {
     try {
-      stop();
+      attemptStopWatch(stop);
     } catch (error) {
       if (reportFailure) throw error;
       // Best-effort cancellation outside destructive reset cannot block UI.
@@ -470,7 +484,7 @@ function isReactNativeRuntime(): boolean {
 function startWebWatch(
   onPoint: (point: WalkRoutePoint) => void,
   onDenied: () => void,
-): StopWatchFn | null {
+): WalkRouteStopWatch | null {
   const geolocation = getWebGeolocation();
   if (!geolocation) return null;
   try {
@@ -503,7 +517,7 @@ function startWebWatch(
 async function startNativeWatch(
   onPoint: (point: WalkRoutePoint) => void,
   onDenied: () => void,
-): Promise<StopWatchFn | null> {
+): Promise<WalkRouteStopWatch | null> {
   if (!isReactNativeRuntime()) return null;
   try {
     const Location = await import("expo-location");
@@ -536,13 +550,26 @@ async function startNativeWatch(
   }
 }
 
+const defaultWalkRouteWatchAdapter: WalkRouteWatchAdapter = Object.freeze({
+  async start(
+    onPoint: (point: WalkRoutePoint) => void,
+    onDenied: () => void,
+  ) {
+    const webStop = startWebWatch(onPoint, onDenied);
+    return webStop ?? startNativeWatch(onPoint, onDenied);
+  },
+});
+
 /**
  * Start capturing a route for the given walk session key (its
  * walkStartedAt ISO string). Idempotent for the same key; a new key
  * discards the previous capture. Resolves once the platform watch is
  * established (or determined to be denied/unavailable).
  */
-async function establishWalkRouteCapture(sessionKey: string): Promise<void> {
+async function establishWalkRouteCapture(
+  sessionKey: string,
+  adapter: WalkRouteWatchAdapter,
+): Promise<void> {
   if (!sessionKey) return;
   if (
     capture.sessionKey === sessionKey &&
@@ -571,38 +598,37 @@ async function establishWalkRouteCapture(sessionKey: string): Promise<void> {
     setStatus("denied");
   };
 
-  const webStop = startWebWatch(onPoint, onDenied);
-  if (webStop) {
-    if (capture.generation !== generation) {
-      webStop();
-      return;
-    }
-    capture.stopWatch = webStop;
-    publish();
-    return;
-  }
-
-  const nativeStop = await startNativeWatch(onPoint, onDenied);
+  const stopWatch = await adapter.start(onPoint, onDenied);
   if (capture.generation !== generation) {
-    if (nativeStop) nativeStop();
+    if (stopWatch) attemptStopWatch(stopWatch);
     return;
   }
-  if (nativeStop) {
-    capture.stopWatch = nativeStop;
+  if (stopWatch) {
+    capture.stopWatch = stopWatch;
     publish();
     return;
   }
   if (capture.status !== "denied") setStatus("unavailable");
 }
 
-export function startWalkRouteCapture(sessionKey: string): Promise<void> {
-  const operation = establishWalkRouteCapture(sessionKey);
+export function startWalkRouteCaptureWithAdapter(
+  sessionKey: string,
+  adapter: WalkRouteWatchAdapter,
+): Promise<void> {
+  const operation = establishWalkRouteCapture(sessionKey, adapter);
   pendingCaptureStarts.add(operation);
   void operation.then(
     () => pendingCaptureStarts.delete(operation),
     () => pendingCaptureStarts.delete(operation),
   );
   return operation;
+}
+
+export function startWalkRouteCapture(sessionKey: string): Promise<void> {
+  return startWalkRouteCaptureWithAdapter(
+    sessionKey,
+    defaultWalkRouteWatchAdapter,
+  );
 }
 
 /**
@@ -642,24 +668,38 @@ export function cancelWalkRouteCapture(): void {
 
 /** Reset-owner barrier: revoke capture, stop the live watch, and drain starts. */
 export async function cancelAndDrainWalkRouteCapture(): Promise<void> {
-  let stopFailure: unknown;
-  try {
-    stopActiveWatch(true);
-  } catch (error) {
-    stopFailure = error;
-  }
+  const activeStop = capture.stopWatch;
+  capture.stopWatch = null;
   capture.generation += 1;
   capture.sessionKey = null;
   capture.points = [];
   setStatus("idle");
 
-  const startResults = await Promise.allSettled([...pendingCaptureStarts]);
-  const failures = startResults
-    .filter(
-      (result): result is PromiseRejectedResult => result.status === "rejected",
-    )
-    .map((result) => result.reason);
-  if (stopFailure !== undefined) failures.unshift(stopFailure);
+  const failures: unknown[] = [];
+  const attempted = new Set<WalkRouteStopWatch>();
+  const attempt = (stop: WalkRouteStopWatch) => {
+    attempted.add(stop);
+    try {
+      attemptStopWatch(stop);
+    } catch (error) {
+      failures.push(error);
+    }
+  };
+
+  if (activeStop) attempt(activeStop);
+  for (const stop of [...retainedStopHandles]) {
+    if (!attempted.has(stop)) attempt(stop);
+  }
+
+  while (pendingCaptureStarts.size > 0) {
+    const startResults = await Promise.allSettled([...pendingCaptureStarts]);
+    for (const result of startResults) {
+      if (result.status === "rejected") failures.push(result.reason);
+    }
+  }
+  if (retainedStopHandles.size > 0 && failures.length === 0) {
+    failures.push(new Error("A walk capture subscription remains active."));
+  }
   if (failures.length > 0) {
     throw new AggregateError(
       failures,
