@@ -30,6 +30,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { LocalDataResetAppShield } from "@/components/LocalDataResetAppShield";
 import { WalkRouteRecorderBridge } from "@/components/WalkRouteRecorder";
 import { WebDialogHost } from "@/components/WebDialogHost";
 import { CareProvider } from "@/context/CareContext";
@@ -376,7 +377,9 @@ export default function RootLayout() {
                         <GestureHandlerRootView style={{ flex: 1 }}>
                           <KeyboardProvider>
                             <StatusBar style={Platform.OS !== "web" && scheme === "dark" ? "light" : "dark"} />
-                            <AppFrame />
+                            <LocalDataResetAppShield>
+                              <AppFrame />
+                            </LocalDataResetAppShield>
                           </KeyboardProvider>
                         </GestureHandlerRootView>
                       </AvatarProvider>

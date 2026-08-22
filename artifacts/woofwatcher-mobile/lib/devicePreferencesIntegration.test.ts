@@ -315,12 +315,13 @@ test("mounted preference projections follow reset epochs and bounded retry lifet
   );
 });
 
-test("preserves the legacy Privacy bypass until the later coordinator cutover", () => {
+test("Privacy deletion uses the coordinated root and no preference/avatar bypass", () => {
   const privacy = readMobile("components", "more", "PrivacyDataScreen.tsx");
 
-  assert.match(
+  assert.match(privacy, /useLocalDataReset\(\)/);
+  assert.match(privacy, /runPrivacyLocalDataReset\(runReset\)/);
+  assert.doesNotMatch(
     privacy,
-    /Promise\.all\(\[eraseAllLocalData\(\), clearAvatarSet\(\), resetAvatarConfig\(\)\]\)/,
+    /Promise\.all|eraseAllLocalData|clearAvatarSet|resetAvatarConfig/,
   );
-  assert.doesNotMatch(privacy, /\brunReset\b/);
 });

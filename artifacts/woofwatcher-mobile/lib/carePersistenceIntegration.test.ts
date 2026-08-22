@@ -22,7 +22,7 @@ function sourceSlice(start: string, end: string): string {
   return careContextSource.slice(startIndex, endIndex);
 }
 
-test("CareContext serializes primary snapshots and keeps owner wipe barriers ordered", () => {
+test("CareContext serializes primary snapshots and exposes only coordinated reset barriers", () => {
   assert.match(
     careContextSource,
     /import \{[\s\S]*createCarePersistenceWriter[\s\S]*\} from "@\/lib\/carePersistenceWriter";/,
@@ -38,30 +38,16 @@ test("CareContext serializes primary snapshots and keeps owner wipe barriers ord
     )?.length,
     1,
   );
-  const wipe = sourceSlice(
-    "const performOwnerWipe = useCallback(async () => {",
-    "const eraseAllLocalData = useCallback(() => {",
+  const finalization = sourceSlice(
+    "const finalizeSuccessfulCareReset = useCallback(() => {",
+    "const careLocalDataResetControllerRef =",
   );
-  const paused = wipe.indexOf("snapshotPersistencePausedRef.current = true;");
-  const invalidated = wipe.indexOf(
-    "await carePersistenceWriter.invalidateAndDrain();",
-  );
-  const removed = wipe.indexOf("await AsyncStorage.multiRemove(owned);");
-  const nativeFilesRemoved = wipe.indexOf("FileSystem.deleteAsync(");
-  const defaultRefInstalled = wipe.indexOf("docRef.current = defaultDoc;");
-  const hydrationCompleted = wipe.indexOf("hydratedRef.current = true;");
-  const resumed = wipe.indexOf("snapshotPersistencePausedRef.current = false;");
-
-  assert.ok(paused >= 0);
-  assert.ok(paused < invalidated);
-  assert.ok(invalidated < removed);
-  assert.ok(removed < nativeFilesRemoved);
-  assert.ok(nativeFilesRemoved < defaultRefInstalled);
-  assert.ok(defaultRefInstalled < hydrationCompleted);
-  assert.ok(hydrationCompleted < resumed);
-  assert.match(
+  assert.match(finalization, /docRef\.current = defaultDoc/);
+  assert.match(finalization, /hydratedRef\.current = true/);
+  assert.match(finalization, /suppressNextSettledSnapshotRef\.current = true/);
+  assert.doesNotMatch(
     careContextSource,
-    /if \(eraseAllLocalDataInFlightRef\.current\) \{\s*return eraseAllLocalDataInFlightRef\.current;/,
+    /eraseAllLocalData|performOwnerWipe|AsyncStorage\.(?:getAllKeys|multiRemove)|FileSystem\.deleteAsync/,
   );
   const hydration = sourceSlice(
     "const hydrationEraseGeneration = eraseGenerationRef.current;",
@@ -104,7 +90,7 @@ test("CareContext supplies nondestructive prepare drains and commit-only invalid
 
   assert.match(
     hooks,
-    /canPrepare:\s*\(\) =>\s*hydratedRef\.current && !legacyOwnerWipeInProgressRef\.current/,
+    /canPrepare:\s*\(\) => hydratedRef\.current/,
   );
   assert.match(
     hooks,

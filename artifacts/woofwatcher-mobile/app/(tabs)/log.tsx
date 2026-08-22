@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -36,6 +35,7 @@ import {
   type StickyNoteColor,
 } from "@workspace/care-domain";
 import { useAppViewport } from "@/context/AppViewportContext";
+import { useAppFileSystem } from "@/context/AppFileSystemContext";
 import { useCare, Entry } from "@/context/CareContext";
 import { announce } from "@/lib/announce";
 import { isClerkConfigured } from "@/lib/auth";
@@ -104,7 +104,7 @@ import {
   parseStrictNonNegativeInteger,
   validateMealAmounts,
 } from "@/lib/inputValidation";
-import { persistPickedMedia } from "@/lib/durablePickedMedia";
+import { runMedicationProofPhotoPicker } from "@/lib/pickedMediaLocalDataActions";
 import { TrailMap } from "@/components/TrailMap";
 import { useWalkRouteCaptureStatus } from "@/components/WalkRouteRecorder";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
@@ -1003,6 +1003,7 @@ export default function LogScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const appFileSystem = useAppFileSystem();
   const {
     state,
     careMutationsBlocked,
@@ -2110,57 +2111,48 @@ export default function LogScreen() {
       return;
     }
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: false,
-        quality: 0.78,
-      });
-      if (result.canceled || !result.assets[0]?.uri) return;
+      const action = await runMedicationProofPhotoPicker({
+        appFileSystem,
+        pick: () =>
+          ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ["images"],
+            allowsEditing: false,
+            quality: 0.78,
+          }),
+        apply: ({ fileName, uri }) => {
+          const patch = buildCareLogPhotoProofAttachmentPatch(detailEntry, {
+            caregiver,
+            uri,
+            fileName,
+            source: "library",
+            now,
+          });
 
-      const asset = result.assets[0];
-      const fileName =
-        typeof (asset as { fileName?: unknown }).fileName === "string"
-          ? (asset as { fileName: string }).fileName
-          : "Medication proof photo";
-      const persistedPhoto = await persistPickedMedia({
-        platform: Platform.OS,
-        sourceUri: asset.uri,
-        fileName,
-        mimeType: asset.mimeType,
-        filePrefix: "medication-proof",
-        fileSystem: FileSystem,
+          if (!patch) {
+            notifyDialog("Proof not attached", "Choose a clear photo before saving proof to this log.");
+            return;
+          }
+
+          const updated = updateEntry(detailEntry.id, patch);
+          if (!careMutationWasAccepted(updated)) {
+            showCareReadOnly();
+            return;
+          }
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        },
       });
-      if (!persistedPhoto.ok) {
+      if (action.status === "not-saved") {
         notifyDialog(
           "Photo not saved",
           "WoofWatcher could not copy that photo into durable app storage. The medication log was not changed. Try again or choose another photo.",
         );
-        return;
       }
-      const patch = buildCareLogPhotoProofAttachmentPatch(detailEntry, {
-        caregiver,
-        uri: persistedPhoto.uri,
-        fileName,
-        source: "library",
-        now,
-      });
-
-      if (!patch) {
-        notifyDialog("Proof not attached", "Choose a clear photo before saving proof to this log.");
-        return;
-      }
-
-      const updated = updateEntry(detailEntry.id, patch);
-      if (!careMutationWasAccepted(updated)) {
-        showCareReadOnly();
-        return;
-      }
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch {
       notifyDialog("Photo unavailable", "Attach proof later. Medication logs stay pending until an owner confirms them.");
     }
   }, [
     caregiver,
+    appFileSystem,
     careMutationsBlocked,
     detailEntry,
     now,

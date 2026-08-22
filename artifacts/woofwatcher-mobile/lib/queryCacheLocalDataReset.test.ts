@@ -8,10 +8,30 @@ import {
   REQUIRED_LOCAL_DATA_PARTICIPANT_IDS,
 } from "./localDataResetRuntime.ts";
 import {
-  createQueryCacheLocalDataResetController,
+  createPersonalQueryObserverShield,
+  createQueryCacheLocalDataResetController as createRawQueryCacheLocalDataResetController,
   QueryCacheIdentityChangedError,
+  type QueryCacheLocalDataResetAdapters,
   type QueryCacheResetIdentityState,
 } from "./queryCacheLocalDataReset.ts";
+
+function createQueryCacheLocalDataResetController(
+  adapters: Omit<
+    QueryCacheLocalDataResetAdapters,
+    "waitUntilPersonalQueryConsumersUnmounted"
+  > &
+    Partial<
+      Pick<
+        QueryCacheLocalDataResetAdapters,
+        "waitUntilPersonalQueryConsumersUnmounted"
+      >
+    >,
+) {
+  return createRawQueryCacheLocalDataResetController({
+    waitUntilPersonalQueryConsumersUnmounted: async () => {},
+    ...adapters,
+  });
+}
 
 function deferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
@@ -74,12 +94,54 @@ test("captures a frozen loaded identity and normalizes undefined IDs to null", (
   assert.deepEqual(captured, { userId: null, sessionId: null });
 });
 
+test("personal query observer shield is one-host, fail-closed, and cycle-safe", async () => {
+  const shield = createPersonalQueryObserverShield();
+  await assert.rejects(shield.requestAndWait(), /no attached host/i);
+
+  const detach = shield.attachHost();
+  assert.throws(() => shield.attachHost(), /already has a host/i);
+  let firstSettled = false;
+  const first = shield.requestAndWait().then(() => {
+    firstSettled = true;
+  });
+  await Promise.resolve();
+  assert.equal(firstSettled, false);
+  assert.equal(shield.isRequested(), true);
+  shield.confirmPersonalObserversHidden();
+  await first;
+
+  await shield.requestAndWait();
+  shield.release();
+  assert.equal(shield.isRequested(), false);
+  let secondSettled = false;
+  const second = shield.requestAndWait().then(() => {
+    secondSettled = true;
+  });
+  await Promise.resolve();
+  assert.equal(secondSettled, false);
+  shield.confirmPersonalObserversHidden();
+  await second;
+  detach();
+});
+
+test("personal query observer shield rejects pending work when its host detaches", async () => {
+  const shield = createPersonalQueryObserverShield();
+  const detach = shield.attachHost();
+  const waiting = shield.requestAndWait();
+  detach();
+  await assert.rejects(waiting, /host detached/i);
+});
+
 test("prepare awaits cancellation without deleting and commit clears exactly once afterward", async () => {
   const cancellation = deferred<void>();
   let clearCalls = 0;
   let cancelCalls = 0;
   const controller = createQueryCacheLocalDataResetController({
-    getIdentity: () => ({ isLoaded: true, userId: "user-1", sessionId: "session-1" }),
+    getIdentity: () => ({
+      isLoaded: true,
+      userId: "user-1",
+      sessionId: "session-1",
+    }),
     cancelQueries: () => {
       cancelCalls += 1;
       return cancellation.promise;
@@ -122,6 +184,7 @@ test("identity change during cancellation rejects preparation and permits a fres
   });
 
   const first = controller.participant.prepare();
+  while (cancelCalls === 0) await Promise.resolve();
   identity = { isLoaded: true, userId: "user-1", sessionId: "session-2" };
   cancellation.resolve();
   await assert.rejects(first, QueryCacheIdentityChangedError);
@@ -130,7 +193,7 @@ test("identity change during cancellation rejects preparation and permits a fres
 
   await controller.participant.prepare();
   await controller.participant.commit();
-  assert.equal(cancelCalls, 2);
+  assert.equal(cancelCalls, 3);
   assert.equal(clearCalls, 1);
 });
 
@@ -138,7 +201,10 @@ test("identity change after prepare rejects only query-cache commit and never cl
   const harness = controllerHarness();
   const peerGate = deferred<void>();
   const coordinator = createLocalDataResetCoordinator();
-  coordinator.register({ id: "query-cache", ...harness.controller.participant });
+  coordinator.register({
+    id: "query-cache",
+    ...harness.controller.participant,
+  });
   coordinator.register({
     id: "zz-peer",
     prepare: () => peerGate.promise,
@@ -146,8 +212,13 @@ test("identity change after prepare rejects only query-cache commit and never cl
   });
 
   const reset = coordinator.run();
-  await Promise.resolve();
-  harness.setIdentity({ isLoaded: true, userId: "user-2", sessionId: "session-2" });
+  while (harness.cancelCalls === 0) await Promise.resolve();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  harness.setIdentity({
+    isLoaded: true,
+    userId: "user-2",
+    sessionId: "session-2",
+  });
   peerGate.resolve();
 
   assert.deepEqual(await reset, {
@@ -161,7 +232,10 @@ test("identity change after prepare rejects only query-cache commit and never cl
 test("unloaded auth and cancellation failures reject nondestructively and retry", async () => {
   const unloaded = controllerHarness({ isLoaded: false });
   assert.equal(unloaded.controller.captureIdentity(), null);
-  await assert.rejects(unloaded.controller.participant.prepare(), /loaded auth identity/i);
+  await assert.rejects(
+    unloaded.controller.participant.prepare(),
+    /loaded auth identity/i,
+  );
   assert.equal(unloaded.cancelCalls, 0);
   assert.equal(unloaded.clearCalls, 0);
 
@@ -171,13 +245,20 @@ test("unloaded auth and cancellation failures reject nondestructively and retry"
     cancelQueries: () => {
       attempt += 1;
       if (attempt === 1) throw new Error("cancel sync failure");
-      if (attempt === 2) return Promise.reject(new Error("cancel async failure"));
+      if (attempt === 2)
+        return Promise.reject(new Error("cancel async failure"));
       return Promise.resolve();
     },
     clearQueryAndMutationCaches: () => {},
   });
-  await assert.rejects(cancellationFailure.participant.prepare(), /cancel sync failure/);
-  await assert.rejects(cancellationFailure.participant.prepare(), /cancel async failure/);
+  await assert.rejects(
+    cancellationFailure.participant.prepare(),
+    /cancel sync failure/,
+  );
+  await assert.rejects(
+    cancellationFailure.participant.prepare(),
+    /cancel async failure/,
+  );
   await cancellationFailure.participant.prepare();
   await cancellationFailure.participant.commit();
 });
@@ -188,7 +269,11 @@ test("concurrent and cancellation-reentrant preparation starts one cancellation 
   let cancelCalls = 0;
   let controller!: ReturnType<typeof createQueryCacheLocalDataResetController>;
   controller = createQueryCacheLocalDataResetController({
-    getIdentity: () => ({ isLoaded: true, userId: "user-1", sessionId: "session-1" }),
+    getIdentity: () => ({
+      isLoaded: true,
+      userId: "user-1",
+      sessionId: "session-1",
+    }),
     cancelQueries: () => {
       cancelCalls += 1;
       reentrantCalls.push(controller.participant.prepare());
@@ -208,6 +293,8 @@ test("concurrent and cancellation-reentrant preparation starts one cancellation 
   cancellation.resolve();
   await first;
   await controller.participant.commit();
+  await assert.rejects(reentrantCalls[2]!, /in progress/i);
+  await assert.rejects(reentrantCalls[3]!, /in progress/i);
 });
 
 test("commit misuse, concurrent calls, clear failure, and true reentry start no extra clears", async () => {
@@ -216,7 +303,11 @@ test("commit misuse, concurrent calls, clear failure, and true reentry start no 
   const reentrantPrepares: Promise<void>[] = [];
   let controller!: ReturnType<typeof createQueryCacheLocalDataResetController>;
   controller = createQueryCacheLocalDataResetController({
-    getIdentity: () => ({ isLoaded: true, userId: "user-1", sessionId: "session-1" }),
+    getIdentity: () => ({
+      isLoaded: true,
+      userId: "user-1",
+      sessionId: "session-1",
+    }),
     cancelQueries: async () => {},
     clearQueryAndMutationCaches: () => {
       clearCalls += 1;
@@ -248,8 +339,13 @@ test("a peer preparation failure retains real cached data and invokes no query-c
   const queryClient = new QueryClient();
   queryClient.setQueryData(["me"], { displayName: "Apollo" });
   const controller = createQueryCacheLocalDataResetController({
-    getIdentity: () => ({ isLoaded: true, userId: "user-1", sessionId: "session-1" }),
-    cancelQueries: () => queryClient.cancelQueries(undefined, { revert: true, silent: true }),
+    getIdentity: () => ({
+      isLoaded: true,
+      userId: "user-1",
+      sessionId: "session-1",
+    }),
+    cancelQueries: () =>
+      queryClient.cancelQueries(undefined, { revert: true, silent: true }),
     clearQueryAndMutationCaches: () => queryClient.clear(),
   });
   const coordinator = createLocalDataResetCoordinator();
@@ -271,25 +367,30 @@ test("a peer preparation failure retains real cached data and invokes no query-c
 });
 
 test("real QueryClient cancellation aborts and settles old work before prepare completes", async () => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   let sawAbort = false;
   let settled = false;
-  const fetching = queryClient.fetchQuery({
-    queryKey: ["deferred-generated-style"],
-    queryFn: ({ signal }) =>
-      new Promise<string>((_resolve, reject) => {
-        signal.addEventListener("abort", () => {
-          sawAbort = true;
-          reject(new Error("transport aborted"));
-        });
-      }),
-  }).catch(() => {
-    settled = true;
-  });
+  const fetching = queryClient
+    .fetchQuery({
+      queryKey: ["deferred-generated-style"],
+      queryFn: ({ signal }) =>
+        new Promise<string>((_resolve, reject) => {
+          signal.addEventListener("abort", () => {
+            sawAbort = true;
+            reject(new Error("transport aborted"));
+          });
+        }),
+    })
+    .catch(() => {
+      settled = true;
+    });
   await Promise.resolve();
   const controller = createQueryCacheLocalDataResetController({
     getIdentity: () => ({ isLoaded: true, userId: null, sessionId: null }),
-    cancelQueries: () => queryClient.cancelQueries(undefined, { revert: true, silent: true }),
+    cancelQueries: () =>
+      queryClient.cancelQueries(undefined, { revert: true, silent: true }),
     clearQueryAndMutationCaches: () => queryClient.clear(),
   });
 
@@ -300,26 +401,34 @@ test("real QueryClient cancellation aborts and settles old work before prepare c
 });
 
 test("commit destroys a gap query and empties both real TanStack caches", async () => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   queryClient.setQueryData(["old"], "old data");
   const controller = createQueryCacheLocalDataResetController({
     getIdentity: () => ({ isLoaded: true, userId: null, sessionId: null }),
-    cancelQueries: () => queryClient.cancelQueries(undefined, { revert: true, silent: true }),
+    cancelQueries: () =>
+      queryClient.cancelQueries(undefined, { revert: true, silent: true }),
     clearQueryAndMutationCaches: () => queryClient.clear(),
   });
 
   await controller.participant.prepare();
   let gapQueryAborted = false;
-  const gapQuery = queryClient.fetchQuery({
-    queryKey: ["gap"],
-    queryFn: ({ signal }) => new Promise<string>((_resolve, reject) => {
-      signal.addEventListener("abort", () => {
-        gapQueryAborted = true;
-        reject(new Error("gap aborted"));
-      });
-    }),
-  }).catch(() => {});
-  queryClient.getMutationCache().build(queryClient, { mutationKey: ["pending-record"] });
+  const gapQuery = queryClient
+    .fetchQuery({
+      queryKey: ["gap"],
+      queryFn: ({ signal }) =>
+        new Promise<string>((_resolve, reject) => {
+          signal.addEventListener("abort", () => {
+            gapQueryAborted = true;
+            reject(new Error("gap aborted"));
+          });
+        }),
+    })
+    .catch(() => {});
+  queryClient
+    .getMutationCache()
+    .build(queryClient, { mutationKey: ["pending-record"] });
 
   await controller.participant.commit();
   await gapQuery;
@@ -344,7 +453,9 @@ test("TanStack clear empties both caches but a mounted observer can retain and r
   const unsubscribe = observer.subscribe(() => {});
 
   assert.deepEqual(observer.getCurrentResult().data, { displayName: "Apollo" });
-  queryClient.getMutationCache().build(queryClient, { mutationKey: ["provider-write"] });
+  queryClient
+    .getMutationCache()
+    .build(queryClient, { mutationKey: ["provider-write"] });
   queryClient.clear();
 
   assert.equal(queryClient.getQueryCache().getAll().length, 0);
@@ -362,6 +473,177 @@ test("TanStack clear empties both caches but a mounted observer can retain and r
 
   unsubscribe();
   queryClient.clear();
+});
+
+test("the production query shield unmounts a real observer before the final identity-aware close", async () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  queryClient.setQueryData(["me"], { displayName: "Apollo" });
+  let fetchCalls = 0;
+  const queryFn = async () => {
+    fetchCalls += 1;
+    return { displayName: "Fresh" };
+  };
+  const observer = new QueryObserver(queryClient, {
+    queryKey: ["me"],
+    queryFn,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const unsubscribeObserver = observer.subscribe(() => {});
+  const shield = createPersonalQueryObserverShield();
+  const detachHost = shield.attachHost();
+  const unsubscribeShield = shield.subscribe(() => {
+    if (!shield.isRequested()) return;
+    unsubscribeObserver();
+    shield.confirmPersonalObserversHidden();
+  });
+  const events: string[] = [];
+  const controller = createQueryCacheLocalDataResetController({
+    getIdentity: () => ({
+      isLoaded: true,
+      userId: "user-1",
+      sessionId: "session-1",
+    }),
+    waitUntilPersonalQueryConsumersUnmounted: shield.requestAndWait,
+    cancelQueries: async () => {
+      events.push("cancel");
+    },
+    clearQueryAndMutationCaches: () => {
+      events.push("clear");
+      queryClient.clear();
+    },
+  });
+
+  await controller.participant.prepare();
+  assert.equal(observer.hasListeners(), false);
+  await controller.participant.commit();
+  assert.deepEqual(events, ["cancel", "cancel", "clear"]);
+  assert.equal(queryClient.getQueryCache().getAll().length, 0);
+
+  const laterObserver = new QueryObserver(queryClient, {
+    queryKey: ["me"],
+    queryFn,
+    enabled: false,
+  });
+  assert.equal(laterObserver.getCurrentResult().data, undefined);
+  assert.equal(fetchCalls, 0);
+  unsubscribeShield();
+  shield.release();
+  detachHost();
+});
+
+test("final close identity or clear failure remains a retryable query-cache partial failure", async () => {
+  const runtime = createLocalDataResetRuntime({
+    getItem: async () => null,
+    setItem: async () => {},
+    removeItem: async () => {},
+  });
+  const shield = createPersonalQueryObserverShield();
+  const detachHost = shield.attachHost();
+  const unsubscribeShield = shield.subscribe(() => {
+    if (shield.isRequested()) shield.confirmPersonalObserversHidden();
+  });
+  let clearCalls = 0;
+  const queryController = createQueryCacheLocalDataResetController({
+    getIdentity: () => ({
+      isLoaded: true,
+      userId: "user-1",
+      sessionId: "session-1",
+    }),
+    waitUntilPersonalQueryConsumersUnmounted: shield.requestAndWait,
+    cancelQueries: async () => {},
+    clearQueryAndMutationCaches: () => {
+      clearCalls += 1;
+      if (clearCalls === 1) throw new Error("final clear failed");
+    },
+  });
+  for (const id of REQUIRED_LOCAL_DATA_PARTICIPANT_IDS) {
+    runtime.attachRequiredParticipant(
+      id,
+      id === "query-cache"
+        ? queryController.participant
+        : { prepare: async () => {}, commit: async () => {} },
+    );
+  }
+
+  assert.deepEqual(await runtime.operations.runReset(), {
+    status: "partial-failure",
+    committedParticipantIds: [
+      "avatar",
+      "care",
+      "device-preferences",
+      "files",
+      "walk-capture",
+      "web-runtime",
+      "work-drain",
+    ],
+    failedParticipantIds: ["query-cache"],
+  });
+  shield.release();
+  assert.equal((await runtime.operations.runReset()).status, "complete");
+  unsubscribeShield();
+  detachHost();
+});
+
+test("a final cancellation rejection remains an exact query-cache partial failure", async () => {
+  const runtime = createLocalDataResetRuntime({
+    getItem: async () => null,
+    setItem: async () => {},
+    removeItem: async () => {},
+  });
+  const shield = createPersonalQueryObserverShield();
+  const detachHost = shield.attachHost();
+  const unsubscribeShield = shield.subscribe(() => {
+    if (shield.isRequested()) shield.confirmPersonalObserversHidden();
+  });
+  let cancellationCalls = 0;
+  const queryController = createQueryCacheLocalDataResetController({
+    getIdentity: () => ({
+      isLoaded: true,
+      userId: "user-1",
+      sessionId: "session-1",
+    }),
+    waitUntilPersonalQueryConsumersUnmounted: shield.requestAndWait,
+    cancelQueries: async () => {
+      cancellationCalls += 1;
+      if (cancellationCalls === 2) {
+        throw new Error("final cancellation failed");
+      }
+    },
+    clearQueryAndMutationCaches: () => {},
+  });
+  for (const id of REQUIRED_LOCAL_DATA_PARTICIPANT_IDS) {
+    runtime.attachRequiredParticipant(
+      id,
+      id === "query-cache"
+        ? queryController.participant
+        : { prepare: async () => {}, commit: async () => {} },
+    );
+  }
+
+  assert.deepEqual(await runtime.operations.runReset(), {
+    status: "partial-failure",
+    committedParticipantIds: [
+      "avatar",
+      "care",
+      "device-preferences",
+      "files",
+      "walk-capture",
+      "web-runtime",
+      "work-drain",
+    ],
+    failedParticipantIds: ["query-cache"],
+  });
+  assert.deepEqual(runtime.operations.getState(), {
+    status: "failed",
+    operation: "delete",
+    failedParticipantIds: ["query-cache"],
+  });
+  shield.release();
+  assert.equal((await runtime.operations.runReset()).status, "complete");
+  unsubscribeShield();
+  detachHost();
 });
 
 test("tracked provider work holds root preparation open and stale or late mutation effects stay closed", async () => {
@@ -422,7 +704,11 @@ test("tracked provider work holds root preparation open and stale or late mutati
 
 test("finalizer performs cancel-check-clear-check and a later call closes a recreated cache", async () => {
   const events: string[] = [];
-  const harnessIdentity = { isLoaded: true, userId: "user-1", sessionId: "session-1" };
+  const harnessIdentity = {
+    isLoaded: true,
+    userId: "user-1",
+    sessionId: "session-1",
+  };
   const controller = createQueryCacheLocalDataResetController({
     getIdentity: () => harnessIdentity,
     cancelQueries: async () => {
@@ -438,7 +724,7 @@ test("finalizer performs cancel-check-clear-check and a later call closes a recr
   await controller.participant.prepare();
   await controller.participant.commit();
   await controller.finalizeForIdentity(expected);
-  assert.deepEqual(events, ["cancel", "clear", "cancel", "clear"]);
+  assert.deepEqual(events, ["cancel", "cancel", "clear", "cancel", "clear"]);
 });
 
 test("finalizer identity changes reject before destructive work and remain retryable", async () => {
@@ -460,7 +746,10 @@ test("finalizer identity changes reject before destructive work and remain retry
   assert.ok(expected);
 
   identity = { isLoaded: true, userId: "user-2", sessionId: "session-2" };
-  await assert.rejects(controller.finalizeForIdentity(expected), QueryCacheIdentityChangedError);
+  await assert.rejects(
+    controller.finalizeForIdentity(expected),
+    QueryCacheIdentityChangedError,
+  );
   assert.equal(cancelCalls, 0);
   assert.equal(clearCalls, 0);
 
@@ -494,8 +783,14 @@ test("finalizer reports a post-clear identity change and a synchronous clear fai
   const expected = controller.captureIdentity();
   assert.ok(expected);
 
-  await assert.rejects(controller.finalizeForIdentity(expected), QueryCacheIdentityChangedError);
+  await assert.rejects(
+    controller.finalizeForIdentity(expected),
+    QueryCacheIdentityChangedError,
+  );
   identity = { isLoaded: true, userId: "user-1", sessionId: "session-1" };
-  await assert.rejects(controller.finalizeForIdentity(expected), /final clear failed/);
+  await assert.rejects(
+    controller.finalizeForIdentity(expected),
+    /final clear failed/,
+  );
   assert.equal(clearCalls, 2);
 });

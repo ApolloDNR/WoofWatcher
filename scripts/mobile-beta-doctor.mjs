@@ -271,6 +271,7 @@ const careEntryProviderSyncProofPath = join(mobileRoot, "lib", "careEntryProvide
 const reportArtifactExportFilePath = join(mobileRoot, "lib", "reportArtifactExportFile.ts");
 const reportBinaryExportProofPath = join(mobileRoot, "lib", "reportBinaryExportProof.ts");
 const reportGeneratedBinaryArtifactPath = join(mobileRoot, "lib", "reportGeneratedBinaryArtifact.ts");
+const recordsFileShareActionsPath = join(mobileRoot, "lib", "recordsFileShareActions.ts");
 const privacySafetyPath = join(mobileRoot, "lib", "privacySafety.ts");
 const careTwinQaRoutePath = join(mobileRoot, "app", "care-twin-qa.tsx");
 const setupRoutePath = join(mobileRoot, "app", "setup.tsx");
@@ -316,6 +317,7 @@ const careEntryProviderSyncProofSource = existsSync(careEntryProviderSyncProofPa
 const reportArtifactExportFileSource = existsSync(reportArtifactExportFilePath) ? readFileSync(reportArtifactExportFilePath, "utf8") : "";
 const reportBinaryExportProofSource = existsSync(reportBinaryExportProofPath) ? readFileSync(reportBinaryExportProofPath, "utf8") : "";
 const reportGeneratedBinaryArtifactSource = existsSync(reportGeneratedBinaryArtifactPath) ? readFileSync(reportGeneratedBinaryArtifactPath, "utf8") : "";
+const recordsFileShareActionsSource = existsSync(recordsFileShareActionsPath) ? readFileSync(recordsFileShareActionsPath, "utf8") : "";
 const privacySafetySource = existsSync(privacySafetyPath) ? readFileSync(privacySafetyPath, "utf8") : "";
 const careTwinQaRouteSource = existsSync(careTwinQaRoutePath) ? readFileSync(careTwinQaRoutePath, "utf8") : "";
 const setupRouteSource = existsSync(setupRoutePath) ? readFileSync(setupRoutePath, "utf8") : "";
@@ -1495,15 +1497,20 @@ const generatedBinaryArtifactExportsAreSourceBacked = includesAll(reportGenerate
   && includesAll(recordsScreenSource, [
     "buildCarePassPdfArtifactSource",
     "buildDogIdPngArtifactSource",
-    "buildGeneratedBinaryArtifactFilePlan",
-    "buildGeneratedBinaryArtifactShareContent",
-    "FileSystem.EncodingType.Base64",
+    "runGeneratedRecordsFileShare",
     "shareGeneratedCarePassPdfArtifact",
     "shareCredentialPngArtifact",
     "Share generated Care Pass PDF",
     "Share generated Dog ID PNG",
     "generatedCarePassPdf:",
     "generatedDogIdPng:",
+  ])
+  && includesAll(recordsFileShareActionsSource, [
+    "runGeneratedRecordsFileShare",
+    "buildGeneratedBinaryArtifactFilePlan",
+    "buildGeneratedBinaryArtifactShareContent",
+    'encoding: "base64"',
+    "runProtectedShare",
   ]);
 check(
   "generated binary artifact exports are source-backed",

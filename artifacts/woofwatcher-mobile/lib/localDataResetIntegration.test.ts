@@ -102,7 +102,11 @@ test("the reset provider owns web runtime, file facade, query cache, and prefere
   const preferencesOpen = layout.indexOf("<DevicePreferencesProvider>");
   const auth = layout.indexOf("<AuthBridge />");
   const careOpen = layout.indexOf("<CareProvider>");
+  const walkBridge = layout.indexOf("<WalkRouteRecorderBridge />");
   const avatarOpen = layout.indexOf("<AvatarProvider>");
+  const shieldOpen = layout.indexOf("<LocalDataResetAppShield>");
+  const appFrame = layout.indexOf("<AppFrame />");
+  const shieldClose = layout.indexOf("</LocalDataResetAppShield>");
   const preferencesClose = layout.indexOf("</DevicePreferencesProvider>");
   const queryCacheClose = layout.indexOf("</QueryCacheLocalDataResetProvider>");
   const filesClose = layout.indexOf("</AppFileSystemProvider>");
@@ -119,7 +123,11 @@ test("the reset provider owns web runtime, file facade, query cache, and prefere
     ["DevicePreferencesProvider", preferencesOpen],
     ["AuthBridge", auth],
     ["CareProvider", careOpen],
+    ["WalkRouteRecorderBridge", walkBridge],
     ["AvatarProvider", avatarOpen],
+    ["LocalDataResetAppShield", shieldOpen],
+    ["AppFrame", appFrame],
+    ["LocalDataResetAppShield close", shieldClose],
     ["DevicePreferencesProvider close", preferencesClose],
     ["QueryCacheLocalDataResetProvider close", queryCacheClose],
     ["AppFileSystemProvider close", filesClose],
@@ -136,7 +144,12 @@ test("the reset provider owns web runtime, file facade, query cache, and prefere
   assert.ok(queryCacheOpen < preferencesOpen);
   assert.ok(preferencesOpen < auth);
   assert.ok(auth < careOpen);
-  assert.ok(careOpen < avatarOpen);
+  assert.ok(careOpen < walkBridge);
+  assert.ok(walkBridge < avatarOpen);
+  assert.ok(avatarOpen < shieldOpen);
+  assert.ok(shieldOpen < appFrame);
+  assert.ok(appFrame < shieldClose);
+  assert.ok(shieldClose < preferencesClose);
   assert.ok(avatarOpen < preferencesClose);
   assert.ok(preferencesClose < queryCacheClose);
   assert.ok(queryCacheClose < filesClose);

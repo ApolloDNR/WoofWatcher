@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
@@ -13,7 +12,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -64,6 +62,7 @@ import {
   type RecordKind,
 } from "@workspace/care-domain";
 import { useAppViewport } from "@/context/AppViewportContext";
+import { useAppFileSystem } from "@/context/AppFileSystemContext";
 import { useCare, Entry, type Record as CareRecord } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -86,23 +85,23 @@ import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { homeImmersiveRoomIsNight } from "@/app/(tabs)/index";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
-import {
-  buildReportArtifactExportFilePlan,
-  buildReportArtifactShareContent,
-  type ReportArtifactPrintableSource,
-} from "@/lib/reportArtifactExportFile";
+import type { ReportArtifactPrintableSource } from "@/lib/reportArtifactExportFile";
 import {
   buildCarePassPdfArtifactSource,
   buildDogIdPngArtifactSource,
-  buildGeneratedBinaryArtifactFilePlan,
-  buildGeneratedBinaryArtifactShareContent,
   type GeneratedBinaryArtifactSource,
 } from "@/lib/reportGeneratedBinaryArtifact";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import { resolvePetName } from "@/lib/petIdentity";
 import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
 import { shareTextPayload } from "@/lib/shareText";
-import { persistPickedMedia } from "@/lib/durablePickedMedia";
+import { shareNativeFilePayload } from "@/lib/nativeFileShare";
+import { runRecordAttachmentPicker } from "@/lib/pickedMediaLocalDataActions";
+import {
+  runGeneratedRecordsFileShare,
+  runPrintableRecordsFileShare,
+} from "@/lib/recordsFileShareActions";
+import type { AppArtifactDestination } from "@/lib/appOwnedFileInventory";
 import {
   getCareCorrectionPresentation,
   mergeValidatedRecordEdit,
@@ -248,6 +247,7 @@ export default function RecordsScreen({
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const appFileSystem = useAppFileSystem();
   const ownerOps = isOwnerOpsBuild();
   const { state, careMutationsBlocked, updateCareDoc } = useCare();
   const showCareReadOnly = () =>
@@ -587,32 +587,26 @@ export default function RecordsScreen({
 
   const pickRecordAttachment = async () => {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        quality: 0.8,
-        allowsEditing: false,
-      });
-      if (!result.canceled && result.assets[0]?.uri) {
-        const asset = result.assets[0];
-        const persistedAttachment = await persistPickedMedia({
-          platform: Platform.OS,
-          sourceUri: asset.uri,
-          fileName: asset.fileName,
-          mimeType: asset.mimeType,
-          filePrefix: "record-attachment",
-          fileSystem: FileSystem,
-        });
-        if (!persistedAttachment.ok) {
-          notifyDialog(
-            "Attachment not saved",
-            "WoofWatcher could not copy that file into durable app storage. No record attachment was added. Try again or choose another file.",
+      const action = await runRecordAttachmentPicker({
+        appFileSystem,
+        pick: () =>
+          ImagePicker.launchImageLibraryAsync({
+            quality: 0.8,
+            allowsEditing: false,
+          }),
+        apply: ({ asset, uri }) => {
+          setRecordAttachmentUri(uri);
+          setRecordAttachmentName(
+            asset.fileName?.trim() ||
+              uri.split(/[\\/]/).pop()?.split(/[?#]/, 1)[0] ||
+              `${recordOption.label} attachment`,
           );
-          return;
-        }
-        setRecordAttachmentUri(persistedAttachment.uri);
-        setRecordAttachmentName(
-          asset.fileName?.trim() ||
-            persistedAttachment.uri.split(/[\\/]/).pop()?.split(/[?#]/, 1)[0] ||
-            `${recordOption.label} attachment`,
+        },
+      });
+      if (action.status === "not-saved") {
+        notifyDialog(
+          "Attachment not saved",
+          "WoofWatcher could not copy that file into durable app storage. No record attachment was added. Try again or choose another file.",
         );
       }
     } catch {
@@ -728,91 +722,42 @@ export default function RecordsScreen({
 
   const sharePrintableSourceFile = async (
     printable: ReportArtifactPrintableSource,
-    options: { directoryName?: string; printableLabel?: string; title: string },
+    options: {
+      destination: AppArtifactDestination;
+      printableLabel?: string;
+      title: string;
+    },
   ) => {
-    const plan = buildReportArtifactExportFilePlan(printable, {
-      directoryName: options.directoryName,
-      documentDirectory: Platform.OS === "web" ? null : FileSystem.documentDirectory,
+    await runPrintableRecordsFileShare({
+      appFileSystem,
+      destination: options.destination,
+      printable,
       printableLabel: options.printableLabel,
       title: options.title,
+      shareNative: shareNativeFilePayload,
+      shareText: shareTextPayload,
     });
-
-    const shareFallback = async () => {
-      const fallbackPlan = buildReportArtifactExportFilePlan(printable, {
-        directoryName: options.directoryName,
-        documentDirectory: null,
-        printableLabel: options.printableLabel,
-        title: options.title,
-      });
-      const fallbackContent = buildReportArtifactShareContent(fallbackPlan);
-      await shareTextPayload({ title: fallbackContent.title, message: fallbackContent.message });
-    };
-
-    if (plan.canWriteLocalFile && plan.directoryUri && plan.fileUri) {
-      try {
-        await FileSystem.makeDirectoryAsync(plan.directoryUri, { intermediates: true });
-        await FileSystem.writeAsStringAsync(plan.fileUri, printable.html, { encoding: FileSystem.EncodingType.UTF8 });
-        const shareUri =
-          Platform.OS === "android"
-            ? await FileSystem.getContentUriAsync(plan.fileUri).catch(() => plan.fileUri)
-            : plan.fileUri;
-        await Share.share(buildReportArtifactShareContent(plan, { shareUri }));
-        return;
-      } catch {
-        await shareFallback();
-        return;
-      }
-    }
-
-    await shareFallback();
   };
 
   const shareGeneratedBinaryArtifactFile = async (
     source: GeneratedBinaryArtifactSource,
-    options: { directoryName?: string; title: string },
+    options: { destination: AppArtifactDestination; title: string },
   ) => {
-    const plan = buildGeneratedBinaryArtifactFilePlan(source, {
-      directoryName: options.directoryName,
-      documentDirectory: Platform.OS === "web" ? null : FileSystem.documentDirectory,
+    await runGeneratedRecordsFileShare({
+      appFileSystem,
+      destination: options.destination,
+      source,
       title: options.title,
+      shareNative: shareNativeFilePayload,
+      shareText: shareTextPayload,
     });
-
-    const shareFallback = async () => {
-      const fallbackPlan = buildGeneratedBinaryArtifactFilePlan(source, {
-        directoryName: options.directoryName,
-        documentDirectory: null,
-        title: options.title,
-      });
-      const fallbackContent = buildGeneratedBinaryArtifactShareContent(fallbackPlan);
-      await shareTextPayload({ title: fallbackContent.title, message: fallbackContent.message });
-    };
-
-    if (plan.canWriteLocalFile && plan.directoryUri && plan.fileUri) {
-      try {
-        await FileSystem.makeDirectoryAsync(plan.directoryUri, { intermediates: true });
-        await FileSystem.writeAsStringAsync(plan.fileUri, plan.contentBase64, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        const shareUri =
-          Platform.OS === "android"
-            ? await FileSystem.getContentUriAsync(plan.fileUri).catch(() => plan.fileUri)
-            : plan.fileUri;
-        await Share.share(buildGeneratedBinaryArtifactShareContent(plan, { shareUri }));
-        return;
-      } catch {
-        await shareFallback();
-        return;
-      }
-    }
-
-    await shareFallback();
   };
 
   const sharePrintableCredential = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const printable = getPetCredentialPrintView(credential);
     await sharePrintableSourceFile(printable, {
-      directoryName: "WoofWatcherCredentials",
+      destination: "credentials",
       printableLabel: "Dog ID credential source",
       title: `${credential.name} Dog ID`,
     });
@@ -829,7 +774,7 @@ export default function RecordsScreen({
         boundary: credentialImageView.boundary,
       },
       {
-        directoryName: "WoofWatcherCredentials",
+        destination: "credentials",
         printableLabel: "Dog ID SVG image source",
         title: `${credential.name} Dog ID`,
       },
@@ -839,7 +784,7 @@ export default function RecordsScreen({
   const shareCredentialPngArtifact = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await shareGeneratedBinaryArtifactFile(credentialPngArtifactSource, {
-      directoryName: "WoofWatcherCredentials",
+      destination: "credentials",
       title: `${credential.name} Dog ID`,
     });
   };
@@ -911,7 +856,10 @@ export default function RecordsScreen({
   const sharePrintableReportArtifact = async (artifact: CarePassArtifact) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const printable = getCarePassArtifactPrintView(artifact);
-    await sharePrintableSourceFile(printable, { title: artifact.title });
+    await sharePrintableSourceFile(printable, {
+      destination: "reports",
+      title: artifact.title,
+    });
   };
 
   const shareGeneratedCarePassPdfArtifact = async (artifact: CarePassArtifact) => {
@@ -924,7 +872,7 @@ export default function RecordsScreen({
       message: artifact.message,
     });
     await shareGeneratedBinaryArtifactFile(source, {
-      directoryName: "WoofWatcherReports",
+      destination: "reports",
       title: artifact.title,
     });
   };

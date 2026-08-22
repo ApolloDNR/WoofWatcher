@@ -49,6 +49,10 @@ const rootLayoutSource = readFileSync(
   join(mobileRoot, "app", "_layout.tsx"),
   "utf8",
 );
+const resetShieldSource = readFileSync(
+  join(mobileRoot, "components", "LocalDataResetAppShield.tsx"),
+  "utf8",
+);
 
 function sourceSlice(source: string, start: string, end: string): string {
   const startIndex = source.indexOf(start);
@@ -87,6 +91,10 @@ test("production composition attaches files, walk capture, and web runtime requi
     rootLayoutSource,
     /<LocalDataResetProvider>[\s\S]*<WebRuntimeLocalDataResetProvider>[\s\S]*<AppFileSystemProvider>/,
   );
+  assert.match(
+    rootLayoutSource,
+    /<AvatarProvider>[\s\S]*<LocalDataResetAppShield>\s*<AppFrame \/>\s*<\/LocalDataResetAppShield>[\s\S]*<\/AvatarProvider>/,
+  );
 });
 
 test("Query cache attaches one identity-safe stable required owner", () => {
@@ -102,6 +110,10 @@ test("Query cache attaches one identity-safe stable required owner", () => {
   );
   assert.match(
     queryCacheContextSource,
+    /waitUntilPersonalQueryConsumersUnmounted:\s*shield\.requestAndWait/,
+  );
+  assert.match(
+    queryCacheContextSource,
     /useRef<QueryCacheLocalDataResetController \| null>\(null\)/,
   );
   assert.match(
@@ -113,6 +125,16 @@ test("Query cache attaches one identity-safe stable required owner", () => {
     /queryClient\.cancelQueries\(undefined, \{ revert: true, silent: true \}\)/,
   );
   assert.match(queryCacheContextSource, /queryClient\.clear\(\)/);
+  assert.match(queryCacheContextSource, /createPersonalQueryObserverShield\(\)/);
+  assert.match(resetShieldSource, /attachPersonalQueryObserverShieldHost/);
+  assert.match(resetShieldSource, /confirmPersonalQueryObserversHidden\(\)/);
+  assert.match(
+    resetShieldSource,
+    /getPrivacyLocalDataResetView\(operationState\)/,
+  );
+  assert.match(resetShieldSource, /resetView\.failures\.map/);
+  assert.match(resetShieldSource, /All data deleted/);
+  assert.match(resetShieldSource, /Retry deletion/);
   assert.match(queryCacheResetSource, /Object\.freeze\(\{[\s\S]*userId:[\s\S]*sessionId:/);
   assert.doesNotMatch(queryCacheResetSource, /removeQueries|resetQueries|invalidateQueries|signOut/);
   assert.doesNotMatch(queryCacheContextSource, /removeQueries|resetQueries|invalidateQueries|signOut/);
@@ -189,7 +211,7 @@ test("Care prepare drains accepted specialized work and commit alone invalidates
 
   assert.match(
     controllerHooks,
-    /canPrepare:\s*\(\) =>\s*hydratedRef\.current && !legacyOwnerWipeInProgressRef\.current/,
+    /canPrepare:\s*\(\) => hydratedRef\.current/,
   );
   assert.match(
     controllerHooks,
@@ -362,14 +384,10 @@ test("coordinated exact-key deletion preserves cleanup metadata and finalizes ev
     /discardedServerEntryIdsRef\.current\s*=\s*new Set\(\)/,
   );
 
-  const legacyTail = sourceSlice(
+  assert.doesNotMatch(
     careContextSource,
-    "const performOwnerWipe = useCallback(async () => {",
-    "const eraseAllLocalData = useCallback(() => {",
+    /eraseAllLocalData|performOwnerWipe|AsyncStorage\.(?:getAllKeys|multiRemove)|FileSystem\.deleteAsync/,
   );
-  assert.match(legacyTail, /AsyncStorage\.getAllKeys\(\)/);
-  assert.match(legacyTail, /AsyncStorage\.multiRemove\(owned\)/);
-  assert.match(legacyTail, /FileSystem\.deleteAsync\(/);
 });
 
 test("settled reset epochs trigger persistence without rerunning completed hydration", () => {
@@ -433,16 +451,7 @@ test("settled reset epochs trigger persistence without rerunning completed hydra
   );
 });
 
-test("legacy and coordinated Care resets reject overlap while Privacy remains on its explicit legacy bypass", () => {
-  const legacy = sourceSlice(
-    careContextSource,
-    "const eraseAllLocalData = useCallback(() => {",
-    "const careMutationsBlocked = careDocWritesBlocked();",
-  );
-  assert.match(legacy, /if \(!isWriteAdmissionOpen\(\)\)/);
-  assert.match(legacy, /Promise\.reject/);
-  assert.doesNotMatch(legacy, /careLocalDataResetController\.participant/);
-
+test("Privacy and Care expose only the coordinated root reset path", () => {
   const hooks = sourceSlice(
     careContextSource,
     "createCareLocalDataResetController({",
@@ -450,14 +459,15 @@ test("legacy and coordinated Care resets reject overlap while Privacy remains on
   );
   assert.match(
     hooks,
-    /canPrepare:\s*\(\) =>\s*hydratedRef\.current && !legacyOwnerWipeInProgressRef\.current/,
+    /canPrepare:\s*\(\) => hydratedRef\.current/,
   );
-
-  assert.match(
+  assert.doesNotMatch(careContextSource, /legacyOwnerWipe|eraseAllLocalData/);
+  assert.match(privacySource, /useLocalDataReset\(\)/);
+  assert.match(privacySource, /runPrivacyLocalDataReset\(runReset\)/);
+  assert.doesNotMatch(
     privacySource,
-    /Promise\.all\(\[eraseAllLocalData\(\), clearAvatarSet\(\), resetAvatarConfig\(\)\]\)/,
+    /Promise\.all|clearAvatarSet|resetAvatarConfig|eraseAllLocalData/,
   );
-  assert.doesNotMatch(privacySource, /\brunReset\b/);
 });
 
 test("failed coordinated commits recover pending entries while successful commits keep deletion final", () => {
@@ -623,9 +633,6 @@ test("Avatar public mutations use the removable lane and persist before applying
   assert.match(methods, /markAvatarSetLoaded/);
   assert.match(methods, /markAvatarConfigLoaded/);
 
-  assert.match(
-    privacySource,
-    /Promise\.all\(\[eraseAllLocalData\(\), clearAvatarSet\(\), resetAvatarConfig\(\)\]\)/,
-  );
-  assert.doesNotMatch(privacySource, /\brunReset\b/);
+  assert.match(privacySource, /runPrivacyLocalDataReset\(runReset\)/);
+  assert.doesNotMatch(privacySource, /clearAvatarSet|resetAvatarConfig/);
 });

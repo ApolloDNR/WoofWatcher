@@ -4208,16 +4208,15 @@ test("keeps Records report history wired for printable Care Pass artifacts", () 
     careTwinQaRoute,
     /providerStorageEvidence:\s*launchProviderSetupPlan\.providerInput\.storageProviderEvidence\s*\?\s*\[launchProviderSetupPlan\.providerInput\.storageProviderEvidence\]\s*:\s*\[\]/,
   );
-  assert.match(records, /import \* as FileSystem from "expo-file-system\/legacy"/);
-  assert.match(records, /buildReportArtifactExportFilePlan/);
-  assert.match(records, /buildReportArtifactShareContent/);
+  assert.match(records, /useAppFileSystem/);
+  assert.match(records, /runPrintableRecordsFileShare/);
   assert.match(records, /buildCarePassPdfArtifactSource/);
-  assert.match(records, /buildGeneratedBinaryArtifactFilePlan/);
-  assert.match(records, /buildGeneratedBinaryArtifactShareContent/);
-  assert.match(records, /FileSystem\.makeDirectoryAsync/);
-  assert.match(records, /FileSystem\.writeAsStringAsync/);
-  assert.match(records, /FileSystem\.EncodingType\.Base64/);
-  assert.match(records, /FileSystem\.getContentUriAsync/);
+  assert.match(records, /runGeneratedRecordsFileShare/);
+  assert.match(records, /shareNativeFilePayload/);
+  assert.doesNotMatch(
+    records,
+    /FileSystem\.(?:makeDirectoryAsync|writeAsStringAsync|getContentUriAsync)|Share\.share/,
+  );
   assert.match(records, /const storage = exportView\.storage/);
   assert.doesNotMatch(
     records,
@@ -4283,11 +4282,13 @@ test("keeps Records dog ID wired for printable credential sharing", () => {
   assert.match(records, /sharePrintableCredential/);
   assert.match(records, /shareCredentialImageSource/);
   assert.match(records, /shareCredentialPngArtifact/);
-  assert.match(records, /directoryName: "WoofWatcherCredentials"/);
+  assert.match(records, /destination: "credentials"/);
+  assert.match(records, /runPrintableRecordsFileShare/);
+  assert.match(records, /runGeneratedRecordsFileShare/);
   assert.match(records, /printableLabel: "Dog ID credential source"/);
   assert.match(records, /printableLabel: "Dog ID SVG image source"/);
-  assert.match(records, /FileSystem\.writeAsStringAsync/);
-  assert.match(records, /FileSystem\.EncodingType\.Base64/);
+  assert.doesNotMatch(records, /FileSystem\.writeAsStringAsync/);
+  assert.doesNotMatch(records, /Share\.share/);
   assert.match(records, /accessibilityLabel="Share dog ID card"/);
   assert.match(records, /accessibilityLabel="Share local printable Dog ID source file"/);
   assert.match(records, /accessibilityLabel="Share local SVG Dog ID image source"/);
@@ -4832,10 +4833,10 @@ test("keeps care log trust review wired into Log detail flows", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
   assert.match(log, /ImagePicker/);
-  assert.match(log, /persistPickedMedia/);
-  assert.match(log, /filePrefix:\s*"medication-proof"/);
-  assert.match(log, /if \(!persistedPhoto\.ok\)/);
-  assert.match(log, /uri:\s*persistedPhoto\.uri/);
+  assert.match(log, /useAppFileSystem/);
+  assert.match(log, /runMedicationProofPhotoPicker/);
+  assert.match(log, /if \(action\.status === "not-saved"\)/);
+  assert.doesNotMatch(log, /persistPickedMedia|fileSystem:\s*FileSystem/);
   assert.match(log, /buildCareLogPhotoProofAttachmentPatch/);
   assert.match(log, /buildCareLogTrustReviewPatch/);
   assert.match(log, /buildCareLogTrustDefaults/);
@@ -4861,10 +4862,11 @@ test("copies picked care files into durable storage before persisting native URI
   const records = readRecordsScreen();
   const durableMedia = readMobileLibFile("durablePickedMedia.ts");
 
-  assert.match(records, /persistPickedMedia/);
-  assert.match(records, /filePrefix:\s*"record-attachment"/);
-  assert.match(records, /if \(!persistedAttachment\.ok\)/);
-  assert.match(records, /setRecordAttachmentUri\(persistedAttachment\.uri\)/);
+  assert.match(records, /runRecordAttachmentPicker/);
+  assert.match(records, /useAppFileSystem/);
+  assert.match(records, /if \(action\.status === "not-saved"\)/);
+  assert.match(records, /setRecordAttachmentUri\(uri\)/);
+  assert.doesNotMatch(records, /persistPickedMedia|fileSystem:\s*FileSystem/);
   assert.doesNotMatch(records, /setRecordAttachmentUri\(pickedUri\)/);
   assert.match(durableMedia, /woofwatcher-attachments/);
   assert.match(durableMedia, /await options\.fileSystem\.copyAsync/);

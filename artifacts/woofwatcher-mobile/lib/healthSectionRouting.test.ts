@@ -180,7 +180,8 @@ test("adds inert Records section props and stable owner anchors without thinning
   assert.match(records, /Records Command Vault/);
   assert.match(records, /WOOFWATCHER DOG ID/);
   assert.match(records, /title="Care Pass"/);
-  assert.match(records, /persistPickedMedia/);
+  assert.match(records, /runRecordAttachmentPicker/);
+  assert.match(records, /useAppFileSystem/);
   assert.equal((records.match(/\bupdateCareDoc\(/g) ?? []).length, 3);
 });
 

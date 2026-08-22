@@ -13,6 +13,7 @@ export interface QueryCacheResetIdentityState {
 
 export interface QueryCacheLocalDataResetAdapters {
   getIdentity(): QueryCacheResetIdentityState;
+  waitUntilPersonalQueryConsumersUnmounted(): Promise<void>;
   cancelQueries(): Promise<void>;
   clearQueryAndMutationCaches(): void;
 }
@@ -21,6 +22,15 @@ export interface QueryCacheLocalDataResetController {
   participant: Omit<LocalDataResetParticipant, "id">;
   captureIdentity(): AuthIdentitySnapshot | null;
   finalizeForIdentity(expected: AuthIdentitySnapshot): Promise<void>;
+}
+
+export interface PersonalQueryObserverShield {
+  attachHost(): () => void;
+  requestAndWait(): Promise<void>;
+  confirmPersonalObserversHidden(): void;
+  release(): void;
+  isRequested(): boolean;
+  subscribe(listener: () => void): () => void;
 }
 
 export class QueryCacheIdentityChangedError extends Error {
@@ -65,6 +75,91 @@ function invokeAsync(operation: () => Promise<void>): Promise<void> {
   }
 }
 
+export function createPersonalQueryObserverShield(): PersonalQueryObserverShield {
+  let hostAttached = false;
+  let requested = false;
+  let shielded = false;
+  const listeners = new Set<() => void>();
+  const waiters = new Set<{
+    resolve(): void;
+    reject(reason: unknown): void;
+  }>();
+
+  const notify = () => {
+    for (const listener of listeners) listener();
+  };
+  const rejectWaiters = (error: Error) => {
+    const pending = [...waiters];
+    waiters.clear();
+    for (const waiter of pending) waiter.reject(error);
+  };
+
+  const shield: PersonalQueryObserverShield = {
+    attachHost() {
+      if (hostAttached) {
+        throw new Error(
+          "The personal query observer shield already has a host.",
+        );
+      }
+      hostAttached = true;
+      return () => {
+        if (!hostAttached) return;
+        hostAttached = false;
+        requested = false;
+        shielded = false;
+        rejectWaiters(
+          new Error(
+            "The personal query observer shield host detached during reset.",
+          ),
+        );
+        notify();
+      };
+    },
+    requestAndWait() {
+      if (!hostAttached) {
+        return Promise.reject(
+          new Error("The personal query observer shield has no attached host."),
+        );
+      }
+      if (shielded) return Promise.resolve();
+      return new Promise<void>((resolve, reject) => {
+        waiters.add({ resolve, reject });
+        if (!requested) {
+          requested = true;
+          notify();
+        }
+      });
+    },
+    confirmPersonalObserversHidden() {
+      if (!hostAttached || !requested || shielded) return;
+      shielded = true;
+      const pending = [...waiters];
+      waiters.clear();
+      for (const waiter of pending) waiter.resolve();
+    },
+    release() {
+      if (!requested && !shielded) return;
+      requested = false;
+      shielded = false;
+      rejectWaiters(
+        new Error(
+          "The personal query observer shield was released during reset.",
+        ),
+      );
+      notify();
+    },
+    isRequested() {
+      return requested;
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
+
+  return Object.freeze(shield);
+}
+
 export function createQueryCacheLocalDataResetController(
   adapters: QueryCacheLocalDataResetAdapters,
 ): QueryCacheLocalDataResetController {
@@ -83,10 +178,26 @@ export function createQueryCacheLocalDataResetController(
     }
   };
 
+  const closeForIdentity = async (
+    expected: AuthIdentitySnapshot,
+  ): Promise<void> => {
+    requireIdentity(expected);
+    await invokeAsync(adapters.cancelQueries);
+    requireIdentity(expected);
+    adapters.clearQueryAndMutationCaches();
+    requireIdentity(expected);
+  };
+
   const participant: Omit<LocalDataResetParticipant, "id"> = {
     prepare() {
-      if (phase === "preparing" || phase === "committing" || phase === "finalizing") {
-        return Promise.reject(new Error("Query cache local data reset is in progress."));
+      if (
+        phase === "preparing" ||
+        phase === "committing" ||
+        phase === "finalizing"
+      ) {
+        return Promise.reject(
+          new Error("Query cache local data reset is in progress."),
+        );
       }
 
       preparedIdentity = null;
@@ -95,28 +206,42 @@ export function createQueryCacheLocalDataResetController(
       if (!expected) {
         phase = "idle";
         return Promise.reject(
-          new Error("Query cache local data reset requires a loaded auth identity."),
+          new Error(
+            "Query cache local data reset requires a loaded auth identity.",
+          ),
         );
       }
 
-      return invokeAsync(adapters.cancelQueries).then(
-        () => {
+      return invokeAsync(adapters.waitUntilPersonalQueryConsumersUnmounted)
+        .then(() => {
           requireIdentity(expected);
-          preparedIdentity = expected;
-          phase = "prepared";
-        },
-        (error) => {
-          phase = "idle";
+          return invokeAsync(adapters.cancelQueries);
+        })
+        .then(
+          () => {
+            requireIdentity(expected);
+            preparedIdentity = expected;
+            phase = "prepared";
+          },
+          (error) => {
+            phase = "idle";
+            throw error;
+          },
+        )
+        .catch((error) => {
+          if (phase === "preparing") phase = "idle";
           throw error;
-        },
-      ).catch((error) => {
-        if (phase === "preparing") phase = "idle";
-        throw error;
-      });
+        });
     },
     commit() {
-      if (phase === "preparing" || phase === "committing" || phase === "finalizing") {
-        return Promise.reject(new Error("Query cache local data reset is in progress."));
+      if (
+        phase === "preparing" ||
+        phase === "committing" ||
+        phase === "finalizing"
+      ) {
+        return Promise.reject(
+          new Error("Query cache local data reset is in progress."),
+        );
       }
       if (phase !== "prepared" || !preparedIdentity) {
         return Promise.reject(
@@ -127,15 +252,9 @@ export function createQueryCacheLocalDataResetController(
       const expected = preparedIdentity;
       preparedIdentity = null;
       phase = "committing";
-      try {
-        requireIdentity(expected);
-        adapters.clearQueryAndMutationCaches();
-        return Promise.resolve();
-      } catch (error) {
-        return Promise.reject(error);
-      } finally {
+      return closeForIdentity(expected).finally(() => {
         phase = "idle";
-      }
+      });
     },
   };
 
@@ -149,11 +268,7 @@ export function createQueryCacheLocalDataResetController(
       const normalizedExpected = normalizeIdentity(expected);
       phase = "finalizing";
       try {
-        requireIdentity(normalizedExpected);
-        await invokeAsync(adapters.cancelQueries);
-        requireIdentity(normalizedExpected);
-        adapters.clearQueryAndMutationCaches();
-        requireIdentity(normalizedExpected);
+        await closeForIdentity(normalizedExpected);
       } finally {
         phase = "idle";
       }

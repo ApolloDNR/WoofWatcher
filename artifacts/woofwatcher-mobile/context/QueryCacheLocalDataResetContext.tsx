@@ -1,18 +1,27 @@
 import { useQueryClient } from "@tanstack/react-query";
-import React, { createContext, useContext, useEffect, useMemo, useRef } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 
 import { useLocalDataReset } from "@/context/LocalDataResetContext";
 import { useWoofAuth } from "@/lib/auth";
 import {
+  createPersonalQueryObserverShield,
   createQueryCacheLocalDataResetController,
-  type AuthIdentitySnapshot,
   type QueryCacheLocalDataResetController,
   type QueryCacheResetIdentityState,
 } from "@/lib/queryCacheLocalDataReset";
 
 export interface QueryCacheLocalDataResetContextValue {
-  captureIdentity(): AuthIdentitySnapshot | null;
-  finalizeForIdentity(expected: AuthIdentitySnapshot): Promise<void>;
+  attachPersonalQueryObserverShieldHost(): () => void;
+  subscribeToPersonalQueryObserverShield(listener: () => void): () => void;
+  isPersonalQueryObserverShieldRequested(): boolean;
+  confirmPersonalQueryObserversHidden(): void;
+  releasePersonalQueryObserverShield(): void;
 }
 
 const QueryCacheLocalDataResetContext =
@@ -37,10 +46,19 @@ export function QueryCacheLocalDataResetProvider({
     sessionId: sessionId ?? null,
   };
 
+  const shieldRef = useRef<ReturnType<
+    typeof createPersonalQueryObserverShield
+  > | null>(null);
+  if (shieldRef.current === null) {
+    shieldRef.current = createPersonalQueryObserverShield();
+  }
+  const shield = shieldRef.current;
+
   const controllerRef = useRef<QueryCacheLocalDataResetController | null>(null);
   if (controllerRef.current === null) {
     controllerRef.current = createQueryCacheLocalDataResetController({
       getIdentity: () => identityRef.current,
+      waitUntilPersonalQueryConsumersUnmounted: shield.requestAndWait,
       cancelQueries: () =>
         queryClient.cancelQueries(undefined, { revert: true, silent: true }),
       clearQueryAndMutationCaches: () => queryClient.clear(),
@@ -49,20 +67,20 @@ export function QueryCacheLocalDataResetProvider({
   const controller = controllerRef.current;
 
   useEffect(
-    () =>
-      attachRequiredParticipant(
-        "query-cache",
-        controller.participant,
-      ),
+    () => attachRequiredParticipant("query-cache", controller.participant),
     [attachRequiredParticipant, controller],
   );
 
   const value = useMemo<QueryCacheLocalDataResetContextValue>(
     () => ({
-      captureIdentity: controller.captureIdentity,
-      finalizeForIdentity: controller.finalizeForIdentity,
+      attachPersonalQueryObserverShieldHost: shield.attachHost,
+      subscribeToPersonalQueryObserverShield: shield.subscribe,
+      isPersonalQueryObserverShieldRequested: shield.isRequested,
+      confirmPersonalQueryObserversHidden:
+        shield.confirmPersonalObserversHidden,
+      releasePersonalQueryObserverShield: shield.release,
     }),
-    [controller],
+    [shield],
   );
 
   return (

@@ -15,8 +15,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGetMe } from "@workspace/api-client-react";
-import { useAvatar } from "@/context/AvatarContext";
 import { useCare, type LaunchSupportProfile } from "@/context/CareContext";
+import { useLocalDataReset } from "@/context/LocalDataResetContext";
 import { useColors } from "@/hooks/useColors";
 import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import {
@@ -49,6 +49,10 @@ import {
   type SupportRunbookStatus,
 } from "@/lib/supportRunbook";
 import type { AttachmentReviewRow } from "@/lib/attachmentManifest";
+import {
+  runPrivacyCareDataExport,
+  runPrivacyLocalDataReset,
+} from "@/lib/privacyLocalDataActions";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -94,8 +98,8 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, careMutationsBlocked, updateCareDoc, eraseAllLocalData } = useCare();
-  const { clearAvatarSet, resetAvatarConfig } = useAvatar();
+  const { state, careMutationsBlocked, updateCareDoc } = useCare();
+  const { operationState, runExport, runReset } = useLocalDataReset();
   // Launch-ops cards (support runbook, launch gates) are owner tooling and
   // stay out of store production builds.
   const ownerOps = isOwnerOpsBuild();
@@ -213,12 +217,28 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
     if (!accepted) notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   };
 
+  const localDataOperationBusy =
+    operationState.status === "exporting" ||
+    operationState.status === "deleting";
+
   const shareExport = () => {
+    if (localDataOperationBusy) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const fresh = buildPrivacyExportBundle(state, context, Date.now());
-    void shareTextPayload({
-      title: `WoofWatcher care export - ${fresh.dogName}`,
-      message: serializePrivacyExportBundle(fresh),
+    void runPrivacyCareDataExport({
+      runExport,
+      capture: () => {
+        const fresh = buildPrivacyExportBundle(state, context, Date.now());
+        return {
+          title: `WoofWatcher care export - ${fresh.dogName}`,
+          message: serializePrivacyExportBundle(fresh),
+        };
+      },
+      share: shareTextPayload,
+    }).catch(() => {
+      notifyDialog(
+        "Export not shared",
+        "WoofWatcher could not share the care export. Your local data was not changed. Try again.",
+      );
     });
   };
 
@@ -256,11 +276,11 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
   // Themed two-step delete-all confirmation: the native confirm()/alert()
   // fallback read as browser chrome on web, so the flow now runs in the
   // app's own board-style sheet on every platform. Semantics are unchanged:
-  // two explicit confirmations, then a completion notice after the wipe.
+  // two explicit confirmations, then the root reset shield owns progress and
+  // the terminal complete/partial-failure verdict after this screen unmounts.
   const [eraseStage, setEraseStage] = useState<
-    "confirm" | "confirm-final" | "done" | null
+    "confirm" | "confirm-final" | null
   >(null);
-  const [erasing, setErasing] = useState(false);
 
   const eraseSteps = {
     confirm: {
@@ -275,19 +295,16 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
       confirmLabel: "Yes, delete it all",
       cancelLabel: "Keep my data",
     },
-    done: {
-      title: "All data deleted",
-      message: "WoofWatcher has been reset to a fresh household on this device.",
-    },
   } as const;
 
   const confirmEraseAllLocalData = () => {
+    if (localDataOperationBusy) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setEraseStage("confirm");
   };
 
   const cancelEraseFlow = () => {
-    if (erasing) return;
+    if (localDataOperationBusy) return;
     setEraseStage(null);
   };
 
@@ -298,20 +315,9 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
       return;
     }
     if (eraseStage === "confirm-final") {
-      if (erasing) return;
-      setErasing(true);
-      // The avatar contexts hold hydrated in-memory state, so the wipe
-      // must reset them too or the custom twin would survive on screen
-      // (and a later Studio save would re-persist deleted data).
-      // Never leave the owner stuck on "erasing" with no verdict: even if an
-      // avatar reset rejects, the care-data wipe already ran, so land on
-      // "done" rather than hanging silently.
-      void Promise.all([eraseAllLocalData(), clearAvatarSet(), resetAvatarConfig()])
-        .catch(() => {})
-        .then(() => {
-          setErasing(false);
-          setEraseStage("done");
-        });
+      if (localDataOperationBusy) return;
+      setEraseStage(null);
+      void runPrivacyLocalDataReset(runReset);
       return;
     }
     setEraseStage(null);
@@ -389,9 +395,16 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
         <View style={s.actionRow}>
           <Pressable
             onPress={shareExport}
+            disabled={localDataOperationBusy}
             accessibilityRole="button"
             accessibilityLabel="Export WoofWatcher care data"
-            style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+            style={({ pressed }) => [
+              s.primaryBtn,
+              {
+                backgroundColor: colors.primary,
+                opacity: localDataOperationBusy ? 0.55 : pressed ? 0.85 : 1,
+              },
+            ]}
           >
             <Ionicons name="download-outline" size={18} color="#FFFFFF" />
             <Text style={[s.primaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Export care data</Text>
@@ -444,11 +457,16 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
           </Pressable>
           <Pressable
             onPress={confirmEraseAllLocalData}
+            disabled={localDataOperationBusy}
             accessibilityRole="button"
             accessibilityLabel="Delete all WoofWatcher data on this device"
             style={({ pressed }) => [
               s.legalRow,
-              { borderColor: colors.rose + "55", backgroundColor: pressed ? colors.rose + "14" : colors.background },
+              {
+                borderColor: colors.rose + "55",
+                backgroundColor: pressed ? colors.rose + "14" : colors.background,
+                opacity: localDataOperationBusy ? 0.55 : 1,
+              },
             ]}
           >
             <Ionicons name="trash-bin-outline" size={18} color={colors.rose} />
@@ -582,7 +600,7 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
       >
         <Pressable
           style={s.modalBackdrop}
-          onPress={eraseStage === "done" ? advanceEraseFlow : cancelEraseFlow}
+          onPress={cancelEraseFlow}
           accessibilityRole="button"
           accessibilityLabel="Dismiss delete confirmation"
         >
@@ -606,14 +624,14 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                       s.confirmIcon,
                       {
                         backgroundColor:
-                          eraseStage === "done" ? colors.sage + "16" : colors.rose + "14",
+                          colors.rose + "14",
                       },
                     ]}
                   >
                     <Ionicons
-                      name={eraseStage === "done" ? "checkmark-circle-outline" : "trash-bin-outline"}
+                      name="trash-bin-outline"
                       size={20}
-                      color={eraseStage === "done" ? colors.sage : colors.rose}
+                      color={colors.rose}
                     />
                   </View>
                   <Text style={[s.confirmTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
@@ -628,27 +646,11 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                 >
                   {eraseSteps[eraseStage].message}
                 </Text>
-                {eraseStage === "done" ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Close data deletion notice"
-                    onPress={advanceEraseFlow}
-                    style={({ pressed }) => [
-                      s.confirmPrimaryBtn,
-                      s.confirmDoneBtn,
-                      { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 },
-                    ]}
-                  >
-                    <Text style={[s.confirmPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>
-                      Done
-                    </Text>
-                  </Pressable>
-                ) : (
-                  <View style={s.confirmActions}>
+                <View style={s.confirmActions}>
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={eraseSteps[eraseStage].cancelLabel}
-                      disabled={erasing}
+                      disabled={localDataOperationBusy}
                       onPress={cancelEraseFlow}
                       style={({ pressed }) => [
                         s.confirmCancelBtn,
@@ -671,22 +673,21 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={eraseSteps[eraseStage].confirmLabel}
-                      disabled={erasing}
+                      disabled={localDataOperationBusy}
                       onPress={advanceEraseFlow}
                       style={({ pressed }) => [
                         s.confirmPrimaryBtn,
                         {
                           backgroundColor: colors.rose,
-                          opacity: erasing ? 0.6 : pressed ? 0.84 : 1,
+                          opacity: localDataOperationBusy ? 0.6 : pressed ? 0.84 : 1,
                         },
                       ]}
                     >
                       <Text style={[s.confirmPrimaryText, { fontFamily: "Inter_800ExtraBold" }]}>
-                        {erasing ? "Deleting..." : eraseSteps[eraseStage].confirmLabel}
+                        {eraseSteps[eraseStage].confirmLabel}
                       </Text>
                     </Pressable>
-                  </View>
-                )}
+                </View>
               </>
             ) : null}
           </Pressable>
@@ -1116,7 +1117,6 @@ const s = StyleSheet.create({
     marginTop: 0,
   },
   confirmPrimaryText: { color: "#FFFFFF", fontSize: 13 },
-  confirmDoneBtn: { flex: 0, marginTop: 18 },
   launchModal: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,

@@ -1,7 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient } from "@tanstack/react-query";
-import { Platform } from "react-native";
-import * as FileSystem from "expo-file-system/legacy";
 import React, {
   createContext,
   useCallback,
@@ -50,7 +48,6 @@ import {
   restoreEntryAfterDeleteFailure,
   retryCareEntryMutationAfterConflict,
   sanitizeCareEntryDetailsForSync,
-  selectWoofWatcherKeysForOwnerWipe,
   shouldRetryCreate,
   shouldRetryUpdate,
   type CareEntryPendingDelete,
@@ -640,13 +637,6 @@ interface CareContextValue {
   updateEntry: (id: string, patch: Partial<Omit<Entry, "id">>) => boolean;
   updateCareDoc: (updater: (doc: CareDoc) => CareDoc) => boolean;
   refresh: () => void;
-  /**
-   * Store-compliance data deletion: resets the live care document and
-   * removes every data-bearing WoofWatcher key on this device (care state,
-   * avatar art, QA sessions). Only an opaque, non-renderable remote-deletion
-   * ledger may remain until provider cleanup is confirmed.
-   */
-  eraseAllLocalData: () => Promise<void>;
   syncOutbox: CareSyncOutbox;
   isLoaded: boolean;
   isSyncing: boolean;
@@ -757,7 +747,6 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const carePersistenceWriterRef =
     useRef<CarePersistenceWriter<CarePersistenceSnapshot> | null>(null);
   const latestCareSnapshotRef = useRef(0);
-  const snapshotPersistencePausedRef = useRef(false);
   const suppressNextSettledSnapshotRef = useRef(false);
   const currentOperationSettledEpochRef = useRef(operationSettledEpoch);
   currentOperationSettledEpochRef.current = operationSettledEpoch;
@@ -767,15 +756,13 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     entries: Entry[];
     serverVersion: number;
   } | null>(null);
-  const eraseAllLocalDataInFlightRef = useRef<Promise<void> | null>(null);
-  const legacyOwnerWipeInProgressRef = useRef(false);
   const stagedCareResetTempIdsRef = useRef<Set<string>>(new Set());
   const stagedCareResetCleanupLedgerRef = useRef<string[]>([]);
   const entryUpdateQueueRef =
     useRef<SerializedCareEntryMutationQueue<Entry> | null>(null);
   const entryWriteGenerationRef = useRef<Map<string, number>>(new Map());
-  // Bumped by eraseAllLocalData so in-flight sync results can't resurrect
-  // data the owner just deleted from this device.
+  // Bumped by the coordinated Care owner so in-flight sync results cannot
+  // resurrect data the owner just deleted from this device.
   const eraseGenerationRef = useRef(0);
 
   if (!carePersistenceWriterRef.current) {
@@ -1240,8 +1227,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     if (
       !hydrated ||
       !isWriteAdmissionOpen() ||
-      careDocWritesBlocked() ||
-      snapshotPersistencePausedRef.current
+      careDocWritesBlocked()
     ) {
       return;
     }
@@ -2291,8 +2277,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   if (!careLocalDataResetControllerRef.current) {
     careLocalDataResetControllerRef.current =
       createCareLocalDataResetController({
-        canPrepare: () =>
-          hydratedRef.current && !legacyOwnerWipeInProgressRef.current,
+        canPrepare: () => hydratedRef.current,
         drainPrimarySnapshots: () => carePersistenceWriter.drain(),
         drainCleanupLedger: () => discardedServerEntryWriter.drain(),
         beginCommit: beginCoordinatedCareReset,
@@ -2316,113 +2301,6 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     [attachRequiredParticipant, careLocalDataResetController],
   );
 
-  const performOwnerWipe = useCallback(async () => {
-    // Stop accepting snapshots, settle the active write, preserve any opaque
-    // remote-cleanup identifiers, and remove owner keys before installing the
-    // pristine document that the normal persist effect will save afterward.
-    snapshotPersistencePausedRef.current = true;
-    ownerWipeInProgressRef.current = true;
-    eraseGenerationRef.current += 1;
-    careWriteProtectionRef.current.reset();
-    latestCareSnapshotRef.current += 1;
-    futureCareDocRef.current = null;
-    futureCareCacheRawRef.current = null;
-    setStorageWarning(null);
-    try {
-      await carePersistenceWriter.invalidateAndDrain();
-      const tempIdsNeedingRemoteCleanup = entriesRef.current
-        .filter(
-          (entry) =>
-            entry.id.startsWith("temp_") &&
-            (creatingTempEntries.current.has(entry.id) ||
-              entry.syncStatus === "pending" ||
-              entry.syncStatus === "failed"),
-        )
-        .map((entry) => entry.id);
-      for (const entry of entriesRef.current) {
-        if (entry.id.startsWith("temp_")) {
-          cancelledTempEntries.current.add(entry.id);
-        }
-      }
-      // Deleting visible local data must not delete the opaque intent needed
-      // to clean up an in-flight/lost-response create on the provider. Commit
-      // those client keys before clearing the cache; the ledger cannot render
-      // or repopulate a care entry.
-      for (const tempId of tempIdsNeedingRemoteCleanup) {
-        try {
-          await markServerEntryDiscarded(tempId);
-        } catch {
-          // The storage warning is already visible. Continue the
-          // owner-requested local wipe; the in-memory ledger remains available
-          // this session.
-        }
-      }
-      entryUpdateQueue.cancelAll();
-      realIdByTemp.current.clear();
-      pendingPatch.current.clear();
-      creatingTempEntries.current.clear();
-      entryWriteGenerationRef.current.clear();
-      try {
-        const keys = await AsyncStorage.getAllKeys();
-        const owned = selectWoofWatcherKeysForOwnerWipe(
-          keys,
-          CARE_PRESERVED_LOCAL_DATA_KEY,
-        );
-        if (owned.length) {
-          await AsyncStorage.multiRemove(owned);
-        }
-      } catch {
-        // Best effort: the in-memory reset below still clears the live
-        // document, and the persist effect overwrites the primary cache key.
-      }
-      // "All data deleted" must include the files WoofWatcher wrote, not just
-      // its key-value store: exported report artifacts and durable record
-      // attachments both live under documentDirectory on native.
-      if (Platform.OS !== "web" && FileSystem.documentDirectory) {
-        await Promise.all(
-          ["WoofWatcherReports", "woofwatcher-attachments"].map((dir) =>
-            FileSystem.deleteAsync(`${FileSystem.documentDirectory}${dir}/`, {
-              idempotent: true,
-            }).catch(() => {}),
-          ),
-        );
-      }
-    } finally {
-      const defaultDoc = getDefaultDoc();
-      entriesRef.current = [];
-      docRef.current = defaultDoc;
-      versionRef.current = 0;
-      hydratedRef.current = true;
-      careWriteProtectionRef.current.reset();
-      snapshotPersistencePausedRef.current = false;
-      ownerWipeInProgressRef.current = false;
-      setDoc(defaultDoc);
-      setEntries([]);
-      setServerVersion(0);
-      setHydrated(true);
-    }
-  }, [carePersistenceWriter, entryUpdateQueue, markServerEntryDiscarded]);
-
-  const eraseAllLocalData = useCallback(() => {
-    if (eraseAllLocalDataInFlightRef.current) {
-      return eraseAllLocalDataInFlightRef.current;
-    }
-    if (!isWriteAdmissionOpen()) {
-      return Promise.reject(
-        new Error("A coordinated local data reset is already in progress."),
-      );
-    }
-    legacyOwnerWipeInProgressRef.current = true;
-    const wipe = performOwnerWipe().finally(() => {
-      legacyOwnerWipeInProgressRef.current = false;
-      if (eraseAllLocalDataInFlightRef.current === wipe) {
-        eraseAllLocalDataInFlightRef.current = null;
-      }
-    });
-    eraseAllLocalDataInFlightRef.current = wipe;
-    return wipe;
-  }, [isWriteAdmissionOpen, performOwnerWipe]);
-
   const careMutationsBlocked = careDocWritesBlocked();
   const value = useMemo<CareContextValue>(
     () => ({
@@ -2433,7 +2311,6 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       updateEntry,
       updateCareDoc,
       refresh: () => void syncFromServer(),
-      eraseAllLocalData,
       syncOutbox,
       isLoaded: hydrated,
       isSyncing,
@@ -2448,7 +2325,6 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       updateEntry,
       updateCareDoc,
       syncFromServer,
-      eraseAllLocalData,
       syncOutbox,
       hydrated,
       isSyncing,
