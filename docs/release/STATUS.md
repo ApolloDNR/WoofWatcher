@@ -3,15 +3,15 @@
 - Integration branch: `release/woofwatcher-v1`
 - Engineering implementation checkpoint: `6b0123512952fd36d27f1ea395b7d5a32948a98c`
 - Verified implementation tree: `9e27d7aa1e6a02b8874bfeaccc4d8493b0c2aa96`
-- Final status-commit local CI: PENDING
-- Final status-commit remote CI: PENDING
-- Latest verified remote predecessor: `94037b97e84516a2b21bb1dd089bf875b1d36594`; [WoofWatcher Verify #1012 — PASS](https://github.com/ApolloDNR/WoofWatcher/actions/runs/32446493970). This run does not verify the implementation or status commits above.
-- Status identity rule: this tracked file names its exact implementation parent, but cannot contain the SHA of its own containing commit because that text would change the commit. The final status-commit SHA and its exact-head CI evidence must be recorded in PR #12 and the release handoff.
+- Verified pre-closeout head: `fe6c9b976e2dff6254e19542baa093d672b4eeed`
+- Direct exact-head local CI: PASS at `fe6c9b976e2dff6254e19542baa093d672b4eeed`
+- GitHub PR-merge CI: [WoofWatcher Verify #1014 — PASS](https://github.com/ApolloDNR/WoofWatcher/actions/runs/32553088638), associated with head `fe6c9b976e2dff6254e19542baa093d672b4eeed`. The workflow checked synthetic merge `5d5fe00468ae44260fd6fea95a8bc55f70dd763e` into `main`; the direct local suite above checked the head itself.
+- Status identity rule: this tracked file names its exact verified predecessor, but cannot contain the SHA of its own containing commit because that text would change the commit. The resulting documentation-only head SHA and its CI evidence are recorded in PR #12 and the release handoff.
 - Durable baseline: `0f1107b170b0a9c89548a51f5cdeb664ba98246f`
 - Baseline code commit: `b6934f7a`
 - Main at recovery start: `47234396`
 - Scope: free, local-first V1
-- Browser verdict: PENDING FINAL STATUS-COMMIT CI
+- Browser/engineering verdict: PASS at the verified pre-closeout head; resulting documentation-only head evidence is recorded externally
 - Native verdict: BLOCKED — NATIVE CANDIDATE AND PHYSICAL-DEVICE QA UNPROVED
 - Production/App Store/Play status: **NOT APPROVED / NOT SUBMITTED / NOT PUBLISHED**
 
@@ -23,8 +23,10 @@ Next: N1 — Signed Native Candidate and Physical-Device QA
 
 This milestone is complete at the exact implementation checkpoint above. It is
 not native-device proof, owner approval, permission to merge PR #12, or
-permission to submit or publish. The documentation commit and pushed canonical
-head still require the full local CI-equivalent suite and exact-SHA GitHub CI.
+permission to submit or publish. The verified pre-closeout head passed the full
+local CI-equivalent suite directly and the required PR-merge workflow; the
+resulting documentation-only head is recorded externally under the identity
+rule above.
 
 ## M2B2 engineering checkpoint
 
@@ -39,9 +41,9 @@ head still require the full local CI-equivalent suite and exact-SHA GitHub CI.
 - The rendered shield stays closed through deletion, partial failure, retry, and complete. Exact failed-owner/generic labels are accessible, Retry starts a fresh root reset, and only Return/Continue remounts personal screens: PASS
 - Complete success copy is reserved for a complete coordinator result; partial failure/rejection remains visible and actionable: PASS
 - Unsafe legacy Care wipe and direct Privacy/file/share bypasses are absent; Avatar Studio's legitimate feature reset remains: PASS
-- Focused adversarial reset/deletion tests: 253/253 PASS at `6b0123512952fd36d27f1ea395b7d5a32948a98c`
-- Full focused repository tests: 1,345/1,345 PASS at `6b0123512952fd36d27f1ea395b7d5a32948a98c`
-- Mobile TypeScript: PASS at `6b0123512952fd36d27f1ea395b7d5a32948a98c`
+- Focused adversarial reset/deletion tests: 253/253 PASS at `fe6c9b976e2dff6254e19542baa093d672b4eeed`
+- Full focused repository tests: 1,345/1,345 PASS at `fe6c9b976e2dff6254e19542baa093d672b4eeed`
+- Mobile TypeScript: PASS at `fe6c9b976e2dff6254e19542baa093d672b4eeed`
 - Independent scoped re-review: APPROVED; zero Critical or Important findings
 
 Automated integrity proof uses controlled native adapters. Physical Expo
