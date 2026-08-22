@@ -34,7 +34,7 @@ function combine(cleanups: Array<() => void>): () => void {
   };
 }
 
-test("shipping reset waits for the real AppFrame query observer and stays shielded through partial retry and complete", async () => {
+test("real shipping shield and providers wait for a mounted personal query consumer through partial retry and complete", async () => {
   const firstFilesPrepareStarted = deferred();
   const releaseFirstFilesPrepare = deferred();
   const events: string[] = [];
@@ -71,7 +71,7 @@ test("shipping reset waits for the real AppFrame query observer and stays shield
     return null;
   }
 
-  function PersonalAppFrame(): React.JSX.Element {
+  function PersonalQueryConsumer(): React.JSX.Element {
     useQuery({
       queryKey: ["personal", "phoenix"],
       queryFn: async () => "Phoenix",
@@ -84,7 +84,7 @@ test("shipping reset waits for the real AppFrame query observer and stays shield
         events.push("personal-layout-cleanup");
       };
     }, []);
-    return <div aria-label="personal-app-frame">personal</div>;
+    return <div aria-label="personal-query-consumer">personal</div>;
   }
 
   function Harness(): React.JSX.Element {
@@ -93,7 +93,7 @@ test("shipping reset waits for the real AppFrame query observer and stays shield
         <QueryCacheLocalDataResetProvider>
           <RequiredOwners />
           <LocalDataResetAppShield>
-            <PersonalAppFrame />
+            <PersonalQueryConsumer />
           </LocalDataResetAppShield>
         </QueryCacheLocalDataResetProvider>
       </LocalDataResetProvider>
@@ -151,7 +151,7 @@ test("shipping reset waits for the real AppFrame query observer and stays shield
         .find({ queryKey: ["personal", "phoenix"] })
         ?.getObserversCount(),
       1,
-      "the mounted AppFrame owns one real QueryObserver",
+      "the mounted personal query consumer owns one QueryObserver",
     );
 
     let firstResetSettled = false;
@@ -187,7 +187,7 @@ test("shipping reset waits for the real AppFrame query observer and stays shield
         '[aria-label="Deleting all local WoofWatcher data"]',
       ),
     );
-    assert.equal(find(container, "personal-app-frame"), null);
+    assert.equal(find(container, "personal-query-consumer"), null);
     assert.equal(find(container, "All data deleted"), null);
     assert.equal(observersAtClear, -1, "no owner commits after a prepare failure");
 
@@ -205,7 +205,7 @@ test("shipping reset waits for the real AppFrame query observer and stays shield
     );
     assert.ok(find(container, "Local data deletion needs attention"));
     assert.ok(find(container, "Files on this device. Failed owner ID: files"));
-    assert.equal(find(container, "personal-app-frame"), null);
+    assert.equal(find(container, "personal-query-consumer"), null);
     assert.equal(find(container, "All data deleted"), null);
 
     const retry = find(container, "Retry deleting all local data");
@@ -229,7 +229,7 @@ test("shipping reset waits for the real AppFrame query observer and stays shield
     );
     assert.ok(find(container, "All data deleted"));
     assert.equal(find(container, "Local data deletion needs attention"), null);
-    assert.equal(find(container, "personal-app-frame"), null);
+    assert.equal(find(container, "personal-query-consumer"), null);
     assert.equal(personalMounts, 1);
 
     const continueButton = find(
@@ -241,7 +241,7 @@ test("shipping reset waits for the real AppFrame query observer and stays shield
       continueButton.click();
     });
 
-    assert.ok(find(container, "personal-app-frame"));
+    assert.ok(find(container, "personal-query-consumer"));
     assert.equal(find(container, "All data deleted"), null);
     assert.equal(personalMounts, 2);
     assert.equal(
@@ -250,7 +250,7 @@ test("shipping reset waits for the real AppFrame query observer and stays shield
         .find({ queryKey: ["personal", "phoenix"] })
         ?.getObserversCount(),
       1,
-      "Continue clearResult/release is the only AppFrame remount path",
+      "Continue clearResult/release is the only personal query consumer remount path",
     );
   } finally {
     await act(async () => {
