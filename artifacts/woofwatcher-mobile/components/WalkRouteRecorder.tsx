@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { normalizeCareEventType } from "@workspace/care-domain";
 
 import { useCare, type Entry } from "@/context/CareContext";
+import { useLocalDataReset } from "@/context/LocalDataResetContext";
 import {
   cancelWalkRouteCapture,
   finishWalkRouteCapture,
   getWalkRouteCaptureSnapshot,
   startWalkRouteCapture,
   subscribeWalkRouteCapture,
+  walkRouteLocalDataResetParticipant,
   type WalkRouteCaptureSnapshot,
 } from "@/lib/walkRoute";
 import { findOpenWalkSession } from "@/lib/walkSession";
@@ -49,6 +51,7 @@ export function useWalkRouteCaptureStatus(): WalkRouteCaptureSnapshot {
 
 export function WalkRouteRecorderBridge() {
   const { state, careMutationsBlocked, updateEntry, isLoaded } = useCare();
+  const { attachRequiredParticipant } = useLocalDataReset();
   const openWalk = useMemo(() => findOpenWalkSession(state.entries), [state.entries]);
   const entriesRef = useRef(state.entries);
   entriesRef.current = state.entries;
@@ -57,6 +60,14 @@ export function WalkRouteRecorderBridge() {
   const sessionKey = isLoaded && !careMutationsBlocked
     ? walkSessionKey(openWalk)
     : null;
+
+  useEffect(
+    () => attachRequiredParticipant(
+      "walk-capture",
+      walkRouteLocalDataResetParticipant,
+    ),
+    [attachRequiredParticipant],
+  );
 
   useEffect(() => {
     if (!isLoaded) return;

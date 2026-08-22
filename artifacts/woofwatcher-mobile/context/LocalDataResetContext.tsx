@@ -47,6 +47,7 @@ export interface LocalDataResetContextValue {
   ): () => void;
   removableStorage: RemovableLocalDataStorage;
   runTrackedLocalDataWork: TrackedLocalDataWork["run"];
+  drainTrackedLocalDataWork: TrackedLocalDataWork["drain"];
   captureLocalDataIntent(): LocalDataIntent | null;
   isLocalDataIntentCurrent(intent: LocalDataIntent): boolean;
   runWithLocalDataIntent<T>(
@@ -120,6 +121,7 @@ export function LocalDataResetProvider({
       attachRequiredParticipant: runtime.attachRequiredParticipant,
       removableStorage: runtime.removableStorage,
       runTrackedLocalDataWork: runtime.trackedWork.run,
+      drainTrackedLocalDataWork: runtime.trackedWork.drain,
       captureLocalDataIntent: intentAuthority.capture,
       isLocalDataIntentCurrent: intentAuthority.isCurrent,
       runWithLocalDataIntent: runLocalDataIntentInteraction,

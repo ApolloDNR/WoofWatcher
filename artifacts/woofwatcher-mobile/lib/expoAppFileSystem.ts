@@ -19,5 +19,7 @@ export function createExpoAppFileSystemAdapter(): AppFileSystemAdapter {
             : FileSystem.EncodingType.UTF8,
       }),
     getContentUriAsync: (uri) => FileSystem.getContentUriAsync(uri),
+    readDirectoryAsync: (uri) => FileSystem.readDirectoryAsync(uri),
+    deleteAsync: (uri, options) => FileSystem.deleteAsync(uri, options),
   };
 }

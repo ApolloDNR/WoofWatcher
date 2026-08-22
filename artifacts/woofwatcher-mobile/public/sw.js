@@ -22,6 +22,27 @@ const SHELL_CACHE = `woofwatcher-shell-${SHELL_VERSION}`;
 const RUNTIME_CACHE = `woofwatcher-runtime-${SHELL_VERSION}`;
 const SHELL_URLS = ["/", "/manifest.json", "/icon.png", "/favicon.ico", ...EXTRA_SHELL_URLS];
 
+async function clearLocalDataCaches() {
+  const keys = await caches.keys();
+  const owned = keys.filter(
+    (key) => key.startsWith("woofwatcher-") && key !== SHELL_CACHE,
+  );
+  const results = await Promise.all(owned.map((key) => caches.delete(key)));
+  if (results.some((deleted) => !deleted)) {
+    throw new Error("one or more WoofWatcher caches could not be deleted");
+  }
+}
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== "woofwatcher:clear-local-data") return;
+  const reply = event.ports?.[0];
+  const operation = clearLocalDataCaches().then(
+    () => reply?.postMessage({ type: "woofwatcher:clear-local-data:complete" }),
+    () => reply?.postMessage({ type: "woofwatcher:clear-local-data:failed" }),
+  );
+  event.waitUntil(operation);
+});
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -90,6 +111,11 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
+    event.respondWith(fetch(request, { cache: "no-store" }));
+    return;
+  }
 
   if (request.mode === "navigate") {
     event.respondWith(networkFirstShell(request));

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useRef } from "react";
+import React, { createContext, useContext, useEffect, useRef } from "react";
 
 import { useLocalDataReset } from "@/context/LocalDataResetContext";
 import {
@@ -18,6 +18,8 @@ export function AppFileSystemProvider({
     captureLocalDataIntent,
     isLocalDataIntentCurrent,
     runTrackedLocalDataWork,
+    drainTrackedLocalDataWork,
+    attachRequiredParticipant,
   } = useLocalDataReset();
   const fileSystemRef = useRef<AppFileSystem | null>(null);
   if (fileSystemRef.current === null) {
@@ -28,8 +30,17 @@ export function AppFileSystemProvider({
         isCurrent: isLocalDataIntentCurrent,
       }),
       runTrackedLocalDataWork,
+      drainTrackedLocalDataWork,
     });
   }
+
+  useEffect(
+    () => attachRequiredParticipant(
+      "files",
+      fileSystemRef.current!.localDataResetParticipant,
+    ),
+    [attachRequiredParticipant],
+  );
 
   return (
     <AppFileSystemContext.Provider value={fileSystemRef.current}>

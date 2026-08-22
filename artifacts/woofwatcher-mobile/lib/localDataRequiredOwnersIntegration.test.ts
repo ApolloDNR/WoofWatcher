@@ -33,6 +33,23 @@ const privacySource = readFileSync(
   "utf8",
 );
 
+const appFileSystemContextSource = readFileSync(
+  join(mobileRoot, "context", "AppFileSystemContext.tsx"),
+  "utf8",
+);
+const walkRouteRecorderSource = readFileSync(
+  join(mobileRoot, "components", "WalkRouteRecorder.tsx"),
+  "utf8",
+);
+const webRuntimeContextSource = readFileSync(
+  join(mobileRoot, "context", "WebRuntimeLocalDataResetContext.tsx"),
+  "utf8",
+);
+const rootLayoutSource = readFileSync(
+  join(mobileRoot, "app", "_layout.tsx"),
+  "utf8",
+);
+
 function sourceSlice(source: string, start: string, end: string): string {
   const startIndex = source.indexOf(start);
   const endIndex = source.indexOf(end, startIndex + start.length);
@@ -52,6 +69,25 @@ function productionTypeScriptFiles(root: string): string[] {
       : [];
   });
 }
+
+test("production composition attaches files, walk capture, and web runtime required owners", () => {
+  assert.match(
+    appFileSystemContextSource,
+    /attachRequiredParticipant\(\s*"files",\s*fileSystemRef\.current!\.localDataResetParticipant,?\s*\)/,
+  );
+  assert.match(
+    walkRouteRecorderSource,
+    /attachRequiredParticipant\(\s*"walk-capture",\s*walkRouteLocalDataResetParticipant,?\s*\)/,
+  );
+  assert.match(
+    webRuntimeContextSource,
+    /attachRequiredParticipant\(\s*"web-runtime",\s*controllerRef\.current!\.participant,?\s*\)/,
+  );
+  assert.match(
+    rootLayoutSource,
+    /<LocalDataResetProvider>[\s\S]*<WebRuntimeLocalDataResetProvider>[\s\S]*<AppFileSystemProvider>/,
+  );
+});
 
 test("Query cache attaches one identity-safe stable required owner", () => {
   assert.match(queryCacheContextSource, /useQueryClient\(\)/);

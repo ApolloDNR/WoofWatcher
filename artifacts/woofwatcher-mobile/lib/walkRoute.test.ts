@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { createLocalDataResetRuntime } from "./localDataResetRuntime.ts";
+import * as walkRouteModule from "./walkRoute.ts";
+
 import {
   WALK_ROUTE_MAX_POINTS,
   cancelWalkRouteCapture,
@@ -31,6 +34,121 @@ function point(lat: number, lon: number, t: number): WalkRoutePoint {
 function latDegrees(meters: number): number {
   return meters / 111_132;
 }
+
+test("walk reset tears down live capture and ignores a queued late callback", async () => {
+  const originalNavigator = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "navigator",
+  );
+  let onPoint:
+    | ((position: {
+        coords: { latitude: number; longitude: number };
+        timestamp: number;
+      }) => void)
+    | null = null;
+  let clearedWatchId: number | null = null;
+  Object.defineProperty(globalThis, "navigator", {
+    configurable: true,
+    value: {
+      geolocation: {
+        watchPosition(callback: typeof onPoint) {
+          onPoint = callback;
+          return 41;
+        },
+        clearWatch(watchId: number) {
+          clearedWatchId = watchId;
+        },
+      },
+    },
+  });
+
+  try {
+    await startWalkRouteCapture("live-reset-walk");
+    const participant = (
+      walkRouteModule as typeof walkRouteModule & {
+        walkRouteLocalDataResetParticipant?: {
+          prepare(): Promise<void>;
+          commit(): Promise<void>;
+        };
+      }
+    ).walkRouteLocalDataResetParticipant;
+    assert.ok(participant, "walk capture must expose its required reset owner");
+
+    const runtime = createLocalDataResetRuntime({
+      async getItem() {
+        return null;
+      },
+      async setItem() {},
+      async removeItem() {},
+    });
+    for (const id of [
+      "avatar",
+      "care",
+      "device-preferences",
+      "files",
+      "query-cache",
+      "web-runtime",
+    ] as const) {
+      runtime.attachRequiredParticipant(id, {
+        prepare: async () => {},
+        commit: async () => {},
+      });
+    }
+    runtime.attachRequiredParticipant("walk-capture", participant);
+
+    assert.equal((await runtime.operations.runReset()).status, "complete");
+    assert.equal(clearedWatchId, 41);
+    assert.equal(getWalkRouteCaptureSnapshot().status, "idle");
+    onPoint?.({
+      coords: { latitude: SF.lat, longitude: SF.lon },
+      timestamp: 100,
+    });
+    assert.equal(getWalkRouteCaptureSnapshot().pointCount, 0);
+  } finally {
+    cancelWalkRouteCapture();
+    if (originalNavigator) {
+      Object.defineProperty(globalThis, "navigator", originalNavigator);
+    } else {
+      delete (globalThis as { navigator?: unknown }).navigator;
+    }
+  }
+});
+
+test("walk reset owner reports a native watch teardown failure", async () => {
+  const originalNavigator = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "navigator",
+  );
+  Object.defineProperty(globalThis, "navigator", {
+    configurable: true,
+    value: {
+      geolocation: {
+        watchPosition() {
+          return 42;
+        },
+        clearWatch() {
+          throw new Error("native watch removal failed");
+        },
+      },
+    },
+  });
+
+  try {
+    await startWalkRouteCapture("teardown-failure-walk");
+    await assert.rejects(
+      walkRouteModule.walkRouteLocalDataResetParticipant.prepare(),
+      /fully stopped/,
+    );
+    assert.equal(getWalkRouteCaptureSnapshot().status, "idle");
+  } finally {
+    cancelWalkRouteCapture();
+    if (originalNavigator) {
+      Object.defineProperty(globalThis, "navigator", originalNavigator);
+    } else {
+      delete (globalThis as { navigator?: unknown }).navigator;
+    }
+  }
+});
 
 test("haversineMeters matches known real-world distances", () => {
   // 0.01 degrees of latitude is ~1111.9 m anywhere on Earth.

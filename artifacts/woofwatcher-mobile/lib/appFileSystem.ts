@@ -1,5 +1,7 @@
 import {
+  APP_OWNED_DIRECTORY_NAMES,
   APP_FILE_DESTINATION_DIRECTORY_NAMES,
+  isLegacyRootAvatarFileName,
   isSafeAppDocumentDirectory,
   relocateAppOwnedDocumentUri,
   type AppArtifactDestination,
@@ -14,6 +16,7 @@ import type {
   LocalDataIntent,
   LocalDataIntentAuthority,
 } from "./localDataIntent.ts";
+import type { LocalDataResetParticipant } from "./localDataResetCoordinator.ts";
 import { LocalDataResetInProgressError } from "./removableLocalDataStorage.ts";
 import type { TrackedLocalDataWork } from "./trackedLocalDataWork.ts";
 
@@ -32,6 +35,8 @@ export interface AppFileSystemAdapter {
     options: { encoding: "utf8" | "base64" },
   ): Promise<void>;
   getContentUriAsync(uri: string): Promise<string>;
+  readDirectoryAsync(uri: string): Promise<string[]>;
+  deleteAsync(uri: string, options: { idempotent: true }): Promise<void>;
 }
 
 export interface AppFileArtifactInput {
@@ -73,12 +78,14 @@ export interface AppFileSystem {
     artifact: AppFileArtifactInput,
     perform: (artifact: AppFileArtifactResult) => Promise<T>,
   ): Promise<ProtectedAppFileResult<T>>;
+  readonly localDataResetParticipant: Omit<LocalDataResetParticipant, "id">;
 }
 
 export interface CreateAppFileSystemOptions {
   adapter: AppFileSystemAdapter;
   intentAuthority: LocalDataIntentAuthority;
   runTrackedLocalDataWork: TrackedLocalDataWork["run"];
+  drainTrackedLocalDataWork: TrackedLocalDataWork["drain"];
 }
 
 const REVOKED = Symbol("app-file-operation-revoked");
@@ -148,8 +155,52 @@ export function createAppFileSystem({
   adapter,
   intentAuthority,
   runTrackedLocalDataWork,
+  drainTrackedLocalDataWork,
 }: CreateAppFileSystemOptions): AppFileSystem {
   const acquireTargetLane = createTargetLaneManager();
+
+  const deleteAllOwnedFiles = async (): Promise<void> => {
+    if (adapter.platform === "web") return;
+    if (!isSafeAppDocumentDirectory(adapter.documentDirectory)) {
+      throw new Error(
+        "App-owned files cannot be deleted without a safe document directory.",
+      );
+    }
+
+    const documentRoot = withTrailingSlash(adapter.documentDirectory);
+    const failures: unknown[] = [];
+    let legacyRootAvatarNames: string[] = [];
+    try {
+      legacyRootAvatarNames = (
+        await adapter.readDirectoryAsync(documentRoot)
+      ).filter(isLegacyRootAvatarFileName);
+    } catch (error) {
+      failures.push(error);
+    }
+
+    const ownedUris = [
+      ...APP_OWNED_DIRECTORY_NAMES.map((name) => `${documentRoot}${name}/`),
+      ...legacyRootAvatarNames.map((name) => `${documentRoot}${name}`),
+    ];
+    for (const uri of ownedUris) {
+      try {
+        await adapter.deleteAsync(uri, { idempotent: true });
+      } catch (error) {
+        failures.push(error);
+      }
+    }
+    if (failures.length > 0) {
+      throw new AggregateError(
+        failures,
+        "One or more app-owned files could not be deleted.",
+      );
+    }
+  };
+
+  const localDataResetParticipant = Object.freeze({
+    prepare: drainTrackedLocalDataWork,
+    commit: deleteAllOwnedFiles,
+  });
 
   const runTracked = async <T>(
     intent: LocalDataIntent,
@@ -304,6 +355,7 @@ export function createAppFileSystem({
         }
       });
     },
+    localDataResetParticipant,
   };
 
   return Object.freeze(facade);

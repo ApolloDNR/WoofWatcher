@@ -371,6 +371,7 @@ const capture: CaptureState = {
 };
 
 const listeners = new Set<() => void>();
+const pendingCaptureStarts = new Set<Promise<void>>();
 let snapshot: WalkRouteCaptureSnapshot = {
   status: "idle",
   sessionKey: null,
@@ -406,14 +407,15 @@ function setStatus(status: WalkRouteCaptureStatus): void {
   publish();
 }
 
-function stopActiveWatch(): void {
+function stopActiveWatch(reportFailure = false): void {
   const stop = capture.stopWatch;
   capture.stopWatch = null;
   if (stop) {
     try {
       stop();
-    } catch {
-      // Ignore teardown failures; nothing else to release.
+    } catch (error) {
+      if (reportFailure) throw error;
+      // Best-effort cancellation outside destructive reset cannot block UI.
     }
   }
 }
@@ -540,7 +542,7 @@ async function startNativeWatch(
  * discards the previous capture. Resolves once the platform watch is
  * established (or determined to be denied/unavailable).
  */
-export async function startWalkRouteCapture(sessionKey: string): Promise<void> {
+async function establishWalkRouteCapture(sessionKey: string): Promise<void> {
   if (!sessionKey) return;
   if (
     capture.sessionKey === sessionKey &&
@@ -593,6 +595,16 @@ export async function startWalkRouteCapture(sessionKey: string): Promise<void> {
   if (capture.status !== "denied") setStatus("unavailable");
 }
 
+export function startWalkRouteCapture(sessionKey: string): Promise<void> {
+  const operation = establishWalkRouteCapture(sessionKey);
+  pendingCaptureStarts.add(operation);
+  void operation.then(
+    () => pendingCaptureStarts.delete(operation),
+    () => pendingCaptureStarts.delete(operation),
+  );
+  return operation;
+}
+
 /**
  * Stop capturing and return the simplified route, or null when nothing
  * meaningful was recorded (denied, unsupported, or the dog never moved).
@@ -627,3 +639,36 @@ export function finishWalkRouteCapture(
 export function cancelWalkRouteCapture(): void {
   resetCapture();
 }
+
+/** Reset-owner barrier: revoke capture, stop the live watch, and drain starts. */
+export async function cancelAndDrainWalkRouteCapture(): Promise<void> {
+  let stopFailure: unknown;
+  try {
+    stopActiveWatch(true);
+  } catch (error) {
+    stopFailure = error;
+  }
+  capture.generation += 1;
+  capture.sessionKey = null;
+  capture.points = [];
+  setStatus("idle");
+
+  const startResults = await Promise.allSettled([...pendingCaptureStarts]);
+  const failures = startResults
+    .filter(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    )
+    .map((result) => result.reason);
+  if (stopFailure !== undefined) failures.unshift(stopFailure);
+  if (failures.length > 0) {
+    throw new AggregateError(
+      failures,
+      "Walk capture could not be fully stopped.",
+    );
+  }
+}
+
+export const walkRouteLocalDataResetParticipant = Object.freeze({
+  prepare: cancelAndDrainWalkRouteCapture,
+  async commit() {},
+});

@@ -58,9 +58,122 @@ function buildAdapter(
     async copyAsync() {},
     async writeAsStringAsync() {},
     async getContentUriAsync(uri) { return `content://${uri}`; },
+    async readDirectoryAsync() { return []; },
+    async deleteAsync() {},
     ...overrides,
   };
 }
+
+test("owned-file reset drains accepted work, deletes the exact inventory, and reports failure", async () => {
+  const copy = deferred<void>();
+  const deleted: string[] = [];
+  const { runtime, fileSystem } = buildHarness(
+    buildAdapter({
+      async copyAsync() {
+        await copy.promise;
+      },
+      async readDirectoryAsync() {
+        return [
+          "phoenix-portrait-17.png",
+          "avatar-anxious-22.png",
+          "private.txt",
+          "avatar-sad-23.png",
+        ];
+      },
+      async deleteAsync(uri) {
+        deleted.push(uri);
+        if (uri.endsWith("WoofWatcherCredentials/")) {
+          throw new Error("credentials directory is locked");
+        }
+      },
+    }),
+  );
+  attachAllRequiredNoOps(runtime, {
+    files: fileSystem.localDataResetParticipant,
+  });
+
+  const persistence = fileSystem.persistPickedMedia(requireIntent(fileSystem), {
+    sourceUri: "file:///var/mobile/Library/Caches/picked.jpg",
+  });
+  await flush();
+  let resetSettled = false;
+  const reset = runtime.operations.runReset().then((result) => {
+    resetSettled = true;
+    return result;
+  });
+  await flush();
+  assert.equal(resetSettled, false);
+
+  copy.resolve();
+  await persistence;
+  assert.deepEqual(await reset, {
+    status: "partial-failure",
+    committedParticipantIds: [
+      "avatar",
+      "care",
+      "device-preferences",
+      "query-cache",
+      "walk-capture",
+      "web-runtime",
+      "work-drain",
+    ],
+    failedParticipantIds: ["files"],
+  });
+  assert.deepEqual(deleted, [
+    "file:///var/mobile/Documents/WoofWatcherReports/",
+    "file:///var/mobile/Documents/WoofWatcherCredentials/",
+    "file:///var/mobile/Documents/woofwatcher-attachments/",
+    "file:///var/mobile/Documents/phoenix-portrait-17.png",
+    "file:///var/mobile/Documents/avatar-anxious-22.png",
+  ]);
+});
+
+test("a reconstructed reset runtime retries a partial owned-file deletion to convergence", async () => {
+  const remaining = new Set([
+    "file:///var/mobile/Documents/WoofWatcherReports/",
+    "file:///var/mobile/Documents/WoofWatcherCredentials/",
+    "file:///var/mobile/Documents/woofwatcher-attachments/",
+    "file:///var/mobile/Documents/avatar-happy-9.png",
+  ]);
+  let failOnce = true;
+  const adapter = buildAdapter({
+    async readDirectoryAsync() {
+      return remaining.has("file:///var/mobile/Documents/avatar-happy-9.png")
+        ? ["avatar-happy-9.png"]
+        : [];
+    },
+    async deleteAsync(uri) {
+      if (uri.endsWith("WoofWatcherCredentials/") && failOnce) {
+        failOnce = false;
+        throw new Error("transient deletion failure");
+      }
+      remaining.delete(uri);
+    },
+  });
+
+  const first = buildHarness(adapter);
+  attachAllRequiredNoOps(first.runtime, {
+    files: first.fileSystem.localDataResetParticipant,
+  });
+  assert.equal(
+    (await first.runtime.operations.runReset()).status,
+    "partial-failure",
+  );
+  assert.deepEqual(
+    remaining,
+    new Set(["file:///var/mobile/Documents/WoofWatcherCredentials/"]),
+  );
+
+  const reconstructed = buildHarness(adapter);
+  attachAllRequiredNoOps(reconstructed.runtime, {
+    files: reconstructed.fileSystem.localDataResetParticipant,
+  });
+  assert.equal(
+    (await reconstructed.runtime.operations.runReset()).status,
+    "complete",
+  );
+  assert.deepEqual(remaining, new Set());
+});
 
 function buildHarness(adapter: AppFileSystemAdapter = buildAdapter()) {
   const runtime = createLocalDataResetRuntime(createStorageAdapter());
@@ -72,6 +185,7 @@ function buildHarness(adapter: AppFileSystemAdapter = buildAdapter()) {
     adapter,
     intentAuthority,
     runTrackedLocalDataWork: runtime.trackedWork.run,
+    drainTrackedLocalDataWork: runtime.trackedWork.drain,
   });
   return { runtime, intentAuthority, fileSystem };
 }

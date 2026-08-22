@@ -36,6 +36,7 @@ import { CareProvider } from "@/context/CareContext";
 import { AvatarProvider } from "@/context/AvatarContext";
 import { AppViewportProvider } from "@/context/AppViewportContext";
 import { AppFileSystemProvider } from "@/context/AppFileSystemContext";
+import { WebRuntimeLocalDataResetProvider } from "@/context/WebRuntimeLocalDataResetContext";
 import { DevicePreferencesProvider } from "@/context/DevicePreferencesContext";
 import { LocalDataResetProvider } from "@/context/LocalDataResetContext";
 import { QueryCacheLocalDataResetProvider } from "@/context/QueryCacheLocalDataResetContext";
@@ -362,7 +363,8 @@ export default function RootLayout() {
         <ErrorBoundary>
           <QueryClientProvider client={queryClient}>
             <LocalDataResetProvider>
-              <AppFileSystemProvider>
+              <WebRuntimeLocalDataResetProvider>
+                <AppFileSystemProvider>
                 <QueryCacheLocalDataResetProvider>
                   <DevicePreferencesProvider>
                     <AuthBridge />
@@ -381,7 +383,8 @@ export default function RootLayout() {
                     </CareProvider>
                   </DevicePreferencesProvider>
                 </QueryCacheLocalDataResetProvider>
-              </AppFileSystemProvider>
+                </AppFileSystemProvider>
+              </WebRuntimeLocalDataResetProvider>
             </LocalDataResetProvider>
           </QueryClientProvider>
         </ErrorBoundary>
