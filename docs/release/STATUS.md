@@ -1,23 +1,78 @@
 # WoofWatcher V1 Release Status
 
 - Integration branch: `release/woofwatcher-v1`
-- Last verified implementation checkpoint: `c50411a401e915c28b24dd7e6d988bd0ac5f1bb6`
-- Verified implementation tree: `a035ffcb4e30cca0acf0dd0d6662f93f0123fda3`
-- Checkpoint CI: [WoofWatcher Verify #981 — PASS](https://github.com/ApolloDNR/WoofWatcher/actions/runs/31753986345)
+- Engineering implementation checkpoint: `6b0123512952fd36d27f1ea395b7d5a32948a98c`
+- Verified implementation tree: `9e27d7aa1e6a02b8874bfeaccc4d8493b0c2aa96`
+- Final status-commit local CI: PENDING
+- Final status-commit remote CI: PENDING
+- Latest verified remote predecessor: `94037b97e84516a2b21bb1dd089bf875b1d36594`; [WoofWatcher Verify #1012 — PASS](https://github.com/ApolloDNR/WoofWatcher/actions/runs/32446493970). This run does not verify the implementation or status commits above.
+- Status identity rule: this tracked file names its exact implementation parent, but cannot contain the SHA of its own containing commit because that text would change the commit. The final status-commit SHA and its exact-head CI evidence must be recorded in PR #12 and the release handoff.
 - Durable baseline: `0f1107b170b0a9c89548a51f5cdeb664ba98246f`
 - Baseline code commit: `b6934f7a`
 - Main at recovery start: `47234396`
 - Scope: free, local-first V1
-- Browser verdict: PASS
-- Native verdict: PENDING NATIVE
+- Browser verdict: PENDING FINAL STATUS-COMMIT CI
+- Native verdict: BLOCKED — NATIVE CANDIDATE AND PHYSICAL-DEVICE QA UNPROVED
+- Production/App Store/Play status: **NOT APPROVED / NOT SUBMITTED / NOT PUBLISHED**
 
 ## Current milestone
 
-M2B1 — Root Local Reset Runtime: COMPLETE
+M2B2 — Coordinated Local-Data Reset and Deletion Integrity: **COMPLETE (ENGINEERING)**
 
-Next: M2B2 — Storage and State Owner Integration
+Next: N1 — Signed Native Candidate and Physical-Device QA
 
-## M2B1 durable checkpoint
+This milestone is complete at the exact implementation checkpoint above. It is
+not native-device proof, owner approval, permission to merge PR #12, or
+permission to submit or publish. The documentation commit and pushed canonical
+head still require the full local CI-equivalent suite and exact-SHA GitHub CI.
+
+## M2B2 engineering checkpoint
+
+- All seven required production owners are attached: `avatar`, `care`, `device-preferences`, `files`, `query-cache`, `walk-capture`, and `web-runtime`: PASS
+- Accepted removable-storage and app-file work is admission-controlled and drained before destructive commits: PASS
+- Successful file-owner commit removes `WoofWatcherReports`, `WoofWatcherCredentials`, `woofwatcher-attachments`, and exact legacy root avatar files; every target is attempted and deletion errors remain exact `files` partial failures: PASS
+- Sensitive same-origin `/api` responses bypass CacheStorage; owned runtime/data caches are cleared with service-worker acknowledgement while the current offline shell is preserved: PASS
+- Active and pending walk capture is invalidated and drained; failed native teardown handles remain retryable; late callbacks cannot restore route state: PASS
+- Picked-media and generated report/credential writers use the reset-aware file facade; revoked writers and late share fallbacks cannot recreate or apply deleted data: PASS
+- Privacy export uses immutable synchronous capture through `runExport`; deletion uses only `runReset`; export/reset mutual exclusion is enforced by the root operation lane: PASS
+- Query-cache deletion waits for the real personal-screen React shield's post-unmount acknowledgement, then cancels, identity-checks, clears, and rechecks before completion: PASS
+- The rendered shield stays closed through deletion, partial failure, retry, and complete. Exact failed-owner/generic labels are accessible, Retry starts a fresh root reset, and only Return/Continue remounts personal screens: PASS
+- Complete success copy is reserved for a complete coordinator result; partial failure/rejection remains visible and actionable: PASS
+- Unsafe legacy Care wipe and direct Privacy/file/share bypasses are absent; Avatar Studio's legitimate feature reset remains: PASS
+- Focused adversarial reset/deletion tests: 253/253 PASS at `6b0123512952fd36d27f1ea395b7d5a32948a98c`
+- Full focused repository tests: 1,345/1,345 PASS at `6b0123512952fd36d27f1ea395b7d5a32948a98c`
+- Mobile TypeScript: PASS at `6b0123512952fd36d27f1ea395b7d5a32948a98c`
+- Independent scoped re-review: APPROVED; zero Critical or Important findings
+
+Automated integrity proof uses controlled native adapters. Physical Expo
+filesystem deletion, location-watch teardown, native sharing, offline/relaunch,
+and installed-binary UI behavior remain part of N1 and are not implied by this
+engineering verdict.
+
+## N1 native candidate and device gate
+
+- Configured identity only: app version `1.0.0`, iOS configured build number `1`, and iOS/Android bundle/package `com.pegasusdreamscapes.woofwatcher`. These values are not a native candidate or build identifier.
+- Signed iOS candidate: **BLOCKED / NONE**; no `.ipa`, EAS build ID, artifact URL, signed install, or TestFlight evidence exists.
+- Android candidate: **BLOCKED / NONE**; no `.apk`, `.aab`, EAS build ID, artifact URL, or signed install evidence exists.
+- Physical iPhone QA: **NOT RUN**; no physical iPhone is accessible from this Linux environment and `xcrun` is unavailable.
+- Physical Android QA: **NOT RUN**; no physical Android device is accessible, and `adb`, `emulator`, `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and `JAVA_HOME` are unavailable here.
+- Native screenshots/video: **NONE**. Existing store screenshots and historical Chromium navigation evidence are web evidence, not native or physical-device proof.
+- Expo/EAS tooling: no global or workspace-local EAS CLI, no authenticated EAS query, no Expo/EAS credential environment, and no committed `extra.eas.projectId`.
+- Account/signing inputs: Expo project ownership/access is unproved. Apple Developer team, certificate, provisioning profile, registered internal device, App Store Connect app/TestFlight access, and Google Play Console, Play App Signing/upload-key, and internal-test access are unavailable or unproved. Release metadata still has null EAS project ID, Apple Team ID, App Store Connect Apple ID, and App Review phone.
+- Native proof metadata remains false for signed TestFlight installation, the physical-iPhone matrix, and Apollo approval of the exact build.
+- Safe areas, touch targets, VoiceOver/TalkBack, large text, haptics, permissions, native sharing/files, offline/background/relaunch, navigation/back/deep links, active walk capture, export, and reset remain unproved on a physical-device binary.
+
+PR #12 remains draft and unmerged, and Issue #13 remains open as the release gate. No
+App Store or Play Store submission and no production publication are authorized.
+Apollo must personally approve the exact tested binary before release.
+
+## Historical checkpoints
+
+The sections below preserve prior checkpoint evidence. Their then-current
+limitations and next-step statements are historical and are superseded by the
+M2B2 and N1 status above.
+
+### M2B1 durable checkpoint
 
 - Remote branch and exact tree equality: PASS
 - Independent adversarial review: PASS; zero remaining critical, important, or minor findings
@@ -32,9 +87,13 @@ Next: M2B2 — Storage and State Owner Integration
 - Focused tests: 1,119/1,119 PASS
 - Mobile beta doctor, store-material validation, TypeScript, and CI-safe builds: PASS
 
-This is inert infrastructure, not a completed deletion flow. Care and Avatar have not attached their destructive delegates, so the new runtime deliberately returns partial failure instead of success. Privacy remains on the legacy path until storage/state owners, files/caches/walk, and truthful export/reset UI are integrated in later M2B slices.
+Historical limitation at M2B1: this was inert infrastructure, not a completed
+deletion flow. Care and Avatar had not attached their destructive delegates at
+that checkpoint, so the runtime deliberately returned partial failure. The
+later M2B2 checkpoint above closes this owner, files/cache/walk, and truthful UI
+work.
 
-## M2A durable checkpoint
+### M2A durable checkpoint
 
 - Remote branch and exact tree equality: PASS
 - Independent adversarial review: PASS; zero critical, important, or minor findings
@@ -49,9 +108,12 @@ This is inert infrastructure, not a completed deletion flow. Care and Avatar hav
 - Mobile beta doctor, store-material validation, TypeScript, and CI-safe builds: PASS
 - Native release verdict: unchanged at PENDING NATIVE
 
-M2 is not complete. The core is now durable and independently proved, but production providers and screens have not yet been moved onto it. M2B must register Care, Avatar, app-owned files, web runtime caches, and live walk capture; migrate every removable `woofwatcher*` writer; drain active file operations; remove all three owned directories including `WoofWatcherCredentials`; and replace Privacy's parallel catch-and-ignore wipe with honest complete/partial-failure UI.
+Historical limitation at M2A: the core was durable and independently proved,
+but production providers and screens had not yet moved onto it. M2B2 later
+closed the owner integration, writer drain, complete file inventory, and honest
+Privacy result work described above.
 
-## M1 durable checkpoint
+### M1 durable checkpoint
 
 - Remote branch and exact tree equality: PASS
 - Independent adversarial review: PASS; no in-scope critical or important issues
@@ -68,9 +130,11 @@ M2 is not complete. The core is now durable and independently proved, but produc
 - Live-preview routes: 56/56 PASS
 - Native release verdict: unchanged at PENDING NATIVE
 
-M2 remains a release blocker: recovery-key and legacy-import `AsyncStorage` writes are not yet registered with a global reset coordinator. An already-started write could finish after owner-key removal and recreate an owned recovery/import key. Deletion must not be represented as production-safe until M2 tracks, invalidates, and drains those writes and reports partial participant failures.
+Historical limitation at M1: recovery-key and legacy-import writes were not yet
+registered with the root reset coordinator. The M2B2 checkpoint above records
+the later coordinated integration and adversarial proof.
 
-## M0 durable checkpoint
+### M0 durable checkpoint
 
 - Remote branch and exact tree equality: PASS
 - Independent review: PASS; zero unresolved issues
@@ -86,7 +150,7 @@ M2 remains a release blocker: recovery-key and legacy-import `AsyncStorage` writ
 
 The first M0 run exposed a `pnpm/action-setup` v6.0.1 bootstrap regression, not a damaged lockfile. The repair pins the corrected v6.0.10 commit and fails fast unless the runner resolves pnpm 10.24.0 before installation.
 
-## Recovered baseline verification
+### Recovered baseline verification
 
 - Focused tests: 1,037/1,037 PASS
 - TypeScript and CI build: PASS
@@ -94,11 +158,3 @@ The first M0 run exposed a `pnpm/action-setup` v6.0.1 bootstrap regression, not 
 - Runtime routes: 47/47 PASS
 - Live-preview routes: 56/56 PASS
 - Historical rendered Chromium navigation: 544/544 PASS
-
-## Active risks
-
-- Physical iOS/Android, VoiceOver/TalkBack, large text, Back/deep-link history, safe areas, touch targets, haptics, permissions, and native sharing remain unproved.
-- Care recovery/import, Avatar, Home, supplies/travel, and QA storage writes remain outside the coordinated removable lane; M2B owns this release blocker.
-- In-flight attachment, report, and Dog ID credential writes can recreate deleted directories; M2B must drain them and delete all three owned directories before reporting success.
-- Web runtime caches can retain same-origin API responses until service-worker bypass and reset-cache cleanup are integrated in M2B.
-- Later local-only hardening commits were pruned and are being reconstructed from tests and documented behavior.
