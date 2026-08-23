@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
@@ -55,6 +57,8 @@ jobs:
         run: pnpm run build:ci
 
       - name: Build consumer release candidate preview
+        env:
+          WOOFWATCHER_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: pnpm run build:candidate
 
       - name: Package exact-head candidate preview
@@ -63,7 +67,7 @@ jobs:
       - name: Preserve exact-head candidate preview
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: woofwatcher-web-candidate-${{ github.sha }}
+          name: woofwatcher-web-candidate-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           path: woofwatcher-web-candidate.tgz
           if-no-files-found: error
           retention-days: 7

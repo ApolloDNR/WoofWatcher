@@ -25,6 +25,17 @@ function fail(message) {
   process.exit(1);
 }
 
+function readGitIdentity(revision) {
+  const result = spawnSync("git", ["rev-parse", revision], {
+    cwd: projectRoot,
+    encoding: "utf8",
+  });
+  if (result.status !== 0 || !result.stdout.trim()) {
+    fail(`Could not resolve candidate source identity for ${revision}.`);
+  }
+  return result.stdout.trim();
+}
+
 removeOutput();
 
 const env = {
@@ -119,6 +130,27 @@ const hasJavaScript = files.some((file) => file.endsWith(".js"));
 if (!hasHtml || !hasJavaScript) {
   fail(
     `Expo web export smoke did not emit expected assets. html=${hasHtml} js=${hasJavaScript}`,
+  );
+}
+
+if (candidateBuild) {
+  const checkedOutCommit = readGitIdentity("HEAD");
+  const expectedCommit = process.env.WOOFWATCHER_SOURCE_SHA?.trim();
+  if (expectedCommit && expectedCommit !== checkedOutCommit) {
+    fail(
+      `Candidate source mismatch: expected ${expectedCommit}, checked out ${checkedOutCommit}.`,
+    );
+  }
+  const identity = {
+    kind: "woofwatcher-web-candidate",
+    sourceCommit: checkedOutCommit,
+    sourceTree: readGitIdentity("HEAD^{tree}"),
+    buildProfile: "production",
+    ownerOpsVisible: false,
+  };
+  fs.writeFileSync(
+    path.join(outputDir, "candidate-identity.json"),
+    `${JSON.stringify(identity, null, 2)}\n`,
   );
 }
 
