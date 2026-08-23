@@ -14,6 +14,7 @@
     "preview:rebuild": "node scripts/replit-preview.mjs --rebuild",
     "start": "node scripts/replit-preview.mjs",
     "preview:mobile-beta": "pnpm --filter @workspace/woofwatcher-mobile run preview:smoke",
+    "build:candidate": "pnpm --filter @workspace/woofwatcher-mobile run smoke:web:candidate",
     "test:renderer": "node scripts/run-mobile-renderer-test.mjs",
     "test:focused": "node scripts/run-mobile-renderer-test.mjs && node --experimental-strip-types --test artifacts/api-server/test/*.test.ts artifacts/woofwatcher-mobile/lib/*.test.ts artifacts/woofwatcher/src/vanilla/*.test.js docs/release/tools/*.test.mjs lib/care-domain/test/*.test.ts",
     "build:ci": "pnpm run typecheck && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/woofwatcher run build && pnpm --filter @workspace/mockup-sandbox run build && pnpm --filter @workspace/woofwatcher-mobile run verify:pixellab-assets && pnpm --filter @workspace/woofwatcher-mobile run smoke:web && pnpm --filter @workspace/woofwatcher-mobile run smoke:runtime && pnpm --filter @workspace/woofwatcher-mobile run proof:live-preview",

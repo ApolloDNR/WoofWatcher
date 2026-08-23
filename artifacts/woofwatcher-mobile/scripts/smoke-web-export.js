@@ -5,6 +5,7 @@ const { spawnSync } = require("child_process");
 const projectRoot = path.resolve(__dirname, "..");
 const outputDirName = ".expo-smoke";
 const outputDir = path.join(projectRoot, outputDirName);
+const candidateBuild = process.argv.includes("--candidate");
 
 function removeOutput() {
   fs.rmSync(outputDir, { recursive: true, force: true });
@@ -30,9 +31,18 @@ const env = {
   ...process.env,
   CI: "1",
   EXPO_NO_TELEMETRY: "1",
+  ...(candidateBuild
+    ? { EXPO_PUBLIC_BUILD_PROFILE: "production" }
+    : {}),
   EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY:
     process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || "pk_test_woofwatcher_smoke",
 };
+
+if (candidateBuild) {
+  console.log(
+    "[smoke-web-export] Building the consumer candidate profile; owner and QA tooling stays hidden.",
+  );
+}
 
 const result = spawnSync(
   "pnpm",
