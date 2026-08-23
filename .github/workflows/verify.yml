@@ -53,3 +53,17 @@ jobs:
 
       - name: Typecheck and CI-safe builds
         run: pnpm run build:ci
+
+      - name: Build consumer release candidate preview
+        run: pnpm run build:candidate
+
+      - name: Package exact-head candidate preview
+        run: tar -czf woofwatcher-web-candidate.tgz -C artifacts/woofwatcher-mobile/.expo-smoke .
+
+      - name: Preserve exact-head candidate preview
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: woofwatcher-web-candidate-${{ github.sha }}
+          path: woofwatcher-web-candidate.tgz
+          if-no-files-found: error
+          retention-days: 7
