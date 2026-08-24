@@ -53,7 +53,7 @@ export default function PremiumScreen() {
   // Store builds hide the gated Plus preview: pricing tiers may not be
   // shown to reviewers or households until checkout is provider-approved.
   if (!isOwnerOpsBuild()) {
-    return <OwnerOpsUnavailableScreen title="WoofWatcher Plus preview unavailable" />;
+    return <OwnerOpsUnavailableScreen />;
   }
   return <PremiumScreenBody />;
 }

@@ -95,7 +95,11 @@ import {
   getQuickLogPolicy,
   QUICK_LOG_DEDUPE_WINDOW_MS,
 } from "@/lib/quickLogEntry";
-import { formatRouteDistanceMiles, parseWalkRoute } from "@/lib/walkRoute";
+import {
+  formatRouteDistanceMiles,
+  parseWalkRoute,
+  type WalkRouteCaptureStatus,
+} from "@/lib/walkRoute";
 import { buildWalkSessionFinishPatch, buildWalkSessionStartEntry, findOpenWalkSession } from "@/lib/walkSession";
 import { dayKey, dayLabel } from "@/lib/time";
 import { localDateKey, todayLocalDateKey } from "@/lib/localCalendar";
@@ -104,7 +108,14 @@ import {
   parseStrictNonNegativeInteger,
   validateMealAmounts,
 } from "@/lib/inputValidation";
-import { runMedicationProofPhotoPicker } from "@/lib/pickedMediaLocalDataActions";
+import {
+  PickedMediaLocalDataActionError,
+  releasePickedMediaReferences,
+  runMedicationProofPhotoPicker,
+} from "@/lib/pickedMediaLocalDataActions";
+import { createExclusiveAsyncAction } from "@/lib/exclusiveAsyncAction";
+import { collectCareAppOwnedFileReferences } from "@/lib/appOwnedFileReferences";
+import { runCareFileCleanupAfterDurableSnapshot } from "@/lib/careFileCleanup";
 import { TrailMap } from "@/components/TrailMap";
 import { useWalkRouteCaptureStatus } from "@/components/WalkRouteRecorder";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
@@ -112,12 +123,22 @@ import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { shareTextPayload } from "@/lib/shareText";
-import { BoardActionButton, BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader, BoardSegmentTabs } from "@/components/board/BoardPrimitives";
+import {
+  BoardActionButton,
+  BoardCard,
+  BoardPill,
+  BoardRouteHeader,
+  BoardSectionHeader,
+  BoardSegmentTabs,
+  ModalBackdropPressable,
+  ModalSheetPressable,
+} from "@/components/board/BoardPrimitives";
 import { PressScale } from "@/components/motion/GameFeel";
 import { homeImmersiveRoomIsNight } from "./index";
 import {
   CARE_READ_ONLY_MESSAGE,
   careMutationWasAccepted,
+  type CareStorageWarning,
 } from "@/lib/careWriteProtection";
 import {
   canonicalHomeRoute,
@@ -126,6 +147,7 @@ import { executePrimaryTabTaskPath } from "@/lib/primaryTabExperience";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+const FULL_COMPOSER_LOG_DEDUPE_MS = 1_000;
 // Wide banner composed for the ~4:1 console stage; the square day-room
 // painting stretched into a squashed wall band here.
 const LOG_COMMAND_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-banner.png");
@@ -569,10 +591,10 @@ const TRUST_ACTION_LABELS: Record<CareLogReviewAction, string> = {
 
 const ENTRY_ATTENTION_CHIP_COPY: Record<string, string> = {
   "needs-review": "Needs review",
-  "proof-needed": "Proof needed",
+  "proof-needed": "Photo needed",
   "photo-requested": "Photo requested",
   "outcome-pending": "Outcome pending",
-  "proof-attached": "Proof attached",
+  "proof-attached": "Photo attached",
   rejected: "Rejected",
   corrected: "Corrected",
   estimated: "Estimated",
@@ -639,7 +661,7 @@ function CareTypeIcon({
 }
 
 // "{petName}" resolves to the dog's real display name at render time (via
-// resolvePetName), so a renamed dog never reads "Phoenix" in guidance copy.
+// resolvePetName), so guidance uses the current name or a neutral fallback.
 const LOG_GUIDANCE: Record<string, string> = {
   meal: "Serve it now, then update the outcome when {petName} finishes.",
   water: "Fresh water keeps hydration and Bile Watch context honest.",
@@ -664,11 +686,47 @@ const LOG_GUIDANCE: Record<string, string> = {
 const SYNC_PROVIDER_CONFIGURED =
   isClerkConfigured && getConsumerSurfacePolicy().providerSyncControls;
 
-function syncLabel(status: Entry["syncStatus"]): string | null {
+function careStorageWarningMessage(warning: CareStorageWarning): string {
+  if (warning === "save-failed") {
+    return "Device storage could not confirm recent care changes. They may not survive an app restart.";
+  }
+  if (warning === "read-failed") {
+    return "Saved care data could not be read. Saving is paused this session to protect what is stored.";
+  }
+  if (warning === "newer-version") {
+    return "This care data came from a newer WoofWatcher version. This version will not overwrite it.";
+  }
+  return "Saved care data could not be read and was reset. A recovery copy was kept on this device.";
+}
+
+function syncLabel(
+  status: Entry["syncStatus"],
+  storageWarning: CareStorageWarning = null,
+): string | null {
+  if (storageWarning) return "Storage warning";
   if (status === "pending") return "Pending sync";
   if (status === "local") return SYNC_PROVIDER_CONFIGURED ? "Saved offline" : "Saved on this device";
   if (status === "failed") return "Sync failed";
   return null;
+}
+
+function describeWalkRouteCaptureStatus(
+  status: WalkRouteCaptureStatus,
+): string {
+  switch (status) {
+    case "idle":
+      return "Route recording starts when an active walk begins";
+    case "starting":
+      return "Getting location for the route map…";
+    case "recording":
+      return "Recording the route for this walk's map · stays in your care log";
+    case "paused":
+      return "Route recording paused while local data is being reset";
+    case "denied":
+      return "Route not recorded: location permission was denied";
+    case "unavailable":
+      return "Route recording is unavailable on this device";
+  }
 }
 
 const DETAIL_SKIP_KEYS = new Set([
@@ -775,6 +833,14 @@ function isDetailRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === "object" && !Array.isArray(value);
 }
 
+function entryProofAttachmentUri(
+  entry: Entry | null | undefined,
+): string | null {
+  if (!entry || !isDetailRecord(entry.details)) return null;
+  const uri = entry.details.photoProofAttachmentUri;
+  return typeof uri === "string" && uri.trim() ? uri : null;
+}
+
 function humanizeKey(key: string): string {
   return DETAIL_LABELS[key] ?? key.replace(/([A-Z])/g, " $1").replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
@@ -817,7 +883,10 @@ function entryTypeLabel(type: string): string {
   return config?.label ?? humanizeKey(type);
 }
 
-function buildEntryDetailRows(entry: Entry): { label: string; value: string }[] {
+function buildEntryDetailRows(
+  entry: Entry,
+  storageWarning: CareStorageWarning = null,
+): { label: string; value: string }[] {
   const rows: { label: string; value: string }[] = [];
   const details = isDetailRecord(entry.details) ? entry.details : {};
   const servingAmount = detailValue(details.servingAmount);
@@ -828,7 +897,7 @@ function buildEntryDetailRows(entry: Entry): { label: string; value: string }[] 
   const eatenUnit = detailValue(details.eatenUnit) ?? servedUnit;
   const expectedPortion = detailValue(details.expectedPortion);
   const mealCompletion = detailValue(details.mealCompletion);
-  const status = syncLabel(entry.syncStatus);
+  const status = syncLabel(entry.syncStatus, storageWarning);
 
   if (entry.durationMinutes != null) rows.push({ label: "Duration", value: `${entry.durationMinutes} min` });
   if (entry.amount && !eatenAmount) rows.push({ label: "Amount", value: servingUnit ? `${entry.amount} ${servingUnit}` : entry.amount });
@@ -844,7 +913,12 @@ function buildEntryDetailRows(entry: Entry): { label: string; value: string }[] 
   if (entry.mood) rows.push({ label: "Mood", value: humanizeKey(entry.mood) });
   if (entry.severity) rows.push({ label: "Severity", value: humanizeKey(entry.severity) });
   if (entry.dogInteractions != null) rows.push({ label: "Dog interactions", value: String(entry.dogInteractions) });
-  if (status) rows.push({ label: "Sync", value: status });
+  if (status) {
+    rows.push({
+      label: storageWarning ? "Storage" : "Sync",
+      value: status,
+    });
+  }
 
   Object.entries(details).forEach(([key, value]) => {
     if (DETAIL_SKIP_KEYS.has(key)) return;
@@ -857,9 +931,12 @@ function buildEntryDetailRows(entry: Entry): { label: string; value: string }[] 
   return rows;
 }
 
-function buildEntryHandoffMessage(entry: Entry): string {
+function buildEntryHandoffMessage(
+  entry: Entry,
+  storageWarning: CareStorageWarning = null,
+): string {
   const type = entryTypeLabel(normalizeCareEventType(entry.type, entry.details));
-  const rows = buildEntryDetailRows(entry);
+  const rows = buildEntryDetailRows(entry, storageWarning);
   const stickyNotes = getStickyNotes(entry.details);
   const auditTrail = getCareAuditTrail(entry.details);
   return [
@@ -1011,10 +1088,23 @@ export default function LogScreen() {
     deleteEntry,
     updateEntry,
     updateCareDoc,
+    persistCurrentCareSnapshot,
+    storageWarning,
     refresh,
     syncOutbox,
     isSyncing,
   } = useCare();
+  const careStateRef = useRef(state);
+  careStateRef.current = state;
+  const logScreenMountedRef = useRef(true);
+  const proofPickerInFlightRef = useRef(false);
+  const [proofPickerBusy, setProofPickerBusy] = useState(false);
+  useEffect(() => {
+    logScreenMountedRef.current = true;
+    return () => {
+      logScreenMountedRef.current = false;
+    };
+  }, []);
   const showCareReadOnly = useCallback(
     () => notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE),
     [],
@@ -1234,6 +1324,31 @@ export default function LogScreen() {
   // the Quick Log fallback always land on the composer instead of a guess.
   const composerSectionY = useRef<number | null>(null);
   const [lastQuickLog, setLastQuickLog] = useState<{ id: string; title: string } | null>(null);
+  const lastQuickLogUndoGateRef = useRef<ReturnType<
+    typeof createExclusiveAsyncAction
+  > | null>(null);
+  if (lastQuickLogUndoGateRef.current === null) {
+    lastQuickLogUndoGateRef.current = createExclusiveAsyncAction();
+  }
+  const lastQuickLogUndoGate = lastQuickLogUndoGateRef.current;
+  const [lastQuickLogUndoBusy, setLastQuickLogUndoBusy] = useState(false);
+  const fullComposerLogGateRef = useRef<ReturnType<
+    typeof createExclusiveAsyncAction
+  > | null>(null);
+  if (fullComposerLogGateRef.current === null) {
+    fullComposerLogGateRef.current = createExclusiveAsyncAction();
+  }
+  const fullComposerLogGate = fullComposerLogGateRef.current;
+  const lastFullComposerLogAtRef = useRef(Number.NEGATIVE_INFINITY);
+  const [fullComposerLogBusy, setFullComposerLogBusy] = useState(false);
+  const entryHandoffShareGateRef = useRef<ReturnType<
+    typeof createExclusiveAsyncAction
+  > | null>(null);
+  if (entryHandoffShareGateRef.current === null) {
+    entryHandoffShareGateRef.current = createExclusiveAsyncAction();
+  }
+  const entryHandoffShareGate = entryHandoffShareGateRef.current;
+  const [entryHandoffShareBusy, setEntryHandoffShareBusy] = useState(false);
   // Screen readers can't see the feedback card and its Undo vanishes on a
   // timer - every quick log announces, whichever of the five paths set it.
   useEffect(() => {
@@ -1288,8 +1403,11 @@ export default function LogScreen() {
     [state.entries, detailEntryId],
   );
   const detailRows = useMemo(
-    () => (detailEntry ? buildEntryDetailRows(detailEntry) : []),
-    [detailEntry],
+    () =>
+      detailEntry
+        ? buildEntryDetailRows(detailEntry, storageWarning)
+        : [],
+    [detailEntry, storageWarning],
   );
   const detailStickyNotes = useMemo(
     () => (detailEntry ? getStickyNotes(detailEntry.details) : []),
@@ -1718,70 +1836,100 @@ export default function LogScreen() {
   ]);
 
   const handleLog = useCallback(() => {
-    if (careMutationsBlocked) {
-      showCareReadOnly();
-      return;
-    }
-    const entry = buildEntry();
-    if (!entry) return;
-    const id = addEntry(entry);
-    if (!careMutationWasAccepted(id)) {
-      showCareReadOnly();
-      return;
-    }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void fullComposerLogGate
+      .run(async () => {
+        const activationAt = Date.now();
+        if (
+          activationAt - lastFullComposerLogAtRef.current <
+          FULL_COMPOSER_LOG_DEDUPE_MS
+        ) {
+          return;
+        }
+        setFullComposerLogBusy(true);
+        try {
+          if (careMutationsBlocked) {
+            showCareReadOnly();
+            return;
+          }
+          const entry = buildEntry();
+          if (!entry) return;
+          const id = addEntry(entry);
+          if (!careMutationWasAccepted(id)) {
+            showCareReadOnly();
+            return;
+          }
+          lastFullComposerLogAtRef.current = activationAt;
 
-    // Weight logs also update the living profile weight.
-    if (entry.type === "weight" && entry.amount != null) {
-      const w = parseStrictNonNegativeDecimal(entry.amount);
-      if (w != null && w > 0) {
-        const profileUpdated = updateCareDoc((doc) => ({
-          ...doc,
-          profile: { ...doc.profile, weight: { ...doc.profile.weight, current: w } },
-        }));
-        if (!careMutationWasAccepted(profileUpdated)) showCareReadOnly();
-      }
-    }
+          // Weight logs also update the living profile weight.
+          if (entry.type === "weight" && entry.amount != null) {
+            const w = parseStrictNonNegativeDecimal(entry.amount);
+            if (w != null && w > 0) {
+              const profileUpdated = updateCareDoc((doc) => ({
+                ...doc,
+                profile: {
+                  ...doc.profile,
+                  weight: { ...doc.profile.weight, current: w },
+                },
+              }));
+              if (!careMutationWasAccepted(profileUpdated)) showCareReadOnly();
+            }
+          }
 
-    setNumeric(entry.type === "weight" ? (entry.amount ?? "") : "");
-    if (entry.type === "meal") {
-      setExpectedPortion(state.dietProfile.normalPortion);
-      setEatenAmount("");
-      setHouseholdVisible(true);
-    }
-    if (entry.type === "mood") {
-      setMoodContext("");
-      setHouseholdVisible(true);
-    }
-    if (entry.type === "alone") {
-      setAloneTrigger("");
-      setCalmingSupport("");
-      setRecoveryMinutes("");
-      setHouseholdVisible(true);
-    }
-    if (entry.type === "incident") {
-      setIncidentTrigger("");
-      setIncidentExposure("");
-      setIncidentInjury("");
-      setIncidentAction("");
-      setIncidentFollowUp("");
-      setHouseholdVisible(true);
-    }
-    setNoteText("");
+          setNumeric(entry.type === "weight" ? (entry.amount ?? "") : "");
+          if (entry.type === "meal") {
+            setExpectedPortion(state.dietProfile.normalPortion);
+            setEatenAmount("");
+            setHouseholdVisible(true);
+          }
+          if (entry.type === "mood") {
+            setMoodContext("");
+            setHouseholdVisible(true);
+          }
+          if (entry.type === "alone") {
+            setAloneTrigger("");
+            setCalmingSupport("");
+            setRecoveryMinutes("");
+            setHouseholdVisible(true);
+          }
+          if (entry.type === "incident") {
+            setIncidentTrigger("");
+            setIncidentExposure("");
+            setIncidentInjury("");
+            setIncidentAction("");
+            setIncidentFollowUp("");
+            setHouseholdVisible(true);
+          }
+          setNoteText("");
 
-    // If a note was already captured inline, skip the prompt.
-    if (config?.noteField) return;
+          // If a note was already captured inline, skip the follow-up prompt.
+          if (!config?.noteField) {
+            setPromptId(id);
+            setPromptTitle(entry.title);
+            setPromptNote("");
+            setPromptMode("post-log");
+            setTimeout(() => promptRef.current?.focus(), 250);
+          }
 
-    setPromptId(id);
-    setPromptTitle(entry.title);
-    setPromptNote("");
-    setPromptMode("post-log");
-    setTimeout(() => promptRef.current?.focus(), 250);
+          await Haptics.impactAsync(
+            Haptics.ImpactFeedbackStyle.Medium,
+          ).catch(() => {});
+        } finally {
+          if (logScreenMountedRef.current) setFullComposerLogBusy(false);
+        }
+      })
+      .catch(() => {
+        if (!logScreenMountedRef.current) return;
+        notifyDialog(
+          "Check this care log",
+          "WoofWatcher could not confirm that logging finished cleanly. Check the timeline before trying again.",
+        );
+      });
   }, [
     addEntry,
     buildEntry,
     careMutationsBlocked,
     config,
+    fullComposerLogGate,
     showCareReadOnly,
     state.dietProfile.normalPortion,
     updateCareDoc,
@@ -1831,6 +1979,21 @@ export default function LogScreen() {
     updateEntry,
   ]);
 
+  const carePickedMediaUris = (excludeEntryId?: string): string[] =>
+    collectCareAppOwnedFileReferences({
+      doc: careStateRef.current,
+      entries: careStateRef.current.entries,
+      excludeEntryIds: excludeEntryId ? [excludeEntryId] : [],
+    });
+
+  const reportPickedMediaCleanupFailure = (count: number) => {
+    if (!logScreenMountedRef.current || count <= 0) return;
+    notifyDialog(
+      "Local file cleanup incomplete",
+      `The log change is complete, but ${count} saved photo${count === 1 ? "" : "s"} could not be removed from this device. Privacy & Data reset will try again.`,
+    );
+  };
+
   const handleDelete = useCallback(
     (id: string, title: string, onDeleted?: () => void) => {
       confirmThroughSteps(
@@ -1847,19 +2010,21 @@ export default function LogScreen() {
             showCareReadOnly();
             return;
           }
-          const entry = state.entries.find((item) => item.id === id);
+          const entry = careStateRef.current.entries.find((item) => item.id === id);
           const deleted = await deleteEntry(id);
           if (!careMutationWasAccepted(deleted)) {
-            notifyDialog("Delete failed", "WoofWatcher kept the log because the household sync rejected the delete. Try again after refresh.");
+            if (logScreenMountedRef.current) {
+              notifyDialog("Delete failed", "WoofWatcher kept the log because the household sync rejected the delete. Try again after refresh.");
+            }
             return;
           }
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
           // Shared-household accountability only: the deletion audit note
           // says "from the shared care log", so it is truthful and useful
           // only when more than one caregiver exists. For a solo owner it
           // would leave a "Deleted log - ..." row in their own timeline and
           // read as if the delete failed - so a solo delete just deletes.
-          if (entry && state.caregivers.length > 1) {
+          if (entry && careStateRef.current.caregivers.length > 1) {
             const auditIdValue = addEntry(
               buildCareLogDeletionAuditEntry({
                 id: auditId(),
@@ -1872,15 +2037,36 @@ export default function LogScreen() {
               showCareReadOnly();
             }
           }
-          onDeleted?.();
+          const result = await runCareFileCleanupAfterDurableSnapshot({
+            persistSnapshot: persistCurrentCareSnapshot,
+            cleanup: () =>
+              releasePickedMediaReferences({
+                appFileSystem,
+                uris: [entryProofAttachmentUri(entry)],
+                protectedUris: carePickedMediaUris(id),
+              }),
+          });
+          if (logScreenMountedRef.current) {
+            if (result.status === "snapshot-not-confirmed") {
+              notifyDialog(
+                "Photo retained",
+                "The log was removed from this session, but WoofWatcher could not confirm that change in device storage. Its local photo was kept so a relaunch cannot restore a log with a missing file.",
+              );
+            } else if (result.cleanup.status === "partial-failure") {
+              reportPickedMediaCleanupFailure(result.cleanup.failedUris.length);
+            }
+          }
+          if (logScreenMountedRef.current) onDeleted?.();
         },
       );
     },
     [
       addEntry,
+      appFileSystem,
       caregiver,
       careMutationsBlocked,
       deleteEntry,
+      persistCurrentCareSnapshot,
       showCareReadOnly,
       state.caregivers.length,
       state.entries,
@@ -2054,18 +2240,36 @@ export default function LogScreen() {
   // Honest route-recorder state: only ever says "recording" while location
   // fixes are actually landing; otherwise it explains what would enable it.
   const walkRouteCapture = useWalkRouteCaptureStatus();
-  const walkRouteStatusText =
-    walkRouteCapture.status === "recording"
-      ? "Recording the route for this walk's map · stays in your care log"
-      : walkRouteCapture.status === "starting"
-        ? "Getting location for the route map…"
-        : "Route recording available when location is permitted";
+  const walkRouteStatusText = describeWalkRouteCaptureStatus(
+    walkRouteCapture.status,
+  );
 
   const shareEntryHandoff = useCallback((e: Entry) => {
-    const message = buildEntryHandoffMessage(e);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void shareTextPayload({ message, title: `${e.title} handoff` });
-  }, []);
+    void entryHandoffShareGate
+      .run(async () => {
+        if (logScreenMountedRef.current) setEntryHandoffShareBusy(true);
+        try {
+          const message = buildEntryHandoffMessage(e, storageWarning);
+          await Haptics.impactAsync(
+            Haptics.ImpactFeedbackStyle.Light,
+          ).catch(() => {});
+          await shareTextPayload({
+            message,
+            title: `${e.title} handoff`,
+          });
+        } finally {
+          if (logScreenMountedRef.current) setEntryHandoffShareBusy(false);
+        }
+      })
+      .catch(() => {
+        if (logScreenMountedRef.current) {
+          notifyDialog(
+            "Sharing unavailable",
+            "The care handoff could not be prepared. Try again.",
+          );
+        }
+      });
+  }, [entryHandoffShareGate, storageWarning]);
 
   const handleTrustReview = useCallback(
     (action: CareLogReviewAction) => {
@@ -2105,57 +2309,145 @@ export default function LogScreen() {
   );
 
   const handleAttachProof = useCallback(async () => {
-    if (!detailEntry) return;
+    if (!detailEntry || proofPickerInFlightRef.current) return;
     if (careMutationsBlocked) {
       showCareReadOnly();
       return;
     }
+
+    const currentEntry = careStateRef.current.entries.find(
+      (entry) => entry.id === detailEntry.id,
+    );
+    if (!currentEntry) return;
+    const entryId = currentEntry.id;
+    const originalUri = entryProofAttachmentUri(currentEntry);
+    proofPickerInFlightRef.current = true;
+    setProofPickerBusy(true);
     try {
-      const action = await runMedicationProofPhotoPicker({
-        appFileSystem,
-        pick: () =>
-          ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ["images"],
-            allowsEditing: false,
-            quality: 0.78,
-          }),
-        apply: ({ fileName, uri }) => {
-          const patch = buildCareLogPhotoProofAttachmentPatch(detailEntry, {
-            caregiver,
-            uri,
-            fileName,
-            source: "library",
-            now,
-          });
+      let rejectionReason:
+        | "invalid-proof"
+        | "stale-entry"
+        | "mutation-rejected"
+        | null = null;
+      let action: Awaited<ReturnType<typeof runMedicationProofPhotoPicker>>;
+      try {
+        action = await runMedicationProofPhotoPicker({
+          appFileSystem,
+          failureProtectedUris: [originalUri, ...carePickedMediaUris()],
+          cleanupProtectedUris: carePickedMediaUris(entryId),
+          pick: () =>
+            ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ["images"],
+              allowsEditing: false,
+              quality: 0.78,
+            }),
+          apply: ({ fileName, uri }) => {
+            const latestEntry = careStateRef.current.entries.find(
+              (entry) => entry.id === entryId,
+            );
+            if (!logScreenMountedRef.current || !latestEntry) {
+              rejectionReason = "stale-entry";
+              return false;
+            }
+            const patch = buildCareLogPhotoProofAttachmentPatch(latestEntry, {
+              caregiver,
+              uri,
+              fileName,
+              source: "library",
+              now: Date.now(),
+            });
 
-          if (!patch) {
-            notifyDialog("Proof not attached", "Choose a clear photo before saving proof to this log.");
-            return;
-          }
+            if (!patch) {
+              rejectionReason = "invalid-proof";
+              return false;
+            }
 
-          const updated = updateEntry(detailEntry.id, patch);
-          if (!careMutationWasAccepted(updated)) {
-            showCareReadOnly();
-            return;
-          }
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        },
-      });
+            const updated = updateEntry(entryId, patch);
+            if (!careMutationWasAccepted(updated)) {
+              rejectionReason = "mutation-rejected";
+              return false;
+            }
+            return true;
+          },
+        });
+      } catch (error) {
+        if (logScreenMountedRef.current) {
+          notifyDialog(
+            "Photo unavailable",
+            error instanceof PickedMediaLocalDataActionError && error.cleanupFailed
+              ? "The photo was not added, and one temporary local file could not be removed. Privacy & Data reset will retry cleanup."
+              : "Add a photo later. Medication logs stay pending until a caregiver confirms them.",
+          );
+        }
+        return;
+      }
+
+      if (!logScreenMountedRef.current) return;
       if (action.status === "not-saved") {
         notifyDialog(
           "Photo not saved",
-          "WoofWatcher could not copy that photo into durable app storage. The medication log was not changed. Try again or choose another photo.",
+          action.cleanupFailed
+            ? "WoofWatcher could not save that photo, and its temporary picker copy could not be removed. The medication log was not changed. Privacy & Data reset will retry cleanup."
+            : "WoofWatcher could not save that photo on this device. The medication log was not changed. Try again or choose another photo.",
         );
+        return;
       }
-    } catch {
-      notifyDialog("Photo unavailable", "Attach proof later. Medication logs stay pending until an owner confirms them.");
+      if (action.status === "rejected") {
+        if (action.cleanupFailed) reportPickedMediaCleanupFailure(1);
+        if (rejectionReason === "stale-entry") return;
+        if (rejectionReason === "mutation-rejected") {
+          showCareReadOnly();
+        } else {
+          notifyDialog(
+            "Photo not attached",
+            "Choose a clear photo before adding it to this log.",
+          );
+        }
+        return;
+      }
+      if (action.status !== "applied") return;
+
+      const result = await runCareFileCleanupAfterDurableSnapshot({
+        persistSnapshot: persistCurrentCareSnapshot,
+        cleanup: () =>
+          releasePickedMediaReferences({
+            appFileSystem,
+            uris: [originalUri],
+            protectedUris: carePickedMediaUris(entryId),
+          }),
+      });
+      if (!logScreenMountedRef.current) return;
+      if (result.status === "snapshot-not-confirmed") {
+        notifyDialog(
+          "Previous photo retained",
+          "WoofWatcher could not confirm the updated log in device storage, so it kept the previous local photo. The new photo is still shown for this session; try again before relaunching.",
+        );
+      } else if (result.cleanup.status === "partial-failure") {
+        reportPickedMediaCleanupFailure(result.cleanup.failedUris.length);
+      }
+
+      // Feedback is deliberately outside the accepted data mutation. Native
+      // haptic failures must never turn a saved proof into a reported failure.
+      try {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
+          () => {},
+        );
+      } catch {
+        // Haptics are best-effort; the attachment has already been committed.
+      }
+      if (action.cleanupFailed) {
+        reportPickedMediaCleanupFailure(1);
+      }
+    } finally {
+      proofPickerInFlightRef.current = false;
+      if (logScreenMountedRef.current) setProofPickerBusy(false);
     }
   }, [
     caregiver,
     appFileSystem,
     careMutationsBlocked,
     detailEntry,
-    now,
+    persistCurrentCareSnapshot,
     showCareReadOnly,
     updateEntry,
   ]);
@@ -2219,7 +2511,15 @@ export default function LogScreen() {
         icon: "restaurant-outline" as const,
         tone: colors.sage,
       },
-      SYNC_PROVIDER_CONFIGURED
+      storageWarning
+        ? {
+            label: "Storage",
+            value: "Unconfirmed",
+            detail: "check device warning",
+            icon: "warning-outline" as const,
+            tone: colors.amber,
+          }
+        : SYNC_PROVIDER_CONFIGURED
         ? {
             label: "Sync",
             value: syncOutbox.total > 0 ? `${syncOutbox.total}` : "Ready",
@@ -2247,6 +2547,7 @@ export default function LogScreen() {
       dietProgress.targetAmount,
       syncOutbox.status,
       syncOutbox.total,
+      storageWarning,
       todaySnapshot.total,
     ],
   );
@@ -2355,8 +2656,8 @@ export default function LogScreen() {
   const logCommandSpeech = selectedLauncherAction
     ? selectedLauncherRequiresDetail
       ? `${selectedLauncherAction.label} opens the details form before it saves.`
-      : `Tap ${selectedLauncherAction.label}. Hold for proof, notes, and corrections.`
-    : "Tap fast. Hold for proof, notes, or later updates.";
+      : `Tap ${selectedLauncherAction.label}. Hold for photos, notes, and corrections.`
+    : "Tap fast. Hold for photos, notes, or later updates.";
   const logCommandHud = [
     {
       label: "Today",
@@ -2679,18 +2980,46 @@ export default function LogScreen() {
   };
 
   const undoLastQuickLog = async () => {
-    if (!lastQuickLog) return;
+    const feedback = lastQuickLog;
+    if (!feedback) return;
     if (careMutationsBlocked) {
       showCareReadOnly();
       return;
     }
-    const deleted = await deleteEntry(lastQuickLog.id);
-    if (!careMutationWasAccepted(deleted)) {
-      showCareReadOnly();
-      return;
-    }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setLastQuickLog(null);
+    await lastQuickLogUndoGate.run(async () => {
+      setLastQuickLogUndoBusy(true);
+      try {
+        let deleted = false;
+        try {
+          deleted = await deleteEntry(feedback.id);
+        } catch {
+          deleted = false;
+        }
+        if (!logScreenMountedRef.current) return;
+        if (!careMutationWasAccepted(deleted)) {
+          notifyDialog(
+            "Undo not completed",
+            "WoofWatcher could not confirm that this care log was removed. Check the timeline before trying again.",
+          );
+          return;
+        }
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        setLastQuickLog((current) =>
+          current?.id === feedback.id ? null : current,
+        );
+      } finally {
+        if (logScreenMountedRef.current) {
+          setLastQuickLogUndoBusy(false);
+        }
+      }
+    });
+  };
+
+  const openLastQuickLogDetails = () => {
+    if (lastQuickLogUndoGate.isBusy()) return;
+    if (!lastQuickLog) return;
+    Haptics.selectionAsync().catch(() => {});
+    setDetailEntryId(lastQuickLog.id);
   };
 
   const selectMoodLauncher = (mood: (typeof MOOD_LAUNCHER)[number]) => {
@@ -3061,8 +3390,17 @@ export default function LogScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`Undo ${lastQuickLog.title} quick log`}
+                    accessibilityState={{ disabled: lastQuickLogUndoBusy }}
+                    disabled={lastQuickLogUndoBusy}
                     onPress={undoLastQuickLog}
-                    style={[s.quickFeedbackButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    style={[
+                      s.quickFeedbackButton,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        opacity: lastQuickLogUndoBusy ? 0.5 : 1,
+                      },
+                    ]}
                   >
                     <Text style={[s.quickFeedbackButtonText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                       Undo
@@ -3071,11 +3409,17 @@ export default function LogScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`Add details to ${lastQuickLog.title}`}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setDetailEntryId(lastQuickLog.id);
-                    }}
-                    style={[s.quickFeedbackButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    accessibilityState={{ disabled: lastQuickLogUndoBusy }}
+                    disabled={lastQuickLogUndoBusy}
+                    onPress={openLastQuickLogDetails}
+                    style={[
+                      s.quickFeedbackButton,
+                      {
+                        backgroundColor: colors.primary,
+                        borderColor: colors.primary,
+                        opacity: lastQuickLogUndoBusy ? 0.5 : 1,
+                      },
+                    ]}
                   >
                     <Text style={[s.quickFeedbackButtonText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
                       Add details
@@ -3304,7 +3648,35 @@ export default function LogScreen() {
             ))}
           </View>
 
-          {!SYNC_PROVIDER_CONFIGURED && state.entries.length > 0 ? (
+          {storageWarning ? (
+            <View
+              accessibilityRole="alert"
+              aria-live="assertive"
+              style={[
+                s.outboxCard,
+                {
+                  backgroundColor: colors.amberSoft,
+                  borderColor: colors.amber + "66",
+                  shadowColor: colors.amber,
+                },
+              ]}
+            >
+              <View style={s.outboxTop}>
+                <View style={[s.outboxIcon, { backgroundColor: colors.amber + "18" }]}>
+                  <Ionicons name="warning-outline" size={18} color={colors.amber} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[s.outboxEyebrow, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>DEVICE STORAGE</Text>
+                  <Text style={[s.outboxTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Device storage not confirmed</Text>
+                  <Text style={[s.outboxMessage, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>
+                    {careStorageWarningMessage(storageWarning)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ) : null}
+
+          {!SYNC_PROVIDER_CONFIGURED && state.entries.length > 0 && !storageWarning ? (
             // Local-first build: device storage is the success state, so the
             // care record card confirms that instead of promising sync.
             <View
@@ -3336,7 +3708,7 @@ export default function LogScreen() {
             </View>
           ) : null}
 
-          {SYNC_PROVIDER_CONFIGURED && syncOutbox.total > 0 ? (
+          {SYNC_PROVIDER_CONFIGURED && syncOutbox.total > 0 && !storageWarning ? (
             <View
               style={[
                 s.outboxCard,
@@ -3591,6 +3963,9 @@ export default function LogScreen() {
                     return (
                       <Pressable
                         key={o.id}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Set ${g.label}: ${o.label}`}
+                        accessibilityState={{ selected: active }}
                         onPress={() => {
                           Haptics.selectionAsync();
                           setChoices((prev) => ({ ...prev, [g.key]: o.id }));
@@ -3680,6 +4055,9 @@ export default function LogScreen() {
                     return (
                       <Pressable
                         key={v}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${config.stepper!.label}: ${v} ${config.stepper!.unit}`}
+                        accessibilityState={{ selected: active }}
                         onPress={() => {
                           Haptics.selectionAsync();
                           setStepIndex(i);
@@ -4242,13 +4620,19 @@ export default function LogScreen() {
               </Text>
             ) : null}
             <BoardActionButton
-              label={`Log ${(config?.label ?? "care").toLowerCase()}`}
+              label={
+                fullComposerLogBusy
+                  ? "Logging care"
+                  : `Log ${(config?.label ?? "care").toLowerCase()}`
+              }
               icon="checkmark-circle"
               variant="primary"
               onPress={handleLog}
-              disabled={missingRequiredGroup != null}
+              disabled={missingRequiredGroup != null || fullComposerLogBusy}
               accessibilityLabel={
-                missingRequiredGroup
+                fullComposerLogBusy
+                  ? "Logging care. Please wait."
+                  : missingRequiredGroup
                   ? `Log ${(config?.label ?? "care").toLowerCase()}. Disabled until ${missingRequiredGroup.label.replace(/\?$/, "").toLowerCase()} is chosen.`
                   : `Log ${(config?.label ?? "care").toLowerCase()}`
               }
@@ -4306,6 +4690,7 @@ export default function LogScreen() {
               {searchText.trim() ? (
                 <Pressable
                   accessibilityLabel="Clear log search"
+                  accessibilityRole="button"
                   onPress={() => {
                     Haptics.selectionAsync();
                     setSearchText("");
@@ -4386,7 +4771,7 @@ export default function LogScreen() {
                     const icon = TYPE_ICON[normalizedType] ?? "paw";
                     const sev = e.severity && e.severity !== "normal" ? e.severity : null;
                     const sevColor = sev === "alert" ? colors.rose : colors.amber;
-                    const statusLabel = syncLabel(e.syncStatus);
+                    const statusLabel = syncLabel(e.syncStatus, storageWarning);
                     const compactStatusLabel =
                       statusLabel === "Saved offline"
                         ? "Offline"
@@ -4398,8 +4783,9 @@ export default function LogScreen() {
                     // Without a sync provider, local storage is the success
                     // state; render it calm instead of as a warning.
                     const statusSettled =
-                      e.syncStatus === "synced" ||
-                      (!SYNC_PROVIDER_CONFIGURED && e.syncStatus === "local");
+                      !storageWarning &&
+                      (e.syncStatus === "synced" ||
+                        (!SYNC_PROVIDER_CONFIGURED && e.syncStatus === "local"));
                     const stickyNotes = getStickyNotes(e.details);
                     const entryAttentionChips = getCareLogAttentionChips(e);
                     const pendingMeal = isPendingMealEntry(e);
@@ -4541,12 +4927,11 @@ export default function LogScreen() {
         animationType="slide"
         onRequestClose={() => setLauncherDetailAction(null)}
       >
-        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setLauncherDetailAction(null)}>
-          <Pressable
-            accessible={false}
-            accessibilityViewIsModal
+        <ModalBackdropPressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setLauncherDetailAction(null)}>
+          <ModalSheetPressable
+            visible={launcherDetailAction !== null}
+            onRequestClose={() => setLauncherDetailAction(null)}
             style={[s.launcherDetailSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
-            onPress={(e) => e.stopPropagation()}
           >
             <View style={s.editHandle} />
             {launcherDetailAction && launcherDetailPresentation ? (
@@ -4680,14 +5065,18 @@ export default function LogScreen() {
                 </View>
               </>
             ) : null}
-          </Pressable>
-        </Pressable>
+          </ModalSheetPressable>
+        </ModalBackdropPressable>
       </Modal>
 
       {/* Entry detail modal */}
       <Modal visible={detailEntry !== null} transparent animationType="slide" onRequestClose={() => setDetailEntryId(null)}>
-        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDetailEntryId(null)}>
-          <Pressable accessible={false} accessibilityViewIsModal style={[s.detailSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+        <ModalBackdropPressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDetailEntryId(null)}>
+          <ModalSheetPressable
+            visible={detailEntry !== null}
+            onRequestClose={() => setDetailEntryId(null)}
+            style={[s.detailSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]}
+          >
             <View style={s.editHandle} />
             {detailEntry ? (
               <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
@@ -4786,7 +5175,7 @@ export default function LogScreen() {
                         <Ionicons name="camera-outline" size={15} color={colors.sage} />
                         <View style={{ flex: 1, minWidth: 0 }}>
                           <Text style={[s.trustProofText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                            Proof status: {humanizeKey(detailTrustReview.proofStatus)}
+                            Photo status: {humanizeKey(detailTrustReview.proofStatus)}
                           </Text>
                           {detailTrustReview.proofAttachmentName ? (
                             <Text numberOfLines={1} style={[s.trustProofMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
@@ -4795,7 +5184,7 @@ export default function LogScreen() {
                           ) : null}
                           {detailTrustReview.proofStorageStatus === "local-only" ? (
                             <Text style={[s.trustProofMeta, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
-                              Local-only proof saved. Cloud storage is not enabled yet.
+                              Photo saved on this device. Cloud backup is not available.
                             </Text>
                           ) : null}
                         </View>
@@ -4804,19 +5193,22 @@ export default function LogScreen() {
                     {detailTrustReview.proofStatus && detailTrustReview.proofStatus !== "attached" ? (
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel="Attach proof photo to care log"
+                        accessibilityLabel="Attach photo to care log"
+                        accessibilityState={{ disabled: proofPickerBusy }}
+                        disabled={proofPickerBusy}
                         onPress={handleAttachProof}
                         style={({ pressed }) => [
                           s.trustProofAttachButton,
                           {
                             backgroundColor: pressed ? colors.secondary : colors.card,
                             borderColor: colors.border,
+                            opacity: proofPickerBusy ? 0.5 : 1,
                           },
                         ]}
                       >
                         <Ionicons name="image-outline" size={15} color={colors.sage} />
                         <Text style={[s.trustProofAttachText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                          Attach proof photo
+                          Attach photo
                         </Text>
                       </Pressable>
                     ) : null}
@@ -5263,7 +5655,7 @@ export default function LogScreen() {
                 ) : (
                   <View style={[s.detailFieldWide, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <Text style={[s.detailFieldValue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      No corrections yet. New edits, proof, and outcome updates will appear here.
+                      No corrections yet. New edits, photos, and outcome updates will appear here.
                     </Text>
                   </View>
                 )}
@@ -5304,11 +5696,21 @@ export default function LogScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Share care handoff"
+                    accessibilityState={{ disabled: entryHandoffShareBusy }}
+                    disabled={entryHandoffShareBusy}
                     onPress={() => shareEntryHandoff(detailEntry)}
-                    style={({ pressed }) => [s.detailPrimaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                    style={({ pressed }) => [
+                      s.detailPrimaryBtn,
+                      {
+                        backgroundColor: colors.primary,
+                        opacity: entryHandoffShareBusy ? 0.5 : pressed ? 0.85 : 1,
+                      },
+                    ]}
                   >
                     <Ionicons name="share-outline" size={17} color={colors.primaryForeground} />
-                    <Text style={[s.detailPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Share handoff</Text>
+                    <Text style={[s.detailPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                      {entryHandoffShareBusy ? "Opening share…" : "Share handoff"}
+                    </Text>
                   </Pressable>
                   <View style={s.detailIconActions}>
                     <Pressable
@@ -5349,14 +5751,18 @@ export default function LogScreen() {
                 </Pressable>
               </ScrollView>
             ) : null}
-          </Pressable>
-        </Pressable>
+          </ModalSheetPressable>
+        </ModalBackdropPressable>
       </Modal>
 
       {/* Entry editor modal */}
       <Modal visible={editEntry !== null} transparent animationType="slide" onRequestClose={() => setEditEntry(null)}>
-        <Pressable accessible={false} style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setEditEntry(null)}>
-          <Pressable accessible={false} accessibilityViewIsModal style={[s.editSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+        <ModalBackdropPressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setEditEntry(null)}>
+          <ModalSheetPressable
+            visible={editEntry !== null}
+            onRequestClose={() => setEditEntry(null)}
+            style={[s.editSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]}
+          >
             <View style={s.editHandle} />
             <Text style={[s.editSheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Edit entry</Text>
             <Text style={[s.editFieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Title</Text>
@@ -5382,15 +5788,19 @@ export default function LogScreen() {
               onPress={saveEditEntry}
               style={s.editSaveAction}
             />
-          </Pressable>
-        </Pressable>
+          </ModalSheetPressable>
+        </ModalBackdropPressable>
       </Modal>
 
       {/* Post-log quick-note prompt */}
       <Modal visible={promptId !== null} transparent animationType="fade" onRequestClose={() => setPromptId(null)}>
-        <Pressable accessible={false} style={[s.modalBackdrop, centeredModalPadding]} onPress={saveQuickNote}>
+        <ModalBackdropPressable style={[s.modalBackdrop, centeredModalPadding]} onPress={saveQuickNote}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalCenter}>
-            <Pressable accessible={false} accessibilityViewIsModal style={[s.modalCard, { backgroundColor: colors.card }]} onPress={() => {}}>
+            <ModalSheetPressable
+              visible={promptId !== null}
+              onRequestClose={() => setPromptId(null)}
+              style={[s.modalCard, { backgroundColor: colors.card }]}
+            >
               <View style={[s.modalIcon, { backgroundColor: colors.sage + "1A" }]}>
                 <Ionicons name="checkmark" size={22} color={colors.sage} />
               </View>
@@ -5429,9 +5839,9 @@ export default function LogScreen() {
                   <Text style={[s.modalSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save sticky</Text>
                 </Pressable>
               </View>
-            </Pressable>
+            </ModalSheetPressable>
           </KeyboardAvoidingView>
-        </Pressable>
+        </ModalBackdropPressable>
       </Modal>
     </View>
   );

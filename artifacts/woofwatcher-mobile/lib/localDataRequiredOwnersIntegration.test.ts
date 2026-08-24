@@ -45,8 +45,24 @@ const webRuntimeContextSource = readFileSync(
   join(mobileRoot, "context", "WebRuntimeLocalDataResetContext.tsx"),
   "utf8",
 );
+const authCredentialsContextSource = readFileSync(
+  join(mobileRoot, "context", "AuthCredentialsLocalDataResetContext.tsx"),
+  "utf8",
+);
+const authCredentialsResetSource = readFileSync(
+  join(mobileRoot, "lib", "authCredentialsLocalDataReset.ts"),
+  "utf8",
+);
 const rootLayoutSource = readFileSync(
   join(mobileRoot, "app", "_layout.tsx"),
+  "utf8",
+);
+const localDataResetContextSource = readFileSync(
+  join(mobileRoot, "context", "LocalDataResetContext.tsx"),
+  "utf8",
+);
+const localDataResetRuntimeSource = readFileSync(
+  join(mobileRoot, "lib", "localDataResetRuntime.ts"),
   "utf8",
 );
 const resetShieldSource = readFileSync(
@@ -74,7 +90,14 @@ function productionTypeScriptFiles(root: string): string[] {
   });
 }
 
-test("production composition attaches files, walk capture, and web runtime required owners", () => {
+test("production composition attaches auth, files, walk capture, and web runtime required owners", () => {
+  assert.match(
+    authCredentialsContextSource,
+    /attachRequiredParticipant\(\s*"auth-credentials",\s*controllerRef\.current!\.participant,?\s*\)/,
+  );
+  assert.match(authCredentialsResetSource, /"__clerk_client_jwt"/);
+  assert.match(authCredentialsResetSource, /await auth\.signOut\(\)/);
+  assert.match(authCredentialsResetSource, /options\.clearToken\(key\)/);
   assert.match(
     appFileSystemContextSource,
     /attachRequiredParticipant\(\s*"files",\s*fileSystemRef\.current!\.localDataResetParticipant,?\s*\)/,
@@ -89,7 +112,7 @@ test("production composition attaches files, walk capture, and web runtime requi
   );
   assert.match(
     rootLayoutSource,
-    /<LocalDataResetProvider>[\s\S]*<WebRuntimeLocalDataResetProvider>[\s\S]*<AppFileSystemProvider>/,
+    /<LocalDataResetProvider>[\s\S]*<AuthCredentialsLocalDataResetProvider>[\s\S]*<WebRuntimeLocalDataResetProvider>[\s\S]*<AppFileSystemProvider>/,
   );
   assert.match(
     rootLayoutSource,
@@ -133,7 +156,8 @@ test("Query cache attaches one identity-safe stable required owner", () => {
     /getPrivacyLocalDataResetView\(operationState\)/,
   );
   assert.match(resetShieldSource, /resetView\.failures\.map/);
-  assert.match(resetShieldSource, /All data deleted/);
+  assert.match(resetShieldSource, /Local care content deleted/);
+  assert.match(resetShieldSource, /resetView\.detail/);
   assert.match(resetShieldSource, /Retry deletion/);
   assert.match(queryCacheResetSource, /Object\.freeze\(\{[\s\S]*userId:[\s\S]*sessionId:/);
   assert.doesNotMatch(queryCacheResetSource, /removeQueries|resetQueries|invalidateQueries|signOut/);
@@ -198,8 +222,12 @@ test("Care attaches the required owner while root admission blocks only new muta
     "const careWriteCanContinue = useCallback(",
     "// Maps optimistic temp ids",
   );
-  assert.match(admission, /!isWriteAdmissionOpen\(\)/);
-  assert.doesNotMatch(continuation, /isWriteAdmissionOpen/);
+  assert.match(admission, /careWriteAdmissionIsOpen\(\{/);
+  assert.match(admission, /hydrated:\s*hydratedRef\.current/);
+  assert.match(admission, /localDataAdmissionOpen:\s*isWriteAdmissionOpen\(\)/);
+  assert.match(continuation, /careWriteAdmissionIsOpen\(\{/);
+  assert.match(continuation, /hydrated:\s*hydratedRef\.current/);
+  assert.match(continuation, /localDataAdmissionOpen:\s*isWriteAdmissionOpen\(\)/);
 });
 
 test("Care prepare drains accepted specialized work and commit alone invalidates it", () => {
@@ -234,6 +262,10 @@ test("Care prepare drains accepted specialized work and commit alone invalidates
   );
   assert.match(
     physicalPrimaryWrite,
+    /removableStorage\.setItem\(CARE_PRIMARY_LOCAL_DATA_KEY, raw\)/,
+  );
+  assert.doesNotMatch(
+    physicalPrimaryWrite,
     /AsyncStorage\.setItem\(CARE_PRIMARY_LOCAL_DATA_KEY, raw\)/,
   );
   assert.doesNotMatch(physicalPrimaryWrite, /snapshotPersistencePausedRef/);
@@ -255,7 +287,7 @@ test("Care prepare drains accepted specialized work and commit alone invalidates
   );
 });
 
-test("Care auxiliary hydration uses the shared lane while primary and cleanup ledger stay specialized", () => {
+test("Care hydration routes every local read through the cross-runtime removable lane", () => {
   const hydration = sourceSlice(
     careContextSource,
     "const hydrationEraseGeneration = eraseGenerationRef.current;",
@@ -285,11 +317,15 @@ test("Care auxiliary hydration uses the shared lane while primary and cleanup le
   );
   assert.match(
     hydration,
-    /AsyncStorage\.getItem\(CARE_PRIMARY_LOCAL_DATA_KEY\)/,
+    /removableStorage\.getItem\(CARE_PRIMARY_LOCAL_DATA_KEY\)/,
   );
   assert.match(
     hydration,
-    /AsyncStorage\.getItem\(CARE_PRESERVED_LOCAL_DATA_KEY\)/,
+    /removableStorage\.getItem\(CARE_PRESERVED_LOCAL_DATA_KEY\)/,
+  );
+  assert.doesNotMatch(
+    hydration,
+    /AsyncStorage\.getItem\((?:CARE_PRIMARY|CARE_PRESERVED)_LOCAL_DATA_KEY\)/,
   );
 });
 
@@ -315,7 +351,7 @@ test("future-schema Care hydration keeps the unknown primary envelope opaque", (
   );
 });
 
-test("coordinated exact-key deletion preserves cleanup metadata and finalizes evidence only after primary removal", () => {
+test("coordinated exact-key deletion uses a scoped Care commit capability and finalizes evidence only after primary removal", () => {
   const controllerHooks = sourceSlice(
     careContextSource,
     "createCareLocalDataResetController({",
@@ -341,7 +377,33 @@ test("coordinated exact-key deletion preserves cleanup metadata and finalizes ev
   );
   assert.match(
     cleanupIntent,
-    /if \(cleanupLedger\.length > 0\)[\s\S]*discardedServerEntryWriter\.enqueue\(cleanupLedger\)/,
+    /commitContext\?: CareResetCommitContext/,
+  );
+  assert.match(
+    cleanupIntent,
+    /if \(cleanupLedger\.length > 0\) \{[\s\S]*if \(!commitContext\) \{[\s\S]*throw new Error\("The Care reset commit capability is unavailable\."\);[\s\S]*await commitContext\.persistCareCleanupLedger\(cleanupLedger\);/,
+  );
+  assert.doesNotMatch(cleanupIntent, /resetCommitStorage/);
+  assert.doesNotMatch(localDataResetContextSource, /resetCommitStorage/);
+  assert.match(
+    localDataResetRuntimeSource,
+    /care: createRequiredParticipantSlot\("care", "data", invokeCareCommit\)/,
+  );
+  assert.match(
+    localDataResetRuntimeSource,
+    /persistCareCleanupLedger\(entryIds\)[\s\S]*storage\.setItem\(\s*CARE_PRESERVED_LOCAL_DATA_KEY,\s*JSON\.stringify\(uniqueEntryIds\),?\s*\)/,
+  );
+  assert.match(
+    localDataResetRuntimeSource,
+    /const operationResults = await Promise\.allSettled\(operations\)/,
+  );
+  assert.match(
+    localDataResetRuntimeSource,
+    /operationResults\.flatMap\([\s\S]*result\.status === "rejected"/,
+  );
+  assert.doesNotMatch(
+    cleanupIntent,
+    /discardedServerEntryWriter\.enqueue\(cleanupLedger\)/,
   );
   assert.match(
     cleanupIntent,
@@ -405,7 +467,7 @@ test("settled reset epochs trigger persistence without rerunning completed hydra
   );
   assert.match(
     persistence,
-    /if \(decision === "wait"\) return;[\s\S]*if \(decision === "suppress"\) return;[\s\S]*carePersistenceWriter\s*\.enqueue/,
+    /if \(decision === "wait"\) return;[\s\S]*if \(decision === "suppress"\) return;[\s\S]*persistCurrentCareSnapshot\(\)/,
   );
 
   const hydration = sourceSlice(
@@ -523,7 +585,7 @@ test("Avatar attaches one stable required owner with exact raw commit removal", 
   );
   assert.match(
     avatarContextSource,
-    /setAvatarSet\(null\)[\s\S]*setAvatarConfig\(createDefaultAvatarConfig\("Phoenix"\)\)[\s\S]*setIsLoaded\(true\)/,
+    /setAvatarSet\(null\)[\s\S]*setAvatarConfig\(createDefaultAvatarConfig\(DEFAULT_PET_PLACEHOLDER\)\)[\s\S]*setIsLoaded\(true\)/,
   );
   const finalizer = sourceSlice(
     avatarContextSource,

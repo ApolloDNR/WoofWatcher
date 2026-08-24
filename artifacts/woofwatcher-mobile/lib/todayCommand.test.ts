@@ -6,6 +6,7 @@ import { deriveTodayCommand, type TodayCommandState } from "./todayCommand.ts";
 process.env.TZ = "America/Los_Angeles";
 
 const MORNING = new Date("2026-06-06T09:00:00-07:00").getTime();
+const BEFORE_CARE_DAY = new Date("2026-06-06T00:30:00-07:00").getTime();
 const AFTERNOON = new Date("2026-06-06T14:00:00-07:00").getTime();
 
 function state(overrides: Partial<TodayCommandState> = {}): TodayCommandState {
@@ -21,6 +22,21 @@ function state(overrides: Partial<TodayCommandState> = {}): TodayCommandState {
     ...overrides,
   };
 }
+
+test("fresh reset state uses the neutral setup name", () => {
+  const command = deriveTodayCommand(
+    state({
+      profile: { name: "My Dog" },
+      caregivers: [],
+      routines: [],
+      entries: [],
+    }),
+    BEFORE_CARE_DAY,
+  );
+
+  assert.equal(command.primaryAction.label, "Set up your dog");
+  assert.doesNotMatch(command.primaryAction.label, /My Dog|Phoenix/);
+});
 
 test("missed meal in the morning creates a log-meal primary action", () => {
   const command = deriveTodayCommand(state(), MORNING);

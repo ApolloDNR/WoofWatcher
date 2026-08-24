@@ -1,4 +1,5 @@
 import * as FileSystem from "expo-file-system/legacy";
+import { Image } from "expo-image";
 import { Platform } from "react-native";
 
 import type { AppFileSystemAdapter } from "./appFileSystem.ts";
@@ -7,6 +8,7 @@ export function createExpoAppFileSystemAdapter(): AppFileSystemAdapter {
   return {
     platform: Platform.OS,
     documentDirectory: FileSystem.documentDirectory,
+    cacheDirectory: FileSystem.cacheDirectory,
     getInfoAsync: (uri) => FileSystem.getInfoAsync(uri),
     makeDirectoryAsync: (uri, options) =>
       FileSystem.makeDirectoryAsync(uri, options),
@@ -21,5 +23,7 @@ export function createExpoAppFileSystemAdapter(): AppFileSystemAdapter {
     getContentUriAsync: (uri) => FileSystem.getContentUriAsync(uri),
     readDirectoryAsync: (uri) => FileSystem.readDirectoryAsync(uri),
     deleteAsync: (uri, options) => FileSystem.deleteAsync(uri, options),
+    clearImageMemoryCache: () => Image.clearMemoryCache(),
+    clearImageDiskCache: () => Image.clearDiskCache(),
   };
 }

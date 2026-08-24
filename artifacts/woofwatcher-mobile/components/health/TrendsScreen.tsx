@@ -28,6 +28,7 @@ import { PressScale } from "@/components/motion/GameFeel";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
+import { resolveConsumerPetName } from "@/lib/petIdentity";
 import {
   bucketAverages,
   bucketCounts,
@@ -344,8 +345,7 @@ export default function TrendsScreen({
   const [windowKey, setWindowKey] = useState<TrendWindowKey>("week");
   const [showSignals, setShowSignals] = useState(false);
 
-  const petName =
-    state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
+  const petName = resolveConsumerPetName(state.profile.name);
 
   // Stable `now` per window + entries so buckets/animations don't churn each render.
   const now = useMemo(() => Date.now(), [windowKey, state.entries]);

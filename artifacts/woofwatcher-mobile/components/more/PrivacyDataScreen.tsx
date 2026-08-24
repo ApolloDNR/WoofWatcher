@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Modal,
   Platform,
@@ -14,11 +14,18 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useGetMe } from "@workspace/api-client-react";
+import { getGetMeQueryKey, useGetMe } from "@workspace/api-client-react";
 import { useCare, type LaunchSupportProfile } from "@/context/CareContext";
+import { useAppFileSystem } from "@/context/AppFileSystemContext";
 import { useLocalDataReset } from "@/context/LocalDataResetContext";
 import { useColors } from "@/hooks/useColors";
-import { BoardCard, BoardPill, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import {
+  BoardCard,
+  BoardPill,
+  BoardSectionHeader,
+  ModalBackdropPressable,
+  ModalSheetPressable,
+} from "@/components/board/BoardPrimitives";
 import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
@@ -34,6 +41,7 @@ import {
   type AccountSafetyStatus,
 } from "@/lib/privacySafety";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
+import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
 import { resolvePetName } from "@/lib/petIdentity";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import { shareTextPayload } from "@/lib/shareText";
@@ -50,6 +58,8 @@ import {
 } from "@/lib/supportRunbook";
 import type { AttachmentReviewRow } from "@/lib/attachmentManifest";
 import {
+  PrivacyExportDismissedError,
+  preparePrivacyCareExportWithDeviceInventory,
   runPrivacyCareDataExport,
   runPrivacyLocalDataReset,
 } from "@/lib/privacyLocalDataActions";
@@ -99,13 +109,23 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, careMutationsBlocked, updateCareDoc } = useCare();
+  const fileSystem = useAppFileSystem();
   const { operationState, runExport, runReset } = useLocalDataReset();
   // Launch-ops cards (support runbook, launch gates) are owner tooling and
   // stay out of store production builds.
   const ownerOps = isOwnerOpsBuild();
+  const privacyScreenMountedRef = useRef(true);
+  const privacyExportInFlightRef = useRef(false);
+  const [privacyExportBusy, setPrivacyExportBusy] = useState(false);
   const [launchEditorOpen, setLaunchEditorOpen] = useState(false);
   const [launchDraft, setLaunchDraft] = useState<LaunchSupportProfile>(state.launchSupportProfile);
-  const me = useGetMe();
+  const { isSignedIn } = useWoofAuth();
+  const me = useGetMe({
+    query: {
+      queryKey: getGetMeQueryKey(),
+      enabled: isClerkEnabledForBuild && Boolean(isSignedIn),
+    },
+  });
   const context = useMemo(
     () => ({
       userId: me.data?.user?.id ?? null,
@@ -141,6 +161,12 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
   useEffect(() => {
     if (!launchEditorOpen) setLaunchDraft(state.launchSupportProfile);
   }, [launchEditorOpen, state.launchSupportProfile]);
+  useEffect(() => {
+    privacyScreenMountedRef.current = true;
+    return () => {
+      privacyScreenMountedRef.current = false;
+    };
+  }, []);
 
   const sections = [
     plan.export,
@@ -222,24 +248,47 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
     operationState.status === "deleting";
 
   const shareExport = () => {
-    if (localDataOperationBusy) return;
+    if (localDataOperationBusy || privacyExportInFlightRef.current) return;
+    privacyExportInFlightRef.current = true;
+    setPrivacyExportBusy(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void runPrivacyCareDataExport({
+    const operation = runPrivacyCareDataExport({
       runExport,
       capture: () => {
+        const inventoryIntent = fileSystem.captureIntent();
+        if (!inventoryIntent) {
+          throw new Error("A local data reset is in progress.");
+        }
         const fresh = buildPrivacyExportBundle(state, context, Date.now());
         return {
           title: `WoofWatcher care export - ${fresh.dogName}`,
-          message: serializePrivacyExportBundle(fresh),
+          serializedBundle: serializePrivacyExportBundle(fresh),
+          inventoryIntent,
         };
       },
-      share: shareTextPayload,
-    }).catch(() => {
-      notifyDialog(
-        "Export not shared",
-        "WoofWatcher could not share the care export. Your local data was not changed. Try again.",
-      );
+      prepare: (captured) =>
+        preparePrivacyCareExportWithDeviceInventory(
+          captured,
+          fileSystem.listOwnedFiles,
+        ),
+      share: (payload) =>
+        shareTextPayload(payload, { notifyOnFailure: false }),
     });
+    void operation
+      .catch((error: unknown) => {
+        if (
+          error instanceof PrivacyExportDismissedError ||
+          !privacyScreenMountedRef.current
+        ) return;
+        notifyDialog(
+          "Export not shared",
+          "WoofWatcher could not share the care export. Your local data was not changed. Try again.",
+        );
+      })
+      .finally(() => {
+        privacyExportInFlightRef.current = false;
+        if (privacyScreenMountedRef.current) setPrivacyExportBusy(false);
+      });
   };
 
   const shareDeletionRequest = () => {
@@ -285,14 +334,14 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
   const eraseSteps = {
     confirm: {
       title: "Delete all data on this device?",
-      message: `This permanently removes every log, routine, record, memory, report, and avatar for ${resolvePetName(state.profile.name)} from this device. WoofWatcher keeps no copy anywhere else. Export first if you want a backup.`,
-      confirmLabel: "Delete everything",
+      message: `This permanently removes every log, routine, record, memory, report, avatar, app-owned file, preference, cache, and saved sign-in credential for ${resolvePetName(state.profile.name)} from this device. WoofWatcher V1 has no cloud backup. If an older connected build was used, the reset may retain opaque non-content sync-cleanup IDs only to stop deleted entries from returning; it does not prove deletion of a connected service's account copy. Export first if you want a backup.`,
+      confirmLabel: "Delete local content",
       cancelLabel: "Cancel",
     },
     "confirm-final": {
       title: "This cannot be undone",
-      message: "Delete all WoofWatcher data from this device now?",
-      confirmLabel: "Yes, delete it all",
+      message: "Delete all WoofWatcher care content and app-owned local data from this device now?",
+      confirmLabel: "Yes, delete local content",
       cancelLabel: "Keep my data",
     },
   } as const;
@@ -367,42 +416,47 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
             <StatCard label="Logs" value={String(bundle.counts.entries)} colors={colors} />
             <StatCard label="Records" value={String(bundle.counts.records)} colors={colors} />
             <StatCard label="Reports" value={String(bundle.counts.reportArtifacts)} colors={colors} />
-            <StatCard label="Files" value={String(bundle.counts.localAttachments)} colors={colors} />
+            <StatCard label="File refs" value={String(bundle.counts.localAttachments)} colors={colors} />
           </View>
         </BoardCard>
 
-        <BoardCard enter={1} style={s.privacyBoard}>
-          <BoardSectionHeader
-            title="Attachment queue"
-            accessory={<BoardPill label={`${bundle.storage.attachmentQueue.total} files`} tone={colors.copper} />}
-          />
-          <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-            {bundle.storage.attachmentSummary}
-          </Text>
-          <View style={s.queueStack}>
-            {bundle.storage.attachmentReviewRows.length > 0 ? (
-              bundle.storage.attachmentReviewRows.map((row) => (
-                <AttachmentQueueRow key={row.kind} row={row} colors={colors} />
-              ))
-            ) : (
-              <Text style={[s.emptyQueue, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                No proof photos, record uploads, memories, reports, or QA screenshots are waiting for storage.
-              </Text>
-            )}
-          </View>
-        </BoardCard>
+        {ownerOps ? (
+          <BoardCard enter={1} style={s.privacyBoard}>
+            <BoardSectionHeader
+              title="Attachment queue"
+              accessory={<BoardPill label={`${bundle.storage.attachmentQueue.total} files`} tone={colors.copper} />}
+            />
+            <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              {bundle.storage.attachmentSummary}
+            </Text>
+            <View style={s.queueStack}>
+              {bundle.storage.attachmentReviewRows.length > 0 ? (
+                bundle.storage.attachmentReviewRows.map((row) => (
+                  <AttachmentQueueRow key={row.kind} row={row} colors={colors} />
+                ))
+              ) : (
+                <Text style={[s.emptyQueue, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  No proof photos, record uploads, memories, reports, or QA screenshots are waiting for storage.
+                </Text>
+              )}
+            </View>
+          </BoardCard>
+        ) : null}
 
         <View style={s.actionRow}>
           <Pressable
             onPress={shareExport}
-            disabled={localDataOperationBusy}
+            disabled={localDataOperationBusy || privacyExportBusy}
             accessibilityRole="button"
             accessibilityLabel="Export WoofWatcher care data"
+            accessibilityState={{
+              disabled: localDataOperationBusy || privacyExportBusy,
+            }}
             style={({ pressed }) => [
               s.primaryBtn,
               {
                 backgroundColor: colors.primary,
-                opacity: localDataOperationBusy ? 0.55 : pressed ? 0.85 : 1,
+                opacity: localDataOperationBusy || privacyExportBusy ? 0.55 : pressed ? 0.85 : 1,
               },
             ]}
           >
@@ -433,7 +487,7 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
           />
           <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             Every care log lives only on this device. Read the full privacy
-            policy and terms, or erase everything in one step.
+            policy and terms, or delete your local care content and app data in one step.
           </Text>
           <Pressable
             onPress={openLegalDocuments}
@@ -598,13 +652,13 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
         animationType="fade"
         onRequestClose={cancelEraseFlow}
       >
-        <Pressable
+        <ModalBackdropPressable
           style={s.modalBackdrop}
           onPress={cancelEraseFlow}
-          accessibilityRole="button"
-          accessibilityLabel="Dismiss delete confirmation"
         >
-          <Pressable
+          <ModalSheetPressable
+            visible={eraseStage !== null}
+            onRequestClose={cancelEraseFlow}
             style={[
               s.confirmSheet,
               {
@@ -613,7 +667,6 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                 paddingBottom: Math.max(modalSheetBottomPadding, 18),
               },
             ]}
-            onPress={(event) => event.stopPropagation()}
           >
             <View style={s.modalHandle} />
             {eraseStage ? (
@@ -690,14 +743,15 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                 </View>
               </>
             ) : null}
-          </Pressable>
-        </Pressable>
+          </ModalSheetPressable>
+        </ModalBackdropPressable>
       </Modal>
       <Modal visible={launchEditorOpen} transparent animationType="slide" onRequestClose={() => setLaunchEditorOpen(false)}>
-        <Pressable style={s.modalBackdrop} onPress={() => setLaunchEditorOpen(false)}>
-          <Pressable
+        <ModalBackdropPressable style={s.modalBackdrop} onPress={() => setLaunchEditorOpen(false)}>
+          <ModalSheetPressable
+            visible={launchEditorOpen}
+            onRequestClose={() => setLaunchEditorOpen(false)}
             style={[s.launchModal, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
-            onPress={(event) => event.stopPropagation()}
           >
             <View style={s.modalHandle} />
             <View style={s.modalHeader}>
@@ -799,8 +853,8 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                 <Text style={[s.modalPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Owner-reviewed</Text>
               </Pressable>
             </View>
-          </Pressable>
-        </Pressable>
+          </ModalSheetPressable>
+        </ModalBackdropPressable>
       </Modal>
     </View>
   );

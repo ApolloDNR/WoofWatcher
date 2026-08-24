@@ -12,7 +12,9 @@ import {
   type LocalDataResetRuntime,
 } from "./localDataResetRuntime.ts";
 import {
+  PickedMediaLocalDataActionError,
   runMedicationProofPhotoPicker,
+  runQaScreenshotPicker,
   runRecordAttachmentPicker,
 } from "./pickedMediaLocalDataActions.ts";
 import {
@@ -46,8 +48,9 @@ function buildAdapter(
   return {
     platform: "android",
     documentDirectory: "file:///documents/",
-    async getInfoAsync() {
-      return { exists: true };
+    cacheDirectory: "file:///cache/",
+    async getInfoAsync(uri) {
+      return { exists: true, isDirectory: uri.endsWith("/") };
     },
     async makeDirectoryAsync() {},
     async copyAsync() {},
@@ -59,6 +62,12 @@ function buildAdapter(
       return [];
     },
     async deleteAsync() {},
+    async clearImageMemoryCache() {
+      return true;
+    },
+    async clearImageDiskCache() {
+      return true;
+    },
     ...overrides,
   };
 }
@@ -100,6 +109,12 @@ async function waitUntil(predicate: () => boolean) {
   assert.fail("condition did not become true before the microtask limit");
 }
 
+async function flushMicrotasks(count = 100) {
+  for (let index = 0; index < count; index += 1) {
+    await Promise.resolve();
+  }
+}
+
 const pickedAsset = {
   canceled: false as const,
   assets: [
@@ -114,9 +129,12 @@ const pickedAsset = {
 for (const [label, runPicker] of [
   ["Records attachment", runRecordAttachmentPicker],
   ["Log medication proof", runMedicationProofPhotoPicker],
+  ["QA screenshot", runQaScreenshotPicker],
 ] as const) {
-  test(`${label} captures intent before the picker and applies nothing when reset wins`, async () => {
-    const picker = deferred<typeof pickedAsset>();
+  test(`${label} drains the native picker and deletes cache it creates after reset starts`, async () => {
+    const picker = deferred<void>();
+    const pickerCacheUri = "file:///cache/ImagePicker/proof.jpg";
+    const files = new Set<string>();
     const events: string[] = [];
     const { runtime, appFileSystem } = harness(
       buildAdapter({
@@ -126,22 +144,56 @@ for (const [label, runPicker] of [
         async copyAsync() {
           events.push("copy");
         },
+        async deleteAsync(uri) {
+          events.push(`delete:${uri}`);
+          for (const file of [...files]) {
+            if (file.startsWith(uri)) files.delete(file);
+          }
+        },
       }),
     );
 
     const action = runPicker({
       appFileSystem,
-      pick: () => picker.promise,
+      pick: async () => {
+        events.push("picker:start");
+        await picker.promise;
+        files.add(pickerCacheUri);
+        events.push("picker:end");
+        return {
+          ...pickedAsset,
+          assets: [{ ...pickedAsset.assets[0], uri: pickerCacheUri }],
+        };
+      },
       apply: () => {
         events.push("apply");
       },
     });
-    const reset = runtime.operations.runReset();
-    picker.resolve(pickedAsset);
+    await waitUntil(() => events.includes("picker:start"));
+    let resetSettled = false;
+    const reset = runtime.operations.runReset().then((result) => {
+      resetSettled = true;
+      return result;
+    });
+    await flushMicrotasks();
+    assert.equal(resetSettled, false);
+    assert.equal(
+      events.includes("delete:file:///cache/ImagePicker/"),
+      false,
+      "file-owner commit must wait until the native picker has settled",
+    );
+
+    picker.resolve();
 
     assert.deepEqual(await action, { status: "revoked" });
     assert.equal((await reset).status, "complete");
-    assert.deepEqual(events, []);
+    assert.equal(files.size, 0);
+    assert.equal(events.includes("copy"), false);
+    assert.equal(events.includes("apply"), false);
+    assert.ok(
+      events.indexOf("picker:end") <
+        events.indexOf("delete:file:///cache/ImagePicker/"),
+    );
   });
 
   test(`${label} drains an accepted real copy, deletes it, and suppresses stale UI/care apply`, async () => {
@@ -188,6 +240,438 @@ for (const [label, runPicker] of [
   });
 }
 
+test("Avatar permission prompt is drained and cannot launch a picker after reset begins", async () => {
+  const permission = deferred<void>();
+  const events: string[] = [];
+  const { runtime, appFileSystem } = harness(buildAdapter());
+  const intent = appFileSystem.captureIntent();
+  assert.ok(intent);
+
+  const interaction = appFileSystem.runProtectedPicker(intent, async () => {
+    events.push("permission:start");
+    await permission.promise;
+    events.push("permission:end");
+    if (!appFileSystem.isIntentCurrent(intent)) return null;
+    events.push("picker:launch");
+    return pickedAsset;
+  });
+  await waitUntil(() => events.includes("permission:start"));
+  let resetSettled = false;
+  const reset = runtime.operations.runReset().then((result) => {
+    resetSettled = true;
+    return result;
+  });
+  await flushMicrotasks();
+  assert.equal(resetSettled, false);
+
+  permission.resolve();
+
+  assert.deepEqual(await interaction, { status: "revoked" });
+  assert.equal((await reset).status, "complete");
+  assert.deepEqual(events, ["permission:start", "permission:end"]);
+});
+
+test("Avatar picker cache created after reset starts is drained and deleted before completion", async () => {
+  const picker = deferred<void>();
+  const pickerCacheUri = "file:///cache/ImagePicker/avatar.jpg";
+  const files = new Set<string>();
+  const events: string[] = [];
+  const { runtime, appFileSystem } = harness(
+    buildAdapter({
+      async deleteAsync(uri) {
+        events.push(`delete:${uri}`);
+        for (const file of [...files]) {
+          if (file.startsWith(uri)) files.delete(file);
+        }
+      },
+    }),
+  );
+  const intent = appFileSystem.captureIntent();
+  assert.ok(intent);
+  const interaction = appFileSystem.runProtectedPicker(intent, async () => {
+    events.push("picker:start");
+    await picker.promise;
+    files.add(pickerCacheUri);
+    events.push("picker:end");
+    return pickedAsset;
+  });
+  await waitUntil(() => events.includes("picker:start"));
+  let resetSettled = false;
+  const reset = runtime.operations.runReset().then((result) => {
+    resetSettled = true;
+    return result;
+  });
+  await flushMicrotasks();
+  assert.equal(resetSettled, false);
+  assert.equal(
+    events.includes("delete:file:///cache/ImagePicker/"),
+    false,
+  );
+
+  picker.resolve();
+
+  assert.deepEqual(await interaction, { status: "revoked" });
+  assert.equal((await reset).status, "complete");
+  assert.equal(files.size, 0);
+  assert.ok(
+    events.indexOf("picker:end") <
+      events.indexOf("delete:file:///cache/ImagePicker/"),
+  );
+});
+
+test("a rejected picker apply deletes the new durable copy and picker cache while preserving the committed original", async () => {
+  const copied: string[] = [];
+  const deleted: string[] = [];
+  const previousUri =
+    "file:///documents/woofwatcher-attachments/committed.jpg";
+  const pickerSourceUri = "file:///cache/ImagePicker/rejected-proof.jpg";
+  const { appFileSystem } = harness(
+    buildAdapter({
+      async copyAsync({ to }) {
+        copied.push(to);
+      },
+      async deleteAsync(uri) {
+        deleted.push(uri);
+      },
+    }),
+  );
+
+  const action = await runMedicationProofPhotoPicker({
+    appFileSystem,
+    pick: async () => ({
+      ...pickedAsset,
+      assets: [{ ...pickedAsset.assets[0], uri: pickerSourceUri }],
+    }),
+    preserveUris: [previousUri],
+    apply: () => false,
+  });
+
+  assert.equal(copied.length, 1);
+  assert.deepEqual(action, { status: "rejected", cleanupFailed: false });
+  assert.deepEqual(deleted, [copied[0], pickerSourceUri]);
+  assert.equal(deleted.includes(previousUri), false);
+});
+
+test("a throwing picker apply releases both the durable copy and picker cache before surfacing the error", async () => {
+  const copied: string[] = [];
+  const deleted: string[] = [];
+  const pickerSourceUri = "file:///cache/ImagePicker/throwing-proof.jpg";
+  const { appFileSystem } = harness(
+    buildAdapter({
+      async copyAsync({ to }) {
+        copied.push(to);
+      },
+      async deleteAsync(uri) {
+        deleted.push(uri);
+      },
+    }),
+  );
+
+  await assert.rejects(
+    runRecordAttachmentPicker({
+      appFileSystem,
+      pick: async () => ({
+        ...pickedAsset,
+        assets: [{ ...pickedAsset.assets[0], uri: pickerSourceUri }],
+      }),
+      apply: () => {
+        throw new Error("metadata persistence denied");
+      },
+    }),
+    /metadata persistence denied/,
+  );
+
+  assert.equal(copied.length, 1);
+  assert.deepEqual(deleted, [copied[0], pickerSourceUri]);
+});
+
+test("a picker copies an already-owned shared source before rejection so cleanup cannot delete the original", async () => {
+  const sharedUri =
+    "file:///documents/woofwatcher-attachments/shared-original.jpg";
+  const copied: Array<{ from: string; to: string }> = [];
+  const deleted: string[] = [];
+  const { appFileSystem } = harness(
+    buildAdapter({
+      async copyAsync(input) {
+        copied.push(input);
+      },
+      async deleteAsync(uri) {
+        deleted.push(uri);
+      },
+    }),
+  );
+
+  const action = await runMedicationProofPhotoPicker({
+    appFileSystem,
+    pick: async () => ({
+      canceled: false,
+      assets: [{ ...pickedAsset.assets[0], uri: sharedUri }],
+    }),
+    preserveUris: [sharedUri],
+    apply: () => false,
+  });
+
+  assert.deepEqual(action, { status: "rejected", cleanupFailed: false });
+  assert.equal(copied.length, 1);
+  assert.equal(copied[0]?.from, sharedUri);
+  assert.notEqual(copied[0]?.to, sharedUri);
+  assert.deepEqual(deleted, [copied[0]?.to]);
+  assert.equal(deleted.includes(sharedUri), false);
+});
+
+test("replacement protection is failure-only so rejection keeps the old proof but acceptance releases it", async () => {
+  const previousUri =
+    "file:///documents/woofwatcher-attachments/previous-proof.jpg";
+
+  for (const accepted of [false, true]) {
+    const copied: string[] = [];
+    const deleted: string[] = [];
+    const { appFileSystem } = harness(
+      buildAdapter({
+        async copyAsync({ to }) {
+          copied.push(to);
+        },
+        async deleteAsync(uri) {
+          deleted.push(uri);
+        },
+      }),
+    );
+
+    const action = await runMedicationProofPhotoPicker({
+      appFileSystem,
+      pick: async () => ({
+        canceled: false,
+        assets: [{ ...pickedAsset.assets[0], uri: previousUri }],
+      }),
+      failureProtectedUris: [previousUri],
+      cleanupAfterApplyUris: [previousUri],
+      apply: () => accepted,
+    });
+
+    assert.equal(copied.length, 1);
+    assert.equal(deleted.includes(copied[0]!), !accepted);
+    assert.equal(
+      deleted.includes(previousUri),
+      accepted,
+      accepted
+        ? "accepted replacement must release the no-longer-referenced proof"
+        : "rejected replacement must retain the still-referenced proof",
+    );
+    assert.equal(action.status, accepted ? "applied" : "rejected");
+  }
+});
+
+test("a failed forced copy of an owned shared source leaves the original untouched", async () => {
+  const sharedUri =
+    "file:///documents/woofwatcher-attachments/shared-original.jpg";
+  const deleted: string[] = [];
+  let applyCalls = 0;
+  const { appFileSystem } = harness(
+    buildAdapter({
+      async copyAsync() {
+        throw new Error("copy denied");
+      },
+      async deleteAsync(uri) {
+        deleted.push(uri);
+      },
+    }),
+  );
+
+  const action = await runRecordAttachmentPicker({
+    appFileSystem,
+    pick: async () => ({
+      canceled: false,
+      assets: [{ ...pickedAsset.assets[0], uri: sharedUri }],
+    }),
+    preserveUris: [sharedUri],
+    apply: () => {
+      applyCalls += 1;
+      return true;
+    },
+  });
+
+  assert.deepEqual(action, {
+    status: "not-saved",
+    reason: "durable-copy-failed",
+    cleanupFailed: false,
+  });
+  assert.equal(applyCalls, 0);
+  assert.deepEqual(deleted, []);
+});
+
+test("a failed durable copy releases an orphaned picker cache source", async () => {
+  const sourceUri = "file:///cache/ImagePicker/orphan-after-copy-failure.jpg";
+  const deleted: string[] = [];
+  const { appFileSystem } = harness(
+    buildAdapter({
+      async copyAsync() {
+        throw new Error("copy denied");
+      },
+      async deleteAsync(uri) {
+        deleted.push(uri);
+      },
+    }),
+  );
+
+  const action = await runRecordAttachmentPicker({
+    appFileSystem,
+    pick: async () => ({
+      canceled: false,
+      assets: [{ ...pickedAsset.assets[0], uri: sourceUri }],
+    }),
+    apply: () => true,
+  });
+
+  assert.deepEqual(action, {
+    status: "not-saved",
+    reason: "durable-copy-failed",
+    cleanupFailed: false,
+  });
+  assert.deepEqual(deleted, [sourceUri]);
+});
+
+test("a failed durable copy reports when its orphaned picker cache cannot be removed", async () => {
+  const sourceUri = "file:///cache/ImagePicker/locked-copy-failure.jpg";
+  const { appFileSystem } = harness(
+    buildAdapter({
+      async copyAsync() {
+        throw new Error("copy denied");
+      },
+      async deleteAsync(uri) {
+        if (uri === sourceUri) throw new Error("picker cache locked");
+      },
+    }),
+  );
+
+  const action = await runRecordAttachmentPicker({
+    appFileSystem,
+    pick: async () => ({
+      canceled: false,
+      assets: [{ ...pickedAsset.assets[0], uri: sourceUri }],
+    }),
+    apply: () => true,
+  });
+
+  assert.deepEqual(action, {
+    status: "not-saved",
+    reason: "durable-copy-failed",
+    cleanupFailed: true,
+  });
+});
+
+test("a throwing picker apply carries truthful partial-cleanup state to the caller", async () => {
+  const sourceUri = "file:///cache/ImagePicker/locked-apply-failure.jpg";
+  const { appFileSystem } = harness(
+    buildAdapter({
+      async deleteAsync(uri) {
+        if (uri === sourceUri) throw new Error("picker cache locked");
+      },
+    }),
+  );
+
+  await assert.rejects(
+    runRecordAttachmentPicker({
+      appFileSystem,
+      pick: async () => ({
+        canceled: false,
+        assets: [{ ...pickedAsset.assets[0], uri: sourceUri }],
+      }),
+      apply: () => {
+        throw new Error("metadata persistence denied");
+      },
+    }),
+    (error: unknown) => {
+      assert.ok(error instanceof PickedMediaLocalDataActionError);
+      assert.equal(error.message, "metadata persistence denied");
+      assert.equal(error.cleanupFailed, true);
+      return true;
+    },
+  );
+});
+
+test("an accepted replacement releases the old durable file only after the mutation accepts", async () => {
+  const events: string[] = [];
+  const previousUri =
+    "file:///documents/woofwatcher-attachments/committed.jpg";
+  const { appFileSystem } = harness(
+    buildAdapter({
+      async copyAsync() {
+        events.push("copy");
+      },
+      async deleteAsync(uri) {
+        events.push(`delete:${uri}`);
+      },
+    }),
+  );
+
+  const action = await runMedicationProofPhotoPicker({
+    appFileSystem,
+    pick: async () => pickedAsset,
+    cleanupAfterApplyUris: [previousUri],
+    apply: () => {
+      events.push("apply:accepted");
+      return true;
+    },
+  });
+
+  assert.deepEqual(action, { status: "applied", cleanupFailed: false });
+  assert.deepEqual(events.slice(0, 2), ["copy", "apply:accepted"]);
+  assert.equal(events[2], `delete:${previousUri}`);
+});
+
+test("an accepted picker copy releases its sensitive ImagePicker source while retaining the durable copy", async () => {
+  const sourceUri = "file:///cache/ImagePicker/sensitive-original.jpg";
+  const copied: Array<{ from: string; to: string }> = [];
+  const deleted: string[] = [];
+  const { appFileSystem } = harness(
+    buildAdapter({
+      async copyAsync(input) {
+        copied.push(input);
+      },
+      async deleteAsync(uri) {
+        deleted.push(uri);
+      },
+    }),
+  );
+
+  const action = await runRecordAttachmentPicker({
+    appFileSystem,
+    pick: async () => ({
+      canceled: false,
+      assets: [{ ...pickedAsset.assets[0], uri: sourceUri }],
+    }),
+    apply: () => true,
+  });
+
+  assert.deepEqual(action, { status: "applied", cleanupFailed: false });
+  assert.equal(copied.length, 1);
+  assert.equal(copied[0]?.from, sourceUri);
+  assert.notEqual(copied[0]?.to, sourceUri);
+  assert.deepEqual(deleted, [sourceUri]);
+  assert.equal(deleted.includes(copied[0]?.to ?? ""), false);
+});
+
+test("an accepted replacement reports orphan cleanup failure without pretending the mutation failed", async () => {
+  const previousUri =
+    "file:///documents/woofwatcher-attachments/locked.jpg";
+  const { appFileSystem } = harness(
+    buildAdapter({
+      async deleteAsync(uri) {
+        if (uri === previousUri) throw new Error("file locked");
+      },
+    }),
+  );
+
+  const action = await runMedicationProofPhotoPicker({
+    appFileSystem,
+    pick: async () => pickedAsset,
+    cleanupAfterApplyUris: [previousUri],
+    apply: () => true,
+  });
+
+  assert.deepEqual(action, { status: "applied", cleanupFailed: true });
+});
+
 test("Records generated writers preserve reports/credentials destinations and utf8/base64 encodings", async () => {
   const writes: Array<{ uri: string; content: string; encoding: string }> = [];
   const nativeShares: Array<{ title: string; message: string; url?: string }> =
@@ -205,6 +689,7 @@ test("Records generated writers preserve reports/credentials destinations and ut
     url?: string;
   }) => {
     nativeShares.push(payload);
+    return "shared" as const;
   };
   const shareText = async () => "shared" as const;
 
@@ -327,6 +812,7 @@ for (const writer of ["printable", "generated"] as const) {
         events.push("share:start");
         if (boundary === "share") await gate.promise;
         events.push("share:end");
+        return "shared" as const;
       };
       const shareText = async () => {
         events.push("fallback");

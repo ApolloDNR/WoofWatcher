@@ -1,3 +1,5 @@
+import { resolvePetName } from "./pet-identity.ts";
+
 export type AdventureQuestStatus = "available" | "complete" | "locked";
 export type AdventureModeStatus = "needs-outing" | "quest-ready" | "memory-ready";
 export type AdventureMemoryStorageStatus = "local-draft" | "provider-ready" | "provider-saved";
@@ -164,7 +166,7 @@ export function buildAdventureMemoryDraft(input: AdventureMemoryDraftInput): Adv
 
   return {
     id: `memory_${slug(title) || "adventure"}_${Date.parse(nowIso) || Date.now()}`,
-    petName: clean(input.petName) || "Phoenix",
+    petName: resolvePetName(clean(input.petName)),
     questId: clean(input.questId) || "free-memory",
     title,
     note: clean(input.note),
@@ -179,7 +181,7 @@ export function buildAdventureMemoryDraft(input: AdventureMemoryDraftInput): Adv
 
 export function deriveAdventureMode(input: AdventureInput): AdventureMode {
   const now = input.now ?? Date.now();
-  const petName = clean(input.petName) || "Phoenix";
+  const petName = resolvePetName(clean(input.petName));
   const memories = [...(input.memories ?? [])].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   const todays = (input.entries ?? []).filter((entry) => visible(entry) && isSameLocalDay(entry.occurredAt, now));
   const walkEntries = todays.filter((entry) => normalizedType(entry) === "walk");

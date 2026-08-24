@@ -19,8 +19,9 @@ test("the root reset provider constructs its runtime lazily exactly once", () =>
   );
   assert.match(
     source,
-    /if \(runtimeRef\.current === null\) \{\s*runtimeRef\.current = createLocalDataResetRuntime\(AsyncStorage\);\s*\}/,
+    /if \(runtimeRef\.current === null\) \{\s*runtimeRef\.current = createLocalDataResetRuntime\(AsyncStorage, \{\s*requireWebLock: Platform\.OS === "web",\s*\}\);\s*\}/,
   );
+  assert.match(source, /import \{ Platform \} from "react-native"/);
   assert.doesNotMatch(source, /useRef\(createLocalDataResetRuntime\(/);
 });
 

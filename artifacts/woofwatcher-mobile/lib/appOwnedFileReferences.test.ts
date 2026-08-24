@@ -2,10 +2,49 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  collectCareAppOwnedFileReferences,
   relocateCareAppOwnedFileReferences,
   verifyAvatarFileReferences,
   type FileAvailability,
 } from "./appOwnedFileReferences.ts";
+
+test("collects every live care-owned media reference and honors record or entry exclusions", () => {
+  const shared = "file:///documents/woofwatcher-attachments/shared.jpg";
+  const doc = {
+    records: [
+      { id: "keep-record", attachmentUri: shared },
+      { id: "drop-record", attachmentUri: "file:///documents/drop.pdf" },
+    ],
+    adventureMemories: [
+      { id: "memory", photoUri: "file:///documents/adventure.jpg" },
+      { id: "duplicate", photoUri: shared },
+    ],
+  };
+  const entries = [
+    {
+      id: "keep-entry",
+      details: { photoProofAttachmentUri: "file:///documents/proof.jpg" },
+    },
+    {
+      id: "drop-entry",
+      details: { photoProofAttachmentUri: "file:///documents/drop-proof.jpg" },
+    },
+  ];
+
+  assert.deepEqual(
+    collectCareAppOwnedFileReferences({
+      doc,
+      entries,
+      excludeRecordIds: ["drop-record"],
+      excludeEntryIds: ["drop-entry"],
+    }),
+    [
+      shared,
+      "file:///documents/adventure.jpg",
+      "file:///documents/proof.jpg",
+    ],
+  );
+});
 
 test("relocates only the three current-schema Care URI fields without mutating input", () => {
   const unchangedRecord = { id: "r0", title: "No file" };

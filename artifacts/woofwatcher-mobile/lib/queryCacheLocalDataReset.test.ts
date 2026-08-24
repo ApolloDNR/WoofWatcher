@@ -577,6 +577,7 @@ test("final close identity or clear failure remains a retryable query-cache part
       "walk-capture",
       "web-runtime",
       "work-drain",
+      "auth-credentials",
     ],
     failedParticipantIds: ["query-cache"],
   });
@@ -632,6 +633,7 @@ test("a final cancellation rejection remains an exact query-cache partial failur
       "walk-capture",
       "web-runtime",
       "work-drain",
+      "auth-credentials",
     ],
     failedParticipantIds: ["query-cache"],
   });

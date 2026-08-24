@@ -58,6 +58,10 @@ import {
   type RoamPlan,
 } from "@/lib/careTwinRoam";
 import { pixelImageStyle } from "@/lib/pixelRendering";
+import {
+  buildCareTwinRoomAccessibilityLabel,
+  resolveConsumerPetName,
+} from "@/lib/petIdentity";
 import type { Mood } from "@/lib/phoenixStatus";
 
 // Constant ink for text on the fixed cream overlay chips/bubbles: the
@@ -480,12 +484,15 @@ export function LivingPhoenixRoom({
     [avatarConfig, shouldUseAvatarRuntime, stagePoseAction],
   );
   const avatarAccessoryCount = avatarRoomRuntime?.activeSlots.length ?? 0;
-  const roomLiveTitle = isStudio ? "STUDIO RIG" : "PHOENIX TWIN";
+  const consumerPetName = resolveConsumerPetName(petName);
+  const roomLiveTitle = isStudio
+    ? "CARE TWIN"
+    : `${consumerPetName.toUpperCase()} CARE TWIN`;
   const roomLiveDetail = avatarRoomRuntime
     ? avatarAccessoryCount > 0
       ? `${avatarRoomRuntime.templateLabel} - ${avatarAccessoryCount} add-ons`
-      : `${avatarRoomRuntime.templateLabel} rig`
-    : "Pixel room";
+      : `${avatarRoomRuntime.templateLabel} care twin`
+    : "Care twin room";
   const activeZoneKey =
     compactChrome && !transparentScene
       ? "rug"
@@ -963,7 +970,13 @@ export function LivingPhoenixRoom({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Phoenix room. ${avatarRoomRuntime?.templateLabel ?? "Shepherd"} care twin. ${motion.label}. ${plan.tapVerb}. ${speech}`}
+      accessibilityLabel={buildCareTwinRoomAccessibilityLabel({
+        name: petName,
+        templateLabel: avatarRoomRuntime?.templateLabel,
+        motionLabel: motion.label,
+        interactionLabel: plan.tapVerb,
+        speech,
+      })}
       accessibilityHint={accessibilityHint}
       onPress={handlePress}
       onLongPress={onLongPress}
@@ -1032,7 +1045,7 @@ export function LivingPhoenixRoom({
             <PixelIcon name="walk" size={18} />
             <View>
               <Text style={styles.awayCueTitle}>
-                {petName ?? "Phoenix"} is out exploring
+                {consumerPetName} is out exploring
               </Text>
               <Text style={styles.awayCueDetail}>
                 {typeof awayMinutes === "number" && awayMinutes >= 0

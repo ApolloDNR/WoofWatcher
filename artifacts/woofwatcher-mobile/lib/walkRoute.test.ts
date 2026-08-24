@@ -20,6 +20,7 @@ import {
   shouldAppendRoutePoint,
   simplifyRoute,
   startWalkRouteCapture,
+  startWalkRouteCaptureWithAdapter,
   subscribeWalkRouteCapture,
   type WalkRoutePoint,
 } from "./walkRoute.ts";
@@ -48,6 +49,7 @@ function attachResetPeers(
   walkParticipant: { prepare(): Promise<void>; commit(): Promise<void> },
 ) {
   for (const id of [
+    "auth-credentials",
     "avatar",
     "care",
     "device-preferences",
@@ -91,7 +93,7 @@ test("walk reset tears down live capture and ignores a queued late callback", as
   });
 
   try {
-    await startWalkRouteCapture("live-reset-walk");
+    await startWalkRouteCapture("live-reset-walk", () => true);
     const participant = (
       walkRouteModule as typeof walkRouteModule & {
         walkRouteLocalDataResetParticipant?: {
@@ -153,7 +155,7 @@ test("walk reset owner reports a native watch teardown failure", async () => {
   });
 
   try {
-    await startWalkRouteCapture("teardown-failure-walk");
+    await startWalkRouteCapture("teardown-failure-walk", () => true);
     await assert.rejects(
       walkRouteModule.walkRouteLocalDataResetParticipant.prepare(),
       /fully stopped/,
@@ -163,6 +165,8 @@ test("walk reset owner reports a native watch teardown failure", async () => {
       walkRouteModule.walkRouteLocalDataResetParticipant.prepare(),
     );
     assert.equal(stopCalls, 2);
+    assert.equal(getWalkRouteCaptureSnapshot().status, "paused");
+    await walkRouteModule.walkRouteLocalDataResetParticipant.commit();
     assert.equal(getWalkRouteCaptureSnapshot().status, "idle");
   } finally {
     cancelWalkRouteCapture();
@@ -171,6 +175,70 @@ test("walk reset owner reports a native watch teardown failure", async () => {
     } else {
       delete (globalThis as { navigator?: unknown }).navigator;
     }
+  }
+});
+
+test("a peer preparation failure preserves a paused live route for retry", async () => {
+  const callbacks: Array<(point: WalkRoutePoint) => void> = [];
+  let stopCalls = 0;
+  const adapter = {
+    async start(onPoint: (value: WalkRoutePoint) => void) {
+      callbacks.push(onPoint);
+      return () => {
+        stopCalls += 1;
+      };
+    },
+  };
+
+  try {
+    await startWalkRouteCaptureWithAdapter(
+      "prepare-failure-walk",
+      adapter,
+      () => true,
+    );
+    callbacks[0]?.(point(SF.lat, SF.lon, 100));
+    callbacks[0]?.(point(SF.lat + latDegrees(30), SF.lon, 200));
+    assert.equal(getWalkRouteCaptureSnapshot().pointCount, 2);
+
+    const runtime = createLocalDataResetRuntime({
+      async getItem() { return null; },
+      async setItem() {},
+      async removeItem() {},
+    });
+    attachResetPeers(runtime, walkRouteModule.walkRouteLocalDataResetParticipant);
+    runtime.registerParticipant({
+      id: "zz-failing-peer",
+      async prepare() {
+        throw new Error("peer could not prepare");
+      },
+      async commit() {
+        assert.fail("no participant may commit after a preparation failure");
+      },
+    });
+
+    const result = await runtime.operations.runReset();
+    assert.equal(result.status, "partial-failure");
+    assert.deepEqual(result.committedParticipantIds, []);
+    assert.equal(stopCalls, 1);
+    assert.deepEqual(getWalkRouteCaptureSnapshot(), {
+      status: "paused",
+      sessionKey: "prepare-failure-walk",
+      pointCount: 2,
+    });
+
+    await startWalkRouteCaptureWithAdapter(
+      "prepare-failure-walk",
+      adapter,
+      runtime.operations.isWriteAdmissionOpen,
+    );
+    assert.equal(callbacks.length, 2);
+    callbacks[1]?.(point(SF.lat + latDegrees(60), SF.lon, 300));
+    assert.equal(getWalkRouteCaptureSnapshot().pointCount, 3);
+    const finished = finishWalkRouteCapture("prepare-failure-walk");
+    assert.ok(finished);
+    assert.ok(finished.distanceM >= 59);
+  } finally {
+    cancelWalkRouteCapture();
   }
 });
 
@@ -189,17 +257,22 @@ test("a deferred watch whose late stop fails remains retryable across reconstruc
             denied: () => void,
           ): Promise<(() => void) | null>;
         },
+        isCurrent: () => boolean,
       ) => Promise<void>;
     }
   ).startWalkRouteCaptureWithAdapter;
   assert.ok(startWithAdapter, "walk capture must expose its platform adapter boundary");
 
-  const start = startWithAdapter("deferred-native-reset", {
-    async start(point) {
-      onPoint = point;
-      return setup.promise;
+  const start = startWithAdapter(
+    "deferred-native-reset",
+    {
+      async start(point) {
+        onPoint = point;
+        return setup.promise;
+      },
     },
-  });
+    () => true,
+  );
   const firstRuntime = createLocalDataResetRuntime({
     async getItem() { return null; },
     async setItem() {},
@@ -241,6 +314,75 @@ test("a deferred watch whose late stop fails remains retryable across reconstruc
   onPoint?.(point(SF.lat + 0.01, SF.lon, 200));
   assert.equal(getWalkRouteCaptureSnapshot().pointCount, 0);
   assert.equal(finishWalkRouteCapture("deferred-native-reset"), null);
+});
+
+test("walk capture rejects a start admitted after its reset prepare barrier", async () => {
+  const commitEntered = deferred<void>();
+  const releaseCommit = deferred<void>();
+  let adapterStartCalls = 0;
+  const startWithAdapter = (
+    walkRouteModule as typeof walkRouteModule & {
+      startWalkRouteCaptureWithAdapter?: (
+        sessionKey: string,
+        adapter: {
+          start(
+            point: (value: WalkRoutePoint) => void,
+            denied: () => void,
+          ): Promise<(() => void) | null>;
+        },
+        isCurrent: () => boolean,
+      ) => Promise<void>;
+    }
+  ).startWalkRouteCaptureWithAdapter;
+  assert.ok(
+    startWithAdapter,
+    "walk capture must expose its platform adapter boundary",
+  );
+
+  const runtime = createLocalDataResetRuntime({
+    async getItem() {
+      return null;
+    },
+    async setItem() {},
+    async removeItem() {},
+  });
+  attachResetPeers(
+    runtime,
+    walkRouteModule.walkRouteLocalDataResetParticipant,
+  );
+  runtime.registerParticipant({
+    id: "zz-post-walk-commit-gate",
+    async prepare() {},
+    async commit() {
+      commitEntered.resolve();
+      await releaseCommit.promise;
+    },
+  });
+
+  try {
+    const reset = runtime.operations.runReset();
+    await commitEntered.promise;
+    await startWithAdapter(
+      "post-prepare-start",
+      {
+        async start() {
+          adapterStartCalls += 1;
+          return () => {};
+        },
+      },
+      runtime.operations.isWriteAdmissionOpen,
+    );
+
+    assert.equal(adapterStartCalls, 0);
+    assert.equal(getWalkRouteCaptureSnapshot().status, "idle");
+    assert.equal(getWalkRouteCaptureSnapshot().sessionKey, null);
+
+    releaseCommit.resolve();
+    assert.equal((await reset).status, "complete");
+  } finally {
+    releaseCommit.resolve();
+    cancelWalkRouteCapture();
+  }
 });
 
 test("haversineMeters matches known real-world distances", () => {
@@ -468,7 +610,7 @@ test("recorder degrades to a no-op outside web/native runtimes", async () => {
     seen.push(getWalkRouteCaptureSnapshot().status);
   });
   try {
-    await startWalkRouteCapture("2026-07-10T17:00:00.000Z");
+    await startWalkRouteCapture("2026-07-10T17:00:00.000Z", () => true);
     assert.equal(getWalkRouteCaptureSnapshot().status, "unavailable");
     assert.equal(getWalkRouteCaptureSnapshot().pointCount, 0);
     assert.ok(seen.includes("starting"));
@@ -479,7 +621,7 @@ test("recorder degrades to a no-op outside web/native runtimes", async () => {
     assert.equal(getWalkRouteCaptureSnapshot().status, "idle");
 
     // Finishing with a mismatched key never steals another session.
-    await startWalkRouteCapture("session-a");
+    await startWalkRouteCapture("session-a", () => true);
     assert.equal(finishWalkRouteCapture("session-b"), null);
     assert.equal(getWalkRouteCaptureSnapshot().sessionKey, "session-a");
   } finally {

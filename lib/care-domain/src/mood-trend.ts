@@ -20,7 +20,7 @@ export interface MoodTrendInput {
   now?: number;
   lookbackDays?: number;
   limit?: number;
-  /** Display name for owner-facing copy; resolved via resolvePetName so renamed dogs never read "Phoenix". */
+  /** Display name for owner-facing copy; resolved to the current name or neutral fresh-install fallback. */
   petName?: string | null;
 }
 

@@ -12,6 +12,7 @@ import {
   getRouteTopPadding,
   getStandaloneRouteBottomPadding,
   getTabbedRouteBottomPadding,
+  MAX_TAB_LABEL_FONT_SCALE,
   MOBILE_INLINE_HIT_SLOP,
   MIN_MOBILE_TOUCH_TARGET,
 } from "./mobileLayout.ts";
@@ -102,4 +103,59 @@ test("keeps modal, feedback, debug, and keyboard offsets on shared contracts", (
 test("keeps mobile touch and inline hit targets release-safe", () => {
   assert.equal(MIN_MOBILE_TOUCH_TARGET, 48);
   assert.equal(MOBILE_INLINE_HIT_SLOP, 10);
+});
+
+test("switches a five-tab phone dock to accessible icon-only labels before text can clip", () => {
+  const lastFittingScale = getFloatingTabChromeMetrics({
+    platform: "ios",
+    bottomInset: 34,
+    viewportWidth: 390,
+    fontScale: 1.3,
+  });
+  const firstOverflowingScale = getFloatingTabChromeMetrics({
+    platform: "ios",
+    bottomInset: 34,
+    viewportWidth: 390,
+    fontScale: 1.4,
+  });
+  const accessibilityScale = getFloatingTabChromeMetrics({
+    platform: "ios",
+    bottomInset: 34,
+    viewportWidth: 390,
+    fontScale: MAX_TAB_LABEL_FONT_SCALE,
+  });
+  const aboveCeiling = getFloatingTabChromeMetrics({
+    platform: "ios",
+    bottomInset: 34,
+    viewportWidth: 390,
+    fontScale: 99,
+  });
+
+  assert.equal(MAX_TAB_LABEL_FONT_SCALE, 3.6);
+  assert.equal(lastFittingScale.showVisualLabels, true);
+  assert.equal(lastFittingScale.visualLabelLineCount, 1);
+  assert.equal(firstOverflowingScale.showVisualLabels, false);
+  assert.equal(firstOverflowingScale.visualLabelLineCount, 0);
+  assert.equal(accessibilityScale.showVisualLabels, false);
+  assert.equal(accessibilityScale.tabBarHeight, 72);
+  assert.equal(accessibilityScale.contentBottomPadding, 124);
+  assert.deepEqual(aboveCeiling, accessibilityScale);
+  assert.equal(
+    getFloatingTabChromeMetrics({ platform: "ios", bottomInset: 34, fontScale: 0 }).tabBarHeight,
+    72,
+  );
+});
+
+test("derives a wide dock height from the rendered icon, scaled label line, margins, and padding", () => {
+  const wideAccessibilityScale = getFloatingTabChromeMetrics({
+    platform: "ios",
+    bottomInset: 34,
+    viewportWidth: 1024,
+    fontScale: MAX_TAB_LABEL_FONT_SCALE,
+  });
+
+  assert.equal(wideAccessibilityScale.showVisualLabels, true);
+  assert.equal(wideAccessibilityScale.visualLabelLineCount, 1);
+  assert.equal(wideAccessibilityScale.tabBarHeight, 105);
+  assert.equal(wideAccessibilityScale.contentBottomPadding, 133);
 });

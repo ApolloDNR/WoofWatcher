@@ -20,6 +20,7 @@ import {
   type GeneratedBinaryArtifactSource,
 } from "./reportGeneratedBinaryArtifact.ts";
 import type { ShareTextOutcome, ShareTextPayload } from "./shareText.ts";
+import type { NativeFileShareOutcome } from "./nativeFileSharePolicy.ts";
 
 export type NativeRecordsFileShareContent =
   | ReportArtifactShareContent
@@ -29,9 +30,18 @@ interface RecordsShareAdapters {
   appFileSystem: AppFileSystem;
   destination: AppArtifactDestination;
   title: string;
-  shareNative(content: NativeRecordsFileShareContent): Promise<void>;
+  shareNative(
+    content: NativeRecordsFileShareContent,
+  ): Promise<NativeFileShareOutcome>;
   shareText(payload: ShareTextPayload): Promise<ShareTextOutcome>;
 }
+
+export type RecordsFileShareResult =
+  | {
+      status: "complete";
+      outcome: Exclude<ShareTextOutcome, "dismissed" | "failed">;
+    }
+  | { status: "dismissed" | "failed" | "revoked" };
 
 export interface PrintableRecordsFileShareOptions extends RecordsShareAdapters {
   printable: ReportArtifactPrintableSource;
@@ -45,23 +55,47 @@ export interface GeneratedRecordsFileShareOptions extends RecordsShareAdapters {
 async function performWithTextFallback(
   receipt: AppFileArtifactResult,
   nativeContent: () => NativeRecordsFileShareContent,
-  fallbackContent: () => ShareTextPayload,
+  savedFileFallbackContent: () => ShareTextPayload,
+  unavailableFallbackContent: () => ShareTextPayload,
   shareNative: RecordsShareAdapters["shareNative"],
   shareText: RecordsShareAdapters["shareText"],
   isCurrent: () => boolean,
-): Promise<void> {
+): Promise<ShareTextOutcome> {
   if (receipt.ok) {
     try {
-      await shareNative(nativeContent());
-      return;
+      return await shareNative(nativeContent());
     } catch {
-      // Preserve the established text fallback, but keep it inside the
-      // protected callback so reset drains the whole sharing lifecycle.
-      if (!isCurrent()) return;
+      if (!isCurrent()) return "failed";
+      return shareText(savedFileFallbackContent());
     }
   }
-  if (!isCurrent()) return;
-  await shareText(fallbackContent());
+  if (!isCurrent()) return "failed";
+  return shareText(unavailableFallbackContent());
+}
+
+function recordsFileShareResult(
+  protectedResult: ProtectedAppFileResult<ShareTextOutcome>,
+): RecordsFileShareResult {
+  if (protectedResult.status === "revoked") return protectedResult;
+  if (protectedResult.value === "dismissed") return { status: "dismissed" };
+  if (protectedResult.value === "failed") return { status: "failed" };
+  return { status: "complete", outcome: protectedResult.value };
+}
+
+function savedFileCouldNotAttach(
+  payload: ShareTextPayload,
+  fallbackBody?: string,
+): ShareTextPayload {
+  return {
+    title: payload.title,
+    message: [
+      payload.message,
+      "The local file was saved inside WoofWatcher, but it could not be attached by this share sheet. WoofWatcher is sharing the text handoff instead.",
+      fallbackBody,
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
+  };
 }
 
 export async function runPrintableRecordsFileShare({
@@ -72,7 +106,7 @@ export async function runPrintableRecordsFileShare({
   title,
   shareNative,
   shareText,
-}: PrintableRecordsFileShareOptions): Promise<ProtectedAppFileResult<void>> {
+}: PrintableRecordsFileShareOptions): Promise<RecordsFileShareResult> {
   const intent = appFileSystem.captureIntent();
   if (!intent) return { status: "revoked" };
   const directoryName = APP_FILE_DESTINATION_DIRECTORY_NAMES[destination];
@@ -89,7 +123,7 @@ export async function runPrintableRecordsFileShare({
     title,
   });
 
-  return appFileSystem.runProtectedShare(
+  const protectedResult = await appFileSystem.runProtectedShare(
     intent,
     {
       destination,
@@ -104,12 +138,18 @@ export async function runPrintableRecordsFileShare({
           buildReportArtifactShareContent(plan, {
             shareUri: receipt.ok ? receipt.shareUri : null,
           }),
+        () =>
+          savedFileCouldNotAttach(
+            { title: plan.shareTitle, message: plan.message },
+            plan.html,
+          ),
         () => buildReportArtifactShareContent(fallbackPlan),
         shareNative,
         shareText,
         () => appFileSystem.isIntentCurrent(intent),
       ),
   );
+  return recordsFileShareResult(protectedResult);
 }
 
 export async function runGeneratedRecordsFileShare({
@@ -119,7 +159,7 @@ export async function runGeneratedRecordsFileShare({
   title,
   shareNative,
   shareText,
-}: GeneratedRecordsFileShareOptions): Promise<ProtectedAppFileResult<void>> {
+}: GeneratedRecordsFileShareOptions): Promise<RecordsFileShareResult> {
   const intent = appFileSystem.captureIntent();
   if (!intent) return { status: "revoked" };
   const directoryName = APP_FILE_DESTINATION_DIRECTORY_NAMES[destination];
@@ -134,7 +174,7 @@ export async function runGeneratedRecordsFileShare({
     title,
   });
 
-  return appFileSystem.runProtectedShare(
+  const protectedResult = await appFileSystem.runProtectedShare(
     intent,
     {
       destination,
@@ -149,10 +189,16 @@ export async function runGeneratedRecordsFileShare({
           buildGeneratedBinaryArtifactShareContent(plan, {
             shareUri: receipt.ok ? receipt.shareUri : null,
           }),
+        () =>
+          savedFileCouldNotAttach({
+            title: plan.shareTitle,
+            message: plan.message,
+          }),
         () => buildGeneratedBinaryArtifactShareContent(fallbackPlan),
         shareNative,
         shareText,
         () => appFileSystem.isIntentCurrent(intent),
       ),
   );
+  return recordsFileShareResult(protectedResult);
 }

@@ -4,14 +4,26 @@ import assert from "node:assert/strict";
 import {
   buildMobileQaSessionProofManifest,
   buildMobileQaSessionProofManifestShareText,
+  buildPersistedMobileQaSessionSnapshot,
   buildMobileQaSessionSnapshot,
   createEmptyMobileQaSessionState,
+  createMobileQaSessionSaveQueue,
   createMobileQaSessionPersistenceGate,
   MOBILE_QA_SESSION_STORAGE_KEY,
   parseMobileQaSessionSnapshot,
   type MobileQaSessionInput,
   type MobileQaSessionState,
 } from "./mobileQaSession.ts";
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
+}
 
 function qaInput(state: MobileQaSessionState): MobileQaSessionInput {
   return {
@@ -82,6 +94,7 @@ test("builds a compact local mobile QA snapshot", () => {
           source: "library",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-20T13:00:05.000Z",
+          verification: "manual-self-attested",
         },
       ],
     },
@@ -99,6 +112,7 @@ test("builds a compact local mobile QA snapshot", () => {
           source: "library",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-20T13:00:10.000Z",
+          verification: "manual-self-attested",
         },
       ],
     },
@@ -108,6 +122,20 @@ test("builds a compact local mobile QA snapshot", () => {
       note: "Follow-up row needs touch review.",
     },
   ]);
+});
+
+test("a proof snapshot exists only for an exact durable saved timestamp", () => {
+  const input = qaInput(createEmptyMobileQaSessionState());
+
+  assert.equal(buildPersistedMobileQaSessionSnapshot(input, undefined), null);
+  assert.equal(buildPersistedMobileQaSessionSnapshot(input, "Saved locally"), null);
+  assert.equal(
+    buildPersistedMobileQaSessionSnapshot(
+      input,
+      "2026-08-23T21:04:05.000Z",
+    )?.savedAtIso,
+    "2026-08-23T21:04:05.000Z",
+  );
 });
 
 test("parses a saved mobile QA snapshot into screen state maps", () => {
@@ -276,12 +304,12 @@ test("builds a deterministic handoff proof manifest for saved device QA", () => 
     unknownEvidence: 0,
   });
   assert.equal(manifest.totalEvidenceFiles, 3);
-  assert.equal(manifest.platformEvidenceLabel, "iOS 1, Android 1, Web 1, Unknown 0");
-  assert.match(text, /WoofWatcher QA Proof Manifest/);
-  assert.match(text, /Proof ID: wwqa-/);
+  assert.equal(manifest.platformEvidenceLabel, "manual self-attested tags: iOS 1, Android 1, Web 1, Unknown 0");
+  assert.match(text, /WoofWatcher QA Evidence Manifest/);
+  assert.match(text, /Manifest ID: wwqa-/);
   assert.match(text, /Care twin: 1 pass, 1 needs tune, 1 evidence file/);
   assert.match(text, /Release: 2 pass, 0 needs tune, 2 evidence files/);
-  assert.match(text, /does not prove App Store or Play Store approval/);
+  assert.match(text, /cannot close iOS\/Android release gates/);
 });
 
 test("creates six fresh non-aliased QA content maps", () => {
@@ -455,4 +483,51 @@ test("real edits and newer hydration tickets invalidate delayed QA hydration", (
     "applied",
   );
   assert.equal(applies, 1);
+});
+
+test("serializes QA saves so an older write cannot finish after a newer write", async () => {
+  const queue = createMobileQaSessionSaveQueue();
+  const first = deferred<void>();
+  const second = deferred<void>();
+  const started: string[] = [];
+
+  const firstSave = queue.save("older", async (value) => {
+    started.push(value);
+    await first.promise;
+  });
+  const secondSave = queue.save("newer", async (value) => {
+    started.push(value);
+    await second.promise;
+  });
+
+  await Promise.resolve();
+  assert.deepEqual(started, ["older"]);
+  assert.equal(queue.isPending(), true);
+
+  first.resolve();
+  await firstSave;
+  await Promise.resolve();
+  assert.deepEqual(started, ["older", "newer"]);
+
+  second.resolve();
+  await secondSave;
+  assert.equal(queue.isPending(), false);
+});
+
+test("a rejected QA save does not block a legitimate later save", async () => {
+  const queue = createMobileQaSessionSaveQueue();
+  const saved: string[] = [];
+
+  await assert.rejects(
+    queue.save("failed", async () => {
+      throw new Error("disk unavailable");
+    }),
+    /disk unavailable/,
+  );
+  await queue.save("later", async (value) => {
+    saved.push(value);
+  });
+
+  assert.deepEqual(saved, ["later"]);
+  assert.equal(queue.isPending(), false);
 });

@@ -120,8 +120,8 @@ test("derives improving trend when recent incidents quiet down", () => {
   assert.equal(watch.trend.windows[0]?.count, 0);
   assert.equal(watch.trend.windows[2]?.count, 1);
   assert.match(watch.trend.detail, /lower than the prior window/);
-  // Default copy keeps the app-wide Phoenix fallback.
-  assert.match(watch.trend.detail, /helped Phoenix recover calmly/);
+  // Default copy keeps the app-wide neutral fallback.
+  assert.match(watch.trend.detail, /helped your dog recover calmly/);
 });
 
 test("incident copy uses the renamed dog's name, never Phoenix", () => {

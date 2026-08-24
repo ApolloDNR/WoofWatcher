@@ -29,6 +29,11 @@ test("production requires the explicit store profile label", () => {
     resolveBuildChannel({ isDev: false, buildProfile: "store" }),
     "production",
   );
+  assert.equal(
+    resolveBuildChannel({ isDev: false, buildProfile: "candidate" }),
+    "production",
+    "release candidates must fail closed to the consumer surface",
+  );
 });
 
 test("unlabeled release builds stay internal so owner tooling survives", () => {

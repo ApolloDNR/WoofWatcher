@@ -116,7 +116,7 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Beta verdict: Beta candidate - capture device proof/);
   assert.match(text, /Public launch verdict: Not ready for public launch/);
   assert.match(text, /Owner preview proof: Not reviewed/);
-  assert.match(text, /Owner preview missing: Attach 1 iOS screenshot for Owner Preview Core Loop\./);
+  assert.match(text, /Owner preview missing: Attach 1 exact-device iOS screenshot for Owner Preview Core Loop\./);
   assert.match(text, /Release smoke checklist:/);
   assert.match(text, /WoofWatcher Release Smoke Checklist/);
   assert.match(text, /Dependency and export proof:/);
@@ -134,7 +134,7 @@ test("builds a 48-hour beta handoff packet from release truth and native QA proo
   assert.match(text, /Generated Care Pass PDF and Dog ID PNG bytes stay local-only until native share\/reopen and provider storage proof are approved/);
   assert.match(text, /Next device mission: Owner Preview Core Loop \(\/care-twin-qa\)/);
   assert.match(text, /Status: Not reviewed/);
-  assert.match(text, /Missing proof: Attach 1 iOS screenshot for Owner Preview Core Loop\. Attach 1 Android screenshot/);
+  assert.match(text, /Missing proof: Attach 1 exact-device iOS screenshot for Owner Preview Core Loop\. Attach 1 exact-device Android screenshot/);
   assert.match(text, /Run order:/);
   assert.match(text, /1\. Today \(\/\): Confirm Phoenix status/);
   assert.match(text, /2\. Log \(\/log\): Quick-log one safe care event/);
@@ -323,8 +323,14 @@ test("keeps the beta handoff focused when the current mission is pass pending pr
 
   assert.match(text, /Status: Pass pending proof/);
   assert.match(text, /Owner preview proof: Pass pending proof/);
-  assert.match(text, /Owner preview missing: Add QA note for Owner Preview Core Loop\./);
-  assert.match(text, /Missing proof: Add QA note for Owner Preview Core Loop\./);
+  assert.match(
+    text,
+    /Owner preview missing: Attach 1 exact-device iOS screenshot for Owner Preview Core Loop\. Attach 1 exact-device Android screenshot for Owner Preview Core Loop\. Add QA note for Owner Preview Core Loop\./,
+  );
+  assert.match(
+    text,
+    /Missing proof: Attach 1 exact-device iOS screenshot for Owner Preview Core Loop\. Attach 1 exact-device Android screenshot for Owner Preview Core Loop\. Add QA note for Owner Preview Core Loop\./,
+  );
   assert.match(text, /Tester instruction: finish the missing proof before treating this beta mission as complete\./);
 });
 
@@ -379,10 +385,11 @@ test("includes saved QA proof manifest when More shares the beta handoff", () =>
     proofManifest,
   });
 
-  assert.match(text, /WoofWatcher QA Proof Manifest/);
-  assert.match(text, new RegExp(`Proof ID: ${proofManifest.proofId}`));
+  assert.match(text, /WoofWatcher QA Evidence Manifest/);
+  assert.match(text, new RegExp(`Manifest ID: ${proofManifest.proofId}`));
   assert.match(text, /Care twin: 1 pass, 0 needs tune, 1 evidence file, 1 notes\./);
   assert.match(text, /Release: 1 pass, 0 needs tune, 1 evidence file, 1 notes\./);
-  assert.match(text, /Platform evidence: iOS 1, Android 1, Web 0, Unknown 0\./);
-  assert.match(text, /does not prove App Store or Play Store approval/);
+  assert.match(text, /Attachment metadata: manual self-attested tags: iOS 1, Android 1, Web 0, Unknown 0\./);
+  assert.match(text, /Photos-library attachments are manual self-attested metadata/);
+  assert.match(text, /cannot close iOS\/Android release gates/);
 });

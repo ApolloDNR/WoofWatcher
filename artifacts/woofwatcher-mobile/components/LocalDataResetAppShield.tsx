@@ -66,7 +66,7 @@ export function LocalDataResetAppShield({
     return (
       <View
         accessibilityRole="alert"
-        accessibilityLabel="All data deleted"
+        accessibilityLabel="Local care content deleted"
         style={[styles.root, { backgroundColor: colors.background }]}
       >
         <View
@@ -82,7 +82,7 @@ export function LocalDataResetAppShield({
             {resetView.title}
           </Text>
           <Text style={[styles.message, { color: colors.mutedForeground }]}>
-            WoofWatcher has been reset to a fresh household on this device.
+            {resetView.detail}
           </Text>
           <Pressable
             accessibilityRole="button"

@@ -10,6 +10,8 @@ export const APP_FILE_DESTINATION_DIRECTORY_NAMES = Object.freeze({
   attachments: "woofwatcher-attachments",
 } as const);
 
+export const IMAGE_PICKER_CACHE_DIRECTORY_NAME = "ImagePicker" as const;
+
 export type AppOwnedDirectoryName =
   (typeof APP_OWNED_DIRECTORY_NAMES)[number];
 export type AppFileDestination =
@@ -69,6 +71,26 @@ function isSafeRelativeSuffix(value: string): boolean {
   );
 }
 
+export function isSafeAppFileSystemPathComponent(
+  value: unknown,
+): value is string {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    value === "." ||
+    value === ".." ||
+    /[\\/\u0000-\u001f\u007f]/.test(value)
+  ) {
+    return false;
+  }
+  try {
+    encodeURIComponent(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function isLegacyRootAvatarFileName(fileName: string): boolean {
   return LEGACY_ROOT_AVATAR_PATTERNS.some((pattern) => pattern.test(fileName));
 }
@@ -126,4 +148,18 @@ export function isInsideOwnedAttachmentDirectory(
     `${withoutTrailingSlash(currentDocumentDirectory)}/` +
     `${APP_FILE_DESTINATION_DIRECTORY_NAMES.attachments}/`;
   return uri.startsWith(attachmentRoot) && uri.length > attachmentRoot.length;
+}
+
+
+export function isInsideImagePickerCacheDirectory(
+  uri: string,
+  currentCacheDirectory: string | null,
+): boolean {
+  if (!isSafeAppDocumentDirectory(currentCacheDirectory)) return false;
+  const cacheRoot = `${withoutTrailingSlash(currentCacheDirectory)}/`;
+  const imagePickerRoot = `${cacheRoot}${IMAGE_PICKER_CACHE_DIRECTORY_NAME}/`;
+  if (!uri.startsWith(imagePickerRoot) || uri.length <= imagePickerRoot.length) {
+    return false;
+  }
+  return isSafeRelativeSuffix(uri.slice(imagePickerRoot.length));
 }

@@ -12,6 +12,7 @@ import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { LivingPhoenixRoom, type PhoenixRoomStat } from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useCare } from "@/context/CareContext";
+import { useAppFileSystem } from "@/context/AppFileSystemContext";
 import { useDevicePreferences } from "@/context/DevicePreferencesContext";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -61,10 +62,14 @@ import {
   buildMobileQaSessionProofManifest,
   buildMobileQaSessionProofManifestShareText,
   buildMobileQaSessionSnapshot,
+  buildPersistedMobileQaSessionSnapshot,
   createEmptyMobileQaSessionState,
   createMobileQaSessionPersistenceGate,
+  createMobileQaSessionSaveQueue,
   MOBILE_QA_SESSION_STORAGE_KEY,
   parseMobileQaSessionSnapshot,
+  type MobileQaSessionInput,
+  type MobileQaSessionSnapshot,
 } from "@/lib/mobileQaSession";
 import { createDevicePreferenceHydrationRetryScheduler } from "@/lib/devicePreferences";
 import {
@@ -93,6 +98,13 @@ import { canonicalizeOwnedRoute } from "@/lib/canonicalRouteBuilders";
 import { buildReleasePacket } from "@/lib/releasePacket";
 import { buildStoreSubmissionPacket, buildStoreSubmissionPacketShareText } from "@/lib/storeSubmissionPacket";
 import { LocalDataResetInProgressError } from "@/lib/removableLocalDataStorage";
+import {
+  PickedMediaLocalDataActionError,
+  runPickedMediaEvidenceClear,
+  runQaScreenshotPicker,
+} from "@/lib/pickedMediaLocalDataActions";
+import { collectCareAppOwnedFileReferences } from "@/lib/appOwnedFileReferences";
+import { createExclusiveAsyncAction } from "@/lib/exclusiveAsyncAction";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -145,7 +157,7 @@ function iconForNeed(need: CareTwinRuntimeQaResult["actualNeed"]): PixelIconName
 function formatSavedAt(value?: string): string {
   if (!value) return "Not saved yet";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Saved locally";
+  if (Number.isNaN(date.getTime())) return "Invalid saved timestamp";
   return date.toLocaleString(undefined, {
     month: "short",
     day: "numeric",
@@ -153,6 +165,14 @@ function formatSavedAt(value?: string): string {
     minute: "2-digit",
   });
 }
+
+type QaSessionSaveStatus =
+  | "loading"
+  | "unsaved"
+  | "saving"
+  | "saved"
+  | "load-failed"
+  | "save-failed";
 
 function readoutsFor(result: CareTwinRuntimeQaResult): PhoenixRoomStat[] {
   const energy = energyForScenario(result);
@@ -255,10 +275,19 @@ function buildQaReturnRoute(target: { route: string; id?: string; surfaceId?: st
   );
 }
 
+function resolveStateAction<T>(
+  current: T,
+  next: React.SetStateAction<T>,
+): T {
+  return typeof next === "function"
+    ? (next as (value: T) => T)(current)
+    : next;
+}
+
 export default function CareTwinQaScreen() {
   // Store builds never render the internal QA cockpit, even via deep link.
   if (!isOwnerOpsBuild()) {
-    return <OwnerOpsUnavailableScreen title="QA cockpit unavailable" />;
+    return <OwnerOpsUnavailableScreen />;
   }
   return <CareTwinQaScreenBody />;
 }
@@ -269,6 +298,9 @@ function CareTwinQaScreenBody() {
   const routeParams = useLocalSearchParams<{ qaSurface?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const { state } = useCare();
+  const careStateRef = useRef(state);
+  careStateRef.current = state;
+  const appFileSystem = useAppFileSystem();
   const { store, operationSettledEpoch } = useDevicePreferences();
   const [selectedEvidencePlatform, setSelectedEvidencePlatform] = useState<QaScreenshotEvidencePlatform>(() =>
     qaScreenshotPlatformForRuntime(),
@@ -279,8 +311,37 @@ function CareTwinQaScreenBody() {
   const [surfaceStatusById, setSurfaceStatusByIdFromHydration] = useState<Record<string, MobileReleaseQaReviewStatus>>({});
   const [surfaceNotes, setSurfaceNotesFromHydration] = useState<Record<string, string>>({});
   const [surfaceEvidenceById, setSurfaceEvidenceByIdFromHydration] = useState<Record<string, QaScreenshotEvidence[]>>({});
+  const qaSessionInputRef = useRef<MobileQaSessionInput>({
+    careTwinStatusById: {},
+    careTwinNotes: {},
+    careTwinEvidenceById: {},
+    surfaceStatusById: {},
+    surfaceNotes: {},
+    surfaceEvidenceById: {},
+  });
+  const qaScreenMountedRef = useRef(true);
+  const qaEvidenceActionGateRef = useRef<ReturnType<
+    typeof createExclusiveAsyncAction
+  > | null>(null);
+  if (qaEvidenceActionGateRef.current === null) {
+    qaEvidenceActionGateRef.current = createExclusiveAsyncAction();
+  }
+  const qaEvidenceActionGate = qaEvidenceActionGateRef.current;
+  const [qaEvidenceBusy, setQaEvidenceBusy] = useState(false);
+  const qaReportShareGateRef = useRef<ReturnType<
+    typeof createExclusiveAsyncAction
+  > | null>(null);
+  if (qaReportShareGateRef.current === null) {
+    qaReportShareGateRef.current = createExclusiveAsyncAction();
+  }
+  const qaReportShareGate = qaReportShareGateRef.current;
+  const [qaReportShareBusy, setQaReportShareBusy] = useState(false);
   const [qaSessionLoaded, setQaSessionLoaded] = useState(false);
   const [qaSessionSavedAt, setQaSessionSavedAt] = useState<string | undefined>();
+  const [qaSessionSaveStatus, setQaSessionSaveStatus] =
+    useState<QaSessionSaveStatus>("loading");
+  const [persistedQaSessionSnapshot, setPersistedQaSessionSnapshot] =
+    useState<MobileQaSessionSnapshot | null>(null);
   const qaSessionPersistenceGateRef = useRef<ReturnType<
     typeof createMobileQaSessionPersistenceGate
   > | null>(null);
@@ -299,29 +360,107 @@ function CareTwinQaScreenBody() {
   const hydrationRetry = qaSessionHydrationRetryRef.current;
   const qaEditAdmissionRef = useRef(false);
   const qaAutosavePendingRef = useRef(false);
+  const qaAutosaveAttemptRef = useRef(0);
+  const qaSessionSaveQueueRef = useRef<ReturnType<
+    typeof createMobileQaSessionSaveQueue
+  > | null>(null);
+  if (qaSessionSaveQueueRef.current === null) {
+    qaSessionSaveQueueRef.current = createMobileQaSessionSaveQueue();
+  }
+  const qaSessionSaveQueue = qaSessionSaveQueueRef.current;
+  const qaEditControlsDisabled =
+    !qaSessionLoaded ||
+    qaSessionSaveStatus === "load-failed" ||
+    qaEvidenceBusy ||
+    qaReportShareBusy;
   const applyRealQaEdit = (apply: () => void) => {
-    if (!qaEditAdmissionRef.current) return;
+    if (
+      !qaEditAdmissionRef.current ||
+      qaEvidenceActionGate.isBusy() ||
+      qaReportShareGate.isBusy()
+    ) return;
     qaAutosavePendingRef.current = true;
+    setQaSessionSaveStatus("saving");
     qaSessionPersistenceGate.markRealEdit();
     apply();
   };
   const setQaStatusById: typeof setQaStatusByIdFromHydration = (next) => {
-    applyRealQaEdit(() => setQaStatusByIdFromHydration(next));
+    applyRealQaEdit(() => {
+      const value = resolveStateAction(
+        qaSessionInputRef.current.careTwinStatusById,
+        next,
+      );
+      qaSessionInputRef.current = {
+        ...qaSessionInputRef.current,
+        careTwinStatusById: value,
+      };
+      setQaStatusByIdFromHydration(value);
+    });
   };
   const setQaNotes: typeof setQaNotesFromHydration = (next) => {
-    applyRealQaEdit(() => setQaNotesFromHydration(next));
+    applyRealQaEdit(() => {
+      const value = resolveStateAction(
+        qaSessionInputRef.current.careTwinNotes,
+        next,
+      );
+      qaSessionInputRef.current = {
+        ...qaSessionInputRef.current,
+        careTwinNotes: value,
+      };
+      setQaNotesFromHydration(value);
+    });
   };
   const setQaEvidenceById: typeof setQaEvidenceByIdFromHydration = (next) => {
-    applyRealQaEdit(() => setQaEvidenceByIdFromHydration(next));
+    applyRealQaEdit(() => {
+      const value = resolveStateAction(
+        qaSessionInputRef.current.careTwinEvidenceById,
+        next,
+      );
+      qaSessionInputRef.current = {
+        ...qaSessionInputRef.current,
+        careTwinEvidenceById: value,
+      };
+      setQaEvidenceByIdFromHydration(value);
+    });
   };
   const setSurfaceStatusById: typeof setSurfaceStatusByIdFromHydration = (next) => {
-    applyRealQaEdit(() => setSurfaceStatusByIdFromHydration(next));
+    applyRealQaEdit(() => {
+      const value = resolveStateAction(
+        qaSessionInputRef.current.surfaceStatusById,
+        next,
+      );
+      qaSessionInputRef.current = {
+        ...qaSessionInputRef.current,
+        surfaceStatusById: value,
+      };
+      setSurfaceStatusByIdFromHydration(value);
+    });
   };
   const setSurfaceNotes: typeof setSurfaceNotesFromHydration = (next) => {
-    applyRealQaEdit(() => setSurfaceNotesFromHydration(next));
+    applyRealQaEdit(() => {
+      const value = resolveStateAction(
+        qaSessionInputRef.current.surfaceNotes,
+        next,
+      );
+      qaSessionInputRef.current = {
+        ...qaSessionInputRef.current,
+        surfaceNotes: value,
+      };
+      setSurfaceNotesFromHydration(value);
+    });
   };
   const setSurfaceEvidenceById: typeof setSurfaceEvidenceByIdFromHydration = (next) => {
-    applyRealQaEdit(() => setSurfaceEvidenceByIdFromHydration(next));
+    applyRealQaEdit(() => {
+      const value = resolveStateAction(
+        qaSessionInputRef.current.surfaceEvidenceById,
+        next,
+      );
+      qaSessionInputRef.current = {
+        ...qaSessionInputRef.current,
+        surfaceEvidenceById: value,
+      };
+      setSurfaceEvidenceByIdFromHydration(value);
+    });
   };
   const scenarios = useMemo(
     () => listCareTwinRuntimeQaScenarios().map(evaluateCareTwinRuntimeQaScenario),
@@ -373,12 +512,7 @@ function CareTwinQaScreenBody() {
     () =>
       deriveLaunchReadiness({
         nativeQa: null,
-        local: {
-          careWorkflowsReady: true,
-          easProfilesReady: true,
-          pixelAssetsReady: true,
-          privacyExportReady: true,
-        },
+        local: {},
         provider: {
           authConfigured: Boolean(launchProviderSetupPlan.providerInput.authConfigured),
           authProviderProofReady: Boolean(launchProviderSetupPlan.providerInput.authProviderProofReady),
@@ -404,7 +538,7 @@ function CareTwinQaScreenBody() {
           supportRunbookOwnerReviewed,
           supportRunbookProofReady,
         },
-        syncStatus: "healthy",
+        syncStatus: undefined,
       }),
     [
       attachmentManifest.launchQueue,
@@ -421,7 +555,7 @@ function CareTwinQaScreenBody() {
     () =>
       buildReleasePacket(storeLaunchReadinessPlan, {
         appName: "WoofWatcher",
-        buildName: "mobile screenshot candidate",
+        buildName: "unbound local QA workspace (exact binary not identified)",
       }),
     [storeLaunchReadinessPlan],
   );
@@ -466,24 +600,12 @@ function CareTwinQaScreenBody() {
     () => summarizeMobileReleaseQaReviews(releaseQaSurfaces, releaseReviews),
     [releaseQaSurfaces, releaseReviews],
   );
-  const qaSessionSnapshot = useMemo(
-    () =>
-      buildMobileQaSessionSnapshot(
-        {
-          careTwinStatusById: qaStatusById,
-          careTwinNotes: qaNotes,
-          careTwinEvidenceById: qaEvidenceById,
-          surfaceStatusById,
-          surfaceNotes,
-          surfaceEvidenceById,
-        },
-        qaSessionSavedAt ?? new Date().toISOString(),
-      ),
-    [qaEvidenceById, qaNotes, qaSessionSavedAt, qaStatusById, surfaceEvidenceById, surfaceNotes, surfaceStatusById],
-  );
   const qaProofManifest = useMemo(
-    () => buildMobileQaSessionProofManifest(qaSessionSnapshot),
-    [qaSessionSnapshot],
+    () =>
+      persistedQaSessionSnapshot
+        ? buildMobileQaSessionProofManifest(persistedQaSessionSnapshot)
+        : null,
+    [persistedQaSessionSnapshot],
   );
   const betaCapturePlan = useMemo(
     () =>
@@ -624,6 +746,25 @@ function CareTwinQaScreenBody() {
   const releaseMissingEvidenceLabel = formatMobileReleaseQaMissingEvidence(releaseSummary);
   const selectedEvidencePlatformLabel = qaScreenshotEvidencePlatformLabel(selectedEvidencePlatform);
   const attachedEvidenceFiles = releaseSummary.attachedScreenshots + qaSummary.attachedScreenshots;
+  const qaSessionStatusLabel =
+    qaSessionSaveStatus === "saved"
+      ? "Saved locally"
+      : qaSessionSaveStatus === "saving"
+        ? "Saving locally"
+        : qaSessionSaveStatus === "save-failed"
+          ? "Save failed"
+          : qaSessionSaveStatus === "load-failed"
+            ? "Load failed"
+            : qaSessionSaveStatus === "unsaved"
+              ? "No saved QA"
+              : "Loading saved QA";
+  const qaSessionStatusTone =
+    qaSessionSaveStatus === "saved"
+      ? colors.sage
+      : qaSessionSaveStatus === "save-failed" ||
+          qaSessionSaveStatus === "load-failed"
+        ? colors.copper
+        : colors.amber;
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
     topInset: insets.top,
@@ -633,6 +774,14 @@ function CareTwinQaScreenBody() {
     platform: Platform.OS,
     bottomInset: insets.bottom,
   });
+
+  useEffect(() => {
+    qaScreenMountedRef.current = true;
+    return () => {
+      qaScreenMountedRef.current = false;
+      qaEditAdmissionRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -654,13 +803,30 @@ function CareTwinQaScreenBody() {
                 ticket,
                 savedSession,
                 (state) => {
+                  const persistedSnapshot =
+                    buildPersistedMobileQaSessionSnapshot(
+                      state,
+                      state.savedAtIso,
+                    );
+                  qaSessionInputRef.current = {
+                    careTwinStatusById: state.careTwinStatusById,
+                    careTwinNotes: state.careTwinNotes,
+                    careTwinEvidenceById: state.careTwinEvidenceById,
+                    surfaceStatusById: state.surfaceStatusById,
+                    surfaceNotes: state.surfaceNotes,
+                    surfaceEvidenceById: state.surfaceEvidenceById,
+                  };
                   setQaStatusByIdFromHydration(state.careTwinStatusById);
                   setQaNotesFromHydration(state.careTwinNotes);
                   setQaEvidenceByIdFromHydration(state.careTwinEvidenceById);
                   setSurfaceStatusByIdFromHydration(state.surfaceStatusById);
                   setSurfaceNotesFromHydration(state.surfaceNotes);
                   setSurfaceEvidenceByIdFromHydration(state.surfaceEvidenceById);
-                  setQaSessionSavedAt(state.savedAtIso);
+                  setPersistedQaSessionSnapshot(persistedSnapshot);
+                  setQaSessionSavedAt(persistedSnapshot?.savedAtIso);
+                  setQaSessionSaveStatus(
+                    persistedSnapshot ? "saved" : "unsaved",
+                  );
                 },
               ) === "applied";
           },
@@ -683,6 +849,9 @@ function CareTwinQaScreenBody() {
           }
           qaEditAdmissionRef.current = false;
           setQaSessionLoaded(false);
+          setPersistedQaSessionSnapshot(null);
+          setQaSessionSavedAt(undefined);
+          setQaSessionSaveStatus("load-failed");
           hydrationRetry.request(hydrateQaSessionWhenAutosaveAdmitted);
         });
     }
@@ -704,7 +873,11 @@ function CareTwinQaScreenBody() {
   }, [hydrationRetry, operationSettledEpoch, qaSessionPersistenceGate, store]);
 
   useEffect(() => {
-    if (!qaSessionLoaded || !qaEditAdmissionRef.current) return;
+    if (
+      !qaSessionLoaded ||
+      !qaEditAdmissionRef.current ||
+      qaEvidenceActionGate.isBusy()
+    ) return;
     let cancelled = false;
 
     const qaSessionInput = {
@@ -719,21 +892,39 @@ function CareTwinQaScreenBody() {
       qaSessionPersistenceGate.consumeAutosaveDecision(qaSessionInput);
     if (autosaveDecision === "suppress-hydration") return;
     const snapshot = buildMobileQaSessionSnapshot(qaSessionInput);
-    qaAutosavePendingRef.current = false;
-    void store
-      .save(MOBILE_QA_SESSION_STORAGE_KEY, JSON.stringify(snapshot))
+    const attempt = ++qaAutosaveAttemptRef.current;
+    qaAutosavePendingRef.current = true;
+    setQaSessionSaveStatus("saving");
+    void qaSessionSaveQueue
+      .save(JSON.stringify(snapshot), (value) =>
+        store.save(MOBILE_QA_SESSION_STORAGE_KEY, value),
+      )
       .then(() => {
-        if (!cancelled) setQaSessionSavedAt(snapshot.savedAtIso);
+        if (cancelled || attempt !== qaAutosaveAttemptRef.current) return;
+        setPersistedQaSessionSnapshot(snapshot);
+        setQaSessionSavedAt(snapshot.savedAtIso);
+        setQaSessionSaveStatus("saved");
       })
       .catch((error) => {
-        if (error instanceof LocalDataResetInProgressError) return;
+        if (cancelled || attempt !== qaAutosaveAttemptRef.current) return;
+        setQaSessionSaveStatus(
+          error instanceof LocalDataResetInProgressError
+            ? "unsaved"
+            : "save-failed",
+        );
+      })
+      .finally(() => {
+        if (attempt === qaAutosaveAttemptRef.current) {
+          qaAutosavePendingRef.current = qaSessionSaveQueue.isPending();
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [qaEvidenceById, qaNotes, qaSessionLoaded, qaSessionPersistenceGate, qaStatusById, store, surfaceEvidenceById, surfaceNotes, surfaceStatusById]);
+  }, [qaEvidenceActionGate, qaEvidenceById, qaNotes, qaSessionLoaded, qaSessionPersistenceGate, qaSessionSaveQueue, qaStatusById, store, surfaceEvidenceById, surfaceNotes, surfaceStatusById]);
 
   const markScenario = (scenarioId: string, status: CareTwinQaReviewStatus) => {
+    if (qaEditControlsDisabled) return;
     if (Platform.OS !== "web") {
       Haptics.selectionAsync().catch(() => {});
     }
@@ -744,6 +935,7 @@ function CareTwinQaScreenBody() {
   };
 
   const markSurface = (surfaceId: string, status: MobileReleaseQaReviewStatus) => {
+    if (qaEditControlsDisabled) return;
     if (Platform.OS !== "web") {
       Haptics.selectionAsync().catch(() => {});
     }
@@ -776,93 +968,319 @@ function CareTwinQaScreenBody() {
     );
   };
 
-  const pickScreenshotEvidence = async (fallbackFileName: string): Promise<QaScreenshotEvidence | null> => {
+  const enqueueQaEvidenceOperation = async <T,>(
+    work: () => Promise<T>,
+  ): Promise<T | undefined> => {
+    const result = await qaEvidenceActionGate.run(async () => {
+      if (!qaScreenMountedRef.current || !qaEditAdmissionRef.current) {
+        return undefined;
+      }
+      setQaEvidenceBusy(true);
+      try {
+        return await work();
+      } finally {
+        if (qaScreenMountedRef.current) setQaEvidenceBusy(false);
+      }
+    });
+    return result.status === "complete" ? result.value : undefined;
+  };
+
+  const persistQaSessionInput = async (
+    nextInput: MobileQaSessionInput,
+  ): Promise<boolean> => {
+    const snapshot = buildMobileQaSessionSnapshot(nextInput);
+    const attempt = ++qaAutosaveAttemptRef.current;
+    qaAutosavePendingRef.current = true;
+    setQaSessionSaveStatus("saving");
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: false,
-        quality: 0.9,
-      });
-      if (result.canceled || !result.assets[0]?.uri) return null;
-
-      const asset = result.assets[0];
-      const fileName =
-        typeof (asset as { fileName?: unknown }).fileName === "string"
-          ? (asset as { fileName: string }).fileName
-          : fallbackFileName;
-
-      return buildQaScreenshotEvidence({
-        uri: asset.uri,
-        fileName,
-        source: "library",
-        targetPlatform: selectedEvidencePlatform,
-        capturedAtIso: new Date().toISOString(),
-      }, fallbackFileName);
-    } catch {
-      notifyDialog("Screenshot unavailable", "Choose the screenshot from Photos after capturing it on iOS or Android.");
-      return null;
+      await qaSessionSaveQueue.save(JSON.stringify(snapshot), (value) =>
+        store.save(MOBILE_QA_SESSION_STORAGE_KEY, value),
+      );
+    } catch (error) {
+      if (attempt === qaAutosaveAttemptRef.current) {
+        qaAutosavePendingRef.current = qaSessionSaveQueue.isPending();
+        if (qaScreenMountedRef.current) {
+          setQaSessionSaveStatus(
+            error instanceof LocalDataResetInProgressError
+              ? "unsaved"
+              : "save-failed",
+          );
+        }
+      }
+      if (error instanceof LocalDataResetInProgressError) return false;
+      if (qaScreenMountedRef.current) {
+        notifyDialog(
+          "QA evidence not saved",
+          "WoofWatcher kept the previous QA evidence. Try again before leaving this screen.",
+        );
+      }
+      return false;
     }
+    if (attempt === qaAutosaveAttemptRef.current) {
+      qaAutosavePendingRef.current = qaSessionSaveQueue.isPending();
+      if (qaScreenMountedRef.current) {
+        setPersistedQaSessionSnapshot(snapshot);
+        setQaSessionSavedAt(snapshot.savedAtIso);
+        setQaSessionSaveStatus("saved");
+      }
+    }
+    return true;
   };
 
-  const attachSurfaceScreenshot = async (surface: MobileReleaseQaSurface) => {
-    const evidence = await pickScreenshotEvidence(`${surface.id}-qa-screenshot.png`);
-    if (!evidence) return;
-    setSurfaceEvidenceById((current) => ({
-      ...current,
-      [surface.id]: [...(current[surface.id] ?? []), evidence],
-    }));
-  };
+  const attachScreenshotEvidence = (
+    target: { kind: "surface" | "scenario"; id: string },
+    fallbackFileName: string,
+  ) =>
+    enqueueQaEvidenceOperation(async () => {
+      try {
+        const action = await runQaScreenshotPicker({
+          appFileSystem,
+          fallbackFileName,
+          pick: () =>
+            ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ["images"],
+              allowsEditing: false,
+              quality: 0.9,
+            }),
+          apply: async ({ asset, fileName, uri }) => {
+            if (
+              !qaScreenMountedRef.current ||
+              !qaEditAdmissionRef.current
+            ) {
+              return false;
+            }
+            const evidence = buildQaScreenshotEvidence(
+              {
+                uri,
+                fileName: asset.fileName?.trim() || fileName,
+                source: "library",
+                targetPlatform: selectedEvidencePlatform,
+                capturedAtIso: new Date().toISOString(),
+              },
+              fallbackFileName,
+            );
+            const currentInput = qaSessionInputRef.current;
+            const currentMap =
+              target.kind === "surface"
+                ? currentInput.surfaceEvidenceById
+                : currentInput.careTwinEvidenceById;
+            const nextMap = {
+              ...currentMap,
+              [target.id]: [...(currentMap[target.id] ?? []), evidence],
+            };
+            const nextInput: MobileQaSessionInput =
+              target.kind === "surface"
+                ? { ...currentInput, surfaceEvidenceById: nextMap }
+                : { ...currentInput, careTwinEvidenceById: nextMap };
 
-  const attachScenarioScreenshot = async (scenarioId: string) => {
-    const evidence = await pickScreenshotEvidence(`${scenarioId}-qa-screenshot.png`);
-    if (!evidence) return;
-    setQaEvidenceById((current) => ({
-      ...current,
-      [scenarioId]: [...(current[scenarioId] ?? []), evidence],
-    }));
+            qaAutosavePendingRef.current = true;
+            qaSessionPersistenceGate.markRealEdit();
+            if (!(await persistQaSessionInput(nextInput))) {
+              qaAutosavePendingRef.current = qaSessionSaveQueue.isPending();
+              return false;
+            }
+            qaSessionInputRef.current = nextInput;
+            qaAutosavePendingRef.current = qaSessionSaveQueue.isPending();
+            if (qaScreenMountedRef.current) {
+              if (target.kind === "surface") {
+                setSurfaceEvidenceByIdFromHydration(nextMap);
+              } else {
+                setQaEvidenceByIdFromHydration(nextMap);
+              }
+            }
+            return true;
+          },
+        });
+        if (!qaScreenMountedRef.current) return;
+        if (action.status === "not-saved") {
+          notifyDialog(
+            "Screenshot not saved",
+            action.cleanupFailed
+              ? "WoofWatcher could not save that screenshot, and its temporary picker copy could not be removed. No QA evidence was added. Privacy & Data reset will retry cleanup."
+              : "WoofWatcher could not save that screenshot on this device. No QA evidence was added.",
+          );
+        } else if (action.status === "rejected" && action.cleanupFailed) {
+          notifyDialog(
+            "Screenshot cleanup incomplete",
+            "The QA evidence was not saved, and one local file could not be removed. Privacy & Data reset will retry that cleanup.",
+          );
+        }
+      } catch (error) {
+        if (qaScreenMountedRef.current) {
+          notifyDialog(
+            "Screenshot unavailable",
+            error instanceof PickedMediaLocalDataActionError && error.cleanupFailed
+              ? "The screenshot was not added, and one temporary local file could not be removed. Privacy & Data reset will retry cleanup."
+              : "Choose the screenshot from Photos after capturing it on iOS or Android.",
+          );
+        }
+      }
+    });
+
+  const clearScreenshotEvidence = (
+    target: { kind: "surface" | "scenario"; id: string },
+  ) =>
+    enqueueQaEvidenceOperation(async () => {
+      const currentInput = qaSessionInputRef.current;
+      const targetMap =
+        target.kind === "surface"
+          ? currentInput.surfaceEvidenceById
+          : currentInput.careTwinEvidenceById;
+      const evidence = targetMap[target.id] ?? [];
+      if (evidence.length === 0) return;
+
+      const protectedUris = [
+        ...collectCareAppOwnedFileReferences({
+          doc: careStateRef.current,
+          entries: careStateRef.current.entries,
+        }),
+        ...Object.entries(currentInput.surfaceEvidenceById).flatMap(
+          ([id, items]) =>
+            target.kind === "surface" && id === target.id
+              ? []
+              : items.map((item) => item.uri),
+        ),
+        ...Object.entries(currentInput.careTwinEvidenceById).flatMap(
+          ([id, items]) =>
+            target.kind === "scenario" && id === target.id
+              ? []
+              : items.map((item) => item.uri),
+        ),
+      ];
+
+      const result = await runPickedMediaEvidenceClear({
+        appFileSystem,
+        evidence,
+        protectedUris,
+        removeMetadata: async () => {
+          const latestInput = qaSessionInputRef.current;
+          const latestMap =
+            target.kind === "surface"
+              ? latestInput.surfaceEvidenceById
+              : latestInput.careTwinEvidenceById;
+          const nextMap = { ...latestMap, [target.id]: [] };
+          const nextInput: MobileQaSessionInput =
+            target.kind === "surface"
+              ? { ...latestInput, surfaceEvidenceById: nextMap }
+              : { ...latestInput, careTwinEvidenceById: nextMap };
+
+          qaAutosavePendingRef.current = true;
+          qaSessionPersistenceGate.markRealEdit();
+          if (!(await persistQaSessionInput(nextInput))) {
+            qaAutosavePendingRef.current = qaSessionSaveQueue.isPending();
+            return "not-committed";
+          }
+          qaSessionInputRef.current = nextInput;
+          qaAutosavePendingRef.current = qaSessionSaveQueue.isPending();
+          if (qaScreenMountedRef.current) {
+            if (target.kind === "surface") {
+              setSurfaceEvidenceByIdFromHydration(nextMap);
+            } else {
+              setQaEvidenceByIdFromHydration(nextMap);
+            }
+          }
+          return "committed";
+        },
+      });
+
+      if (
+        result.status === "partial-failure" &&
+        qaScreenMountedRef.current
+      ) {
+        notifyDialog(
+          "Screenshot cleanup incomplete",
+          `${result.failedCount} local screenshot file${result.failedCount === 1 ? "" : "s"} could not be removed. The evidence list was cleared, and Privacy & Data reset will retry the file cleanup.`,
+        );
+      }
+    });
+
+  const attachSurfaceScreenshot = (surface: MobileReleaseQaSurface) =>
+    attachScreenshotEvidence(
+      { kind: "surface", id: surface.id },
+      `${surface.id}-qa-screenshot.png`,
+    );
+
+  const attachScenarioScreenshot = (scenarioId: string) =>
+    attachScreenshotEvidence(
+      { kind: "scenario", id: scenarioId },
+      `${scenarioId}-qa-screenshot.png`,
+    );
+
+  const runQaReportShare = async (work: () => Promise<void>) => {
+    await qaReportShareGate.run(async () => {
+      if (!qaScreenMountedRef.current) return;
+      setQaReportShareBusy(true);
+      try {
+        await work();
+      } finally {
+        if (qaScreenMountedRef.current) setQaReportShareBusy(false);
+      }
+    });
   };
 
   const shareQaSummary = async () => {
-    const reviewedAtIso = new Date().toISOString();
-    const proofManifest = buildMobileQaSessionProofManifest(qaSessionSnapshot, reviewedAtIso);
-    const message = [
-      buildMobileQaSessionProofManifestShareText(proofManifest),
-      buildMobileLaunchQaCaptureShareText(betaCapturePlan, reviewedAtIso),
-      buildMobileReleaseQaShareText(releaseQaSurfaces, releaseReviews, reviewedAtIso),
-      buildStoreSubmissionPacketShareText(storeSubmissionPacket),
-      buildCareTwinQaShareText(scenarios, qaReviews, reviewedAtIso),
-    ].join("\n\n");
+    await runQaReportShare(async () => {
+      if (
+        !persistedQaSessionSnapshot ||
+        qaSessionSaveStatus !== "saved" ||
+        qaEvidenceActionGate.isBusy()
+      ) {
+        notifyDialog(
+          "QA session not saved",
+          "Wait for the local save to finish, or retry the last edit, before sharing this QA proof.",
+        );
+        return;
+      }
+      const reviewedAtIso = new Date().toISOString();
+      const proofManifest = buildMobileQaSessionProofManifest(
+        persistedQaSessionSnapshot,
+        reviewedAtIso,
+      );
+      const message = [
+        buildMobileQaSessionProofManifestShareText(proofManifest),
+        buildMobileLaunchQaCaptureShareText(betaCapturePlan, reviewedAtIso),
+        buildMobileReleaseQaShareText(releaseQaSurfaces, releaseReviews, reviewedAtIso),
+        buildStoreSubmissionPacketShareText(storeSubmissionPacket),
+        buildCareTwinQaShareText(scenarios, qaReviews, reviewedAtIso),
+      ].join("\n\n");
 
-    await shareTextPayload({
-      title: "WoofWatcher Mobile Release QA",
-      message,
+      await shareTextPayload({
+        title: "WoofWatcher Mobile Release QA",
+        message,
+      });
     });
   };
 
   const shareFocusedTargetChecklist = async () => {
-    const generatedAtIso = new Date().toISOString();
-    const message = buildMobileLaunchQaFocusedTargetShareText(focusedQaTarget, generatedAtIso);
+    await runQaReportShare(async () => {
+      const generatedAtIso = new Date().toISOString();
+      const message = buildMobileLaunchQaFocusedTargetShareText(focusedQaTarget, generatedAtIso);
 
-    await shareTextPayload({
-      title: "WoofWatcher Focused QA Target",
-      message,
+      await shareTextPayload({
+        title: "WoofWatcher Focused QA Target",
+        message,
+      });
     });
   };
 
   const shareFocusedFixBrief = async () => {
-    const generatedAtIso = new Date().toISOString();
-    const message = buildMobileLaunchQaFixBriefShareText(betaCapturePlan, generatedAtIso);
+    await runQaReportShare(async () => {
+      const generatedAtIso = new Date().toISOString();
+      const message = buildMobileLaunchQaFixBriefShareText(betaCapturePlan, generatedAtIso);
 
-    await shareTextPayload({
-      title: "WoofWatcher Needs Tune Fix Brief",
-      message,
+      await shareTextPayload({
+        title: "WoofWatcher Needs Tune Fix Brief",
+        message,
+      });
     });
   };
 
   const shareStoreSubmissionPacket = async () => {
-    await shareTextPayload({
-      title: storeSubmissionPacket.title,
-      message: buildStoreSubmissionPacketShareText(storeSubmissionPacket),
+    await runQaReportShare(async () => {
+      await shareTextPayload({
+        title: storeSubmissionPacket.title,
+        message: buildStoreSubmissionPacketShareText(storeSubmissionPacket),
+      });
     });
   };
 
@@ -872,6 +1290,8 @@ function CareTwinQaScreenBody() {
         style={[s.screen, { backgroundColor: colors.background }]}
         contentContainerStyle={[s.content, { paddingTop: topPadding, paddingBottom: bottomPadding }]}
         showsVerticalScrollIndicator={false}
+        pointerEvents={qaEvidenceBusy ? "none" : "auto"}
+        accessibilityState={{ busy: qaEvidenceBusy }}
       >
         <BoardRouteHeader
           kicker="Native QA"
@@ -1754,19 +2174,20 @@ function CareTwinQaScreenBody() {
                   </View>
                 ) : null}
                 <EvidenceCapture
-                  title="Focused screenshot proof"
+                  disabled={qaEditControlsDisabled}
+                  title="Focused screenshot reference"
                   label={`${focusedQaEvidence.length} focused`}
                   evidence={focusedQaEvidence}
                   targetPlatformLabel={selectedEvidencePlatformLabel}
-                  attachLabel="Attach focused proof"
-                  attachAccessibilityLabel={`Attach focused QA proof for ${focusedQaTarget.target.title}`}
-                  clearAccessibilityLabel={`Clear focused QA proof for ${focusedQaTarget.target.title}`}
+                  attachLabel="Attach focused reference"
+                  attachAccessibilityLabel={`Attach focused QA screenshot reference for ${focusedQaTarget.target.title}`}
+                  clearAccessibilityLabel={`Clear focused QA screenshot references for ${focusedQaTarget.target.title}`}
                   onAttach={() => attachSurfaceScreenshot(focusedQaTarget.surface)}
                   onClear={() =>
-                    setSurfaceEvidenceById((current) => ({
-                      ...current,
-                      [focusedQaTarget.target.surfaceId]: [],
-                    }))
+                    clearScreenshotEvidence({
+                      kind: "surface",
+                      id: focusedQaTarget.target.surfaceId,
+                    })
                   }
                 />
                 {focusedQaTarget.target.routeChecklist?.length ? (
@@ -1778,7 +2199,7 @@ function CareTwinQaScreenBody() {
                           Native route targets
                         </Text>
                         <Text style={[s.betaRunRouteLoopHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                          Open each route, capture native proof, then return here to attach it.
+                          Open each route on the exact candidate. Photos attachments remain manual references; record exact-binary device proof outside this library picker.
                         </Text>
                       </View>
                     </View>
@@ -1841,6 +2262,8 @@ function CareTwinQaScreenBody() {
                   </Text>
                   <TextInput
                     accessibilityLabel={`Focused QA note for ${focusedQaTarget.target.title}`}
+                    accessibilityState={{ disabled: qaEditControlsDisabled }}
+                    editable={!qaEditControlsDisabled}
                     multiline
                     textAlignVertical="top"
                     placeholder="Save the screenshot condition, device, and anything that still feels off."
@@ -1866,7 +2289,9 @@ function CareTwinQaScreenBody() {
                 <View style={s.betaRunMissionActions}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Attach focused QA proof for ${focusedQaTarget.target.title}`}
+                    accessibilityLabel={`Attach focused QA screenshot reference for ${focusedQaTarget.target.title}`}
+                    accessibilityState={{ disabled: qaEditControlsDisabled }}
+                    disabled={qaEditControlsDisabled}
                     onPress={() => attachSurfaceScreenshot(focusedQaTarget.surface)}
                     style={({ pressed }) => [
                       s.betaRunMissionAttach,
@@ -1879,7 +2304,7 @@ function CareTwinQaScreenBody() {
                     <Ionicons name="camera-outline" size={17} color={colors.copper} />
                     <View style={s.betaRunMissionActionCopy}>
                       <Text style={[s.betaRunMissionAttachText, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
-                        Attach focused QA proof
+                        Attach screenshot reference
                       </Text>
                       <Text style={[s.betaRunMissionActionHint, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                         Tagged as {selectedEvidencePlatformLabel}
@@ -1906,6 +2331,8 @@ function CareTwinQaScreenBody() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`Share focused QA target checklist: ${focusedQaTarget.target.title}`}
+                    accessibilityState={{ disabled: qaReportShareBusy }}
+                    disabled={qaReportShareBusy}
                     onPress={shareFocusedTargetChecklist}
                     style={({ pressed }) => [
                       s.betaRunSecondary,
@@ -1924,6 +2351,8 @@ function CareTwinQaScreenBody() {
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Share focused Needs tune fix brief: ${focusedQaTarget.target.title}`}
+                      accessibilityState={{ disabled: qaReportShareBusy }}
+                      disabled={qaReportShareBusy}
                       onPress={shareFocusedFixBrief}
                       style={({ pressed }) => [
                         s.betaRunSecondary,
@@ -1945,6 +2374,8 @@ function CareTwinQaScreenBody() {
                     accessibilityRole="button"
                     aria-selected={focusedQaTarget.target.status === "pass"}
                     accessibilityLabel={`Mark focused QA target pass: ${focusedQaTarget.target.title}`}
+                    accessibilityState={{ disabled: qaEditControlsDisabled }}
+                    disabled={qaEditControlsDisabled}
                     onPress={() => markSurface(focusedQaTarget.target.surfaceId, "pass")}
                     style={({ pressed }) => [
                       s.betaRunMissionReviewButton,
@@ -1963,6 +2394,8 @@ function CareTwinQaScreenBody() {
                     accessibilityRole="button"
                     aria-selected={focusedQaTarget.target.status === "needs-review"}
                     accessibilityLabel={`Mark focused QA target needs tune: ${focusedQaTarget.target.title}`}
+                    accessibilityState={{ disabled: qaEditControlsDisabled }}
+                    disabled={qaEditControlsDisabled}
                     onPress={() => markSurface(focusedQaTarget.target.surfaceId, "needs-review")}
                     style={({ pressed }) => [
                       s.betaRunMissionReviewButton,
@@ -2155,6 +2588,8 @@ function CareTwinQaScreenBody() {
                 </View>
                 <TextInput
                   accessibilityLabel={`Mission note for ${nextBetaTarget.title}`}
+                  accessibilityState={{ disabled: qaEditControlsDisabled }}
+                  editable={!qaEditControlsDisabled}
                   multiline
                   textAlignVertical="top"
                   placeholder="Confirm what passed, what felt off, or that the route loop had no dead ends."
@@ -2198,8 +2633,9 @@ function CareTwinQaScreenBody() {
               <View style={s.betaRunMissionActions}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Attach proof for next beta mission: ${nextBetaTarget.title}`}
-                  disabled={!nextBetaSurface}
+                  accessibilityLabel={`Attach screenshot reference for next beta mission: ${nextBetaTarget.title}`}
+                  accessibilityState={{ disabled: !nextBetaSurface || qaEditControlsDisabled }}
+                  disabled={!nextBetaSurface || qaEditControlsDisabled}
                   onPress={() => {
                     if (nextBetaSurface) attachSurfaceScreenshot(nextBetaSurface);
                   }}
@@ -2215,7 +2651,7 @@ function CareTwinQaScreenBody() {
                   <Ionicons name="camera-outline" size={17} color={colors.copper} />
                   <View style={s.betaRunMissionActionCopy}>
                     <Text style={[s.betaRunMissionAttachText, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
-                      Attach proof
+                      Attach screenshot reference
                     </Text>
                     <Text style={[s.betaRunMissionActionHint, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                       Tagged as {selectedEvidencePlatformLabel}
@@ -2227,6 +2663,8 @@ function CareTwinQaScreenBody() {
                     accessibilityRole="button"
                     aria-selected={nextBetaTarget.status === "pass"}
                     accessibilityLabel={`Mark next beta mission pass: ${nextBetaTarget.title}`}
+                    accessibilityState={{ disabled: qaEditControlsDisabled }}
+                    disabled={qaEditControlsDisabled}
                     onPress={() => markSurface(nextBetaTarget.surfaceId, "pass")}
                     style={({ pressed }) => [
                       s.betaRunMissionReviewButton,
@@ -2245,6 +2683,8 @@ function CareTwinQaScreenBody() {
                     accessibilityRole="button"
                     aria-selected={nextBetaTarget.status === "needs-review"}
                     accessibilityLabel={`Mark next beta mission needs tune: ${nextBetaTarget.title}`}
+                    accessibilityState={{ disabled: qaEditControlsDisabled }}
+                    disabled={qaEditControlsDisabled}
                     onPress={() => markSurface(nextBetaTarget.surfaceId, "needs-review")}
                     style={({ pressed }) => [
                       s.betaRunMissionReviewButton,
@@ -2295,7 +2735,7 @@ function CareTwinQaScreenBody() {
                   Tag screenshot evidence
                 </Text>
                 <Text style={[s.betaRunPlatformHelp, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                  Choose the device type before attaching from Photos so iPhone and Android proof count toward the beta gate.
+                  Photos-library attachments are manual self-attested references. A platform tag helps organize them but never closes an exact-binary iOS or Android release gate.
                 </Text>
               </View>
               <QaBadge label={selectedEvidencePlatformLabel} tone={selectedEvidencePlatform === "web" ? colors.amber : colors.sage} />
@@ -2309,6 +2749,8 @@ function CareTwinQaScreenBody() {
                     accessibilityRole="button"
                     aria-selected={active}
                     accessibilityLabel={`Tag QA screenshots as ${option.label}`}
+                    accessibilityState={{ disabled: qaEditControlsDisabled }}
+                    disabled={qaEditControlsDisabled}
                     onPress={() => setSelectedEvidencePlatform(option.value)}
                     style={({ pressed }) => [
                       s.betaRunPlatformOption,
@@ -2337,6 +2779,8 @@ function CareTwinQaScreenBody() {
               accessibilityLabel={
                 nextBetaTarget ? `Open next beta QA surface: ${nextBetaTarget.title}` : "Share completed beta QA summary"
               }
+              accessibilityState={{ disabled: qaReportShareBusy }}
+              disabled={qaReportShareBusy}
               onPress={nextBetaTarget ? () => router.push(buildQaReturnRoute(nextBetaTarget) as never) : shareQaSummary}
               style={({ pressed }) => [
                 s.betaRunPrimary,
@@ -2352,6 +2796,8 @@ function CareTwinQaScreenBody() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Share beta QA summary from cockpit"
+                accessibilityState={{ disabled: qaReportShareBusy }}
+                disabled={qaReportShareBusy}
                 onPress={shareQaSummary}
                 style={({ pressed }) => [
                   s.betaRunSecondary,
@@ -2383,34 +2829,53 @@ function CareTwinQaScreenBody() {
           </View>
           <View style={s.summaryGrid}>
             <QaBadge label={`${releaseSummary.passed}/${releaseSummary.total} release`} tone={releaseSummary.passed === releaseSummary.total ? colors.sage : colors.amber} />
-            <QaBadge label={`${releaseSummary.passedWithRequiredProof} proof-backed`} tone={releaseSummary.passPendingProof === 0 ? colors.sage : colors.amber} />
+            <QaBadge label={`${releaseSummary.passedWithRequiredProof} exact-device`} tone={releaseSummary.passPendingProof === 0 ? colors.sage : colors.amber} />
             <QaBadge label={`${releaseSummary.passPendingProof} release pending`} tone={releaseSummary.passPendingProof === 0 ? colors.sage : colors.amber} />
-            <QaBadge label={`Proof ${qaProofManifest.proofId}`} tone={colors.brandNavy} />
-            <QaBadge label={`${qaProofManifest.totalEvidenceFiles} manifest files`} tone={qaProofManifest.totalEvidenceFiles > 0 ? colors.sage : colors.amber} />
+            <QaBadge
+              label={qaProofManifest ? `Saved manifest ${qaProofManifest.proofId}` : "Manifest unavailable"}
+              tone={qaProofManifest ? colors.brandNavy : colors.amber}
+            />
+            <QaBadge
+              label={qaProofManifest ? `${qaProofManifest.totalEvidenceFiles} saved manifest files` : "No saved manifest"}
+              tone={qaProofManifest && qaProofManifest.totalEvidenceFiles > 0 ? colors.sage : colors.amber}
+            />
             <QaBadge label={`${readyCount}/${scenarios.length} layered`} tone={readyCount === scenarios.length ? colors.sage : colors.amber} />
             <QaBadge label={`${qaSummary.passed} pass`} tone={colors.sage} />
-            <QaBadge label={`${qaSummary.passedWithNativeProof} native proof`} tone={qaSummary.passPendingProof === 0 ? colors.sage : colors.amber} />
+            <QaBadge label={`${qaSummary.passedWithNativeProof} exact-device`} tone={qaSummary.passPendingProof === 0 ? colors.sage : colors.amber} />
             <QaBadge label={`${qaSummary.passPendingProof} pending proof`} tone={qaSummary.passPendingProof === 0 ? colors.sage : colors.amber} />
             <QaBadge label={`${qaSummary.needsReview} needs tune`} tone={colors.amber} />
             <QaBadge label={`${qaSummary.unreviewed} unreviewed`} tone={colors.mutedForeground} />
             <QaBadge label={`${attachedEvidenceFiles} evidence files`} tone={releaseScreenshotEvidenceComplete ? colors.sage : colors.amber} />
-            <QaBadge label={releaseScreenshotEvidenceComplete ? "Native proof ready" : "Native proof open"} tone={releaseScreenshotEvidenceComplete ? colors.sage : colors.amber} />
+            <QaBadge label={releaseScreenshotEvidenceComplete ? "Exact-device gate ready" : "Exact-device gate open"} tone={releaseScreenshotEvidenceComplete ? colors.sage : colors.amber} />
             <QaBadge label={`iOS ${releaseSummary.attachedIosScreenshots}/${releaseSummary.requiredIosScreenshots}`} tone={releaseSummary.missingIosScreenshots === 0 ? colors.sage : colors.amber} />
             <QaBadge label={`Android ${releaseSummary.attachedAndroidScreenshots}/${releaseSummary.requiredAndroidScreenshots}`} tone={releaseSummary.missingAndroidScreenshots === 0 ? colors.sage : colors.amber} />
-            <QaBadge label={qaSessionLoaded ? "Saved locally" : "Loading saved QA"} tone={qaSessionLoaded ? colors.sage : colors.amber} />
+            <QaBadge label={qaSessionStatusLabel} tone={qaSessionStatusTone} />
           </View>
           <Text style={[s.platformEvidenceText, { color: releaseScreenshotEvidenceComplete ? colors.sage : colors.amber, fontFamily: "Inter_700Bold" }]}>
-            Platform proof: {releasePlatformEvidenceLabel}. {releaseMissingEvidenceLabel}.
+            Exact-device gate: {releasePlatformEvidenceLabel}. {releaseMissingEvidenceLabel}.
           </Text>
           <Text style={[s.savedSessionText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-            Proof manifest: {qaProofManifest.proofId} - {qaProofManifest.platformEvidenceLabel}. Local metadata only; store approval and provider proof stay separate.
+            {qaProofManifest
+              ? `Evidence manifest: ${qaProofManifest.proofId} - ${qaProofManifest.platformEvidenceLabel}. Photos attachments do not prove an exact binary or device.`
+              : "Evidence manifest unavailable until this QA session is saved locally. Exact-binary device proof stays separate."}
           </Text>
           <Text style={[s.savedSessionText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-            Local QA session: {formatSavedAt(qaSessionSavedAt)}
+            Last saved QA session: {formatSavedAt(qaSessionSavedAt)}
           </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Share care twin QA summary"
+            accessibilityState={{
+              disabled:
+                qaReportShareBusy ||
+                qaEvidenceBusy ||
+                qaSessionSaveStatus !== "saved",
+            }}
+            disabled={
+              qaReportShareBusy ||
+              qaEvidenceBusy ||
+              qaSessionSaveStatus !== "saved"
+            }
             onPress={shareQaSummary}
             style={({ pressed }) => [
               s.shareButton,
@@ -2429,7 +2894,7 @@ function CareTwinQaScreenBody() {
           title="Launch Workflow QA"
           accessory={
             <BoardPill
-              label={releaseScreenshotEvidenceComplete ? "platform proof complete" : releaseMissingEvidenceLabel}
+              label={releaseScreenshotEvidenceComplete ? "exact-device gate complete" : releaseMissingEvidenceLabel}
               tone={releaseScreenshotEvidenceComplete ? colors.sage : colors.amber}
             />
           }
@@ -2498,15 +2963,13 @@ function CareTwinQaScreenBody() {
               </View>
 
               <EvidenceCapture
+                disabled={qaEditControlsDisabled}
                 label={`${attachedScreenshots.length} attached`}
                 evidence={attachedScreenshots}
                 targetPlatformLabel={selectedEvidencePlatformLabel}
                 onAttach={() => attachSurfaceScreenshot(surface)}
                 onClear={() =>
-                  setSurfaceEvidenceById((current) => ({
-                    ...current,
-                    [surface.id]: [],
-                  }))
+                  clearScreenshotEvidence({ kind: "surface", id: surface.id })
                 }
               />
 
@@ -2540,6 +3003,7 @@ function CareTwinQaScreenBody() {
               <View style={s.reviewGrid}>
                 <ReviewButton
                   active={reviewStatus === "pass"}
+                  disabled={qaEditControlsDisabled}
                   icon="checkmark-circle"
                   label="Pass"
                   onPress={() => markSurface(surface.id, "pass")}
@@ -2547,6 +3011,7 @@ function CareTwinQaScreenBody() {
                 />
                 <ReviewButton
                   active={reviewStatus === "needs-review"}
+                  disabled={qaEditControlsDisabled}
                   icon="build"
                   label="Needs tune"
                   onPress={() => markSurface(surface.id, "needs-review")}
@@ -2556,6 +3021,8 @@ function CareTwinQaScreenBody() {
 
               <TextInput
                 accessibilityLabel={`Release QA notes for ${surface.title}`}
+                accessibilityState={{ disabled: qaEditControlsDisabled }}
+                editable={!qaEditControlsDisabled}
                 multiline
                 onChangeText={(text) =>
                   setSurfaceNotes((current) => ({
@@ -2642,6 +3109,8 @@ function CareTwinQaScreenBody() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Share WoofWatcher store submission packet from QA"
+            accessibilityState={{ disabled: qaReportShareBusy }}
+            disabled={qaReportShareBusy}
             onPress={shareStoreSubmissionPacket}
             style={({ pressed }) => [
               s.shareButton,
@@ -2775,15 +3244,13 @@ function CareTwinQaScreenBody() {
               </View>
 
               <EvidenceCapture
+                disabled={qaEditControlsDisabled}
                 label={`${attachedScreenshots.length} attached`}
                 evidence={attachedScreenshots}
                 targetPlatformLabel={selectedEvidencePlatformLabel}
                 onAttach={() => attachSurfaceScreenshot(surface)}
                 onClear={() =>
-                  setSurfaceEvidenceById((current) => ({
-                    ...current,
-                    [surface.id]: [],
-                  }))
+                  clearScreenshotEvidence({ kind: "surface", id: surface.id })
                 }
               />
 
@@ -2817,6 +3284,7 @@ function CareTwinQaScreenBody() {
               <View style={s.reviewGrid}>
                 <ReviewButton
                   active={reviewStatus === "pass"}
+                  disabled={qaEditControlsDisabled}
                   icon="checkmark-circle"
                   label="Pass"
                   onPress={() => markSurface(surface.id, "pass")}
@@ -2824,6 +3292,7 @@ function CareTwinQaScreenBody() {
                 />
                 <ReviewButton
                   active={reviewStatus === "needs-review"}
+                  disabled={qaEditControlsDisabled}
                   icon="build"
                   label="Needs tune"
                   onPress={() => markSurface(surface.id, "needs-review")}
@@ -2833,6 +3302,8 @@ function CareTwinQaScreenBody() {
 
               <TextInput
                 accessibilityLabel={`Store QA notes for ${surface.title}`}
+                accessibilityState={{ disabled: qaEditControlsDisabled }}
+                editable={!qaEditControlsDisabled}
                 multiline
                 onChangeText={(text) =>
                   setSurfaceNotes((current) => ({
@@ -3008,15 +3479,16 @@ function CareTwinQaScreenBody() {
               </View>
 
               <EvidenceCapture
+                disabled={qaEditControlsDisabled}
                 label={`${attachedScreenshots.length} attached`}
                 evidence={attachedScreenshots}
                 targetPlatformLabel={selectedEvidencePlatformLabel}
                 onAttach={() => attachScenarioScreenshot(result.scenario.id)}
                 onClear={() =>
-                  setQaEvidenceById((current) => ({
-                    ...current,
-                    [result.scenario.id]: [],
-                  }))
+                  clearScreenshotEvidence({
+                    kind: "scenario",
+                    id: result.scenario.id,
+                  })
                 }
               />
 
@@ -3025,11 +3497,11 @@ function CareTwinQaScreenBody() {
                   <View style={s.betaRunProofGateHeader}>
                     <Ionicons name="lock-closed-outline" size={16} color={colors.amber} />
                     <Text style={[s.betaRunProofGateTitle, { color: colors.amber, fontFamily: "Inter_800ExtraBold" }]}>
-                      Pass pending native proof
+                      Pass pending exact-device proof
                     </Text>
                   </View>
                   <Text style={[s.betaRunProofGateText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                    This care-twin state is marked Pass, but it still needs iOS or Android screenshot evidence before it counts as launch proof.
+                    This care-twin state is marked Pass, but it still needs screenshot evidence bound to an exact iOS or Android binary and device. A Photos attachment alone does not count.
                   </Text>
                   <View style={s.betaRunProofGateRow}>
                     <View style={[s.betaRunProofGateDot, { backgroundColor: colors.amber }]} />
@@ -3043,6 +3515,7 @@ function CareTwinQaScreenBody() {
               <View style={s.reviewGrid}>
                 <ReviewButton
                   active={reviewStatus === "pass"}
+                  disabled={qaEditControlsDisabled}
                   icon="checkmark-circle"
                   label="Pass"
                   onPress={() => markScenario(result.scenario.id, "pass")}
@@ -3050,6 +3523,7 @@ function CareTwinQaScreenBody() {
                 />
                 <ReviewButton
                   active={reviewStatus === "needs-review"}
+                  disabled={qaEditControlsDisabled}
                   icon="build"
                   label="Needs tune"
                   onPress={() => markScenario(result.scenario.id, "needs-review")}
@@ -3059,6 +3533,8 @@ function CareTwinQaScreenBody() {
 
               <TextInput
                 accessibilityLabel={`QA notes for ${result.scenario.label}`}
+                accessibilityState={{ disabled: qaEditControlsDisabled }}
+                editable={!qaEditControlsDisabled}
                 multiline
                 onChangeText={(text) =>
                   setQaNotes((current) => ({
@@ -3099,12 +3575,14 @@ function CareTwinQaScreenBody() {
 
 function ReviewButton({
   active,
+  disabled = false,
   icon,
   label,
   onPress,
   tone,
 }: {
   active: boolean;
+  disabled?: boolean;
   icon: React.ComponentProps<typeof Ionicons>["name"];
   label: string;
   onPress: () => void;
@@ -3115,13 +3593,15 @@ function ReviewButton({
     <Pressable
       accessibilityRole="button"
       aria-selected={active}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         s.reviewButton,
         {
           backgroundColor: active ? `${tone}1F` : colors.background,
           borderColor: active ? tone : colors.border,
-          opacity: pressed ? 0.72 : 1,
+          opacity: disabled ? 0.5 : pressed ? 0.72 : 1,
         },
       ]}
     >
@@ -3143,6 +3623,7 @@ function EvidenceCapture({
   title = "Screenshot evidence",
   onAttach,
   onClear,
+  disabled = false,
 }: {
   attachAccessibilityLabel?: string;
   attachLabel?: string;
@@ -3153,6 +3634,7 @@ function EvidenceCapture({
   title?: string;
   onAttach: () => void;
   onClear: () => void;
+  disabled?: boolean;
 }) {
   const colors = useColors();
   return (
@@ -3167,7 +3649,7 @@ function EvidenceCapture({
         <QaBadge label={label} tone={evidence.length ? colors.sage : colors.amber} />
       </View>
       <Text style={[s.evidenceCaptureHelp, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-        Capture the screen on iOS or Android, then attach it here from Photos so the QA report keeps local proof with the route notes. New attachments are tagged as {targetPlatformLabel}.
+        Attach from Photos as a manual self-attested reference for the route notes. New attachments are tagged as {targetPlatformLabel}, but the tag does not prove the exact binary, device, or native run.
       </Text>
       {evidence.length ? (
         <View style={s.attachedList}>
@@ -3188,12 +3670,15 @@ function EvidenceCapture({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={attachAccessibilityLabel}
+          accessibilityState={{ disabled }}
+          disabled={disabled}
           onPress={onAttach}
           style={({ pressed }) => [
             s.attachButton,
             {
               backgroundColor: pressed ? `${colors.copper}22` : `${colors.copper}12`,
               borderColor: `${colors.copper}55`,
+              opacity: disabled ? 0.5 : 1,
             },
           ]}
         >
@@ -3204,12 +3689,15 @@ function EvidenceCapture({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={clearAccessibilityLabel}
+            accessibilityState={{ disabled }}
+            disabled={disabled}
             onPress={onClear}
             style={({ pressed }) => [
               s.clearEvidenceButton,
               {
                 backgroundColor: pressed ? `${colors.rose}18` : colors.background,
                 borderColor: `${colors.rose}55`,
+                opacity: disabled ? 0.5 : 1,
               },
             ]}
           >

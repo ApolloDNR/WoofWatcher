@@ -564,22 +564,22 @@ check(
 );
 
 const authSetupProofManifestIsSourceBacked = includesAll(authProviderProofSource, [
-    "buildAuthSetupProofManifest",
-    "AuthProviderStructuredProofEvidence",
-    "providerEvidence",
-    "Clerk production app",
-    "Redirect and deep links",
-    "Native auth screenshots",
-    "Setup local-preview proof",
-    "nativeEvidence",
-    "Clerk pending structured proof",
-    "Redirects pending structured proof",
-    "Household sync pending structured proof",
-    "localPlaceholderKeysExcluded",
-    "crossHouseholdAccessDenied",
-    "apolloApproved",
-    "Auth gateway screenshots ready",
-    "Setup local-preview screenshots ready",
+  "buildAuthSetupProofManifest",
+  "AuthProviderStructuredProofEvidence",
+  "providerEvidence",
+  "Clerk production app",
+  "Redirect and deep links",
+  "Native auth screenshots",
+  "Setup local-preview proof",
+  "nativeEvidence",
+  "Clerk pending structured proof",
+  "Redirects pending structured proof",
+  "Household sync pending structured proof",
+  "localPlaceholderKeysExcluded",
+  "crossHouseholdAccessDenied",
+  "apolloApproved",
+  "Auth gateway screenshots ready",
+  "Setup local-preview screenshots ready",
   "iOS Auth gateway screenshot",
   "Android Setup local-preview screenshot",
   "capturesProviderBoundaryCopy",
@@ -589,12 +589,13 @@ const authSetupProofManifestIsSourceBacked = includesAll(authProviderProofSource
 ])
   && includesAll(authUiSource, [
     "buildAuthSetupProofManifest",
-    "const authSetupProofManifest = buildAuthSetupProofManifest",
     "Auth/Setup proof manifest",
     "authSetupProofManifest.rows.map",
     "authSetupProofManifest.blockers.map",
     "Native proof blocked",
   ])
+  && /const authSetupProofManifest = ownerOps\s*\?\s*buildAuthSetupProofManifest\(\)\s*:\s*null/.test(authUiSource)
+  && /\{ownerOps && authSetupProofManifest \? \([\s\S]{0,1400}Auth\/Setup proof manifest/.test(authUiSource)
   && includesAll(setupRouteSource, [
     "buildAuthSetupProofManifest",
     "const authSetupProofManifest = buildAuthSetupProofManifest",
@@ -603,6 +604,7 @@ const authSetupProofManifestIsSourceBacked = includesAll(authProviderProofSource
     "authSetupProofManifest.blockers.map",
     "Native proof blocked",
   ])
+  && /\{ownerOps \? \(\s*<BoardCard style=\{s\.authSetupProofCard\}>[\s\S]{0,300}title="Auth\/Setup proof manifest"/.test(setupRouteSource)
   && includesAll(careTwinQaRouteSource, [
     "buildAuthSetupProofManifest",
     "authSetupProofManifest",
@@ -615,8 +617,8 @@ check(
   "auth/setup proof manifest is source-backed",
   authSetupProofManifestIsSourceBacked,
   authSetupProofManifestIsSourceBacked
-    ? "Auth gateway, Setup, and the focused helper route show structured Clerk, redirect, platform-specific native screenshot, local-preview setup, household sync, and launch blockers before native auth/setup proof can be claimed"
-    : "keep Auth gateway, Setup, and /care-twin-qa?qaSurface=auth-setup-onboarding-proof wired to buildAuthSetupProofManifest before claiming native auth/setup proof",
+    ? "Owner-ops Auth gateway, Setup, and the focused helper route show structured Clerk, redirect, platform-specific native screenshot, local-preview setup, household sync, and launch blockers before native auth/setup proof can be claimed"
+    : "keep the owner-ops Auth gateway, Setup, and /care-twin-qa?qaSurface=auth-setup-onboarding-proof wired to buildAuthSetupProofManifest before claiming native auth/setup proof",
 );
 
 const paymentsProviderProofPacketIsSourceBacked = includesAll(paymentsProviderProofSource, [
@@ -876,7 +878,7 @@ check(
 const careTwinQaRouteProofFlowIsSourceBacked = includesAll(careTwinQaRouteSource, [
   "Mission note",
   "Pass pending proof",
-  "Attach proof",
+  "Attach screenshot reference",
   "care-twin-qa-stage-",
   "buildMobileLaunchQaReturnRoute",
 ])
@@ -896,7 +898,7 @@ check(
   "care-twin QA route proof flow is source-backed",
   careTwinQaRouteProofFlowIsSourceBacked,
   careTwinQaRouteProofFlowIsSourceBacked
-    ? "/care-twin-qa still carries mission note, attach-proof, owner-loop, and iOS/Android proof contracts"
+    ? "/care-twin-qa keeps mission notes, manual screenshot references, owner-loop checks, and exact-device proof gates distinct"
     : "keep /care-twin-qa and the release QA matrix wired to owner-loop device proof",
 );
 
@@ -938,7 +940,7 @@ const avatarSpriteProductionReviewIsSourceBacked = includesAll(avatarSpriteProdu
   ])
   && includesAll(careTwinQaRouteSource, [
     "focusedQaTarget",
-    "Attach focused QA proof",
+    "Attach focused QA screenshot reference",
     "Pass pending release proof",
   ]);
 check(
@@ -990,8 +992,11 @@ const carePassStorageProofGuardIsSourceBacked = includesAll(carePassDomainSource
     "describeCarePassArtifactExport(artifact",
     "const storage = exportView.storage",
     "storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured",
+    "storageProviderEvidence: ownerOps",
+    "launchProviderSetupPlan.providerInput.storageProviderEvidence",
+    "const storageProviderBacked = ownerOps && storage.providerBacked",
     "storage.label",
-    "storage.detail",
+    "This stores the audience preset, not a report snapshot.",
   ]);
 check(
   "Care Pass storage proof guard is source-backed",
@@ -1459,21 +1464,24 @@ const recordsBinaryExportProofManifestIsSourceBacked = includesAll(reportBinaryE
   && includesAll(recordsScreenSource, [
     "buildReportBinaryExportProofManifest",
     "Binary proof manifest",
-    "const binaryProofManifest = buildReportBinaryExportProofManifest",
     "carePassHtmlFileName: exportView.fileName",
     "dogIdSvgFileName: credentialImageView.fileName",
-    "generatedCarePassPdf:",
     "generatedDogIdPng:",
     "storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured",
+    "pdfGeneratorApproved: false",
+    "pngRendererApproved: false",
+    "nativeArtifactEvidenceApproved: false",
     "binaryProofManifest.rows.map",
     "binaryProofManifest.blockers.map",
-  ]);
+  ])
+  && /const binaryProofManifest = ownerOps\s*\?\s*buildReportBinaryExportProofManifest\(\{[\s\S]{0,1300}pdfGeneratorApproved: false,[\s\S]{0,120}pngRendererApproved: false,[\s\S]{0,120}nativeArtifactEvidenceApproved: false,[\s\S]{0,120}\}\)\s*:\s*null/.test(recordsScreenSource)
+  && /\{ownerOps && binaryProofManifest \? \([\s\S]{0,350}Export manifest/.test(recordsScreenSource);
 check(
   "records binary export proof manifest is source-backed",
   recordsBinaryExportProofManifestIsSourceBacked,
   recordsBinaryExportProofManifestIsSourceBacked
-    ? "Records shows artifact-specific PDF/PNG proof status from local Care Pass HTML, Dog ID SVG, structured provider storage blockers, and native evidence blockers"
-    : "keep Records Report History wired to the binary export proof manifest before claiming generated PDF/PNG readiness",
+    ? "Owner-ops Records shows artifact-specific proof from local Care Pass HTML and Dog ID SVG/PNG while the lazy PDF, provider storage, native evidence, and approval gates remain blocked"
+    : "keep owner-ops Records Report History wired to the binary export proof manifest, with unproved PDF/provider/native gates blocked, before claiming generated PDF/PNG readiness",
 );
 
 const generatedBinaryArtifactExportsAreSourceBacked = includesAll(reportGeneratedBinaryArtifactSource, [
@@ -1484,8 +1492,9 @@ const generatedBinaryArtifactExportsAreSourceBacked = includesAll(reportGenerate
   "application/pdf",
   "image/png",
   "base64",
-  "Native share/reopen proof still required",
-  "provider storage is not enabled",
+  "This PDF stays inside WoofWatcher unless you share it",
+  "This PNG stays inside WoofWatcher unless you share it",
+  "WoofWatcher cloud backup is not included",
 ])
   && includesAll(reportBinaryExportProofSource, [
     "generatedCarePassPdf",
@@ -1500,11 +1509,12 @@ const generatedBinaryArtifactExportsAreSourceBacked = includesAll(reportGenerate
     "runGeneratedRecordsFileShare",
     "shareGeneratedCarePassPdfArtifact",
     "shareCredentialPngArtifact",
-    "Share generated Care Pass PDF",
+    "Share PDF of current",
     "Share generated Dog ID PNG",
-    "generatedCarePassPdf:",
     "generatedDogIdPng:",
   ])
+  && /const shareGeneratedCarePassPdfArtifact[\s\S]{0,700}const source = buildCarePassPdfArtifactSource\([\s\S]{0,400}await shareGeneratedBinaryArtifactFile\(source/.test(recordsScreenSource)
+  && /const shareCredentialPngArtifact[\s\S]{0,300}shareGeneratedBinaryArtifactFile\(buildCredentialPngSource\(\)/.test(recordsScreenSource)
   && includesAll(recordsFileShareActionsSource, [
     "runGeneratedRecordsFileShare",
     "buildGeneratedBinaryArtifactFilePlan",
@@ -1516,7 +1526,7 @@ check(
   "generated binary artifact exports are source-backed",
   generatedBinaryArtifactExportsAreSourceBacked,
   generatedBinaryArtifactExportsAreSourceBacked
-    ? "Records can generate local Care Pass PDF and Dog ID PNG bytes while keeping native share/reopen and provider storage proof blocked"
+    ? "Records generates local Care Pass PDF and Dog ID PNG bytes only on explicit share actions, preserves the local-only/no-cloud boundary, and keeps native share/reopen and provider storage proof blocked"
     : "keep reportGeneratedBinaryArtifact.ts wired through Records PDF/PNG actions and the binary proof manifest",
 );
 

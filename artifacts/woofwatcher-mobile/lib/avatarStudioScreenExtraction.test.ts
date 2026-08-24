@@ -52,7 +52,12 @@ test("moves Avatar Studio mechanically into one dual-surface owner", () => {
   assert.equal(component.match(/<BoardRouteHeader\b/g)?.length ?? 0, 1);
   assert.equal(component.match(/<ScrollView\b/g)?.length ?? 0, 1);
   assert.match(component, /title="Avatar Studio"/);
-  assert.match(component, /subtitle="Choose a pixel twin, then customize\."/);
+  assert.match(
+    component,
+    /subtitle=\{avatarIsLoaded[\s\S]*Choose a pixel twin, then customize\.[\s\S]*Loading saved avatar choices…/,
+  );
+  assert.match(component, /backDisabled=\{avatarPersistenceBusy\}/);
+  assert.match(component, /actionDisabled=\{avatarEditorDisabled\}/);
   assert.match(component, /onBack=\{onBack\}/);
   assert.match(
     component,
@@ -90,13 +95,19 @@ test("preserves the Avatar state, art, picker, motion, and creator anatomy", () 
   assert.match(component, /requestMediaLibraryPermissionsAsync/);
   assert.match(component, /launchCameraAsync/);
   assert.match(component, /launchImageLibraryAsync/);
-  assert.match(component, /if \(res\.canceled \|\| !res\.assets\?\.\[0\]\?\.uri\) return/);
+  assert.match(
+    component,
+    /if \(!res \|\| res\.canceled \|\| !res\.assets\?\.\[0\]\?\.uri\) return/,
+  );
   assert.match(component, /Haptics\.impactAsync\(Haptics\.ImpactFeedbackStyle\.Medium\)/);
   assert.equal(component.match(/\buseEffect\(/g)?.length ?? 0, 3);
   assert.equal(component.match(/\bAnimated\.loop\(/g)?.length ?? 0, 1);
   assert.equal(component.match(/\.stop\(\)/g)?.length ?? 0, 1);
   assert.equal(component.match(/\bclearInterval\(/g)?.length ?? 0, 1);
-  assert.equal(component.match(/\bclearTimeout\(/g)?.length ?? 0, 0);
+  assert.ok(
+    (component.match(/\bclearTimeout\(/g)?.length ?? 0) >= 1,
+    "saved feedback timers must be cleared during replacement or unmount",
+  );
   assert.equal(component.match(/\.setValue\(0\)/g)?.length ?? 0, 1);
 
   const pick = between(component, "const pick = async", "const selectTemplate =");

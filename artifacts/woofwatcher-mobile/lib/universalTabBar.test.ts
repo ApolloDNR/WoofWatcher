@@ -217,8 +217,12 @@ test("maps the canonical model to regular Expo tab screens without a second Home
 test("keeps visible tab labels readable and preserves Expo icon tint", () => {
   const layout = readSource(TAB_LAYOUT_PATH);
 
-  assert.match(layout, /tabBarShowLabel:\s*true/);
+  assert.match(layout, /tabBarShowLabel:\s*chrome\.showVisualLabels/);
   assert.match(layout, /tabBarAllowFontScaling:\s*true/);
+  assert.match(layout, /maxFontSizeMultiplier=\{MAX_TAB_LABEL_FONT_SCALE\}/);
+  assert.match(layout, /fontScale/);
+  assert.match(layout, /viewportWidth:\s*width/);
+  assert.match(layout, /numberOfLines=\{1\}/);
   assert.match(layout, /fontSize:\s*(?:1[4-9]|[2-9]\d)/);
   assert.match(layout, /lineHeight:\s*(?:1[8-9]|[2-9]\d)/);
   assert.match(layout, /tabBarActiveTintColor:\s*colors\.forest/);

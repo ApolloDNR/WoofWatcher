@@ -349,3 +349,17 @@ test("formats a shareable Health Review Packet without medical certainty", () =>
   assert.doesNotMatch(text, /\bdiagnose[sd]?\b/i);
   assert.doesNotMatch(text, /\btreat(?:ment|s|ed|ing)?\b/i);
 });
+
+test("keeps fresh-install review and share copy neutral", () => {
+  const packet = deriveHealthReviewPacket({
+    ...baseInput,
+    dogName: "My Dog",
+    healthStatus: "watch",
+    bileStatus: "Watch",
+  });
+  const text = buildHealthReviewPacketShareText(packet, { dogName: "My Dog" });
+
+  assert.match(packet.prompts.join(" "), /what your dog ate/);
+  assert.match(text, /Dog: your dog/);
+  assert.doesNotMatch(`${JSON.stringify(packet)} ${text}`, /Phoenix|My Dog/);
+});

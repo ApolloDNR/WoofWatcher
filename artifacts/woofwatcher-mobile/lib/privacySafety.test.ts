@@ -6,6 +6,7 @@ import {
   buildPrivacyExportBundle,
   deriveAccountSafetyPlan,
   serializePrivacyExportBundle,
+  withPrivacyDeviceFileInventory,
 } from "./privacySafety.ts";
 import type { AttachmentStorageProviderEvidence } from "./attachmentManifest.ts";
 
@@ -144,6 +145,10 @@ test("builds an owner export bundle with counts and care data", () => {
     ["Record documents", "Care Pass reports"],
   );
   assert.equal(bundle.storage.attachmentReviewRows[0]?.statusLabel, "On this device");
+  assert.deepEqual(bundle.storage.deviceFileInventory, {
+    status: "not-inspected",
+    fileCount: null,
+  });
   assert.equal(bundle.care.profile?.name, "Phoenix");
   assert.equal(bundle.care.activePetId, "primary");
   assert.equal(bundle.care.pets[0]?.name, "London");
@@ -157,6 +162,40 @@ test("builds an owner export bundle with counts and care data", () => {
   assert.deepEqual(bundle.care.reportArtifacts[0], state.reportArtifacts[0]);
   assert.match(bundle.disclosures.ai, /not a veterinary diagnosis/i);
   assert.match(bundle.disclosures.documents, /2 local files stay on this device/i);
+});
+
+test("adds only the exact physical file count to the consumer export inventory", () => {
+  const base = buildPrivacyExportBundle(
+    { ...state, records: [], reportArtifacts: [], entries: [] },
+    { userId: "user_123" },
+    NOW,
+  );
+  const native = withPrivacyDeviceFileInventory(base, {
+    status: "complete",
+    fileCount: 17,
+  });
+  const web = withPrivacyDeviceFileInventory(base, {
+    status: "unsupported-platform",
+  });
+
+  assert.deepEqual(native.storage.deviceFileInventory, {
+    status: "complete",
+    fileCount: 17,
+  });
+  assert.deepEqual(web.storage.deviceFileInventory, {
+    status: "unsupported-platform",
+    fileCount: null,
+  });
+  const serialized = serializePrivacyExportBundle(native);
+  assert.match(serialized, /"fileCount": 17/);
+  assert.doesNotMatch(
+    serialized,
+    /file:\/\/\/private|ImagePicker\/secret|phoenix-portrait-17\.png/,
+  );
+  assert.deepEqual(base.storage.deviceFileInventory, {
+    status: "not-inspected",
+    fileCount: null,
+  });
 });
 
 test("uses saved structured storage proof for owner export attachment queue", () => {

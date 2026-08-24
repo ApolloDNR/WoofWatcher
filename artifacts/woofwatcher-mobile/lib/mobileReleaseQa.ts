@@ -1,5 +1,8 @@
 import type { QaScreenshotEvidence } from "./qaScreenshotEvidence.ts";
-import { qaScreenshotEvidenceNames } from "./qaScreenshotEvidence.ts";
+import {
+  qaScreenshotEvidenceIsExactDeviceProof,
+  qaScreenshotEvidenceNames,
+} from "./qaScreenshotEvidence.ts";
 import { buildAvatarSpriteProductionQaSummary } from "./avatarSpriteProductionQa.ts";
 import type { StoreSubmissionPacket, StoreScreenshotChecklistItem } from "./storeSubmissionPacket.ts";
 import {
@@ -1422,7 +1425,10 @@ function routeVisualEvidenceForRoute(
 ): QaScreenshotEvidence | undefined {
   const routeSlug = slugForQaId(routeCheck.label);
   return evidence.find((item) => {
-    if (item.targetPlatform !== targetPlatform) return false;
+    if (
+      item.targetPlatform !== targetPlatform ||
+      !qaScreenshotEvidenceIsExactDeviceProof(item)
+    ) return false;
     const evidenceLabel = slugForQaId(`${item.fileName} ${item.uri}`);
     return evidenceLabel.includes(routeSlug);
   });
@@ -1434,8 +1440,12 @@ export function buildRouteVisualProofManifest(
   const surface = routeVisualSurfaceForManifest(input.surface);
   const routeChecks = surface.routeChecklist ?? [];
   const evidence = input.evidence ?? [];
-  const attachedIosScreenshots = evidence.filter((item) => item.targetPlatform === "ios").length;
-  const attachedAndroidScreenshots = evidence.filter((item) => item.targetPlatform === "android").length;
+  const attachedIosScreenshots = evidence.filter(
+    (item) => item.targetPlatform === "ios" && qaScreenshotEvidenceIsExactDeviceProof(item),
+  ).length;
+  const attachedAndroidScreenshots = evidence.filter(
+    (item) => item.targetPlatform === "android" && qaScreenshotEvidenceIsExactDeviceProof(item),
+  ).length;
   const rows = routeChecks.map((routeCheck) => {
     const iosEvidence = routeVisualEvidenceForRoute(evidence, routeCheck, "ios");
     const androidEvidence = routeVisualEvidenceForRoute(evidence, routeCheck, "android");
@@ -1490,7 +1500,9 @@ export function mobileReleaseQaMissingEvidenceForSurface(
   const requiredIos = requiredPlatforms.filter((platform) => platform === "ios").length;
   const requiredAndroid = requiredPlatforms.filter((platform) => platform === "android").length;
   const requiredAny = requiredPlatforms.filter((platform) => platform === "any").length;
-  const evidence = review.screenshotEvidence ?? [];
+  const evidence = (review.screenshotEvidence ?? []).filter(
+    qaScreenshotEvidenceIsExactDeviceProof,
+  );
   const requiresNote = surface.requiredEvidence.some(evidenceRequiresNote);
   const hasNote = Boolean(review.note?.trim());
   const attachedIos = evidence.filter((item) => item.targetPlatform === "ios").length;
@@ -1502,11 +1514,11 @@ export function mobileReleaseQaMissingEvidenceForSurface(
   const missingAny = Math.max(0, requiredAny - flexibleAvailable);
   const missing: string[] = [];
 
-  if (missingIos > 0) missing.push(`Attach ${pluralLabel(missingIos, "iOS screenshot")} for ${surface.title}.`);
+  if (missingIos > 0) missing.push(`Attach ${pluralLabel(missingIos, "exact-device iOS screenshot")} for ${surface.title}.`);
   if (missingAndroid > 0) {
-    missing.push(`Attach ${pluralLabel(missingAndroid, "Android screenshot")} for ${surface.title}.`);
+    missing.push(`Attach ${pluralLabel(missingAndroid, "exact-device Android screenshot")} for ${surface.title}.`);
   }
-  if (missingAny > 0) missing.push(`Attach ${pluralLabel(missingAny, "screenshot")} for ${surface.title}.`);
+  if (missingAny > 0) missing.push(`Attach ${pluralLabel(missingAny, "exact-device screenshot")} for ${surface.title}.`);
   if (requiresNote && !hasNote) missing.push(`Add QA note for ${surface.title}.`);
 
   if (!missing.length && review.status === "unreviewed") {
@@ -1569,11 +1581,16 @@ export function summarizeMobileReleaseQaReviews(
   const requiredIosScreenshots = requiredScreenshotPlatforms.filter((platform) => platform === "ios").length;
   const requiredAndroidScreenshots = requiredScreenshotPlatforms.filter((platform) => platform === "android").length;
   const requiredAnyScreenshots = requiredScreenshotPlatforms.filter((platform) => platform === "any").length;
-  const screenshotEvidence = surfaces.flatMap((surface) => reviewFor(reviews, surface.id).screenshotEvidence ?? []);
+  const screenshotEvidence = surfaces.flatMap(
+    (surface) => reviewFor(reviews, surface.id).screenshotEvidence ?? [],
+  );
   const attachedScreenshots = screenshotEvidence.length;
-  const attachedIosScreenshots = screenshotEvidence.filter((item) => item.targetPlatform === "ios").length;
-  const attachedAndroidScreenshots = screenshotEvidence.filter((item) => item.targetPlatform === "android").length;
-  const attachedOtherScreenshots = screenshotEvidence.filter(
+  const exactDeviceEvidence = screenshotEvidence.filter(
+    qaScreenshotEvidenceIsExactDeviceProof,
+  );
+  const attachedIosScreenshots = exactDeviceEvidence.filter((item) => item.targetPlatform === "ios").length;
+  const attachedAndroidScreenshots = exactDeviceEvidence.filter((item) => item.targetPlatform === "android").length;
+  const attachedOtherScreenshots = exactDeviceEvidence.filter(
     (item) => item.targetPlatform !== "ios" && item.targetPlatform !== "android",
   ).length;
   const missingIosScreenshots = Math.max(0, requiredIosScreenshots - attachedIosScreenshots);
@@ -1641,10 +1658,10 @@ export function buildMobileReleaseQaShareText(
   const lines = [
     "WoofWatcher Mobile Release QA",
     `Reviewed: ${reviewedAtIso}`,
-    `Summary: ${summary.passed}/${summary.total} passed, ${summary.passedWithRequiredProof} proof-backed pass, ${summary.passPendingProof} pass pending proof, ${summary.needsReview} needs tune, ${summary.unreviewed} unreviewed.`,
+    `Summary: ${summary.passed}/${summary.total} passed, ${summary.passedWithRequiredProof} exact-device pass, ${summary.passPendingProof} pass pending exact-device proof, ${summary.needsReview} needs tune, ${summary.unreviewed} unreviewed.`,
     `Required screenshot slots: ${summary.requiredScreenshots}.`,
-    `Screenshot evidence: ${summary.attachedScreenshots} attached, ${summary.missingScreenshots} still missing.`,
-    `Platform evidence: ${formatMobileReleaseQaPlatformEvidence(summary)}.`,
+    `Manual/local screenshot attachments: ${summary.attachedScreenshots}. Exact-device gates still missing: ${summary.missingScreenshots}.`,
+    `Exact-device platform evidence: ${formatMobileReleaseQaPlatformEvidence(summary)}.`,
     `Evidence gap: ${formatMobileReleaseQaMissingEvidence(summary)}.`,
     "",
     "Workflow notes:",
@@ -1688,7 +1705,7 @@ export function buildMobileReleaseQaShareText(
 
   lines.push(
     "",
-    "Launch boundary: this report is a device-session checklist. It does not replace attached iOS/Android screenshots or human review before release approval.",
+    "Launch boundary: Photos-library attachments are manual self-attested references only. They are not bound to an exact binary or device and cannot close iOS/Android release gates; exact-device evidence and Apollo review remain required.",
   );
 
   return lines.join("\n");

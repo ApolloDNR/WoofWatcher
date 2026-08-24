@@ -62,6 +62,7 @@ function attachFutureRequiredNoOps(
   runtime: ReturnType<typeof createLocalDataResetRuntime>,
 ) {
   for (const id of [
+    "auth-credentials",
     "files",
     "query-cache",
     "walk-capture",

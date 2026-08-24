@@ -7,7 +7,14 @@ import {
   getPetCredentialImageView,
   getPetCredentialPrintView,
   getRecordDueStatus,
+  PET_CREDENTIAL_SVG_BODY_GLYPH_LIMIT,
+  PET_CREDENTIAL_SVG_BODY_MAX_VISIBLE_LINES,
+  PET_CREDENTIAL_SVG_BOUNDARY_GLYPH_LIMIT,
+  PET_CREDENTIAL_SVG_BOUNDARY_MAX_VISIBLE_LINES,
+  PET_CREDENTIAL_SVG_TITLE_GLYPH_LIMIT,
+  PET_CREDENTIAL_SVG_TITLE_MAX_VISIBLE_LINES,
   summarizeRecordVault,
+  wrapPetCredentialSvgText,
 } from "../src/index.ts";
 
 const records = [
@@ -78,6 +85,26 @@ test("uses dog profile credential fields when records are not uploaded yet", () 
   assert.match(credential.message, /Emergency contact: Apollo - 555-0100/);
 });
 
+test("keeps a fresh-install dog ID neutral and grammatical", () => {
+  const credential = buildPetCredential({
+    profile: { name: "My Dog" },
+    generatedAt: "2026-06-06T18:00:00.000Z",
+  });
+  const printable = getPetCredentialPrintView(credential);
+  const image = getPetCredentialImageView(credential);
+
+  assert.equal(credential.name, "your dog");
+  assert.match(credential.message, /^Your Dog's ID/);
+  assert.match(printable.html, /Your Dog&#39;s ID/);
+  assert.match(image.svg, /Your Dog&#39;s ID/);
+  assert.equal(printable.fileName, "your-dog-id-2026-06-06.html");
+  assert.equal(image.fileName, "your-dog-id-2026-06-06.svg");
+  assert.doesNotMatch(
+    `${credential.message}\n${printable.fileName}\n${printable.html}\n${image.fileName}\n${image.svg}`,
+    /Phoenix|My Dog|your dog Dog ID|your-dog-dog-id/,
+  );
+});
+
 test("renders a print-ready dog ID credential with escaped details", () => {
   const credential = buildPetCredential({
     profile: {
@@ -134,9 +161,91 @@ test("renders a shareable SVG dog ID image source without claiming PDF output", 
   assert.match(image.svg, /^<svg /);
   assert.match(image.svg, /Phoenix &lt;script&gt; Dog ID/);
   assert.match(image.svg, /985112003004551/);
-  assert.match(image.svg, /Lemonade - WW-1042/);
-  assert.match(image.boundary, /PNG and PDF export still need native or provider-backed generation/);
+  assert.match(image.svg, /Lemonade -/);
+  assert.match(image.svg, /WW-1042/);
+  assert.match(image.boundary, /generated PNG is available separately/i);
+  assert.match(image.boundary, /both stay inside WoofWatcher unless you share them/i);
+  assert.match(image.boundary, /cloud backup is not included/i);
+  assert.doesNotMatch(image.boundary, /proof|provider storage|unverified/i);
+  assert.doesNotMatch(image.boundary, /PNG and PDF export still need/i);
   assert.doesNotMatch(image.svg, /Phoenix <script>/);
+});
+
+test("wraps every long SVG credential field and boundary into an expanded visible card", () => {
+  const longVet = "Dr. Jose Garcia at Alameda Wellness Veterinary Hospital and Emergency Center";
+  const longFocus = "Anxiety-aware feeding and medication timing with overnight handoff notes";
+  assert.equal(PET_CREDENTIAL_SVG_BODY_GLYPH_LIMIT, 16);
+  assert.equal(PET_CREDENTIAL_SVG_BODY_MAX_VISIBLE_LINES, 8);
+  assert.equal(PET_CREDENTIAL_SVG_TITLE_GLYPH_LIMIT, 16);
+  assert.equal(PET_CREDENTIAL_SVG_TITLE_MAX_VISIBLE_LINES, 3);
+  assert.equal(PET_CREDENTIAL_SVG_BOUNDARY_GLYPH_LIMIT, 45);
+  assert.equal(PET_CREDENTIAL_SVG_BOUNDARY_MAX_VISIBLE_LINES, 6);
+  assert.equal(
+    wrapPetCredentialSvgText(longVet, PET_CREDENTIAL_SVG_BODY_GLYPH_LIMIT).join(" "),
+    longVet,
+  );
+  const wideGlyphs = "W".repeat(65);
+  const wideGlyphLines = wrapPetCredentialSvgText(
+    wideGlyphs,
+    PET_CREDENTIAL_SVG_BODY_GLYPH_LIMIT,
+  );
+  assert.equal(wideGlyphLines.join(""), wideGlyphs);
+  assert.ok(wideGlyphLines.every((line) => line.length <= 16));
+  const boundedWideGlyphs = wrapPetCredentialSvgText(
+    `START-${"W".repeat(10_000)}-CRITICAL-END`,
+    PET_CREDENTIAL_SVG_BODY_GLYPH_LIMIT,
+    PET_CREDENTIAL_SVG_BODY_MAX_VISIBLE_LINES,
+  );
+  assert.equal(boundedWideGlyphs.length, 8);
+  assert.match(boundedWideGlyphs[7], /^\.\.\. /);
+  assert.match(boundedWideGlyphs[7], /CRITICAL-END$/);
+
+  const credential = buildPetCredential({
+    profile: {
+      name: "Alexandria's Very Long Emergency Companion Name",
+      careFocus: longFocus,
+      primaryVet: longVet,
+      emergencyContact: "+1 (555) 010-9876 extension 44321",
+      insuranceProvider: "Woof Wellness",
+      insurancePolicy: "WW-1042-VERY-LONG-TAIL",
+    },
+    generatedAt: "2026-06-06T18:00:00.000Z",
+  });
+  const image = getPetCredentialImageView(credential);
+  const declaredHeight = Number(/<svg[^>]+height="(\d+)"/.exec(image.svg)?.[1]);
+
+  assert.ok(declaredHeight > 680, "long values should grow the SVG instead of clipping at 680px");
+  assert.match(image.svg, /Emergency Center/);
+  assert.match(image.svg, /WW-1042-VERY-LON/);
+  assert.match(image.svg, /G-TAIL/);
+  assert.match(image.svg, /WoofWatcher cloud backup/);
+  assert.match(image.svg, /<tspan /);
+});
+
+test("bounds SVG identity metadata, file names, and invalid XML controls", () => {
+  const hostileName = `A\0B\u0001C\uD800D\uFFFEE\uFFFFF-${"W".repeat(100_000)}-DECISIVE-TAIL`;
+  const credential = buildPetCredential({
+    profile: {
+      name: hostileName,
+      breed: hostileName,
+      careFocus: hostileName,
+      weight: { current: 42, unit: `${"U".repeat(1_000_000)}-TAIL` },
+    },
+    generatedAt: "2026-06-06T18:00:00.000Z",
+  });
+  const image = getPetCredentialImageView(credential);
+  const ariaLabel = /aria-label="([^"]*)"/.exec(image.svg)?.[1] ?? "";
+
+  assert.ok(image.fileName.length <= 96);
+  assert.ok(image.svg.length < 100_000);
+  assert.equal(credential.weight, "42 lb");
+  assert.ok(credential.message.length < 10_000);
+  assert.ok(ariaLabel.length <= 192);
+  assert.doesNotMatch(image.svg, /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/);
+  assert.ok(!image.svg.includes("\uD800"));
+  assert.ok(!image.svg.includes("\uFFFE"));
+  assert.ok(!image.svg.includes("\uFFFF"));
+  assert.match(image.svg, /DECISIVE-TAIL/);
 });
 
 test("classifies date-backed records by due status", () => {

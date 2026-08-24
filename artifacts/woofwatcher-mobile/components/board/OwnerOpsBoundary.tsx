@@ -14,7 +14,7 @@ import { MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
  * never expose launch tooling to households or store reviewers.
  */
 export function OwnerOpsUnavailableScreen({
-  title = "Not part of this release",
+  title = "Page unavailable",
 }: {
   title?: string;
 }) {
@@ -52,9 +52,8 @@ export function OwnerOpsUnavailableScreen({
             { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
           ]}
         >
-          This area holds internal owner tooling and is not included in the
-          store release. Everything for your dog's day lives in Home, Log,
-          Plans, Health, and More.
+          This page isn't available in this version of WoofWatcher. Everything
+          for your dog's day is available from Home, Log, Plans, Health, and More.
         </Text>
         <Pressable
           accessibilityRole="button"

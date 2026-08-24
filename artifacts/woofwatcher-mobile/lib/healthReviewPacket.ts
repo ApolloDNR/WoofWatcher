@@ -8,6 +8,7 @@ import {
   type CanonicalMoreRoute,
 } from "./canonicalRouteBuilders.ts";
 import { resolveCanonicalDestination } from "./navigationOwnership.ts";
+import { resolveConsumerPetName } from "./petIdentity.ts";
 
 export type BileWatchStatus = "Low Risk" | "Watch" | "Review";
 
@@ -129,7 +130,7 @@ function buildPrompts(input: HealthReviewPacketInput): string[] {
       : [
           "Capture timing, food gap, appetite after, energy after, stool detail, and hydration.",
           "Add a photo only when it helps the household or vet understand the observation.",
-          "Keep notes factual: what happened, when, what Phoenix ate, and how she acted after.",
+          `Keep notes factual: what happened, when, what ${input.dogName} ate, and how ${input.dogName} acted after.`,
         ];
 
   if (input.healthStatus === "alert" || input.redFlagCount > 0) {
@@ -159,19 +160,23 @@ function buildChecklist(input: HealthReviewPacketInput): string[] {
 }
 
 export function deriveHealthReviewPacket(input: HealthReviewPacketInput): HealthReviewPacket {
-  const languagePill = languagePillFor(input);
+  const resolvedInput = {
+    ...input,
+    dogName: resolveConsumerPetName(input.dogName),
+  };
+  const languagePill = languagePillFor(resolvedInput);
   const vetShareLanguage =
-    input.healthStatus === "good"
+    resolvedInput.healthStatus === "good"
       ? "Save this as calm household context."
       : "Consider sharing with your vet if the pattern repeats, worsens, or appears with other concerning signs.";
 
   return {
     title: "Review packet",
-    statusLabel: statusLabelFor(input.healthStatus),
+    statusLabel: statusLabelFor(resolvedInput.healthStatus),
     languagePill,
-    summary: buildSummary(input, languagePill),
-    prompts: buildPrompts(input),
-    vetShareChecklist: buildChecklist(input),
+    summary: buildSummary(resolvedInput, languagePill),
+    prompts: buildPrompts(resolvedInput),
+    vetShareChecklist: buildChecklist(resolvedInput),
     boundary: `${vetShareLanguage} Not veterinary advice.`,
     primaryAction: {
       label: "Log health detail",
@@ -217,11 +222,12 @@ export function buildHealthReviewPacketShareText(
   options: HealthReviewPacketShareOptions,
 ): string {
   const generatedAtIso = options.generatedAtIso ?? new Date().toISOString();
+  const dogName = resolveConsumerPetName(options.dogName);
 
   return [
     "WoofWatcher Health Review Packet",
     `Generated: ${generatedAtIso}`,
-    `Dog: ${options.dogName}`,
+    `Dog: ${dogName}`,
     `Status: ${packet.statusLabel}`,
     `Language: ${packet.languagePill}`,
     "",

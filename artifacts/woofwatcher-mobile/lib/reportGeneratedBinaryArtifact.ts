@@ -54,31 +54,89 @@ export interface GeneratedBinaryArtifactShareContent {
 const REPORT_EXPORT_DIRECTORY_NAME = "WoofWatcherReports";
 const BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const PDF_BOUNDARY =
-  "Native share/reopen proof still required on iOS and Android; provider storage is not enabled by this local PDF.";
+  "This PDF stays inside WoofWatcher unless you share it. WoofWatcher cloud backup is not included.";
 const PNG_BOUNDARY =
-  "Native share/reopen proof still required on iOS and Android; provider storage is not enabled by this local PNG.";
+  "This PNG stays inside WoofWatcher unless you share it. WoofWatcher cloud backup is not included.";
+const GENERATED_ARTIFACT_FILE_NAME_MAX_CHARS = 96;
+const PDF_TITLE_MAX_CHARS = 512;
+const PDF_SUMMARY_MAX_CHARS = 2_048;
+const PDF_MESSAGE_MAX_CHARS = 32_768;
+const DOG_ID_FIELD_MAX_CHARS = 4_096;
+const DOG_ID_METADATA_FIELD_MAX_CHARS = 512;
+const DOG_ID_METADATA_MAX_FIELDS = 24;
+const TRUNCATION_MARKER = " ... [content shortened] ... ";
+
+function boundTextPreservingEnds(value: unknown, maxChars: number): string {
+  const text = String(value ?? "");
+  if (text.length <= maxChars) return text;
+  if (maxChars <= TRUNCATION_MARKER.length) return text.slice(0, maxChars);
+  const remaining = maxChars - TRUNCATION_MARKER.length;
+  const headLength = Math.ceil(remaining * 0.6);
+  const tailLength = remaining - headLength;
+  return `${text.slice(0, headLength)}${TRUNCATION_MARKER}${text.slice(-tailLength)}`;
+}
+
+function capFileStem(stem: string, extension: ".pdf" | ".png"): string {
+  const maxStemChars = GENERATED_ARTIFACT_FILE_NAME_MAX_CHARS - extension.length;
+  if (stem.length <= maxStemChars) return stem;
+  const marker = "---";
+  const remaining = maxStemChars - marker.length;
+  const headLength = Math.ceil(remaining * 0.65);
+  return `${stem.slice(0, headLength)}${marker}${stem.slice(-(remaining - headLength))}`;
+}
 
 function clean(value: unknown, fallback = ""): string {
   const text = String(value ?? "").replace(/\s+/g, " ").trim();
   return text.length ? text : fallback;
 }
 
-function printableAscii(value: unknown, fallback = ""): string {
-  return clean(value, fallback).replace(/[^\x20-\x7e]+/g, " ");
+function printableAscii(
+  value: unknown,
+  fallback = "",
+  maxChars = PDF_MESSAGE_MAX_CHARS,
+): string {
+  return clean(boundTextPreservingEnds(value, maxChars), fallback)
+    .replace(/[‘’ʼ]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[‐‑‒–—−]/g, "-")
+    .replace(/[•·]/g, "-")
+    .replace(/…/g, "...")
+    .replace(/Æ/g, "AE")
+    .replace(/æ/g, "ae")
+    .replace(/Œ/g, "OE")
+    .replace(/œ/g, "oe")
+    .replace(/Ø/g, "O")
+    .replace(/ø/g, "o")
+    .replace(/Ł/g, "L")
+    .replace(/ł/g, "l")
+    .replace(/Đ/g, "D")
+    .replace(/đ/g, "d")
+    .replace(/Þ/g, "Th")
+    .replace(/þ/g, "th")
+    .replace(/ß/g, "ss")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]+/g, "")
+    .replace(/[^\x20-\x7e]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function normalizeGeneratedBinaryFileName(fileName: string, extension: ".pdf" | ".png"): string {
-  const normalized = printableAscii(fileName, "woofwatcher-artifact")
+  const normalized = printableAscii(fileName, "woofwatcher-artifact", 512)
     .replace(/\.[a-z0-9]+$/i, "")
     .replace(/[\\/:*?"<>|#%{}^[\]`]+/g, "-")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^[.-]+|[.-]+$/g, "");
-  return `${normalized || "woofwatcher-artifact"}${extension}`;
+  return `${capFileStem(normalized || "woofwatcher-artifact", extension)}${extension}`;
 }
 
 function normalizeExportDirectoryName(directoryName: string | undefined): string {
-  const normalized = printableAscii(directoryName ?? REPORT_EXPORT_DIRECTORY_NAME, REPORT_EXPORT_DIRECTORY_NAME)
+  const normalized = printableAscii(
+    directoryName ?? REPORT_EXPORT_DIRECTORY_NAME,
+    REPORT_EXPORT_DIRECTORY_NAME,
+    64,
+  )
     .replace(/[\\/:*?"<>|#%{}^[\]`]+/g, "-")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
@@ -120,48 +178,129 @@ function pdfText(value: unknown): string {
     .replace(/\)/g, "\\)");
 }
 
-function wrapText(value: string, width: number): string[] {
-  const words = printableAscii(value).split(/\s+/).filter(Boolean);
+function wrapText(value: string, width: number, maxChars: number): string[] {
   const lines: string[] = [];
-  let current = "";
-  for (const word of words) {
-    const next = current ? `${current} ${word}` : word;
-    if (next.length > width && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = next;
+  for (const rawLine of boundTextPreservingEnds(value, maxChars).split(/\r?\n/)) {
+    const words = printableAscii(rawLine, "", maxChars)
+      .split(/\s+/)
+      .filter(Boolean)
+      .flatMap((word) => {
+        const chunks: string[] = [];
+        for (let index = 0; index < word.length; index += width) {
+          chunks.push(word.slice(index, index + width));
+        }
+        return chunks;
+      });
+    if (words.length === 0) {
+      if (lines.length > 0 && lines[lines.length - 1] !== "") lines.push("");
+      continue;
     }
+    let current = "";
+    for (const word of words) {
+      const next = current ? `${current} ${word}` : word;
+      if (next.length > width && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = next;
+      }
+    }
+    if (current) lines.push(current);
   }
-  if (current) lines.push(current);
   return lines.length ? lines : ["No report text available."];
 }
 
+interface PdfRenderLine {
+  readonly text: string;
+  readonly fontSize: number;
+  readonly height: number;
+}
+
+function paginatePdfLines(
+  lines: readonly PdfRenderLine[],
+  maxHeight: number,
+): PdfRenderLine[][] {
+  const pages: PdfRenderLine[][] = [];
+  let page: PdfRenderLine[] = [];
+  let usedHeight = 0;
+  for (const line of lines) {
+    if (page.length > 0 && usedHeight + line.height > maxHeight) {
+      pages.push(page);
+      page = [];
+      usedHeight = 0;
+    }
+    page.push(line);
+    usedHeight += line.height;
+  }
+  if (page.length > 0) pages.push(page);
+  return pages;
+}
+
 function buildPdfBytes(input: CarePassPdfArtifactInput): Uint8Array {
-  const title = printableAscii(input.title, "Care Pass");
-  const summary = printableAscii(input.summary, "Owner-reviewed care context.");
-  const bodyLines = wrapText(input.message, 78).slice(0, 28);
-  const streamLines = [
-    "BT",
-    "/F1 18 Tf",
-    "72 760 Td",
-    `(${pdfText(title)}) Tj`,
-    "0 -28 Td",
-    "/F1 10 Tf",
-    `(${pdfText(summary)}) Tj`,
-    "0 -22 Td",
-    "(WoofWatcher organizes owner-reported care context; it does not diagnose.) Tj",
-    ...bodyLines.flatMap((line) => ["0 -15 Td", `(${pdfText(line)}) Tj`]),
-    "ET",
+  const title = printableAscii(input.title, "Care Pass", PDF_TITLE_MAX_CHARS);
+  const summary = printableAscii(
+    input.summary,
+    "Owner-reviewed care context.",
+    PDF_SUMMARY_MAX_CHARS,
+  );
+  const bodyLines = wrapText(input.message, 48, PDF_MESSAGE_MAX_CHARS);
+  const renderLines: PdfRenderLine[] = [
+    ...wrapText(title, 26, PDF_TITLE_MAX_CHARS).map((text) => ({ text, fontSize: 18, height: 24 })),
+    { text: " ", fontSize: 10, height: 8 },
+    ...wrapText(summary, 48, PDF_SUMMARY_MAX_CHARS).map((text) => ({ text, fontSize: 10, height: 15 })),
+    { text: " ", fontSize: 10, height: 8 },
+    {
+      text: "WoofWatcher organizes owner-reported care context; it does not diagnose.",
+      fontSize: 10,
+      height: 18,
+    },
+    ...bodyLines.map((text) => ({
+      text: text || " ",
+      fontSize: 10,
+      height: 15,
+    })),
   ];
-  const stream = `${streamLines.join("\n")}\n`;
-  const objects = [
+  const pages = paginatePdfLines(renderLines, 675);
+  if (pages.length === 0) {
+    pages.push([{ text: "No report text available.", fontSize: 10, height: 15 }]);
+  }
+
+  const pageObjectNumbers = pages.map((_, index) => 4 + index * 2);
+  const contentObjectNumbers = pages.map((_, index) => 5 + index * 2);
+  const objects: string[] = [
     "<< /Type /Catalog /Pages 2 0 R >>",
-    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+    `<< /Type /Pages /Kids [${pageObjectNumbers.map((number) => `${number} 0 R`).join(" ")}] /Count ${pages.length} >>`,
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-    `<< /Length ${asciiBytes(stream).length} >>\nstream\n${stream}endstream`,
   ];
+
+  pages.forEach((pageLines, index) => {
+    const pageNumber = index + 1;
+    let y = 760;
+    const streamLines = [
+      "BT",
+      ...pageLines.flatMap((line) => {
+        const commands = [
+          `/F1 ${line.fontSize} Tf`,
+          `1 0 0 1 72 ${y} Tm`,
+          `(${pdfText(line.text)}) Tj`,
+        ];
+        y -= line.height;
+        return commands;
+      }),
+      "ET",
+      "BT",
+      "/F1 9 Tf",
+      "72 42 Td",
+      `(Page ${pageNumber} of ${pages.length}) Tj`,
+      "ET",
+    ];
+    const stream = `${streamLines.join("\n")}\n`;
+    objects.push(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentObjectNumbers[index]} 0 R >>`,
+      `<< /Length ${asciiBytes(stream).length} >>\nstream\n${stream}endstream`,
+    );
+  });
+
   let pdf = "%PDF-1.4\n";
   const offsets = [0];
   for (let index = 0; index < objects.length; index += 1) {
@@ -179,6 +318,10 @@ function buildPdfBytes(input: CarePassPdfArtifactInput): Uint8Array {
 
 const FONT_5X7: Record<string, readonly string[]> = {
   " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
+  "'": ["00100", "00100", "00000", "00000", "00000", "00000", "00000"],
+  "+": ["00000", "00100", "00100", "11111", "00100", "00100", "00000"],
+  "(": ["00010", "00100", "01000", "01000", "01000", "00100", "00010"],
+  ")": ["01000", "00100", "00010", "00010", "00010", "00100", "01000"],
   "-": ["00000", "00000", "00000", "11110", "00000", "00000", "00000"],
   ":": ["00000", "01100", "01100", "00000", "01100", "01100", "00000"],
   ".": ["00000", "00000", "00000", "00000", "00000", "01100", "01100"],
@@ -314,7 +457,7 @@ function pngChunk(type: string, data: Uint8Array): Uint8Array {
   const crcInput = new Uint8Array(typeBytes.length + data.length);
   crcInput.set(typeBytes, 0);
   crcInput.set(data, typeBytes.length);
-  const output = new Uint8Array(12 + typeBytes.length + data.length);
+  const output = new Uint8Array(12 + data.length);
   const view = new DataView(output.buffer);
   view.setUint32(0, data.length);
   output.set(typeBytes, 4);
@@ -335,12 +478,102 @@ function concatBytes(parts: readonly Uint8Array[]): Uint8Array {
 }
 
 function textChunk(keyword: string, text: string): Uint8Array {
-  return asciiBytes(`${printableAscii(keyword)}\0${printableAscii(text)}`);
+  return asciiBytes(
+    `${printableAscii(keyword, "", 79)}\0${printableAscii(text, "", 16_384)}`,
+  );
+}
+
+export const DOG_ID_BODY_CANVAS_GLYPH_LIMIT = 39;
+export const DOG_ID_BODY_MAX_VISIBLE_LINES_PER_FIELD = 6;
+export const DOG_ID_MAX_VISIBLE_FIELDS = 12;
+export const DOG_ID_TITLE_MAX_VISIBLE_LINES = 3;
+
+export function wrapDogIdCanvasText(
+  value: string,
+  glyphLimit = DOG_ID_BODY_CANVAS_GLYPH_LIMIT,
+  maxVisibleLines = Number.POSITIVE_INFINITY,
+): string[] {
+  if (!Number.isInteger(glyphLimit) || glyphLimit < 1) {
+    throw new RangeError("Dog ID canvas glyph limit must be a positive integer");
+  }
+  if (
+    maxVisibleLines !== Number.POSITIVE_INFINITY &&
+    (!Number.isInteger(maxVisibleLines) || maxVisibleLines < 1)
+  ) {
+    throw new RangeError("Dog ID canvas line limit must be a positive integer");
+  }
+  const finiteVisibleLimit = Number.isFinite(maxVisibleLines)
+    ? Math.max(256, glyphLimit * maxVisibleLines * 4)
+    : DOG_ID_FIELD_MAX_CHARS;
+  const normalized = printableAscii(value, "", finiteVisibleLimit);
+  if (!normalized) return [""];
+
+  const words = normalized.split(" ").flatMap((word) => {
+    const chunks: string[] = [];
+    for (let index = 0; index < word.length; index += glyphLimit) {
+      chunks.push(word.slice(index, index + glyphLimit));
+    }
+    return chunks;
+  });
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > glyphLimit && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  }
+  if (current) lines.push(current);
+  const wrapped = lines.length ? lines : [""];
+  if (wrapped.length <= maxVisibleLines) return wrapped;
+
+  const omissionPrefix = glyphLimit >= 4 ? "... " : ".".repeat(glyphLimit);
+  const tailCapacity = Math.max(0, glyphLimit - omissionPrefix.length);
+  const tail = tailCapacity > 0 ? normalized.slice(-tailCapacity) : "";
+  return [
+    ...wrapped.slice(0, maxVisibleLines - 1),
+    `${omissionPrefix}${tail}`,
+  ];
 }
 
 function buildPngBytes(input: DogIdPngArtifactInput): Uint8Array {
   const width = 520;
-  const height = 300;
+  const safeTitle = printableAscii(input.title, "Dog ID", PDF_TITLE_MAX_CHARS);
+  const titleLines = wrapDogIdCanvasText(safeTitle, 24, DOG_ID_TITLE_MAX_VISIBLE_LINES);
+  const visibleFields = input.lines
+    .slice(0, DOG_ID_MAX_VISIBLE_FIELDS)
+    .map((line) => printableAscii(line, "", DOG_ID_FIELD_MAX_CHARS));
+  const bodyLines = visibleFields.flatMap((line, sourceIndex) =>
+    wrapDogIdCanvasText(
+      line,
+      DOG_ID_BODY_CANVAS_GLYPH_LIMIT,
+      DOG_ID_BODY_MAX_VISIBLE_LINES_PER_FIELD,
+    ).map((text) => ({ sourceIndex, text })),
+  );
+  if (input.lines.length > visibleFields.length) {
+    bodyLines.push({
+      sourceIndex: visibleFields.length,
+      text: `... ${input.lines.length - visibleFields.length} MORE FIELDS IN METADATA`,
+    });
+  }
+  const metadataSourceLines = input.lines.length <= DOG_ID_METADATA_MAX_FIELDS
+    ? [...input.lines]
+    : [
+        ...input.lines.slice(0, DOG_ID_METADATA_MAX_FIELDS - 1),
+        input.lines[input.lines.length - 1] ?? "",
+      ];
+  const metadataDescription = metadataSourceLines
+    .map((line) => printableAscii(line, "", DOG_ID_METADATA_FIELD_MAX_CHARS))
+    .join(" | ");
+  const titleLineHeight = 21;
+  const bodyLineHeight = 21;
+  const headerExtraHeight = Math.max(0, titleLines.length - 1) * titleLineHeight;
+  const bodyStartY = 142 + headerExtraHeight;
+  const finalBodyGlyphBottom = bodyStartY + Math.max(0, bodyLines.length - 1) * bodyLineHeight + 14;
+  const height = Math.max(300, finalBodyGlyphBottom + 18);
   const pixels = new Uint8Array(width * height * 4);
   const cream = [247, 245, 241, 255];
   const white = [255, 255, 255, 255];
@@ -350,12 +583,23 @@ function buildPngBytes(input: DogIdPngArtifactInput): Uint8Array {
   const muted = [95, 111, 99, 255];
   fillRect(pixels, width, height, 0, 0, width, height, cream);
   fillRect(pixels, width, height, 20, 20, width - 40, height - 40, white);
-  fillRect(pixels, width, height, 20, 20, width - 40, 72, navy);
-  fillRect(pixels, width, height, 20, 92, width - 40, 4, copper);
-  drawText(pixels, width, height, 42, 42, input.title.slice(0, 24), white, 3);
-  drawText(pixels, width, height, 42, 118, "WOOFWATCHER DOG ID", copper, 2);
-  input.lines.slice(0, 5).forEach((line, index) => {
-    drawText(pixels, width, height, 42, 150 + index * 24, line.slice(0, 42), index === 0 ? ink : muted, 2);
+  fillRect(pixels, width, height, 20, 20, width - 40, 72 + headerExtraHeight, navy);
+  fillRect(pixels, width, height, 20, 92 + headerExtraHeight, width - 40, 4, copper);
+  titleLines.forEach((line, index) => {
+    drawText(pixels, width, height, 42, 42 + index * titleLineHeight, line, white, 3);
+  });
+  drawText(pixels, width, height, 42, 118 + headerExtraHeight, "WOOFWATCHER DOG ID", copper, 2);
+  bodyLines.forEach((line, index) => {
+    drawText(
+      pixels,
+      width,
+      height,
+      42,
+      bodyStartY + index * bodyLineHeight,
+      line.text,
+      line.sourceIndex === 0 ? ink : muted,
+      2,
+    );
   });
 
   const raw = new Uint8Array((width * 4 + 1) * height);
@@ -375,8 +619,8 @@ function buildPngBytes(input: DogIdPngArtifactInput): Uint8Array {
   return concatBytes([
     Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10]),
     pngChunk("IHDR", ihdr),
-    pngChunk("tEXt", textChunk("Title", input.title)),
-    pngChunk("tEXt", textChunk("Description", input.lines.join(" | "))),
+    pngChunk("tEXt", textChunk("Title", safeTitle)),
+    pngChunk("tEXt", textChunk("Description", metadataDescription)),
     pngChunk("IDAT", zlibStored(raw)),
     pngChunk("IEND", new Uint8Array()),
   ]);
@@ -429,10 +673,10 @@ export function buildGeneratedBinaryArtifactFilePlan(
     ? null
     : "Local file export is unavailable because this runtime does not expose a document directory.";
   const format = source.mimeType === "application/pdf" ? "PDF" : "PNG";
-  // "Saved to your device", not "attached": RN Share.share attaches the
-  // url file only on iOS; on Android it shares text, so the honest claim is
-  // the local file write (which always succeeds on native).
-  const baseMessage = `WoofWatcher local generated ${format} is saved to your device as ${source.fileName} (${source.mimeType}, ${formatBytes(source.byteSize)}). ${source.boundary}`;
+  // The document directory is the app sandbox. It is not the public Files
+  // surface, and Android's current text-share fallback cannot attach it.
+  const savedMessage = `WoofWatcher local generated ${format} is saved inside WoofWatcher as ${source.fileName} (${source.mimeType}, ${formatBytes(source.byteSize)}). ${source.boundary}`;
+  const unavailableMessage = `${fallbackReason} The generated ${format} could not be saved or attached in this runtime (${source.mimeType}, ${formatBytes(source.byteSize)}). ${source.boundary}`;
 
   return {
     directoryUri,
@@ -446,7 +690,7 @@ export function buildGeneratedBinaryArtifactFilePlan(
     shareTitle: `${options.title} ${source.formatLabel.toLowerCase()}`,
     canWriteLocalFile,
     fallbackReason,
-    message: canWriteLocalFile ? baseMessage : `${fallbackReason} ${baseMessage}`,
+    message: canWriteLocalFile ? savedMessage : unavailableMessage,
   };
 }
 

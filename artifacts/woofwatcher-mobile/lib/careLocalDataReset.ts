@@ -12,6 +12,10 @@ export const CARE_AUXILIARY_LOCAL_DATA_KEYS = [
 export const CARE_PRESERVED_LOCAL_DATA_KEY =
   "woofwatcher.v2.discarded-server-entry-ids";
 
+export interface CareResetCommitContext {
+  persistCareCleanupLedger(entryIds: readonly string[]): Promise<void>;
+}
+
 export interface CareLocalDataResetHooks {
   canPrepare(): boolean;
   drainPrimarySnapshots(): Promise<void>;
@@ -19,7 +23,7 @@ export interface CareLocalDataResetHooks {
   beginCommit(): void;
   endCommit(result: { committed: boolean }): void;
   invalidateAndDrainPrimarySnapshots(): Promise<void>;
-  persistCleanupIntent(): Promise<void>;
+  persistCleanupIntent(context?: CareResetCommitContext): Promise<void>;
   removeItem(key: string): Promise<void>;
   finalizeSuccessfulCommit(): void;
 }
@@ -133,7 +137,7 @@ export function createCareLocalDataResetController(
         if (preparationAttempt === attempt) preparedAttempt = attempt;
       });
     },
-    async commit() {
+    async commit(context) {
       if (preparedAttempt === null) {
         throw new Error("Care local data reset was not prepared.");
       }
@@ -144,7 +148,9 @@ export function createCareLocalDataResetController(
         hooks.beginCommit();
         await hooks.invalidateAndDrainPrimarySnapshots();
         await hooks.drainCleanupLedger();
-        await hooks.persistCleanupIntent();
+        await hooks.persistCleanupIntent(
+          context as CareResetCommitContext | undefined,
+        );
 
         const auxiliaryFailures: unknown[] = [];
         for (const key of CARE_AUXILIARY_LOCAL_DATA_KEYS) {

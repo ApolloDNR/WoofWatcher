@@ -21,6 +21,7 @@ export interface PersistPickedMediaOptions {
   fileName?: string | null;
   mimeType?: string | null;
   filePrefix?: string;
+  forceCopy?: boolean;
   now?: () => number;
   randomToken?: () => string;
   isCurrent?: () => boolean;
@@ -120,7 +121,10 @@ export async function persistPickedMedia(
   }
 
   const durableRoot = withoutTrailingSlash(documentDirectory);
-  if (isInsideOwnedAttachmentDirectory(sourceUri, documentDirectory)) {
+  if (
+    !options.forceCopy &&
+    isInsideOwnedAttachmentDirectory(sourceUri, documentDirectory)
+  ) {
     return { ok: true, uri: sourceUri, storage: "app-document" };
   }
 

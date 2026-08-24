@@ -29,9 +29,10 @@ function createStorageAdapter() {
 
 function attachAllRequiredNoOps(
   runtime: ReturnType<typeof createLocalDataResetRuntime>,
-  overrides: Partial<Record<"avatar" | "care" | "device-preferences" | "files" | "query-cache" | "walk-capture" | "web-runtime", { prepare(): Promise<void>; commit(): Promise<void> }>> = {},
+  overrides: Partial<Record<"auth-credentials" | "avatar" | "care" | "device-preferences" | "files" | "query-cache" | "walk-capture" | "web-runtime", { prepare(): Promise<void>; commit(): Promise<void> }>> = {},
 ) {
   for (const id of [
+    "auth-credentials",
     "avatar",
     "care",
     "device-preferences",
@@ -53,16 +54,578 @@ function buildAdapter(
   return {
     platform: "ios",
     documentDirectory: "file:///var/mobile/Documents/",
-    async getInfoAsync() { return { exists: true }; },
+    cacheDirectory: "file:///var/mobile/Library/Caches/",
+    async getInfoAsync() { return { exists: true, isDirectory: false }; },
     async makeDirectoryAsync() {},
     async copyAsync() {},
     async writeAsStringAsync() {},
     async getContentUriAsync(uri) { return `content://${uri}`; },
     async readDirectoryAsync() { return []; },
     async deleteAsync() {},
+    async clearImageMemoryCache() { return true; },
+    async clearImageDiskCache() { return true; },
     ...overrides,
   };
 }
+
+test("owned-file inventory recursively counts every physical leaf without exposing names or URIs", async () => {
+  const documentRoot = "file:///var/mobile/Documents/";
+  const cacheRoot = "file:///var/mobile/Library/Caches/";
+  const directoryEntries = new Map<string, string[]>([
+    [documentRoot, ["phoenix-portrait-17.png", "private.txt"]],
+    [`${documentRoot}WoofWatcherReports/`, ["2026 reports", "care #1.pdf"]],
+    [`${documentRoot}WoofWatcherReports/2026%20reports/`, ["january.pdf"]],
+    [`${documentRoot}WoofWatcherCredentials/`, ["dog-id.png"]],
+    [`${documentRoot}woofwatcher-attachments/`, ["proof.jpg", "nested"]],
+    [`${documentRoot}woofwatcher-attachments/nested/`, ["visit photo.jpg"]],
+    [`${cacheRoot}ImagePicker/`, ["picker result.jpg"]],
+  ]);
+  const directories = new Set(directoryEntries.keys());
+  const inspected: string[] = [];
+  const { fileSystem } = buildHarness(buildAdapter({
+    async getInfoAsync(uri) {
+      inspected.push(uri);
+      if (directories.has(uri) || directories.has(`${uri}/`)) {
+        return { exists: true, isDirectory: true };
+      }
+      return { exists: true, isDirectory: false };
+    },
+    async readDirectoryAsync(uri) {
+      const entries = directoryEntries.get(uri);
+      if (!entries) throw new Error(`unexpected directory read: ${uri}`);
+      return entries;
+    },
+  }));
+
+  const result = await fileSystem.listOwnedFiles(requireIntent(fileSystem));
+
+  assert.deepEqual(result, { status: "complete", fileCount: 7 });
+  assert.equal(JSON.stringify(result).includes("phoenix-portrait"), false);
+  assert.equal(JSON.stringify(result).includes("file:///"), false);
+  assert.ok(
+    inspected.includes(
+      `${documentRoot}WoofWatcherReports/2026%20reports/january.pdf`,
+    ),
+  );
+  assert.ok(
+    inspected.includes(`${cacheRoot}ImagePicker/picker%20result.jpg`),
+  );
+  assert.equal(inspected.some((uri) => uri.includes("private.txt")), false);
+});
+
+test("owned-file inventory is a stable snapshot between active and queued physical mutations", async () => {
+  const documentRoot = "file:///var/mobile/Documents/";
+  const cacheRoot = "file:///var/mobile/Library/Caches/";
+  const reportsRoot = `${documentRoot}WoofWatcherReports/`;
+  const credentialsRoot = `${documentRoot}WoofWatcherCredentials/`;
+  const attachmentsRoot = `${documentRoot}woofwatcher-attachments/`;
+  const imagePickerRoot = `${cacheRoot}ImagePicker/`;
+  const firstReport = `${reportsRoot}first.pdf`;
+  const laterReport = `${reportsRoot}later.pdf`;
+  const attachment = `${attachmentsRoot}proof.jpg`;
+  const directories = new Set([
+    documentRoot,
+    reportsRoot,
+    credentialsRoot,
+    attachmentsRoot,
+    imagePickerRoot,
+  ]);
+  const files = new Set([attachment]);
+  const firstWrite = deferred<void>();
+  const inventoryHold = deferred<string[]>();
+  const events: string[] = [];
+  const { fileSystem } = buildHarness(buildAdapter({
+    async getInfoAsync(uri) {
+      if (directories.has(uri)) return { exists: true, isDirectory: true };
+      return { exists: files.has(uri), isDirectory: false };
+    },
+    async readDirectoryAsync(uri) {
+      events.push(`read:${uri}`);
+      if (uri === documentRoot) return [];
+      if (uri === credentialsRoot) {
+        events.push("inventory:held");
+        return inventoryHold.promise;
+      }
+      if (uri === reportsRoot || uri === attachmentsRoot) {
+        return [...files]
+          .filter((file) => file.startsWith(uri))
+          .map((file) => decodeURIComponent(file.slice(uri.length)));
+      }
+      if (uri === imagePickerRoot) return [];
+      throw new Error(`unexpected directory read: ${uri}`);
+    },
+    async makeDirectoryAsync(uri) {
+      events.push(`mkdir:${uri}`);
+    },
+    async writeAsStringAsync(uri) {
+      if (uri === firstReport) {
+        events.push("first-write:start");
+        await firstWrite.promise;
+        files.add(uri);
+        events.push("first-write:end");
+        return;
+      }
+      events.push("later-write");
+      files.add(uri);
+    },
+    async deleteAsync(uri) {
+      events.push(`delete:${uri}`);
+      files.delete(uri);
+    },
+  }));
+
+  const share = (fileName: string) =>
+    fileSystem.runProtectedShare(
+      requireIntent(fileSystem),
+      {
+        destination: "reports",
+        fileName,
+        content: fileName,
+        encoding: "utf8",
+      },
+      async (receipt) => receipt,
+    );
+
+  const activeWrite = share("first.pdf");
+  await waitUntil(() => events.includes("first-write:start"));
+  const inventory = fileSystem.listOwnedFiles(requireIntent(fileSystem));
+  const queuedWrite = share("later.pdf");
+  const queuedDelete = fileSystem.discardPickedMedia(
+    requireIntent(fileSystem),
+    attachment,
+  );
+  await flush();
+
+  assert.equal(events.some((event) => event.startsWith("read:")), false);
+  assert.equal(events.includes("later-write"), false);
+  assert.equal(events.includes(`delete:${attachment}`), false);
+
+  firstWrite.resolve();
+  await activeWrite;
+  await waitUntil(() => events.includes("inventory:held"));
+  assert.equal(files.has(firstReport), true);
+  assert.equal(files.has(laterReport), false);
+  assert.equal(files.has(attachment), true);
+  assert.equal(events.includes("later-write"), false);
+  assert.equal(events.includes(`delete:${attachment}`), false);
+
+  inventoryHold.resolve([]);
+  assert.deepEqual(await inventory, { status: "complete", fileCount: 2 });
+  assert.equal((await queuedWrite).status, "complete");
+  assert.deepEqual(await queuedDelete, { ok: true });
+  assert.deepEqual(files, new Set([firstReport, laterReport]));
+});
+
+test("owned-file inventory rejects unsafe directory entries before inspecting them", async () => {
+  const documentRoot = "file:///var/mobile/Documents/";
+  const inspected: string[] = [];
+  const { fileSystem } = buildHarness(buildAdapter({
+    async getInfoAsync(uri) {
+      inspected.push(uri);
+      return {
+        exists: true,
+        isDirectory: uri.endsWith("/"),
+      };
+    },
+    async readDirectoryAsync(uri) {
+      if (uri === documentRoot) return [];
+      if (uri === `${documentRoot}WoofWatcherReports/`) return ["../escape"];
+      return [];
+    },
+  }));
+
+  await assert.rejects(
+    fileSystem.listOwnedFiles(requireIntent(fileSystem)),
+    /unsafe.*path component/i,
+  );
+  assert.equal(inspected.some((uri) => uri.includes("escape")), false);
+});
+
+test("owned-file inventory fails closed when a listed path type is indeterminate", async () => {
+  const documentRoot = "file:///var/mobile/Documents/";
+  const { fileSystem } = buildHarness(buildAdapter({
+    async getInfoAsync(uri) {
+      if (uri === `${documentRoot}WoofWatcherReports/mystery`) {
+        return { exists: true };
+      }
+      return { exists: true, isDirectory: uri.endsWith("/") };
+    },
+    async readDirectoryAsync(uri) {
+      if (uri === documentRoot) return [];
+      if (uri === `${documentRoot}WoofWatcherReports/`) return ["mystery"];
+      return [];
+    },
+  }));
+
+  await assert.rejects(
+    fileSystem.listOwnedFiles(requireIntent(fileSystem)),
+    /path type.*could not be proven/i,
+  );
+});
+
+test("owned-file inventory stops at the bounded maximum depth", async () => {
+  const documentRoot = "file:///var/mobile/Documents/";
+  const { fileSystem } = buildHarness(buildAdapter({
+    async getInfoAsync(uri) {
+      return { exists: true, isDirectory: uri.endsWith("/") || uri.endsWith("/next") };
+    },
+    async readDirectoryAsync(uri) {
+      if (uri === documentRoot) return [];
+      if (uri.includes("WoofWatcherReports")) return ["next"];
+      return [];
+    },
+  }));
+
+  await assert.rejects(
+    fileSystem.listOwnedFiles(requireIntent(fileSystem)),
+    /maximum.*depth/i,
+  );
+});
+
+test("reset during an awaited inventory read revokes the result and starts no later reads", async () => {
+  const firstRead = deferred<string[]>();
+  const reads: string[] = [];
+  const { runtime, fileSystem } = buildHarness(buildAdapter({
+    async getInfoAsync(uri) {
+      return { exists: true, isDirectory: uri.endsWith("/") };
+    },
+    async readDirectoryAsync(uri) {
+      reads.push(uri);
+      if (reads.length === 1) return firstRead.promise;
+      return [];
+    },
+  }));
+  attachAllRequiredNoOps(runtime, {
+    files: fileSystem.localDataResetParticipant,
+  });
+  const inventory = fileSystem.listOwnedFiles(requireIntent(fileSystem));
+  await waitUntil(() => reads.length === 1);
+
+  const reset = runtime.operations.runReset();
+  firstRead.resolve([]);
+
+  assert.deepEqual(await inventory, { status: "revoked" });
+  assert.deepEqual(reads, ["file:///var/mobile/Documents/"]);
+  assert.equal((await reset).status, "complete");
+  assert.deepEqual(reads, [
+    "file:///var/mobile/Documents/",
+    "file:///var/mobile/Documents/",
+  ]);
+});
+
+test("owned-file inventory truthfully reports unsupported web only for a current intent", async () => {
+  const { runtime, fileSystem } = buildHarness(buildAdapter({
+    platform: "web",
+    documentDirectory: null,
+    cacheDirectory: null,
+  }));
+  const current = requireIntent(fileSystem);
+  assert.deepEqual(await fileSystem.listOwnedFiles(current), {
+    status: "unsupported-platform",
+  });
+
+  runtime.generationAuthority.invalidate();
+  assert.deepEqual(await fileSystem.listOwnedFiles(current), {
+    status: "revoked",
+  });
+});
+
+test("file-owner reset clears both Expo Image caches and retries cache and ImagePicker failures", async () => {
+  const calls: string[] = [];
+  let memoryFails = true;
+  let imagePickerDeleteFails = true;
+  const adapter = buildAdapter({
+    async readDirectoryAsync(uri) {
+      if (uri === "file:///var/mobile/Documents/") return [];
+      return [];
+    },
+    async clearImageMemoryCache() {
+      calls.push("memory");
+      if (memoryFails) {
+        memoryFails = false;
+        return false;
+      }
+      return true;
+    },
+    async clearImageDiskCache() {
+      calls.push("disk");
+      return true;
+    },
+    async deleteAsync(uri) {
+      calls.push(`delete:${uri}`);
+      if (uri.endsWith("/ImagePicker/") && imagePickerDeleteFails) {
+        imagePickerDeleteFails = false;
+        throw new Error("picker cache locked");
+      }
+    },
+  });
+  const first = buildHarness(adapter);
+  attachAllRequiredNoOps(first.runtime, {
+    files: first.fileSystem.localDataResetParticipant,
+  });
+  assert.equal(
+    (await first.runtime.operations.runReset()).status,
+    "partial-failure",
+  );
+  assert.ok(calls.includes("memory"));
+  assert.ok(calls.includes("disk"));
+  assert.ok(
+    calls.includes(
+      "delete:file:///var/mobile/Library/Caches/ImagePicker/",
+    ),
+  );
+
+  calls.length = 0;
+  const retry = buildHarness(adapter);
+  attachAllRequiredNoOps(retry.runtime, {
+    files: retry.fileSystem.localDataResetParticipant,
+  });
+  assert.equal((await retry.runtime.operations.runReset()).status, "complete");
+  assert.deepEqual(calls.filter((call) => call === "memory"), ["memory"]);
+  assert.deepEqual(calls.filter((call) => call === "disk"), ["disk"]);
+  assert.ok(
+    calls.includes(
+      "delete:file:///var/mobile/Library/Caches/ImagePicker/",
+    ),
+  );
+});
+
+test("file-owner reset keeps inspecting and deleting later legacy leaves after one inspection fails", async () => {
+  const deleted: string[] = [];
+  const { runtime, fileSystem } = buildHarness(buildAdapter({
+    async readDirectoryAsync(uri) {
+      return uri === "file:///var/mobile/Documents/"
+        ? ["avatar-happy-1.png", "avatar-calm-2.png"]
+        : [];
+    },
+    async getInfoAsync(uri) {
+      if (uri.endsWith("avatar-happy-1.png")) {
+        throw new Error("first avatar cannot be inspected");
+      }
+      return { exists: true, isDirectory: false };
+    },
+    async deleteAsync(uri) {
+      deleted.push(uri);
+    },
+  }));
+  attachAllRequiredNoOps(runtime, {
+    files: fileSystem.localDataResetParticipant,
+  });
+
+  const result = await runtime.operations.runReset();
+
+  assert.equal(result.status, "partial-failure");
+  assert.deepEqual(result.failedParticipantIds, ["files"]);
+  assert.ok(
+    deleted.includes(
+      "file:///var/mobile/Documents/avatar-calm-2.png",
+    ),
+  );
+});
+
+test("file-owner reset reports partial failure for a legacy avatar owned-name directory", async () => {
+  const legacyDirectory =
+    "file:///var/mobile/Documents/avatar-happy-1.png";
+  const deleted: string[] = [];
+  const { runtime, fileSystem } = buildHarness(buildAdapter({
+    async readDirectoryAsync(uri) {
+      return uri === "file:///var/mobile/Documents/"
+        ? ["avatar-happy-1.png"]
+        : [];
+    },
+    async getInfoAsync(uri) {
+      return {
+        exists: true,
+        isDirectory: uri === legacyDirectory,
+      };
+    },
+    async deleteAsync(uri) {
+      deleted.push(uri);
+    },
+  }));
+  attachAllRequiredNoOps(runtime, {
+    files: fileSystem.localDataResetParticipant,
+  });
+
+  const result = await runtime.operations.runReset();
+
+  assert.equal(result.status, "partial-failure");
+  assert.deepEqual(result.failedParticipantIds, ["files"]);
+  assert.equal(deleted.includes(legacyDirectory), false);
+});
+
+test("discardPickedMedia deletes only proven current attachment or ImagePicker cache leaves", async () => {
+  const deleted: string[] = [];
+  const { fileSystem } = buildHarness(buildAdapter({
+    async getInfoAsync(uri) {
+      if (uri.endsWith("missing.jpg")) {
+        return { exists: false, isDirectory: false };
+      }
+      return { exists: true, isDirectory: uri.endsWith("nested/") };
+    },
+    async deleteAsync(uri) {
+      deleted.push(uri);
+    },
+  }));
+
+  assert.deepEqual(
+    await fileSystem.discardPickedMedia(
+      requireIntent(fileSystem),
+      "file:///var/mobile/Documents/woofwatcher-attachments/proof.jpg",
+    ),
+    { ok: true },
+  );
+  assert.deepEqual(
+    await fileSystem.discardPickedMedia(
+      requireIntent(fileSystem),
+      "file:///var/mobile/Library/Caches/ImagePicker/picked%20photo.jpg",
+    ),
+    { ok: true },
+  );
+  assert.deepEqual(
+    await fileSystem.discardPickedMedia(
+      requireIntent(fileSystem),
+      "file:///var/mobile/Documents/woofwatcher-attachments/missing.jpg",
+    ),
+    { ok: true },
+  );
+  for (const uri of [
+    "file:///var/mobile/Documents/woofwatcher-attachments/",
+    "file:///var/mobile/Documents/woofwatcher-attachments/nested/",
+    "file:///var/mobile/Documents/WoofWatcherReports/report.pdf",
+    "file:///var/mobile/Library/Caches/ImagePicker/../secret.jpg",
+    "file:///tmp/picked.jpg",
+  ]) {
+    assert.deepEqual(
+      await fileSystem.discardPickedMedia(requireIntent(fileSystem), uri),
+      { ok: false, reason: "invalid-target" },
+      uri,
+    );
+  }
+  assert.deepEqual(deleted, [
+    "file:///var/mobile/Documents/woofwatcher-attachments/proof.jpg",
+    "file:///var/mobile/Library/Caches/ImagePicker/picked%20photo.jpg",
+  ]);
+});
+
+test("discardPickedMedia refuses an unprotected old iOS alias instead of rebinding it to a current attachment", async () => {
+  const inspected: string[] = [];
+  const deleted: string[] = [];
+  const { fileSystem } = buildHarness(buildAdapter({
+    async getInfoAsync(uri) {
+      inspected.push(uri);
+      return { exists: true, isDirectory: false };
+    },
+    async deleteAsync(uri) {
+      deleted.push(uri);
+    },
+  }));
+
+  assert.deepEqual(
+    await fileSystem.discardPickedMedia(
+      requireIntent(fileSystem),
+      "file:///var/mobile/Containers/Data/Application/STALE/Documents/woofwatcher-attachments/current-proof.jpg",
+    ),
+    { ok: false, reason: "invalid-target" },
+  );
+  assert.deepEqual(inspected, []);
+  assert.deepEqual(deleted, []);
+});
+
+test("discardPickedMedia refuses an old iOS alias of a protected current attachment at the deletion boundary", async () => {
+  const deleted: string[] = [];
+  const { fileSystem } = buildHarness(buildAdapter({
+    async getInfoAsync() {
+      return { exists: true, isDirectory: false };
+    },
+    async deleteAsync(uri) {
+      deleted.push(uri);
+    },
+  }));
+  const currentUri =
+    "file:///var/mobile/Documents/woofwatcher-attachments/shared.jpg";
+  const oldUri =
+    "file:///var/mobile/Containers/Data/Application/OLD/Documents/woofwatcher-attachments/shared.jpg";
+
+  assert.deepEqual(
+    await fileSystem.discardPickedMedia(
+      requireIntent(fileSystem),
+      oldUri,
+      [currentUri],
+    ),
+    { ok: false, reason: "invalid-target" },
+  );
+  assert.deepEqual(deleted, []);
+});
+
+test("discardPickedMedia refuses a percent-encoded alias of a protected current attachment", async () => {
+  const inspected: string[] = [];
+  const deleted: string[] = [];
+  const { fileSystem } = buildHarness(buildAdapter({
+    async getInfoAsync(uri) {
+      inspected.push(uri);
+      return { exists: true, isDirectory: false };
+    },
+    async deleteAsync(uri) {
+      deleted.push(uri);
+    },
+  }));
+  const currentUri =
+    "file:///var/mobile/Documents/woofwatcher-attachments/victim.jpg";
+  const encodedAlias =
+    "file:///var/mobile/Documents/woofwatcher-attachments/%76ictim.jpg";
+
+  assert.deepEqual(
+    await fileSystem.discardPickedMedia(
+      requireIntent(fileSystem),
+      encodedAlias,
+      [currentUri],
+    ),
+    { ok: false, reason: "invalid-target" },
+  );
+  assert.deepEqual(inspected, []);
+  assert.deepEqual(deleted, []);
+});
+
+test("discardPickedMedia is drained by reset and reports revocation after an awaited delete", async () => {
+  const deletion = deferred<void>();
+  const events: string[] = [];
+  const { runtime, fileSystem } = buildHarness(buildAdapter({
+    async getInfoAsync() {
+      return { exists: true, isDirectory: false };
+    },
+    async deleteAsync(uri) {
+      if (uri.endsWith("proof.jpg")) {
+        events.push("delete:start");
+        await deletion.promise;
+        events.push("delete:end");
+      }
+    },
+  }));
+  attachAllRequiredNoOps(runtime, {
+    files: fileSystem.localDataResetParticipant,
+  });
+  const discarded = fileSystem.discardPickedMedia(
+    requireIntent(fileSystem),
+    "file:///var/mobile/Documents/woofwatcher-attachments/proof.jpg",
+  );
+  await waitUntil(() => events.includes("delete:start"));
+  let resetSettled = false;
+  const reset = runtime.operations.runReset().then((result) => {
+    resetSettled = true;
+    return result;
+  });
+  await flush();
+  assert.equal(resetSettled, false);
+
+  deletion.resolve();
+  assert.deepEqual(await discarded, {
+    ok: false,
+    reason: "reset-in-progress",
+  });
+  assert.equal((await reset).status, "complete");
+  assert.deepEqual(events, ["delete:start", "delete:end"]);
+});
 
 test("owned-file reset drains accepted work, deletes the exact inventory, and reports failure", async () => {
   const copy = deferred<void>();
@@ -116,6 +679,7 @@ test("owned-file reset drains accepted work, deletes the exact inventory, and re
       "walk-capture",
       "web-runtime",
       "work-drain",
+      "auth-credentials",
     ],
     failedParticipantIds: ["files"],
   });
@@ -123,6 +687,7 @@ test("owned-file reset drains accepted work, deletes the exact inventory, and re
     "file:///var/mobile/Documents/WoofWatcherReports/",
     "file:///var/mobile/Documents/WoofWatcherCredentials/",
     "file:///var/mobile/Documents/woofwatcher-attachments/",
+    "file:///var/mobile/Library/Caches/ImagePicker/",
     "file:///var/mobile/Documents/phoenix-portrait-17.png",
     "file:///var/mobile/Documents/avatar-anxious-22.png",
   ]);
@@ -846,7 +1411,7 @@ test("reset drains both active and queued accepted shares and suppresses queued 
       return "first";
     },
   );
-  await flush();
+  await waitUntil(() => events.includes("callback:start"));
   const second = fileSystem.runProtectedShare(
     requireIntent(fileSystem),
     input,

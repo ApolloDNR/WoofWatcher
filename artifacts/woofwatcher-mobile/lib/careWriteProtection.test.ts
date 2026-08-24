@@ -3,12 +3,36 @@ import { test } from "node:test";
 
 import {
   CARE_READ_ONLY_MESSAGE,
+  careWriteAdmissionIsOpen,
   careMutationWasAccepted,
   createCareWriteProtection,
   prioritizeCareStorageWarning,
   runAcceptedCareMutation,
   type CareStorageWarning,
 } from "./careWriteProtection.ts";
+
+test("care mutations stay closed until hydration and across every reset barrier", () => {
+  const base = {
+    hydrated: true,
+    ownerWipeInProgress: false,
+    localDataAdmissionOpen: true,
+    versionProtectionBlocked: false,
+  };
+  assert.equal(careWriteAdmissionIsOpen(base), true);
+  assert.equal(careWriteAdmissionIsOpen({ ...base, hydrated: false }), false);
+  assert.equal(
+    careWriteAdmissionIsOpen({ ...base, ownerWipeInProgress: true }),
+    false,
+  );
+  assert.equal(
+    careWriteAdmissionIsOpen({ ...base, localDataAdmissionOpen: false }),
+    false,
+  );
+  assert.equal(
+    careWriteAdmissionIsOpen({ ...base, versionProtectionBlocked: true }),
+    false,
+  );
+});
 
 function deferred<T>() {
   let resolve!: (value: T) => void;

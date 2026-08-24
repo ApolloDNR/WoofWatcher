@@ -17,7 +17,7 @@ test("starts an open home-alone session with household-visible lifecycle details
   const entry = buildAloneTimeStartEntry({ caregiver: "Apollo", now: START });
 
   assert.equal(entry.type, "alone");
-  assert.equal(entry.title, "Alone Time - Phoenix home alone");
+  assert.equal(entry.title, "Alone Time - home alone");
   assert.equal(entry.caregiver, "Apollo");
   assert.equal(entry.occurredAt, "2026-06-19T19:30:00.000Z");
   assert.equal(entry.mood, "home_alone");

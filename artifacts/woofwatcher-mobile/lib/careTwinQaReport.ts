@@ -2,7 +2,10 @@ import type { CareTwinRuntimeQaResult } from "./careTwinAssets.ts";
 import { describeMotionRecipeForSpriteAction } from "./careTwinChoreography.ts";
 import { describeCareTwinStageFraming } from "./careTwinStage.ts";
 import type { QaScreenshotEvidence } from "./qaScreenshotEvidence.ts";
-import { qaScreenshotEvidenceNames } from "./qaScreenshotEvidence.ts";
+import {
+  qaScreenshotEvidenceIsExactDeviceProof,
+  qaScreenshotEvidenceNames,
+} from "./qaScreenshotEvidence.ts";
 
 export type CareTwinQaReviewStatus = "unreviewed" | "pass" | "needs-review";
 
@@ -38,9 +41,7 @@ function reviewFor(
 }
 
 function hasNativeScreenshotEvidence(review: CareTwinQaReview): boolean {
-  return (review.screenshotEvidence ?? []).some(
-    (item) => item.targetPlatform === "ios" || item.targetPlatform === "android",
-  );
+  return (review.screenshotEvidence ?? []).some(qaScreenshotEvidenceIsExactDeviceProof);
 }
 
 export function careTwinQaMissingNativeProof(review: CareTwinQaReview): string[] {
@@ -49,7 +50,7 @@ export function careTwinQaMissingNativeProof(review: CareTwinQaReview): string[]
   }
 
   return [
-    "Attach at least one iOS or Android screenshot for this care-twin state before treating Pass as native launch proof.",
+    "Capture at least one exact-binary iOS or Android device screenshot for this care-twin state before treating Pass as native launch proof; Photos-library attachments are manual self-attested references only.",
   ];
 }
 
@@ -112,7 +113,7 @@ export function buildCareTwinQaShareText(
   const lines = [
     "WoofWatcher Care Twin QA",
     `Reviewed: ${reviewedAtIso}`,
-    `Summary: ${summary.passed}/${summary.total} passed, ${summary.passedWithNativeProof} native-proof pass, ${summary.passPendingProof} pass pending proof, ${summary.needsReview} needs tune, ${summary.unreviewed} unreviewed.`,
+    `Summary: ${summary.passed}/${summary.total} passed, ${summary.passedWithNativeProof} exact-device pass, ${summary.passPendingProof} pass pending exact-device proof, ${summary.needsReview} needs tune, ${summary.unreviewed} unreviewed.`,
     `Layered assets ready: ${summary.readyLayered}/${summary.total}.`,
     `Attached screenshots: ${summary.attachedScreenshots} (iOS ${summary.attachedIosScreenshots}, Android ${summary.attachedAndroidScreenshots}, other ${summary.attachedUnknownScreenshots}).`,
     "",
@@ -145,7 +146,7 @@ export function buildCareTwinQaShareText(
 
   lines.push(
     "",
-    "Native screenshot evidence still required before launch: iOS Home, iOS happy idle, iOS Health Watch, Android sleep/bedtime, and Avatar Studio live template.",
+    "Exact-binary native device evidence still required before launch: iOS Home, iOS happy idle, iOS Health Watch, Android sleep/bedtime, and Avatar Studio live template. Photos-library attachments are manual self-attested references and do not close these gates.",
   );
 
   return lines.join("\n");

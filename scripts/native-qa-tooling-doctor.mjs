@@ -129,8 +129,13 @@ check(
     "veterinary boundary",
     "iOS screenshot",
     "Android screenshot",
+    "qaScreenshotEvidenceIsExactDeviceProof",
   ].every((value) => releaseQaSource.includes(value)) &&
-    qaRouteSource.includes("Attach focused proof"),
+    [
+      "Attach focused QA screenshot reference",
+      "Pass pending exact-device proof",
+      "A Photos attachment alone does not count.",
+    ].every((value) => qaRouteSource.includes(value)),
   "focused /care-twin-qa targets must stay wired before native proof can be collected",
 );
 

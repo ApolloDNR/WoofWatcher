@@ -188,7 +188,7 @@ test("real shipping shield and providers wait for a mounted personal query consu
       ),
     );
     assert.equal(find(container, "personal-query-consumer"), null);
-    assert.equal(find(container, "All data deleted"), null);
+    assert.equal(find(container, "Local care content deleted"), null);
     assert.equal(observersAtClear, -1, "no owner commits after a prepare failure");
 
     releaseFirstFilesPrepare.resolve();
@@ -206,7 +206,7 @@ test("real shipping shield and providers wait for a mounted personal query consu
     assert.ok(find(container, "Local data deletion needs attention"));
     assert.ok(find(container, "Files on this device. Failed owner ID: files"));
     assert.equal(find(container, "personal-query-consumer"), null);
-    assert.equal(find(container, "All data deleted"), null);
+    assert.equal(find(container, "Local care content deleted"), null);
 
     const retry = find(container, "Retry deleting all local data");
     assert.ok(retry);
@@ -215,7 +215,7 @@ test("real shipping shield and providers wait for a mounted personal query consu
       await new Promise<void>((resolve) => setImmediate(resolve));
     });
     await waitForRendered(
-      () => find(container, "All data deleted"),
+      () => find(container, "Local care content deleted"),
       "the fresh coordinated retry to reach its complete verdict",
     );
 
@@ -227,7 +227,7 @@ test("real shipping shield and providers wait for a mounted personal query consu
         events.indexOf("query-cache-clear"),
       "the React layout cleanup/ack happens before query-cache commit clears",
     );
-    assert.ok(find(container, "All data deleted"));
+    assert.ok(find(container, "Local care content deleted"));
     assert.equal(find(container, "Local data deletion needs attention"), null);
     assert.equal(find(container, "personal-query-consumer"), null);
     assert.equal(personalMounts, 1);
@@ -242,7 +242,7 @@ test("real shipping shield and providers wait for a mounted personal query consu
     });
 
     assert.ok(find(container, "personal-query-consumer"));
-    assert.equal(find(container, "All data deleted"), null);
+    assert.equal(find(container, "Local care content deleted"), null);
     assert.equal(personalMounts, 2);
     assert.equal(
       queryClient

@@ -1,6 +1,7 @@
 import { Platform, Share } from "react-native";
 
 import { notifyDialog } from "./confirmDialog.ts";
+import { classifyNativeFileShareResult } from "./nativeFileSharePolicy.ts";
 
 /**
  * Cross-platform text sharing: native uses the OS share sheet; web tries
@@ -10,11 +11,21 @@ import { notifyDialog } from "./confirmDialog.ts";
  * button in web builds — this helper guarantees a real outcome everywhere.
  */
 
-export type ShareTextOutcome = "shared" | "copied" | "downloaded" | "failed";
+export type ShareTextOutcome =
+  | "shared"
+  | "dismissed"
+  | "copied"
+  | "downloaded"
+  | "failed";
 
 export interface ShareTextPayload {
   title: string;
   message: string;
+}
+
+export interface ShareTextOptions {
+  /** Let a higher-level flow own the single failure presentation. */
+  notifyOnFailure?: boolean;
 }
 
 interface WebShareGlobals {
@@ -45,7 +56,10 @@ export function shareFileNameForTitle(title: string): string {
   return `${slug || "woofwatcher-share"}.txt`;
 }
 
-async function shareOnWeb(payload: ShareTextPayload): Promise<ShareTextOutcome> {
+async function shareOnWeb(
+  payload: ShareTextPayload,
+  options: ShareTextOptions,
+): Promise<ShareTextOutcome> {
   const g = globalThis as WebShareGlobals;
 
   if (typeof g.navigator?.share === "function") {
@@ -56,7 +70,7 @@ async function shareOnWeb(payload: ShareTextPayload): Promise<ShareTextOutcome> 
       // A deliberate cancel is a completed decision, not a failure to
       // route around — only unsupported payloads fall through.
       if ((error as { name?: string })?.name === "AbortError") {
-        return "failed";
+        return "dismissed";
       }
     }
   }
@@ -90,21 +104,33 @@ async function shareOnWeb(payload: ShareTextPayload): Promise<ShareTextOutcome> 
     // Nothing else to try on this platform.
   }
 
-  notifyDialog("Sharing unavailable", "This browser blocked sharing, clipboard, and downloads.");
+  if (options.notifyOnFailure !== false) {
+    notifyDialog("Sharing unavailable", "This browser blocked sharing, clipboard, and downloads.");
+  }
   return "failed";
 }
 
 export async function shareTextPayload(
   payload: ShareTextPayload,
+  options: ShareTextOptions = {},
 ): Promise<ShareTextOutcome> {
   if (Platform.OS === "web") {
-    return shareOnWeb(payload);
+    return shareOnWeb(payload, options);
   }
   try {
-    await Share.share({ title: payload.title, message: payload.message });
-    return "shared";
+    const result = await Share.share({
+      title: payload.title,
+      message: payload.message,
+    });
+    return classifyNativeFileShareResult(
+      Platform.OS,
+      result,
+      Share.dismissedAction,
+    );
   } catch {
-    notifyDialog("Sharing unavailable", "The device share sheet could not open.");
+    if (options.notifyOnFailure !== false) {
+      notifyDialog("Sharing unavailable", "The device share sheet could not open.");
+    }
     return "failed";
   }
 }

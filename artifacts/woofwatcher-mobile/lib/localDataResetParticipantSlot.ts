@@ -7,6 +7,11 @@ export interface RequiredParticipantSlot {
 
 export function createRequiredParticipantSlot(
   requiredId: string,
+  commitPhase: LocalDataResetParticipant["commitPhase"] = "data",
+  invokeCommit?: (
+    delegate: Omit<LocalDataResetParticipant, "id">,
+    commit: Omit<LocalDataResetParticipant, "id">["commit"],
+  ) => Promise<void>,
 ): RequiredParticipantSlot {
   type Delegate = Omit<LocalDataResetParticipant, "id">;
   interface DelegateSnapshot {
@@ -24,6 +29,7 @@ export function createRequiredParticipantSlot(
 
   const participant = Object.freeze<LocalDataResetParticipant>({
     id: requiredId,
+    commitPhase,
     prepare() {
       const attempt = ++preparationAttempt;
       preparedDelegate = null;
@@ -60,7 +66,9 @@ export function createRequiredParticipantSlot(
       }
 
       try {
-        return Promise.resolve(delegate.commit.call(delegate.delegate));
+        return invokeCommit
+          ? Promise.resolve(invokeCommit(delegate.delegate, delegate.commit))
+          : Promise.resolve(delegate.commit.call(delegate.delegate));
       } catch (error) {
         return Promise.reject(error);
       }

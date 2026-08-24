@@ -6,6 +6,56 @@ function isRecord(value: unknown): value is UnknownRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function appendOwnedUri(
+  value: unknown,
+  seen: Set<string>,
+  uris: string[],
+): void {
+  if (typeof value !== "string") return;
+  const uri = value.trim();
+  if (!uri || seen.has(uri)) return;
+  seen.add(uri);
+  uris.push(uri);
+}
+
+export function collectCareAppOwnedFileReferences(input: {
+  doc: unknown;
+  entries: readonly unknown[];
+  excludeRecordIds?: readonly string[];
+  excludeEntryIds?: readonly string[];
+}): string[] {
+  const uris: string[] = [];
+  const seen = new Set<string>();
+  const excludedRecords = new Set(input.excludeRecordIds ?? []);
+  const excludedEntries = new Set(input.excludeEntryIds ?? []);
+
+  if (isRecord(input.doc)) {
+    if (Array.isArray(input.doc.records)) {
+      for (const record of input.doc.records) {
+        if (!isRecord(record) || excludedRecords.has(String(record.id ?? ""))) {
+          continue;
+        }
+        appendOwnedUri(record.attachmentUri, seen, uris);
+      }
+    }
+    if (Array.isArray(input.doc.adventureMemories)) {
+      for (const memory of input.doc.adventureMemories) {
+        if (isRecord(memory)) appendOwnedUri(memory.photoUri, seen, uris);
+      }
+    }
+  }
+
+  for (const entry of input.entries) {
+    if (!isRecord(entry) || excludedEntries.has(String(entry.id ?? ""))) {
+      continue;
+    }
+    if (isRecord(entry.details)) {
+      appendOwnedUri(entry.details.photoProofAttachmentUri, seen, uris);
+    }
+  }
+  return uris;
+}
+
 function relocateField<T extends UnknownRecord>(
   value: T,
   field: string,

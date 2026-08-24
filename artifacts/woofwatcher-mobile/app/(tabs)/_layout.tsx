@@ -6,14 +6,17 @@ import {
   useRouter,
 } from "expo-router";
 import React, { useEffect, useRef } from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useBounce } from "@/components/motion/GameFeel";
 import { UniversalTabButton } from "@/components/navigation/UniversalTabButton";
 import { useColors } from "@/hooks/useColors";
-import { getFloatingTabChromeMetrics } from "@/lib/mobileLayout";
+import {
+  getFloatingTabChromeMetrics,
+  MAX_TAB_LABEL_FONT_SCALE,
+} from "@/lib/mobileLayout";
 import { resolveMoreSectionRoute } from "@/lib/moreSectionRouting";
 import {
   handleUniversalTabPress,
@@ -72,6 +75,7 @@ function TabIcon({
 export default function TabLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { fontScale, width } = useWindowDimensions();
   const pathname = usePathname();
   const params = useGlobalSearchParams<Record<string, string | string[]>>();
   const router = useRouter();
@@ -80,6 +84,8 @@ export default function TabLayout() {
   const chrome = getFloatingTabChromeMetrics({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+    fontScale,
+    viewportWidth: width,
   });
 
   return (
@@ -89,7 +95,7 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.forest,
         tabBarInactiveTintColor: colors.mutedForeground,
-        tabBarShowLabel: true,
+        tabBarShowLabel: chrome.showVisualLabels,
         tabBarAllowFontScaling: true,
         tabBarLabelStyle: {
           fontFamily: "Inter_700Bold",
@@ -166,6 +172,22 @@ export default function TabLayout() {
             }
             options={{
               title: tab.label,
+              tabBarLabel: ({ color, children }) => (
+                <Text
+                  allowFontScaling
+                  maxFontSizeMultiplier={MAX_TAB_LABEL_FONT_SCALE}
+                  numberOfLines={1}
+                  style={{
+                    color,
+                    fontFamily: "Inter_700Bold",
+                    fontSize: 14,
+                    lineHeight: 18,
+                    textAlign: "center",
+                  }}
+                >
+                  {children}
+                </Text>
+              ),
               tabBarIcon: ({ color, focused }) => (
                 <TabIcon
                   focused={focused}

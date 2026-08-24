@@ -51,15 +51,17 @@ export function useWalkRouteCaptureStatus(): WalkRouteCaptureSnapshot {
 
 export function WalkRouteRecorderBridge() {
   const { state, careMutationsBlocked, updateEntry, isLoaded } = useCare();
-  const { attachRequiredParticipant } = useLocalDataReset();
+  const {
+    attachRequiredParticipant,
+    captureLocalDataIntent,
+    isLocalDataIntentCurrent,
+  } = useLocalDataReset();
   const openWalk = useMemo(() => findOpenWalkSession(state.entries), [state.entries]);
   const entriesRef = useRef(state.entries);
   entriesRef.current = state.entries;
   const activeKeyRef = useRef<string | null>(null);
 
-  const sessionKey = isLoaded && !careMutationsBlocked
-    ? walkSessionKey(openWalk)
-    : null;
+  const sessionKey = isLoaded ? walkSessionKey(openWalk) : null;
 
   useEffect(
     () => attachRequiredParticipant(
@@ -71,8 +73,26 @@ export function WalkRouteRecorderBridge() {
 
   useEffect(() => {
     if (!isLoaded) return;
+    // A reset prepare barrier pauses the native/web watch without deleting
+    // its captured points. Do not treat that temporary barrier as the walk
+    // ending. If a peer cannot prepare, resume the same session once local
+    // writes reopen; a successful reset clears it in the owner's commit.
+    if (careMutationsBlocked) return;
     const previousKey = activeKeyRef.current;
-    if (sessionKey === previousKey) return;
+    if (sessionKey === previousKey) {
+      if (
+        sessionKey &&
+        getWalkRouteCaptureSnapshot().status === "paused"
+      ) {
+        const intent = captureLocalDataIntent();
+        if (intent) {
+          void startWalkRouteCapture(sessionKey, () =>
+            isLocalDataIntentCurrent(intent),
+          );
+        }
+      }
+      return;
+    }
     activeKeyRef.current = sessionKey;
 
     if (previousKey) {
@@ -99,9 +119,21 @@ export function WalkRouteRecorderBridge() {
     }
 
     if (sessionKey && !careMutationsBlocked) {
-      void startWalkRouteCapture(sessionKey);
+      const intent = captureLocalDataIntent();
+      if (intent) {
+        void startWalkRouteCapture(sessionKey, () =>
+          isLocalDataIntentCurrent(intent),
+        );
+      }
     }
-  }, [careMutationsBlocked, sessionKey, isLoaded, updateEntry]);
+  }, [
+    captureLocalDataIntent,
+    careMutationsBlocked,
+    isLoaded,
+    isLocalDataIntentCurrent,
+    sessionKey,
+    updateEntry,
+  ]);
 
   // Never leave a location watch running after the app tree unmounts.
   useEffect(() => () => cancelWalkRouteCapture(), []);

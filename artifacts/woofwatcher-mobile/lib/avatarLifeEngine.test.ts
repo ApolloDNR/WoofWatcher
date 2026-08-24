@@ -75,6 +75,13 @@ test("keeps steady care playful without forcing health aura", () => {
   assert.ok(plan.idleBehaviors.some((behavior) => behavior.action === "idle-breathe"));
 });
 
+test("keeps consumer tap actions neutral instead of assuming the sample dog's name", () => {
+  const happy = deriveCareTwinScene(motion({ state: "happy" }));
+  const tired = deriveCareTwinScene(motion({ state: "tired" }));
+
+  assert.doesNotMatch(`${happy.tapVerb} ${tired.tapVerb}`, /Phoenix|My Dog/);
+});
+
 test("keeps legacy life-plan export compatible with the care twin scene engine", () => {
   const input = motion({ state: "treat", avatarMood: "happy", cue: "treat-hop" });
 

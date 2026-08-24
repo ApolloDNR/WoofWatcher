@@ -115,11 +115,10 @@ test("resolves the stored pet-name placeholder so the pass matches the app", () 
     profile: { ...baseInput().profile, name: "My Dog" },
   });
 
-  // "My Dog" is the stored profile default, not a name; every app surface
-  // shows "Phoenix" until the owner personalizes it, and the flagship share
-  // artifact has to agree.
-  assert.equal(pass.title, "Phoenix Sitter Care Pass");
-  assert.match(pass.summary, /^Phoenix care handoff/);
+  // "My Dog" is the stored profile default, not a name; every consumer
+  // surface stays neutral until the household supplies a real name.
+  assert.equal(pass.title, "Sitter Care Pass for your dog");
+  assert.match(pass.summary, /^Care handoff for your dog/);
   assert.doesNotMatch(pass.message, /My Dog/);
 
   const empty = buildCarePass({
@@ -127,7 +126,7 @@ test("resolves the stored pet-name placeholder so the pass matches the app", () 
     audience: "sitter",
     profile: { ...baseInput().profile, name: "" },
   });
-  assert.equal(empty.title, "Phoenix Sitter Care Pass");
+  assert.equal(empty.title, "Sitter Care Pass for your dog");
 });
 
 test("a renamed dog's care pass never reads Phoenix in derived copy", () => {
@@ -859,18 +858,56 @@ test("returns stored print source for current care pass artifacts", () => {
   assert.equal(printable.html, artifact.printHtml);
 });
 
-test("describes Care Pass artifact export readiness without claiming PDF generation", () => {
+test("bounds hostile Care Pass fields before message and HTML persistence", () => {
+  const enormous = `START-${"W".repeat(1_000_000)}-DECISIVE-TAIL`;
+  const pass = buildCarePass({
+    ...baseInput(),
+    entries: [],
+    routines: [],
+    records: [],
+    audience: "vet",
+    profile: {
+      name: enormous,
+      breed: enormous,
+      careFocus: enormous,
+      vetBoundary: enormous,
+      weight: { current: 42, unit: enormous },
+    },
+  });
+  const artifact = createCarePassArtifact(
+    pass,
+    "2026-06-08T06:30:00.000Z",
+  );
+
+  assert.ok(pass.title.length <= 192);
+  assert.ok(pass.summary.length <= 1_024);
+  assert.ok(pass.message.length <= 65_536);
+  assert.ok((artifact.printHtml?.length ?? 0) < 200_000);
+  assert.ok((artifact.printFileName?.length ?? 0) <= 96);
+  assert.match(pass.message, /DECISIVE-TAIL/);
+});
+
+test("describes a generated local Care Pass PDF without claiming native or provider proof", () => {
   const pass = buildCarePass({ ...baseInput(), audience: "vet" });
   const artifact = createCarePassArtifact(pass, "2026-06-08T06:30:00.000Z");
-  const exportView = describeCarePassArtifactExport(artifact, { storageProviderConfigured: true });
+  const exportView = describeCarePassArtifactExport(artifact, {
+    storageProviderConfigured: true,
+    generatedPdf: {
+      fileName: "phoenix-vet-care-pass-2026-06-08.pdf",
+      mimeType: "application/pdf",
+      byteSize: 4_096,
+    },
+  });
 
   assert.equal(exportView.fileName, "phoenix-vet-care-pass-2026-06-08.html");
   assert.equal(exportView.mimeType, "text/html");
   assert.equal(exportView.formatLabel, "Printable HTML");
   assert.equal(exportView.sourceStatus, "ready");
   assert.ok(exportView.byteSize > 500);
-  assert.equal(exportView.pdfStatus, "not-generated");
-  assert.match(exportView.pdfDetail, /PDF export still needs native or provider-backed generation/);
+  assert.equal(exportView.pdfStatus, "generated-local");
+  assert.match(exportView.pdfDetail, /generated locally/);
+  assert.match(exportView.pdfDetail, /native share and reopen proof still required/);
+  assert.match(exportView.pdfDetail, /provider storage is not enabled/i);
   assert.equal(exportView.storage.label, "Saved locally");
   assert.equal(exportView.providerBacked, false);
   assert.deepEqual(
@@ -879,9 +916,9 @@ test("describes Care Pass artifact export readiness without claiming PDF generat
   );
   assert.equal(exportView.manifestRows[0]?.value, "Printable HTML");
   assert.equal(exportView.manifestRows[1]?.value, "Print-ready");
-  assert.equal(exportView.manifestRows[2]?.value, "PDF pending");
+  assert.equal(exportView.manifestRows[2]?.value, "PDF generated locally");
   assert.equal(exportView.manifestRows[3]?.value, "Saved locally");
-  assert.match(exportView.manifestRows[2]?.detail ?? "", /native or provider-backed generation/);
+  assert.match(exportView.manifestRows[2]?.detail ?? "", /4,096 bytes/);
 });
 
 test("restores escaped print source for older care pass artifacts", () => {

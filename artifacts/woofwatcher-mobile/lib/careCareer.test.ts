@@ -187,7 +187,8 @@ test("Home wires the care career level strip, XP toasts, and level-up celebratio
     ),
     "utf8",
   );
-  assert.match(home, /deriveCareCareer\(state\.entries, now\)/);
+  assert.match(home, /const homeEntries = useMemo\([\s\S]{0,120}selectHomeVisibleEntries\(state\.entries\)/);
+  assert.match(home, /deriveCareCareer\(homeEntries, now\)/);
   assert.match(home, /careXpForEntry\(entry\)/);
   assert.match(home, /care XP/);
   assert.match(home, /Level up!/);

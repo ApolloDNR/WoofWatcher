@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Animated,
   ImageBackground,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -56,6 +57,7 @@ import {
   buildReminderNotificationPreferencesForCenter,
 } from "@/lib/reminderNotificationPreferences";
 import {
+  getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
@@ -63,11 +65,16 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
-import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
 import {
   BoardActionButton,
+  BoardCard,
+  BoardPill,
+  BoardRouteHeader,
+  BoardSectionHeader,
   BoardSegmentTabs,
   BoardStatusPill,
+  ModalBackdropPressable,
+  ModalSheetPressable,
   type BoardStatusPillTone,
 } from "@/components/board/BoardPrimitives";
 import {
@@ -85,6 +92,7 @@ import {
 } from "@/lib/planReminderCenter";
 import { buildNextPlanVisibleControl } from "@/lib/primaryTabExperience";
 import { canonicalMoreRoute } from "@/lib/canonicalRouteBuilders";
+import { createExclusiveAsyncAction } from "@/lib/exclusiveAsyncAction";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -296,6 +304,13 @@ export default function CalendarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const calendarScreenMountedRef = useRef(true);
+  useEffect(() => {
+    calendarScreenMountedRef.current = true;
+    return () => {
+      calendarScreenMountedRef.current = false;
+    };
+  }, []);
   const routeParams = useLocalSearchParams<Record<string, string | string[]>>();
   const scrollRef = useRef<ScrollView>(null);
   const scrollContentRef = useRef<View>(null!);
@@ -348,6 +363,11 @@ export default function CalendarScreen() {
     platform: Platform.OS,
     bottomInset: insets.bottom,
   });
+  const keyboardOffset = getKeyboardAvoidingVerticalOffset({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
+  });
   const now = Date.now();
   const today = todayLocalDateKey(new Date(now));
   const [scheduleTab, setScheduleTab] = useState<"day" | "week" | "month">("day");
@@ -376,6 +396,14 @@ export default function CalendarScreen() {
   const [rTimeError, setRTimeError] = useState<string | null>(null);
   const [routineFeedback, setRoutineFeedback] = useState<{ id: string; title: string; type: string } | null>(null);
   const routineFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const routineFeedbackUndoGateRef = useRef<ReturnType<
+    typeof createExclusiveAsyncAction
+  > | null>(null);
+  if (routineFeedbackUndoGateRef.current === null) {
+    routineFeedbackUndoGateRef.current = createExclusiveAsyncAction();
+  }
+  const routineFeedbackUndoGate = routineFeedbackUndoGateRef.current;
+  const [routineFeedbackUndoBusy, setRoutineFeedbackUndoBusy] = useState(false);
 
   // WoofGuide discovery
   const [discoverOpen, setDiscoverOpen] = useState(false);
@@ -908,22 +936,46 @@ export default function CalendarScreen() {
   };
 
   const undoRoutineFeedback = async () => {
-    if (!routineFeedback) return;
+    const feedback = routineFeedback;
+    if (!feedback) return;
     if (careMutationsBlocked) {
       showCareReadOnly();
       return;
     }
-    const deleted = await deleteEntry(routineFeedback.id);
-    if (!careMutationWasAccepted(deleted)) {
-      showCareReadOnly();
-      return;
-    }
-    clearRoutineFeedbackTimer();
-    setRoutineFeedback(null);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    await routineFeedbackUndoGate.run(async () => {
+      setRoutineFeedbackUndoBusy(true);
+      clearRoutineFeedbackTimer();
+      try {
+        let deleted = false;
+        try {
+          deleted = await deleteEntry(feedback.id);
+        } catch {
+          deleted = false;
+        }
+        if (!calendarScreenMountedRef.current) return;
+        if (!careMutationWasAccepted(deleted)) {
+          notifyDialog(
+            "Undo not completed",
+            "WoofWatcher could not confirm that this care log was removed. Check the timeline before trying again.",
+          );
+          return;
+        }
+        setRoutineFeedback((current) =>
+          current?.id === feedback.id ? null : current,
+        );
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Warning,
+        ).catch(() => {});
+      } finally {
+        if (calendarScreenMountedRef.current) {
+          setRoutineFeedbackUndoBusy(false);
+        }
+      }
+    });
   };
 
   const openRoutineFeedbackDetails = () => {
+    if (routineFeedbackUndoGate.isBusy()) return;
     if (!routineFeedback) return;
     const entryId = routineFeedback.id;
     clearRoutineFeedbackTimer();
@@ -1098,7 +1150,7 @@ export default function CalendarScreen() {
 
   planMissionRows.push({
     id: "household-sync",
-    eyebrow: "Household Sync",
+    eyebrow: "Care team",
     title: responsibilityIsCovered ? "Care board is covered" : "Needs owner attention",
     detail: responsibility.nextStep,
     icon: "heart",
@@ -2049,7 +2101,7 @@ export default function CalendarScreen() {
                 ))}
                 {careReminderCenter.total > careReminderCenter.items.length ? (
                   <Text style={[s.reminderMore, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                    + {careReminderCenter.total - careReminderCenter.items.length} more reminder candidate{careReminderCenter.total - careReminderCenter.items.length === 1 ? "" : "s"} in records and routines.
+                    + {careReminderCenter.total - careReminderCenter.items.length} more reminder{careReminderCenter.total - careReminderCenter.items.length === 1 ? "" : "s"} in records and routines.
                   </Text>
                 ) : null}
               </View>
@@ -2358,12 +2410,15 @@ export default function CalendarScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Undo ${routineFeedback.title} routine log`}
+              accessibilityState={{ disabled: routineFeedbackUndoBusy }}
+              disabled={routineFeedbackUndoBusy}
               onPress={undoRoutineFeedback}
               style={({ pressed }) => [
                 s.routineFeedbackButton,
                 {
-                  backgroundColor: pressed ? "rgba(255,249,239,0.17)" : "rgba(255,249,239,0.1)",
+                  backgroundColor: pressed && !routineFeedbackUndoBusy ? "rgba(255,249,239,0.17)" : "rgba(255,249,239,0.1)",
                   borderColor: "rgba(255,249,239,0.34)",
+                  opacity: routineFeedbackUndoBusy ? 0.5 : 1,
                 },
               ]}
             >
@@ -2372,12 +2427,15 @@ export default function CalendarScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Add details to ${routineFeedback.title} routine log`}
+              accessibilityState={{ disabled: routineFeedbackUndoBusy }}
+              disabled={routineFeedbackUndoBusy}
               onPress={openRoutineFeedbackDetails}
               style={({ pressed }) => [
                 s.routineFeedbackButton,
                 {
-                  backgroundColor: pressed ? colors.copper + "DD" : colors.copper,
+                  backgroundColor: pressed && !routineFeedbackUndoBusy ? colors.copper + "DD" : colors.copper,
                   borderColor: colors.copper,
+                  opacity: routineFeedbackUndoBusy ? 0.5 : 1,
                 },
               ]}
             >
@@ -2391,12 +2449,24 @@ export default function CalendarScreen() {
 
       {/* Routine editor modal */}
       <Modal visible={routineOpen} transparent animationType="slide" onRequestClose={() => setRoutineOpen(false)}>
-        <Pressable accessible={false} style={s.modalBackdrop} onPress={() => setRoutineOpen(false)}>
-          <Pressable accessible={false} accessibilityViewIsModal style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
-            <View style={s.modalHandle} />
-            <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
-              {routineEditId ? "Edit Routine" : "New Routine"}
-            </Text>
+        <ModalBackdropPressable style={s.modalBackdrop} onPress={() => setRoutineOpen(false)}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
+            <ModalSheetPressable
+              visible={routineOpen}
+              onRequestClose={() => setRoutineOpen(false)}
+              style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
+            >
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator
+                bounces={false}
+                style={s.modalFormScroll}
+                contentContainerStyle={s.modalFormContent}
+              >
+                <View style={s.modalHandle} />
+                <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                  {routineEditId ? "Edit Routine" : "New Routine"}
+                </Text>
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>LABEL</Text>
             <TextInput
@@ -2463,7 +2533,7 @@ export default function CalendarScreen() {
                 <TextInput
                   value={rOwner}
                   onChangeText={setROwner}
-                  placeholder="Apollo, Maya..."
+                  placeholder="Caregiver name"
                   placeholderTextColor={colors.mutedForeground}
                   style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
                 />
@@ -2532,22 +2602,36 @@ export default function CalendarScreen() {
               </Text>
             ) : null}
 
-            {routineEditId && (
-              <Pressable onPress={() => deleteRoutine(routineEditId)} style={s.deleteBtn}>
-                <Ionicons name="trash-outline" size={15} color={colors.rose} />
-                <Text style={[s.deleteBtnText, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>Delete Routine</Text>
-              </Pressable>
-            )}
-          </Pressable>
-        </Pressable>
+                {routineEditId && (
+                  <Pressable onPress={() => deleteRoutine(routineEditId)} style={s.deleteBtn}>
+                    <Ionicons name="trash-outline" size={15} color={colors.rose} />
+                    <Text style={[s.deleteBtnText, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>Delete Routine</Text>
+                  </Pressable>
+                )}
+              </ScrollView>
+            </ModalSheetPressable>
+          </KeyboardAvoidingView>
+        </ModalBackdropPressable>
       </Modal>
 
       {/* Add-event modal */}
       <Modal visible={addOpen} transparent animationType="slide" onRequestClose={() => setAddOpen(false)}>
-        <Pressable accessible={false} style={s.modalBackdrop} onPress={() => setAddOpen(false)}>
-          <Pressable accessible={false} accessibilityViewIsModal style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
-            <View style={s.modalHandle} />
-            <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>{eventEditId ? "Edit Event" : "New Event"}</Text>
+        <ModalBackdropPressable style={s.modalBackdrop} onPress={() => setAddOpen(false)}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
+            <ModalSheetPressable
+              visible={addOpen}
+              onRequestClose={() => setAddOpen(false)}
+              style={[s.modalSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
+            >
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator
+                bounces={false}
+                style={s.modalFormScroll}
+                contentContainerStyle={s.modalFormContent}
+              >
+                <View style={s.modalHandle} />
+                <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>{eventEditId ? "Edit Event" : "New Event"}</Text>
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TITLE</Text>
             <TextInput
@@ -2629,17 +2713,19 @@ export default function CalendarScreen() {
             </Pressable>
             {/* Validation feedback lives next to the submit button so the
                 sheet never looks silently broken when a field above is off. */}
-            {evTitleError ? null : !evTitle.trim() ? (
-              <Text style={[s.sheetSubmitHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                Add a title above to save this event.
-              </Text>
-            ) : dateError || evTimeError ? (
-              <Text aria-live="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
-                {dateError ?? evTimeError}
-              </Text>
-            ) : null}
-          </Pressable>
-        </Pressable>
+                {evTitleError ? null : !evTitle.trim() ? (
+                  <Text style={[s.sheetSubmitHint, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    Add a title above to save this event.
+                  </Text>
+                ) : dateError || evTimeError ? (
+                  <Text aria-live="polite" style={[s.sheetSubmitHint, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>
+                    {dateError ?? evTimeError}
+                  </Text>
+                ) : null}
+              </ScrollView>
+            </ModalSheetPressable>
+          </KeyboardAvoidingView>
+        </ModalBackdropPressable>
       </Modal>
     </View>
   );
@@ -3266,8 +3352,11 @@ const s = StyleSheet.create({
   },
   routineFeedbackButtonText: { fontSize: 12.5 },
 
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
-  modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
+  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
+  modalDock: { flex: 1, justifyContent: "flex-end" },
+  modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, maxHeight: "92%" },
+  modalFormScroll: { flexShrink: 1 },
+  modalFormContent: { paddingBottom: 4 },
   modalHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
   modalTitle: { fontSize: 22, marginBottom: 16 },
   fieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 14 },

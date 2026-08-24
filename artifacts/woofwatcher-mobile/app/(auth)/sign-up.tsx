@@ -11,9 +11,9 @@ import {
   Field,
   FormError,
   GoogleButton,
-  LocalPreviewGateway,
   PrimaryButton,
 } from "@/components/auth-ui";
+import { OwnerOpsUnavailableScreen } from "@/components/board/OwnerOpsBoundary";
 import { useColors } from "@/hooks/useColors";
 import { isClerkEnabledForBuild } from "@/lib/auth";
 
@@ -23,9 +23,7 @@ export default function SignUpScreen() {
   // Clerk hooks require the matching provider. Production remains local-only
   // even if a valid Clerk key is accidentally present in the build environment.
   if (!isClerkEnabledForBuild) {
-    return (
-      <LocalPreviewGateway subtitle="Account creation is not connected in this preview build. Care data stays local-first until production sync providers are configured." />
-    );
+    return <OwnerOpsUnavailableScreen />;
   }
   return <ClerkSignUpScreen />;
 }
@@ -160,7 +158,7 @@ function ClerkSignUpScreen() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Create the account layer for Phoenix's care twin. Care data stays local-first until production sync providers are configured."
+      subtitle="Create a private account for your dog's care. Care data stays on this device unless you choose an available sharing feature."
     >
       <FormError message={formError} />
       <Field

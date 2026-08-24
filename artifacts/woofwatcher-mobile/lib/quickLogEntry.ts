@@ -324,7 +324,7 @@ export function describeQuickLogDetailSheet(
     return {
       ...base,
       subtitle: "Fast bowl drop now, accurate outcome later.",
-      quickSummary: "Quick tap serves the usual meal and keeps the meal outcome pending until someone confirms what Phoenix ate.",
+      quickSummary: "Quick tap serves the usual meal and keeps the meal outcome pending until someone confirms what your dog ate.",
       detailChecklist: [
         "Meal uses a served -> outcome lifecycle so a bowl on the floor is not treated as eaten.",
         "Track portion offered, expected portion, and food notes before saving.",

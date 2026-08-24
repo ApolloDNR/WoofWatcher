@@ -34,9 +34,13 @@ test("CareContext serializes primary snapshots and exposes only coordinated rese
   assert.match(careContextSource, /carePersistenceWriter\s*\.enqueue\(\{/);
   assert.equal(
     careContextSource.match(
-      /AsyncStorage\.setItem\(CARE_PRIMARY_LOCAL_DATA_KEY,/g,
+      /removableStorage\.setItem\(CARE_PRIMARY_LOCAL_DATA_KEY,/g,
     )?.length,
     1,
+  );
+  assert.doesNotMatch(
+    careContextSource,
+    /AsyncStorage\.setItem\(CARE_PRIMARY_LOCAL_DATA_KEY,/,
   );
   const finalization = sourceSlice(
     "const finalizeSuccessfulCareReset = useCallback(() => {",
@@ -80,6 +84,29 @@ test("CareContext pauses snapshot enqueue during prepare without skipping accept
     /!isWriteAdmissionOpen\(\)/,
   );
   assert.match(persistence, /operationSettledEpoch/);
+});
+
+test("CareContext exposes an exact current-ref persistence receipt for file cleanup", () => {
+  assert.match(
+    careContextSource,
+    /persistCurrentCareSnapshot:\s*\(\)\s*=>\s*Promise<boolean>/,
+  );
+  const receipt = sourceSlice(
+    "const persistCurrentCareSnapshot = useCallback(",
+    "// Persist the offline cache whenever synced state changes.",
+  );
+  assert.match(receipt, /doc:\s*docRef\.current/);
+  assert.match(receipt, /entries:\s*entriesRef\.current/);
+  assert.match(receipt, /serverVersion:\s*versionRef\.current/);
+  assert.match(receipt, /await carePersistenceWriter\.enqueue/);
+  assert.match(receipt, /careWriteCanContinue\(writeGeneration\)/);
+
+  const effect = sourceSlice(
+    "// Persist the offline cache whenever synced state changes.",
+    "const pushDoc = useCallback",
+  );
+  assert.match(effect, /persistCurrentCareSnapshot\(\)/);
+  assert.doesNotMatch(effect, /JSON\.stringify\(\{\s*doc,\s*entries/);
 });
 
 test("CareContext supplies nondestructive prepare drains and commit-only invalidation", () => {

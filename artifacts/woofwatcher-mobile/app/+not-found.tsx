@@ -34,8 +34,8 @@ export default function NotFoundScreen() {
           { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
         ]}
       >
-        The screen you were looking for is not here. Head back to the Phoenix
-        Room and pick up the day from there.
+        The page you were looking for isn't available. Head back to Home and
+        continue your dog's care from there.
       </Text>
       <Pressable
         accessibilityRole="button"

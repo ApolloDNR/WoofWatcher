@@ -4,6 +4,8 @@ export interface MobileLayoutInput {
   platform: MobileRuntimePlatform;
   bottomInset?: number;
   topInset?: number;
+  fontScale?: number;
+  viewportWidth?: number;
 }
 
 export type RouteTopPaddingSurface = "tabbed" | "standalone" | "setup" | "auth";
@@ -16,13 +18,27 @@ export interface FloatingTabChromeMetrics {
   centerFabBottom: number;
   centerFabSize: number;
   contentBottomPadding: number;
+  showVisualLabels: boolean;
+  visualLabelLineCount: 0 | 1;
 }
 
 export const MIN_MOBILE_TOUCH_TARGET = 48;
 export const MOBILE_INLINE_HIT_SLOP = 10;
+export const MAX_TAB_LABEL_FONT_SCALE = 3.6;
 
 const TAB_BAR_NATIVE_HEIGHT = 72;
 const TAB_BAR_WEB_HEIGHT = 72;
+const TAB_COUNT = 5;
+const TAB_LABEL_LINE_HEIGHT = 18;
+const TAB_WIDEST_LABEL_BASE_WIDTH = 48;
+const TAB_ICON_HEIGHT = 23;
+const TAB_ICON_LABEL_GAP = 2;
+const TAB_BAR_PADDING_TOP = 5;
+const TAB_BAR_PADDING_BOTTOM = 6;
+const TAB_BAR_HORIZONTAL_PADDING = 7;
+const TAB_ITEM_VERTICAL_MARGIN = 2;
+const TAB_ITEM_HORIZONTAL_MARGIN = 3;
+const DEFAULT_TAB_VIEWPORT_WIDTH = 390;
 const TAB_BAR_NATIVE_BOTTOM = 12;
 const TAB_BAR_WEB_BOTTOM = 12;
 const TAB_BAR_HORIZONTAL_INSET = 16;
@@ -69,11 +85,44 @@ function normalizeTopInset(platform: MobileRuntimePlatform, topInset = 0): numbe
   return Math.max(0, topInset);
 }
 
+function normalizeTabLabelFontScale(fontScale = 1): number {
+  if (!Number.isFinite(fontScale) || fontScale <= 0) return 1;
+  return Math.min(MAX_TAB_LABEL_FONT_SCALE, Math.max(1, fontScale));
+}
+
+function normalizeViewportWidth(viewportWidth = DEFAULT_TAB_VIEWPORT_WIDTH): number {
+  if (!Number.isFinite(viewportWidth) || viewportWidth <= 0) {
+    return DEFAULT_TAB_VIEWPORT_WIDTH;
+  }
+  return viewportWidth;
+}
+
 export function getFloatingTabChromeMetrics(input: MobileLayoutInput): FloatingTabChromeMetrics {
   const web = isWebPlatform(input.platform);
   const bottomInset = normalizeBottomInset(input.platform, input.bottomInset);
   const tabBarBottom = web ? TAB_BAR_WEB_BOTTOM : TAB_BAR_NATIVE_BOTTOM;
-  const tabBarHeight = web ? TAB_BAR_WEB_HEIGHT : TAB_BAR_NATIVE_HEIGHT;
+  const baseTabBarHeight = web ? TAB_BAR_WEB_HEIGHT : TAB_BAR_NATIVE_HEIGHT;
+  const labelFontScale = normalizeTabLabelFontScale(input.fontScale);
+  const viewportWidth = normalizeViewportWidth(input.viewportWidth);
+  const tabItemContentWidth = Math.max(
+    0,
+    (viewportWidth - TAB_BAR_HORIZONTAL_INSET * 2 - TAB_BAR_HORIZONTAL_PADDING * 2) /
+      TAB_COUNT -
+      TAB_ITEM_HORIZONTAL_MARGIN * 2,
+  );
+  const showVisualLabels =
+    TAB_WIDEST_LABEL_BASE_WIDTH * labelFontScale <= tabItemContentWidth;
+  const visualLabelLineCount = showVisualLabels ? 1 : 0;
+  const requiredTabBarHeight =
+    TAB_BAR_PADDING_TOP +
+    TAB_BAR_PADDING_BOTTOM +
+    TAB_ITEM_VERTICAL_MARGIN * 2 +
+    TAB_ICON_HEIGHT +
+    (showVisualLabels
+      ? TAB_ICON_LABEL_GAP +
+        Math.ceil(TAB_LABEL_LINE_HEIGHT * labelFontScale) * visualLabelLineCount
+      : 0);
+  const tabBarHeight = Math.max(baseTabBarHeight, requiredTabBarHeight);
   const centerFabBottom =
     (bottomInset || CENTER_FAB_FALLBACK_SAFE_BOTTOM) + CENTER_FAB_BOTTOM_OFFSET;
   const chromeBottomClearance = Math.max(
@@ -88,6 +137,8 @@ export function getFloatingTabChromeMetrics(input: MobileLayoutInput): FloatingT
     tabBarRadius: TAB_BAR_RADIUS,
     centerFabBottom,
     centerFabSize: CENTER_FAB_SIZE,
+    showVisualLabels,
+    visualLabelLineCount,
     contentBottomPadding: Math.max(
       TABBED_ROUTE_MIN_BOTTOM_PADDING,
       chromeBottomClearance + TABBED_ROUTE_BOTTOM_GUTTER,

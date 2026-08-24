@@ -1,3 +1,5 @@
+import { DEFAULT_PET_PLACEHOLDER } from "./petIdentity.ts";
+
 export type PetAvatarStyle = "pixel";
 
 export type AvatarTemplateId =
@@ -306,7 +308,10 @@ export function summarizeAvatarAccessoryFits(templateId: AvatarTemplateId): stri
   return `${fittedCount}/${AVATAR_ACCESSORIES.length} accessories template-fitted for ${template.label}; ${pendingCopy} inventory-ready until their template overlay pack ships.`;
 }
 
-export function createDefaultAvatarConfig(petName = "Phoenix", now = new Date().toISOString()): PetAvatarConfig {
+export function createDefaultAvatarConfig(
+  petName = DEFAULT_PET_PLACEHOLDER,
+  now = new Date().toISOString(),
+): PetAvatarConfig {
   return {
     version: 1,
     petName,
@@ -331,7 +336,10 @@ export function createDefaultAvatarConfig(petName = "Phoenix", now = new Date().
   };
 }
 
-export function normalizeAvatarConfig(input: unknown, petName = "Phoenix"): PetAvatarConfig {
+export function normalizeAvatarConfig(
+  input: unknown,
+  petName = DEFAULT_PET_PLACEHOLDER,
+): PetAvatarConfig {
   const fallback = createDefaultAvatarConfig(petName);
   if (!input || typeof input !== "object" || Array.isArray(input)) return fallback;
 
@@ -402,6 +410,13 @@ export function hasManualAvatarConfiguration(config: PetAvatarConfig): boolean {
       (slot) => config.accessorySlots[slot] !== baseline.accessorySlots[slot],
     )
   );
+}
+
+export function shouldSyncAvatarStudioDraftFromContext(input: {
+  draftDirty: boolean;
+  persistenceInFlight: boolean;
+}): boolean {
+  return !input.draftDirty && !input.persistenceInFlight;
 }
 
 export function describeAvatarConfig(config: PetAvatarConfig): string {

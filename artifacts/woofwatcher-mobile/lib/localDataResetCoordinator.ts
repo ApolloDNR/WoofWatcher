@@ -1,7 +1,8 @@
 export interface LocalDataResetParticipant {
   id: string;
+  commitPhase?: "data" | "credentials";
   prepare(): Promise<void>;
-  commit(): Promise<void>;
+  commit(context?: unknown): Promise<void>;
 }
 
 export interface LocalDataResetResult {
@@ -12,19 +13,26 @@ export interface LocalDataResetResult {
 
 export interface LocalDataResetCoordinator {
   register(participant: LocalDataResetParticipant): () => void;
-  run(beforeCommit?: () => void): Promise<LocalDataResetResult>;
+  run(
+    beforeCommit?: () => void | Promise<void>,
+    afterCommit?: () => void | Promise<void>,
+  ): Promise<LocalDataResetResult>;
 }
 
 export function createLocalDataResetCoordinator(): LocalDataResetCoordinator {
   interface RegisteredParticipant {
     id: string;
+    commitPhase: "data" | "credentials";
     participant: LocalDataResetParticipant;
   }
 
   const participants = new Map<string, RegisteredParticipant>();
   let inFlight: Promise<LocalDataResetResult> | null = null;
 
-  const executeRun = async (beforeCommit?: () => void): Promise<LocalDataResetResult> => {
+  const executeRun = async (
+    beforeCommit?: () => void | Promise<void>,
+    afterCommit?: () => void | Promise<void>,
+  ): Promise<LocalDataResetResult> => {
     const snapshot = [...participants.values()].sort((left, right) =>
       left.id.localeCompare(right.id),
     );
@@ -48,24 +56,36 @@ export function createLocalDataResetCoordinator(): LocalDataResetCoordinator {
       };
     }
 
-    beforeCommit?.();
+    let commitBoundaryEntered = false;
+    try {
+      if (beforeCommit) await beforeCommit();
+      commitBoundaryEntered = true;
 
-    const committedParticipantIds: string[] = [];
-    const failedParticipantIds: string[] = [];
-    for (const { id, participant } of snapshot) {
-      try {
-        await participant.commit();
-        committedParticipantIds.push(id);
-      } catch {
-        failedParticipantIds.push(id);
+      const committedParticipantIds: string[] = [];
+      const failedParticipantIds: string[] = [];
+      const commitSnapshot = [...snapshot].sort((left, right) => {
+        const phaseOrder =
+          Number(left.commitPhase === "credentials") -
+          Number(right.commitPhase === "credentials");
+        return phaseOrder || left.id.localeCompare(right.id);
+      });
+      for (const { id, participant } of commitSnapshot) {
+        try {
+          await participant.commit();
+          committedParticipantIds.push(id);
+        } catch {
+          failedParticipantIds.push(id);
+        }
       }
-    }
 
-    return {
-      status: failedParticipantIds.length === 0 ? "complete" : "partial-failure",
-      committedParticipantIds,
-      failedParticipantIds,
-    };
+      return {
+        status: failedParticipantIds.length === 0 ? "complete" : "partial-failure",
+        committedParticipantIds,
+        failedParticipantIds,
+      };
+    } finally {
+      if (commitBoundaryEntered) await afterCommit?.();
+    }
   };
 
   return {
@@ -74,7 +94,11 @@ export function createLocalDataResetCoordinator(): LocalDataResetCoordinator {
       if (participants.has(registeredId)) {
         throw new Error(`Local data reset participant '${registeredId}' is already registered.`);
       }
-      const registration = { id: registeredId, participant };
+      const registration = {
+        id: registeredId,
+        commitPhase: participant.commitPhase ?? "data",
+        participant,
+      };
       participants.set(registeredId, registration);
       return () => {
         if (participants.get(registeredId) === registration) {
@@ -82,7 +106,7 @@ export function createLocalDataResetCoordinator(): LocalDataResetCoordinator {
         }
       };
     },
-    run(beforeCommit) {
+    run(beforeCommit, afterCommit) {
       if (inFlight) return inFlight;
       let resolveOperation!: (result: LocalDataResetResult) => void;
       let rejectOperation!: (reason?: unknown) => void;
@@ -91,7 +115,7 @@ export function createLocalDataResetCoordinator(): LocalDataResetCoordinator {
         rejectOperation = reject;
       });
       inFlight = operation;
-      const execution = executeRun(beforeCommit);
+      const execution = executeRun(beforeCommit, afterCommit);
       void execution.then(resolveOperation, rejectOperation);
       void operation.then(
         () => {

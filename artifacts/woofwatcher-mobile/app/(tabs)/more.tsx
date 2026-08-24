@@ -94,7 +94,17 @@ import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
-import { BoardActionButton, BoardCard, BoardMetricTile, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import { resolveConsumerPetName } from "@/lib/petIdentity";
+import {
+  BoardActionButton,
+  BoardCard,
+  BoardMetricTile,
+  BoardPill,
+  BoardRouteHeader,
+  BoardSectionHeader,
+  ModalBackdropPressable,
+  ModalSheetPressable,
+} from "@/components/board/BoardPrimitives";
 import { ProgressFill } from "@/components/motion/GameFeel";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 import {
@@ -471,10 +481,7 @@ function MoreScreenContent({}: Record<string, never>) {
       }),
     [entries, routines, caregivers, now, providerSyncEnabled],
   );
-  const petName =
-    profile.name && profile.name !== "My Dog"
-      ? profile.name
-      : "Phoenix";
+  const petName = resolveConsumerPetName(profile.name);
   const avatarTemplate = useMemo(
     () => getAvatarTemplate(avatarConfig.templateId),
     [avatarConfig.templateId],
@@ -2619,8 +2626,12 @@ function MoreScreenContent({}: Record<string, never>) {
 
 
       <Modal visible={providerSetupOpen} transparent animationType="slide" onRequestClose={() => setProviderSetupOpen(false)}>
-        <Pressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProviderSetupOpen(false)}>
-          <Pressable style={[s.profileModal, { backgroundColor: colors.card }]} onPress={(e) => e.stopPropagation()}>
+        <ModalBackdropPressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProviderSetupOpen(false)}>
+          <ModalSheetPressable
+            visible={providerSetupOpen}
+            onRequestClose={() => setProviderSetupOpen(false)}
+            style={[s.profileModal, { backgroundColor: colors.card }]}
+          >
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: modalSheetBottomPadding, paddingHorizontal: 22 }}
@@ -2726,8 +2737,8 @@ function MoreScreenContent({}: Record<string, never>) {
                 <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save provider setup</Text>
               </Pressable>
             </ScrollView>
-          </Pressable>
-        </Pressable>
+          </ModalSheetPressable>
+        </ModalBackdropPressable>
       </Modal>
 
     </View>

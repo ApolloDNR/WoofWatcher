@@ -34,6 +34,7 @@ import { LocalDataResetAppShield } from "@/components/LocalDataResetAppShield";
 import { WalkRouteRecorderBridge } from "@/components/WalkRouteRecorder";
 import { WebDialogHost } from "@/components/WebDialogHost";
 import { CareProvider } from "@/context/CareContext";
+import { AuthCredentialsLocalDataResetProvider } from "@/context/AuthCredentialsLocalDataResetContext";
 import { AvatarProvider } from "@/context/AvatarContext";
 import { AppViewportProvider } from "@/context/AppViewportContext";
 import { AppFileSystemProvider } from "@/context/AppFileSystemContext";
@@ -130,7 +131,7 @@ function RootLayoutNav() {
       <Stack.Screen
         name="premium"
         options={{
-          title: "WoofWatcher Plus",
+          headerShown: false,
           presentation: "card",
         }}
       />
@@ -173,7 +174,7 @@ function RootLayoutNav() {
       <Stack.Screen
         name="care-twin-qa"
         options={{
-          title: "Care Twin QA",
+          headerShown: false,
           presentation: "card",
         }}
       />
@@ -364,12 +365,13 @@ export default function RootLayout() {
         <ErrorBoundary>
           <QueryClientProvider client={queryClient}>
             <LocalDataResetProvider>
-              <WebRuntimeLocalDataResetProvider>
-                <AppFileSystemProvider>
-                <QueryCacheLocalDataResetProvider>
-                  <DevicePreferencesProvider>
-                    <AuthBridge />
-                    <CareProvider>
+              <AuthCredentialsLocalDataResetProvider>
+                <WebRuntimeLocalDataResetProvider>
+                  <AppFileSystemProvider>
+                  <QueryCacheLocalDataResetProvider>
+                    <DevicePreferencesProvider>
+                      <AuthBridge />
+                      <CareProvider>
                       {/* Follows the shared walk lifecycle: starts route capture when
                           any surface opens a walk session, persists it on finish. */}
                       <WalkRouteRecorderBridge />
@@ -383,11 +385,12 @@ export default function RootLayout() {
                           </KeyboardProvider>
                         </GestureHandlerRootView>
                       </AvatarProvider>
-                    </CareProvider>
-                  </DevicePreferencesProvider>
-                </QueryCacheLocalDataResetProvider>
-                </AppFileSystemProvider>
-              </WebRuntimeLocalDataResetProvider>
+                      </CareProvider>
+                    </DevicePreferencesProvider>
+                  </QueryCacheLocalDataResetProvider>
+                  </AppFileSystemProvider>
+                </WebRuntimeLocalDataResetProvider>
+              </AuthCredentialsLocalDataResetProvider>
             </LocalDataResetProvider>
           </QueryClientProvider>
         </ErrorBoundary>

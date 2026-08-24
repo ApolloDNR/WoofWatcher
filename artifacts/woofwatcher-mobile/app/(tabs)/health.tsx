@@ -329,7 +329,7 @@ function HealthCoreScreen({
 
   const healthWatch = useMemo(
     // petName keeps pattern next steps ("... or <dog> seems painful ...")
-    // on the renamed dog instead of a hardcoded "Phoenix".
+    // on the current dog name, with a neutral fresh-install fallback.
     () =>
       deriveHealthWatch({
         entries: state.entries,

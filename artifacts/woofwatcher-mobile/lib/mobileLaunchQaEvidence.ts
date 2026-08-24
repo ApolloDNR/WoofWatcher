@@ -13,6 +13,7 @@ import {
 import type { MobileQaSessionState } from "./mobileQaSession.ts";
 import { buildReleasePacket } from "./releasePacket.ts";
 import { buildStoreSubmissionPacket } from "./storeSubmissionPacket.ts";
+import { qaScreenshotEvidenceIsExactDeviceProof } from "./qaScreenshotEvidence.ts";
 
 export interface MobileLaunchQaCaptureTarget {
   surfaceId: string;
@@ -104,12 +105,7 @@ export function mobileLaunchQaCaptureTargetStatusLabel(
 function buildScreenshotCandidateStoreSurfaces(): readonly MobileReleaseQaSurface[] {
   const launchReadinessPlan = deriveLaunchReadiness({
     nativeQa: null,
-    local: {
-      careWorkflowsReady: true,
-      easProfilesReady: true,
-      pixelAssetsReady: true,
-      privacyExportReady: true,
-    },
+    local: {},
     provider: {
       authConfigured: false,
       databaseConfigured: false,
@@ -122,11 +118,11 @@ function buildScreenshotCandidateStoreSurfaces(): readonly MobileReleaseQaSurfac
       privacyLegalApproved: false,
       supportRunbookApproved: false,
     },
-    syncStatus: "healthy",
+    syncStatus: undefined,
   });
   const releasePacket = buildReleasePacket(launchReadinessPlan, {
     appName: "WoofWatcher",
-    buildName: "mobile screenshot candidate",
+    buildName: "unbound local QA workspace (exact binary not identified)",
   });
   return buildStoreSubmissionScreenshotQaSurfaces(buildStoreSubmissionPacket(releasePacket));
 }
@@ -178,7 +174,9 @@ function missingEvidenceForSurface(
   const requiredIos = requiredPlatforms.filter((platform) => platform === "ios").length;
   const requiredAndroid = requiredPlatforms.filter((platform) => platform === "android").length;
   const requiredAny = requiredPlatforms.filter((platform) => platform === "any").length;
-  const evidence = review.screenshotEvidence ?? [];
+  const evidence = (review.screenshotEvidence ?? []).filter(
+    qaScreenshotEvidenceIsExactDeviceProof,
+  );
   const requiresNote = surface.requiredEvidence.some(evidenceRequiresNote);
   const hasNote = Boolean(review.note?.trim());
   const attachedIos = evidence.filter((item) => item.targetPlatform === "ios").length;
@@ -190,9 +188,9 @@ function missingEvidenceForSurface(
   const missingAny = Math.max(0, requiredAny - flexibleAvailable);
   const missing: string[] = [];
 
-  if (missingIos > 0) missing.push(`Attach ${pluralLabel(missingIos, "iOS screenshot")} for ${surface.title}.`);
-  if (missingAndroid > 0) missing.push(`Attach ${pluralLabel(missingAndroid, "Android screenshot")} for ${surface.title}.`);
-  if (missingAny > 0) missing.push(`Attach ${pluralLabel(missingAny, "screenshot")} for ${surface.title}.`);
+  if (missingIos > 0) missing.push(`Attach ${pluralLabel(missingIos, "exact-device iOS screenshot")} for ${surface.title}.`);
+  if (missingAndroid > 0) missing.push(`Attach ${pluralLabel(missingAndroid, "exact-device Android screenshot")} for ${surface.title}.`);
+  if (missingAny > 0) missing.push(`Attach ${pluralLabel(missingAny, "exact-device screenshot")} for ${surface.title}.`);
   if (requiresNote && !hasNote) missing.push(`Add QA note for ${surface.title}.`);
 
   if (!missing.length && review.status === "unreviewed") {
@@ -522,7 +520,7 @@ export function buildMobileLaunchQaFocusedTargetShareText(
     `Goal: ${surface.goal}`,
     `Device prompt: ${surface.devicePrompt}`,
     `Proof needed: ${target.missingEvidence.join(" ") || "No missing proof remains for this focused target."}`,
-    `Attached proof: ${pluralLabel(target.evidenceAttached, "screenshot")}.`,
+    `Manual screenshot references: ${pluralLabel(target.evidenceAttached, "attachment")}. These are not exact-binary/device proof.`,
     `Setup: ${target.setupSteps.join(" ") || "Open the route from the current local beta state."}`,
     `Verify: ${target.verificationSteps.join(" ") || "Review the route on a phone-sized iOS or Android surface."}`,
   );
@@ -543,7 +541,7 @@ export function buildMobileLaunchQaFocusedTargetShareText(
     "",
     `Pass when: ${target.acceptanceCriteria.join(" ") || "The focused route passes its acceptance criteria."}`,
     `Needs tune if: ${target.failureEscalation}`,
-    `After capture: return to ${focusedRoute}, attach focused proof, save a note if needed, and mark Pass or Needs tune.`,
+    `After capture: return to ${focusedRoute}, attach a focused manual reference, save a note if needed, and mark Pass or Needs tune. Exact-device attestation stays separate.`,
     "Keep App Store/Play Store approval separate from this local beta QA evidence.",
   );
 
@@ -680,13 +678,13 @@ export function buildMobileLaunchQaCaptureShareText(
     }
     lines.push(`   Pass criteria: ${target.acceptanceCriteria.join(" ")}`);
     lines.push(`   Needs tune if: ${target.failureEscalation}`);
-    lines.push(`   Evidence attached: ${target.evidenceAttached}`);
+    lines.push(`   Manual screenshot references attached: ${target.evidenceAttached}`);
     if (target.note) lines.push(`   Note: ${target.note}`);
   });
 
   lines.push(
     "",
-    "Done condition: capture iOS and Android proof in /care-twin-qa, mark Pass or Needs tune for each surface, share the QA report, and keep store approval separate from local evidence.",
+    "Done condition: record exact-binary iOS and Android device proof separately from Photos-library references, mark Pass or Needs tune for each surface, share the QA report, and keep store approval separate from local evidence.",
   );
 
   return lines.join("\n");

@@ -85,6 +85,12 @@ import {
 } from "@/lib/homeFixedHeroLayout";
 import { isHomeSceneReady } from "@/lib/homeSceneReady";
 import { getHomeMissionDeckLayout } from "@/lib/homeMissionLayout";
+import {
+  deriveHomeEvidenceCopy,
+  formatHomeCompletion,
+  isHomeMoodEvidence,
+  selectHomeVisibleEntries,
+} from "@/lib/homeEvidence";
 import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
 import {
   careXpForEntry,
@@ -103,7 +109,11 @@ import {
   findOpenWalkSession,
 } from "@/lib/walkSession";
 import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
-import { resolvePetName } from "@/lib/petIdentity";
+import {
+  buildCareTwinRoomAccessibilityLabel,
+  buildPetSetupCopy,
+  resolveConsumerPetName,
+} from "@/lib/petIdentity";
 import { deriveTodayCommand, findPendingMealOutcome } from "@/lib/todayCommand";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
 import { deriveHomeRoutinePlan } from "@/lib/homeRoutinePlan";
@@ -121,6 +131,7 @@ import {
   HOME_WELCOME_DISMISSED_KEY,
   createDevicePreferenceHydrationRetryScheduler,
 } from "@/lib/devicePreferences";
+import { createExclusiveAsyncAction } from "@/lib/exclusiveAsyncAction";
 import { LocalDataResetInProgressError } from "@/lib/removableLocalDataStorage";
 
 const HOME_PROVIDER_SYNC_ENABLED =
@@ -243,11 +254,6 @@ const MOOD_ICON: Record<Mood, PixelIconName> = {
   unwell: "mood_rough",
 };
 
-function completionLabel(done: number, target: number): string {
-  if (!target) return `${done}`;
-  return `${Math.min(done, target)}/${target}`;
-}
-
 function routineIcon(type: string): PixelIconName {
   const t = normalizeCareEventType(type);
   if (t === "walk") return "walk";
@@ -360,6 +366,13 @@ function HomeHeaderAction({
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const homeScreenMountedRef = useRef(true);
+  useEffect(() => {
+    homeScreenMountedRef.current = true;
+    return () => {
+      homeScreenMountedRef.current = false;
+    };
+  }, []);
   const { width: viewportWidth, height: viewportHeight } =
     useAppViewport();
   const router = useRouter();
@@ -423,10 +436,58 @@ export default function HomeScreen() {
     return () => clearInterval(id);
   }, []);
 
-  const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
-  const openWalkSession = useMemo(
-    () => findOpenWalkSession(state.entries),
+  const petName = resolveConsumerPetName(state.profile.name);
+  // Home is a household-shared surface. Private entries are removed once at
+  // the boundary, before any status, story, activity, or recommendation can
+  // select their title, caregiver, details, or derived signals.
+  const homeEntries = useMemo(
+    () => selectHomeVisibleEntries(state.entries),
     [state.entries],
+  );
+  const todayHomeEntries = useMemo(
+    () => homeEntries.filter((entry) => isToday(entry.occurredAt, now)),
+    [homeEntries, now],
+  );
+  const bileCount = useMemo(
+    () =>
+      todayHomeEntries.filter((entry) => {
+        const type = normalizeCareEventType(entry.type, entry.details);
+        return type === "vomit" || type === "symptom" || /bile/i.test(entry.title);
+      }).length,
+    [todayHomeEntries],
+  );
+  const status = useMemo(
+    () => derivePhoenixStatus({ ...state, entries: homeEntries }, now),
+    [homeEntries, now, state],
+  );
+  const homeEvidenceCopy = useMemo(
+    () =>
+      deriveHomeEvidenceCopy({
+        todayLogCount: todayHomeEntries.length,
+        healthAlert: status.counts.healthAlert,
+        bileCount,
+      }),
+    [bileCount, status.counts.healthAlert, todayHomeEntries.length],
+  );
+  const hasMoodEvidence = todayHomeEntries.some((entry) => {
+    return isHomeMoodEvidence({
+      mood: entry.mood,
+      normalizedType: normalizeCareEventType(entry.type, entry.details),
+    });
+  });
+  const hasEnergyEvidence = todayHomeEntries.some((entry) =>
+    ["walk", "play", "training"].includes(
+      normalizeCareEventType(entry.type, entry.details),
+    ),
+  );
+  const bondEvidenceCount = todayHomeEntries.filter((entry) =>
+    ["play", "training"].includes(
+      normalizeCareEventType(entry.type, entry.details),
+    ),
+  ).length;
+  const openWalkSession = useMemo(
+    () => findOpenWalkSession(homeEntries),
+    [homeEntries],
   );
   // Session-scoped reaction gate: the room only reacts to care logged in
   // THIS session. Without the floor, a meal logged minutes before an app
@@ -438,18 +499,20 @@ export default function HomeScreen() {
   const avatarMotion = useMemo(
     () =>
       deriveAvatarMotion({
-        entries: state.entries,
+        entries: homeEntries,
         routines: state.routines,
         caregivers: state.caregivers,
+        petName,
         now,
         energy: status.energy,
         activeWalk: Boolean(openWalkSession),
         reactionsSince: reactionSessionFloor.current,
       }),
     [
-      state.entries,
+      homeEntries,
       state.routines,
       state.caregivers,
+      petName,
       now,
       openWalkSession,
       status.energy,
@@ -474,21 +537,21 @@ export default function HomeScreen() {
       ? restWord
       : HOME_MOOD_WORD[status.mood];
 
-  // Care Sense card derivations - each meter is a presentation of the same
-  // real, derived state the old chips carried. Mood maps ordinally (the word
-  // stays the source of truth in the value label), hunger reads meals done
-  // against target, alone time fills over a four-hour window while an away
-  // session is actually open. No invented numbers.
+  // Care Sense only presents a reading when the corresponding local evidence
+  // exists. Missing mood/activity evidence and missing meal targets stay
+  // visibly unknown instead of receiving a synthetic baseline.
   const careSenseHeadline =
-    status.mood === "unwell"
-      ? "Extra-gentle day underway."
-      : status.mood === "anxious"
-        ? "A gentle day - stay close."
-        : status.mood === "excited"
-          ? "Ready for adventure!"
-          : status.mood === "happy"
-            ? "Great day so far!"
-            : "A calm, steady day.";
+    todayHomeEntries.length === 0 || !hasMoodEvidence
+      ? homeEvidenceCopy.headline
+      : status.mood === "unwell"
+        ? "Extra-gentle day underway."
+        : status.mood === "anxious"
+          ? "A gentle day - stay close."
+          : status.mood === "excited"
+            ? "Ready for adventure!"
+            : status.mood === "happy"
+              ? "Great day so far!"
+              : "A calm, steady day.";
   const careSenseMoodRatio =
     status.mood === "happy"
       ? 0.95
@@ -502,38 +565,38 @@ export default function HomeScreen() {
   const careIntelligence = useMemo(
     () =>
       deriveCareIntelligence({
-        entries: state.entries,
+        entries: homeEntries,
         routines: state.routines,
         caregivers: state.caregivers,
         now,
         providerSyncEnabled: HOME_PROVIDER_SYNC_ENABLED,
       }),
-    [state.entries, state.routines, state.caregivers, now],
+    [homeEntries, state.routines, state.caregivers, now],
   );
   const careCareer = useMemo(
-    () => deriveCareCareer(state.entries, now),
-    [state.entries, now],
+    () => deriveCareCareer(homeEntries, now),
+    [homeEntries, now],
   );
   const careStreak = useMemo(
-    () => deriveCareStreak(state.entries, now),
-    [state.entries, now],
+    () => deriveCareStreak(homeEntries, now),
+    [homeEntries, now],
   );
   const todayCommand = useMemo(
     () =>
       deriveTodayCommand(
         {
           profile: state.profile,
-          entries: state.entries,
+          entries: homeEntries,
           routines: state.routines,
           caregivers: state.caregivers,
           providerSyncEnabled: HOME_PROVIDER_SYNC_ENABLED,
         },
         now,
       ),
-    [state.caregivers, state.entries, state.profile, state.routines, now],
+    [homeEntries, state.caregivers, state.profile, state.routines, now],
   );
 
-  const petName = resolvePetName(state.profile.name);
+  const petSetupCopy = buildPetSetupCopy(state.profile.name);
   const avatarTemplate = useMemo(
     () => getAvatarTemplate(avatarConfig.templateId),
     [avatarConfig.templateId],
@@ -595,7 +658,7 @@ export default function HomeScreen() {
   };
   const isFreshStart =
     !hasCaregivers &&
-    state.entries.length === 0 &&
+    homeEntries.length === 0 &&
     !state.profile.breed?.trim();
 
   // The welcome card leaves by folding shut (height + opacity, ~250ms)
@@ -660,8 +723,8 @@ export default function HomeScreen() {
     [now],
   );
   const openAloneSession = useMemo(
-    () => findOpenAloneTimeSession(state.entries),
-    [state.entries],
+    () => findOpenAloneTimeSession(homeEntries),
+    [homeEntries],
   );
   const openAloneStartedAt = openAloneSession
     ? String(
@@ -699,17 +762,17 @@ export default function HomeScreen() {
     ? "home-alone"
     : openWalkSession
       ? "on-walk"
-      : "with-human";
+      : "no-session";
   const presenceLabel = openAloneSession
-    ? `${petName} Home alone`
+    ? `${petName} is home alone`
     : openWalkSession
       ? `${petName} on a walk`
-      : `${petName} with ${caregiver}`;
+      : "No active away session";
   const presenceSub = openAloneSession
     ? `${formatDuration(openAloneMinutes)} active - tap I\u2019m Home in Log`
     : openWalkSession
       ? `${formatDuration(openWalkMinutes)} active - tap Finish in Next Up`
-      : `At home - ${timeLabel}`;
+      : `Presence not logged - ${timeLabel}`;
   const presenceRoute: HomePresenceRoute = openAloneSession
     ? openAloneSession.id
       ? homeLogEntryRoute(openAloneSession.id)
@@ -726,19 +789,22 @@ export default function HomeScreen() {
       : "Opens the Alone Time flow to log heading out or time apart.";
 
   const meals = status.counts.meals;
-  const fed = meals.target > 0 ? meals.done >= meals.target : true;
-  const bondLabel = status.mood === "unwell" ? "Okay" : "Strong";
-  const hydrationScore = 72;
-  const hungerScore = fed ? 86 : 42;
-  const hungerLabel = fed ? "Good" : "Hungry";
-  const bondScore = status.mood === "anxious" ? 70 : 92;
+  const hasMealTarget = meals.target > 0;
+  const fed = meals.target > 0 && meals.done >= meals.target;
+  const hungerLabel = formatHomeCompletion(meals.done, meals.target);
+  const hungerScore = meals.target > 0 ? careSenseMealsRatio * 100 : 0;
+  const hungerTone = hasMealTarget
+    ? fed
+      ? colors.sage
+      : colors.copper
+    : colors.mutedForeground;
   const moodIcon = MOOD_ICON[status.mood];
 
   // Shared with Today Command: pending meal outcomes stay actionable across
   // the midnight rollover (up to 12h) instead of vanishing at 12:00 AM.
   const pendingMeal = useMemo(
-    () => findPendingMealOutcome(state.entries, now),
-    [state.entries, now],
+    () => findPendingMealOutcome(homeEntries, now),
+    [homeEntries, now],
   );
 
   // Session-local snooze: a snoozed routine steps out of Next Up for 30
@@ -748,11 +814,11 @@ export default function HomeScreen() {
     () =>
       deriveHomeRoutinePlan({
         routines: state.routines,
-        entries: state.entries,
+        entries: homeEntries,
         snoozedUntil,
         now,
       }),
-    [now, snoozedUntil, state.entries, state.routines],
+    [homeEntries, now, snoozedUntil, state.routines],
   );
 
   const nextUp = useMemo<HomeNextUpItem[]>(() => {
@@ -805,28 +871,11 @@ export default function HomeScreen() {
     }
     return [
       {
-        label: hasCaregivers ? `Walk with ${caregiver}` : "Evening walk",
-        time: "5:30 PM",
-        icon: "walk" as PixelIconName,
-        route: homeLogDetailRoute("walk", now),
-        meta: "Start",
-        kind: "suggestion" as const,
-        owner: hasCaregivers ? caregiver : undefined,
-      },
-      {
-        label: "Dinner",
-        time: "7:00 PM",
-        icon: "meal" as PixelIconName,
-        route: homeLogDetailRoute("meal", now),
-        meta: "Serve",
-        kind: "suggestion" as const,
-      },
-      {
-        label: "Training",
-        time: "6:30 PM",
-        icon: "training" as PixelIconName,
-        route: homeLogDetailRoute("training", now),
-        meta: "Log",
+        label: "Plan today's care",
+        time: "No routines scheduled",
+        icon: "clock" as PixelIconName,
+        route: "/calendar" as const,
+        meta: "Plan",
         kind: "suggestion" as const,
       },
     ];
@@ -836,8 +885,6 @@ export default function HomeScreen() {
     openWalkMinutes,
     openWalkSession,
     homeRoutinePlan,
-    caregiver,
-    hasCaregivers,
     now,
   ]);
 
@@ -894,6 +941,7 @@ export default function HomeScreen() {
     // back to the calm command line instead of echoing the active walk here.
     if (openWalkSession) return todayCommand.primaryAction.detail;
     const parts = nextUp.slice(0, 2).map((item, index) => {
+      if (item.kind === "suggestion") return item.time;
       if (index === 0 && item.kind === "routine" && status.minutesUntilNext !== null) {
         return `${item.label} in ${formatDuration(status.minutesUntilNext)}`;
       }
@@ -902,6 +950,12 @@ export default function HomeScreen() {
     if (!parts.length) return todayCommand.primaryAction.detail;
     return parts.join(" · ");
   }, [nextUp, openWalkSession, status.minutesUntilNext, todayCommand.primaryAction.detail]);
+  const careSenseSubline =
+    todayHomeEntries.length === 0
+      ? `${petName}: ${homeEvidenceCopy.summary}`
+      : hasMoodEvidence
+        ? `${petName} is ${homeMoodWord}. ${glanceLine}`
+        : `${petName}: ${homeEvidenceCopy.summary} ${glanceLine}`;
 
   // The old Fed/Potty/Walk/Alone recency chips folded into the Care Sense
   // meters above - same real-log truth, one calmer surface.
@@ -931,33 +985,18 @@ export default function HomeScreen() {
     ? "Alone"
     : openWalkSession
       ? "On walk"
-      : `With ${caregiver}`;
+      : "No session";
 
-  const health = status.counts.healthAlert
-    ? {
-        status: "Needs Watch",
-        sub: "Recent symptom logged",
-        color: colors.amber,
-      }
-    : { status: "Stable", sub: "All good right now", color: colors.sage };
-
-  const bileCount = useMemo(
-    () =>
-      state.entries.filter((e) => {
-        if (!isToday(e.occurredAt, now)) return false;
-        const t = normalizeCareEventType(e.type, e.details);
-        return t === "vomit" || t === "symptom" || /bile/i.test(e.title);
-      }).length,
-    [state.entries, now],
-  );
-  const bile =
-    bileCount === 0
-      ? { status: "Low Risk", sub: "Everything looks good", color: colors.sage }
-      : {
-          status: "Watch",
-          sub: `${bileCount} flagged today`,
-          color: colors.amber,
-        };
+  const health = {
+    status: homeEvidenceCopy.health.status,
+    sub: homeEvidenceCopy.health.detail,
+    color: status.counts.healthAlert ? colors.amber : colors.mutedForeground,
+  };
+  const bile = {
+    status: homeEvidenceCopy.bile.status,
+    sub: homeEvidenceCopy.bile.detail,
+    color: bileCount > 0 ? colors.amber : colors.mutedForeground,
+  };
 
   // Header bell badge mirrors the Health/Bile watch cards below: one signal
   // per watch surface that currently needs owner attention, hidden when calm.
@@ -973,13 +1012,13 @@ export default function HomeScreen() {
         ? "On a walk now"
         : openAloneSession
           ? "Home alone now"
-          : "Care on track";
+          : homeEvidenceCopy.careLine;
 
   const roomStats = useMemo<PhoenixRoomStat[]>(
     () => [
       {
         label: "Mood",
-        value: status.meta.label,
+        value: hasMoodEvidence ? status.meta.label : "No data",
         icon: moodIcon,
         tone:
           status.mood === "unwell"
@@ -987,50 +1026,40 @@ export default function HomeScreen() {
             : status.mood === "anxious"
               ? colors.amber
               : colors.sage,
-        progress:
-          status.mood === "unwell" ? 44 : status.mood === "anxious" ? 62 : 92,
+        progress: hasMoodEvidence
+          ? status.mood === "unwell"
+            ? 44
+            : status.mood === "anxious"
+              ? 62
+              : 92
+          : 0,
       },
       {
         label: "Energy",
-        value: `${status.energy}%`,
+        value: hasEnergyEvidence ? `${status.energy}%` : "No data",
         icon: "energy",
         tone: colors.sage,
-        progress: status.energy,
+        progress: hasEnergyEvidence ? status.energy : 0,
       },
       {
         label: "Hunger",
         value: hungerLabel,
         icon: "hunger",
-        tone: fed ? colors.sage : colors.copper,
+        tone: hungerTone,
         progress: hungerScore,
-      },
-      {
-        label: "Hydration",
-        value: "Good",
-        icon: "bile",
-        tone: colors.blueSignal,
-        progress: hydrationScore,
-      },
-      {
-        label: "Bond",
-        value: bondLabel,
-        icon: "heart",
-        tone: colors.rose,
-        progress: bondScore,
       },
     ],
     [
-      bondLabel,
-      bondScore,
       colors.amber,
-      colors.blueSignal,
       colors.copper,
       colors.rose,
       colors.sage,
       fed,
+      hungerTone,
+      hasEnergyEvidence,
+      hasMoodEvidence,
       hungerLabel,
       hungerScore,
-      hydrationScore,
       moodIcon,
       status.energy,
       status.meta.label,
@@ -1040,14 +1069,14 @@ export default function HomeScreen() {
 
   const aloneMinutes = useMemo(
     () =>
-      state.entries
+      homeEntries
         .filter(
           (e) =>
             isToday(e.occurredAt, now) &&
             normalizeCareEventType(e.type, e.details) === "alone",
         )
         .reduce((sum, e) => sum + (e.durationMinutes ?? 0), 0),
-    [state.entries, now],
+    [homeEntries, now],
   );
   const alone = {
     status: openAloneSession
@@ -1065,7 +1094,7 @@ export default function HomeScreen() {
 
   const recentActivity = useMemo(
     () =>
-      [...state.entries]
+      [...homeEntries]
         .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
         .slice(0, 3)
         .map((entry) => ({
@@ -1075,7 +1104,7 @@ export default function HomeScreen() {
           icon: routineIcon(entry.type),
           caregiver: entry.caregiver,
         })),
-    [state.entries],
+    [homeEntries],
   );
 
   const questLine = careIntelligence.title;
@@ -1083,11 +1112,11 @@ export default function HomeScreen() {
     () =>
       deriveAdventureMode({
         petName,
-        entries: state.entries,
+        entries: homeEntries,
         memories: state.adventureMemories,
         now,
       }),
-    [petName, state.entries, state.adventureMemories, now],
+    [homeEntries, petName, state.adventureMemories, now],
   );
   const adventureQuest = adventureMode.quests[0];
 
@@ -1263,6 +1292,16 @@ export default function HomeScreen() {
     title: string;
     type: CareEventType;
   } | null>(null);
+  const quickFeedbackRef = useRef(quickFeedback);
+  quickFeedbackRef.current = quickFeedback;
+  const quickFeedbackUndoGateRef = useRef<ReturnType<
+    typeof createExclusiveAsyncAction
+  > | null>(null);
+  if (quickFeedbackUndoGateRef.current === null) {
+    quickFeedbackUndoGateRef.current = createExclusiveAsyncAction();
+  }
+  const quickFeedbackUndoGate = quickFeedbackUndoGateRef.current;
+  const [quickFeedbackUndoBusy, setQuickFeedbackUndoBusy] = useState(false);
   const [roomReaction, setRoomReaction] = useState<PhoenixRoomReaction | null>(
     null,
   );
@@ -1351,6 +1390,7 @@ export default function HomeScreen() {
     feedback?: { id: string; title: string; type: CareEventType },
     holdMs?: number,
   ) => {
+    quickFeedbackRef.current = feedback ?? null;
     setToast(msg);
     setQuickFeedback(feedback ?? null);
     // The toast is invisible to screen readers and its Undo button vanishes
@@ -1369,6 +1409,7 @@ export default function HomeScreen() {
           duration: 240,
           useNativeDriver: Platform.OS !== "web",
         }).start(() => {
+          quickFeedbackRef.current = null;
           setToast(null);
           setQuickFeedback(null);
         });
@@ -1405,33 +1446,54 @@ export default function HomeScreen() {
   }, [legacyImport]);
 
   const undoQuickFeedback = async () => {
-    if (!quickFeedback) return;
+    const feedback = quickFeedback;
+    if (!feedback) return;
     if (careMutationsBlocked) {
       showCareReadOnly();
       return;
     }
-    const title = quickFeedback.title;
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    const deleted = await deleteEntry(quickFeedback.id);
-    const accepted = runAcceptedCareMutation(deleted, () => {
-      setQuickFeedback(null);
-      // Clear the room bubble in the same commit: the undone log's "Meal
-      // served"/"Walk started" line must not linger over the twin for the
-      // rest of its 3.2s timer after the entry is already gone.
-      if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
-      setRoomSpeechOverride(null);
-      showToast(`${title} undone`);
+    await quickFeedbackUndoGate.run(async () => {
+      setQuickFeedbackUndoBusy(true);
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      try {
+        let deleted = false;
+        try {
+          deleted = await deleteEntry(feedback.id);
+        } catch {
+          deleted = false;
+        }
+        if (!homeScreenMountedRef.current) return;
+        if (!deleted) {
+          notifyDialog(
+            "Undo not completed",
+            "WoofWatcher could not confirm that this care log was removed. Check the timeline before trying again.",
+          );
+          return;
+        }
+        // A newer quick log may have replaced this feedback while deletion
+        // settled. Never clear or relabel that newer action.
+        if (quickFeedbackRef.current?.id !== feedback.id) return;
+        quickFeedbackRef.current = null;
+        // Clear the room bubble in the same commit: the undone log's "Meal
+        // served"/"Walk started" line must not linger over the twin for the
+        // rest of its 3.2s timer after the entry is already gone.
+        if (roomSpeechTimer.current) clearTimeout(roomSpeechTimer.current);
+        setRoomSpeechOverride(null);
+        showToast(`${feedback.title} undone`);
+      } finally {
+        if (homeScreenMountedRef.current) {
+          setQuickFeedbackUndoBusy(false);
+        }
+      }
     });
-    if (!accepted) {
-      showCareReadOnly();
-      return;
-    }
   };
 
   const openQuickFeedbackDetails = () => {
+    if (quickFeedbackUndoGate.isBusy()) return;
     if (!quickFeedback) return;
     const entryId = quickFeedback.id;
     if (toastTimer.current) clearTimeout(toastTimer.current);
+    quickFeedbackRef.current = null;
     setToast(null);
     setQuickFeedback(null);
     router.push(`/log?entry=${entryId}` as never);
@@ -1542,6 +1604,7 @@ export default function HomeScreen() {
         type: "walk",
         label: "Walk",
         title: "Walk started",
+        petName,
         details: entry.details,
       });
       showRoomSpeech(reactionPlan.label);
@@ -1591,7 +1654,7 @@ export default function HomeScreen() {
     // tick look like a bounce forever.
     if (
       isDuplicateQuickTap(policy.type) ||
-      findRecentQuickLogDuplicate(state.entries, item.type, Date.now())
+      findRecentQuickLogDuplicate(homeEntries, item.type, Date.now())
     ) {
       return;
     }
@@ -1620,6 +1683,7 @@ export default function HomeScreen() {
         title: entry.title,
         mood: entry.mood,
         severity: entry.severity,
+        petName,
         details: entry.details,
       });
       showRoomSpeech(reactionPlan.label);
@@ -1672,7 +1736,7 @@ export default function HomeScreen() {
   // Today's Story: one honest sentence from the day's real log evidence.
   const todayStoryLine = useMemo(() => {
     const todayKey = new Date(now).toDateString();
-    const todaysEntries = state.entries.filter(
+    const todaysEntries = homeEntries.filter(
       (entry) => new Date(entry.occurredAt).toDateString() === todayKey,
     );
     if (!todaysEntries.length) {
@@ -1683,7 +1747,7 @@ export default function HomeScreen() {
     )[0];
     const count = todaysEntries.length;
     return `${latest.title} logged by ${latest.caregiver}. ${count} care ${count === 1 ? "moment" : "moments"} today.`;
-  }, [now, petName, state.entries]);
+  }, [homeEntries, now, petName]);
 
   const isWebRoutePreview = (Platform.OS as string) === "web";
   // The web preview mirrors the native inset so the room console floats
@@ -1974,7 +2038,7 @@ export default function HomeScreen() {
                 WELCOME TO WOOFWATCHER
               </Text>
               <Text style={[s.welcomeTitle, { color: colors.primaryForeground, fontFamily: "Fraunces_700Bold" }]}>
-                Let's make {petName} yours
+                {petSetupCopy.title}
               </Text>
               <Text style={[s.welcomeBody, { color: colors.primaryForeground, fontFamily: "Inter_500Medium" }]}>
                 Add your dog's name, breed, and routines so Home, Log, and Health fit your real day. It takes a minute.
@@ -1982,7 +2046,7 @@ export default function HomeScreen() {
               <View style={s.welcomeActions}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Set up ${petName}`}
+                  accessibilityLabel={petSetupCopy.actionLabel}
                   onPress={() => {
                     void Haptics.selectionAsync();
                     router.push("/setup" as never);
@@ -1993,7 +2057,7 @@ export default function HomeScreen() {
                   ]}
                 >
                   <Text style={[s.welcomePrimaryText, { color: colors.forest, fontFamily: "Inter_800ExtraBold" }]}>
-                    Set up {petName}
+                    {petSetupCopy.actionLabel}
                   </Text>
                   <Ionicons name="arrow-forward" size={15} color={colors.forest} />
                 </Pressable>
@@ -2047,7 +2111,11 @@ export default function HomeScreen() {
           >
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${petName} Room. Phoenix ${avatarTemplate.label} care twin. ${avatarMotion.label}.`}
+              accessibilityLabel={buildCareTwinRoomAccessibilityLabel({
+                name: state.profile.name,
+                templateLabel: avatarTemplate.label,
+                motionLabel: avatarMotion.label,
+              })}
               accessibilityHint="Tap for a care-twin reaction. Long press to open Avatar Studio."
               onPress={tapPhoenixRoom}
               onLongPress={openAvatarStudio}
@@ -2099,9 +2167,8 @@ export default function HomeScreen() {
           ) : null}
 
           {/* Mock-board Care Sense card: mood, energy, hunger, and alone
-              time as chunky pip meters. Every fill derives from real logged
-              care - the same truth the old chips carried, now at a glance.
-              The headline row is still the Today Command surface. */}
+              time as chunky pip meters. Missing evidence stays at zero with
+              an explicit No data/No target label. */}
           <Reanimated.View entering={enterUp(0)}>
             <BoardCard style={s.careSenseCard}>
               <View style={s.careSenseHeader}>
@@ -2142,7 +2209,7 @@ export default function HomeScreen() {
                     onPress={() =>
                       notifyDialog(
                         "Care Sense",
-                        `Every meter reads from real logged care only. Mood and energy derive from today's walks, meals, potty, and notes. Hunger tracks meals against ${petName}'s daily target. Alone Time fills while an away session is open. Nothing here is invented.`,
+                        `Care Sense uses care data available on this device. Mood needs a mood, alone-time, or symptom log. Energy needs an activity log. Meals are compared only when ${petName} has a daily target. Alone Time fills only while an away session is open. Missing evidence stays marked as No data or No target.`,
                       )
                     }
                     style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
@@ -2157,7 +2224,7 @@ export default function HomeScreen() {
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Today Command. ${petName} is ${homeMoodWord}. ${glanceLine}`}
+                accessibilityLabel={`Today Command. ${careSenseHeadline} ${careSenseSubline}`}
                 accessibilityHint="Opens the exact care workflow behind today's recommended action."
                 hitSlop={MOBILE_INLINE_HIT_SLOP}
                 onPress={() =>
@@ -2188,7 +2255,7 @@ export default function HomeScreen() {
                       },
                     ]}
                   >
-                    {petName} is {homeMoodWord}. {glanceLine}
+                    {careSenseSubline}
                   </Text>
                 </View>
                 <Ionicons
@@ -2201,40 +2268,49 @@ export default function HomeScreen() {
                 <StatusMeter
                   label="Mood"
                   icon={MOOD_ICON[status.mood]}
-                  value={careSenseMoodRatio}
-                  valueLabel={status.meta.label}
+                  value={hasMoodEvidence ? careSenseMoodRatio : 0}
+                  valueLabel={hasMoodEvidence ? status.meta.label : "No data"}
                   tone={colors.meterMood}
                   onPress={() =>
                     router.push(todayCommand.primaryAction.route as never)
                   }
-                  accessibilityLabel={`Mood ${status.meta.label}`}
+                  accessibilityLabel={
+                    hasMoodEvidence ? `Mood ${status.meta.label}` : "Mood, no data"
+                  }
                   accessibilityHint="Opens today's recommended care workflow."
                 />
                 <StatusMeter
                   label="Energy"
                   icon="energy"
-                  value={status.energy / 100}
-                  valueLabel={`${status.energy}%`}
+                  value={hasEnergyEvidence ? status.energy / 100 : 0}
+                  valueLabel={hasEnergyEvidence ? `${status.energy}%` : "No data"}
                   tone={colors.meterEnergy}
                   onPress={() =>
                     router.push(homeLogDetailRoute("walk", now) as never)
                   }
-                  accessibilityLabel={`Energy ${status.energy} percent`}
+                  accessibilityLabel={
+                    hasEnergyEvidence
+                      ? `Energy ${status.energy} percent`
+                      : "Energy, no activity data"
+                  }
                   accessibilityHint="Opens the walk detail flow - activity builds energy."
                 />
                 <StatusMeter
                   label="Hunger"
                   icon="hunger"
-                  value={careSenseMealsRatio}
-                  valueLabel={`${status.counts.meals.done}/${Math.max(
-                    status.counts.meals.target,
+                  value={hasMealTarget ? careSenseMealsRatio : 0}
+                  valueLabel={formatHomeCompletion(
                     status.counts.meals.done,
-                  )}`}
-                  tone={colors.meterHunger}
+                    status.counts.meals.target,
+                  )}
+                  tone={hasMealTarget ? colors.meterHunger : colors.mutedForeground}
                   onPress={() =>
                     router.push(homeLogDetailRoute("meal", now) as never)
                   }
-                  accessibilityLabel={`Meals ${status.counts.meals.done} of ${status.counts.meals.target} logged`}
+                  accessibilityLabel={`Meals ${formatHomeCompletion(
+                    status.counts.meals.done,
+                    status.counts.meals.target,
+                  )}`}
                   accessibilityHint="Opens the meal detail flow."
                 />
                 <StatusMeter
@@ -2243,7 +2319,9 @@ export default function HomeScreen() {
                   value={careSenseAloneRatio}
                   polarity="inverse"
                   valueLabel={
-                    openAloneSession ? formatDuration(openAloneMinutes) : "OK"
+                    openAloneSession
+                      ? formatDuration(openAloneMinutes)
+                      : "None active"
                   }
                   tone={colors.meterAlone}
                   onPress={() =>
@@ -2256,7 +2334,7 @@ export default function HomeScreen() {
                   accessibilityLabel={
                     openAloneSession
                       ? `Alone time active, ${formatDuration(openAloneMinutes)}`
-                      : "Alone time none logged today"
+                      : "No active alone time session"
                   }
                   accessibilityHint={
                     openAloneSession
@@ -2768,7 +2846,7 @@ export default function HomeScreen() {
                   ? `${petName} is home alone`
                   : openWalkSession
                     ? `${petName} is on a walk`
-                    : `${petName} is with ${caregiver}`}
+                    : presenceLabel}
               </Text>
               <Text
                 numberOfLines={1}
@@ -2788,28 +2866,35 @@ export default function HomeScreen() {
           )}
 
           {/* Care Status keeps only what Care Sense doesn't already show:
-              the presence pill, the Bond meter, and the diet-profile door.
-              Mood/energy/hunger live in the Care Sense card up top - one
-              meters surface, exactly like the mock boards. */}
+              presence, logged bond evidence, and the diet-profile door. */}
           <BoardCard style={s.careStatusCard}>
             <BoardSectionHeader
               title="Care Status"
               accessory={<BoardPill label={careStatusLabel} tone={careStatusTone} />}
             />
-            <StatusMeter
-              label="Bond"
+            <CareRow
               icon="heart"
-              value={bondScore / 100}
-              valueLabel={bondLabel}
-              tone={colors.rose}
+              title="Bond evidence"
+              detail={
+                bondEvidenceCount > 0
+                  ? `${bondEvidenceCount} play or training ${bondEvidenceCount === 1 ? "moment" : "moments"} logged today`
+                  : "No play or training logged today"
+              }
               onPress={() => openStatusTile("bond")}
-              accessibilityLabel={`Bond ${bondLabel}`}
-              accessibilityHint="Opens play details - shared play grows the bond."
+              accessibilityLabel={
+                bondEvidenceCount > 0
+                  ? `Bond evidence, ${bondEvidenceCount} moments logged today`
+                  : "Bond evidence, no play or training logged today"
+              }
             />
             <CareRow
               icon="meal"
               title="Diet profile"
-              detail="Meals, portions, and sensitivities on file"
+              detail={
+                Object.values(state.dietProfile).some((value) => value.trim())
+                  ? "Meals, portions, and sensitivities on file"
+                  : "No diet profile saved yet"
+              }
               onPress={() => openStatusTile("diet")}
               accessibilityLabel="Open Diet Profile"
             />
@@ -3085,7 +3170,7 @@ export default function HomeScreen() {
                       { color: colors.navy, fontFamily: "Inter_700Bold" },
                     ]}
                   >
-                    {completionLabel(meals.done, meals.target || 2)}
+                    {formatHomeCompletion(meals.done, meals.target)}
                   </Text>
                   <Text
                     style={[
@@ -3122,9 +3207,9 @@ export default function HomeScreen() {
                       { color: colors.navy, fontFamily: "Inter_700Bold" },
                     ]}
                   >
-                    {completionLabel(
+                    {formatHomeCompletion(
                       status.counts.potty.done,
-                      status.counts.potty.target || 3,
+                      status.counts.potty.target,
                     )}
                   </Text>
                   <Text
@@ -3504,14 +3589,17 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Undo ${quickFeedback.title} quick log`}
+                accessibilityState={{ disabled: quickFeedbackUndoBusy }}
+                disabled={quickFeedbackUndoBusy}
                 onPress={undoQuickFeedback}
                 style={({ pressed }) => [
                   s.toastAction,
                   {
-                    backgroundColor: pressed
+                    backgroundColor: pressed && !quickFeedbackUndoBusy
                       ? "rgba(255,249,239,0.16)"
                       : "rgba(255,249,239,0.1)",
                     borderColor: "rgba(255,249,239,0.34)",
+                    opacity: quickFeedbackUndoBusy ? 0.5 : 1,
                   },
                 ]}
               >
@@ -3527,14 +3615,17 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Add details to ${quickFeedback.title}`}
+                accessibilityState={{ disabled: quickFeedbackUndoBusy }}
+                disabled={quickFeedbackUndoBusy}
                 onPress={openQuickFeedbackDetails}
                 style={({ pressed }) => [
                   s.toastAction,
                   {
-                    backgroundColor: pressed
+                    backgroundColor: pressed && !quickFeedbackUndoBusy
                       ? colors.copper + "DD"
                       : colors.copper,
                     borderColor: colors.copper,
+                    opacity: quickFeedbackUndoBusy ? 0.5 : 1,
                   },
                 ]}
               >
@@ -3646,8 +3737,9 @@ const s = StyleSheet.create({
     bottom: 12,
     right: 12,
     zIndex: 8,
-    width: 40,
-    height: 40,
+    width: MIN_MOBILE_TOUCH_TARGET,
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 999,
     borderWidth: 1,
     alignItems: "center",
@@ -4276,7 +4368,7 @@ const s = StyleSheet.create({
     marginTop: 10,
   },
   nextButton: {
-    minHeight: 34,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 999,
     paddingHorizontal: 15,
     alignItems: "center",
@@ -4293,6 +4385,7 @@ const s = StyleSheet.create({
   nextMoreRow: {
     flexDirection: "row",
     alignItems: "center",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     gap: 3,
     marginTop: 10,
     alignSelf: "flex-start",

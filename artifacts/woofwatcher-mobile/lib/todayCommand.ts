@@ -582,7 +582,7 @@ export function deriveTodayCommand(
   return {
     primaryAction: {
       kind: lastEntry ? "handoff" : "review",
-      label: lastEntry ? "Review handoff" : `Set up ${state.profile?.name ?? "your dog"}`,
+      label: lastEntry ? "Review handoff" : `Set up ${resolvePetName(state.profile?.name)}`,
       detail: lastEntry
         ? handoff.detail
         : "Add the care profile and routine so the day can run from one place.",

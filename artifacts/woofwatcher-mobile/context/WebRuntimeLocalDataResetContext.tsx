@@ -13,6 +13,9 @@ const CLEAR_COMPLETE = "woofwatcher:clear-local-data:complete";
 
 interface WebRuntimeGlobals {
   caches?: WebRuntimeCacheStorage;
+  sessionStorage?: {
+    removeItem(key: string): void;
+  };
   navigator?: {
     serviceWorker?: {
       controller?: {
@@ -87,6 +90,8 @@ export function WebRuntimeLocalDataResetProvider({
     controllerRef.current = createWebRuntimeLocalDataResetController({
       platform: Platform.OS,
       cacheStorage: Platform.OS === "web" ? (globals.caches ?? null) : null,
+      sessionStorage:
+        Platform.OS === "web" ? (globals.sessionStorage ?? null) : null,
       requestServiceWorkerClear,
     });
   }

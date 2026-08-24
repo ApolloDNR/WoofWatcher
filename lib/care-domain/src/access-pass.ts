@@ -1,4 +1,5 @@
 import { isRoutineBoardScheduledItem, type RoutineBoardEntry, type RoutineBoardItem, type RoutineBoardRoutine, deriveRoutineBoard } from "./routine-board.ts";
+import { resolvePetName } from "./pet-identity.ts";
 
 export type AccessPassKind = "sitter" | "trainer" | "vet" | "emergency" | "temporary-helper";
 export type AccessPassStatus = "draft" | "upcoming" | "active" | "expired" | "revoked";
@@ -194,7 +195,7 @@ export function buildAccessPassDraft(input: AccessPassDraftInput): AccessPass {
     startsAt,
     endsAt,
     status: "draft",
-    petName: clean(input.petName) || "Phoenix",
+    petName: resolvePetName(clean(input.petName)),
     permissions: permissionsFor(kind),
     blockedPermissions: blockedPermissionsFor(kind),
     responsibilities: [],
@@ -206,7 +207,7 @@ export function buildAccessPassDraft(input: AccessPassDraftInput): AccessPass {
 
 export function deriveAccessPassPlan(input: AccessPassInput): AccessPassPlan {
   const now = input.now ?? Date.now();
-  const petName = clean(input.petName) || "Phoenix";
+  const petName = resolvePetName(clean(input.petName));
   const passes = (input.passes ?? [])
     .map((pass): AccessPassView => {
       const kind = pass.kind ?? "sitter";
@@ -216,7 +217,7 @@ export function deriveAccessPassPlan(input: AccessPassInput): AccessPassPlan {
         role: clean(pass.role) || kindLabel(kind),
         kind,
         holderName: clean(pass.holderName) || "Temporary helper",
-        petName: clean(pass.petName) || petName,
+        petName: resolvePetName(clean(pass.petName), petName),
         status,
         permissions: [...(pass.permissions?.length ? pass.permissions : permissionsFor(kind))],
         blockedPermissions: [...(pass.blockedPermissions?.length ? pass.blockedPermissions : blockedPermissionsFor(kind))],
@@ -296,8 +297,10 @@ function nextOpen(items: readonly RoutineBoardItem[]): RoutineBoardItem | null {
 
 export function deriveMyCareToday(input: MyCareTodayInput): MyCareToday {
   const now = input.now ?? Date.now();
-  const personName = clean(input.personName) || "You";
-  const petName = clean(input.petName) || "Phoenix";
+  const namedPerson = clean(input.personName);
+  const personName = namedPerson || "You";
+  const personObject = namedPerson || "you";
+  const petName = resolvePetName(clean(input.petName));
   const board = deriveRoutineBoard({
     routines: input.routines,
     entries: input.entries,
@@ -319,21 +322,21 @@ export function deriveMyCareToday(input: MyCareTodayInput): MyCareToday {
 
   return {
     status,
-    title: `${personName}'s care today`,
+    title: namedPerson ? `${personName}'s care today` : "Your care today",
     summary:
       assigned.length === 0
-        ? `No routines are assigned to ${personName} today.`
+        ? `No routines are assigned to ${personObject} today.`
         : scheduledAssigned.length === 0
-          ? `0 schedulable routines assigned to ${personName}. ${correctionSummary}`
+          ? `0 schedulable routines assigned to ${personObject}. ${correctionSummary}`
           : `${doneCount}/${scheduledAssigned.length} assigned routines handled for ${petName}. ${scheduledAssigned.length - doneCount} open.${correctionCount ? ` ${correctionSummary}` : ""}`,
     nextStep:
       assigned.length === 0
         ? "Assign routines by owner so each human sees their own care list."
         : next
-          ? `${next.label} is ${next.status} for ${personName}. Log it, update it, or reassign it if plans changed.`
+          ? `${next.label} is ${next.status} for ${personObject}. Log it, update it, or reassign it if plans changed.`
           : correctionCount > 0
-            ? `Correct ${assigned.find((item) => item.status === "needs-correction")?.label ?? "the routine"}'s saved time before it can be scheduled for ${personName}.`
-          : `Everything assigned to ${personName} is handled today.`,
+            ? `Correct ${assigned.find((item) => item.status === "needs-correction")?.label ?? "the routine"}'s saved time before it can be scheduled for ${personObject}.`
+          : `Everything assigned to ${personObject} is handled today.`,
     personName,
     petName,
     assignedCount: scheduledAssigned.length,

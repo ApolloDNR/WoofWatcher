@@ -35,6 +35,8 @@ import {
   BoardPill,
   BoardRouteHeader,
   BoardSectionHeader,
+  ModalBackdropPressable,
+  ModalSheetPressable,
 } from "@/components/board/BoardPrimitives";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { PressScale } from "@/components/motion/GameFeel";
@@ -730,7 +732,7 @@ export function CareTeamSuppliesScreen({
   });
 
   const petName = resolvePetName(state.profile.name);
-  const currentHuman = myName || state.caregivers[0]?.name || "Apollo";
+  const currentHuman = myName || state.caregivers[0]?.name || null;
   const careTwinRoster = useMemo(() => deriveCareTwinRoster(state), [state]);
   const responsibilityCaregivers = useMemo(() => {
     const byName = new Map<string, { name: string; role: string }>();
@@ -2779,7 +2781,7 @@ export function CareTeamSuppliesScreen({
             icon="home-outline"
             title="Rename household"
             subtitle="Give your care team a name everyone recognizes."
-            placeholder="The Phoenix Pack"
+            placeholder="Your care team"
             value={renameValue}
             onChangeText={setRenameValue}
             confirmLabel="Save"
@@ -2811,13 +2813,14 @@ export function CareTeamSuppliesScreen({
           animationType="slide"
           onRequestClose={() => setPetRosterOpen(false)}
         >
-          <Pressable
+          <ModalBackdropPressable
             style={[s.modalBackdrop, { justifyContent: "flex-end" }]}
             onPress={() => setPetRosterOpen(false)}
           >
-            <Pressable
+            <ModalSheetPressable
+              visible={petRosterOpen}
+              onRequestClose={() => setPetRosterOpen(false)}
               style={[s.profileModal, { backgroundColor: colors.card }]}
-              onPress={(event) => event.stopPropagation()}
             >
               <View
                 style={{
@@ -2926,8 +2929,8 @@ export function CareTeamSuppliesScreen({
                   </Text>
                 </Pressable>
               </View>
-            </Pressable>
-          </Pressable>
+            </ModalSheetPressable>
+          </ModalBackdropPressable>
         </Modal>
       ) : null}
 
@@ -2938,13 +2941,14 @@ export function CareTeamSuppliesScreen({
           animationType="slide"
           onRequestClose={() => setAccessPassOpen(false)}
         >
-          <Pressable
+          <ModalBackdropPressable
             style={[s.modalBackdrop, { justifyContent: "flex-end" }]}
             onPress={() => setAccessPassOpen(false)}
           >
-            <Pressable
+            <ModalSheetPressable
+              visible={accessPassOpen}
+              onRequestClose={() => setAccessPassOpen(false)}
               style={[s.profileModal, { backgroundColor: colors.card }]}
-              onPress={(event) => event.stopPropagation()}
             >
               <View
                 style={{
@@ -3083,8 +3087,8 @@ export function CareTeamSuppliesScreen({
                   </Text>
                 </Pressable>
               </View>
-            </Pressable>
-          </Pressable>
+            </ModalSheetPressable>
+          </ModalBackdropPressable>
         </Modal>
       ) : null}
     </View>
@@ -3127,10 +3131,11 @@ function PromptModal({
       animationType="fade"
       onRequestClose={onCancel}
     >
-      <Pressable style={s.modalBackdrop} onPress={onCancel}>
-        <Pressable
+      <ModalBackdropPressable style={s.modalBackdrop} onPress={onCancel}>
+        <ModalSheetPressable
+          visible={visible}
+          onRequestClose={onCancel}
           style={[s.modalCard, { backgroundColor: colors.card }]}
-          onPress={() => {}}
         >
           <View
             style={[s.modalIcon, { backgroundColor: colors.primary + "1A" }]}
@@ -3221,8 +3226,8 @@ function PromptModal({
               </Text>
             </Pressable>
           </View>
-        </Pressable>
-      </Pressable>
+        </ModalSheetPressable>
+      </ModalBackdropPressable>
     </Modal>
   );
 }

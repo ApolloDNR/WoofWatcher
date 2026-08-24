@@ -19,6 +19,7 @@ export interface RemovableLocalDataStorageOptions {
   capturePermit(): GenerationPermit;
   isPermitValid(permit: GenerationPermit): boolean;
   isAdmissionOpen(): boolean;
+  runWithStorageFence?<T>(operation: () => Promise<T>): Promise<T>;
 }
 
 type QueuedStorageOperation =
@@ -46,6 +47,7 @@ export function createRemovableLocalDataStorage({
   capturePermit,
   isPermitValid,
   isAdmissionOpen,
+  runWithStorageFence = (operation) => operation(),
 }: RemovableLocalDataStorageOptions): RemovableLocalDataStorage {
   const isOperationAdmitted = (permit: GenerationPermit) =>
     isAdmissionOpen() && isPermitValid(permit);
@@ -53,11 +55,14 @@ export function createRemovableLocalDataStorage({
   const writer = createCarePersistenceWriter<QueuedStorageOperation>(async (operation) => {
     await Promise.resolve();
     if (!isPermitValid(operation.permit)) return;
-    if (operation.type === "set") {
-      await storage.setItem(operation.key, operation.value);
-      return;
-    }
-    await storage.removeItem(operation.key);
+    await runWithStorageFence(async () => {
+      if (!isPermitValid(operation.permit)) return;
+      if (operation.type === "set") {
+        await storage.setItem(operation.key, operation.value);
+        return;
+      }
+      await storage.removeItem(operation.key);
+    });
   });
 
   const rejectBlocked = <T>() => Promise.reject<T>(new LocalDataResetInProgressError());
@@ -89,7 +94,7 @@ export function createRemovableLocalDataStorage({
 
       let read: Promise<string | null>;
       try {
-        read = storage.getItem(key);
+        read = runWithStorageFence(() => storage.getItem(key));
       } catch (error) {
         return Promise.reject(error);
       }

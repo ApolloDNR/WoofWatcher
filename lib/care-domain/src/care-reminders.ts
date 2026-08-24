@@ -133,8 +133,8 @@ function sortReminderItems(items: CareReminderItem[]): CareReminderItem[] {
 }
 
 function summaryFor(total: number, alertCount: number, watchCount: number): string {
-  if (total === 0) return "No reminder candidates need attention right now.";
-  return `${total} reminder candidate${total === 1 ? "" : "s"} - ${alertCount} urgent, ${watchCount} watch.`;
+  if (total === 0) return "No reminders need attention right now.";
+  return `${total} reminder${total === 1 ? "" : "s"} - ${alertCount} urgent, ${watchCount} watch.`;
 }
 
 function nextStepFor(status: CareReminderStatus): string {
@@ -144,7 +144,7 @@ function nextStepFor(status: CareReminderStatus): string {
   if (status === "watch") {
     return "Review due-soon reminders and assign the owner before the care window closes.";
   }
-  return "Keep routines and records current; push notifications still need provider setup.";
+  return "Keep routines and records current. This build keeps reminders inside WoofWatcher and does not send push notifications.";
 }
 
 function notificationPreferenceSummaryFor(preferences: CareReminderNotificationPreferences = {}): string {
@@ -351,10 +351,10 @@ export function deriveCareReminderCenter(input: CareReminderCenterInput): CareRe
     summary,
     nextStep,
     notificationReadiness: providerBackedNotifications
-      ? "Reminder candidates are ready for owner review; push delivery is eligible for delivery QA, but launch still needs delivered-notification proof."
+      ? "Reminders are ready to review; notification delivery still needs device testing before launch."
       : // Do not embed the preference summary here - screens render both
         // fields adjacently and the same sentence appeared twice.
-        "Reminder candidates are ready for owner review.",
+        "Reminders are ready to review.",
     notificationPreferenceSummary,
     notificationQuietHours: notificationQuietHoursFor(input.notificationPreferences),
     notificationOptOut: notificationOptOutFor(input.notificationPreferences),

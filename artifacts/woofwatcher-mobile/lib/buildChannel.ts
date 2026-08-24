@@ -19,7 +19,7 @@ export interface BuildChannelInput {
 export function resolveBuildChannel(input: BuildChannelInput): BuildChannel {
   if (input.isDev) return "development";
   const profile = (input.buildProfile ?? "").trim().toLowerCase();
-  if (profile === "production" || profile === "store") return "production";
+  if (profile === "production" || profile === "store" || profile === "candidate") return "production";
   return "internal";
 }
 

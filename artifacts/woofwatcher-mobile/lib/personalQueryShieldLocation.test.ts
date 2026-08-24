@@ -81,3 +81,17 @@ test("personal API query hooks stay inside AppFrame screen content", () => {
     "personal query consumers must remain below the shipping AppFrame shield",
   );
 });
+
+test("Privacy & Data never calls the personal API when the provider is disabled or signed out", () => {
+  const source = readFileSync(
+    join(mobileRoot, "components", "more", "PrivacyDataScreen.tsx"),
+    "utf8",
+  );
+
+  assert.match(source, /import \{ isClerkEnabledForBuild, useWoofAuth \} from "@\/lib\/auth"/);
+  assert.match(
+    source,
+    /const \{ isSignedIn \} = useWoofAuth\(\);[\s\S]*useGetMe\(\{[\s\S]*queryKey: getGetMeQueryKey\(\),[\s\S]*enabled:\s*isClerkEnabledForBuild && Boolean\(isSignedIn\)/,
+  );
+  assert.doesNotMatch(source, /const me = useGetMe\(\);/);
+});

@@ -28,6 +28,7 @@ import {
   type PetAvatarConfig,
 } from "@/lib/avatarStudio";
 import { LocalDataResetInProgressError } from "@/lib/removableLocalDataStorage";
+import { DEFAULT_PET_PLACEHOLDER } from "@/lib/petIdentity";
 import type { Mood } from "@/lib/phoenixStatus";
 
 export const MOODS: Mood[] = ["happy", "excited", "calm", "anxious", "unwell"];
@@ -104,7 +105,7 @@ const AvatarContext = createContext<AvatarContextValue | null>(null);
 export function AvatarProvider({ children }: { children: React.ReactNode }) {
   const [avatarSet, setAvatarSet] = useState<AvatarSet | null>(null);
   const [avatarConfig, setAvatarConfig] = useState<PetAvatarConfig>(() =>
-    createDefaultAvatarConfig("Phoenix"),
+    createDefaultAvatarConfig(DEFAULT_PET_PLACEHOLDER),
   );
   const [isLoaded, setIsLoaded] = useState(false);
   const [hydrationReloadNonce, setHydrationReloadNonce] = useState(0);
@@ -171,7 +172,7 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
           avatarConfigLoadedRef.current = true;
           resetHydrationRetry();
           setAvatarSet(null);
-          setAvatarConfig(createDefaultAvatarConfig("Phoenix"));
+          setAvatarConfig(createDefaultAvatarConfig(DEFAULT_PET_PLACEHOLDER));
           setIsLoaded(true);
         },
       });
@@ -249,14 +250,17 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
         read: () => removableStorage.getItem(AVATAR_CONFIG_KEY),
         resolve: (raw) => {
           if (!raw) {
-            return { value: createDefaultAvatarConfig("Phoenix") };
+            return { value: createDefaultAvatarConfig(DEFAULT_PET_PLACEHOLDER) };
           }
           try {
             return {
-              value: normalizeAvatarConfig(JSON.parse(raw), "Phoenix"),
+              value: normalizeAvatarConfig(
+                JSON.parse(raw),
+                DEFAULT_PET_PLACEHOLDER,
+              ),
             };
           } catch {
-            return { value: createDefaultAvatarConfig("Phoenix") };
+            return { value: createDefaultAvatarConfig(DEFAULT_PET_PLACEHOLDER) };
           }
         },
         apply: (next) => {
@@ -364,7 +368,7 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
           ...config,
           updatedAt: new Date().toISOString(),
         },
-        config.petName || "Phoenix",
+        config.petName || DEFAULT_PET_PLACEHOLDER,
       );
       try {
         await runTrackedAvatarMutation({
@@ -398,7 +402,7 @@ export function AvatarProvider({ children }: { children: React.ReactNode }) {
   );
 
   const resetAvatarConfig = useCallback(
-    async (petName = "Phoenix") => {
+    async (petName = DEFAULT_PET_PLACEHOLDER) => {
       const clean = createDefaultAvatarConfig(petName);
       try {
         await runTrackedAvatarMutation({

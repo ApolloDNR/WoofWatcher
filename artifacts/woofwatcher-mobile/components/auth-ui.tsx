@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import { isClerkEnabledForBuild } from "@/lib/auth";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
 import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
@@ -43,7 +44,7 @@ const TRUST_STEPS = [
   {
     icon: "sparkles-outline" as const,
     label: "CareTwin ready",
-    detail: "Set up Phoenix, then invite your household when providers are live.",
+    detail: "Set up your dog, then invite your household when providers are live.",
   },
 ];
 
@@ -68,11 +69,12 @@ export function AuthShell({
     topInset: insets.top,
     surface: "auth",
   });
+  const ownerOps = isOwnerOpsBuild();
   const openAuthSetupProofMission = () => {
     Haptics.selectionAsync();
     router.push("/care-twin-qa?qaSurface=auth-setup-onboarding-proof" as never);
   };
-  const authSetupProofManifest = buildAuthSetupProofManifest();
+  const authSetupProofManifest = ownerOps ? buildAuthSetupProofManifest() : null;
 
   return (
     <ScrollView
@@ -124,7 +126,7 @@ export function AuthShell({
           <View style={[styles.stageHud, { backgroundColor: colors.ivory, borderColor: colors.border }]}>
             <View style={[styles.stageDot, { backgroundColor: colors.sage }]} />
             <Text style={[styles.stageHudText, { color: BUBBLE_INK, fontFamily: "Inter_700Bold" }]}>
-              Phoenix care starts here
+              Your dog's care starts here
             </Text>
           </View>
         </ImageBackground>
@@ -145,56 +147,60 @@ export function AuthShell({
             </View>
           ))}
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open auth and setup proof mission"
-          onPress={openAuthSetupProofMission}
-          style={({ pressed }) => [
-            styles.proofButton,
-            { backgroundColor: colors.ivory, borderColor: colors.copper, opacity: pressed ? 0.76 : 1 },
-          ]}
-        >
-          <Ionicons name="shield-checkmark-outline" size={15} color={colors.copper} />
-          <Text style={[styles.proofButtonText, { color: BUBBLE_INK, fontFamily: "Inter_800ExtraBold" }]}>
-            Open setup proof
-          </Text>
-        </Pressable>
-        <View style={[styles.proofManifest, { backgroundColor: colors.ivory, borderColor: colors.border }]}>
-          <View style={styles.proofManifestHead}>
-            <Text style={[styles.proofManifestTitle, { color: BUBBLE_INK, fontFamily: "Inter_800ExtraBold" }]}>
-              Auth/Setup proof manifest
-            </Text>
-            <Text style={[styles.proofManifestPill, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
-              Native proof blocked
-            </Text>
-          </View>
-          <View style={styles.proofManifestGrid}>
-            {authSetupProofManifest.rows.map((row) => (
-              <View key={row.label} style={[styles.proofManifestCell, { borderColor: colors.border }]}>
-                <Text style={[styles.proofManifestLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
-                  {row.label}
+        {ownerOps && authSetupProofManifest ? (
+          <>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open auth and setup proof mission"
+              onPress={openAuthSetupProofMission}
+              style={({ pressed }) => [
+                styles.proofButton,
+                { backgroundColor: colors.ivory, borderColor: colors.copper, opacity: pressed ? 0.76 : 1 },
+              ]}
+            >
+              <Ionicons name="shield-checkmark-outline" size={15} color={colors.copper} />
+              <Text style={[styles.proofButtonText, { color: BUBBLE_INK, fontFamily: "Inter_800ExtraBold" }]}>
+                Open setup proof
+              </Text>
+            </Pressable>
+            <View style={[styles.proofManifest, { backgroundColor: colors.ivory, borderColor: colors.border }]}>
+              <View style={styles.proofManifestHead}>
+                <Text style={[styles.proofManifestTitle, { color: BUBBLE_INK, fontFamily: "Inter_800ExtraBold" }]}>
+                  Auth/Setup proof manifest
                 </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.proofManifestValue,
-                    { color: row.status === "ready" ? colors.sage : BUBBLE_INK, fontFamily: "Inter_800ExtraBold" },
-                  ]}
-                >
-                  {row.value}
-                </Text>
-                <Text numberOfLines={2} style={[styles.proofManifestDetail, { color: BUBBLE_INK, fontFamily: "Inter_500Medium" }]}>
-                  {row.detail}
+                <Text style={[styles.proofManifestPill, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                  Native proof blocked
                 </Text>
               </View>
-            ))}
-          </View>
-          {authSetupProofManifest.blockers.map((blocker) => (
-            <Text key={blocker} numberOfLines={2} style={[styles.proofManifestBlocker, { color: BUBBLE_INK, fontFamily: "Inter_500Medium" }]}>
-              - {blocker}
-            </Text>
-          ))}
-        </View>
+              <View style={styles.proofManifestGrid}>
+                {authSetupProofManifest.rows.map((row) => (
+                  <View key={row.label} style={[styles.proofManifestCell, { borderColor: colors.border }]}>
+                    <Text style={[styles.proofManifestLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                      {row.label}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.proofManifestValue,
+                        { color: row.status === "ready" ? colors.sage : BUBBLE_INK, fontFamily: "Inter_800ExtraBold" },
+                      ]}
+                    >
+                      {row.value}
+                    </Text>
+                    <Text numberOfLines={2} style={[styles.proofManifestDetail, { color: BUBBLE_INK, fontFamily: "Inter_500Medium" }]}>
+                      {row.detail}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              {authSetupProofManifest.blockers.map((blocker) => (
+                <Text key={blocker} numberOfLines={2} style={[styles.proofManifestBlocker, { color: BUBBLE_INK, fontFamily: "Inter_500Medium" }]}>
+                  - {blocker}
+                </Text>
+              ))}
+            </View>
+          </>
+        ) : null}
       </View>
 
       <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>

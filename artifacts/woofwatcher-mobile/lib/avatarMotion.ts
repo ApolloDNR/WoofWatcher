@@ -6,6 +6,7 @@ import {
   type CareEventDetails,
 } from "../../../lib/care-domain/src/index.ts";
 import type { Mood } from "./phoenixStatus.ts";
+import { resolveConsumerPetName } from "./petIdentity.ts";
 
 export type AvatarMotionState =
   | "happy"
@@ -71,6 +72,7 @@ export interface AvatarMotionInput {
   entries: readonly AvatarMotionEntry[];
   routines: readonly AvatarMotionRoutine[];
   caregivers?: readonly AvatarMotionCaregiver[];
+  petName?: string | null;
   now?: number;
   energy?: number | null;
   /**
@@ -220,6 +222,8 @@ function openRoutineMotion(
   input: AvatarMotionInput,
   now: number,
 ): AvatarMotionModel | null {
+  const petName = resolveConsumerPetName(input.petName);
+  const sentencePetName = petName.charAt(0).toUpperCase() + petName.slice(1);
   const board = deriveRoutineBoard({
     routines: input.routines,
     entries: input.entries,
@@ -267,7 +271,7 @@ function openRoutineMotion(
       intensity: "high",
       label: "Ready soon",
       speech: "Walk soon?",
-      line: `${open.label} is coming up. Phoenix is watching the routine board.`,
+      line: `${open.label} is coming up. ${sentencePetName} is watching the routine board.`,
       route: "/calendar",
     };
   }
@@ -290,6 +294,8 @@ function openRoutineMotion(
 
 export function deriveAvatarMotion(input: AvatarMotionInput): AvatarMotionModel {
   const now = input.now ?? Date.now();
+  const petName = resolveConsumerPetName(input.petName);
+  const sentencePetName = petName.charAt(0).toUpperCase() + petName.slice(1);
   const health = deriveHealthWatch({
     entries: input.entries,
     routines: input.routines,
@@ -321,7 +327,7 @@ export function deriveAvatarMotion(input: AvatarMotionInput): AvatarMotionModel 
       intensity: "high",
       label: "Walking",
       speech: "Out exploring.",
-      line: "Walk in progress. Phoenix keeps moving until the session is finished.",
+      line: `Walk in progress. ${sentencePetName} keeps moving until the session is finished.`,
       route: "/log",
     };
   }

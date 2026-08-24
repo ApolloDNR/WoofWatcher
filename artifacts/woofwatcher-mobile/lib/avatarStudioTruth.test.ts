@@ -81,12 +81,103 @@ test("keeps a picked photo local, ephemeral, and unable to mutate the draft", ()
   assert.match(screen, /Selected reference photo/);
   assert.match(screen, /Current manual pixel twin/);
   assert.match(pick, /setSourceUri\(res\.assets\[0\]\.uri\)/);
+  assert.match(pick, /appFileSystem\.runProtectedPicker/);
+  assert.match(pick, /appFileSystem\.isIntentCurrent\(intent\)/);
+  const captureAt = pick.indexOf("captureIntent()");
+  const protectedPickerAt = pick.indexOf("runProtectedPicker(");
+  const permissionAt = pick.indexOf("ensurePermission(camera)");
+  const currentCheckAt = pick.indexOf("isIntentCurrent(intent)");
+  const cameraLaunchAt = pick.indexOf("launchCameraAsync(");
+  const libraryLaunchAt = pick.indexOf("launchImageLibraryAsync(");
+  assert.ok(
+    [
+      captureAt,
+      protectedPickerAt,
+      permissionAt,
+      currentCheckAt,
+      cameraLaunchAt,
+      libraryLaunchAt,
+    ].every((index) => index >= 0),
+    "Avatar protected picker sequence must be present",
+  );
+  assert.ok(
+    captureAt < protectedPickerAt &&
+      protectedPickerAt < permissionAt &&
+      permissionAt < currentCheckAt &&
+      currentCheckAt < cameraLaunchAt &&
+      currentCheckAt < libraryLaunchAt,
+    "Avatar must capture intent before the protected permission await and re-check it before either native picker can launch",
+  );
   assert.doesNotMatch(pick, /setDraft|setPhase|setTimeout|setInterval|suggest/i);
   assert.doesNotMatch(save, /sourceUri/);
-  assert.doesNotMatch(screen, /AsyncStorage|FileSystem|copyAsync|saveAvatarSet|uploadAsync|fetch\(/i);
+  assert.doesNotMatch(screen, /AsyncStorage|copyAsync|persistPickedMedia|saveAvatarSet|uploadAsync|fetch\(/i);
   assert.doesNotMatch(screen, /\bPhase\b|setPhase|scanLine|finishTimer|lineTimer|scanLoop|pulseLoop/);
   assert.equal(callCount(screen, "saveAvatarConfig"), 1);
   assert.equal(callCount(screen, "resetAvatarConfig"), 1);
+});
+
+test("Avatar Studio reports picker, removal, save, and reset failures without lying about state", () => {
+  const screen = read(PATHS.screen);
+  const pick = between(screen, "const pick = async", "const removeReferencePhoto = async");
+  const remove = between(screen, "const removeReferencePhoto = async", "const selectTemplate =");
+  const save = between(screen, "const saveDraft = async", "const resetDraft = async");
+  const reset = between(screen, "const resetDraft = async", "return (");
+
+  assert.match(screen, /import \{ notifyDialog \} from "@\/lib\/confirmDialog"/);
+  assert.match(pick, /permissionDenied = true/);
+  assert.match(pick, /Permission needed/);
+  assert.match(pick, /catch \(error\)/);
+  assert.match(pick, /Photo unavailable/);
+  assert.match(remove, /sourceUriRef\.current = null/);
+  assert.match(remove, /setSourceUri\(null\)/);
+  assert.match(remove, /await releasePickedMediaReferences/);
+  assert.match(remove, /cleanup\.status === "partial-failure"/);
+  assert.match(remove, /Photo cleanup incomplete/);
+  assert.match(save, /try \{/);
+  assert.match(save, /catch/);
+  assert.match(save, /Avatar not saved/);
+  assert.match(reset, /try \{/);
+  assert.match(reset, /catch/);
+  assert.match(reset, /Avatar not reset/);
+  assert.ok(
+    reset.indexOf("await resetAvatarConfig(petName)") < reset.indexOf("setDraft(clean)"),
+    "Reset must commit durable storage before showing the clean draft",
+  );
+  assert.match(screen, /actionDisabled=\{avatarEditorDisabled\}/);
+  assert.match(screen, /disabled=\{avatarEditorDisabled\}/);
+  assert.match(screen, /onPress=\{\(\) => void removeReferencePhoto\(\)\}/);
+});
+
+test("Avatar Studio freezes every persisted draft mutator during a pending save or reset", () => {
+  const screen = read(PATHS.screen);
+  for (const [start, end] of [
+    ["const selectTemplate =", "const setAccessory ="],
+    ["const setAccessory =", "const selectStudioTab ="],
+    ["const setCoatColor =", "const setFaceMarking ="],
+    ["const setFaceMarking =", "const previewMoodState ="],
+  ] as const) {
+    assert.match(
+      between(screen, start, end),
+      /if \(!avatarIsLoaded \|\| avatarPersistenceInFlightRef\.current\) return;/,
+      `${start} must reject an edit while persistence is in flight`,
+    );
+  }
+  assert.ok(
+    (screen.match(/accessibilityState=\{\{ disabled: avatarEditorDisabled \}\}/g)
+      ?.length ?? 0) >= 6,
+    "all four editor groups plus Save and Reset must expose their disabled state",
+  );
+  assert.match(screen, /avatarDraftDirtyRef = useRef\(false\)/);
+  assert.match(screen, /shouldSyncAvatarStudioDraftFromContext/);
+  assert.match(screen, /draftDirty: avatarDraftDirtyRef\.current/);
+  assert.match(screen, /backDisabled=\{avatarPersistenceBusy\}/);
+  assert.match(screen, /isLoaded: avatarIsLoaded/);
+  assert.match(screen, /const avatarEditorDisabled = !avatarIsLoaded \|\| avatarPersistenceBusy/);
+  assert.match(screen, /Loading saved avatar choices/);
+  assert.ok(
+    (screen.match(/avatarDraftDirtyRef\.current = true/g)?.length ?? 0) >= 4,
+    "every persisted editor group must mark the visible draft dirty",
+  );
 });
 
 test("backward-reads old v1 config and rewrites only clean v1 objects on Save or Reset", () => {
@@ -104,7 +195,10 @@ test("backward-reads old v1 config and rewrites only clean v1 objects on Save or
   assert.match(localData, /AVATAR_CONFIG_KEY = "woofwatcher\.petAvatarConfig\.v1"/);
   assert.match(localData, /AVATAR_KEY = "woofwatcher\.avatarSet\.v1"/);
   assert.doesNotMatch(context, /const AVATAR_(?:CONFIG_)?KEY\s*=/);
-  assert.match(load, /normalizeAvatarConfig\(JSON\.parse\(raw(?:Config)?\), "Phoenix"\)/);
+  assert.match(
+    load,
+    /normalizeAvatarConfig\(\s*JSON\.parse\(raw(?:Config)?\),\s*DEFAULT_PET_PLACEHOLDER,?\s*\)/,
+  );
   assert.doesNotMatch(load, /AsyncStorage/);
   assert.match(save, /const clean = normalizeAvatarConfig/);
   assert.match(

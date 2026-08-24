@@ -116,7 +116,7 @@ export function buildAloneTimeStartEntry(options: AloneTimeStartOptions): AloneT
   const caregiver = clean(options.caregiver) || "Care team";
   return {
     type: "alone",
-    title: "Alone Time - Phoenix home alone",
+    title: "Alone Time - home alone",
     caregiver,
     occurredAt,
     mood: "home_alone",

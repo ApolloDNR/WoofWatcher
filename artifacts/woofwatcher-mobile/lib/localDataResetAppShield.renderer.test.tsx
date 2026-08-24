@@ -31,7 +31,7 @@ test("the rendered shield exposes generic coordinator failure accessibly and Ret
     assert.ok(
       find(container, "Deletion coordinator. Failed owner ID: reset"),
     );
-    assert.equal(find(container, "All data deleted"), null);
+    assert.equal(find(container, "Local care content deleted"), null);
     assert.equal(find(container, "personal-app-frame"), null);
     assert.deepEqual(getControlledCalls(), { clearResult: 0, release: 0 });
 

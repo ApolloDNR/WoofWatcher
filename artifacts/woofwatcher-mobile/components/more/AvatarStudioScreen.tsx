@@ -27,10 +27,12 @@ import { PressScale } from "@/components/motion/GameFeel";
 import { LivingPhoenixRoom } from "@/components/LivingPhoenixRoom";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
+import { useAppFileSystem } from "@/context/AppFileSystemContext";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
+import { collectCareAppOwnedFileReferences } from "@/lib/appOwnedFileReferences";
 import {
   deriveAvatarPreviewAccessories,
   deriveAvatarPreviewMood,
@@ -48,6 +50,7 @@ import {
   deriveAvatarAccessoryFit,
   describeAvatarConfig,
   getAvatarTemplate,
+  shouldSyncAvatarStudioDraftFromContext,
   summarizeAvatarAccessoryFits,
   type AvatarAccessoryOption,
   type AvatarEmoteState,
@@ -76,9 +79,11 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
-import { resolvePetName } from "@/lib/petIdentity";
+import { resolveConsumerPetName } from "@/lib/petIdentity";
 import { pixelImageStyle } from "@/lib/pixelRendering";
+import { releasePickedMediaReferences } from "@/lib/pickedMediaLocalDataActions";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
+import { notifyDialog } from "@/lib/confirmDialog";
 
 const DISPLAY = "Fredoka_700Bold";
 const PIXEL_ROOM_SOURCE = require("@/assets/avatar/rooms/phoenix-room-day-option-b.png");
@@ -174,16 +179,20 @@ export default function AvatarStudioScreen({
 }: AvatarStudioScreenProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const appFileSystem = useAppFileSystem();
   const ownerOps = isOwnerOpsBuild();
   const { state } = useCare();
+  const careStateRef = useRef(state);
+  careStateRef.current = state;
   const {
     avatarConfig,
     hasCustomAvatar,
+    isLoaded: avatarIsLoaded,
     saveAvatarConfig,
     resetAvatarConfig,
   } = useAvatar();
 
-  const petName = resolvePetName(state.profile.name);
+  const petName = resolveConsumerPetName(state.profile.name);
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
     topInset: insets.top,
@@ -212,20 +221,57 @@ export default function AvatarStudioScreen({
   const [draft, setDraft] = useState<PetAvatarConfig>(() => avatarConfig);
   const [previewEmote, setPreviewEmote] = useState<AvatarEmoteState>("happy");
   const [sourceUri, setSourceUri] = useState<string | null>(null);
+  const sourceUriRef = useRef<string | null>(null);
+  const avatarStudioMountedRef = useRef(true);
+  const avatarPickerInFlightRef = useRef(false);
+  const avatarPersistenceInFlightRef = useRef(false);
+  const avatarDraftDirtyRef = useRef(false);
+  const savedToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [avatarPhotoBusy, setAvatarPhotoBusy] = useState(false);
+  const [avatarPersistenceBusy, setAvatarPersistenceBusy] = useState(false);
   const [savedToast, setSavedToast] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const avatarEditorDisabled = !avatarIsLoaded || avatarPersistenceBusy;
 
   const templateLife = useRef(new Animated.Value(0)).current;
   const reduced = useReducedMotion();
 
   useEffect(() => {
-    setDraft(avatarConfig);
+    if (
+      shouldSyncAvatarStudioDraftFromContext({
+        draftDirty: avatarDraftDirtyRef.current,
+        persistenceInFlight: avatarPersistenceInFlightRef.current,
+      })
+    ) {
+      setDraft(avatarConfig);
+    }
   }, [avatarConfig]);
 
   useEffect(() => {
+    avatarStudioMountedRef.current = true;
     const id = setInterval(() => setNow(Date.now()), 30000);
-    return () => clearInterval(id);
-  }, []);
+    return () => {
+      avatarStudioMountedRef.current = false;
+      avatarPickerInFlightRef.current = false;
+      avatarPersistenceInFlightRef.current = false;
+      clearInterval(id);
+      if (savedToastTimerRef.current) {
+        clearTimeout(savedToastTimerRef.current);
+        savedToastTimerRef.current = null;
+      }
+      const uri = sourceUriRef.current;
+      sourceUriRef.current = null;
+      if (!uri) return;
+      void releasePickedMediaReferences({
+        appFileSystem,
+        uris: [uri],
+        protectedUris: collectCareAppOwnedFileReferences({
+          doc: careStateRef.current,
+          entries: careStateRef.current.entries,
+        }),
+      });
+    };
+  }, [appFileSystem]);
 
   useEffect(() => {
     if (reduced) return; // Reduce Motion: template preview holds still
@@ -330,10 +376,11 @@ export default function AvatarStudioScreen({
         entries: state.entries,
         routines: state.routines,
         caregivers: state.caregivers,
+        petName,
         now,
         energy: status.energy,
       }),
-    [state.entries, state.routines, state.caregivers, now, status.energy],
+    [state.entries, state.routines, state.caregivers, petName, now, status.energy],
   );
   const caregiver = state.caregivers[0]?.name ?? "you";
   const templateLift = templateLife.interpolate({
@@ -361,27 +408,147 @@ export default function AvatarStudioScreen({
   };
 
   const pick = async (camera: boolean) => {
-    const ok = await ensurePermission(camera);
-    if (!ok) return;
+    if (avatarPickerInFlightRef.current) return;
+    avatarPickerInFlightRef.current = true;
+    setAvatarPhotoBusy(true);
+    let operationIntent = appFileSystem.captureIntent();
+    let permissionDenied = false;
+    try {
+      const intent = operationIntent;
+      if (!intent) return;
 
-    const res = camera
-      ? await ImagePicker.launchCameraAsync({
-          mediaTypes: ["images"],
-          allowsEditing: true,
-          quality: 0.86,
-        })
-      : await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ["images"],
-          allowsEditing: true,
-          quality: 0.86,
+      const protectedPick = await appFileSystem.runProtectedPicker(
+        intent,
+        async () => {
+          const ok = await ensurePermission(camera);
+          if (!ok) permissionDenied = true;
+          if (
+            !ok ||
+            !avatarStudioMountedRef.current ||
+            !appFileSystem.isIntentCurrent(intent)
+          ) {
+            return null;
+          }
+          return camera
+            ? ImagePicker.launchCameraAsync({
+                mediaTypes: ["images"],
+                allowsEditing: true,
+                quality: 0.86,
+              })
+            : ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ["images"],
+                allowsEditing: true,
+                quality: 0.86,
+              });
+        },
+      );
+      if (protectedPick.status === "revoked") return;
+      if (permissionDenied) {
+        if (avatarStudioMountedRef.current) {
+          notifyDialog(
+            "Permission needed",
+            camera
+              ? "Allow camera access in device Settings to take a reference photo. Your avatar choices still work without one."
+              : "Allow photo-library access in device Settings to choose a reference photo. Your avatar choices still work without one.",
+          );
+        }
+        return;
+      }
+      const res = protectedPick.value;
+      if (!res || res.canceled || !res.assets?.[0]?.uri) return;
+
+      const nextUri = res.assets[0].uri;
+      if (
+        !avatarStudioMountedRef.current ||
+        !appFileSystem.isIntentCurrent(intent)
+      ) {
+        await releasePickedMediaReferences({
+          appFileSystem,
+          uris: [nextUri],
         });
+        return;
+      }
 
-    if (res.canceled || !res.assets?.[0]?.uri) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    setSourceUri(res.assets[0].uri);
+      const previousUri = sourceUriRef.current;
+      sourceUriRef.current = nextUri;
+      setSourceUri(res.assets[0].uri);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      if (previousUri && previousUri !== nextUri) {
+        const cleanup = await releasePickedMediaReferences({
+          appFileSystem,
+          uris: [previousUri],
+          protectedUris: [
+            nextUri,
+            ...collectCareAppOwnedFileReferences({
+              doc: careStateRef.current,
+              entries: careStateRef.current.entries,
+            }),
+          ],
+        });
+        if (
+          cleanup.status === "partial-failure" &&
+          avatarStudioMountedRef.current
+        ) {
+          notifyDialog(
+            "Photo cleanup incomplete",
+            "The new reference photo is selected, but the previous temporary photo could not be removed. Privacy & Data reset will retry cleanup.",
+          );
+        }
+      }
+    } catch (error) {
+      if (
+        avatarStudioMountedRef.current &&
+        (!operationIntent || appFileSystem.isIntentCurrent(operationIntent))
+      ) {
+        notifyDialog(
+          "Photo unavailable",
+          camera
+            ? "WoofWatcher could not open the camera. Your avatar choices were not changed. Try again from device Settings or use Gallery."
+            : "WoofWatcher could not open the photo library. Your avatar choices were not changed. Try again.",
+        );
+      }
+    } finally {
+      avatarPickerInFlightRef.current = false;
+      operationIntent = null;
+      if (avatarStudioMountedRef.current) setAvatarPhotoBusy(false);
+    }
+  };
+
+  const removeReferencePhoto = async () => {
+    if (avatarPickerInFlightRef.current) return;
+    const uri = sourceUriRef.current;
+    if (!uri) return;
+    avatarPickerInFlightRef.current = true;
+    setAvatarPhotoBusy(true);
+    sourceUriRef.current = null;
+    setSourceUri(null);
+    try {
+      const cleanup = await releasePickedMediaReferences({
+        appFileSystem,
+        uris: [uri],
+        protectedUris: collectCareAppOwnedFileReferences({
+          doc: careStateRef.current,
+          entries: careStateRef.current.entries,
+        }),
+      });
+      if (
+        cleanup.status === "partial-failure" &&
+        avatarStudioMountedRef.current
+      ) {
+        notifyDialog(
+          "Photo cleanup incomplete",
+          "The reference was removed from this screen, but its temporary local file could not be deleted. Privacy & Data reset will retry cleanup.",
+        );
+      }
+    } finally {
+      avatarPickerInFlightRef.current = false;
+      if (avatarStudioMountedRef.current) setAvatarPhotoBusy(false);
+    }
   };
 
   const selectTemplate = (templateId: AvatarTemplateId) => {
+    if (!avatarIsLoaded || avatarPersistenceInFlightRef.current) return;
+    avatarDraftDirtyRef.current = true;
     const template = getAvatarTemplate(templateId);
     Haptics.selectionAsync().catch(() => {});
     setDraft((current) =>
@@ -395,6 +562,8 @@ export default function AvatarStudioScreen({
   };
 
   const setAccessory = (item: AvatarAccessoryOption) => {
+    if (!avatarIsLoaded || avatarPersistenceInFlightRef.current) return;
+    avatarDraftDirtyRef.current = true;
     Haptics.selectionAsync().catch(() => {});
     setDraft((current) =>
       updateConfig(current, {
@@ -413,6 +582,8 @@ export default function AvatarStudioScreen({
   };
 
   const setCoatColor = (swatch: string, primary: boolean) => {
+    if (!avatarIsLoaded || avatarPersistenceInFlightRef.current) return;
+    avatarDraftDirtyRef.current = true;
     Haptics.selectionAsync().catch(() => {});
     setDraft((current) =>
       updateConfig(
@@ -423,6 +594,8 @@ export default function AvatarStudioScreen({
   };
 
   const setFaceMarking = (marking: AvatarFaceMarkingId) => {
+    if (!avatarIsLoaded || avatarPersistenceInFlightRef.current) return;
+    avatarDraftDirtyRef.current = true;
     Haptics.selectionAsync().catch(() => {});
     setDraft((current) => updateConfig(current, { faceMarkingId: marking }));
   };
@@ -438,23 +611,61 @@ export default function AvatarStudioScreen({
   };
 
   const saveDraft = async () => {
-    await saveAvatarConfig({
-      ...draft,
-      petName,
-      updatedAt: new Date().toISOString(),
-    });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-      () => {},
-    );
-    setSavedToast(`${petName}'s care twin saved`);
-    setTimeout(() => setSavedToast(null), 1600);
+    if (!avatarIsLoaded || avatarPersistenceInFlightRef.current) return;
+    avatarPersistenceInFlightRef.current = true;
+    setAvatarPersistenceBusy(true);
+    try {
+      await saveAvatarConfig({
+        ...draft,
+        petName,
+        updatedAt: new Date().toISOString(),
+      });
+      if (!avatarStudioMountedRef.current) return;
+      avatarDraftDirtyRef.current = false;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => {},
+      );
+      setSavedToast(`${petName}'s care twin saved`);
+      if (savedToastTimerRef.current) clearTimeout(savedToastTimerRef.current);
+      savedToastTimerRef.current = setTimeout(() => {
+        if (avatarStudioMountedRef.current) setSavedToast(null);
+        savedToastTimerRef.current = null;
+      }, 1600);
+    } catch {
+      if (avatarStudioMountedRef.current) {
+        notifyDialog(
+          "Avatar not saved",
+          "WoofWatcher kept your visible draft, but could not save it on this device. Try again before leaving Avatar Studio.",
+        );
+      }
+    } finally {
+      avatarPersistenceInFlightRef.current = false;
+      if (avatarStudioMountedRef.current) setAvatarPersistenceBusy(false);
+    }
   };
 
   const resetDraft = async () => {
+    if (!avatarIsLoaded || avatarPersistenceInFlightRef.current) return;
+    avatarPersistenceInFlightRef.current = true;
+    setAvatarPersistenceBusy(true);
     const clean = createDefaultAvatarConfig(petName);
-    setDraft(clean);
-    await resetAvatarConfig(petName);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    try {
+      await resetAvatarConfig(petName);
+      if (!avatarStudioMountedRef.current) return;
+      avatarDraftDirtyRef.current = false;
+      setDraft(clean);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    } catch {
+      if (avatarStudioMountedRef.current) {
+        notifyDialog(
+          "Avatar not reset",
+          "WoofWatcher could not save the reset on this device, so your current draft is still shown. Try again.",
+        );
+      }
+    } finally {
+      avatarPersistenceInFlightRef.current = false;
+      if (avatarStudioMountedRef.current) setAvatarPersistenceBusy(false);
+    }
   };
 
   return (
@@ -471,12 +682,16 @@ export default function AvatarStudioScreen({
         <BoardRouteHeader
           kicker="Pixel Twin"
           title="Avatar Studio"
-          subtitle="Choose a pixel twin, then customize."
+          subtitle={avatarIsLoaded
+            ? "Choose a pixel twin, then customize."
+            : "Loading saved avatar choices…"}
           back
           onBack={onBack}
+          backDisabled={avatarPersistenceBusy}
           actionIcon="checkmark"
           actionLabel="Save avatar"
           onAction={saveDraft}
+          actionDisabled={avatarEditorDisabled}
           plain
         />
 
@@ -732,7 +947,7 @@ export default function AvatarStudioScreen({
                     activeTab === "emotes"
                       ? "Try my moods."
                       : activeTab === "customize"
-                        ? "Make me Phoenix."
+                        ? "Make me yours."
                         : "I'm ready."
                   }
                   energy={status.energy}
@@ -772,14 +987,14 @@ export default function AvatarStudioScreen({
                     },
                   ]}
                 >
-                  Manual template
+                  Chosen by you
                 </Text>
               </View>
               <Text numberOfLines={1} adjustsFontSizeToFit style={[s.savedName, { fontFamily: DISPLAY }]}>
                 {petName}'s Pixel Twin
               </Text>
               <Text numberOfLines={1} style={[s.savedSub, { fontFamily: "Inter_600SemiBold" }]}>
-                {previewIsSprite ? "Live PixelLab sprite rig." : "Still preview until a live animation pack exists."}
+                {previewIsSprite ? "Ready to move and react." : "Ready to personalize and save."}
               </Text>
             </View>
         </BoardCard>
@@ -846,7 +1061,7 @@ export default function AvatarStudioScreen({
                 </View>
                 <View style={[s.referencePane, { borderColor: colors.border }]}>
                   <Image source={selectedTemplateStillSource} accessibilityLabel="Current manual pixel twin" style={[s.referenceImage, pixelImageStyle]} contentFit="contain" />
-                  <Text style={[s.referenceLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Current manual twin</Text>
+                  <Text style={[s.referenceLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Current care twin</Text>
                 </View>
               </View>
             ) : (
@@ -855,17 +1070,17 @@ export default function AvatarStudioScreen({
               </View>
             )}
             <View style={s.actionRow}>
-              <Pressable accessibilityRole="button" accessibilityLabel="Choose dog photo from gallery" onPress={() => pick(false)} style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, opacity: pressed ? 0.65 : 1 }]}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Choose dog photo from gallery" accessibilityState={{ disabled: avatarPhotoBusy }} disabled={avatarPhotoBusy} onPress={() => void pick(false)} style={({ pressed }) => [s.secondaryBtn, { borderColor: colors.border, opacity: avatarPhotoBusy ? 0.5 : pressed ? 0.65 : 1 }]}>
                 <Ionicons name="images-outline" size={18} color={colors.foreground} />
                 <Text style={[s.secondaryBtnText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Gallery</Text>
               </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel="Take dog photo" onPress={() => pick(true)} style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 }]}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Take dog photo" accessibilityState={{ disabled: avatarPhotoBusy }} disabled={avatarPhotoBusy} onPress={() => void pick(true)} style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: avatarPhotoBusy ? 0.5 : pressed ? 0.82 : 1 }]}>
                 <Ionicons name="camera" size={18} color="#FFF9EF" />
                 <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>Take photo</Text>
               </Pressable>
             </View>
             {sourceUri ? (
-              <Pressable accessibilityRole="button" accessibilityLabel="Remove reference photo" onPress={() => setSourceUri(null)} style={s.referenceRemoveButton}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Remove reference photo" accessibilityState={{ disabled: avatarPhotoBusy }} disabled={avatarPhotoBusy} onPress={() => void removeReferencePhoto()} style={s.referenceRemoveButton}>
                 <Text style={[s.referenceRemoveText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Remove photo</Text>
               </Pressable>
             ) : null}
@@ -878,10 +1093,17 @@ export default function AvatarStudioScreen({
               <BoardSectionHeader
                 title="Choose base template"
                 accessory={
-                  <BoardPill
-                    label={`${liveTemplateCount}/${AVATAR_TEMPLATES.length} live`}
-                    tone={colors.primary}
-                  />
+                  ownerOps ? (
+                    <BoardPill
+                      label={`${liveTemplateCount}/${AVATAR_TEMPLATES.length} live`}
+                      tone={colors.primary}
+                    />
+                  ) : (
+                    <BoardPill
+                      label={`${liveTemplateCount} animated`}
+                      tone={colors.primary}
+                    />
+                  )
                 }
               />
               <View style={s.templateGrid}>
@@ -895,6 +1117,8 @@ export default function AvatarStudioScreen({
                       accessibilityRole="button"
                       aria-selected={active}
                       accessibilityLabel={`Choose ${template.label} avatar template`}
+                      accessibilityState={{ disabled: avatarEditorDisabled }}
+                      disabled={avatarEditorDisabled}
                       onPress={() => selectTemplate(template.id)}
                       haptic="none"
                       scaleTo={0.97}
@@ -906,6 +1130,7 @@ export default function AvatarStudioScreen({
                             ? tone + "20"
                             : colors.background,
                           borderColor: active ? tone : colors.border,
+                          opacity: avatarEditorDisabled ? 0.5 : 1,
                         },
                       ]}
                     >
@@ -950,7 +1175,7 @@ export default function AvatarStudioScreen({
                               },
                             ]}
                           >
-                            {liveSprite ? "Live" : "Still"}
+                            {liveSprite ? "Animated" : "Classic"}
                           </Text>
                         </View>
                         {active ? (
@@ -997,8 +1222,8 @@ export default function AvatarStudioScreen({
                         ]}
                       >
                         {liveSprite
-                          ? "Breathes and walks in preview"
-                          : "Sprite rig in production"}
+                          ? "Moves with care moments"
+                          : "A calm, still style"}
                       </Text>
                     </PressScale>
                   );
@@ -1299,6 +1524,8 @@ export default function AvatarStudioScreen({
                       accessibilityRole="button"
                       aria-selected={primary || secondary}
                       accessibilityLabel={`Set coat color ${swatch}`}
+                      accessibilityState={{ disabled: avatarEditorDisabled }}
+                      disabled={avatarEditorDisabled}
                       accessibilityHint={
                         primary
                           ? "Double tap to set this as the secondary coat color."
@@ -1318,6 +1545,7 @@ export default function AvatarStudioScreen({
                               ? colors.amber
                               : colors.border,
                           borderWidth: primary || secondary ? 3 : 1,
+                          opacity: avatarEditorDisabled ? 0.5 : 1,
                         },
                       ]}
                     >
@@ -1336,8 +1564,8 @@ export default function AvatarStudioScreen({
                 ]}
               >
                 Tap a swatch for the primary coat, then tap it again for the
-                secondary. Saved to your dog's identity - the painted twin
-                recolors once this template's sprite pack lands.
+                secondary. Your color choices are saved with your dog's
+                profile.
               </Text>
             </BoardCard>
 
@@ -1357,6 +1585,8 @@ export default function AvatarStudioScreen({
                       accessibilityRole="button"
                       aria-selected={active}
                       accessibilityLabel={`Set ${marking.label} face marking`}
+                      accessibilityState={{ disabled: avatarEditorDisabled }}
+                      disabled={avatarEditorDisabled}
                       accessibilityHint="Double tap to apply this marking to the pixel twin."
                       hitSlop={MOBILE_INLINE_HIT_SLOP}
                       onPress={() => setFaceMarking(marking.id)}
@@ -1370,6 +1600,7 @@ export default function AvatarStudioScreen({
                           borderColor: active
                             ? colors.primary
                             : colors.border,
+                          opacity: avatarEditorDisabled ? 0.5 : 1,
                         },
                       ]}
                     >
@@ -1397,15 +1628,14 @@ export default function AvatarStudioScreen({
                   },
                 ]}
               >
-                Saved to your dog's identity. Markings paint onto the pixel twin
-                when this template's sprite pack lands.
+                Your marking choice is saved with your dog's profile.
               </Text>
             </BoardCard>
 
             <BoardCard style={s.avatarBoard}>
               <BoardSectionHeader
                 title="Accessories"
-                accessory={<BoardPill label="Fit map" tone={colors.amber} />}
+                accessory={<BoardPill label="Placement" tone={colors.amber} />}
               />
               <View
                 style={[
@@ -1451,6 +1681,8 @@ export default function AvatarStudioScreen({
                       accessibilityRole="button"
                       aria-selected={active}
                       accessibilityLabel={`Set ${item.label} ${item.slot} accessory`}
+                      accessibilityState={{ disabled: avatarEditorDisabled }}
+                      disabled={avatarEditorDisabled}
                       onPress={() => setAccessory(item)}
                       haptic="none"
                       scaleTo={0.97}
@@ -1462,6 +1694,7 @@ export default function AvatarStudioScreen({
                             ? item.tone + "20"
                             : colors.background,
                           borderColor: active ? item.tone : colors.border,
+                          opacity: avatarEditorDisabled ? 0.5 : 1,
                         },
                       ]}
                     >
@@ -1531,7 +1764,7 @@ export default function AvatarStudioScreen({
                 <BoardPill
                   label={
                     draft.emotePackId === "phoenix-shepherd"
-                      ? "Phoenix pack"
+                      ? "Full mood set"
                       : "Starter"
                   }
                   tone={colors.primary}
@@ -1544,9 +1777,8 @@ export default function AvatarStudioScreen({
                 { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
               ]}
             >
-              Every mood swaps the preview. "Live" moods animate in the room
-              today; "Still" moods show a hand-drawn pose until this template's
-              animation pack lands.
+              Choose a mood to see how your care twin looks. Animated moods
+              move; classic moods use a hand-drawn pose.
             </Text>
             <View style={s.moodGrid}>
               {AVATAR_EMOTE_STATES.map((emote) => {
@@ -1570,7 +1802,7 @@ export default function AvatarStudioScreen({
                     accessibilityRole="button"
                     aria-selected={active}
                     accessibilityLabel={`Preview ${emoteLabel(emote)} mood`}
-                    accessibilityHint="Double tap to update the live care-twin preview mood."
+                    accessibilityHint="Double tap to preview this care-twin mood."
                     hitSlop={MOBILE_INLINE_HIT_SLOP}
                     onPress={() => previewMoodState(emote)}
                     haptic="none"
@@ -1643,7 +1875,7 @@ export default function AvatarStudioScreen({
                             },
                           ]}
                         >
-                          {chipIsLive ? "Live" : "Still"}
+                          {chipIsLive ? "Animated" : "Classic"}
                         </Text>
                       </View>
                     </View>
@@ -1669,14 +1901,16 @@ export default function AvatarStudioScreen({
 
         <View style={s.actionRow}>
           <Pressable
-            onPress={resetDraft}
+            onPress={() => void resetDraft()}
+            disabled={avatarEditorDisabled}
+            accessibilityState={{ disabled: avatarEditorDisabled }}
             accessibilityRole="button"
             accessibilityLabel="Reset Avatar Studio draft"
             accessibilityHint="Restores the default pixel twin before saving."
             hitSlop={MOBILE_INLINE_HIT_SLOP}
             style={({ pressed }) => [
               s.secondaryBtn,
-              { borderColor: colors.border, opacity: pressed ? 0.65 : 1 },
+              { borderColor: colors.border, opacity: avatarEditorDisabled ? 0.5 : pressed ? 0.65 : 1 },
             ]}
           >
             <Ionicons name="refresh" size={18} color={colors.foreground} />
@@ -1690,14 +1924,16 @@ export default function AvatarStudioScreen({
             </Text>
           </Pressable>
           <Pressable
-            onPress={saveDraft}
+            onPress={() => void saveDraft()}
+            disabled={avatarEditorDisabled}
+            accessibilityState={{ disabled: avatarEditorDisabled }}
             accessibilityRole="button"
             accessibilityLabel="Save Avatar Studio draft"
             accessibilityHint="Saves the current pixel twin configuration locally."
             hitSlop={MOBILE_INLINE_HIT_SLOP}
             style={({ pressed }) => [
               s.primaryBtn,
-              { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
+              { backgroundColor: colors.primary, opacity: avatarEditorDisabled ? 0.5 : pressed ? 0.82 : 1 },
             ]}
           >
             <Ionicons name="heart" size={18} color="#FFF9EF" />
@@ -1718,8 +1954,8 @@ export default function AvatarStudioScreen({
                 },
               ]}
             >
-              Your uploaded mood images still work. The new template config
-              gives those images a real editable identity layer.
+              Your saved mood images still work with these editable care-twin
+              choices.
             </Text>
           </BoardCard>
         ) : (
@@ -1733,8 +1969,8 @@ export default function AvatarStudioScreen({
                 },
               ]}
             >
-              This version is a manual PixelLab template creator. Photos are
-              optional on-screen references and are never saved with the avatar.
+              Build your care twin with the choices above. A photo is optional
+              and stays only on this screen while you compare.
             </Text>
           </BoardCard>
         )}

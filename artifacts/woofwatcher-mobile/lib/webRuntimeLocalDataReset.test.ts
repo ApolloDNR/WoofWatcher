@@ -19,6 +19,7 @@ function attachPeers(
   webRuntimeParticipant: { prepare(): Promise<void>; commit(): Promise<void> },
 ) {
   for (const id of [
+    "auth-credentials",
     "avatar",
     "care",
     "device-preferences",
@@ -75,6 +76,7 @@ test("web-runtime cache failure is partial and a reconstructed runtime retries i
       "query-cache",
       "walk-capture",
       "work-drain",
+      "auth-credentials",
     ],
     failedParticipantIds: ["web-runtime"],
   });
@@ -114,4 +116,23 @@ test("web-runtime treats a service-worker negative acknowledgement as reset fail
   const result = await runtime.operations.runReset();
   assert.equal(result.status, "partial-failure");
   assert.deepEqual(result.failedParticipantIds, ["web-runtime"]);
+});
+
+test("web-runtime removes legacy notification session metadata", async () => {
+  const removed: string[] = [];
+  const controller = createWebRuntimeLocalDataResetController({
+    platform: "web",
+    cacheStorage: null,
+    sessionStorage: {
+      removeItem(key) {
+        removed.push(key);
+      },
+    },
+    async requestServiceWorkerClear() {},
+  });
+  const runtime = createLocalDataResetRuntime(createStorageAdapter());
+  attachPeers(runtime, controller.participant);
+
+  assert.equal((await runtime.operations.runReset()).status, "complete");
+  assert.deepEqual(removed, ["woofwatcher.v1.lastNotificationKey"]);
 });

@@ -12,8 +12,33 @@ import {
   describeAvatarConfig,
   hasManualAvatarConfiguration,
   normalizeAvatarConfig,
+  shouldSyncAvatarStudioDraftFromContext,
   summarizeAvatarAccessoryFits,
 } from "./avatarStudio.ts";
+
+test("external avatar hydration never overwrites a dirty or saving Studio draft", () => {
+  assert.equal(
+    shouldSyncAvatarStudioDraftFromContext({
+      draftDirty: false,
+      persistenceInFlight: false,
+    }),
+    true,
+  );
+  assert.equal(
+    shouldSyncAvatarStudioDraftFromContext({
+      draftDirty: true,
+      persistenceInFlight: false,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldSyncAvatarStudioDraftFromContext({
+      draftDirty: false,
+      persistenceInFlight: true,
+    }),
+    false,
+  );
+});
 
 test("defines the launch template library for manual dog avatars", () => {
   const ids = AVATAR_TEMPLATES.map((template) => template.id);

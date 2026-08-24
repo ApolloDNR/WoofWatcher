@@ -71,6 +71,7 @@ function attachFutureRequiredNoOps(
   runtime: ReturnType<typeof createLocalDataResetRuntime>,
 ) {
   for (const id of [
+    "auth-credentials",
     "files",
     "query-cache",
     "walk-capture",
@@ -542,6 +543,7 @@ test("peer commit failures do not skip preference removals", async () => {
       "walk-capture",
       "web-runtime",
       "work-drain",
+      "auth-credentials",
     ],
     failedParticipantIds: ["avatar", "care"],
   });
@@ -591,12 +593,13 @@ test("preference failure remains visible without hiding peer commit results", as
       "walk-capture",
       "web-runtime",
       "work-drain",
+      "auth-credentials",
     ],
     failedParticipantIds: ["avatar", "device-preferences"],
   });
 });
 
-test("reset removes legacy theme while preserving the deferred session notification key", async () => {
+test("device-preference reset leaves session-only metadata to the web-runtime owner", async () => {
   const { createDevicePreferencesLocalDataResetController } =
     await loadResetModule();
   const sessionNotificationKey = "woofwatcher.v1.lastNotificationKey";
@@ -673,6 +676,7 @@ for (const rejectionMode of ["retain", "delete"] as const) {
         "walk-capture",
         "web-runtime",
         "work-drain",
+        "auth-credentials",
       ],
       failedParticipantIds: ["device-preferences"],
     });

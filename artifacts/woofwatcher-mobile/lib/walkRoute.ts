@@ -35,6 +35,7 @@ export type WalkRouteCaptureStatus =
   | "idle"
   | "starting"
   | "recording"
+  | "paused"
   | "denied"
   | "unavailable";
 
@@ -569,23 +570,28 @@ const defaultWalkRouteWatchAdapter: WalkRouteWatchAdapter = Object.freeze({
 async function establishWalkRouteCapture(
   sessionKey: string,
   adapter: WalkRouteWatchAdapter,
+  isCurrent: () => boolean,
 ): Promise<void> {
-  if (!sessionKey) return;
+  if (!sessionKey || !isCurrent()) return;
   if (
     capture.sessionKey === sessionKey &&
     (capture.status === "recording" || capture.status === "starting")
   ) {
     return;
   }
+  const preservedPoints =
+    capture.sessionKey === sessionKey && capture.status === "paused"
+      ? [...capture.points]
+      : [];
   stopActiveWatch();
   capture.generation += 1;
   const generation = capture.generation;
   capture.sessionKey = sessionKey;
-  capture.points = [];
+  capture.points = preservedPoints;
   setStatus("starting");
 
   const onPoint = (point: WalkRoutePoint) => {
-    if (capture.generation !== generation) return;
+    if (!isCurrent() || capture.generation !== generation) return;
     const last = capture.points[capture.points.length - 1] ?? null;
     if (!shouldAppendRoutePoint(last, point)) return;
     capture.points.push(point);
@@ -593,13 +599,13 @@ async function establishWalkRouteCapture(
     publish();
   };
   const onDenied = () => {
-    if (capture.generation !== generation) return;
+    if (!isCurrent() || capture.generation !== generation) return;
     stopActiveWatch();
     setStatus("denied");
   };
 
   const stopWatch = await adapter.start(onPoint, onDenied);
-  if (capture.generation !== generation) {
+  if (!isCurrent() || capture.generation !== generation) {
     if (stopWatch) attemptStopWatch(stopWatch);
     return;
   }
@@ -614,8 +620,9 @@ async function establishWalkRouteCapture(
 export function startWalkRouteCaptureWithAdapter(
   sessionKey: string,
   adapter: WalkRouteWatchAdapter,
+  isCurrent: () => boolean,
 ): Promise<void> {
-  const operation = establishWalkRouteCapture(sessionKey, adapter);
+  const operation = establishWalkRouteCapture(sessionKey, adapter, isCurrent);
   pendingCaptureStarts.add(operation);
   void operation.then(
     () => pendingCaptureStarts.delete(operation),
@@ -624,10 +631,14 @@ export function startWalkRouteCaptureWithAdapter(
   return operation;
 }
 
-export function startWalkRouteCapture(sessionKey: string): Promise<void> {
+export function startWalkRouteCapture(
+  sessionKey: string,
+  isCurrent: () => boolean,
+): Promise<void> {
   return startWalkRouteCaptureWithAdapter(
     sessionKey,
     defaultWalkRouteWatchAdapter,
+    isCurrent,
   );
 }
 
@@ -666,14 +677,16 @@ export function cancelWalkRouteCapture(): void {
   resetCapture();
 }
 
-/** Reset-owner barrier: revoke capture, stop the live watch, and drain starts. */
+/**
+ * Reset-owner barrier: revoke callbacks, stop the live watch, and drain starts.
+ * Captured points remain staged until commit. If another owner cannot prepare,
+ * the bridge can resume this paused session without losing the route.
+ */
 export async function cancelAndDrainWalkRouteCapture(): Promise<void> {
   const activeStop = capture.stopWatch;
   capture.stopWatch = null;
   capture.generation += 1;
-  capture.sessionKey = null;
-  capture.points = [];
-  setStatus("idle");
+  setStatus(capture.sessionKey ? "paused" : "idle");
 
   const failures: unknown[] = [];
   const attempted = new Set<WalkRouteStopWatch>();
@@ -710,5 +723,7 @@ export async function cancelAndDrainWalkRouteCapture(): Promise<void> {
 
 export const walkRouteLocalDataResetParticipant = Object.freeze({
   prepare: cancelAndDrainWalkRouteCapture,
-  async commit() {},
+  async commit() {
+    resetCapture();
+  },
 });

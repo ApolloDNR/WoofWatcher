@@ -24,7 +24,12 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import {
+  BoardCard,
+  BoardSectionHeader,
+  ModalBackdropPressable,
+  ModalSheetPressable,
+} from "@/components/board/BoardPrimitives";
 import { PressScale } from "@/components/motion/GameFeel";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
@@ -43,7 +48,10 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
-import { resolvePetName } from "@/lib/petIdentity";
+import {
+  DEFAULT_PET_PLACEHOLDER,
+  resolvePetName,
+} from "@/lib/petIdentity";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
 
 const SERIF = "Fraunces_700Bold";
@@ -306,7 +314,7 @@ export default function DogProfileScreen({
       return;
     }
     setPWeightError(null);
-    const name = pName.trim() || "Phoenix";
+    const name = pName.trim() || DEFAULT_PET_PLACEHOLDER;
     const weight = weightValidation.value;
     const updated = updateCareDoc((doc) => ({
       ...doc,
@@ -574,14 +582,14 @@ export default function DogProfileScreen({
         animationType="slide"
         onRequestClose={() => setProfileOpen(false)}
       >
-        <Pressable
+        <ModalBackdropPressable
           style={s.modalBackdrop}
           onPress={() => setProfileOpen(false)}
-          accessibilityLabel="Close dog profile editor"
         >
-          <Pressable
+          <ModalSheetPressable
+            visible={profileOpen}
+            onRequestClose={() => setProfileOpen(false)}
             style={[s.profileModal, { backgroundColor: colors.card }]}
-            onPress={(e) => e.stopPropagation()}
           >
             <ScrollView
               showsVerticalScrollIndicator={false}
@@ -762,8 +770,8 @@ export default function DogProfileScreen({
                 <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save profile</Text>
               </Pressable>
             </ScrollView>
-          </Pressable>
-        </Pressable>
+          </ModalSheetPressable>
+        </ModalBackdropPressable>
       </Modal>
     </View>
   );

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -18,7 +18,14 @@ import { deriveOnboardingStatus } from "@workspace/care-domain";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
-import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import {
+  BoardCard,
+  BoardPill,
+  BoardRouteHeader,
+  BoardSectionHeader,
+  ModalBackdropPressable,
+  ModalSheetPressable,
+} from "@/components/board/BoardPrimitives";
 import { isClerkConfigured, useWoofAuth } from "@/lib/auth";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
 import {
@@ -28,8 +35,9 @@ import {
 import { notifyDialog } from "@/lib/confirmDialog";
 import {
   CARE_READ_ONLY_MESSAGE,
-  runAcceptedCareMutation,
+  careMutationWasAccepted,
 } from "@/lib/careWriteProtection";
+import { createExclusiveAsyncAction } from "@/lib/exclusiveAsyncAction";
 import {
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
@@ -49,6 +57,7 @@ import {
   canonicalHomeRoute,
   canonicalPlansRoute,
 } from "@/lib/canonicalRouteBuilders";
+import { persistSetupFoundation } from "@/lib/setupFoundationSave";
 
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
 // Storybook mockup: big warm serif for celebration titles (same face the
@@ -116,9 +125,21 @@ export default function SetupScreen() {
   const router = useRouter();
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
   const ownerOps = consumerSurfacePolicy.ownerOps;
-  const { state, careMutationsBlocked, updateCareDoc, isLoaded } = useCare();
+  const {
+    state,
+    careMutationsBlocked,
+    updateCareDoc,
+    persistCurrentCareSnapshot,
+    isLoaded,
+    storageWarning,
+  } = useCare();
   const { isSignedIn } = useWoofAuth();
-  const { avatarConfig, hasConfiguredAvatar, saveAvatarConfig } = useAvatar();
+  const {
+    avatarConfig,
+    hasConfiguredAvatar,
+    isLoaded: avatarIsLoaded,
+    saveAvatarConfig,
+  } = useAvatar();
   const [draft, setDraft] = useState<SetupWizardDraft>(() => {
     const next = createSetupWizardDraft(state);
     return consumerSurfacePolicy.householdSetupModes
@@ -131,6 +152,9 @@ export default function SetupScreen() {
   // tell "never opened Avatar Studio" apart from "deliberately re-saved the
   // default shepherd", so the swap stays owner-confirmable here. Defaults ON.
   const [matchTwinToBreed, setMatchTwinToBreed] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const saveGateRef = useRef(createExclusiveAsyncAction());
+  const mountedRef = useRef(true);
   // Snapshot of the save celebration, captured at save time so the sheet
   // stays stable while care and avatar state update underneath it.
   const [successMoment, setSuccessMoment] = useState<{
@@ -138,6 +162,13 @@ export default function SetupScreen() {
     twinLine: string;
     templateLine: string;
   } | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isLoaded || dirty) return;
@@ -185,12 +216,15 @@ export default function SetupScreen() {
   );
 
   const setField = (key: keyof SetupWizardDraft, value: string) => {
+    if (saveGateRef.current.isBusy()) return;
     setDirty(true);
     setDraft((prev) => ({ ...prev, [key]: value }));
   };
 
   const householdReady = draft.householdMode !== "join" || draft.inviteCode.trim().length >= 3;
   const canSave = onboarding.isComplete && householdReady;
+  const setupLoaded = isLoaded && avatarIsLoaded;
+  const controlsDisabled = !setupLoaded || isSaving;
 
   // Which sections still block the save, in this screen's own words. Shown
   // under the CTA and echoed when a blocked save is tapped, so the disabled
@@ -201,46 +235,113 @@ export default function SetupScreen() {
       .map((step) => SETUP_SECTION_NAME_BY_STEP_ID[step.id] ?? step.title),
     ...(householdReady ? [] : ["the invite code"]),
   ];
-  const saveBlockedMessage = remainingSections.length
-    ? `Complete ${formatSectionList(remainingSections)} to save.`
-    : "";
+  const saveBlockedMessage = !setupLoaded
+    ? "Loading this device's saved care and twin before editing."
+    : remainingSections.length
+      ? `Complete ${formatSectionList(remainingSections)} to save.`
+      : "";
 
-  const saveSetup = () => {
+  const saveSetup = async () => {
+    if (saveGateRef.current.isBusy()) return;
+    if (!isLoaded || !avatarIsLoaded) {
+      notifyDialog(
+        "Loading saved care",
+        "Wait for this device's care and twin data to finish loading, then try again.",
+      );
+      return;
+    }
     if (!canSave) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       notifyDialog("Almost there", saveBlockedMessage);
       return;
     }
     if (careMutationsBlocked) {
-      notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
+      notifyDialog(
+        storageWarning === "newer-version"
+          ? "Update WoofWatcher"
+          : "Care is temporarily unavailable",
+        storageWarning === "newer-version"
+          ? CARE_READ_ONLY_MESSAGE
+          : "WoofWatcher is finishing a local data operation. Wait for it to finish, then try again.",
+      );
       return;
     }
-    const updated = updateCareDoc((doc) => applySetupWizardDraft(doc, draft));
-    const accepted = runAcceptedCareMutation(updated, () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      if (twinPlan.willSwapTemplate) {
-        // Persist through AvatarContext.saveAvatarConfig - the same state path
-        // Avatar Studio's Save uses - with the template-picker patch, so the
-        // room twin follows the typed breed without duplicating studio logic.
-        void saveAvatarConfig(
-          applyBreedTemplateToAvatarConfig(
-            avatarConfig,
-            twinPlan.resultTemplateId,
-            preview.profile.name,
-          ),
-        ).catch(() => {});
+
+    const draftAtSave = draft;
+    const successAtSave = {
+      dogName: preview.profile.name,
+      twinLine: twinPlan.successLine,
+      templateLine: twinPlan.willSwapTemplate
+        ? `Twin: ${twinPlan.resultTemplateLabel} - change anytime in Avatar Studio.`
+        : twinPlan.previewLine,
+    };
+    const twinConfigAtSave = twinPlan.willSwapTemplate
+      ? applyBreedTemplateToAvatarConfig(
+          avatarConfig,
+          twinPlan.resultTemplateId,
+          preview.profile.name,
+        )
+      : null;
+
+    setIsSaving(true);
+    try {
+      const gated = await saveGateRef.current.run(() =>
+        persistSetupFoundation({
+          updateCare: () => {
+            const updated = updateCareDoc((doc) =>
+              applySetupWizardDraft(doc, draftAtSave),
+            );
+            return careMutationWasAccepted(updated);
+          },
+          persistCare: persistCurrentCareSnapshot,
+          persistTwin: twinConfigAtSave
+            ? () => saveAvatarConfig(twinConfigAtSave)
+            : undefined,
+        }),
+      );
+      if (gated.status === "busy" || !mountedRef.current) return;
+
+      if (gated.value.status === "complete") {
+        setDirty(false);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setSuccessMoment(successAtSave);
+        return;
       }
-      // In-app success sheet (Alert is a no-op on react-native-web); the
-      // hand-off to Home or Plans happens from the sheet's own buttons.
-      setSuccessMoment({
-        dogName: preview.profile.name,
-        twinLine: twinPlan.successLine,
-        templateLine: twinPlan.willSwapTemplate
-          ? `Twin: ${twinPlan.resultTemplateLabel} - change anytime in Avatar Studio.`
-          : twinPlan.previewLine,
-      });
-    });
-    if (!accepted) notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      if (gated.value.status === "twin-persistence-failed") {
+        notifyDialog(
+          "Profile saved; twin unchanged",
+          "The care foundation is saved on this device, but WoofWatcher could not save the breed-matched twin. Stay on this screen and try Save foundation again.",
+        );
+        return;
+      }
+      if (gated.value.status === "care-persistence-failed") {
+        notifyDialog(
+          "Foundation not fully saved",
+          "WoofWatcher could not confirm the profile and routines were saved on this device. Stay on this screen and try again.",
+        );
+        return;
+      }
+      notifyDialog(
+        storageWarning === "newer-version"
+          ? "Update WoofWatcher"
+          : "Care is temporarily unavailable",
+        storageWarning === "newer-version"
+          ? CARE_READ_ONLY_MESSAGE
+          : "The save was interrupted before any success was confirmed. Wait for the current local data operation to finish and try again.",
+      );
+    } catch {
+      if (mountedRef.current) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        notifyDialog(
+          "Foundation not fully saved",
+          "WoofWatcher could not confirm every part of this save. Stay on this screen and try again.",
+        );
+      }
+    } finally {
+      if (mountedRef.current) setIsSaving(false);
+    }
   };
 
   const meetDog = () => {
@@ -256,10 +357,12 @@ export default function SetupScreen() {
   };
 
   const finishLater = () => {
+    if (saveGateRef.current.isBusy()) return;
     Haptics.selectionAsync();
     router.replace(canonicalHomeRoute());
   };
   const openAuthSetupProofMission = () => {
+    if (saveGateRef.current.isBusy()) return;
     Haptics.selectionAsync();
     router.push("/care-twin-qa?qaSurface=auth-setup-onboarding-proof" as never);
   };
@@ -344,8 +447,8 @@ export default function SetupScreen() {
           </BoardCard>
 
           <Section title="Dog profile" icon="paw-outline">
-            <Field label="Name" value={draft.dogName} placeholder="Phoenix" onChangeText={(value) => setField("dogName", value)} />
-            <Field label="Breed or mix" value={draft.breed} placeholder="German Shepherd mix" onChangeText={(value) => setField("breed", value)} />
+            <Field editable={!controlsDisabled} label="Name" value={draft.dogName} placeholder="Your dog's name" onChangeText={(value) => setField("dogName", value)} />
+            <Field editable={!controlsDisabled} label="Breed or mix" value={draft.breed} placeholder="German Shepherd mix" onChangeText={(value) => setField("breed", value)} />
             <View style={s.twinPreview}>
               <View style={s.twinLineRow}>
                 <Ionicons name="sparkles-outline" size={14} color={colors.copper} />
@@ -355,12 +458,15 @@ export default function SetupScreen() {
               </View>
               {twinPlan.swapAvailable ? (
                 <Pressable
+                  disabled={controlsDisabled}
                   accessibilityRole="switch"
                   accessibilityLabel="Match twin to breed on save"
                   aria-checked={matchTwinToBreed}
                   onPress={() => {
                     Haptics.selectionAsync();
-                    setMatchTwinToBreed((value) => !value);
+                    if (!saveGateRef.current.isBusy()) {
+                      setMatchTwinToBreed((value) => !value);
+                    }
                   }}
                   style={({ pressed }) => [
                     s.twinToggle,
@@ -383,22 +489,23 @@ export default function SetupScreen() {
               ) : null}
             </View>
             <View style={s.twoCol}>
-              <Field label="Weight" value={draft.weight} placeholder="68" keyboardType="decimal-pad" onChangeText={(value) => setField("weight", value)} />
-              <Field label="Unit" value={draft.weightUnit} placeholder="lb" onChangeText={(value) => setField("weightUnit", value)} />
+              <Field editable={!controlsDisabled} label="Weight" value={draft.weight} placeholder="68" keyboardType="decimal-pad" onChangeText={(value) => setField("weight", value)} />
+              <Field editable={!controlsDisabled} label="Unit" value={draft.weightUnit} placeholder="lb" onChangeText={(value) => setField("weightUnit", value)} />
             </View>
             <Field
               label="Care focus"
               value={draft.careFocus}
               placeholder="Support anxious eating and steady routines"
               multiline
+              editable={!controlsDisabled}
               onChangeText={(value) => setField("careFocus", value)}
             />
           </Section>
 
           <Section title="Diet baseline" icon="restaurant-outline">
-            <Field label="Food" value={draft.primaryFood} placeholder="Sensitive kibble" onChangeText={(value) => setField("primaryFood", value)} />
-            <Field label="Normal portion" value={draft.normalPortion} placeholder="1 cup" onChangeText={(value) => setField("normalPortion", value)} />
-            <Field label="Meal schedule" value={draft.mealSchedule} placeholder="7 AM and 6 PM" onChangeText={(value) => setField("mealSchedule", value)} />
+            <Field editable={!controlsDisabled} label="Food" value={draft.primaryFood} placeholder="Sensitive kibble" onChangeText={(value) => setField("primaryFood", value)} />
+            <Field editable={!controlsDisabled} label="Normal portion" value={draft.normalPortion} placeholder="1 cup" onChangeText={(value) => setField("normalPortion", value)} />
+            <Field editable={!controlsDisabled} label="Meal schedule" value={draft.mealSchedule} placeholder="7 AM and 6 PM" onChangeText={(value) => setField("mealSchedule", value)} />
           </Section>
 
           <Section title="Starter routine" icon="calendar-outline">
@@ -408,6 +515,7 @@ export default function SetupScreen() {
                 const selected = draft.routineType === item.value;
                 return (
                   <Pressable
+                    disabled={controlsDisabled}
                     key={item.value}
                     accessibilityRole="button"
                     accessibilityLabel={`Routine type ${item.label}`}
@@ -431,8 +539,8 @@ export default function SetupScreen() {
                 );
               })}
             </View>
-            <Field label="Routine name" value={draft.routineLabel} placeholder="Breakfast" onChangeText={(value) => setField("routineLabel", value)} />
-            <Field label="Time" value={draft.routineTime} placeholder="7:30 AM" onChangeText={(value) => setField("routineTime", value)} />
+            <Field editable={!controlsDisabled} label="Routine name" value={draft.routineLabel} placeholder="Breakfast" onChangeText={(value) => setField("routineLabel", value)} />
+            <Field editable={!controlsDisabled} label="Time" value={draft.routineTime} placeholder="7:30 AM" onChangeText={(value) => setField("routineTime", value)} />
           </Section>
 
           {consumerSurfacePolicy.householdSetupModes ? (
@@ -443,6 +551,7 @@ export default function SetupScreen() {
                   const selected = draft.householdMode === item.value;
                   return (
                     <Pressable
+                      disabled={controlsDisabled}
                       key={item.value}
                       accessibilityRole="button"
                       aria-selected={selected}
@@ -477,13 +586,15 @@ export default function SetupScreen() {
                 })}
               </View>
               <Field
+                editable={!controlsDisabled}
                 label="Household name"
                 value={draft.householdName}
-                placeholder="Phoenix House"
+                placeholder="Your household"
                 onChangeText={(value) => setField("householdName", value)}
               />
               {draft.householdMode === "join" && (
                 <Field
+                  editable={!controlsDisabled}
                   label="Invite code"
                   value={draft.inviteCode}
                   placeholder="WW-42"
@@ -507,8 +618,8 @@ export default function SetupScreen() {
           )}
 
           <Section title="Household caregiver" icon="people-outline">
-            <Field label="Name" value={draft.caregiverName} placeholder="Apollo" onChangeText={(value) => setField("caregiverName", value)} />
-            <Field label="Role" value={draft.caregiverRole} placeholder="Primary caregiver" onChangeText={(value) => setField("caregiverRole", value)} />
+            <Field editable={!controlsDisabled} label="Name" value={draft.caregiverName} placeholder="Your name" onChangeText={(value) => setField("caregiverName", value)} />
+            <Field editable={!controlsDisabled} label="Role" value={draft.caregiverRole} placeholder="Primary caregiver" onChangeText={(value) => setField("caregiverRole", value)} />
           </Section>
 
           <BoardCard style={s.confirmationCard}>
@@ -572,22 +683,41 @@ export default function SetupScreen() {
 
           <View style={s.actions}>
             <Pressable
+              disabled={controlsDisabled}
               onPress={saveSetup}
               accessibilityRole="button"
-              accessibilityLabel={householdReady ? "Save foundation" : "Add invite code"}
+              accessibilityLabel={
+                isSaving
+                  ? "Saving foundation"
+                  : setupLoaded
+                    ? householdReady
+                      ? "Save foundation"
+                      : "Add invite code"
+                    : "Loading saved care"
+              }
               accessibilityHint={canSave ? undefined : saveBlockedMessage}
-              aria-disabled={!canSave}
+              aria-disabled={!canSave || controlsDisabled}
               style={({ pressed }) => [
                 s.saveBtn,
-                { backgroundColor: canSave ? colors.primary : colors.border, opacity: pressed ? 0.82 : 1 },
+                {
+                  backgroundColor:
+                    canSave && setupLoaded ? colors.primary : colors.border,
+                  opacity: pressed && !controlsDisabled ? 0.82 : 1,
+                },
               ]}
             >
-              <Ionicons name="checkmark-circle" size={18} color={canSave ? colors.primaryForeground : colors.mutedForeground} />
-              <Text style={[s.saveText, { color: canSave ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                {householdReady ? "Save foundation" : "Add invite code"}
+              <Ionicons name={isSaving ? "hourglass-outline" : "checkmark-circle"} size={18} color={canSave && setupLoaded ? colors.primaryForeground : colors.mutedForeground} />
+              <Text style={[s.saveText, { color: canSave && setupLoaded ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                {isSaving
+                  ? "Saving foundation…"
+                  : setupLoaded
+                    ? householdReady
+                      ? "Save foundation"
+                      : "Add invite code"
+                    : "Loading saved care…"}
               </Text>
             </Pressable>
-            {!canSave && saveBlockedMessage ? (
+            {(!canSave || !setupLoaded) && saveBlockedMessage ? (
               <Text
                 aria-live="polite"
                 style={[s.saveHint, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
@@ -596,6 +726,7 @@ export default function SetupScreen() {
               </Text>
             ) : null}
             <Pressable
+              disabled={controlsDisabled}
               onPress={finishLater}
               accessibilityRole="button"
               accessibilityLabel="Finish setup later"
@@ -605,6 +736,7 @@ export default function SetupScreen() {
             </Pressable>
             {ownerOps ? (
               <Pressable
+                disabled={controlsDisabled}
                 onPress={openAuthSetupProofMission}
                 accessibilityRole="button"
                 accessibilityLabel="Open auth and setup proof mission"
@@ -630,12 +762,14 @@ export default function SetupScreen() {
         animationType="slide"
         onRequestClose={meetDog}
       >
-        <Pressable
-          accessibilityLabel="Continue to Home"
+        <ModalBackdropPressable
           style={s.sheetBackdrop}
           onPress={meetDog}
         >
-          <Pressable onPress={(event) => event.stopPropagation()}>
+          <ModalSheetPressable
+            visible={successMoment !== null}
+            onRequestClose={meetDog}
+          >
             <BoardCard style={[s.sheetCard, { paddingBottom: modalSheetBottomPadding }]}>
               <View style={[s.sheetHandle, { backgroundColor: colors.border }]} />
               <View style={[s.sheetBadge, { backgroundColor: colors.primary + "16" }]}>
@@ -659,7 +793,7 @@ export default function SetupScreen() {
               <Pressable
                 onPress={meetDog}
                 accessibilityRole="button"
-                accessibilityLabel={`Meet ${successMoment?.dogName ?? "your dog"}`}
+                accessibilityLabel={`Continue to Home and meet ${successMoment?.dogName ?? "your dog"}`}
                 style={({ pressed }) => [
                   s.saveBtn,
                   s.sheetPrimaryBtn,
@@ -685,8 +819,8 @@ export default function SetupScreen() {
                 </Text>
               </Pressable>
             </BoardCard>
-          </Pressable>
-        </Pressable>
+          </ModalSheetPressable>
+        </ModalBackdropPressable>
       </Modal>
     </>
   );
@@ -723,6 +857,7 @@ function Field({
   multiline = false,
   keyboardType = "default",
   autoCapitalize = "sentences",
+  editable = true,
 }: {
   label: string;
   value: string;
@@ -731,12 +866,14 @@ function Field({
   multiline?: boolean;
   keyboardType?: "default" | "decimal-pad";
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  editable?: boolean;
 }) {
   const colors = useColors();
   return (
     <View style={{ flex: 1 }}>
       <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{label.toUpperCase()}</Text>
       <TextInput
+        editable={editable}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}

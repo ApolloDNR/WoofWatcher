@@ -34,11 +34,15 @@ export interface LocalDataOperations {
 export interface LocalDataOperationsOptions {
   resetCoordinator: LocalDataResetCoordinator;
   generationAuthority: GenerationPermitAuthority;
+  beginResetFence?(): Promise<() => Promise<void>>;
+  runExportFence?<T>(operation: () => Promise<T>): Promise<T>;
 }
 
 export function createLocalDataOperations({
   resetCoordinator,
   generationAuthority,
+  beginResetFence,
+  runExportFence,
 }: LocalDataOperationsOptions): LocalDataOperations {
   let state: LocalDataOperationState = { status: "idle" };
   let activeExport: Promise<void> | null = null;
@@ -106,7 +110,8 @@ export function createLocalDataOperations({
 
       let performed: Promise<void>;
       try {
-        performed = perform(captured);
+        const execute = async () => perform(captured);
+        performed = runExportFence ? runExportFence(execute) : execute();
       } catch (error) {
         fail(error);
         return operation;
@@ -145,9 +150,16 @@ export function createLocalDataOperations({
 
         let coordinated: Promise<LocalDataResetResult>;
         try {
-          coordinated = resetCoordinator.run(() => {
-            generationAuthority.invalidate();
-          });
+          let releaseResetFence: (() => Promise<void>) | null = null;
+          coordinated = resetCoordinator.run(
+            async () => {
+              releaseResetFence = await beginResetFence?.() ?? null;
+              generationAuthority.invalidate();
+            },
+            async () => {
+              await releaseResetFence?.();
+            },
+          );
         } catch (error) {
           setState({
             status: "failed",

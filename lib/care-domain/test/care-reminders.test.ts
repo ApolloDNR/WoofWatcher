@@ -120,7 +120,7 @@ test("derives a shared reminder center from routines, medications, records, and 
   assert.ok(center.items.some((item) => item.kind === "grooming" && item.label === "Grooming due soon"));
   assert.match(center.summary, /reminder/i);
   assert.match(center.nextStep, /overdue|missed/i);
-  assert.match(center.notificationReadiness, /ready for owner review/i);
+  assert.match(center.notificationReadiness, /reminders are ready to review/i);
 });
 
 test("omits an invalid-time routine from reminder calculations", async () => {
@@ -222,7 +222,10 @@ test("clears visible routine reminders only when matching household-visible logs
   assert.ok(privateOnly.items.some((item) => item.label === "Breakfast overdue"));
   assert.equal(visibleLog.status, "clear");
   assert.equal(visibleLog.total, 0);
-  assert.match(visibleLog.nextStep, /push notifications/i);
+  assert.equal(
+    visibleLog.nextStep,
+    "Keep routines and records current. This build keeps reminders inside WoofWatcher and does not send push notifications.",
+  );
   assert.match(visibleLog.notificationPreferenceSummary, /aren't part of this build yet/i);
   assert.match(visibleLog.notificationQuietHours, /Quiet hours not set/i);
   assert.match(visibleLog.notificationOptOut, /Opt-out control/i);

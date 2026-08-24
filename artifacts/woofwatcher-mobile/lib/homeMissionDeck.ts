@@ -2,6 +2,7 @@ import {
   canonicalHealthRoute,
   canonicalMoreRoute,
 } from "./canonicalRouteBuilders.ts";
+import { resolveConsumerPetName } from "./petIdentity.ts";
 
 export type HomeMissionTone = "sage" | "copper" | "amber" | "rose" | "navy";
 
@@ -98,7 +99,7 @@ function safeNumber(value: number): number {
 }
 
 export function buildHomeMissionDeck(input: HomeMissionDeckInput): HomeMission[] {
-  const petName = clean(input.petName, "Phoenix");
+  const petName = resolveConsumerPetName(input.petName);
   const caregiverName = clean(input.caregiverName, "caregiver");
   const nextCareTitle = clean(input.nextCare.label, `${petName}'s next care`);
   const nextCareDetail = clean(input.nextCare.detail, `${caregiverName} can review today's plan.`);

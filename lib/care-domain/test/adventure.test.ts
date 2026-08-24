@@ -209,3 +209,23 @@ test("builds a local Adventure memory draft without claiming cloud media storage
   assert.equal(memory.xp, 18);
   assert.deepEqual(memory.humans, ["Emma", "Apollo"]);
 });
+
+test("keeps unnamed fresh-install adventure copy neutral", () => {
+  const memory = buildAdventureMemoryDraft({
+    petName: "My Dog",
+    questId: "sniffari-walk",
+    title: "First walk",
+    nowIso: "2026-06-11T18:00:00.000Z",
+  });
+  const adventure = deriveAdventureMode({
+    petName: "My Dog",
+    entries: [],
+    memories: [],
+    now: NOW,
+  });
+
+  assert.equal(memory.petName, "your dog");
+  assert.equal(adventure.petName, "your dog");
+  assert.match(adventure.quests[0].prompt, /Take your dog on a calm/);
+  assert.doesNotMatch(JSON.stringify(adventure), /Phoenix|My Dog/);
+});

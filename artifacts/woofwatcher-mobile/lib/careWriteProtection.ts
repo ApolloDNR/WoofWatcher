@@ -17,6 +17,20 @@ export interface CareWriteProtection {
   reset(): number;
 }
 
+export function careWriteAdmissionIsOpen(input: {
+  hydrated: boolean;
+  ownerWipeInProgress: boolean;
+  localDataAdmissionOpen: boolean;
+  versionProtectionBlocked: boolean;
+}): boolean {
+  return (
+    input.hydrated &&
+    !input.ownerWipeInProgress &&
+    input.localDataAdmissionOpen &&
+    !input.versionProtectionBlocked
+  );
+}
+
 export function createCareWriteProtection(): CareWriteProtection {
   let generation = 0;
   let blocked = false;

@@ -73,6 +73,7 @@ import {
   type CareDocMigrationQuarantineItem,
 } from "../lib/careDocMigration";
 import {
+  careWriteAdmissionIsOpen,
   createCareWriteProtection,
   prioritizeCareStorageWarning,
   type CareStorageWarning,
@@ -90,6 +91,7 @@ import {
   hasInterruptedCareEntryMutationsToRecover,
   type CareHydrationAttemptAuthority,
   type CareLocalDataResetController,
+  type CareResetCommitContext,
 } from "@/lib/careLocalDataReset";
 import { useLocalDataReset } from "@/context/LocalDataResetContext";
 import { LocalDataResetInProgressError } from "@/lib/removableLocalDataStorage";
@@ -636,6 +638,7 @@ interface CareContextValue {
   deleteEntry: (id: string) => Promise<boolean>;
   updateEntry: (id: string, patch: Partial<Omit<Entry, "id">>) => boolean;
   updateCareDoc: (updater: (doc: CareDoc) => CareDoc) => boolean;
+  persistCurrentCareSnapshot: () => Promise<boolean>;
   refresh: () => void;
   syncOutbox: CareSyncOutbox;
   isLoaded: boolean;
@@ -720,16 +723,24 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const careDocWritesBlocked = useCallback(
     (): boolean =>
-      ownerWipeInProgressRef.current ||
-      !isWriteAdmissionOpen() ||
-      careWriteProtectionRef.current.isBlocked(),
+      !careWriteAdmissionIsOpen({
+        hydrated: hydratedRef.current,
+        ownerWipeInProgress: ownerWipeInProgressRef.current,
+        localDataAdmissionOpen: isWriteAdmissionOpen(),
+        versionProtectionBlocked: careWriteProtectionRef.current.isBlocked(),
+      }),
     [isWriteAdmissionOpen],
   );
   const careWriteCanContinue = useCallback(
     (generation: number): boolean =>
-      !ownerWipeInProgressRef.current &&
+      careWriteAdmissionIsOpen({
+        hydrated: hydratedRef.current,
+        ownerWipeInProgress: ownerWipeInProgressRef.current,
+        localDataAdmissionOpen: isWriteAdmissionOpen(),
+        versionProtectionBlocked: careWriteProtectionRef.current.isBlocked(),
+      }) &&
       careWriteProtectionRef.current.canContinue(generation),
-    [],
+    [isWriteAdmissionOpen],
   );
   // Maps optimistic temp ids to their server ids, and queues patches that
   // arrive before a create resolves (post-log quick-note race).
@@ -775,23 +786,71 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           ) {
             return;
           }
-          await AsyncStorage.setItem(CARE_PRIMARY_LOCAL_DATA_KEY, raw);
+          await removableStorage.setItem(CARE_PRIMARY_LOCAL_DATA_KEY, raw);
         },
       );
   }
   const carePersistenceWriter = carePersistenceWriterRef.current;
 
+  const persistCurrentCareSnapshot = useCallback(async (): Promise<boolean> => {
+    if (!hydratedRef.current || careDocWritesBlocked()) return false;
+    const writeGeneration = careWriteProtectionRef.current.capture();
+    const eraseGeneration = eraseGenerationRef.current;
+    const snapshot = latestCareSnapshotRef.current + 1;
+    latestCareSnapshotRef.current = snapshot;
+    try {
+      await carePersistenceWriter.enqueue({
+        raw: JSON.stringify({
+          doc: docRef.current,
+          entries: entriesRef.current,
+          serverVersion: versionRef.current,
+        }),
+        writeGeneration,
+        eraseGeneration,
+      });
+    } catch {
+      if (
+        eraseGeneration === eraseGenerationRef.current &&
+        careWriteCanContinue(writeGeneration)
+      ) {
+        setCareStorageWarning("save-failed");
+      }
+      return false;
+    }
+    if (
+      eraseGeneration !== eraseGenerationRef.current ||
+      !careWriteCanContinue(writeGeneration)
+    ) {
+      return false;
+    }
+    if (snapshot === latestCareSnapshotRef.current) {
+      setStorageWarning((current) =>
+        prioritizeCareStorageWarning(
+          current,
+          current === "save-failed" ? null : current,
+          careWriteProtectionRef.current.isBlocked(),
+        ),
+      );
+    }
+    return true;
+  }, [
+    careDocWritesBlocked,
+    carePersistenceWriter,
+    careWriteCanContinue,
+    setCareStorageWarning,
+  ]);
+
   if (!discardedServerEntryWriterRef.current) {
     discardedServerEntryWriterRef.current =
       createSerializedCareSyncWriter<string[] | null>(async (entryIds) => {
         if (entryIds && entryIds.length > 0) {
-          await AsyncStorage.setItem(
+          await removableStorage.setItem(
             CARE_PRESERVED_LOCAL_DATA_KEY,
             JSON.stringify(entryIds),
           );
           return;
         }
-        await AsyncStorage.removeItem(CARE_PRESERVED_LOCAL_DATA_KEY);
+        await removableStorage.removeItem(CARE_PRESERVED_LOCAL_DATA_KEY);
       });
   }
   const discardedServerEntryWriter =
@@ -1000,8 +1059,8 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
     const stageCareHydration = async (): Promise<StagedCareHydration> => {
       const [raw, discardedRaw] = await Promise.all([
-        AsyncStorage.getItem(CARE_PRIMARY_LOCAL_DATA_KEY),
-        AsyncStorage.getItem(CARE_PRESERVED_LOCAL_DATA_KEY),
+        removableStorage.getItem(CARE_PRIMARY_LOCAL_DATA_KEY),
+        removableStorage.getItem(CARE_PRESERVED_LOCAL_DATA_KEY),
       ]);
       if (!hydrationCanContinue()) {
         throw new LocalDataResetInProgressError();
@@ -1248,45 +1307,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         suppressNextSettledSnapshotRef.current = false;
       }
     }
-    const writeGeneration = careWriteProtectionRef.current.capture();
-    const eraseGeneration = eraseGenerationRef.current;
-    const snapshot = latestCareSnapshotRef.current + 1;
-    latestCareSnapshotRef.current = snapshot;
-    carePersistenceWriter
-      .enqueue({
-        raw: JSON.stringify({
-          doc,
-          entries,
-          serverVersion,
-        }),
-        writeGeneration,
-        eraseGeneration,
-      })
-      .then(() => {
-        if (
-          snapshot !== latestCareSnapshotRef.current ||
-          eraseGeneration !== eraseGenerationRef.current ||
-          !careWriteCanContinue(writeGeneration)
-        ) {
-          return;
-        }
-        setStorageWarning((current) =>
-          prioritizeCareStorageWarning(
-            current,
-            current === "save-failed" ? null : current,
-            careWriteProtectionRef.current.isBlocked(),
-          ),
-        );
-      })
-      .catch(() => {
-        if (
-          eraseGeneration !== eraseGenerationRef.current ||
-          !careWriteCanContinue(writeGeneration)
-        ) {
-          return;
-        }
-        setCareStorageWarning("save-failed");
-      });
+    void persistCurrentCareSnapshot();
   }, [
     doc,
     entries,
@@ -1294,16 +1315,14 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     hydrated,
     operationSettledEpoch,
     isWriteAdmissionOpen,
-    carePersistenceWriter,
     careDocWritesBlocked,
-    careWriteCanContinue,
-    setCareStorageWarning,
+    persistCurrentCareSnapshot,
   ]);
 
   const pushDoc = useCallback(async (next: CareDoc) => {
     if (careDocWritesBlocked() || preserveFutureCareDoc(next)) return;
     // Guard every post-await state write against an owner wipe: a push (or
-    // its conflict-retry) that resolves after "All data deleted" must not
+    // its conflict-retry) that resolves after reset completion must not
     // write the pre-wipe doc back into memory, disk, or the server.
     const eraseGenerationAtStart = eraseGenerationRef.current;
     const writeGeneration = careWriteProtectionRef.current.capture();
@@ -1989,7 +2008,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       } catch {
         if (!canContinue()) return false;
         // Never restore across an owner wipe: a slow delete that fails after
-        // "All data deleted" must not resurrect the entry into the freshly
+        // A completed reset must not resurrect the entry into the freshly
         // wiped store.
         if (removed && eraseGenerationRef.current === eraseGenerationAtStart) {
           for (const discardedId of deletionLedgerIds) {
@@ -2203,7 +2222,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const persistCareResetCleanupIntent = useCallback(async () => {
+  const persistCareResetCleanupIntent = useCallback(async (
+    commitContext?: CareResetCommitContext,
+  ) => {
     const tempIdsNeedingRemoteCleanup = normalizeDiscardedServerEntryIds([
       ...creatingTempEntries.current,
       ...entriesRef.current
@@ -2222,13 +2243,16 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     ]);
 
     if (cleanupLedger.length > 0) {
-      await discardedServerEntryWriter.enqueue(cleanupLedger);
+      if (!commitContext) {
+        throw new Error("The Care reset commit capability is unavailable.");
+      }
+      await commitContext.persistCareCleanupLedger(cleanupLedger);
     }
     stagedCareResetCleanupLedgerRef.current = cleanupLedger;
     stagedCareResetTempIdsRef.current = new Set(
       tempIdsNeedingRemoteCleanup,
     );
-  }, [discardedServerEntryWriter]);
+  }, []);
 
   const finalizeSuccessfulCareReset = useCallback(() => {
     for (const tempId of stagedCareResetTempIdsRef.current) {
@@ -2310,6 +2334,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       deleteEntry,
       updateEntry,
       updateCareDoc,
+      persistCurrentCareSnapshot,
       refresh: () => void syncFromServer(),
       syncOutbox,
       isLoaded: hydrated,
@@ -2324,6 +2349,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       deleteEntry,
       updateEntry,
       updateCareDoc,
+      persistCurrentCareSnapshot,
       syncFromServer,
       syncOutbox,
       hydrated,

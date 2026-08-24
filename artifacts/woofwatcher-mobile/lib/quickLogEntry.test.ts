@@ -329,6 +329,7 @@ test("detail sheet presentation explains quick logging, details, and safety boun
   assert.equal(meal.primaryActionLabel, "Quick log now");
   assert.equal(meal.secondaryActionLabel, "Open full details");
   assert.match(meal.quickSummary, /serves the usual meal/i);
+  assert.doesNotMatch(meal.quickSummary, /Phoenix|My Dog/);
   assert.deepEqual(
     meal.interactionRail.map((item) => item.label),
     ["Tap", "Hold", "Edit later"],

@@ -13,6 +13,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import {
+  ModalBackdropPressable,
+  ModalSheetPressable,
+} from "@/components/board/BoardPrimitives";
 import { getModalSheetBottomPadding } from "@/lib/mobileLayout";
 
 export type ErrorFallbackProps = {
@@ -111,8 +115,13 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           transparent={true}
           onRequestClose={() => setIsModalVisible(false)}
         >
-          <View style={styles.modalOverlay}>
-            <View
+          <ModalBackdropPressable
+            style={styles.modalOverlay}
+            onPress={() => setIsModalVisible(false)}
+          >
+            <ModalSheetPressable
+              visible={isModalVisible}
+              onRequestClose={() => setIsModalVisible(false)}
               style={[
                 styles.modalContainer,
                 { backgroundColor: colors.background },
@@ -168,8 +177,8 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
                   </Text>
                 </View>
               </ScrollView>
-            </View>
-          </View>
+            </ModalSheetPressable>
+          </ModalBackdropPressable>
         </Modal>
       ) : null}
     </View>

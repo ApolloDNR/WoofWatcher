@@ -52,6 +52,11 @@ export interface MobileQaSessionPersistenceGate {
   ): MobileQaSessionAutosaveDecision;
 }
 
+export interface MobileQaSessionSaveQueue {
+  save(value: string, write: (value: string) => Promise<void>): Promise<void>;
+  isPending(): boolean;
+}
+
 export interface MobileQaSessionProofSummary {
   totalReviews: number;
   passed: number;
@@ -193,6 +198,26 @@ export function createMobileQaSessionPersistenceGate(): MobileQaSessionPersisten
   };
 }
 
+export function createMobileQaSessionSaveQueue(): MobileQaSessionSaveQueue {
+  let tail: Promise<void> = Promise.resolve();
+  let pending = 0;
+
+  return Object.freeze({
+    save(value, write) {
+      pending += 1;
+      const operation = tail.then(() => write(value));
+      const settled = operation.finally(() => {
+        pending = Math.max(0, pending - 1);
+      });
+      tail = settled.catch(() => undefined);
+      return settled;
+    },
+    isPending() {
+      return pending > 0;
+    },
+  });
+}
+
 function proofFingerprint(snapshot: MobileQaSessionSnapshot): string {
   const source = stableStringify({
     version: snapshot.version,
@@ -288,6 +313,21 @@ export function buildMobileQaSessionSnapshot(
   };
 }
 
+export function buildPersistedMobileQaSessionSnapshot(
+  input: MobileQaSessionInput,
+  savedAtIso: string | undefined,
+): MobileQaSessionSnapshot | null {
+  if (!savedAtIso) return null;
+  const savedAt = new Date(savedAtIso);
+  if (
+    Number.isNaN(savedAt.getTime()) ||
+    savedAt.toISOString() !== savedAtIso
+  ) {
+    return null;
+  }
+  return buildMobileQaSessionSnapshot(input, savedAtIso);
+}
+
 export function parseMobileQaSessionSnapshot(raw: string | null): MobileQaSessionState | null {
   if (!raw) return null;
 
@@ -373,7 +413,7 @@ export function buildMobileQaSessionProofManifest(
     careTwin,
     release,
     totalEvidenceFiles: careTwin.evidenceFiles + release.evidenceFiles,
-    platformEvidenceLabel: `iOS ${iosEvidence}, Android ${androidEvidence}, Web ${webEvidence}, Unknown ${unknownEvidence}`,
+    platformEvidenceLabel: `manual self-attested tags: iOS ${iosEvidence}, Android ${androidEvidence}, Web ${webEvidence}, Unknown ${unknownEvidence}`,
   };
 }
 
@@ -381,14 +421,14 @@ export function buildMobileQaSessionProofManifestShareText(
   manifest: MobileQaSessionProofManifest,
 ): string {
   return [
-    "WoofWatcher QA Proof Manifest",
-    `Proof ID: ${manifest.proofId}`,
+    "WoofWatcher QA Evidence Manifest",
+    `Manifest ID: ${manifest.proofId}`,
     `Generated: ${manifest.generatedAtIso}`,
     `Saved session: ${manifest.savedAtIso}`,
     proofLine("Care twin", manifest.careTwin),
     proofLine("Release", manifest.release),
-    `Platform evidence: ${manifest.platformEvidenceLabel}.`,
+    `Attachment metadata: ${manifest.platformEvidenceLabel}.`,
     `Total attached evidence: ${evidenceWord(manifest.totalEvidenceFiles)}.`,
-    "Boundary: this manifest summarizes local QA evidence metadata only; it does not prove App Store or Play Store approval, provider-backed storage, live AI, payments, push notifications, generated PDF output, or public launch readiness.",
+    "Boundary: Photos-library attachments are manual self-attested metadata. This manifest is not bound to an exact binary or device, cannot close iOS/Android release gates, and does not prove store approval, provider-backed storage, live AI, payments, push notifications, generated PDF output, or public launch readiness.",
   ].join("\n");
 }

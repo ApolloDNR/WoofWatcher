@@ -2,11 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  AccessibilityInfo,
+  findNodeHandle,
   Pressable,
   StyleSheet,
   Text,
   View,
   type LayoutChangeEvent,
+  type PressableProps,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
@@ -23,6 +26,7 @@ import { enterUp, MeterPip, PressScale, SPRING } from "@/components/motion/GameF
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useColors } from "@/hooks/useColors";
 import { hapticSelect } from "@/lib/haptics";
+import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
@@ -30,6 +34,104 @@ const DISPLAY_SEMI = "Fredoka_600SemiBold";
 // Storybook mockup: big warm serif route titles, sans everywhere else.
 const TITLE_SERIF = "Fraunces_700Bold";
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+type StructuralAccessibilityProp =
+  | "accessible"
+  | "accessibilityLabel"
+  | "accessibilityHint"
+  | "accessibilityRole"
+  | "accessibilityState"
+  | "accessibilityValue"
+  | "accessibilityActions"
+  | "onAccessibilityEscape"
+  | "accessibilityElementsHidden"
+  | "accessibilityViewIsModal"
+  | "importantForAccessibility"
+  | "role"
+  | "aria-label"
+  | "aria-labelledby"
+  | "aria-describedby"
+  | "aria-hidden"
+  | "aria-modal";
+
+type StructuralPressableProps = Omit<
+  PressableProps,
+  StructuralAccessibilityProp | "onPress"
+>;
+
+/**
+ * A modal's full-screen dismiss layer is structure, not an extra VoiceOver
+ * action. Keeping this contract shared prevents a whole sheet from being
+ * collapsed into one misleading "close" element.
+ */
+export function ModalBackdropPressable({
+  onPress,
+  ...props
+}: StructuralPressableProps & {
+  onPress: NonNullable<PressableProps["onPress"]>;
+}) {
+  return <Pressable {...props} accessible={false} onPress={onPress} />;
+}
+
+/**
+ * The visible sheet is a modal focus boundary, but not itself an accessible
+ * control. Its real headings, fields, and buttons remain independent nodes.
+ */
+export function ModalSheetPressable({
+  visible,
+  onRequestClose,
+  closeAccessibilityLabel = "Dismiss dialog",
+  children,
+  ...props
+}: StructuralPressableProps & {
+  visible: boolean;
+  onRequestClose: () => void;
+  closeAccessibilityLabel?: string;
+}) {
+  const colors = useColors();
+  const closeButtonRef = useRef<View | null>(null);
+
+  useEffect(() => {
+    if (!visible) return;
+    const focusTimer = setTimeout(() => {
+      const reactTag = findNodeHandle(closeButtonRef.current);
+      if (reactTag !== null) {
+        AccessibilityInfo.setAccessibilityFocus(reactTag);
+      }
+    }, 100);
+    return () => clearTimeout(focusTimer);
+  }, [visible]);
+
+  return (
+    <Pressable
+      {...props}
+      accessible={false}
+      accessibilityViewIsModal
+      onAccessibilityEscape={onRequestClose}
+      onPress={(event) => event.stopPropagation()}
+    >
+      <View style={styles.modalCloseRow}>
+        <Pressable
+          ref={closeButtonRef}
+          accessibilityRole="button"
+          accessibilityLabel={closeAccessibilityLabel}
+          accessibilityHint="Closes this dialog."
+          onPress={onRequestClose}
+          style={({ pressed }) => [
+            styles.modalCloseButton,
+            {
+              backgroundColor: pressed ? colors.secondary : colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Ionicons name="close" size={22} color={colors.foreground} />
+        </Pressable>
+      </View>
+      {children}
+    </Pressable>
+  );
+}
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -46,6 +148,7 @@ export function BoardRouteHeader({
   icon,
   back,
   onBack,
+  backDisabled,
   actionIcon,
   actionLabel,
   onAction,
@@ -60,6 +163,7 @@ export function BoardRouteHeader({
   icon?: IoniconName;
   back?: boolean;
   onBack?: () => void;
+  backDisabled?: boolean;
   actionIcon?: IoniconName;
   actionLabel?: string;
   onAction?: () => void;
@@ -78,7 +182,7 @@ export function BoardRouteHeader({
   const qaReturn = firstParam(qaParams.qaReturn);
   const qaSurface = firstParam(qaParams.qaSurface);
   const qaTitle = firstParam(qaParams.qaTitle);
-  const showQaReturn = qaReturn === "care-twin-qa";
+  const showQaReturn = isOwnerOpsBuild() && qaReturn === "care-twin-qa";
 
   return (
     <>
@@ -87,6 +191,8 @@ export function BoardRouteHeader({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Back"
+            accessibilityState={{ disabled: backDisabled }}
+            disabled={backDisabled}
             onPress={() => {
               hapticSelect();
               onBack?.();
@@ -97,6 +203,7 @@ export function BoardRouteHeader({
               {
                 backgroundColor: plain ? "transparent" : pressed ? colors.secondary : colors.card,
                 borderColor: plain ? "transparent" : colors.border,
+                opacity: backDisabled ? 0.55 : 1,
               },
             ]}
           >
@@ -840,6 +947,20 @@ const styles = StyleSheet.create({
   routeSubtitleCentered: {
     textAlign: "center",
   },
+  modalCloseRow: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    width: "100%",
+    alignItems: "flex-end",
+    justifyContent: "center",
+  },
+  modalCloseButton: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   statusPill: {
     alignSelf: "flex-start",
     borderRadius: 999,
@@ -867,7 +988,7 @@ const styles = StyleSheet.create({
   },
   segmentChip: {
     flexShrink: 1,
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: 14,
@@ -878,7 +999,7 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
   },
   actionButton: {
-    minHeight: 44,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 16,
@@ -888,7 +1009,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   actionButtonCompact: {
-    minHeight: 36,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 10,
     paddingHorizontal: 12,
   },

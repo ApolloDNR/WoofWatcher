@@ -36,6 +36,25 @@ function readGitIdentity(revision) {
   return result.stdout.trim();
 }
 
+function assertCleanCandidateWorktree() {
+  const result = spawnSync("git", ["status", "--porcelain", "--untracked-files=all"], {
+    cwd: projectRoot,
+    encoding: "utf8",
+  });
+  if (result.status !== 0) {
+    fail("Could not verify that the candidate source worktree is clean.");
+  }
+  if (result.stdout.trim()) {
+    fail(
+      "Candidate source worktree is dirty. Commit the exact candidate source before building so its recorded commit and tree cannot mislabel uncommitted code.",
+    );
+  }
+}
+
+if (candidateBuild) {
+  assertCleanCandidateWorktree();
+}
+
 removeOutput();
 
 const env = {

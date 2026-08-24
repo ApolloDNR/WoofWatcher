@@ -346,7 +346,7 @@ export function deriveMedicationFollowUps(input: MedicationFollowUpInput): Medic
       detail: `${item.label} was not logged as taken for ${item.time}${item.owner ? ` by ${item.owner}` : ""}.`,
       urgency: "alert",
       action: "Confirm whether it was taken, skipped, or needs an owner follow-up note.",
-      notificationRule: "Medication reminder candidate: missed dose follow-up after the routine window.",
+      notificationRule: "Medication reminder: missed dose follow-up after the routine window.",
       routineId: item.id,
     }));
 
@@ -359,7 +359,7 @@ export function deriveMedicationFollowUps(input: MedicationFollowUpInput): Medic
       detail: `${item.label} is due at ${item.time}${item.owner ? ` with ${item.owner}` : ""}.`,
       urgency: "watch",
       action: "Log taken, partial, or skipped from the medication composer.",
-      notificationRule: "Medication reminder candidate: due-time nudge at the routine time.",
+      notificationRule: "Medication reminder: due-time nudge at the routine time.",
       routineId: item.id,
     }));
 
@@ -378,7 +378,7 @@ export function deriveMedicationFollowUps(input: MedicationFollowUpInput): Medic
             detail: status.date ? `${refillTitle} was due on ${status.date}.` : `${refillTitle} is overdue.`,
             urgency: "alert",
             action: "Request the refill and update the medication record when complete.",
-            notificationRule: "Medication reminder candidate: overdue refill follow-up until the record is updated.",
+            notificationRule: "Medication reminder: overdue refill follow-up until the record is updated.",
             recordId: record.id,
             daysUntil: status.daysUntil,
             dueDate: status.date,
@@ -395,7 +395,7 @@ export function deriveMedicationFollowUps(input: MedicationFollowUpInput): Medic
             detail: status.date ? `${refillTitle} is due in ${days} days (${status.date}).` : `${refillTitle} is due soon.`,
             urgency: "watch",
             action: "Request or schedule the refill before it runs out.",
-            notificationRule: "Medication reminder candidate: refill follow-up before the due date.",
+            notificationRule: "Medication reminder: refill follow-up before the due date.",
             recordId: record.id,
             daysUntil: status.daysUntil,
             dueDate: status.date,

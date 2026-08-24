@@ -8,9 +8,11 @@ import {
 import {
   buildPrivacyResetFailurePresentation,
   getPrivacyLocalDataResetView,
+  preparePrivacyCareExportWithDeviceInventory,
   runPrivacyCareDataExport,
   runPrivacyLocalDataReset,
 } from "./privacyLocalDataActions.ts";
+import type { LocalDataIntent } from "./localDataIntent.ts";
 
 function deferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
@@ -71,7 +73,9 @@ test("Privacy export freezes serialized title/message and reset waits for the sh
     resetSettled = true;
     return result;
   });
-  await Promise.resolve();
+  for (let turn = 0; turn < 50 && delivered.length === 0; turn += 1) {
+    await Promise.resolve();
+  }
 
   assert.equal(resetSettled, false);
   assert.equal(Object.isFrozen(delivered[0]), true);
@@ -82,6 +86,121 @@ test("Privacy export freezes serialized title/message and reset waits for the sh
   sharing.resolve();
   await exporting;
   assert.equal((await reset).status, "complete");
+});
+
+test("Privacy export awaits physical inventory under export/reset exclusion before sharing", async () => {
+  const runtime = runtimeHarness();
+  const inventory = deferred<{ status: "complete"; fileCount: number }>();
+  const shared: Array<{ title: string; message: string }> = [];
+  const exportOperation = runPrivacyCareDataExport({
+    runExport: runtime.operations.runExport,
+    capture: () => Object.freeze({
+      title: "WoofWatcher care export - Phoenix",
+      serializedBundle: '{"storage":{"deviceFileInventory":{"status":"not-inspected","fileCount":null}}}',
+      inventoryIntent: Object.freeze({ marker: "current" }),
+    }),
+    prepare: async (captured) => {
+      assert.equal(Object.isFrozen(captured), true);
+      const result = await inventory.promise;
+      return {
+        title: captured.title,
+        message: captured.serializedBundle.replace(
+          '{"status":"not-inspected","fileCount":null}',
+          `{"status":"${result.status}","fileCount":${result.fileCount}}`,
+        ),
+      };
+    },
+    share: async (payload) => {
+      shared.push(payload);
+      return "shared";
+    },
+  });
+  let resetSettled = false;
+  const reset = runtime.operations.runReset().then((result) => {
+    resetSettled = true;
+    return result;
+  });
+  await Promise.resolve();
+  assert.equal(resetSettled, false);
+  assert.deepEqual(shared, []);
+
+  inventory.resolve({ status: "complete", fileCount: 9 });
+  await exportOperation;
+  assert.equal((await reset).status, "complete");
+  assert.deepEqual(shared, [{
+    title: "WoofWatcher care export - Phoenix",
+    message: '{"storage":{"deviceFileInventory":{"status":"complete","fileCount":9}}}',
+  }]);
+});
+
+test("Privacy export inventory failure shares nothing and never reports export complete", async () => {
+  const runtime = runtimeHarness();
+  let shares = 0;
+
+  await assert.rejects(
+    runPrivacyCareDataExport({
+      runExport: runtime.operations.runExport,
+      capture: () => ({ snapshot: "care" }),
+      prepare: async () => {
+        throw new Error("physical inventory unavailable");
+      },
+      share: async () => {
+        shares += 1;
+        return "shared";
+      },
+    }),
+    /inventory unavailable/i,
+  );
+  assert.equal(shares, 0);
+  assert.deepEqual(runtime.operations.getState(), {
+    status: "failed",
+    operation: "export",
+    failedParticipantIds: [],
+  });
+});
+
+test("consumer Privacy preparation serializes complete or unsupported inventory without paths", async () => {
+  const inventoryIntent = Object.freeze({}) as LocalDataIntent;
+  const captured = Object.freeze({
+    title: "WoofWatcher care export - Phoenix",
+    serializedBundle:
+      '{"app":"WoofWatcher","storage":{"deviceFileInventory":{"status":"not-inspected","fileCount":null}}}',
+    inventoryIntent,
+  });
+
+  const native = await preparePrivacyCareExportWithDeviceInventory(
+    captured,
+    async (intent) => {
+      assert.equal(intent, inventoryIntent);
+      return { status: "complete", fileCount: 12 };
+    },
+  );
+  assert.equal(native.title, captured.title);
+  assert.deepEqual(
+    JSON.parse(native.message).storage.deviceFileInventory,
+    { status: "complete", fileCount: 12 },
+  );
+  assert.doesNotMatch(
+    native.message,
+    /file:\/\/\/secret|ImagePicker\/photo|phoenix-portrait/i,
+  );
+
+  const web = await preparePrivacyCareExportWithDeviceInventory(
+    captured,
+    async () => ({ status: "unsupported-platform" }),
+  );
+  assert.deepEqual(
+    JSON.parse(web.message).storage.deviceFileInventory,
+    { status: "unsupported-platform", fileCount: null },
+  );
+
+  await assert.rejects(
+    preparePrivacyCareExportWithDeviceInventory(
+      captured,
+      async () => ({ status: "revoked" }),
+    ),
+    /reset.*progress/i,
+  );
 });
 
 test("Privacy export begun after reset captures and performs nothing", async () => {
@@ -125,6 +244,28 @@ test("Privacy treats shareTextPayload's resolved failed outcome as a failed expo
       share: async () => "failed",
     }),
     /could not be shared/i,
+  );
+  assert.deepEqual(runtime.operations.getState(), {
+    status: "failed",
+    operation: "export",
+    failedParticipantIds: [],
+  });
+});
+
+test("Privacy never marks a dismissed native share as a completed export", async () => {
+  const runtime = runtimeHarness();
+  await assert.rejects(
+    runPrivacyCareDataExport({
+      runExport: runtime.operations.runExport,
+      capture: () => ({ title: "care", message: "serialized" }),
+      share: async () => "dismissed",
+    }),
+    (error: unknown) => {
+      assert.ok(error instanceof Error);
+      assert.equal(error.name, "PrivacyExportDismissedError");
+      assert.match(error.message, /dismissed/i);
+      return true;
+    },
   );
   assert.deepEqual(runtime.operations.getState(), {
     status: "failed",
@@ -181,7 +322,7 @@ test("Privacy deletion rejection is failure and never complete", async () => {
   ]);
 });
 
-test("Privacy reset view reserves All data deleted for a complete delete verdict", () => {
+test("Privacy reset view uses truthful complete wording for retained anti-resurrection metadata", () => {
   const partial = getPrivacyLocalDataResetView({
     status: "failed",
     operation: "delete",
@@ -197,13 +338,17 @@ test("Privacy reset view reserves All data deleted for a complete delete verdict
   });
   assert.equal(JSON.stringify(partial).includes("All data deleted"), false);
 
-  assert.deepEqual(
-    getPrivacyLocalDataResetView({
-      status: "complete",
-      operation: "delete",
-    }),
-    { status: "complete", title: "All data deleted" },
-  );
+  const complete = getPrivacyLocalDataResetView({
+    status: "complete",
+    operation: "delete",
+  });
+  assert.equal(complete.status, "complete");
+  assert.equal(complete.title, "Local care content deleted");
+  assert.match(complete.detail, /opaque reset and sync-cleanup markers/i);
+  assert.match(complete.detail, /stale tabs/i);
+  assert.match(complete.detail, /no care details/i);
+  assert.match(complete.detail, /contain no care details/i);
+  assert.equal(JSON.stringify(complete).includes("All data deleted"), false);
   assert.deepEqual(
     getPrivacyLocalDataResetView({
       status: "complete",

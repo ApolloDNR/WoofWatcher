@@ -30,6 +30,7 @@ function attachAllRequiredNoOps(
   runtime: ReturnType<typeof createLocalDataResetRuntime>,
 ) {
   for (const id of [
+    "auth-credentials",
     "avatar",
     "care",
     "device-preferences",

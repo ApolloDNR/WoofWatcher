@@ -26,7 +26,14 @@ import {
 } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare, CareState } from "@/context/CareContext";
-import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import {
+  BoardCard,
+  BoardPill,
+  BoardRouteHeader,
+  BoardSectionHeader,
+  ModalBackdropPressable,
+  ModalSheetPressable,
+} from "@/components/board/BoardPrimitives";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
@@ -711,7 +718,7 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
             <TextInput
               value={input}
               onChangeText={setInput}
-              placeholder={`Ask about ${state.profile.name}...`}
+              placeholder={`Ask about ${name}...`}
               placeholderTextColor={colors.mutedForeground}
               style={[s.input, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
               multiline
@@ -758,15 +765,14 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
         )}
       </KeyboardAvoidingView>
       <Modal visible={reviewAction !== null} transparent animationType="slide" onRequestClose={() => setReviewAction(null)}>
-        <Pressable
+        <ModalBackdropPressable
           style={s.reviewBackdrop}
           onPress={() => setReviewAction(null)}
-          accessibilityRole="button"
-          accessibilityLabel="Close owner review"
         >
-          <Pressable
+          <ModalSheetPressable
+            visible={reviewAction !== null}
+            onRequestClose={() => setReviewAction(null)}
             style={[s.reviewSheet, { backgroundColor: colors.card, borderColor: colors.border, paddingBottom: modalSheetBottomPadding }]}
-            onPress={(event) => event.stopPropagation()}
           >
             {reviewAction?.draft ? (
               <>
@@ -817,8 +823,8 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                 </View>
               </>
             ) : null}
-          </Pressable>
-        </Pressable>
+          </ModalSheetPressable>
+        </ModalBackdropPressable>
       </Modal>
     </>
   );

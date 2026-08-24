@@ -8,6 +8,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { Platform } from "react-native";
 
 import {
   createLocalDataIntentAuthority,
@@ -66,7 +67,9 @@ export function LocalDataResetProvider({
 }) {
   const runtimeRef = useRef<LocalDataResetRuntime | null>(null);
   if (runtimeRef.current === null) {
-    runtimeRef.current = createLocalDataResetRuntime(AsyncStorage);
+    runtimeRef.current = createLocalDataResetRuntime(AsyncStorage, {
+      requireWebLock: Platform.OS === "web",
+    });
   }
   const runtime = runtimeRef.current;
   const intentAuthorityRef = useRef<LocalDataIntentAuthority | null>(null);

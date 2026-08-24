@@ -252,16 +252,22 @@ test("builds a route visual proof manifest from native screenshot evidence", () 
       ...["home", "log", "plans", "health", "more", "story-progress", "records", "care-team-supplies"].map((route) => ({
         uri: `file:///qa/${route}-ios.png`,
         fileName: `${route}-ios.png`,
-        source: "library" as const,
+        source: "camera" as const,
         targetPlatform: "ios" as const,
         capturedAtIso: "2026-07-03T12:00:00.000Z",
+        verification: "exact-binary-device" as const,
+        nativeBuildIdentifier: "com.woofwatcher:42",
+        deviceIdentifier: "iPhone QA",
       })),
       ...["home", "log", "plans", "health", "more", "story-progress", "records", "care-team-supplies"].map((route) => ({
         uri: `file:///qa/${route}-android.png`,
         fileName: `${route}-android.png`,
-        source: "library" as const,
+        source: "camera" as const,
         targetPlatform: "android" as const,
         capturedAtIso: "2026-07-03T12:00:00.000Z",
+        verification: "exact-binary-device" as const,
+        nativeBuildIdentifier: "com.woofwatcher:42",
+        deviceIdentifier: "Android QA",
       })),
     ],
   });
@@ -282,16 +288,22 @@ test("keeps route visual proof blocked until screenshots are route-named", () =>
       ...Array.from({ length: 8 }, (_, index) => ({
         uri: `file:///qa/native-ios-${index + 1}.png`,
         fileName: `native-ios-${index + 1}.png`,
-        source: "library" as const,
+        source: "camera" as const,
         targetPlatform: "ios" as const,
         capturedAtIso: "2026-07-03T12:00:00.000Z",
+        verification: "exact-binary-device" as const,
+        nativeBuildIdentifier: "com.woofwatcher:42",
+        deviceIdentifier: "iPhone QA",
       })),
       ...Array.from({ length: 8 }, (_, index) => ({
         uri: `file:///qa/native-android-${index + 1}.png`,
         fileName: `native-android-${index + 1}.png`,
-        source: "library" as const,
+        source: "camera" as const,
         targetPlatform: "android" as const,
         capturedAtIso: "2026-07-03T12:00:00.000Z",
+        verification: "exact-binary-device" as const,
+        nativeBuildIdentifier: "com.woofwatcher:42",
+        deviceIdentifier: "Android QA",
       })),
     ],
   });
@@ -303,6 +315,37 @@ test("keeps route visual proof blocked until screenshots are route-named", () =>
   assert.match(manifest.rows[7]?.androidStatus ?? "", /Android Care Team & Supplies screenshot pending/);
   assert.match(manifest.blockers.join("\n"), /Plans: iOS Plans screenshot pending/);
   assert.match(manifest.blockers.join("\n"), /Care Team & Supplies: Android Care Team & Supplies screenshot pending/);
+});
+
+test("does not let platform-tagged Photos attachments satisfy native release gates", () => {
+  const surface = listMobileReleaseQaSurfaces().find((item) => item.id === "phoenix-home");
+  assert.ok(surface);
+  const review = {
+    surfaceId: surface.id,
+    status: "pass" as const,
+    note: "Quick log and long press both worked.",
+    screenshotEvidence: [
+      {
+        uri: "file:///qa/home-ios.png",
+        fileName: "home-ios.png",
+        source: "library" as const,
+        targetPlatform: "ios" as const,
+        capturedAtIso: "2026-08-23T20:00:00.000Z",
+      },
+      {
+        uri: "file:///qa/home-android.png",
+        fileName: "home-android.png",
+        source: "library" as const,
+        targetPlatform: "android" as const,
+        capturedAtIso: "2026-08-23T20:01:00.000Z",
+      },
+    ],
+  };
+
+  assert.deepEqual(mobileReleaseQaMissingEvidenceForSurface(surface, review), [
+    "Attach 1 exact-device iOS screenshot for Phoenix Home.",
+    "Attach 1 exact-device Android screenshot for Phoenix Home.",
+  ]);
 });
 
 test("routes Incident Composer QA into the detail-first incident flow", () => {
@@ -974,16 +1017,22 @@ test("summarizes mobile release QA review status and screenshot evidence", () =>
         {
           uri: "file:///qa/ios-home.png",
           fileName: "ios-home.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-20T12:01:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "iPhone QA",
         },
         {
           uri: "file:///qa/ios-home-2.png",
           fileName: "ios-home-2.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-20T12:02:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "iPhone QA",
         },
       ],
     },
@@ -1040,9 +1089,12 @@ test("keeps passed release QA surfaces pending until required proof and notes ar
       {
         uri: "file:///qa/ios-log.png",
         fileName: "ios-log.png",
-        source: "library",
+        source: "camera",
         targetPlatform: "ios",
         capturedAtIso: "2026-06-30T12:00:00.000Z",
+        verification: "exact-binary-device",
+        nativeBuildIdentifier: "com.woofwatcher:42",
+        deviceIdentifier: "iPhone QA",
       },
     ],
   };
@@ -1054,23 +1106,29 @@ test("keeps passed release QA surfaces pending until required proof and notes ar
       {
         uri: "file:///qa/ios-log.png",
         fileName: "ios-log.png",
-        source: "library",
+        source: "camera",
         targetPlatform: "ios",
         capturedAtIso: "2026-06-30T12:00:00.000Z",
+        verification: "exact-binary-device",
+        nativeBuildIdentifier: "com.woofwatcher:42",
+        deviceIdentifier: "iPhone QA",
       },
       {
         uri: "file:///qa/android-launch-readiness.png",
         fileName: "android-launch-readiness.png",
-        source: "library",
+        source: "camera",
         targetPlatform: "android",
         capturedAtIso: "2026-06-30T12:02:00.000Z",
+        verification: "exact-binary-device",
+        nativeBuildIdentifier: "com.woofwatcher:42",
+        deviceIdentifier: "Android QA",
       },
     ],
   };
 
   assert.equal(mobileReleaseQaReviewStatusLabel(surface, pendingPass), "Pass pending proof");
   assert.deepEqual(mobileReleaseQaMissingEvidenceForSurface(surface, pendingPass), [
-    "Attach 1 Android screenshot for Owner Preview Core Loop.",
+    "Attach 1 exact-device Android screenshot for Owner Preview Core Loop.",
     "Add QA note for Owner Preview Core Loop.",
   ]);
   assert.equal(mobileReleaseQaReviewStatusLabel(surface, completePass), "Pass");
@@ -1125,16 +1183,22 @@ test("keeps flexible screenshot slots separate from required iOS and Android pro
         {
           uri: "file:///qa/home-ios-1.png",
           fileName: "home-ios-1.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-20T12:01:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "iPhone QA",
         },
         {
           uri: "file:///qa/home-ios-2.png",
           fileName: "home-ios-2.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-20T12:02:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "iPhone QA",
         },
       ],
     },
@@ -1156,23 +1220,32 @@ test("keeps flexible screenshot slots separate from required iOS and Android pro
         {
           uri: "file:///qa/home-ios.png",
           fileName: "home-ios.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-20T12:01:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "iPhone QA",
         },
         {
           uri: "file:///qa/home-android.png",
           fileName: "home-android.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "android",
           capturedAtIso: "2026-06-20T12:02:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "Android QA",
         },
         {
           uri: "file:///qa/home-report.png",
           fileName: "home-report.png",
-          source: "library",
-          targetPlatform: "unknown",
+          source: "camera",
+          targetPlatform: "android",
           capturedAtIso: "2026-06-20T12:03:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "Android QA 2",
         },
       ],
     },
@@ -1269,9 +1342,12 @@ test("builds a release QA share report with the screenshot boundary intact", () 
         {
           uri: "file:///qa/ios-home.png",
           fileName: "ios-home.png",
-          source: "library",
+          source: "camera",
           targetPlatform: "ios",
           capturedAtIso: "2026-06-20T12:01:00.000Z",
+          verification: "exact-binary-device",
+          nativeBuildIdentifier: "com.woofwatcher:42",
+          deviceIdentifier: "iPhone QA",
         },
       ],
     },
@@ -1281,9 +1357,9 @@ test("builds a release QA share report with the screenshot boundary intact", () 
   const text = buildMobileReleaseQaShareText(surfaces, reviews, "2026-06-20T12:00:00.000Z");
 
   assert.match(text, /WoofWatcher Mobile Release QA/);
-  assert.match(text, /Summary: 1\/\d+ passed, 0 proof-backed pass, 1 pass pending proof/);
+  assert.match(text, /Summary: 1\/\d+ passed, 0 exact-device pass, 1 pass pending exact-device proof/);
   assert.match(text, /Phoenix Home: Pass pending proof/);
-  assert.match(text, /Missing proof: Attach 1 Android screenshot for Phoenix Home/);
+  assert.match(text, /Missing proof: Attach 1 exact-device Android screenshot for Phoenix Home/);
   assert.match(text, /Records Incident Watch: Needs tune/);
   assert.match(text, /Follow-up row needs larger touch target/);
   assert.match(text, /Required screenshot slots:/);
@@ -1295,11 +1371,11 @@ test("builds a release QA share report with the screenshot boundary intact", () 
   assert.match(text, /main Phoenix sprite reacts without a second avatar/);
   assert.match(text, /Needs tune if:/);
   assert.match(text, /duplicate avatar/);
-  assert.match(text, /Screenshot evidence: 1 attached/);
-  assert.match(text, /Platform evidence: iOS 1\/\d+, Android 0\/\d+, flexible 0\/\d+/);
+  assert.match(text, /Manual\/local screenshot attachments: 1/);
+  assert.match(text, /Exact-device platform evidence: iOS 1\/\d+, Android 0\/\d+, flexible 0\/\d+/);
   assert.match(text, /Evidence gap: Missing/);
-  assert.match(text, /Screenshots: ios-home\.png \(iOS\)/);
-  assert.match(text, /does not replace attached iOS\/Android screenshots/);
+  assert.match(text, /Screenshots: ios-home\.png \(iOS, exact binary\/device\)/);
+  assert.match(text, /Photos-library attachments are manual self-attested references only/);
 });
 
 test("uses owner-readable release QA labels", () => {

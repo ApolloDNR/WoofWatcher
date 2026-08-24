@@ -8,7 +8,7 @@ import {
   normalizeReportExportFileName,
 } from "./reportArtifactExportFile.ts";
 
-test("builds a local printable report export file plan without claiming PDF output", () => {
+test("builds a local printable report export file plan without stale PDF-pending copy", () => {
   const plan = buildReportArtifactExportFilePlan(
     {
       fileName: "Phoenix Vet Care Pass: 2026/07/03.html",
@@ -30,8 +30,34 @@ test("builds a local printable report export file plan without claiming PDF outp
   assert.equal(plan.mimeType, "text/html");
   assert.equal(plan.shareTitle, "Phoenix Vet Care Pass printable source");
   assert.match(plan.message, /local HTML file/);
-  assert.match(plan.message, /PDF generation is still pending/);
-  assert.match(plan.message, /cloud storage is not enabled/);
+  assert.match(plan.message, /saved inside WoofWatcher/i);
+  assert.doesNotMatch(plan.message, /saved to your device/i);
+  assert.doesNotMatch(plan.message, /PDF (?:generation )?(?:is still )?pending/i);
+  assert.match(plan.message, /stays inside WoofWatcher unless you share it/i);
+  assert.match(plan.message, /cloud backup is not included/i);
+  assert.doesNotMatch(plan.message, /native.*proof|provider storage|unverified/i);
+});
+
+test("names the separately generated PDF while sharing the Care Pass HTML source", () => {
+  const plan = buildReportArtifactExportFilePlan(
+    {
+      fileName: "Phoenix Vet Care Pass.html",
+      html: "<!doctype html><html><body>Care pass</body></html>",
+      boundary:
+        "A generated PDF is available separately; this action shares the printable HTML source. This file stays inside WoofWatcher unless you share it; WoofWatcher cloud backup is not included.",
+    },
+    {
+      documentDirectory: "file:///var/mobile/Documents/",
+      title: "Phoenix Vet Care Pass",
+    },
+  );
+
+  assert.match(plan.message, /generated PDF is available separately/);
+  assert.match(plan.message, /shares the printable HTML source/);
+  assert.match(plan.message, /stays inside WoofWatcher unless you share it/i);
+  assert.match(plan.message, /cloud backup is not included/i);
+  assert.doesNotMatch(plan.message, /native.*proof|provider storage|unverified/i);
+  assert.doesNotMatch(plan.message, /PDF (?:generation )?(?:is still )?pending/i);
 });
 
 test("builds a local printable credential export file plan without calling it a report", () => {

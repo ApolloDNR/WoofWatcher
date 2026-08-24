@@ -51,11 +51,10 @@ import {
   getCarePassArtifactPrintView,
   getPetCredentialImageView,
   getPetCredentialPrintView,
+  getPetCredentialTitle,
   getRecordDueStatus,
-  normalizeCareEventType,
   summarizeRecordVault,
   type CareEventType,
-  type CarePass,
   type CarePassAudience,
   type CarePassArtifact,
   type MedicationHistoryOutcomeFilter,
@@ -63,7 +62,7 @@ import {
 } from "@workspace/care-domain";
 import { useAppViewport } from "@/context/AppViewportContext";
 import { useAppFileSystem } from "@/context/AppFileSystemContext";
-import { useCare, Entry, type Record as CareRecord } from "@/context/CareContext";
+import { useCare, type Record as CareRecord } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import {
   getKeyboardAvoidingVerticalOffset,
@@ -76,7 +75,14 @@ import {
 import { PulseIcon, PulseIconName, PULSE_COLORS } from "@/components/PulseIcon";
 import { PetPortrait } from "@/components/PetPortrait";
 import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
-import { BoardCard, BoardPill, BoardRouteHeader, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import {
+  BoardCard,
+  BoardPill,
+  BoardRouteHeader,
+  BoardSectionHeader,
+  ModalBackdropPressable,
+  ModalSheetPressable,
+} from "@/components/board/BoardPrimitives";
 import { PressScale } from "@/components/motion/GameFeel";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
@@ -92,16 +98,36 @@ import {
   type GeneratedBinaryArtifactSource,
 } from "@/lib/reportGeneratedBinaryArtifact";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
-import { resolvePetName } from "@/lib/petIdentity";
+import { buildPetSummaryLine, resolvePetName } from "@/lib/petIdentity";
 import { buildReportBinaryExportProofManifest } from "@/lib/reportBinaryExportProof";
+import {
+  buildRecordsProgressReport,
+  selectRecordsHouseholdEntries,
+  selectRecordsRecentMealNotes,
+} from "@/lib/recordsHouseholdPrivacy";
 import { shareTextPayload } from "@/lib/shareText";
 import { shareNativeFilePayload } from "@/lib/nativeFileShare";
-import { runRecordAttachmentPicker } from "@/lib/pickedMediaLocalDataActions";
+import {
+  cancelPickedMediaDraft,
+  commitPickedMediaDraft,
+  createPickedMediaDraft,
+  isPickedMediaDraftSettlementCurrent,
+  PickedMediaLocalDataActionError,
+  releasePickedMediaReferences,
+  runRecordAttachmentPicker,
+  settlePickedMediaDraftRelease,
+  stagePickedMediaDraft,
+  type PickedMediaDraft,
+} from "@/lib/pickedMediaLocalDataActions";
 import {
   runGeneratedRecordsFileShare,
   runPrintableRecordsFileShare,
 } from "@/lib/recordsFileShareActions";
+import { runDurableCarePassSaveShare } from "@/lib/recordsCarePassSaveShare";
 import type { AppArtifactDestination } from "@/lib/appOwnedFileInventory";
+import { collectCareAppOwnedFileReferences } from "@/lib/appOwnedFileReferences";
+import { runCareFileCleanupAfterDurableSnapshot } from "@/lib/careFileCleanup";
+import { createExclusiveAsyncAction } from "@/lib/exclusiveAsyncAction";
 import {
   getCareCorrectionPresentation,
   mergeValidatedRecordEdit,
@@ -117,6 +143,8 @@ import type { RecordsHealthSection } from "@/lib/healthSectionRouting";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+const REPORT_PRESET_REGENERATION_NOTE =
+  "Report preset note: regenerated from current household-visible WoofWatcher data; not a historical snapshot.";
 
 const RECORDS_CREDENTIAL_STAGE_ROOM = require("@/assets/avatar/rooms/phoenix-room-day-pixellab-400x300.png");
 // Night sibling for the credential stage: the storybook night render of the
@@ -137,6 +165,7 @@ interface RecordsCommandItem {
   actionLabel: string;
   tone: string;
   onPress: () => void;
+  disabled?: boolean;
 }
 
 const HEALTH_ICON: Record<string, PulseIconName> = {
@@ -211,10 +240,6 @@ function relativeDay(iso: string, now: number): string {
   return shortDate(iso);
 }
 
-function entryType(entry: Entry): string {
-  return normalizeCareEventType(entry.type, entry.details);
-}
-
 function countNoun(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
@@ -249,7 +274,14 @@ export default function RecordsScreen({
   const router = useRouter();
   const appFileSystem = useAppFileSystem();
   const ownerOps = isOwnerOpsBuild();
-  const { state, careMutationsBlocked, updateCareDoc } = useCare();
+  const {
+    state,
+    careMutationsBlocked,
+    updateCareDoc,
+    persistCurrentCareSnapshot,
+  } = useCare();
+  const careStateRef = useRef(state);
+  careStateRef.current = state;
   const showCareReadOnly = () =>
     notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   const { width } = useAppViewport();
@@ -336,55 +368,105 @@ export default function RecordsScreen({
   const [recordNote, setRecordNote] = useState("");
   const [recordAttachmentUri, setRecordAttachmentUri] = useState("");
   const [recordAttachmentName, setRecordAttachmentName] = useState("");
-  const [carePassPreview, setCarePassPreview] = useState<CarePass | null>(null);
+  const recordAttachmentDraftRef = useRef<PickedMediaDraft>(
+    createPickedMediaDraft(),
+  );
+  const recordFormOpenRef = useRef(false);
+  const recordsScreenMountedRef = useRef(true);
+  const recordPickerInFlightRef = useRef(false);
+  const recordSaveInFlightRef = useRef(false);
+  const recordsShareGateRef = useRef<ReturnType<
+    typeof createExclusiveAsyncAction
+  > | null>(null);
+  if (recordsShareGateRef.current === null) {
+    recordsShareGateRef.current = createExclusiveAsyncAction();
+  }
+  const recordsShareGate = recordsShareGateRef.current;
+  const recordFormSessionRef = useRef(0);
+  const [recordPickerBusy, setRecordPickerBusy] = useState(false);
+  const [recordSaveBusy, setRecordSaveBusy] = useState(false);
+  const [recordsShareBusy, setRecordsShareBusy] = useState(false);
+  const [carePassSaveShareBusy, setCarePassSaveShareBusy] = useState(false);
+  const [carePassSaveShareNotice, setCarePassSaveShareNotice] = useState<string | null>(null);
+  const [pendingCarePassArtifactId, setPendingCarePassArtifactId] = useState<string | null>(null);
+  const [carePassPreviewAudience, setCarePassPreviewAudience] =
+    useState<CarePassAudience | null>(null);
   const [medicationSearch, setMedicationSearch] = useState("");
   const [medicationOutcomeFilter, setMedicationOutcomeFilter] = useState<MedicationHistoryOutcomeFilter>("all");
+
+  useEffect(() => {
+    recordsScreenMountedRef.current = true;
+    return () => {
+      recordsScreenMountedRef.current = false;
+      recordFormOpenRef.current = false;
+      recordFormSessionRef.current += 1;
+      const releaseUris = cancelPickedMediaDraft(
+        recordAttachmentDraftRef.current,
+      ).releaseUris;
+      recordAttachmentDraftRef.current = createPickedMediaDraft();
+      if (releaseUris.length > 0) {
+        const protectedUris = collectCareAppOwnedFileReferences({
+          doc: careStateRef.current,
+          entries: careStateRef.current.entries,
+        });
+        void releasePickedMediaReferences({
+          appFileSystem,
+          uris: releaseUris,
+          protectedUris,
+        });
+      }
+    };
+  }, [appFileSystem]);
 
   const recordOption = RECORD_OPTIONS.find((option) => option.kind === recordType) ?? RECORD_OPTIONS[0];
   const launchProviderSetupPlan = useMemo(
     () => deriveLaunchProviderSetup(state.launchProviderProfile),
     [state.launchProviderProfile],
   );
+  const householdEntries = useMemo(
+    () => selectRecordsHouseholdEntries(state.entries),
+    [state.entries],
+  );
 
   const healthWatch = useMemo(
-    () => deriveHealthWatch({ entries: state.entries, routines: state.routines, now }),
-    [state.entries, state.routines, now],
+    () => deriveHealthWatch({ entries: householdEntries, routines: state.routines, now }),
+    [householdEntries, state.routines, now],
   );
   const incidentWatch = useMemo(
-    () => deriveIncidentWatch({ entries: state.entries, now, lookbackDays: 90 }),
-    [state.entries, now],
+    () => deriveIncidentWatch({ entries: householdEntries, now, lookbackDays: 90 }),
+    [householdEntries, now],
   );
   const careTrends = useMemo(
-    () => deriveCareTrends({ entries: state.entries, now, windowDays: 7 }),
-    [state.entries, now],
+    () => deriveCareTrends({ entries: householdEntries, now, windowDays: 7 }),
+    [householdEntries, now],
   );
   const medicationAdherence = useMemo(
-    () => deriveMedicationAdherence({ entries: state.entries, routines: state.routines, now }),
-    [state.entries, state.routines, now],
+    () => deriveMedicationAdherence({ entries: householdEntries, routines: state.routines, now }),
+    [householdEntries, state.routines, now],
   );
   const medicationFollowUps = useMemo(
-    () => deriveMedicationFollowUps({ entries: state.entries, routines: state.routines, records: state.records, now }).slice(0, 3),
-    [state.entries, state.routines, state.records, now],
+    () => deriveMedicationFollowUps({ entries: householdEntries, routines: state.routines, records: state.records, now }).slice(0, 3),
+    [householdEntries, state.routines, state.records, now],
   );
   const medicationHistory = useMemo(
-    () => deriveMedicationHistory({ entries: state.entries, now, limit: 8, query: medicationSearch, outcome: medicationOutcomeFilter }),
-    [state.entries, now, medicationSearch, medicationOutcomeFilter],
+    () => deriveMedicationHistory({ entries: householdEntries, now, limit: 8, query: medicationSearch, outcome: medicationOutcomeFilter }),
+    [householdEntries, now, medicationSearch, medicationOutcomeFilter],
   );
   const waterHydration = useMemo(
-    () => deriveWaterHydration({ entries: state.entries, now }),
-    [state.entries, now],
+    () => deriveWaterHydration({ entries: householdEntries, now }),
+    [householdEntries, now],
   );
   const walkActivity = useMemo(
-    () => deriveWalkActivity({ entries: state.entries, now, petName: state.profile.name }),
-    [state.entries, now],
+    () => deriveWalkActivity({ entries: householdEntries, now, petName: state.profile.name }),
+    [householdEntries, now, state.profile.name],
   );
   const walkRouteTemplates = useMemo(
-    () => deriveWalkRouteTemplates({ entries: state.entries, now, limit: 3 }),
-    [state.entries, now],
+    () => deriveWalkRouteTemplates({ entries: householdEntries, now, limit: 3 }),
+    [householdEntries, now],
   );
   const pottyHealth = useMemo(
-    () => derivePottyHealth({ entries: state.entries, now }),
-    [state.entries, now],
+    () => derivePottyHealth({ entries: householdEntries, now }),
+    [householdEntries, now],
   );
   // The shared summary says "stool normal" whenever nothing needs review, but
   // quick taps carry no stool detail at all. Until a condition or stool color
@@ -398,20 +480,20 @@ export default function RecordsScreen({
       ? `${countNoun(pottyHealth.total, "potty log")} today - ${pottyHealth.peeCount} pee, ${pottyHealth.poopCount} poop, outcome not recorded`
       : pottyHealth.summary;
   const trainingProgress = useMemo(
-    () => deriveTrainingProgress({ entries: state.entries, now, lookbackDays: 30 }),
-    [state.entries, now],
+    () => deriveTrainingProgress({ entries: householdEntries, now, lookbackDays: 30 }),
+    [householdEntries, now],
   );
   const aloneTime = useMemo(
-    () => deriveAloneTime({ entries: state.entries, now, lookbackDays: 30 }),
-    [state.entries, now],
+    () => deriveAloneTime({ entries: householdEntries, now, lookbackDays: 30 }),
+    [householdEntries, now],
   );
   const groomingCare = useMemo(
-    () => deriveGroomingCare({ entries: state.entries, now, lookbackDays: 45 }),
-    [state.entries, now],
+    () => deriveGroomingCare({ entries: householdEntries, now, lookbackDays: 45 }),
+    [householdEntries, now],
   );
   const weightTrend = useMemo(
-    () => deriveWeightTrend({ entries: state.entries, profile: state.profile, goals: state.goals, now, lookbackDays: 90, limit: 8 }),
-    [state.entries, state.profile, state.goals, now],
+    () => deriveWeightTrend({ entries: householdEntries, profile: state.profile, goals: state.goals, now, lookbackDays: 90, limit: 8 }),
+    [householdEntries, state.profile, state.goals, now],
   );
   const current = weightTrend.currentWeight;
 
@@ -430,8 +512,8 @@ export default function RecordsScreen({
 
   // ---- Mood distribution (last 30 days) ----
   const moodStats = useMemo(
-    () => deriveMoodTrend({ entries: state.entries, now, lookbackDays: 30, limit: 3 }),
-    [state.entries, now],
+    () => deriveMoodTrend({ entries: householdEntries, now, lookbackDays: 30, limit: 3 }),
+    [householdEntries, now],
   );
 
   // ---- Incident lookback ----
@@ -454,37 +536,14 @@ export default function RecordsScreen({
         : colors.sage;
 
   // ---- Progress report (period-scoped, computed from real logs) ----
-  const report = useMemo(() => {
-    const within = state.entries.filter((e) => daysBetween(e.occurredAt, now) <= period);
-    const count = (types: string[]) => within.filter((e) => types.includes(entryType(e))).length;
-    const walkMinutes = within
-      .filter((e) => entryType(e) === "walk")
-      .reduce((sum, e) => sum + (e.durationMinutes ?? 0), 0);
-    const byCaregiver: Record<string, number> = {};
-    for (const e of within) {
-      if (e.caregiver) byCaregiver[e.caregiver] = (byCaregiver[e.caregiver] ?? 0) + 1;
-    }
-    const topCaregiver = Object.entries(byCaregiver).sort((a, b) => b[1] - a[1])[0];
-    return {
-      total: within.length,
-      meals: count(["meal"]),
-      walks: count(["walk"]),
-      walkMinutes,
-      play: count(["play", "training"]),
-      potty: count(["potty"]),
-      treats: count(["treat"]),
-      incidents: count(["incident"]),
-      topCaregiver: topCaregiver ? { name: topCaregiver[0], count: topCaregiver[1] } : null,
-    };
-  }, [state.entries, period, now]);
+  const report = useMemo(
+    () => buildRecordsProgressReport(householdEntries, period, now),
+    [householdEntries, period, now],
+  );
 
   const dietHistory = useMemo(
-    () =>
-      state.entries
-        .filter((e) => entryType(e) === "meal" && e.note)
-        .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
-        .slice(0, 4),
-    [state.entries],
+    () => selectRecordsRecentMealNotes(householdEntries),
+    [householdEntries],
   );
   const dietPrimaryFood = (state.dietProfile.primaryFood ?? "").trim();
   const dietMeta = [state.dietProfile.normalPortion, state.dietProfile.mealSchedule]
@@ -509,7 +568,7 @@ export default function RecordsScreen({
   const credential = useMemo(
     () =>
       // Resolve the placeholder profile name first so shares, exports, and the
-      // ID card all say "Phoenix" (or the real name), never "My Dog Dog ID".
+      // ID card all use the real name or neutral fallback, never "My Dog Dog ID".
       buildPetCredential({
         profile: { ...state.profile, name: resolvePetName(state.profile.name) },
         caregivers: state.caregivers,
@@ -518,11 +577,13 @@ export default function RecordsScreen({
     [state.profile, state.caregivers, state.records],
   );
   const credentialImageView = useMemo(() => getPetCredentialImageView(credential), [credential]);
+  const credentialTitle = getPetCredentialTitle(credential.name);
   const credentialPngArtifactSource = useMemo(
     () =>
-      buildDogIdPngArtifactSource({
+      ownerOps
+        ? buildDogIdPngArtifactSource({
         fileName: credentialImageView.fileName,
-        title: `${credential.name} Dog ID`,
+        title: credentialTitle,
         lines: [
           `Breed: ${credential.breed}`,
           `Weight: ${credential.weight}`,
@@ -532,7 +593,8 @@ export default function RecordsScreen({
           `Microchip: ${credential.microchip}`,
           `Insurance: ${credential.insurance}`,
         ],
-      }),
+      })
+        : null,
     [
       credential.breed,
       credential.careFocus,
@@ -540,13 +602,75 @@ export default function RecordsScreen({
       credential.insurance,
       credential.microchip,
       credential.name,
+      credentialTitle,
       credential.primaryVet,
       credential.weight,
       credentialImageView.fileName,
+      ownerOps,
     ],
   );
 
+  const buildCredentialPngSource = () =>
+    credentialPngArtifactSource ?? buildDogIdPngArtifactSource({
+      fileName: credentialImageView.fileName,
+      title: credentialTitle,
+      lines: [
+        `Breed: ${credential.breed}`,
+        `Weight: ${credential.weight}`,
+        `Care focus: ${credential.careFocus}`,
+        `Primary vet: ${credential.primaryVet}`,
+        `Emergency: ${credential.emergencyContact}`,
+        `Microchip: ${credential.microchip}`,
+        `Insurance: ${credential.insurance}`,
+      ],
+    });
+
+  const carePickedMediaUris = (excludeRecordId?: string): string[] =>
+    collectCareAppOwnedFileReferences({
+      doc: careStateRef.current,
+      entries: careStateRef.current.entries,
+      excludeRecordIds: excludeRecordId ? [excludeRecordId] : [],
+    });
+
+  const reportPickedMediaCleanupFailure = (count: number) => {
+    if (!recordsScreenMountedRef.current || count <= 0) return;
+    notifyDialog(
+      "Local file cleanup incomplete",
+      `The record change is complete, but ${count} saved attachment${count === 1 ? "" : "s"} could not be removed from this device. Privacy & Data reset will try again.`,
+    );
+  };
+
+  const closeRecordForm = async () => {
+    if (recordSaveInFlightRef.current || !recordFormOpenRef.current) return;
+    recordFormOpenRef.current = false;
+    const closedSession = ++recordFormSessionRef.current;
+    setRecordOpen(false);
+    const releaseUris = cancelPickedMediaDraft(
+      recordAttachmentDraftRef.current,
+    ).releaseUris;
+    recordAttachmentDraftRef.current = createPickedMediaDraft();
+    const cleanup = await releasePickedMediaReferences({
+      appFileSystem,
+      uris: releaseUris,
+      protectedUris: carePickedMediaUris(),
+    });
+    if (
+      cleanup.status === "partial-failure" &&
+      recordsScreenMountedRef.current &&
+      !recordFormOpenRef.current &&
+      recordFormSessionRef.current === closedSession
+    ) {
+      const count = cleanup.failedUris.length;
+      notifyDialog(
+        "Draft file cleanup incomplete",
+        `${count} temporary attachment${count === 1 ? "" : "s"} from the canceled record could not be removed from this device. No record was saved. Privacy & Data reset will try cleanup again.`,
+      );
+    }
+  };
+
   const openRecordForm = (kind: RecordKind = "vaccine") => {
+    if (recordSaveInFlightRef.current) return;
+    recordFormSessionRef.current += 1;
     setRecordEditId(null);
     setRecordType(kind);
     setRecordTitle("");
@@ -555,11 +679,15 @@ export default function RecordsScreen({
     setRecordNote("");
     setRecordAttachmentUri("");
     setRecordAttachmentName("");
+    recordAttachmentDraftRef.current = createPickedMediaDraft();
+    recordFormOpenRef.current = true;
     setRecordOpen(true);
     Haptics.selectionAsync();
   };
 
   const openEditRecord = (record: CareRecord) => {
+    if (recordSaveInFlightRef.current) return;
+    recordFormSessionRef.current += 1;
     const dueCorrection = getCareCorrectionPresentation(record, "due");
     setRecordEditId(record.id);
     setRecordType(record.type as RecordKind);
@@ -572,6 +700,10 @@ export default function RecordsScreen({
     setRecordNote(record.note);
     setRecordAttachmentUri(record.attachmentUri ?? "");
     setRecordAttachmentName(record.attachmentName ?? "");
+    recordAttachmentDraftRef.current = createPickedMediaDraft(
+      record.attachmentUri,
+    );
+    recordFormOpenRef.current = true;
     setRecordOpen(true);
     Haptics.selectionAsync();
   };
@@ -586,35 +718,113 @@ export default function RecordsScreen({
   };
 
   const pickRecordAttachment = async () => {
+    if (recordPickerInFlightRef.current || recordSaveInFlightRef.current) return;
+    recordPickerInFlightRef.current = true;
+    setRecordPickerBusy(true);
+    const formSession = recordFormSessionRef.current;
+    const draftBeforePick = recordAttachmentDraftRef.current;
     try {
       const action = await runRecordAttachmentPicker({
         appFileSystem,
+        preserveUris: [
+          draftBeforePick.originalUri,
+          ...draftBeforePick.stagedUris,
+        ],
         pick: () =>
           ImagePicker.launchImageLibraryAsync({
             quality: 0.8,
             allowsEditing: false,
           }),
         apply: ({ asset, uri }) => {
+          if (
+            !recordsScreenMountedRef.current ||
+            !recordFormOpenRef.current ||
+            recordFormSessionRef.current !== formSession
+          ) {
+            return false;
+          }
+          const staged = stagePickedMediaDraft(
+            recordAttachmentDraftRef.current,
+            uri,
+          );
+          recordAttachmentDraftRef.current = staged.draft;
           setRecordAttachmentUri(uri);
           setRecordAttachmentName(
             asset.fileName?.trim() ||
               uri.split(/[\\/]/).pop()?.split(/[?#]/, 1)[0] ||
               `${recordOption.label} attachment`,
           );
+          return true;
         },
       });
+      if (
+        !recordsScreenMountedRef.current ||
+        !recordFormOpenRef.current ||
+        recordFormSessionRef.current !== formSession
+      ) return;
       if (action.status === "not-saved") {
         notifyDialog(
           "Attachment not saved",
-          "WoofWatcher could not copy that file into durable app storage. No record attachment was added. Try again or choose another file.",
+          action.cleanupFailed
+            ? "WoofWatcher could not save that file, and its temporary picker copy could not be removed. No record attachment was added. Privacy & Data reset will retry cleanup."
+            : "WoofWatcher could not save that file on this device. No record attachment was added. Try again or choose another file.",
         );
+      } else if (action.status === "rejected" && action.cleanupFailed) {
+        reportPickedMediaCleanupFailure(1);
+      } else if (action.status === "applied") {
+        const draft = recordAttachmentDraftRef.current;
+        const supersededUris = draft.stagedUris.filter(
+          (uri) => uri !== draft.selectedUri,
+        );
+        const cleanup = await releasePickedMediaReferences({
+          appFileSystem,
+          uris: supersededUris,
+          protectedUris: [
+            draft.originalUri,
+            draft.selectedUri,
+            ...carePickedMediaUris(),
+          ],
+        });
+        if (
+          cleanup.status !== "revoked" &&
+          isPickedMediaDraftSettlementCurrent({
+            mounted: recordsScreenMountedRef.current,
+            formOpen: recordFormOpenRef.current,
+            currentSession: recordFormSessionRef.current,
+            operationSession: formSession,
+            currentDraft: recordAttachmentDraftRef.current,
+            operationDraft: draft,
+          })
+        ) {
+          recordAttachmentDraftRef.current = settlePickedMediaDraftRelease(
+            draft,
+            cleanup.releasedUris,
+          );
+          if (cleanup.status === "partial-failure") {
+            reportPickedMediaCleanupFailure(cleanup.failedUris.length);
+          }
+        }
       }
-    } catch {
-      notifyDialog("Attachment unavailable", "Choose the file details manually for now.");
+    } catch (error) {
+      if (
+        !recordsScreenMountedRef.current ||
+        !recordFormOpenRef.current ||
+        recordFormSessionRef.current !== formSession
+      ) return;
+      notifyDialog(
+        "Attachment unavailable",
+        error instanceof PickedMediaLocalDataActionError && error.cleanupFailed
+          ? "The attachment was not added, and one temporary local file could not be removed. Privacy & Data reset will retry cleanup."
+          : "Choose the file details manually for now.",
+      );
+    } finally {
+      recordPickerInFlightRef.current = false;
+      if (recordsScreenMountedRef.current) setRecordPickerBusy(false);
     }
   };
 
   const saveRecord = () => {
+    if (recordSaveInFlightRef.current || recordPickerInFlightRef.current) return;
     const title = recordTitle.trim();
     if (!title) {
       notifyDialog("Add a title", `Name this ${recordOption.label.toLowerCase()} record.`);
@@ -629,6 +839,8 @@ export default function RecordsScreen({
       showCareReadOnly();
       return;
     }
+    recordSaveInFlightRef.current = true;
+    setRecordSaveBusy(true);
     setRecordDueError(null);
     const id = recordEditId ?? `record_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const draft: CareRecord = {
@@ -655,10 +867,46 @@ export default function RecordsScreen({
         : [...doc.records, draft],
     }));
     const accepted = runAcceptedCareMutation(updated, () => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const cleanupPlan = commitPickedMediaDraft(
+        recordAttachmentDraftRef.current,
+      );
+      recordAttachmentDraftRef.current = createPickedMediaDraft(
+        cleanupPlan.retainedUri,
+      );
+      recordFormOpenRef.current = false;
+      recordFormSessionRef.current += 1;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       setRecordOpen(false);
+      void runCareFileCleanupAfterDurableSnapshot({
+        persistSnapshot: persistCurrentCareSnapshot,
+        cleanup: () =>
+          releasePickedMediaReferences({
+            appFileSystem,
+            uris: cleanupPlan.releaseUris,
+            protectedUris: carePickedMediaUris(recordEditId ?? undefined),
+          }),
+      })
+        .then((result) => {
+          if (!recordsScreenMountedRef.current) return;
+          if (result.status === "snapshot-not-confirmed") {
+            notifyDialog(
+              "Previous file retained",
+              "WoofWatcher could not confirm the record change in device storage, so it kept the previous local attachment. The updated record is still shown for this session; try saving again before relaunching.",
+            );
+          } else if (result.cleanup.status === "partial-failure") {
+            reportPickedMediaCleanupFailure(result.cleanup.failedUris.length);
+          }
+        })
+        .finally(() => {
+          recordSaveInFlightRef.current = false;
+          if (recordsScreenMountedRef.current) setRecordSaveBusy(false);
+        });
     });
-    if (!accepted) showCareReadOnly();
+    if (!accepted) {
+      recordSaveInFlightRef.current = false;
+      setRecordSaveBusy(false);
+      showCareReadOnly();
+    }
   };
 
   const deleteRecord = (id: string | undefined, title: string) => {
@@ -672,53 +920,87 @@ export default function RecordsScreen({
           destructive: true,
         },
       ],
-      () => {
+      async () => {
         if (careMutationsBlocked) {
           showCareReadOnly();
           return;
         }
+        const record = careStateRef.current.records.find(
+          (candidate) => candidate.id === id,
+        );
         const updated = updateCareDoc((doc) => ({ ...doc, records: doc.records.filter((record) => record.id !== id) }));
         const accepted = runAcceptedCareMutation(updated, () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
         });
         if (!accepted) showCareReadOnly();
+        if (!accepted) return;
+        const result = await runCareFileCleanupAfterDurableSnapshot({
+          persistSnapshot: persistCurrentCareSnapshot,
+          cleanup: () =>
+            releasePickedMediaReferences({
+              appFileSystem,
+              uris: [record?.attachmentUri],
+              protectedUris: carePickedMediaUris(id),
+            }),
+        });
+        if (!recordsScreenMountedRef.current) return;
+        if (result.status === "snapshot-not-confirmed") {
+          notifyDialog(
+            "Attachment retained",
+            "The record was removed from this session, but WoofWatcher could not confirm that change in device storage. Its local attachment was kept so a relaunch cannot restore a record with a missing file.",
+          );
+        } else if (result.cleanup.status === "partial-failure") {
+          reportPickedMediaCleanupFailure(result.cleanup.failedUris.length);
+        }
       },
     );
   };
 
   const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? "Month";
 
-  const shareReport = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const lines = [
-      `WOOFWATCHER PROGRESS REPORT - Last ${period} days`,
-      `${resolvePetName(state.profile.name)} (${state.profile.breed})`,
-      "",
-      `Total entries logged: ${report.total}`,
-      `Meals: ${report.meals}`,
-      `Walks: ${report.walks} (${report.walkMinutes} min)`,
-      `Play & training: ${report.play}`,
-      `Potty breaks: ${report.potty}`,
-      `Treats: ${report.treats}`,
-      `Health incidents: ${report.incidents}`,
-      report.topCaregiver ? `Most active caregiver: ${report.topCaregiver.name} (${report.topCaregiver.count})` : "",
-      "",
-      current > 0
-        ? `Current weight: ${current} ${unit}${goalWeight > 0 ? ` (goal ${goalWeight} ${unit})` : ""}`
-        : "",
-      moodStats.total ? `Mood average: ${moodStats.averageScore.toFixed(1)}/5 over ${moodStats.total} check-ins` : "",
-      "",
-      "Shared from WoofWatcher - patterns for caregiver & vet review.",
-    ]
-      .filter(Boolean)
-      .join("\n");
-    void shareTextPayload({ message: lines, title: `${resolvePetName(state.profile.name)} - ${periodLabel} report` });
-  };
+  const runRecordsShare = async <T,>(work: () => Promise<T>) =>
+    await recordsShareGate.run(async () => {
+      if (recordsScreenMountedRef.current) setRecordsShareBusy(true);
+      try {
+        return await work();
+      } finally {
+        if (recordsScreenMountedRef.current) setRecordsShareBusy(false);
+      }
+    });
 
-  const shareCredential = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    void shareTextPayload({ message: credential.message, title: `${credential.name} Dog ID` });
-  };
+  const shareReport = async () =>
+    await runRecordsShare(async () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      const lines = [
+        `WOOFWATCHER PROGRESS REPORT - Last ${period} days`,
+        buildPetSummaryLine(state.profile.name, state.profile.breed),
+        "",
+        `Total entries logged: ${report.total}`,
+        `Meals: ${report.meals}`,
+        `Walks: ${report.walks} (${report.walkMinutes} min)`,
+        `Play & training: ${report.play}`,
+        `Potty breaks: ${report.potty}`,
+        `Treats: ${report.treats}`,
+        `Health incidents: ${report.incidents}`,
+        report.topCaregiver ? `Most active caregiver: ${report.topCaregiver.name} (${report.topCaregiver.count})` : "",
+        "",
+        current > 0
+          ? `Current weight: ${current} ${unit}${goalWeight > 0 ? ` (goal ${goalWeight} ${unit})` : ""}`
+          : "",
+        moodStats.total ? `Mood average: ${moodStats.averageScore.toFixed(1)}/5 over ${moodStats.total} check-ins` : "",
+        "",
+        "Shared from WoofWatcher - patterns for caregiver & vet review.",
+      ]
+        .filter(Boolean)
+        .join("\n");
+      await shareTextPayload({ message: lines, title: `${resolvePetName(state.profile.name)} - ${periodLabel} report` });
+    });
+
+  const shareCredential = async () =>
+    await runRecordsShare(async () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      await shareTextPayload({ message: credential.message, title: credentialTitle });
+    });
 
   const sharePrintableSourceFile = async (
     printable: ReportArtifactPrintableSource,
@@ -753,48 +1035,51 @@ export default function RecordsScreen({
     });
   };
 
-  const sharePrintableCredential = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const printable = getPetCredentialPrintView(credential);
-    await sharePrintableSourceFile(printable, {
-      destination: "credentials",
-      printableLabel: "Dog ID credential source",
-      title: `${credential.name} Dog ID`,
-    });
-  };
-
-  const shareCredentialImageSource = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await sharePrintableSourceFile(
-      {
-        fileName: credentialImageView.fileName,
-        html: credentialImageView.svg,
-        mimeType: credentialImageView.mimeType,
-        formatLabel: credentialImageView.formatLabel,
-        boundary: credentialImageView.boundary,
-      },
-      {
+  const sharePrintableCredential = async () =>
+    await runRecordsShare(async () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      const printable = getPetCredentialPrintView(credential);
+      await sharePrintableSourceFile(printable, {
         destination: "credentials",
-        printableLabel: "Dog ID SVG image source",
-        title: `${credential.name} Dog ID`,
-      },
-    );
-  };
-
-  const shareCredentialPngArtifact = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await shareGeneratedBinaryArtifactFile(credentialPngArtifactSource, {
-      destination: "credentials",
-      title: `${credential.name} Dog ID`,
+        printableLabel: "Dog ID credential source",
+        title: credentialTitle,
+      });
     });
-  };
+
+  const shareCredentialImageSource = async () =>
+    await runRecordsShare(async () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      await sharePrintableSourceFile(
+        {
+          fileName: credentialImageView.fileName,
+          html: credentialImageView.svg,
+          mimeType: credentialImageView.mimeType,
+          formatLabel: credentialImageView.formatLabel,
+          boundary: credentialImageView.boundary,
+        },
+        {
+          destination: "credentials",
+          printableLabel: "Dog ID SVG image source",
+          title: credentialTitle,
+        },
+      );
+    });
+
+  const shareCredentialPngArtifact = async () =>
+    await runRecordsShare(async () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      await shareGeneratedBinaryArtifactFile(buildCredentialPngSource(), {
+        destination: "credentials",
+        title: credentialTitle,
+      });
+    });
 
   const buildCarePassFor = (audience: CarePassAudience) =>
     buildCarePass({
       audience,
       profile: state.profile,
       dietProfile: state.dietProfile,
-      entries: state.entries,
+      entries: householdEntries,
       routines: state.routines,
       caregivers: state.caregivers,
       records: state.records,
@@ -802,15 +1087,36 @@ export default function RecordsScreen({
       now,
     });
 
+  const buildCurrentCarePassArtifact = (artifact: CarePassArtifact) => {
+    const currentPass = buildCarePassFor(artifact.audience);
+    return createCarePassArtifact(
+      {
+        ...currentPass,
+        message: `${currentPass.message}\n\n${REPORT_PRESET_REGENERATION_NOTE}`,
+        sections: [
+          ...currentPass.sections,
+          {
+            title: "Report preset disclosure",
+            lines: [REPORT_PRESET_REGENERATION_NOTE],
+          },
+        ],
+      },
+      artifact.createdAt,
+    );
+  };
+  const carePassPreview = carePassPreviewAudience
+    ? buildCarePassFor(carePassPreviewAudience)
+    : null;
+
   const openCarePassPreview = (audience: CarePassAudience) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCarePassPreview(buildCarePassFor(audience));
+    setCarePassPreviewAudience(audience);
   };
 
   const openIncidentFollowUp = (route: "log-incident" | "review-latest" | "trainer-care-pass") => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (route === "trainer-care-pass") {
-      setCarePassPreview(buildCarePassFor("trainer"));
+      setCarePassPreviewAudience("trainer");
       return;
     }
     if (route === "review-latest" && incidentWatch.latest?.id) {
@@ -823,59 +1129,162 @@ export default function RecordsScreen({
   const reportArtifacts = useMemo(
     () =>
       [...state.reportArtifacts]
+        .filter((artifact) => artifact.id !== pendingCarePassArtifactId)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 5),
-    [state.reportArtifacts],
+        .slice(0, 5)
+        .map((artifact) => buildCurrentCarePassArtifact(artifact)),
+    [
+      householdEntries,
+      now,
+      pendingCarePassArtifactId,
+      state.caregivers,
+      state.dietProfile,
+      state.goals,
+      state.profile,
+      state.records,
+      state.reportArtifacts,
+      state.routines,
+    ],
   );
 
-  const shareCarePass = (pass: CarePass) => {
+  const updateReportArtifacts = (
+    updater: (artifacts: CarePassArtifact[]) => CarePassArtifact[],
+  ): boolean => {
+    const updated = updateCareDoc((doc) => ({
+      ...doc,
+      reportArtifacts: updater(doc.reportArtifacts),
+    }));
+    return runAcceptedCareMutation(updated, () => {});
+  };
+
+  const shareCarePass = async (audience: CarePassAudience) => {
     if (careMutationsBlocked) {
       showCareReadOnly();
       return;
     }
-    const artifact = createCarePassArtifact(pass);
-    const updated = updateCareDoc((doc) => ({
-      ...doc,
-      reportArtifacts: [
-        artifact,
-        ...doc.reportArtifacts.filter((item) => item.id !== artifact.id),
-      ].slice(0, 12),
-    }));
-    const accepted = runAcceptedCareMutation(updated, () => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      void shareTextPayload({ message: pass.message, title: pass.title });
+    await runRecordsShare(async () => {
+      const pass = buildCarePassFor(audience);
+      const artifact = createCarePassArtifact(pass);
+      if (recordsScreenMountedRef.current) {
+        setCarePassSaveShareBusy(true);
+        setCarePassSaveShareNotice(null);
+        setPendingCarePassArtifactId(artifact.id);
+      }
+      let keepPendingArtifactHidden = false;
+      try {
+        const result = await runDurableCarePassSaveShare({
+          save: () =>
+            updateReportArtifacts((artifacts) =>
+              [
+                artifact,
+                ...artifacts.filter((item) => item.id !== artifact.id),
+              ].slice(0, 12),
+            ),
+          persist: persistCurrentCareSnapshot,
+          rollback: () =>
+            updateReportArtifacts((artifacts) =>
+              artifacts.filter(
+                (item) => item.id !== artifact.id,
+              ),
+            ),
+          persistRollback: persistCurrentCareSnapshot,
+          share: async () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+            return await shareTextPayload(
+              {
+                message: `${pass.message}\n\n${REPORT_PRESET_REGENERATION_NOTE}`,
+                title: pass.title,
+              },
+              { notifyOnFailure: false },
+            );
+          },
+        });
+        if (!recordsScreenMountedRef.current) return;
+        if (result.status === "shared") {
+          setCarePassSaveShareNotice(
+            "Saved as a current-data preset. Share handoff completed.",
+          );
+          setCarePassPreviewAudience(null);
+          return;
+        }
+        if (result.status === "saved-not-shared") {
+          setCarePassSaveShareNotice(
+            result.outcome === "dismissed"
+              ? "Saved as a current-data preset. Sharing was canceled."
+              : "Saved as a current-data preset, but the share sheet could not open. Use Share under Saved Report Presets to try again.",
+          );
+          setCarePassPreviewAudience(null);
+          return;
+        }
+        if (result.reason === "mutation-rejected") {
+          showCareReadOnly();
+          setCarePassSaveShareNotice(
+            "Not saved or shared because Records is read-only right now.",
+          );
+          return;
+        }
+        if (result.rollback === "durable-complete") {
+          setCarePassSaveShareNotice(
+            "Not saved or shared. WoofWatcher confirmed the pending preset was removed from device storage.",
+          );
+          return;
+        }
+        keepPendingArtifactHidden = result.rollbackReason === "mutation-rejected";
+        setCarePassSaveShareNotice(
+          result.rollbackReason === "mutation-rejected"
+            ? "Not shared. Device storage was not confirmed, and the pending preset could not be removed from this session. It remains hidden here; relaunch may restore it. Do not treat it as saved or deleted."
+            : "Not shared. The pending preset was removed from this session, but WoofWatcher could not confirm that removal in device storage. Relaunch may restore it. Do not treat it as deleted or safely saved.",
+        );
+      } finally {
+        if (recordsScreenMountedRef.current) {
+          setCarePassSaveShareBusy(false);
+          if (!keepPendingArtifactHidden) setPendingCarePassArtifactId(null);
+        }
+      }
     });
-    if (!accepted) showCareReadOnly();
   };
 
-  const shareReportArtifact = (artifact: CarePassArtifact) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void shareTextPayload({ message: artifact.message, title: artifact.title });
-  };
+  const shareReportArtifact = async (artifact: CarePassArtifact) =>
+    await runRecordsShare(async () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      const currentArtifact = buildCurrentCarePassArtifact(artifact);
+      await shareTextPayload({
+        message: currentArtifact.message,
+        title: currentArtifact.title,
+      });
+    });
 
-  const sharePrintableReportArtifact = async (artifact: CarePassArtifact) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const printable = getCarePassArtifactPrintView(artifact);
-    await sharePrintableSourceFile(printable, {
-      destination: "reports",
-      title: artifact.title,
+  const sharePrintableReportArtifact = async (artifact: CarePassArtifact) =>
+    await runRecordsShare(async () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      const currentArtifact = buildCurrentCarePassArtifact(artifact);
+      const printable = getCarePassArtifactPrintView(currentArtifact);
+      await sharePrintableSourceFile({
+        ...printable,
+        boundary:
+          "This action shares printable HTML source. The file stays inside WoofWatcher unless you share it; WoofWatcher cloud backup is not included.",
+      }, {
+        destination: "reports",
+        title: currentArtifact.title,
+      });
     });
-  };
 
-  const shareGeneratedCarePassPdfArtifact = async (artifact: CarePassArtifact) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const printable = getCarePassArtifactPrintView(artifact);
-    const source = buildCarePassPdfArtifactSource({
-      fileName: printable.fileName,
-      title: artifact.title,
-      summary: artifact.summary,
-      message: artifact.message,
+  const shareGeneratedCarePassPdfArtifact = async (artifact: CarePassArtifact) =>
+    await runRecordsShare(async () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      const currentArtifact = buildCurrentCarePassArtifact(artifact);
+      const printable = getCarePassArtifactPrintView(currentArtifact);
+      const source = buildCarePassPdfArtifactSource({
+        fileName: printable.fileName,
+        title: currentArtifact.title,
+        summary: currentArtifact.summary,
+        message: currentArtifact.message,
+      });
+      await shareGeneratedBinaryArtifactFile(source, {
+        destination: "reports",
+        title: currentArtifact.title,
+      });
     });
-    await shareGeneratedBinaryArtifactFile(source, {
-      destination: "reports",
-      title: artifact.title,
-    });
-  };
 
   const openRecordsFileProofMission = () => {
     Haptics.selectionAsync();
@@ -927,7 +1336,7 @@ export default function RecordsScreen({
 
   const streak = useMemo(() => {
     const days = new Set(
-      state.entries.flatMap((entry) => {
+      householdEntries.flatMap((entry) => {
         const occurredAt = new Date(entry.occurredAt);
         return Number.isFinite(occurredAt.getTime()) ? [localDateKey(occurredAt)] : [];
       }),
@@ -940,7 +1349,7 @@ export default function RecordsScreen({
       key = addLocalCalendarDays(key, -1);
     }
     return s;
-  }, [state.entries, now]);
+  }, [householdEntries, now]);
 
   const lastIncidentDays = useMemo(() => {
     if (incidents.length === 0) return null;
@@ -1026,6 +1435,7 @@ export default function RecordsScreen({
       actionLabel: "Share",
       tone: recordsVaultTone,
       onPress: shareCredential,
+      disabled: recordsShareBusy,
     },
     {
       id: "record-vault",
@@ -1058,6 +1468,7 @@ export default function RecordsScreen({
       actionLabel: "Share",
       tone: colors.primary,
       onPress: shareReport,
+      disabled: recordsShareBusy,
     },
     ...(ownerOps
       ? [
@@ -1139,6 +1550,32 @@ export default function RecordsScreen({
             back
             onBack={onBack}
           />
+          {recordsShareBusy || carePassSaveShareNotice ? (
+            <View
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+              style={[
+                s.shareStatusRow,
+                {
+                  backgroundColor: colors.primary + "12",
+                  borderColor: colors.primary + "33",
+                },
+              ]}
+            >
+              <Ionicons
+                name={recordsShareBusy ? "hourglass-outline" : "information-circle-outline"}
+                size={16}
+                color={colors.primary}
+              />
+              <Text style={[s.shareStatusText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                {recordsShareBusy
+                  ? carePassSaveShareBusy
+                    ? "Saving & sharing after device storage confirms…"
+                    : "Preparing share… Keep WoofWatcher open."
+                  : carePassSaveShareNotice}
+              </Text>
+            </View>
+          ) : null}
 
           <BoardCard padded={false} style={s.recordsCredentialStageCard} enter={0}>
             <ImageBackground
@@ -1240,11 +1677,16 @@ export default function RecordsScreen({
                 <PressScale
                   key={item.id}
                   onPress={item.onPress}
+                  disabled={item.disabled}
                   hitSlop={MOBILE_INLINE_HIT_SLOP}
                   scaleTo={0.97}
-                  style={[s.recordsCommandRow, { borderColor: colors.border }]}
+                  style={[s.recordsCommandRow, { borderColor: colors.border, opacity: item.disabled ? 0.5 : 1 }]}
                   accessibilityRole="button"
                   accessibilityLabel={`${item.label}. ${item.detail}. ${item.actionLabel}`}
+                  accessibilityState={{
+                    disabled: Boolean(item.disabled),
+                    busy: Boolean(item.disabled && recordsShareBusy),
+                  }}
                 >
                   <View style={[s.recordsCommandIcon, { backgroundColor: item.tone + "18" }]}>
                     <Ionicons name={item.icon} size={18} color={item.tone} />
@@ -1342,40 +1784,48 @@ export default function RecordsScreen({
           <View style={s.idShareRow}>
             <Pressable
               onPress={shareCredential}
+              disabled={recordsShareBusy}
               accessibilityRole="button"
               accessibilityLabel="Share dog ID card"
+              accessibilityState={{ disabled: recordsShareBusy, busy: recordsShareBusy }}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
-              style={s.shareInline}
+              style={[s.shareInline, recordsShareBusy && { opacity: 0.5 }]}
             >
               <Ionicons name="share-outline" size={15} color={colors.copper} />
               <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
             </Pressable>
             <Pressable
-              onPress={sharePrintableCredential}
+              onPress={() => void sharePrintableCredential()}
+              disabled={recordsShareBusy}
               accessibilityRole="button"
               accessibilityLabel="Share local printable Dog ID source file"
+              accessibilityState={{ disabled: recordsShareBusy, busy: recordsShareBusy }}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
-              style={s.shareInline}
+              style={[s.shareInline, recordsShareBusy && { opacity: 0.5 }]}
             >
               <Ionicons name="print-outline" size={15} color={colors.copper} />
               <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Print</Text>
             </Pressable>
             <Pressable
-              onPress={shareCredentialImageSource}
+              onPress={() => void shareCredentialImageSource()}
+              disabled={recordsShareBusy}
               accessibilityRole="button"
               accessibilityLabel="Share local SVG Dog ID image source"
+              accessibilityState={{ disabled: recordsShareBusy, busy: recordsShareBusy }}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
-              style={s.shareInline}
+              style={[s.shareInline, recordsShareBusy && { opacity: 0.5 }]}
             >
               <Ionicons name="image-outline" size={15} color={colors.copper} />
               <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>SVG</Text>
             </Pressable>
             <Pressable
-              onPress={shareCredentialPngArtifact}
+              onPress={() => void shareCredentialPngArtifact()}
+              disabled={recordsShareBusy}
               accessibilityRole="button"
               accessibilityLabel="Share generated Dog ID PNG"
+              accessibilityState={{ disabled: recordsShareBusy, busy: recordsShareBusy }}
               hitSlop={MOBILE_INLINE_HIT_SLOP}
-              style={s.shareInline}
+              style={[s.shareInline, recordsShareBusy && { opacity: 0.5 }]}
             >
               <Ionicons name="download-outline" size={15} color={colors.copper} />
               <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>PNG</Text>
@@ -1418,7 +1868,14 @@ export default function RecordsScreen({
             <BoardSectionHeader
               title="Record Vault"
               accessory={
-                <Pressable onPress={() => openRecordForm("document")} hitSlop={MOBILE_INLINE_HIT_SLOP} style={s.shareInline}>
+                <Pressable
+                  onPress={() => openRecordForm("document")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add a document to Record Vault"
+                  accessibilityState={{ disabled: false }}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  style={s.shareInline}
+                >
                   <Ionicons name="add-circle-outline" size={15} color={colors.copper} />
                   <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Add</Text>
                 </Pressable>
@@ -2521,7 +2978,9 @@ export default function RecordsScreen({
                 />
                 {medicationSearch.trim() ? (
                   <Pressable
+                    accessibilityRole="button"
                     accessibilityLabel="Clear medication search"
+                    accessibilityState={{ disabled: false }}
                     onPress={() => {
                       Haptics.selectionAsync();
                       setMedicationSearch("");
@@ -2538,7 +2997,9 @@ export default function RecordsScreen({
                   return (
                     <Pressable
                       key={option.id}
+                      accessibilityRole="button"
                       accessibilityLabel={`Filter medication history: ${option.label}`}
+                      accessibilityState={{ selected: active }}
                       onPress={() => {
                         Haptics.selectionAsync();
                         setMedicationOutcomeFilter(option.id);
@@ -2655,39 +3116,37 @@ export default function RecordsScreen({
 
           <BoardCard style={s.recordsBoardCard}>
             <BoardSectionHeader
-              title="Report History"
-              accessory={<BoardPill label={reportArtifacts.length ? `${reportArtifacts.length} saved` : "No saved"} tone={colors.primary} />}
+              title="Saved Report Presets"
+              accessory={<BoardPill label={reportArtifacts.length ? countNoun(reportArtifacts.length, "preset") : "No presets"} tone={colors.primary} />}
             />
+            <Text style={[s.reportPresetDisclosure, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+              Saved audiences are current-data presets, not historical snapshots. Every preview and share is regenerated from current household-visible data.
+            </Text>
             {reportArtifacts.length === 0 ? (
               <Text style={[s.empty, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                Shared Care Passes will appear here for quick resend.
+                Save a Care Pass audience to create a current-data preset. No report snapshot is stored here.
               </Text>
             ) : (
               reportArtifacts.map((artifact, index) => {
-                const exportView = describeCarePassArtifactExport(artifact, {
-                  storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
-                  storageProviderEvidence: launchProviderSetupPlan.providerInput.storageProviderEvidence,
-                });
                 const printable = getCarePassArtifactPrintView(artifact);
-                const generatedCarePassPdf = buildCarePassPdfArtifactSource({
-                  fileName: printable.fileName,
-                  title: artifact.title,
-                  summary: artifact.summary,
-                  message: artifact.message,
+                const exportView = describeCarePassArtifactExport(artifact, {
+                  storageProviderConfigured: ownerOps
+                    ? launchProviderSetupPlan.providerInput.storageProviderConfigured
+                    : false,
+                  storageProviderEvidence: ownerOps
+                    ? launchProviderSetupPlan.providerInput.storageProviderEvidence
+                    : null,
                 });
-                const binaryProofManifest = buildReportBinaryExportProofManifest({
+                const binaryProofManifest = ownerOps ? buildReportBinaryExportProofManifest({
                   carePassHtmlFileName: exportView.fileName,
                   dogIdSvgFileName: credentialImageView.fileName,
-                  generatedCarePassPdf: {
-                    fileName: generatedCarePassPdf.fileName,
-                    mimeType: generatedCarePassPdf.mimeType,
-                    byteSize: generatedCarePassPdf.byteSize,
-                  },
-                  generatedDogIdPng: {
-                    fileName: credentialPngArtifactSource.fileName,
-                    mimeType: credentialPngArtifactSource.mimeType,
-                    byteSize: credentialPngArtifactSource.byteSize,
-                  },
+                  ...(credentialPngArtifactSource
+                    ? { generatedDogIdPng: {
+                        fileName: credentialPngArtifactSource.fileName,
+                        mimeType: credentialPngArtifactSource.mimeType,
+                        byteSize: credentialPngArtifactSource.byteSize,
+                      } }
+                    : {}),
                   storageProviderConfigured: launchProviderSetupPlan.providerInput.storageProviderConfigured,
                   providerStorageEvidence: launchProviderSetupPlan.providerInput.storageProviderEvidence
                     ? [launchProviderSetupPlan.providerInput.storageProviderEvidence]
@@ -2695,8 +3154,9 @@ export default function RecordsScreen({
                   pdfGeneratorApproved: false,
                   pngRendererApproved: false,
                   nativeArtifactEvidenceApproved: false,
-                });
+                }) : null;
                 const storage = exportView.storage;
+                const storageProviderBacked = ownerOps && storage.providerBacked;
                 const sectionCount = Array.isArray(artifact.sectionTitles) ? artifact.sectionTitles.length : 0;
                 return (
                   <View
@@ -2714,103 +3174,110 @@ export default function RecordsScreen({
                         {artifact.title}
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {shortDate(artifact.createdAt)} - {countNoun(sectionCount, "section")} - {exportView.sourceStatus === "ready" ? "Print-ready" : "Print restored"}
+                        {shortDate(artifact.createdAt)} preset saved - {countNoun(sectionCount, "current section")} - regenerated when opened or shared
                       </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
                         {exportView.fileName}
                       </Text>
-                      <Text numberOfLines={1} style={[s.rowMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                        {exportView.formatLabel} local file - PDF pending
-                      </Text>
                       <Text numberOfLines={1} style={[s.rowMeta, { color: colors.sage, fontFamily: "Inter_600SemiBold" }]}>
-                        Generated PDF local file - native proof pending
+                        {exportView.manifestRows[2]?.value}
+                      </Text>
+                      <Text numberOfLines={2} style={[s.artifactStorageDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                        {ownerOps
+                          ? exportView.pdfDetail
+                          : "The PDF is created when you tap PDF, then stays inside WoofWatcher unless you choose to share it."}
                       </Text>
                       <View style={s.artifactStorageRow}>
                         <View
                           style={[
                             s.artifactStoragePill,
-                            { backgroundColor: (storage.providerBacked ? colors.sage : colors.amber) + "18" },
+                            { backgroundColor: (storageProviderBacked ? colors.sage : colors.amber) + "18" },
                           ]}
                         >
                           <Ionicons
-                            name={storage.providerBacked ? "cloud-done-outline" : "phone-portrait-outline"}
+                            name={storageProviderBacked ? "cloud-done-outline" : "phone-portrait-outline"}
                             size={12}
-                            color={storage.providerBacked ? colors.sage : colors.amber}
+                            color={storageProviderBacked ? colors.sage : colors.amber}
                           />
                           <Text
                             numberOfLines={1}
                             style={[
                               s.artifactStorageText,
                               {
-                                color: storage.providerBacked ? colors.sage : colors.amber,
+                                color: storageProviderBacked ? colors.sage : colors.amber,
                                 fontFamily: "Inter_700Bold",
                               },
                             ]}
                           >
-                            {storage.label}
+                            {ownerOps ? `Preset: ${storage.label}` : "Preset saved in WoofWatcher"}
                           </Text>
                         </View>
                       </View>
                       <Text numberOfLines={2} style={[s.artifactStorageDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                        {storage.detail}
+                        The audience preset stays in WoofWatcher. Report text and printable HTML are regenerated from current household-visible data when you share.
                       </Text>
-                      <Text numberOfLines={2} style={[s.artifactStorageDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                        {exportView.pdfDetail}
-                      </Text>
-                      <Text style={[s.artifactManifestTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        Export manifest
-                      </Text>
-                      <View style={s.artifactManifestGrid}>
-                        {exportView.manifestRows.map((row) => (
-                          <View key={row.label} style={[s.artifactManifestCell, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                            <Text style={[s.artifactManifestLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                              {row.label}
-                            </Text>
-                            <Text numberOfLines={1} style={[s.artifactManifestValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                              {row.value}
-                            </Text>
-                            <Text numberOfLines={2} style={[s.artifactManifestDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                              {row.detail}
-                            </Text>
+                      {ownerOps && binaryProofManifest ? (
+                        <>
+                          <Text style={[s.artifactManifestTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                            Export manifest
+                          </Text>
+                          <View style={s.artifactManifestGrid}>
+                            {exportView.manifestRows.map((row) => (
+                              <View key={row.label} style={[s.artifactManifestCell, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                                <Text style={[s.artifactManifestLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                                  {row.label}
+                                </Text>
+                                <Text numberOfLines={1} style={[s.artifactManifestValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                                  {row.value}
+                                </Text>
+                                <Text numberOfLines={2} style={[s.artifactManifestDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                                  {row.label === "Source"
+                                    ? "Regenerated from current household-visible data; not restored from a historical snapshot."
+                                    : row.label === "Storage"
+                                      ? "This stores the audience preset, not a report snapshot."
+                                      : row.detail}
+                                </Text>
+                              </View>
+                            ))}
                           </View>
-                        ))}
-                      </View>
-                      <Text style={[s.artifactManifestTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        Binary proof manifest
-                      </Text>
-                      <View style={s.artifactManifestGrid}>
-                        {binaryProofManifest.rows.map((row) => (
-                          <View key={row.label} style={[s.artifactManifestCell, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                            <Text style={[s.artifactManifestLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
-                              {row.label}
-                            </Text>
+                          <Text style={[s.artifactManifestTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                            Binary proof manifest
+                          </Text>
+                          <View style={s.artifactManifestGrid}>
+                            {binaryProofManifest.rows.map((row) => (
+                              <View key={row.label} style={[s.artifactManifestCell, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                                <Text style={[s.artifactManifestLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                                  {row.label}
+                                </Text>
+                                <Text
+                                  numberOfLines={1}
+                                  style={[
+                                    s.artifactManifestValue,
+                                    {
+                                      color: row.status === "ready" ? colors.sage : colors.amber,
+                                      fontFamily: "Inter_700Bold",
+                                    },
+                                  ]}
+                                >
+                                  {row.value}
+                                </Text>
+                                <Text numberOfLines={2} style={[s.artifactManifestDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                                  {row.detail}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                          {binaryProofManifest.blockers.map((blocker) => (
                             <Text
-                              numberOfLines={1}
-                              style={[
-                                s.artifactManifestValue,
-                                {
-                                  color: row.status === "ready" ? colors.sage : colors.amber,
-                                  fontFamily: "Inter_700Bold",
-                                },
-                              ]}
+                              key={blocker}
+                              numberOfLines={2}
+                              style={[s.artifactManifestDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
                             >
-                              {row.value}
+                              - {blocker}
                             </Text>
-                            <Text numberOfLines={2} style={[s.artifactManifestDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                              {row.detail}
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
-                      {binaryProofManifest.blockers.map((blocker) => (
-                        <Text
-                          key={blocker}
-                          numberOfLines={2}
-                          style={[s.artifactManifestDetail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}
-                        >
-                          - {blocker}
-                        </Text>
-                      ))}
+                          ))}
+                        </>
+                      ) : null}
                     </View>
                     <View style={s.reportArtifactActions}>
                       <View style={[s.artifactBadge, { backgroundColor: colors.sage + "14" }]}>
@@ -2821,36 +3288,42 @@ export default function RecordsScreen({
                       <View style={s.reportArtifactButtonRow}>
                         <Pressable
                           onPress={() => shareReportArtifact(artifact)}
+                          disabled={recordsShareBusy}
                           accessibilityRole="button"
-                          accessibilityLabel={`Resend ${artifact.title}`}
+                          accessibilityLabel={`Share current ${artifact.audience} Care Pass from this preset; regenerated from current household-visible data, not a historical snapshot`}
+                          accessibilityState={{ disabled: recordsShareBusy, busy: recordsShareBusy }}
                           hitSlop={MOBILE_INLINE_HIT_SLOP}
                           style={({ pressed }) => [
                             s.artifactIconButton,
-                            { backgroundColor: colors.primary + "12", opacity: pressed ? 0.75 : 1 },
+                            { backgroundColor: colors.primary + "12", opacity: recordsShareBusy ? 0.5 : pressed ? 0.75 : 1 },
                           ]}
                         >
                           <Ionicons name="share-outline" size={15} color={colors.primary} />
                         </Pressable>
                         <Pressable
-                          onPress={() => sharePrintableReportArtifact(artifact)}
+                          onPress={() => void sharePrintableReportArtifact(artifact)}
+                          disabled={recordsShareBusy}
                           accessibilityRole="button"
-                          accessibilityLabel={`Share local printable report source file for ${artifact.title}`}
+                          accessibilityLabel={`Share printable current ${artifact.audience} Care Pass from this preset; regenerated from current household-visible data, not a historical snapshot`}
+                          accessibilityState={{ disabled: recordsShareBusy, busy: recordsShareBusy }}
                           hitSlop={MOBILE_INLINE_HIT_SLOP}
                           style={({ pressed }) => [
                             s.artifactIconButton,
-                            { backgroundColor: colors.copper + "14", opacity: pressed ? 0.75 : 1 },
+                            { backgroundColor: colors.copper + "14", opacity: recordsShareBusy ? 0.5 : pressed ? 0.75 : 1 },
                           ]}
                         >
                           <Ionicons name="print-outline" size={15} color={colors.copper} />
                         </Pressable>
                         <Pressable
-                          onPress={() => shareGeneratedCarePassPdfArtifact(artifact)}
+                          onPress={() => void shareGeneratedCarePassPdfArtifact(artifact)}
+                          disabled={recordsShareBusy}
                           accessibilityRole="button"
-                          accessibilityLabel={`Share generated Care Pass PDF for ${artifact.title}`}
+                          accessibilityLabel={`Share PDF of current ${artifact.audience} Care Pass from this preset; regenerated from current household-visible data, not a historical snapshot`}
+                          accessibilityState={{ disabled: recordsShareBusy, busy: recordsShareBusy }}
                           hitSlop={MOBILE_INLINE_HIT_SLOP}
                           style={({ pressed }) => [
                             s.artifactIconButton,
-                            { backgroundColor: colors.sage + "14", opacity: pressed ? 0.75 : 1 },
+                            { backgroundColor: colors.sage + "14", opacity: recordsShareBusy ? 0.5 : pressed ? 0.75 : 1 },
                           ]}
                         >
                           <Ionicons name="download-outline" size={15} color={colors.sage} />
@@ -2882,7 +3355,15 @@ export default function RecordsScreen({
             <BoardSectionHeader
               title="Progress Report"
               accessory={
-                <Pressable onPress={shareReport} hitSlop={MOBILE_INLINE_HIT_SLOP} style={s.shareInline}>
+                <Pressable
+                  onPress={shareReport}
+                  disabled={recordsShareBusy}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share the current progress report"
+                  accessibilityState={{ disabled: recordsShareBusy, busy: recordsShareBusy }}
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
+                  style={[s.shareInline, recordsShareBusy && { opacity: 0.5 }]}
+                >
                   <Ionicons name="share-outline" size={15} color={colors.copper} />
                   <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Share</Text>
                 </Pressable>
@@ -2894,6 +3375,9 @@ export default function RecordsScreen({
                 return (
                   <Pressable
                     key={p.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Show ${p.label} progress report`}
+                    accessibilityState={{ selected: active }}
                     onPress={() => {
                       Haptics.selectionAsync();
                       setPeriod(p.key);
@@ -2948,6 +3432,9 @@ export default function RecordsScreen({
                   onPress={() =>
                     router.push({ pathname: "/health", params: { section: "diet" } })
                   }
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit diet on file"
+                  accessibilityState={{ disabled: false }}
                   hitSlop={MOBILE_INLINE_HIT_SLOP}
                 >
                   <Text style={[s.sectionLink, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>Edit</Text>
@@ -2997,6 +3484,9 @@ export default function RecordsScreen({
                 </Text>
                 <Pressable
                   onPress={() => openRecordForm("vaccine")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add first record"
+                  accessibilityState={{ disabled: false }}
                   style={({ pressed }) => [s.emptyAddBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                 >
                   <Ionicons name="add" size={16} color="#FFFFFF" />
@@ -3085,10 +3575,28 @@ export default function RecordsScreen({
         </Animated.View>
       </ScrollView>
 
-      <Modal visible={carePassPreview !== null} transparent animationType="slide" onRequestClose={() => setCarePassPreview(null)}>
-        <Pressable style={s.modalBackdrop} onPress={() => setCarePassPreview(null)}>
+      <Modal
+        visible={carePassPreview !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          if (!carePassSaveShareBusy) setCarePassPreviewAudience(null);
+        }}
+      >
+        <ModalBackdropPressable
+          style={s.modalBackdrop}
+          onPress={() => {
+            if (!carePassSaveShareBusy) setCarePassPreviewAudience(null);
+          }}
+        >
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
-            <Pressable style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={(e) => e.stopPropagation()}>
+            <ModalSheetPressable
+              visible={carePassPreview !== null}
+              onRequestClose={() => {
+                if (!carePassSaveShareBusy) setCarePassPreviewAudience(null);
+              }}
+              style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
+            >
               <View style={s.sheetHandle} />
               {carePassPreview ? (
                 <>
@@ -3103,6 +3611,9 @@ export default function RecordsScreen({
                   </View>
                   <ScrollView showsVerticalScrollIndicator={false} bounces={false} style={s.passPreviewScroll}>
                     <Text style={[s.passSummary, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{carePassPreview.summary}</Text>
+                    <Text style={[s.reportPresetDisclosure, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                      Saving creates an audience preset. It is regenerated from current household-visible data each time, not a historical snapshot.
+                    </Text>
                     {carePassPreview.sections.map((section) => (
                       <View key={section.title} style={[s.passSection, { backgroundColor: colors.background, borderColor: colors.border }]}>
                         <Text style={[s.passSectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{section.title}</Text>
@@ -3115,44 +3626,83 @@ export default function RecordsScreen({
                       </View>
                     ))}
                   </ScrollView>
+                  {carePassSaveShareNotice ? (
+                    <Text accessibilityLiveRegion="polite" style={[s.carePassSaveNotice, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                      {carePassSaveShareNotice}
+                    </Text>
+                  ) : null}
                   <View style={s.sheetActions}>
-                    <Pressable onPress={() => setCarePassPreview(null)} style={s.sheetCancel}>
+                    <Pressable
+                      onPress={() => setCarePassPreviewAudience(null)}
+                      disabled={carePassSaveShareBusy}
+                      accessibilityRole="button"
+                      accessibilityLabel="Close Care Pass preview"
+                      accessibilityState={{ disabled: carePassSaveShareBusy, busy: carePassSaveShareBusy }}
+                      style={[s.sheetCancel, carePassSaveShareBusy && { opacity: 0.5 }]}
+                    >
                       <Text style={[s.sheetCancelText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Close</Text>
                     </Pressable>
                     <Pressable
-                      onPress={() => shareCarePass(carePassPreview)}
-                      style={({ pressed }) => [s.sheetSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                      onPress={() => shareCarePass(carePassPreview.audience)}
+                      disabled={recordsShareBusy || carePassSaveShareBusy}
+                      accessibilityRole="button"
+                      accessibilityLabel="Save Care Pass and share current data"
+                      accessibilityState={{
+                        disabled: recordsShareBusy || carePassSaveShareBusy,
+                        busy: carePassSaveShareBusy,
+                      }}
+                      style={({ pressed }) => [s.sheetSave, { backgroundColor: colors.primary, opacity: recordsShareBusy || carePassSaveShareBusy ? 0.5 : pressed ? 0.85 : 1 }]}
                     >
-                      <Text style={[s.sheetSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save & share</Text>
+                      <Text style={[s.sheetSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                        {carePassSaveShareBusy ? "Saving & sharing…" : "Save & share"}
+                      </Text>
                     </Pressable>
                   </View>
                 </>
               ) : null}
-            </Pressable>
+            </ModalSheetPressable>
           </KeyboardAvoidingView>
-        </Pressable>
+        </ModalBackdropPressable>
       </Modal>
 
-      <Modal visible={recordOpen} transparent animationType="slide" onRequestClose={() => setRecordOpen(false)}>
-        <Pressable style={s.modalBackdrop} onPress={() => setRecordOpen(false)}>
+      <Modal visible={recordOpen} transparent animationType="slide" onRequestClose={() => void closeRecordForm()}>
+        <ModalBackdropPressable style={s.modalBackdrop} onPress={() => void closeRecordForm()}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
-            <Pressable style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]} onPress={() => {}}>
+            <ModalSheetPressable
+              visible={recordOpen}
+              onRequestClose={() => void closeRecordForm()}
+              style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
+            >
               <View style={s.sheetHandle} />
-              <View style={s.sheetHeader}>
-                <View style={[s.rowIconWrap, { backgroundColor: colors.primary + "14" }]}>
-                  <Ionicons name={recordOption.icon} size={19} color={colors.primary} />
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator
+                bounces={false}
+                style={s.recordFormScroll}
+                contentContainerStyle={s.recordFormContent}
+              >
+                <View style={s.sheetHeader}>
+                  <View style={[s.rowIconWrap, { backgroundColor: colors.primary + "14" }]}>
+                    <Ionicons name={recordOption.icon} size={19} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{recordEditId ? `Edit ${recordOption.label}` : `Add ${recordOption.label}`}</Text>
+                    <Text style={[s.sheetSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{recordOption.detail}</Text>
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{recordEditId ? `Edit ${recordOption.label}` : `Add ${recordOption.label}`}</Text>
-                  <Text style={[s.sheetSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{recordOption.detail}</Text>
-                </View>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.recordTypeRow}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.recordTypeRow}>
                 {RECORD_OPTIONS.map((option) => {
                   const active = option.kind === recordType;
                   return (
                     <Pressable
                       key={option.kind}
+                      disabled={recordPickerBusy || recordSaveBusy}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Use ${option.label} record type`}
+                      accessibilityState={{
+                        selected: active,
+                        disabled: recordPickerBusy || recordSaveBusy,
+                      }}
                       onPress={() => {
                         Haptics.selectionAsync();
                         setRecordType(option.kind);
@@ -3172,8 +3722,8 @@ export default function RecordsScreen({
                     </Pressable>
                   );
                 })}
-              </ScrollView>
-              <Text style={[s.editFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TITLE</Text>
+                </ScrollView>
+                <Text style={[s.editFieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TITLE</Text>
               <TextInput
                 value={recordTitle}
                 onChangeText={setRecordTitle}
@@ -3206,9 +3756,16 @@ export default function RecordsScreen({
               />
               <Pressable
                 onPress={pickRecordAttachment}
+                disabled={recordPickerBusy || recordSaveBusy}
+                accessibilityRole="button"
+                accessibilityLabel="Attach a photo or receipt"
+                accessibilityState={{
+                  disabled: recordPickerBusy || recordSaveBusy,
+                  busy: recordPickerBusy,
+                }}
                 style={({ pressed }) => [
                   s.attachmentBtn,
-                  { borderColor: colors.border, backgroundColor: colors.background, opacity: pressed ? 0.75 : 1 },
+                  { borderColor: colors.border, backgroundColor: colors.background, opacity: recordPickerBusy || recordSaveBusy ? 0.5 : pressed ? 0.75 : 1 },
                 ]}
               >
                 <Ionicons name={recordAttachmentUri ? "checkmark-circle" : "image-outline"} size={17} color={recordAttachmentUri ? colors.sage : colors.primary} />
@@ -3216,20 +3773,35 @@ export default function RecordsScreen({
                   {recordAttachmentUri ? "Attachment selected" : "Attach photo or receipt"}
                 </Text>
               </Pressable>
-              <View style={s.sheetActions}>
-                <Pressable onPress={() => setRecordOpen(false)} style={s.sheetCancel}>
-                  <Text style={[s.sheetCancelText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Cancel</Text>
-                </Pressable>
-                <Pressable
-                  onPress={saveRecord}
-                  style={({ pressed }) => [s.sheetSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
-                >
-                  <Text style={[s.sheetSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{recordEditId ? "Save changes" : "Save record"}</Text>
-                </Pressable>
-              </View>
-            </Pressable>
+                <View style={s.sheetActions}>
+                  <Pressable
+                    onPress={() => void closeRecordForm()}
+                    disabled={recordSaveBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cancel record editor"
+                    accessibilityState={{ disabled: recordSaveBusy, busy: recordSaveBusy }}
+                    style={[s.sheetCancel, recordSaveBusy && { opacity: 0.5 }]}
+                  >
+                    <Text style={[s.sheetCancelText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={saveRecord}
+                    disabled={recordPickerBusy || recordSaveBusy}
+                    accessibilityRole="button"
+                    accessibilityLabel={recordEditId ? "Save record changes" : "Save new record"}
+                    accessibilityState={{
+                      disabled: recordPickerBusy || recordSaveBusy,
+                      busy: recordSaveBusy,
+                    }}
+                    style={({ pressed }) => [s.sheetSave, { backgroundColor: colors.primary, opacity: recordPickerBusy || recordSaveBusy ? 0.5 : pressed ? 0.85 : 1 }]}
+                  >
+                    <Text style={[s.sheetSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{recordEditId ? "Save changes" : "Save record"}</Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
+            </ModalSheetPressable>
           </KeyboardAvoidingView>
-        </Pressable>
+        </ModalBackdropPressable>
       </Modal>
     </View>
   );
@@ -3245,6 +3817,17 @@ const s = StyleSheet.create({
   subtitle: { fontSize: 14, marginTop: 2 },
 
   sectionLink: { fontSize: 14 },
+  shareStatusRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 9,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  shareStatusText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
   shareInline: {
     flexDirection: "row",
     alignItems: "center",
@@ -3697,6 +4280,7 @@ const s = StyleSheet.create({
   carePassIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   carePassLabel: { fontSize: 15 },
   carePassDetail: { fontSize: 12, lineHeight: 16, marginTop: 2, paddingRight: 14 },
+  reportPresetDisclosure: { fontSize: 12, lineHeight: 17, marginBottom: 10 },
   reportArtifactRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13 },
   reportArtifactActions: { alignItems: "flex-end", gap: 8 },
   reportArtifactButtonRow: { flexDirection: "row", alignItems: "center", gap: 6 },
@@ -3821,6 +4405,7 @@ const s = StyleSheet.create({
   sheetSub: { fontSize: 13, marginTop: 2 },
   passPreviewScroll: { maxHeight: 420 },
   passSummary: { fontSize: 14, lineHeight: 20, marginBottom: 12 },
+  carePassSaveNotice: { fontSize: 12.5, lineHeight: 18, marginTop: 10 },
   passSection: { borderWidth: 1, borderRadius: 16, padding: 13, marginBottom: 10 },
   passSectionTitle: { fontSize: 15, marginBottom: 8 },
   passLineRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 6 },
@@ -3838,6 +4423,8 @@ const s = StyleSheet.create({
     paddingVertical: 8,
   },
   recordTypeText: { fontSize: 12.5 },
+  recordFormScroll: { flexShrink: 1 },
+  recordFormContent: { paddingBottom: 4 },
   editFieldLabel: { fontSize: 11, letterSpacing: 0.6, marginBottom: 7, marginTop: 14 },
   recordInput: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14.5 },
   recordInputMulti: { minHeight: 76, textAlignVertical: "top" },

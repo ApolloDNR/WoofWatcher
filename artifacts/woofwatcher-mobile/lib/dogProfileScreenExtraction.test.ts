@@ -100,7 +100,10 @@ test("owns one guarded, accepted profile write including care focus and backgrou
   ]) {
     assert.match(component, new RegExp(`\\b${stateName}\\b`), `${stateName} must be component-owned`);
   }
-  assert.match(component, /const name = pName\.trim\(\) \|\| "Phoenix"/);
+  assert.match(
+    component,
+    /const name = pName\.trim\(\) \|\| DEFAULT_PET_PLACEHOLDER/,
+  );
   assert.match(component, /\.\.\.doc\.profile/);
   assert.match(component, /\.\.\.doc\.profile\.weight/);
   assert.match(component, /publicLabel:\s*name/);
@@ -159,7 +162,10 @@ test("keeps truthful facts and routes every supported edit into the one editor",
     );
   }
   assert.match(component, /<Modal[\s\S]*onRequestClose=\{\(\) => setProfileOpen\(false\)\}/);
-  assert.match(component, /onPress=\{\(e\) => e\.stopPropagation\(\)\}/);
+  assert.match(
+    component,
+    /<ModalSheetPressable[\s\S]{0,240}visible=\{profileOpen\}[\s\S]{0,240}onRequestClose=\{\(\) => setProfileOpen\(false\)\}/,
+  );
   assert.match(component, /bounces=\{false\}/);
   assert.match(component, /getModalSheetBottomPadding/);
   assert.match(component, /aria-live="polite"/);

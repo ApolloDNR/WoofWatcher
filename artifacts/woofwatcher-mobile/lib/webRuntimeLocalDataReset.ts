@@ -5,9 +5,17 @@ export interface WebRuntimeCacheStorage {
   delete(name: string): Promise<boolean>;
 }
 
+export interface WebRuntimeSessionStorage {
+  removeItem(key: string): void;
+}
+
+export const LEGACY_PWA_SESSION_NOTIFICATION_KEY =
+  "woofwatcher.v1.lastNotificationKey";
+
 export interface WebRuntimeLocalDataResetEnvironment {
   platform: string;
   cacheStorage: WebRuntimeCacheStorage | null;
+  sessionStorage?: WebRuntimeSessionStorage | null;
   requestServiceWorkerClear(): Promise<void>;
 }
 
@@ -45,6 +53,14 @@ export function createWebRuntimeLocalDataResetController(
       for (const result of results) {
         if (result.status === "rejected") failures.push(result.reason);
       }
+    }
+
+    try {
+      environment.sessionStorage?.removeItem(
+        LEGACY_PWA_SESSION_NOTIFICATION_KEY,
+      );
+    } catch (error) {
+      failures.push(error);
     }
 
     try {

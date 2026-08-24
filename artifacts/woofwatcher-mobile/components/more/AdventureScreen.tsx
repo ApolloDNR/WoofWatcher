@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ImageBackground,
   Pressable,
@@ -42,11 +42,13 @@ import {
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
+import { resolveConsumerPetName } from "@/lib/petIdentity";
 import { shareTextPayload } from "@/lib/shareText";
 import {
   CARE_READ_ONLY_MESSAGE,
   careMutationWasAccepted,
 } from "@/lib/careWriteProtection";
+import { createExclusiveAsyncAction } from "@/lib/exclusiveAsyncAction";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -116,6 +118,13 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const adventureScreenMountedRef = useRef(true);
+  useEffect(() => {
+    adventureScreenMountedRef.current = true;
+    return () => {
+      adventureScreenMountedRef.current = false;
+    };
+  }, []);
   const {
     state,
     careMutationsBlocked,
@@ -126,6 +135,14 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
   const showCareReadOnly = () =>
     notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   const [questFeedback, setQuestFeedback] = useState<{ id: string; title: string } | null>(null);
+  const questFeedbackUndoGateRef = useRef<ReturnType<
+    typeof createExclusiveAsyncAction
+  > | null>(null);
+  if (questFeedbackUndoGateRef.current === null) {
+    questFeedbackUndoGateRef.current = createExclusiveAsyncAction();
+  }
+  const questFeedbackUndoGate = questFeedbackUndoGateRef.current;
+  const [questFeedbackUndoBusy, setQuestFeedbackUndoBusy] = useState(false);
   const bottomPadding = getTabbedRouteBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
@@ -135,7 +152,7 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
     topInset: insets.top,
     surface: "tabbed",
   });
-  const petName = state.profile.name && state.profile.name !== "My Dog" ? state.profile.name : "Phoenix";
+  const petName = resolveConsumerPetName(state.profile.name);
   const now = Date.now();
   const adventure = useMemo(
     () =>
@@ -308,18 +325,47 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
   };
 
   const undoQuestFeedback = async () => {
-    if (!questFeedback) return;
+    const feedback = questFeedback;
+    if (!feedback) return;
     if (careMutationsBlocked) {
       showCareReadOnly();
       return;
     }
-    const deleted = await deleteEntry(questFeedback.id);
-    if (!careMutationWasAccepted(deleted)) {
-      showCareReadOnly();
-      return;
-    }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setQuestFeedback(null);
+    await questFeedbackUndoGate.run(async () => {
+      setQuestFeedbackUndoBusy(true);
+      try {
+        let deleted = false;
+        try {
+          deleted = await deleteEntry(feedback.id);
+        } catch {
+          deleted = false;
+        }
+        if (!adventureScreenMountedRef.current) return;
+        if (!careMutationWasAccepted(deleted)) {
+          notifyDialog(
+            "Undo not completed",
+            "WoofWatcher could not confirm that this care log was removed. Check the timeline before trying again.",
+          );
+          return;
+        }
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        setQuestFeedback((current) =>
+          current?.id === feedback.id ? null : current,
+        );
+      } finally {
+        if (adventureScreenMountedRef.current) {
+          setQuestFeedbackUndoBusy(false);
+        }
+      }
+    });
+  };
+
+  const openQuestFeedbackDetails = () => {
+    if (questFeedbackUndoGate.isBusy()) return;
+    if (!questFeedback) return;
+    router.push(
+      `/log?entry=${encodeURIComponent(questFeedback.id)}` as never,
+    );
   };
 
   const openProofLog = (entryId: string) => {
@@ -537,10 +583,19 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Undo ${questFeedback.title}`}
+                  accessibilityState={{ disabled: questFeedbackUndoBusy }}
+                  disabled={questFeedbackUndoBusy}
                   onPress={undoQuestFeedback}
                   style={({ pressed }) => [
                     s.questFeedbackButton,
-                    { backgroundColor: pressed ? colors.secondary : colors.background, borderColor: colors.border },
+                    {
+                      backgroundColor:
+                        pressed && !questFeedbackUndoBusy
+                          ? colors.secondary
+                          : colors.background,
+                      borderColor: colors.border,
+                      opacity: questFeedbackUndoBusy ? 0.5 : 1,
+                    },
                   ]}
                 >
                   <Text style={[s.questFeedbackButtonText, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
@@ -550,10 +605,19 @@ export default function AdventureScreen({ onBack }: AdventureScreenProps) {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Add details to ${questFeedback.title}`}
-                  onPress={() => router.push(`/log?entry=${encodeURIComponent(questFeedback.id)}` as never)}
+                  accessibilityState={{ disabled: questFeedbackUndoBusy }}
+                  disabled={questFeedbackUndoBusy}
+                  onPress={openQuestFeedbackDetails}
                   style={({ pressed }) => [
                     s.questFeedbackButton,
-                    { backgroundColor: pressed ? colors.copper + "DD" : colors.copper, borderColor: colors.copper },
+                    {
+                      backgroundColor:
+                        pressed && !questFeedbackUndoBusy
+                          ? colors.copper + "DD"
+                          : colors.copper,
+                      borderColor: colors.copper,
+                      opacity: questFeedbackUndoBusy ? 0.5 : 1,
+                    },
                   ]}
                 >
                   <Text style={[s.questFeedbackButtonText, { color: colors.ivory, fontFamily: "Inter_700Bold" }]}>

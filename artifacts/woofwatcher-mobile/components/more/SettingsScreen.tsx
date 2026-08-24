@@ -53,7 +53,9 @@ export default function SettingsScreen({ onBack, onOpenSection }: SettingsScreen
           <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} /><Text style={[styles.rowText, { color: colors.foreground }]}>Privacy & Data</Text><Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
         </Pressable>
       </BoardCard>
-      <View><Text style={[styles.note, { color: colors.mutedForeground }]}>Provider-backed features remain unavailable until the app reports verified provider readiness.</Text></View>
+      <View>
+        <Text style={[styles.note, { color: colors.mutedForeground }]}>Online account features aren't available in this version. Your care data stays on this device.</Text>
+      </View>
     </ScrollView>
   );
 }

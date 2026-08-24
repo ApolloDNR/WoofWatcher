@@ -13,7 +13,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BoardCard, BoardSectionHeader } from "@/components/board/BoardPrimitives";
+import {
+  BoardCard,
+  BoardSectionHeader,
+  ModalBackdropPressable,
+  ModalSheetPressable,
+} from "@/components/board/BoardPrimitives";
 import { PulseIcon, PULSE_COLORS, type PulseIconName } from "@/components/PulseIcon";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
@@ -274,13 +279,14 @@ export default function DietScreen({
         animationType="slide"
         onRequestClose={() => setDietEditOpen(false)}
       >
-        <Pressable
+        <ModalBackdropPressable
           style={s.modalBackdrop}
           onPress={() => setDietEditOpen(false)}
         >
-          <Pressable
+          <ModalSheetPressable
+            visible={dietEditOpen}
+            onRequestClose={() => setDietEditOpen(false)}
             style={[s.profileModal, { backgroundColor: colors.card }]}
-            onPress={(event) => event.stopPropagation()}
           >
             <ScrollView
               showsVerticalScrollIndicator={false}
@@ -420,8 +426,8 @@ export default function DietScreen({
                 </Text>
               </Pressable>
             </ScrollView>
-          </Pressable>
-        </Pressable>
+          </ModalSheetPressable>
+        </ModalBackdropPressable>
       </Modal>
     </>
   );
