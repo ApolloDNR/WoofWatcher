@@ -1,36 +1,36 @@
 # WoofWatcher V1 Release Status
 
 - Integration branch: `release/woofwatcher-v1`
-- Engineering implementation checkpoint: `6b0123512952fd36d27f1ea395b7d5a32948a98c`
-- Verified implementation tree: `9e27d7aa1e6a02b8874bfeaccc4d8493b0c2aa96`
-- Verified pre-closeout head: `fe6c9b976e2dff6254e19542baa093d672b4eeed`
-- Direct exact-head local CI: PASS at `fe6c9b976e2dff6254e19542baa093d672b4eeed`
-- GitHub PR-merge CI: [WoofWatcher Verify #1014 — PASS](https://github.com/ApolloDNR/WoofWatcher/actions/runs/32553088638), associated with head `fe6c9b976e2dff6254e19542baa093d672b4eeed`. The workflow checked synthetic merge `5d5fe00468ae44260fd6fea95a8bc55f70dd763e` into `main`; the direct local suite above checked the head itself.
+- Engineering implementation checkpoint: `57c5926ce844bef38c798069c602bc19dc09ad3c`
+- Verified implementation tree: `98742050003dd59976073b4d0718ca21c1153b95`
+- Exact-head GitHub CI: [WoofWatcher Verify #1028 — PASS](https://github.com/ApolloDNR/WoofWatcher/actions/runs/32691610467). The workflow checked out and tested exact head `57c5926ce844bef38c798069c602bc19dc09ad3c`; 1,528/1,528 focused tests passed with zero failures and zero skips, followed by successful typecheck, CI-safe builds, candidate packaging, and artifact upload.
+- Exact-head web candidate artifact: ID `9507485215`, `woofwatcher-web-candidate-57c5926ce844bef38c798069c602bc19dc09ad3c`, 22,852,367 bytes, digest `sha256:01d9b839919354c4a885f15575956762062358d5c472f5e47e991de76bfbb081`. This is a web candidate preview, not a signed native binary.
+- Local focused adversarial reset/deletion suite: 277/277 PASS on the verified implementation tree.
 - Status identity rule: this tracked file names its exact verified predecessor, but cannot contain the SHA of its own containing commit because that text would change the commit. The resulting documentation-only head SHA and its CI evidence are recorded in PR #12 and the release handoff.
 - Durable baseline: `0f1107b170b0a9c89548a51f5cdeb664ba98246f`
 - Baseline code commit: `b6934f7a`
 - Main at recovery start: `47234396`
 - Scope: free, local-first V1
-- Browser/engineering verdict: PASS at the verified pre-closeout head; resulting documentation-only head evidence is recorded externally
+- Browser/engineering verdict: PASS at the exact implementation checkpoint; resulting documentation-only head evidence is recorded externally
 - Native verdict: BLOCKED — NATIVE CANDIDATE AND PHYSICAL-DEVICE QA UNPROVED
 - Production/App Store/Play status: **NOT APPROVED / NOT SUBMITTED / NOT PUBLISHED**
 
 ## Current milestone
 
-M2B2 — Coordinated Local-Data Reset and Deletion Integrity: **COMPLETE (ENGINEERING)**
+M2B2 — Coordinated Local-Data Reset and Deletion Integrity: **COMPLETE AT THE ENGINEERING / AUTOMATED-PROOF BOUNDARY at `57c5926ce844bef38c798069c602bc19dc09ad3c`**
 
 Next: N1 — Signed Native Candidate and Physical-Device QA
 
 This milestone is complete at the exact implementation checkpoint above. It is
 not native-device proof, owner approval, permission to merge PR #12, or
-permission to submit or publish. The verified pre-closeout head passed the full
-local CI-equivalent suite directly and the required PR-merge workflow; the
-resulting documentation-only head is recorded externally under the identity
+permission to submit or publish. Exact-head GitHub CI passed the complete
+dependency-installed suite and preserved the exact-head web candidate artifact;
+the resulting documentation-only head is recorded externally under the identity
 rule above.
 
 ## M2B2 engineering checkpoint
 
-- All seven required production owners are attached: `avatar`, `care`, `device-preferences`, `files`, `query-cache`, `walk-capture`, and `web-runtime`: PASS
+- All eight required production owners are attached: `auth-credentials`, `avatar`, `care`, `device-preferences`, `files`, `query-cache`, `walk-capture`, and `web-runtime`: PASS
 - Accepted removable-storage and app-file work is admission-controlled and drained before destructive commits: PASS
 - Successful file-owner commit removes `WoofWatcherReports`, `WoofWatcherCredentials`, `woofwatcher-attachments`, and exact legacy root avatar files; every target is attempted and deletion errors remain exact `files` partial failures: PASS
 - Sensitive same-origin `/api` responses bypass CacheStorage; owned runtime/data caches are cleared with service-worker acknowledgement while the current offline shell is preserved: PASS
@@ -41,10 +41,11 @@ rule above.
 - The rendered shield stays closed through deletion, partial failure, retry, and complete. Exact failed-owner/generic labels are accessible, Retry starts a fresh root reset, and only Return/Continue remounts personal screens: PASS
 - Complete success copy is reserved for a complete coordinator result; partial failure/rejection remains visible and actionable: PASS
 - Unsafe legacy Care wipe and direct Privacy/file/share bypasses are absent; Avatar Studio's legitimate feature reset remains: PASS
-- Focused adversarial reset/deletion tests: 253/253 PASS at `fe6c9b976e2dff6254e19542baa093d672b4eeed`
-- Full focused repository tests: 1,345/1,345 PASS at `fe6c9b976e2dff6254e19542baa093d672b4eeed`
-- Mobile TypeScript: PASS at `fe6c9b976e2dff6254e19542baa093d672b4eeed`
-- Independent scoped re-review: APPROVED; zero Critical or Important findings
+- Focused adversarial reset/deletion tests: 277/277 PASS on the exact implementation tree
+- Full focused repository tests: 1,528/1,528 PASS with zero failures and zero skips in exact-head CI #1028
+- TypeScript and CI-safe builds: PASS for libraries, scripts, API server, web app, mockup sandbox, and mobile in exact-head CI #1028
+- Candidate proof: production-profile web export 260 files PASS; runtime 47/47 routes PASS; live-preview 56/56 checks PASS; exact-head artifact upload PASS
+- Independent scoped code and security reviews: APPROVED; zero findings at all severities
 
 Automated integrity proof uses controlled native adapters. Physical Expo
 filesystem deletion, location-watch teardown, native sharing, offline/relaunch,
@@ -57,7 +58,7 @@ engineering verdict.
 - Signed iOS candidate: **BLOCKED / NONE**; no `.ipa`, EAS build ID, artifact URL, signed install, or TestFlight evidence exists.
 - Android candidate: **BLOCKED / NONE**; no `.apk`, `.aab`, EAS build ID, artifact URL, or signed install evidence exists.
 - Physical iPhone QA: **NOT RUN**; no physical iPhone is accessible from this Linux environment and `xcrun` is unavailable.
-- Physical Android QA: **NOT RUN**; no physical Android device is accessible, and `adb`, `emulator`, `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and `JAVA_HOME` are unavailable here.
+- Physical Android QA: **NOT RUN**; no physical Android device is accessible. Java is available at `/usr/bin/java`, but `adb` and `emulator` are unavailable and `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and `JAVA_HOME` are unset.
 - Native screenshots/video: **NONE**. Existing store screenshots and historical Chromium navigation evidence are web evidence, not native or physical-device proof.
 - Expo/EAS tooling: no global or workspace-local EAS CLI, no authenticated EAS query, no Expo/EAS credential environment, and no committed `extra.eas.projectId`.
 - Account/signing inputs: Expo project ownership/access is unproved. Apple Developer team, certificate, provisioning profile, registered internal device, App Store Connect app/TestFlight access, and Google Play Console, Play App Signing/upload-key, and internal-test access are unavailable or unproved. Release metadata still has null EAS project ID, Apple Team ID, App Store Connect Apple ID, and App Review phone.
