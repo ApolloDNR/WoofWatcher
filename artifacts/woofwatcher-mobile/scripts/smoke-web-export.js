@@ -44,7 +44,10 @@ function assertCleanCandidateWorktree() {
   if (result.status !== 0) {
     fail("Could not verify that the candidate source worktree is clean.");
   }
-  if (result.stdout.trim()) {
+  const dirtyEntries = result.stdout.trim();
+  if (dirtyEntries) {
+    console.error("[smoke-web-export] Dirty candidate source entries:");
+    console.error(dirtyEntries);
     fail(
       "Candidate source worktree is dirty. Commit the exact candidate source before building so its recorded commit and tree cannot mislabel uncommitted code.",
     );
