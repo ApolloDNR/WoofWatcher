@@ -696,7 +696,11 @@ test("Records generated writers preserve reports/credentials destinations and ut
   await runPrintableRecordsFileShare({
     appFileSystem,
     destination: "reports",
-    printable: { fileName: "care-pass.html", html: "<care-pass />" },
+    printable: {
+      fileName: "care-pass.html",
+      html: "<care-pass />",
+      fallbackText: "Care Pass",
+    },
     printableLabel: "Care Pass report source",
     title: "Phoenix Care Pass",
     shareNative,
@@ -708,6 +712,7 @@ test("Records generated writers preserve reports/credentials destinations and ut
     printable: {
       fileName: "dog-id.svg",
       html: "<svg />",
+      fallbackText: "Dog ID",
       mimeType: "image/svg+xml",
     },
     printableLabel: "Dog ID SVG image source",
@@ -826,6 +831,7 @@ for (const writer of ["printable", "generated"] as const) {
               printable: {
                 fileName: "care-pass.html",
                 html: "<care-pass />",
+                fallbackText: "Care Pass",
               },
               printableLabel: "Care Pass report source",
               title: "Phoenix Care Pass",
@@ -881,7 +887,11 @@ test("Records suppresses a native-share failure fallback after reset revokes the
   const action = runPrintableRecordsFileShare({
     appFileSystem,
     destination: "reports",
-    printable: { fileName: "care-pass.html", html: "<care-pass />" },
+    printable: {
+      fileName: "care-pass.html",
+      html: "<care-pass />",
+      fallbackText: "Care Pass",
+    },
     title: "Phoenix Care Pass",
     shareNative: async () => {
       nativeShareStarted = true;

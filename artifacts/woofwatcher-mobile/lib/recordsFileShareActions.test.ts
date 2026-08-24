@@ -60,7 +60,11 @@ test("printable native attachment failure falls back truthfully after the file w
   const result = await runPrintableRecordsFileShare({
     appFileSystem: savedFileSystem(),
     destination: "reports",
-    printable: { fileName: "care-pass.html", html: "<html>Care Pass</html>" },
+    printable: {
+      fileName: "care-pass.html",
+      html: "<html><body><h1>Care Pass</h1></body></html>",
+      fallbackText: "Care Pass\nMeals: Breakfast completed",
+    },
     title: "Phoenix Care Pass",
     shareNative: async () => {
       throw new Error("Android URL attachment unsupported");
@@ -77,7 +81,8 @@ test("printable native attachment failure falls back truthfully after the file w
   assert.doesNotMatch(fallbackMessages[0], /saved to your device/i);
   assert.match(fallbackMessages[0], /could not be attached/i);
   assert.doesNotMatch(fallbackMessages[0], /local file export is unavailable/i);
-  assert.match(fallbackMessages[0], /<html>Care Pass<\/html>/);
+  assert.match(fallbackMessages[0], /Meals: Breakfast completed/);
+  assert.doesNotMatch(fallbackMessages[0], /<\/?(?:html|body|h1)>/i);
 });
 
 test("generated native attachment failure reports the saved PDF without claiming attachment", async () => {

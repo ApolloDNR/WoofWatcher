@@ -1059,6 +1059,7 @@ function CareTwinQaScreenBody() {
               },
               fallbackFileName,
             );
+            if (!evidence) return false;
             const currentInput = qaSessionInputRef.current;
             const currentMap =
               target.kind === "surface"

@@ -203,7 +203,7 @@ export function createMobileQaSessionSaveQueue(): MobileQaSessionSaveQueue {
   let pending = 0;
 
   return Object.freeze({
-    save(value, write) {
+    save(value: string, write: (value: string) => Promise<void>) {
       pending += 1;
       const operation = tail.then(() => write(value));
       const settled = operation.finally(() => {

@@ -94,6 +94,7 @@ export const RECORDS_LOCAL_FILE_HANDOFF_PROOF_SUMMARY =
 export interface ReportArtifactPrintableSource {
   fileName: string;
   html: string;
+  fallbackText: string;
   mimeType?: ReportArtifactExportMimeType;
   formatLabel?: string;
   boundary?: string;
@@ -111,6 +112,7 @@ export interface ReportArtifactExportFilePlan {
   fileName: string;
   fileUri: string | null;
   html: string;
+  fallbackText: string;
   mimeType: ReportArtifactExportMimeType;
   shareTitle: string;
   message: string;
@@ -312,12 +314,19 @@ export function buildReportArtifactExportFilePlan(
   const fallbackReason = canWriteLocalFile
     ? null
     : "Local file export is unavailable because this runtime does not expose a document directory.";
+  const fallbackText =
+    typeof printable.fallbackText === "string"
+      ? printable.fallbackText.trim()
+      : "";
 
   return {
     directoryUri,
     fileName,
     fileUri,
     html: printable.html,
+    fallbackText:
+      fallbackText ||
+      `${options.title}. The printable file could not be included as readable text.`,
     mimeType,
     shareTitle: `${options.title} printable source`,
     canWriteLocalFile,
@@ -343,7 +352,7 @@ export function buildReportArtifactShareContent(
 
   return {
     title: plan.shareTitle,
-    message: `${plan.message}\n\n${plan.html}`,
+    message: `${plan.message}\n\n${plan.fallbackText}`,
   };
 }
 

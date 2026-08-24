@@ -1039,11 +1039,17 @@ export default function RecordsScreen({
     await runRecordsShare(async () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
       const printable = getPetCredentialPrintView(credential);
-      await sharePrintableSourceFile(printable, {
-        destination: "credentials",
-        printableLabel: "Dog ID credential source",
-        title: credentialTitle,
-      });
+      await sharePrintableSourceFile(
+        {
+          ...printable,
+          fallbackText: credential.message,
+        },
+        {
+          destination: "credentials",
+          printableLabel: "Dog ID credential source",
+          title: credentialTitle,
+        },
+      );
     });
 
   const shareCredentialImageSource = async () =>
@@ -1053,6 +1059,7 @@ export default function RecordsScreen({
         {
           fileName: credentialImageView.fileName,
           html: credentialImageView.svg,
+          fallbackText: credential.message,
           mimeType: credentialImageView.mimeType,
           formatLabel: credentialImageView.formatLabel,
           boundary: credentialImageView.boundary,
@@ -1259,14 +1266,18 @@ export default function RecordsScreen({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       const currentArtifact = buildCurrentCarePassArtifact(artifact);
       const printable = getCarePassArtifactPrintView(currentArtifact);
-      await sharePrintableSourceFile({
-        ...printable,
-        boundary:
-          "This action shares printable HTML source. The file stays inside WoofWatcher unless you share it; WoofWatcher cloud backup is not included.",
-      }, {
-        destination: "reports",
-        title: currentArtifact.title,
-      });
+      await sharePrintableSourceFile(
+        {
+          ...printable,
+          fallbackText: currentArtifact.message,
+          boundary:
+            "This action shares printable HTML source. The file stays inside WoofWatcher unless you share it; WoofWatcher cloud backup is not included.",
+        },
+        {
+          destination: "reports",
+          title: currentArtifact.title,
+        },
+      );
     });
 
   const shareGeneratedCarePassPdfArtifact = async (artifact: CarePassArtifact) =>

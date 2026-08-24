@@ -141,7 +141,7 @@ export async function runPrintableRecordsFileShare({
         () =>
           savedFileCouldNotAttach(
             { title: plan.shareTitle, message: plan.message },
-            plan.html,
+            plan.fallbackText,
           ),
         () => buildReportArtifactShareContent(fallbackPlan),
         shareNative,

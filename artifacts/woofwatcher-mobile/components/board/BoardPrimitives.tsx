@@ -56,8 +56,10 @@ type StructuralAccessibilityProp =
 
 type StructuralPressableProps = Omit<
   PressableProps,
-  StructuralAccessibilityProp | "onPress"
->;
+  StructuralAccessibilityProp | "onPress" | "children"
+> & {
+  children?: ReactNode;
+};
 
 /**
  * A modal's full-screen dismiss layer is structure, not an extra VoiceOver

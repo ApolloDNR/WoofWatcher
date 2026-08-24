@@ -13,6 +13,7 @@ test("builds a local printable report export file plan without stale PDF-pending
     {
       fileName: "Phoenix Vet Care Pass: 2026/07/03.html",
       html: "<!doctype html><html><body>Care pass</body></html>",
+      fallbackText: "Care pass",
     },
     {
       documentDirectory: "file:///var/mobile/Containers/Data/Application/WoofWatcher/Documents/",
@@ -43,6 +44,7 @@ test("names the separately generated PDF while sharing the Care Pass HTML source
     {
       fileName: "Phoenix Vet Care Pass.html",
       html: "<!doctype html><html><body>Care pass</body></html>",
+      fallbackText: "Care pass",
       boundary:
         "A generated PDF is available separately; this action shares the printable HTML source. This file stays inside WoofWatcher unless you share it; WoofWatcher cloud backup is not included.",
     },
@@ -65,6 +67,7 @@ test("builds a local printable credential export file plan without calling it a 
     {
       fileName: "Phoenix Dog ID: microchip/insurance.html",
       html: "<!doctype html><html><body>Dog ID</body></html>",
+      fallbackText: "Dog ID",
     },
     {
       documentDirectory: "file:///var/mobile/Documents",
@@ -86,6 +89,7 @@ test("builds a local SVG credential image source export plan without claiming PN
     {
       fileName: "Phoenix Dog ID.svg",
       html: "<svg>Dog ID</svg>",
+      fallbackText: "Dog ID",
       mimeType: "image/svg+xml",
       formatLabel: "SVG image source",
       boundary: "PNG and PDF export still need native or provider-backed generation.",
@@ -242,7 +246,8 @@ test("falls back to inline printable source when a local file directory is unava
   const plan = buildReportArtifactExportFilePlan(
     {
       fileName: "vet-care-pass",
-      html: "<!doctype html><html><body>Care pass</body></html>",
+      html: "<!doctype html><html><body><h1>Care pass</h1></body></html>",
+      fallbackText: "Care pass\nBreakfast completed",
     },
     {
       documentDirectory: null,
@@ -259,6 +264,26 @@ test("falls back to inline printable source when a local file directory is unava
   assert.equal(shareContent.url, undefined);
   assert.match(shareContent.message, /printable report source is included below/);
   assert.match(shareContent.message, /Care pass/);
+  assert.match(shareContent.message, /Breakfast completed/);
+  assert.doesNotMatch(shareContent.message, /<\/?(?:html|body|h1)>/i);
+});
+
+test("a blank readable fallback never leaks printable markup into text sharing", () => {
+  const plan = buildReportArtifactExportFilePlan(
+    {
+      fileName: "vet-care-pass.html",
+      html: "<html><body><script>privateMarkup()</script></body></html>",
+      fallbackText: "   ",
+    },
+    {
+      documentDirectory: null,
+      title: "Vet Care Pass",
+    },
+  );
+
+  const shareContent = buildReportArtifactShareContent(plan);
+  assert.match(shareContent.message, /could not be included as readable text/i);
+  assert.doesNotMatch(shareContent.message, /privateMarkup|<\/?(?:html|body|script)>/i);
 });
 
 test("normalizes unsafe report export filenames for device storage", () => {
