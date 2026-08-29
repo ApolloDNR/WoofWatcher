@@ -1,5 +1,14 @@
+import {
+  isHouseholdVisibleCareEvidence,
+  selectSharedCareEvidence,
+} from "@workspace/care-domain";
+
 export interface HomeEntryVisibilityShape {
   details?: unknown;
+}
+
+export interface ObservableHomeEntryShape extends HomeEntryVisibilityShape {
+  occurredAt?: string;
 }
 
 export interface HomeEvidenceCopyInput {
@@ -26,17 +35,22 @@ export interface HomeEvidenceCopy {
   bile: HomeWatchCopy;
 }
 
-function isHouseholdVisible(details: unknown): boolean {
-  if (!details || typeof details !== "object" || Array.isArray(details)) {
-    return true;
-  }
-  return (details as Record<string, unknown>).householdVisible !== false;
-}
-
 export function selectHomeVisibleEntries<T extends HomeEntryVisibilityShape>(
   entries: readonly T[],
 ): T[] {
-  return entries.filter((entry) => isHouseholdVisible(entry.details));
+  return entries.filter(isHouseholdVisibleCareEvidence);
+}
+
+/**
+ * Establishes the one evidence boundary used by Home. Privacy is applied
+ * before a timestamp is inspected, then malformed and future-dated records
+ * are removed so they cannot influence today, latest, streak, or XP facts.
+ */
+export function selectObservableHomeEntries<T extends ObservableHomeEntryShape>(
+  entries: readonly T[],
+  now: number,
+): T[] {
+  return selectSharedCareEvidence(entries, now);
 }
 
 export function formatHomeCompletion(done: number, target: number): string {
@@ -46,12 +60,8 @@ export function formatHomeCompletion(done: number, target: number): string {
 
 export function isHomeMoodEvidence({
   mood,
-  normalizedType,
 }: HomeMoodEvidenceInput): boolean {
-  return (
-    (typeof mood === "string" && mood.trim().length > 0) ||
-    ["mood", "symptom", "vomit", "alone"].includes(normalizedType)
-  );
+  return typeof mood === "string" && mood.trim().length > 0;
 }
 
 function loggedMomentHeadline(todayLogCount: number): string {
@@ -89,7 +99,7 @@ export function deriveHomeEvidenceCopy({
     headline: loggedMomentHeadline(todayLogCount),
     summary: "Readings use today's available care evidence.",
     health: healthAlert
-      ? { status: "Needs Watch", detail: "Recent symptom logged" }
+      ? { status: "Needs Watch", detail: "Owner-marked health alert logged" }
       : {
           status: "No alerts logged",
           detail: `Based on ${todayLogCount} care ${todayLogCount === 1 ? "log" : "logs"} today`,

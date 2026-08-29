@@ -5,9 +5,14 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { CareStateEnvelopeDoc } from './careStateEnvelopeDoc';
+import type { CareStateEnvelopeDoc } from "./careStateEnvelopeDoc";
 
 export interface CareStateEnvelope {
+  householdId: string;
+  /**
+   * @minimum 1
+   * @maximum 2147483647
+   */
   version: number;
   updatedAt: Date;
   /** @nullable */

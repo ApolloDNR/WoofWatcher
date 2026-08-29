@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   ImageBackground,
@@ -17,12 +17,12 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getGetMeQueryKey, useGetMe } from "@workspace/api-client-react";
 import {
   appendCareAuditEvent,
   appendStickyNote,
-  buildCareLogDeletionAuditEntry,
   getCareAuditTrail,
   deriveCareIntelligence,
   deriveCareLogSearch,
@@ -116,6 +116,7 @@ import {
 import { createExclusiveAsyncAction } from "@/lib/exclusiveAsyncAction";
 import { collectCareAppOwnedFileReferences } from "@/lib/appOwnedFileReferences";
 import { runCareFileCleanupAfterDurableSnapshot } from "@/lib/careFileCleanup";
+import { runCareLogDeletionWithoutSharedAudit } from "@/lib/careLogDeletionPrivacy";
 import { TrailMap } from "@/components/TrailMap";
 import { useWalkRouteCaptureStatus } from "@/components/WalkRouteRecorder";
 import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
@@ -734,7 +735,6 @@ const DETAIL_SKIP_KEYS = new Set([
   "auditAction",
   "auditSubjectId",
   "auditTrail",
-  "deletedEntrySnapshot",
   "stickyNotes",
   "title",
   "durationMinutes",
@@ -1460,15 +1460,25 @@ export default function LogScreen() {
 
   // Mount animation
   const isWebRoutePreview = (Platform.OS as string) === "web";
+  const reducedMotion = useReducedMotion();
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
   const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isWebRoutePreview) return;
-    Animated.parallel([
+    if (reducedMotion) {
+      fade.stopAnimation();
+      slide.stopAnimation();
+      fade.setValue(1);
+      slide.setValue(0);
+      return;
+    }
+    const entrance = Animated.parallel([
       Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
       Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
-    ]).start();
-  }, [fade, isWebRoutePreview, slide]);
+    ]);
+    entrance.start();
+    return () => entrance.stop();
+  }, [fade, isWebRoutePreview, reducedMotion, slide]);
 
   // Two-phase mount: the console stage and quick-log launcher (the whole
   // first screenful) render on the tab-press frame; the composer, search,
@@ -1935,6 +1945,11 @@ export default function LogScreen() {
     updateCareDoc,
   ]);
 
+  const dismissQuickNote = useCallback(() => {
+    setPromptId(null);
+    setPromptNote("");
+  }, []);
+
   const saveQuickNote = useCallback(() => {
     const text = promptNote.trim();
     if (promptId && text) {
@@ -2011,7 +2026,10 @@ export default function LogScreen() {
             return;
           }
           const entry = careStateRef.current.entries.find((item) => item.id === id);
-          const deleted = await deleteEntry(id);
+          const { mutationResult: deleted } =
+            await runCareLogDeletionWithoutSharedAudit({
+              deleteEntry: () => deleteEntry(id),
+            });
           if (!careMutationWasAccepted(deleted)) {
             if (logScreenMountedRef.current) {
               notifyDialog("Delete failed", "WoofWatcher kept the log because the household sync rejected the delete. Try again after refresh.");
@@ -2019,24 +2037,9 @@ export default function LogScreen() {
             return;
           }
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-          // Shared-household accountability only: the deletion audit note
-          // says "from the shared care log", so it is truthful and useful
-          // only when more than one caregiver exists. For a solo owner it
-          // would leave a "Deleted log - ..." row in their own timeline and
-          // read as if the delete failed - so a solo delete just deletes.
-          if (entry && careStateRef.current.caregivers.length > 1) {
-            const auditIdValue = addEntry(
-              buildCareLogDeletionAuditEntry({
-                id: auditId(),
-                caregiver,
-                occurredAt: new Date().toISOString(),
-                entry,
-              }),
-            );
-            if (!careMutationWasAccepted(auditIdValue)) {
-              showCareReadOnly();
-            }
-          }
+          // Intentionally no shared deletion audit: this response cannot
+          // establish authoritative visibility at deletion time. A stale
+          // shared cache must never republish a now-private row's contents.
           const result = await runCareFileCleanupAfterDurableSnapshot({
             persistSnapshot: persistCurrentCareSnapshot,
             cleanup: () =>
@@ -2061,15 +2064,11 @@ export default function LogScreen() {
       );
     },
     [
-      addEntry,
       appFileSystem,
-      caregiver,
       careMutationsBlocked,
       deleteEntry,
       persistCurrentCareSnapshot,
       showCareReadOnly,
-      state.caregivers.length,
-      state.entries,
     ],
   );
 
@@ -3159,8 +3158,6 @@ export default function LogScreen() {
                       {metric.label}
                     </Text>
                     <Text
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
                       style={[s.logCommandHudValue, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}
                     >
                       {metric.value}
@@ -3232,11 +3229,12 @@ export default function LogScreen() {
                       Haptics.selectionAsync();
                       setLauncherTab(tab.key);
                     }}
-                    style={[
+                    style={({ pressed }) => [
                       s.launcherTab,
                       {
                         backgroundColor: active ? colors.primary : colors.card,
                         borderColor: active ? colors.primary : colors.border,
+                        opacity: pressed ? 0.72 : 1,
                       },
                     ]}
                   >
@@ -3306,8 +3304,6 @@ export default function LogScreen() {
                       </View>
                     ) : null}
                     <Text
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
                       style={[s.launcherTileText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}
                     >
                       {action.label}
@@ -3317,8 +3313,6 @@ export default function LogScreen() {
                     {launcherPresentation.detailRequired ? (
                       <View style={[s.launcherTileMode, { backgroundColor: colors.amberSoft }]}>
                         <Text
-                          numberOfLines={1}
-                          adjustsFontSizeToFit
                           style={[
                             s.launcherTileModeText,
                             {
@@ -3364,10 +3358,10 @@ export default function LogScreen() {
                   >
                     <Ionicons name={item.icon} size={14} color={toneColor} />
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text numberOfLines={1} style={[s.launcherDoctrineLabel, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
+                      <Text style={[s.launcherDoctrineLabel, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
                         {item.label}
                       </Text>
-                      <Text numberOfLines={1} style={[s.launcherDoctrineDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                      <Text style={[s.launcherDoctrineDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                         {item.detail}
                       </Text>
                     </View>
@@ -3460,6 +3454,7 @@ export default function LogScreen() {
                 </Text>
                 <View style={s.returnDetailRow}>
                   <TextInput
+                    accessibilityLabel="Walk finish route or place"
                     value={walkFinishRouteName}
                     onChangeText={setWalkFinishRouteName}
                     placeholder="Route or place"
@@ -3467,6 +3462,7 @@ export default function LogScreen() {
                     style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
+                    accessibilityLabel="Walk finish distance in miles"
                     value={walkFinishDistanceMiles}
                     onChangeText={setWalkFinishDistanceMiles}
                     placeholder="Miles"
@@ -3477,6 +3473,7 @@ export default function LogScreen() {
                 </View>
                 <View style={s.returnDetailRow}>
                   <TextInput
+                    accessibilityLabel="Walk finish dog interactions"
                     value={walkFinishDogInteractions}
                     onChangeText={setWalkFinishDogInteractions}
                     placeholder="Dogs met"
@@ -3485,6 +3482,7 @@ export default function LogScreen() {
                     style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
+                    accessibilityLabel="Walk finish social outcome"
                     value={walkFinishSocialOutcome}
                     onChangeText={setWalkFinishSocialOutcome}
                     placeholder="Social outcome"
@@ -3493,6 +3491,7 @@ export default function LogScreen() {
                   />
                 </View>
                 <TextInput
+                  accessibilityLabel="Walk finish note"
                   value={walkFinishNote}
                   onChangeText={setWalkFinishNote}
                   placeholder="Anything notable?"
@@ -3563,6 +3562,7 @@ export default function LogScreen() {
                 </View>
                 <View style={s.returnDetailRow}>
                   <TextInput
+                    accessibilityLabel="Home alone recovery minutes"
                     value={returnRecoveryMinutes}
                     onChangeText={setReturnRecoveryMinutes}
                     placeholder="Recovery min"
@@ -3571,6 +3571,7 @@ export default function LogScreen() {
                     style={[s.returnInput, s.returnInputHalf, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
                   />
                   <TextInput
+                    accessibilityLabel="Home alone return note"
                     value={returnNote}
                     onChangeText={setReturnNote}
                     placeholder="What helped?"
@@ -3924,11 +3925,12 @@ export default function LogScreen() {
                       setSelectedLauncherKey(null);
                       setSelectedType(q.type);
                     }}
-                    style={[
+                    style={({ pressed }) => [
                       s.typeChip,
                       {
                         backgroundColor: active ? colors.primary : colors.card,
                         borderColor: active ? colors.primary : colors.border,
+                        opacity: pressed ? 0.72 : 1,
                       },
                     ]}
                   >
@@ -3970,11 +3972,12 @@ export default function LogScreen() {
                           Haptics.selectionAsync();
                           setChoices((prev) => ({ ...prev, [g.key]: o.id }));
                         }}
-                        style={[
+                        style={({ pressed }) => [
                           s.segPill,
                           {
                             backgroundColor: active ? colors.primary : colors.card,
                             borderColor: active ? colors.primary : colors.border,
+                            opacity: pressed ? 0.72 : 1,
                           },
                         ]}
                       >
@@ -3998,6 +4001,7 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Care context</Text>
                   <TextInput
+                    accessibilityLabel="Mood care context"
                     placeholder="After breakfast, visitor came over, slept poorly, great walk..."
                     placeholderTextColor={colors.mutedForeground}
                     value={moodContext}
@@ -4023,11 +4027,12 @@ export default function LogScreen() {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
                   }}
-                  style={[
+                  style={({ pressed }) => [
                     s.visibilityToggle,
                     {
                       backgroundColor: householdVisible ? colors.sage + "14" : colors.card,
                       borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                      opacity: pressed ? 0.82 : 1,
                     },
                   ]}
                 >
@@ -4062,9 +4067,13 @@ export default function LogScreen() {
                           Haptics.selectionAsync();
                           setStepIndex(i);
                         }}
-                        style={[
+                        style={({ pressed }) => [
                           s.segPill,
-                          { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border },
+                          {
+                            backgroundColor: active ? colors.primary : colors.card,
+                            borderColor: active ? colors.primary : colors.border,
+                            opacity: pressed ? 0.72 : 1,
+                          },
                         ]}
                       >
                         <Text
@@ -4088,6 +4097,7 @@ export default function LogScreen() {
                   {config.numeric.label} ({numericUnit}{config.numeric.optional ? ", optional" : ""})
                 </Text>
                 <TextInput
+                  accessibilityLabel={`${config.numeric.label}, ${numericUnit}, ${config.numeric.optional ? "optional" : "required"}`}
                   placeholder={config.numeric.placeholder}
                   placeholderTextColor={colors.mutedForeground}
                   value={numeric}
@@ -4103,6 +4113,7 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Route or place</Text>
                   <TextInput
+                    accessibilityLabel="Walk route or place"
                     placeholder="Neighborhood Loop, Dog park, River trail..."
                     placeholderTextColor={colors.mutedForeground}
                     value={walkRouteName}
@@ -4114,6 +4125,7 @@ export default function LogScreen() {
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Distance mi</Text>
                     <TextInput
+                      accessibilityLabel="Walk distance in miles"
                       placeholder="1.2"
                       placeholderTextColor={colors.mutedForeground}
                       value={walkDistanceMiles}
@@ -4125,6 +4137,7 @@ export default function LogScreen() {
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Dog interactions</Text>
                     <TextInput
+                      accessibilityLabel="Walk dog interactions"
                       placeholder="0"
                       placeholderTextColor={colors.mutedForeground}
                       value={walkDogInteractions}
@@ -4137,6 +4150,7 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Social outcome</Text>
                   <TextInput
+                    accessibilityLabel="Walk social outcome"
                     placeholder="Calm greeting, no dogs seen, barked near the gate..."
                     placeholderTextColor={colors.mutedForeground}
                     value={walkSocialOutcome}
@@ -4153,11 +4167,12 @@ export default function LogScreen() {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
                   }}
-                  style={[
+                  style={({ pressed }) => [
                     s.visibilityToggle,
                     {
                       backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
                       borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                      opacity: pressed ? 0.82 : 1,
                     },
                   ]}
                 >
@@ -4179,6 +4194,7 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Skill or cue</Text>
                   <TextInput
+                    accessibilityLabel="Training skill or cue"
                     placeholder="Leash manners, recall, calm greeting..."
                     placeholderTextColor={colors.mutedForeground}
                     value={trainingSkill}
@@ -4189,6 +4205,7 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Next practice</Text>
                   <TextInput
+                    accessibilityLabel="Training next practice"
                     placeholder="Practice calm passes, repeat place cue, shorten distance..."
                     placeholderTextColor={colors.mutedForeground}
                     value={trainingNextPractice}
@@ -4205,11 +4222,12 @@ export default function LogScreen() {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
                   }}
-                  style={[
+                  style={({ pressed }) => [
                     s.visibilityToggle,
                     {
                       backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
                       borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                      opacity: pressed ? 0.82 : 1,
                     },
                   ]}
                 >
@@ -4231,6 +4249,7 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Trigger or context</Text>
                   <TextInput
+                    accessibilityLabel="Home alone trigger or context"
                     placeholder="Leaving after breakfast, doorbell, both owners out..."
                     placeholderTextColor={colors.mutedForeground}
                     value={aloneTrigger}
@@ -4242,6 +4261,7 @@ export default function LogScreen() {
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Recovery min</Text>
                     <TextInput
+                      accessibilityLabel="Home alone recovery minutes"
                       placeholder="15"
                       placeholderTextColor={colors.mutedForeground}
                       value={recoveryMinutes}
@@ -4253,6 +4273,7 @@ export default function LogScreen() {
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Support</Text>
                     <TextInput
+                      accessibilityLabel="Home alone calming support"
                       placeholder="Puzzle toy"
                       placeholderTextColor={colors.mutedForeground}
                       value={calmingSupport}
@@ -4269,11 +4290,12 @@ export default function LogScreen() {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
                   }}
-                  style={[
+                  style={({ pressed }) => [
                     s.visibilityToggle,
                     {
                       backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
                       borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                      opacity: pressed ? 0.82 : 1,
                     },
                   ]}
                 >
@@ -4295,6 +4317,7 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Trigger or context</Text>
                   <TextInput
+                    accessibilityLabel="Incident trigger or context"
                     placeholder="Dog at gate, crowded sidewalk..."
                     placeholderTextColor={colors.mutedForeground}
                     value={incidentTrigger}
@@ -4305,6 +4328,7 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Who or what was involved?</Text>
                   <TextInput
+                    accessibilityLabel="Incident people or animals involved"
                     placeholder="Off-leash dog, stranger..."
                     placeholderTextColor={colors.mutedForeground}
                     value={incidentExposure}
@@ -4316,6 +4340,7 @@ export default function LogScreen() {
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Injury check</Text>
                     <TextInput
+                      accessibilityLabel="Incident injury check"
                       placeholder="None, scratch..."
                       placeholderTextColor={colors.mutedForeground}
                       value={incidentInjury}
@@ -4326,6 +4351,7 @@ export default function LogScreen() {
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Action taken</Text>
                     <TextInput
+                      accessibilityLabel="Incident action taken"
                       placeholder="Separated..."
                       placeholderTextColor={colors.mutedForeground}
                       value={incidentAction}
@@ -4337,6 +4363,7 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Follow-up</Text>
                   <TextInput
+                    accessibilityLabel="Incident follow-up"
                     placeholder="Watch tonight, trainer note, vet call, avoid gate route..."
                     placeholderTextColor={colors.mutedForeground}
                     value={incidentFollowUp}
@@ -4353,11 +4380,12 @@ export default function LogScreen() {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
                   }}
-                  style={[
+                  style={({ pressed }) => [
                     s.visibilityToggle,
                     {
                       backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
                       borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                      opacity: pressed ? 0.82 : 1,
                     },
                   ]}
                 >
@@ -4379,6 +4407,7 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Coat or skin note</Text>
                   <TextInput
+                    accessibilityLabel="Grooming coat or skin note"
                     placeholder="Light shedding, mats behind ears, paws looked good..."
                     placeholderTextColor={colors.mutedForeground}
                     value={groomingCondition}
@@ -4390,6 +4419,7 @@ export default function LogScreen() {
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Products</Text>
                     <TextInput
+                      accessibilityLabel="Grooming products"
                       placeholder="Slicker brush"
                       placeholderTextColor={colors.mutedForeground}
                       value={groomingProducts}
@@ -4400,6 +4430,7 @@ export default function LogScreen() {
                   <View style={s.mealField}>
                     <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Next due</Text>
                     <TextInput
+                      accessibilityLabel="Grooming next due date"
                       placeholder="2026-06-18"
                       placeholderTextColor={colors.mutedForeground}
                       value={groomingNextDue}
@@ -4416,11 +4447,12 @@ export default function LogScreen() {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
                   }}
-                  style={[
+                  style={({ pressed }) => [
                     s.visibilityToggle,
                     {
                       backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
                       borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                      opacity: pressed ? 0.82 : 1,
                     },
                   ]}
                 >
@@ -4445,6 +4477,7 @@ export default function LogScreen() {
                       Expected portion
                     </Text>
                     <TextInput
+                      accessibilityLabel="Meal expected portion"
                       placeholder={state.dietProfile.normalPortion || "1 cup"}
                       placeholderTextColor={colors.mutedForeground}
                       value={expectedPortion}
@@ -4457,6 +4490,7 @@ export default function LogScreen() {
                       Eaten amount {mealOutcomeNeedsEatenAmount(selectedMealCompletion) ? "(required)" : "(optional)"}
                     </Text>
                     <TextInput
+                      accessibilityLabel="Meal eaten amount"
                       placeholder={
                         selectedMealCompletion === "skipped"
                           ? "0"
@@ -4499,11 +4533,12 @@ export default function LogScreen() {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
                   }}
-                  style={[
+                  style={({ pressed }) => [
                     s.visibilityToggle,
                     {
                       backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
                       borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                      opacity: pressed ? 0.82 : 1,
                     },
                   ]}
                 >
@@ -4541,6 +4576,7 @@ export default function LogScreen() {
                 <View>
                   <Text style={[s.fieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Dose</Text>
                   <TextInput
+                    accessibilityLabel="Medication dose"
                     placeholder={medicationDefault?.dose && medicationDefault.dose !== "Dose not set" ? medicationDefault.dose : "1 tablet"}
                     placeholderTextColor={colors.mutedForeground}
                     value={medicationDose}
@@ -4556,11 +4592,12 @@ export default function LogScreen() {
                     Haptics.selectionAsync();
                     setHouseholdVisible((prev) => !prev);
                   }}
-                  style={[
+                  style={({ pressed }) => [
                     s.visibilityToggle,
                     {
                       backgroundColor: householdVisible ? colors.sage + "14" : colors.background,
                       borderColor: householdVisible ? colors.sage + "55" : colors.border,
+                      opacity: pressed ? 0.82 : 1,
                     },
                   ]}
                 >
@@ -4604,6 +4641,7 @@ export default function LogScreen() {
             {config?.noteField && (
               <View style={s.fieldBlock}>
                 <TextInput
+                  accessibilityLabel={`${selectedLabel} care note`}
                   placeholder={config.noteField.placeholder}
                   placeholderTextColor={colors.mutedForeground}
                   value={noteText}
@@ -4679,6 +4717,7 @@ export default function LogScreen() {
             <View style={[s.searchPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <Ionicons name="search" size={18} color={colors.mutedForeground} />
               <TextInput
+                accessibilityLabel="Search care logs"
                 value={searchText}
                 onChangeText={setSearchText}
                 placeholder="Search notes, people, meds..."
@@ -4691,11 +4730,15 @@ export default function LogScreen() {
                 <Pressable
                   accessibilityLabel="Clear log search"
                   accessibilityRole="button"
+                  hitSlop={MOBILE_INLINE_HIT_SLOP}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setSearchText("");
                   }}
-                  style={[s.searchClear, { backgroundColor: colors.card }]}
+                  style={({ pressed }) => [
+                    s.searchClear,
+                    { backgroundColor: colors.card, opacity: pressed ? 0.72 : 1 },
+                  ]}
                 >
                   <Ionicons name="close" size={16} color={colors.mutedForeground} />
                 </Pressable>
@@ -4723,7 +4766,14 @@ export default function LogScreen() {
                   Haptics.selectionAsync();
                   setFilter(null);
                 }}
-                style={[s.filterChip, { backgroundColor: filter === null ? colors.primary : colors.card, borderColor: filter === null ? colors.primary : colors.border }]}
+                style={({ pressed }) => [
+                  s.filterChip,
+                  {
+                    backgroundColor: filter === null ? colors.primary : colors.card,
+                    borderColor: filter === null ? colors.primary : colors.border,
+                    opacity: pressed ? 0.72 : 1,
+                  },
+                ]}
               >
                 <Text style={[s.filterText, { color: filter === null ? colors.primaryForeground : colors.foreground, fontFamily: filter === null ? "Inter_700Bold" : "Inter_600SemiBold" }]}>All</Text>
               </Pressable>
@@ -4739,7 +4789,14 @@ export default function LogScreen() {
                         Haptics.selectionAsync();
                         setFilter(active ? null : q.type);
                       }}
-                      style={[s.filterChip, { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border }]}
+                      style={({ pressed }) => [
+                        s.filterChip,
+                        {
+                          backgroundColor: active ? colors.primary : colors.card,
+                          borderColor: active ? colors.primary : colors.border,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}
                     >
                       <CareTypeIcon type={q.type} icon={q.icon} size={14} color={active ? colors.primaryForeground : undefined} />
                       <Text style={[s.filterText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: active ? "Inter_700Bold" : "Inter_600SemiBold" }]}>{q.label}</Text>
@@ -4924,7 +4981,7 @@ export default function LogScreen() {
       <Modal
         visible={launcherDetailAction !== null}
         transparent
-        animationType="slide"
+        animationType={reducedMotion ? "none" : "slide"}
         onRequestClose={() => setLauncherDetailAction(null)}
       >
         <ModalBackdropPressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setLauncherDetailAction(null)}>
@@ -4933,9 +4990,15 @@ export default function LogScreen() {
             onRequestClose={() => setLauncherDetailAction(null)}
             style={[s.launcherDetailSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
           >
-            <View style={s.editHandle} />
-            {launcherDetailAction && launcherDetailPresentation ? (
-              <>
+            <ScrollView
+              showsVerticalScrollIndicator
+              bounces={false}
+              style={s.launcherDetailScroll}
+              contentContainerStyle={s.launcherDetailContent}
+            >
+              <View style={s.editHandle} />
+              {launcherDetailAction && launcherDetailPresentation ? (
+                <>
                 <View style={s.launcherDetailTop}>
                   <View style={[s.launcherDetailIcon, { backgroundColor: colors.secondary, borderWidth: 1, borderColor: colors.border }]}>
                     <PixelIcon name={launcherDetailAction.icon} size={34} />
@@ -4974,10 +5037,10 @@ export default function LogScreen() {
                           },
                         ]}
                       >
-                        <Text numberOfLines={1} style={[s.launcherDetailModeLabel, { color: toneColor, fontFamily: "Inter_800ExtraBold" }]}>
+                        <Text style={[s.launcherDetailModeLabel, { color: toneColor, fontFamily: "Inter_800ExtraBold" }]}>
                           {item.label}
                         </Text>
-                        <Text numberOfLines={1} style={[s.launcherDetailModeDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        <Text style={[s.launcherDetailModeDetail, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                           {item.detail}
                         </Text>
                       </View>
@@ -5063,14 +5126,15 @@ export default function LogScreen() {
                     </Text>
                   </Pressable>
                 </View>
-              </>
-            ) : null}
+                </>
+              ) : null}
+            </ScrollView>
           </ModalSheetPressable>
         </ModalBackdropPressable>
       </Modal>
 
       {/* Entry detail modal */}
-      <Modal visible={detailEntry !== null} transparent animationType="slide" onRequestClose={() => setDetailEntryId(null)}>
+      <Modal visible={detailEntry !== null} transparent animationType={reducedMotion ? "none" : "slide"} onRequestClose={() => setDetailEntryId(null)}>
         <ModalBackdropPressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setDetailEntryId(null)}>
           <ModalSheetPressable
             visible={detailEntry !== null}
@@ -5339,6 +5403,7 @@ export default function LogScreen() {
                               key={option.id}
                               accessibilityRole="button"
                               accessibilityLabel={`Set potty outcome: ${option.label}`}
+                              accessibilityState={{ selected: active }}
                               onPress={() => setPottyDetailDraft((draft) => ({ ...draft, outcome: option.id }))}
                               style={({ pressed }) => [
                                 s.pottyOptionButton,
@@ -5372,6 +5437,7 @@ export default function LogScreen() {
                               key={option.id}
                               accessibilityRole="button"
                               accessibilityLabel={`Set potty location: ${option.label}`}
+                              accessibilityState={{ selected: active }}
                               onPress={() => setPottyDetailDraft((draft) => ({ ...draft, location: option.id }))}
                               style={({ pressed }) => [
                                 s.pottyOptionButton,
@@ -5406,6 +5472,7 @@ export default function LogScreen() {
                                 key={option.id}
                                 accessibilityRole="button"
                                 accessibilityLabel={`Set pee detail: ${option.label}`}
+                                accessibilityState={{ selected: active }}
                                 onPress={() => setPottyDetailDraft((draft) => ({ ...draft, peeDetail: option.id }))}
                                 style={({ pressed }) => [
                                   s.pottyOptionButton,
@@ -5444,6 +5511,7 @@ export default function LogScreen() {
                                   key={option.id}
                                   accessibilityRole="button"
                                   accessibilityLabel={`Set stool consistency: ${option.label}`}
+                                  accessibilityState={{ selected: active }}
                                   onPress={() => setPottyDetailDraft((draft) => ({ ...draft, stoolCondition: option.id }))}
                                   style={({ pressed }) => [
                                     s.pottyOptionButton,
@@ -5476,6 +5544,7 @@ export default function LogScreen() {
                                   key={option.id}
                                   accessibilityRole="button"
                                   accessibilityLabel={`Set stool color: ${option.label}`}
+                                  accessibilityState={{ selected: active }}
                                   onPress={() => setPottyDetailDraft((draft) => ({ ...draft, stoolColor: option.id }))}
                                   style={({ pressed }) => [
                                     s.pottyOptionButton,
@@ -5511,6 +5580,7 @@ export default function LogScreen() {
                               key={option.id}
                               accessibilityRole="button"
                               accessibilityLabel={`Set potty context: ${option.label}`}
+                              accessibilityState={{ selected: active }}
                               onPress={() => setPottyDetailDraft((draft) => ({ ...draft, context: option.id }))}
                               style={({ pressed }) => [
                                 s.pottyOptionButton,
@@ -5756,89 +5826,111 @@ export default function LogScreen() {
       </Modal>
 
       {/* Entry editor modal */}
-      <Modal visible={editEntry !== null} transparent animationType="slide" onRequestClose={() => setEditEntry(null)}>
+      <Modal visible={editEntry !== null} transparent animationType={reducedMotion ? "none" : "slide"} onRequestClose={() => setEditEntry(null)}>
         <ModalBackdropPressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setEditEntry(null)}>
-          <ModalSheetPressable
-            visible={editEntry !== null}
-            onRequestClose={() => setEditEntry(null)}
-            style={[s.editSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]}
-          >
-            <View style={s.editHandle} />
-            <Text style={[s.editSheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Edit entry</Text>
-            <Text style={[s.editFieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Title</Text>
-            <TextInput
-              value={editTitle}
-              onChangeText={setEditTitle}
-              placeholderTextColor={colors.mutedForeground}
-              style={[s.input, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
-            />
-            <Text style={[s.editFieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Note (optional)</Text>
-            <TextInput
-              value={editNote}
-              onChangeText={setEditNote}
-              placeholder="Add or update a note..."
-              placeholderTextColor={colors.mutedForeground}
-              multiline
-              style={[s.input, s.inputMulti, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
-            />
-            <BoardActionButton
-              label="Save changes"
-              icon="checkmark"
-              variant="primary"
-              onPress={saveEditEntry}
-              style={s.editSaveAction}
-            />
-          </ModalSheetPressable>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
+            <ModalSheetPressable
+              visible={editEntry !== null}
+              onRequestClose={() => setEditEntry(null)}
+              style={[s.editSheet, { backgroundColor: colors.background, paddingBottom: modalSheetBottomPadding }]}
+            >
+              <View style={s.editHandle} />
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator
+                bounces={false}
+                style={s.editFormScroll}
+                contentContainerStyle={s.editFormContent}
+              >
+                <Text style={[s.editSheetTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>Edit entry</Text>
+                <Text style={[s.editFieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Title</Text>
+                <TextInput
+                  accessibilityLabel="Care log title"
+                  value={editTitle}
+                  onChangeText={setEditTitle}
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[s.input, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_500Medium" }]}
+                />
+                <Text style={[s.editFieldLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Note (optional)</Text>
+                <TextInput
+                  accessibilityLabel="Care log note"
+                  value={editNote}
+                  onChangeText={setEditNote}
+                  placeholder="Add or update a note..."
+                  placeholderTextColor={colors.mutedForeground}
+                  multiline
+                  style={[s.input, s.inputMulti, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
+                />
+                <BoardActionButton
+                  label="Save changes"
+                  icon="checkmark"
+                  variant="primary"
+                  onPress={saveEditEntry}
+                  style={s.editSaveAction}
+                />
+              </ScrollView>
+            </ModalSheetPressable>
+          </KeyboardAvoidingView>
         </ModalBackdropPressable>
       </Modal>
 
       {/* Post-log quick-note prompt */}
-      <Modal visible={promptId !== null} transparent animationType="fade" onRequestClose={() => setPromptId(null)}>
-        <ModalBackdropPressable style={[s.modalBackdrop, centeredModalPadding]} onPress={saveQuickNote}>
+      <Modal visible={promptId !== null} transparent animationType={reducedMotion ? "none" : "fade"} onRequestClose={dismissQuickNote}>
+        <ModalBackdropPressable style={[s.modalBackdrop, centeredModalPadding]} onPress={dismissQuickNote}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalCenter}>
             <ModalSheetPressable
               visible={promptId !== null}
-              onRequestClose={() => setPromptId(null)}
+              onRequestClose={dismissQuickNote}
               style={[s.modalCard, { backgroundColor: colors.card }]}
             >
-              <View style={[s.modalIcon, { backgroundColor: colors.sage + "1A" }]}>
-                <Ionicons name="checkmark" size={22} color={colors.sage} />
-              </View>
-              <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                {promptMode === "post-log" ? `${promptTitle} logged` : "Add sticky note"}
-              </Text>
-              <Text style={[s.modalSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                {promptMode === "post-log" ? "Add a quick sticky note? (optional)" : promptTitle}
-              </Text>
-              <TextInput
-                ref={promptRef}
-                placeholder="e.g. ate eagerly, left some kibble..."
-                placeholderTextColor={colors.mutedForeground}
-                value={promptNote}
-                onChangeText={setPromptNote}
-                multiline
-                style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular", marginTop: 14 }]}
-                returnKeyType="done"
-                blurOnSubmit
-                onSubmitEditing={saveQuickNote}
-              />
-              <View style={s.modalActions}>
-                <Pressable
-                  onPress={() => {
-                    setPromptId(null);
-                    setPromptNote("");
-                  }}
-                  style={({ pressed }) => [s.modalSkip, { opacity: pressed ? 0.6 : 1 }]}
-                >
-                  <Text style={[s.modalSkipText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Skip</Text>
-                </Pressable>
-                <Pressable
-                  onPress={saveQuickNote}
-                  style={({ pressed }) => [s.modalSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
-                >
-                  <Text style={[s.modalSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save sticky</Text>
-                </Pressable>
-              </View>
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator
+                bounces={false}
+                style={s.modalPromptScroll}
+                contentContainerStyle={s.modalPromptContent}
+              >
+                <View style={[s.modalIcon, { backgroundColor: colors.sage + "1A" }]}>
+                  <Ionicons name="checkmark" size={22} color={colors.sage} />
+                </View>
+                <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                  {promptMode === "post-log" ? `${promptTitle} logged` : "Add sticky note"}
+                </Text>
+                <Text style={[s.modalSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {promptMode === "post-log" ? "Add a quick sticky note? (optional)" : promptTitle}
+                </Text>
+                <TextInput
+                  ref={promptRef}
+                  accessibilityLabel="Sticky note"
+                  placeholder="e.g. ate eagerly, left some kibble..."
+                  placeholderTextColor={colors.mutedForeground}
+                  value={promptNote}
+                  onChangeText={setPromptNote}
+                  multiline
+                  style={[s.input, s.inputMulti, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular", marginTop: 14 }]}
+                  returnKeyType="done"
+                  blurOnSubmit
+                  onSubmitEditing={saveQuickNote}
+                />
+                <View style={s.modalActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Skip sticky note"
+                    onPress={dismissQuickNote}
+                    style={({ pressed }) => [s.modalSkip, { opacity: pressed ? 0.6 : 1 }]}
+                  >
+                    <Text style={[s.modalSkipText, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Skip</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Save sticky note"
+                    onPress={saveQuickNote}
+                    style={({ pressed }) => [s.modalSave, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+                  >
+                    <Text style={[s.modalSaveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save sticky</Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
             </ModalSheetPressable>
           </KeyboardAvoidingView>
         </ModalBackdropPressable>
@@ -5853,7 +5945,7 @@ const s = StyleSheet.create({
 
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 18 },
   headerIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center" },
-  syncBtn: { width: 40, height: 40, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  syncBtn: { width: MIN_MOBILE_TOUCH_TARGET, height: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   title: { fontSize: 26, letterSpacing: -0.3 },
   subtitle: { fontSize: 14, marginTop: 2 },
 
@@ -6336,7 +6428,7 @@ const s = StyleSheet.create({
     gap: 8,
   },
   returnInput: {
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 9,
     paddingHorizontal: 10,
@@ -6435,6 +6527,7 @@ const s = StyleSheet.create({
   loggerTitle: { fontSize: 16, marginBottom: 12 },
   typeRow: { gap: 8, paddingHorizontal: 4, paddingBottom: 4 },
   typeChip: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
@@ -6451,7 +6544,7 @@ const s = StyleSheet.create({
   fieldLabel: { fontSize: 12, letterSpacing: 0, marginBottom: 8 },
   segRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   segPill: {
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 14,
@@ -6515,6 +6608,7 @@ const s = StyleSheet.create({
   filterScroll: { marginTop: 8 },
   filterRow: { gap: 8, paddingHorizontal: 20, paddingVertical: 6 },
   filterChip: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
@@ -6590,7 +6684,9 @@ const s = StyleSheet.create({
   stickyNote: { borderLeftWidth: 3, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8 },
   stickyNoteText: { fontSize: 12.5, lineHeight: 17 },
   stickyNoteMeta: { fontSize: 11, marginTop: 4 },
-  launcherDetailSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, gap: 14 },
+  launcherDetailSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, maxHeight: "92%" },
+  launcherDetailScroll: { flexShrink: 1, minHeight: 0 },
+  launcherDetailContent: { gap: 14, paddingBottom: 2 },
   launcherDetailTop: { flexDirection: "row", alignItems: "center", gap: 13 },
   launcherDetailIcon: { width: 58, height: 58, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   launcherDetailKicker: { fontSize: 9, letterSpacing: 1.1 },
@@ -6916,7 +7012,9 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  editSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22 },
+  editSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, maxHeight: "92%" },
+  editFormScroll: { flexShrink: 1, minHeight: 0 },
+  editFormContent: { paddingBottom: 2 },
   editHandle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.15)", marginBottom: 16 },
   editSheetTitle: { fontSize: 20, marginBottom: 4, letterSpacing: -0.2 },
   editFieldLabel: { fontSize: 12, letterSpacing: 0, marginBottom: 7, marginTop: 14 },
@@ -6931,22 +7029,39 @@ const s = StyleSheet.create({
   emptyText: { fontSize: 15 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(15,31,36,0.45)" },
+  modalDock: { flex: 1, justifyContent: "flex-end" },
   modalCenter: { flex: 1, justifyContent: "center", paddingHorizontal: 28 },
   modalCard: {
     borderRadius: 26,
     padding: 24,
+    maxHeight: "100%",
     shadowColor: "#0F1F33",
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.2,
     shadowRadius: 30,
     elevation: 8,
   },
+  modalPromptScroll: { flexShrink: 1, minHeight: 0 },
+  modalPromptContent: { paddingBottom: 2 },
   modalIcon: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 14 },
   modalTitle: { fontSize: 19, letterSpacing: -0.2 },
   modalSub: { fontSize: 14, marginTop: 4 },
   modalActions: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 },
-  modalSkip: { flex: 1, height: 48, alignItems: "center", justifyContent: "center" },
-  modalSkipText: { fontSize: 15 },
-  modalSave: { flex: 2, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  modalSaveText: { fontSize: 15 },
+  modalSkip: {
+    flex: 1,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalSkipText: { fontSize: 15, lineHeight: 20, flexShrink: 1, textAlign: "center" },
+  modalSave: {
+    flex: 2,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    paddingVertical: 10,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalSaveText: { fontSize: 15, lineHeight: 20, flexShrink: 1, textAlign: "center" },
 });

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Easing,
@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReducedMotion } from "react-native-reanimated";
 import { normalizeCareEventType, type CareEventType } from "@workspace/care-domain";
 
 import { BoardCard } from "@/components/board/BoardPrimitives";
@@ -128,6 +129,7 @@ function outcomeLabel(entry: {
 
 export default function FastLogScreen() {
   const colors = useColors();
+  const reducedMotion = useReducedMotion();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { state, careMutationsBlocked, addEntry } = useCare();
@@ -153,18 +155,24 @@ export default function FastLogScreen() {
   // its real modal transition and skips the double animation.
   const animatesInternally = Platform.OS === "web";
   const sheetProgress = useRef(
-    new Animated.Value(animatesInternally ? 0 : 1),
+    new Animated.Value(animatesInternally && !reducedMotion ? 0 : 1),
   ).current;
   const dismissing = useRef(false);
-  useEffect(() => {
-    if (!animatesInternally) return;
-    Animated.timing(sheetProgress, {
+  useLayoutEffect(() => {
+    if (!animatesInternally || reducedMotion) {
+      sheetProgress.stopAnimation();
+      sheetProgress.setValue(1);
+      return;
+    }
+    const entrance = Animated.timing(sheetProgress, {
       toValue: 1,
       duration: 220,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
-    }).start();
-  }, [animatesInternally, sheetProgress]);
+    });
+    entrance.start();
+    return () => entrance.stop();
+  }, [animatesInternally, reducedMotion, sheetProgress]);
 
   const navigateBack = () => {
     if (router.canGoBack()) {
@@ -175,7 +183,7 @@ export default function FastLogScreen() {
   };
 
   const close = () => {
-    if (!animatesInternally) {
+    if (!animatesInternally || reducedMotion) {
       navigateBack();
       return;
     }
@@ -284,10 +292,15 @@ export default function FastLogScreen() {
           // Web only (progress is pinned to 1 on native): the sheet warms
           // from the app's ivory field into the parchment surface while the
           // content rises, instead of cutting in a single frame.
-          backgroundColor: sheetProgress.interpolate({
-            inputRange: [0, 1],
-            outputRange: [colors.ivory, colors.background],
-          }),
+          backgroundColor: reducedMotion
+              ? colors.background
+              : sheetProgress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [
+                  colors.isDark ? colors.shellNavy : colors.ivory,
+                  colors.background,
+                ],
+              }),
         },
       ]}
     >
@@ -361,7 +374,11 @@ export default function FastLogScreen() {
             >
               {justLogged === tile.key ? (
                 <View style={[s.tileLoggedBadge, { backgroundColor: colors.sage }]}>
-                  <Ionicons name="checkmark" size={13} color="#FFFFFF" />
+                  <Ionicons
+                    name="checkmark"
+                    size={13}
+                    color={colors.isDark ? colors.brandNavy : "#FFFFFF"}
+                  />
                 </View>
               ) : null}
               <PixelIcon name={tile.icon} size={34} />
@@ -398,26 +415,27 @@ export default function FastLogScreen() {
                 </View>
                 <View style={s.recentCopy}>
                   <Text
-                    numberOfLines={1}
                     style={[s.recentName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}
                   >
                     {entry.title.split(" - ")[0]}
                   </Text>
                   <Text
-                    numberOfLines={1}
                     style={[s.recentMeta, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
                   >
                     {shortTime(entry.occurredAt, Date.now())} · {entry.caregiver}
                   </Text>
                 </View>
                 <Text
-                  numberOfLines={1}
                   style={[s.recentOutcome, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}
                 >
                   {outcomeLabel(entry)}
                 </Text>
                 <View style={[s.recentCheck, { backgroundColor: colors.sage }]}>
-                  <Ionicons name="checkmark" size={13} color="#FFFFFF" />
+                  <Ionicons
+                    name="checkmark"
+                    size={13}
+                    color={colors.isDark ? colors.brandNavy : "#FFFFFF"}
+                  />
                 </View>
               </Pressable>
             ))

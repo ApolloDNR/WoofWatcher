@@ -20,6 +20,10 @@ import {
   MIN_MOBILE_TOUCH_TARGET,
   MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
+import {
+  CALENDAR_MONTH_DAY_TARGET,
+  getCalendarMonthGridLayout,
+} from "@/lib/calendarMonthLayout";
 import { resolveConsumerPetName } from "@/lib/petIdentity";
 import {
   buildMonthView,
@@ -125,6 +129,10 @@ export default function CalendarMonthScreen() {
   const { width: screenWidth } = useAppViewport();
   const { state } = useCare();
   const petName = resolveConsumerPetName(state.profile.name);
+  const monthLayout = useMemo(
+    () => getCalendarMonthGridLayout(screenWidth),
+    [screenWidth],
+  );
 
   // The quick-add FAB floats bottom-right (right: 20 + width 60 = 80px lane). On
   // short/narrow viewports the timeline header lands in that lane, so the
@@ -224,7 +232,7 @@ export default function CalendarMonthScreen() {
         contentContainerStyle={{
           paddingTop: topPadding,
           paddingBottom: bottomPadding + 80,
-          paddingHorizontal: 16,
+          paddingHorizontal: monthLayout.pageGutter,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -258,76 +266,117 @@ export default function CalendarMonthScreen() {
         </View>
 
         {/* Week grid */}
-        <BoardCard enter={0} style={s.gridCard}>
-          <View style={s.weekdayRow}>
-            {WEEKDAY_LABELS.map((label, index) => (
-              <Text
-                key={`${label}-${index}`}
-                style={[s.weekdayLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}
-              >
-                {label}
-              </Text>
-            ))}
-          </View>
-
-          <Reanimated.View key={monthKey} entering={reduced ? undefined : FadeIn.duration(200)}>
-            {monthView.weeks.map((week, weekIndex) => (
-              <View key={`week-${weekIndex}`} style={s.weekRow}>
-                {week.map((cell, dayIndex) => {
-                  if (!cell.inMonth || cell.day === null || cell.dateKey === null) {
-                    return <View key={`blank-${weekIndex}-${dayIndex}`} style={s.dayCell} />;
-                  }
-                  const selected = cell.dateKey === selectedKey;
-                  const stamp = dateKeyStamp(cell.dateKey);
-                  const planDot =
-                    hasRoutines && !cell.hasEntries && Number.isFinite(stamp) && stamp >= todayStamp;
-                  const dotColor = cell.hasEntries ? colors.forest : planDot ? colors.sage : "transparent";
-                  const numberColor = selected
-                    ? colors.primaryForeground
-                    : cell.isToday
-                      ? colors.forest
-                      : colors.foreground;
-                  return (
-                    <PressScale
-                      key={cell.dateKey}
-                      accessibilityRole="button"
-                      aria-selected={selected}
-                      accessibilityLabel={`${dayNarration(cell)}${cell.isToday ? ", today" : ""}${
-                        cell.hasEntries
-                          ? `, ${cell.entryCount} ${cell.entryCount === 1 ? "log" : "logs"}`
-                          : planDot
-                            ? ", routines scheduled"
-                            : ""
-                      }`}
-                      haptic="none"
-                      scaleTo={0.9}
-                      onPress={() => selectDay(cell)}
-                      containerStyle={s.dayCell}
-                      style={s.dayCellInner}
-                    >
-                      <View
-                        style={[
-                          s.dayCircle,
-                          selected && { backgroundColor: colors.primary },
-                          !selected && cell.isToday && { borderWidth: 1.5, borderColor: colors.primary },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            s.dayNumber,
-                            { color: numberColor, fontFamily: selected || cell.isToday ? "Inter_700Bold" : "Inter_600SemiBold" },
-                          ]}
-                        >
-                          {cell.day}
-                        </Text>
-                      </View>
-                      <View style={[s.dayDot, { backgroundColor: dotColor }]} />
-                    </PressScale>
-                  );
-                })}
+        <BoardCard
+          enter={0}
+          padded={false}
+          style={[s.gridCard, { paddingHorizontal: monthLayout.gridInset }]}
+        >
+          {monthLayout.requiresHorizontalScroll ? (
+            <Text
+              style={[
+                s.compactGridHint,
+                {
+                  color: colors.mutedForeground,
+                  fontFamily: "Inter_600SemiBold",
+                },
+              ]}
+            >
+              Swipe horizontally to see all seven days
+            </Text>
+          ) : null}
+          <ScrollView
+            horizontal
+            scrollEnabled={monthLayout.requiresHorizontalScroll}
+            showsHorizontalScrollIndicator={monthLayout.requiresHorizontalScroll}
+            bounces={false}
+            style={s.monthGridViewport}
+            contentContainerStyle={s.monthGridViewportContent}
+          >
+            <View style={[s.monthGrid, { width: monthLayout.gridWidth }]}>
+              <View style={s.weekdayRow}>
+                {WEEKDAY_LABELS.map((label, index) => (
+                  <Text
+                    key={`${label}-${index}`}
+                    style={[
+                      s.weekdayLabel,
+                      {
+                        width: monthLayout.cellSize,
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                ))}
               </View>
-            ))}
-          </Reanimated.View>
+
+              <Reanimated.View key={monthKey} entering={reduced ? undefined : FadeIn.duration(200)}>
+                {monthView.weeks.map((week, weekIndex) => (
+                  <View key={`week-${weekIndex}`} style={s.weekRow}>
+                    {week.map((cell, dayIndex) => {
+                      if (!cell.inMonth || cell.day === null || cell.dateKey === null) {
+                        return (
+                          <View
+                            key={`blank-${weekIndex}-${dayIndex}`}
+                            style={[s.dayCell, { width: monthLayout.cellSize }]}
+                          />
+                        );
+                      }
+                      const selected = cell.dateKey === selectedKey;
+                      const stamp = dateKeyStamp(cell.dateKey);
+                      const planDot =
+                        hasRoutines && !cell.hasEntries && Number.isFinite(stamp) && stamp >= todayStamp;
+                      const dotColor = cell.hasEntries ? colors.forest : planDot ? colors.sage : "transparent";
+                      const numberColor = selected
+                        ? colors.primaryForeground
+                        : cell.isToday
+                          ? colors.forest
+                          : colors.foreground;
+                      return (
+                        <PressScale
+                          key={cell.dateKey}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                          aria-selected={selected}
+                          accessibilityLabel={`${dayNarration(cell)}${cell.isToday ? ", today" : ""}${
+                            cell.hasEntries
+                              ? `, ${cell.entryCount} ${cell.entryCount === 1 ? "log" : "logs"}`
+                              : planDot
+                                ? ", routines scheduled"
+                                : ""
+                          }`}
+                          haptic="none"
+                          scaleTo={0.9}
+                          onPress={() => selectDay(cell)}
+                          containerStyle={[s.dayCell, { width: monthLayout.cellSize }]}
+                          style={s.dayCellInner}
+                        >
+                          <View
+                            style={[
+                              s.dayCircle,
+                              selected && { backgroundColor: colors.primary },
+                              !selected && cell.isToday && { borderWidth: 1.5, borderColor: colors.primary },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                s.dayNumber,
+                                { color: numberColor, fontFamily: selected || cell.isToday ? "Inter_700Bold" : "Inter_600SemiBold" },
+                              ]}
+                            >
+                              {cell.day}
+                            </Text>
+                          </View>
+                          <View style={[s.dayDot, { backgroundColor: dotColor }]} />
+                        </PressScale>
+                      );
+                    })}
+                  </View>
+                ))}
+              </Reanimated.View>
+            </View>
+          </ScrollView>
         </BoardCard>
 
         {/* Selected day timeline */}
@@ -467,13 +516,30 @@ const s = StyleSheet.create({
 
   gridCard: {
     marginBottom: 12,
+    paddingVertical: 16,
+  },
+  compactGridHint: {
+    marginBottom: 8,
+    fontSize: 11.5,
+    lineHeight: 16,
+    textAlign: "center",
+  },
+  monthGridViewport: {
+    width: "100%",
+  },
+  monthGridViewportContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+  },
+  monthGrid: {
+    alignSelf: "center",
+    flexDirection: "column",
   },
   weekdayRow: {
     flexDirection: "row",
     marginBottom: 8,
   },
   weekdayLabel: {
-    flex: 1,
     textAlign: "center",
     fontSize: 10.5,
     letterSpacing: 0.6,
@@ -482,13 +548,14 @@ const s = StyleSheet.create({
     flexDirection: "row",
   },
   dayCell: {
-    flex: 1,
+    minWidth: CALENDAR_MONTH_DAY_TARGET,
+    height: CALENDAR_MONTH_DAY_TARGET,
     alignItems: "center",
-    justifyContent: "flex-start",
-    paddingVertical: 3,
-    minHeight: 46,
+    justifyContent: "center",
   },
   dayCellInner: {
+    width: "100%",
+    height: "100%",
     alignItems: "center",
     justifyContent: "center",
     gap: 3,

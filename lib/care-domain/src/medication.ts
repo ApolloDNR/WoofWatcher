@@ -1,6 +1,7 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
 import { parseClockTime } from "./clock-time.ts";
 import { getRecordDueStatus, type CareRecord } from "./record-vault.ts";
+import { isHouseholdVisibleCareEvidence } from "./shared-evidence.ts";
 
 export type MedicationAdherenceStatus = "taken" | "missed" | "due" | "upcoming";
 export type MedicationFollowUpKind = "missed" | "due" | "refill";
@@ -149,7 +150,7 @@ function entryRoutineId(entry: MedicationEntry): string {
 }
 
 function entryVisible(entry: MedicationEntry): boolean {
-  return entry.details?.householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 function entryDose(entry: MedicationEntry): string {

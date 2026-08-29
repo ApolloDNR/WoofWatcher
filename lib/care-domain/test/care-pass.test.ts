@@ -108,6 +108,59 @@ test("builds a sitter care pass with routine, diet, and next action context", ()
   assert.match(pass.message, /Keep meals calm/);
 });
 
+test("shared Care Pass excludes future, malformed, and private logs before deriving any section", () => {
+  const privateEntry = {
+    id: "private-entry",
+    type: "meal",
+    get title(): string {
+      throw new Error("private title must not be observed");
+    },
+    get occurredAt(): string {
+      throw new Error("private timestamp must not be observed");
+    },
+    details: { householdVisible: false },
+  };
+  const pass = buildCarePass({
+    ...baseInput(),
+    audience: "vet",
+    entries: [
+      {
+        id: "past-meal",
+        type: "meal",
+        title: "PAST_MEAL_ALLOWED",
+        caregiver: "Emma",
+        occurredAt: new Date(NOW - 60 * 60 * 1000).toISOString(),
+        details: { householdVisible: true },
+      },
+      {
+        id: "future-meal",
+        type: "meal",
+        title: "FUTURE_MEAL_MUST_NOT_EXPORT",
+        caregiver: "Future caregiver",
+        occurredAt: new Date(NOW + 60 * 60 * 1000).toISOString(),
+        details: { householdVisible: true },
+      },
+      {
+        id: "malformed-urgent",
+        type: "symptom",
+        title: "MALFORMED_URGENT_MUST_NOT_EXPORT",
+        caregiver: "Invalid caregiver",
+        occurredAt: "not-a-date",
+        severity: "urgent",
+        details: { householdVisible: true },
+      },
+      privateEntry,
+    ],
+  });
+
+  assert.match(pass.message, /PAST_MEAL_ALLOWED/);
+  assert.match(pass.message, /logged 1 item today\./);
+  assert.doesNotMatch(
+    pass.message,
+    /FUTURE_MEAL_MUST_NOT_EXPORT|MALFORMED_URGENT_MUST_NOT_EXPORT|Future caregiver|Invalid caregiver|Invalid Date/,
+  );
+});
+
 test("resolves the stored pet-name placeholder so the pass matches the app", () => {
   const pass = buildCarePass({
     ...baseInput(),

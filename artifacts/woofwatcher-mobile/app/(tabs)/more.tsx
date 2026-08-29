@@ -23,6 +23,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReducedMotion } from "react-native-reanimated";
 import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
 import {
   useGetMe,
@@ -31,6 +32,7 @@ import {
 import {
   deriveCareIntelligence,
   deriveHouseholdResponsibility,
+  selectSharedCareEvidence,
 } from "@workspace/care-domain";
 import { useColors } from "@/hooks/useColors";
 import { useCare } from "@/context/CareContext";
@@ -38,7 +40,13 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useDevicePreferences } from "@/context/DevicePreferencesContext";
 import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 import { getAvatarTemplate } from "@/lib/avatarStudio";
-import { derivePhoenixStatus } from "@/lib/phoenixStatus";
+import {
+  deriveCareInitialSyncDashboard,
+  deriveCareStorageRecoveryAction,
+  deriveMoreCareFactsPresentation,
+  deriveCareStorageUnavailableDashboard,
+  derivePhoenixStatus,
+} from "@/lib/phoenixStatus";
 import { deriveCareSyncDashboard, type CareSyncDashboard } from "@/lib/careSync";
 import { deriveAttachmentManifest } from "@/lib/attachmentManifest";
 import {
@@ -156,6 +164,7 @@ interface MoreDirectoryItem {
   actionLabel: string;
   tone: string;
   onPress: () => void;
+  disabled?: boolean;
 }
 
 type LaunchProviderFlagKey = keyof Pick<
@@ -410,6 +419,7 @@ function MoreScreenContent({}: Record<string, never>) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const reducedMotion = useReducedMotion();
   const [moreSearchQuery, setMoreSearchQuery] = useState("");
   const normalizedMoreQuery = moreSearchQuery.trim().replace(/\s+/g, " ");
   const moreSearchResults = useMemo(
@@ -435,8 +445,23 @@ function MoreScreenContent({}: Record<string, never>) {
   const ownerOps = consumerSurfacePolicy.ownerOps;
   const providerSyncEnabled =
     consumerSurfacePolicy.providerSyncControls && isClerkEnabledForBuild;
-  const { state, careMutationsBlocked, refresh, updateCareDoc, syncOutbox, isLoaded, isSyncing } = useCare();
+  const {
+    state,
+    careMutationsBlocked,
+    isInitialSyncSettled,
+    initialSyncStatus,
+    persistCurrentCareSnapshot,
+    refresh,
+    retryInitialSync,
+    retryLocalHydration,
+    updateCareDoc,
+    syncOutbox,
+    isLoaded,
+    isSyncing,
+    storageWarning,
+  } = useCare();
   const { store, operationSettledEpoch } = useDevicePreferences();
+  const careStorageUnavailable = !isLoaded || storageWarning !== null;
   const showCareReadOnly = () =>
     notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   const { profile, entries, routines, caregivers } = state;
@@ -457,29 +482,40 @@ function MoreScreenContent({}: Record<string, never>) {
   const myName = me.data?.user?.displayName?.trim() || "";
 
   const now = Date.now();
-  const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  const observedEntries = useMemo(
+    () => selectSharedCareEvidence(entries, now),
+    [entries, now],
+  );
+  const observedState = useMemo(
+    () => ({ ...state, entries: observedEntries }),
+    [observedEntries, state],
+  );
+  const status = useMemo(
+    () => derivePhoenixStatus(observedState, now),
+    [now, observedState],
+  );
   const moreCareCareer = useMemo(
-    () => deriveCareCareer(state.entries, now),
-    [state.entries, now],
+    () => deriveCareCareer(observedEntries, now),
+    [observedEntries, now],
   );
   const moreCareStreak = useMemo(
-    () => deriveCareStreak(state.entries, now),
-    [state.entries, now],
+    () => deriveCareStreak(observedEntries, now),
+    [observedEntries, now],
   );
   const moreCareerWeek = useMemo(
-    () => deriveCareerWeek(state.entries, now),
-    [state.entries, now],
+    () => deriveCareerWeek(observedEntries, now),
+    [observedEntries, now],
   );
   const careIntelligence = useMemo(
     () =>
       deriveCareIntelligence({
-        entries,
+        entries: observedEntries,
         routines,
         caregivers,
         now,
         providerSyncEnabled,
       }),
-    [entries, routines, caregivers, now, providerSyncEnabled],
+    [observedEntries, routines, caregivers, now, providerSyncEnabled],
   );
   const petName = resolveConsumerPetName(profile.name);
   const avatarTemplate = useMemo(
@@ -489,7 +525,7 @@ function MoreScreenContent({}: Record<string, never>) {
 
   const streak = useMemo(() => {
     const days = new Set(
-      entries.flatMap((entry) => {
+      observedEntries.flatMap((entry) => {
         const occurredAt = new Date(entry.occurredAt);
         return Number.isFinite(occurredAt.getTime()) ? [localDateKey(occurredAt)] : [];
       }),
@@ -502,28 +538,74 @@ function MoreScreenContent({}: Record<string, never>) {
       key = addLocalCalendarDays(key, -1);
     }
     return s;
-  }, [entries, now]);
+  }, [observedEntries, now]);
 
   const todayLogCount = useMemo(() => {
     const today = todayLocalDateKey(new Date(now));
-    return entries.filter((entry) => {
+    return observedEntries.filter((entry) => {
       const occurredAt = new Date(entry.occurredAt);
       return Number.isFinite(occurredAt.getTime()) && localDateKey(occurredAt) === today;
     }).length;
-  }, [entries, now]);
+  }, [observedEntries, now]);
+
+  const moreCareFacts = useMemo(
+    () =>
+      deriveMoreCareFactsPresentation({
+        isLoaded,
+        storageWarning,
+        routineCount: routines.length,
+        todayLogCount,
+        streakDays: streak,
+      }),
+    [
+      isLoaded,
+      routines.length,
+      storageWarning,
+      streak,
+      todayLogCount,
+    ],
+  );
 
   const latestCareUpdate = useMemo(
     () =>
-      entries.reduce<string | undefined>((latest, entry) => {
+      observedEntries.reduce<string | undefined>((latest, entry) => {
         if (!latest) return entry.occurredAt;
         return Date.parse(entry.occurredAt) > Date.parse(latest)
           ? entry.occurredAt
           : latest;
       }, undefined),
-    [entries],
+    [observedEntries],
   );
 
+  const careStorageRecoveryAction = useMemo(
+    () =>
+      deriveCareStorageRecoveryAction({
+        isLoaded,
+        isInitialSyncSettled,
+        storageWarning,
+      }),
+    [isInitialSyncSettled, isLoaded, storageWarning],
+  );
+  const runCareStorageRecovery = useCallback(() => {
+    if (!careStorageRecoveryAction) return;
+    Haptics.selectionAsync();
+    if (careStorageRecoveryAction.kind === "retry-read") {
+      retryLocalHydration();
+      return;
+    }
+    if (careStorageRecoveryAction.kind === "retry-save") {
+      void persistCurrentCareSnapshot();
+    }
+  }, [careStorageRecoveryAction, persistCurrentCareSnapshot, retryLocalHydration]);
+
   const syncDashboard = useMemo<CareSyncDashboard>(() => {
+    const unavailableStorageDashboard =
+      deriveCareStorageUnavailableDashboard({
+        isLoaded,
+        storageWarning,
+      });
+    if (unavailableStorageDashboard) return unavailableStorageDashboard;
+
     if (!providerSyncEnabled) {
       // Local-first build: device storage is the success state, so this card
       // reports the honest on-device record instead of implying a cloud
@@ -555,6 +637,14 @@ function MoreScreenContent({}: Record<string, never>) {
         ],
       };
     }
+    if (isSignedIn) {
+      const initialProviderDashboard = deriveCareInitialSyncDashboard({
+        status: initialSyncStatus,
+        totalEntries: entries.length,
+        caregiverCount: caregivers.length,
+      });
+      if (initialProviderDashboard) return initialProviderDashboard;
+    }
     return deriveCareSyncDashboard({
       outbox: syncOutbox,
       isLoaded,
@@ -567,6 +657,9 @@ function MoreScreenContent({}: Record<string, never>) {
     syncOutbox,
     isLoaded,
     isSyncing,
+    initialSyncStatus,
+    isSignedIn,
+    storageWarning,
     latestCareUpdate,
     state.updatedAt,
     members.length,
@@ -669,7 +762,25 @@ function MoreScreenContent({}: Record<string, never>) {
         ? colors.sage
         : colors.primary;
 
-  const energyDots = Math.round(((status.energy - 35) / (96 - 35)) * 4) + 1;
+  const observedEnergyLevel = moreCareFacts.trusted
+    ? status.evidence.energy
+    : null;
+  const energyDots =
+    observedEnergyLevel === "low"
+      ? 1
+      : observedEnergyLevel === "steady"
+        ? 3
+        : observedEnergyLevel === "high"
+          ? 5
+          : null;
+  const energyEvidenceLabel =
+    observedEnergyLevel === "low"
+      ? "Low"
+      : observedEnergyLevel === "steady"
+        ? "Steady"
+        : observedEnergyLevel === "high"
+          ? "High"
+          : "No data";
 
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
@@ -773,15 +884,29 @@ function MoreScreenContent({}: Record<string, never>) {
 
   // Mount animation
   const isWebRoutePreview = (Platform.OS as string) === "web";
-  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
-  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
+  const fade = useRef(
+    new Animated.Value(isWebRoutePreview || reducedMotion ? 1 : 0),
+  ).current;
+  const slide = useRef(
+    new Animated.Value(isWebRoutePreview || reducedMotion ? 0 : 16),
+  ).current;
   useEffect(() => {
-    if (isWebRoutePreview) return;
-    Animated.parallel([
+    if (isWebRoutePreview || reducedMotion) {
+      fade.stopAnimation();
+      slide.stopAnimation();
+      fade.setValue(1);
+      slide.setValue(0);
+      return;
+    }
+    fade.setValue(0);
+    slide.setValue(16);
+    const entrance = Animated.parallel([
       Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
       Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
-    ]).start();
-  }, [fade, isWebRoutePreview, slide]);
+    ]);
+    entrance.start();
+    return () => entrance.stop();
+  }, [fade, isWebRoutePreview, reducedMotion, slide]);
 
   const nativeQaPrimaryMission = nativeQaCapturePlan.primaryMission;
   const nativeQaPrimaryMissionTarget =
@@ -817,7 +942,9 @@ function MoreScreenContent({}: Record<string, never>) {
       icon: "heart",
       iconName: "chatbubbles",
       label: "WoofGuide Assistant",
-      sub: `Ask about ${petName}'s care, diet, and patterns`,
+      sub: careStorageUnavailable
+        ? "Ask about your dog's care, diet, and patterns"
+        : `Ask about ${petName}'s care, diet, and patterns`,
       onPress: () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         openMoreSection("woofguide");
@@ -1192,16 +1319,51 @@ function MoreScreenContent({}: Record<string, never>) {
     router.push("/log");
   };
 
+  const careFactsUnavailableActionLabel = careStorageRecoveryAction?.label ??
+    (storageWarning === "reset"
+      ? "Review backup"
+      : storageWarning === "newer-version"
+        ? "Update required"
+        : "Checking");
+  const careFactsUnavailableAction = () => {
+    if (careStorageRecoveryAction) {
+      runCareStorageRecovery();
+      return;
+    }
+    if (storageWarning === "reset") {
+      openMoreSection("privacy");
+      return;
+    }
+    if (storageWarning === "newer-version") {
+      showCareReadOnly();
+    }
+  };
+
   const moreDirectoryItems: MoreDirectoryItem[] = [
     {
       id: "care-today",
       iconName: "sparkles-outline",
       eyebrow: "Care today",
-      label: careIntelligence.nextAction.label,
-      detail: careIntelligence.subtitle,
-      actionLabel: "Open",
-      tone: intelligenceTone,
-      onPress: openCareIntelligenceNextAction,
+      label: moreCareFacts.careIntelligenceAvailable
+        ? careIntelligence.nextAction.label
+        : "Care facts unavailable",
+      detail: moreCareFacts.careIntelligenceAvailable
+        ? careIntelligence.subtitle
+        : "Care Intelligence will return after device storage is trusted.",
+      actionLabel: moreCareFacts.careIntelligenceAvailable
+        ? "Open"
+        : careFactsUnavailableActionLabel,
+      tone: moreCareFacts.careIntelligenceAvailable
+        ? intelligenceTone
+        : colors.amber,
+      onPress: moreCareFacts.careIntelligenceAvailable
+        ? openCareIntelligenceNextAction
+        : careFactsUnavailableAction,
+      disabled:
+        !moreCareFacts.careIntelligenceAvailable &&
+        !careStorageRecoveryAction &&
+        storageWarning !== "reset" &&
+        storageWarning !== "newer-version",
     },
     {
       id: "household",
@@ -1209,10 +1371,14 @@ function MoreScreenContent({}: Record<string, never>) {
       eyebrow: consumerSurfacePolicy.householdProviderActions
         ? "Household"
         : "Care team",
-      label: householdResponsibility.title,
-      detail: householdResponsibility.nextStep,
+      label: moreCareFacts.trusted
+        ? householdResponsibility.title
+        : "Care team status unavailable",
+      detail: moreCareFacts.trusted
+        ? householdResponsibility.nextStep
+        : "Routine and care-log status is withheld until device storage is trusted.",
       actionLabel: "Review",
-      tone: responsibilityTone,
+      tone: moreCareFacts.trusted ? responsibilityTone : colors.amber,
       onPress: () => {
         Haptics.selectionAsync();
         router.push({ pathname: "/more", params: { section: "care-team" } });
@@ -1264,24 +1430,71 @@ function MoreScreenContent({}: Record<string, never>) {
   ];
 
   const H_PAD = 16;
-  const renderCanonicalDirectoryRow = (item: CanonicalMoreDirectoryItem) => (
-    <Pressable
-      key={item.id}
-      accessibilityRole="button"
-      accessibilityLabel={item.label}
-      onPress={() => openDirectoryDestination(item.destination)}
-      style={({ pressed }) => [
-        s.canonicalDirectoryRow,
-        { borderColor: colors.border, opacity: pressed ? 0.76 : 1 },
-      ]}
-    >
-      <View style={s.canonicalDirectoryCopy}>
-        <Text style={[s.canonicalDirectoryLabel, { color: colors.foreground }]}>{item.label}</Text>
-        <Text style={[s.canonicalDirectoryDetail, { color: colors.mutedForeground }]}>{item.detail}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.primary} />
-    </Pressable>
-  );
+  const renderCanonicalDirectoryRow = (item: CanonicalMoreDirectoryItem) => {
+    const profileDirectoryBlocked =
+      careStorageUnavailable && item.id === "dog-profile";
+    const profileRecoveryAvailable = Boolean(
+      careStorageRecoveryAction ||
+        storageWarning === "reset" ||
+        storageWarning === "newer-version",
+    );
+    const disabled = profileDirectoryBlocked && !profileRecoveryAvailable;
+
+    return (
+      <Pressable
+        key={item.id}
+        accessibilityRole="button"
+        accessibilityLabel={
+          profileDirectoryBlocked
+            ? `${item.label}. Profile hidden until device storage is trusted.${
+                profileRecoveryAvailable
+                  ? ` ${careFactsUnavailableActionLabel}.`
+                  : ""
+              }`
+            : item.label
+        }
+        accessibilityHint={
+          profileDirectoryBlocked && profileRecoveryAvailable
+            ? `${careFactsUnavailableActionLabel} without opening untrusted profile data.`
+            : undefined
+        }
+        accessibilityState={{ disabled }}
+        disabled={disabled}
+        onPress={() => {
+          if (profileDirectoryBlocked) {
+            careFactsUnavailableAction();
+            return;
+          }
+          openDirectoryDestination(item.destination);
+        }}
+        style={({ pressed }) => [
+          s.canonicalDirectoryRow,
+          {
+            borderColor: colors.border,
+            opacity: disabled ? 0.55 : pressed ? 0.76 : 1,
+          },
+        ]}
+      >
+        <View style={s.canonicalDirectoryCopy}>
+          <Text style={[s.canonicalDirectoryLabel, { color: colors.foreground }]}>{item.label}</Text>
+          <Text style={[s.canonicalDirectoryDetail, { color: colors.mutedForeground }]}>
+            {profileDirectoryBlocked
+              ? `Profile hidden until device storage is trusted.${
+                  profileRecoveryAvailable
+                    ? ` ${careFactsUnavailableActionLabel}.`
+                    : ""
+                }`
+              : item.detail}
+          </Text>
+        </View>
+        <Ionicons
+          name={profileDirectoryBlocked ? "shield-outline" : "chevron-forward"}
+          size={18}
+          color={profileDirectoryBlocked ? colors.amber : colors.primary}
+        />
+      </Pressable>
+    );
+  };
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -1295,10 +1508,56 @@ function MoreScreenContent({}: Record<string, never>) {
           <BoardRouteHeader
             kicker="WOOFWATCHER"
             title="More"
-            subtitle={`${petName}'s care tools, records, household, and settings.`}
+            subtitle={
+              careStorageUnavailable
+                ? "Care tools, records, household, and settings."
+                : `${petName}'s care tools, records, household, and settings.`
+            }
             plain
             style={s.moreRouteHeader}
           />
+
+          {careStorageUnavailable ? (
+            <BoardCard enter={0} style={[s.moreBoardCard, { borderColor: colors.amber + "44" }]}>
+              <View style={s.syncTop}>
+                <View style={[s.syncIcon, { backgroundColor: colors.amber + "18" }]}>
+                  <Ionicons name="shield-outline" size={20} color={colors.amber} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    accessibilityRole="header"
+                    accessibilityLabel="Care profile storage unavailable"
+                    style={[s.syncTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}
+                  >
+                    Profile hidden until storage is trusted
+                  </Text>
+                  <Text style={[s.syncMessage, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    {syncDashboard.message}
+                  </Text>
+                </View>
+              </View>
+              {careStorageRecoveryAction || storageWarning === "reset" || storageWarning === "newer-version" ? (
+                <Pressable
+                  onPress={careFactsUnavailableAction}
+                  accessibilityRole="button"
+                  accessibilityLabel={careFactsUnavailableActionLabel}
+                  style={({ pressed }) => [
+                    s.providerSetupRowAction,
+                    {
+                      borderColor: colors.border,
+                      backgroundColor: colors.background,
+                      opacity: pressed ? 0.72 : 1,
+                    },
+                  ]}
+                >
+                  <Ionicons name="refresh-outline" size={14} color={colors.amber} />
+                  <Text style={[s.providerSetupRowActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    {careFactsUnavailableActionLabel}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </BoardCard>
+          ) : null}
 
           <BoardCard enter={0} style={s.canonicalDirectoryCard}>
             <TextInput
@@ -1422,6 +1681,7 @@ function MoreScreenContent({}: Record<string, never>) {
           </BoardCard>
           ) : null}
 
+          {moreCareFacts.trusted ? (
           <BoardCard style={s.moreDirectoryCard}>
             <BoardSectionHeader
               title="Career & Stats"
@@ -1478,6 +1738,17 @@ function MoreScreenContent({}: Record<string, never>) {
               />
             </View>
           </BoardCard>
+          ) : (
+            <BoardCard style={s.moreDirectoryCard}>
+              <BoardSectionHeader
+                title="Career & Stats"
+                accessory={<BoardPill label="Unavailable" tone={colors.amber} />}
+              />
+              <Text style={[s.intelligenceSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                Log totals, active days, streaks, and care XP are withheld until device storage is trusted.
+              </Text>
+            </BoardCard>
+          )}
 
           <BoardCard style={s.moreDirectoryCard}>
             <BoardSectionHeader
@@ -1490,6 +1761,8 @@ function MoreScreenContent({}: Record<string, never>) {
                   key={item.id}
                   accessibilityRole="button"
                   accessibilityLabel={`${item.eyebrow}: ${item.label}. ${item.detail}`}
+                  accessibilityState={{ disabled: item.disabled === true }}
+                  disabled={item.disabled}
                   onPress={item.onPress}
                   style={({ pressed }) => [
                     s.moreDirectoryRow,
@@ -1498,7 +1771,7 @@ function MoreScreenContent({}: Record<string, never>) {
                       borderBottomColor: colors.border,
                     },
                     {
-                      opacity: pressed ? 0.72 : 1,
+                      opacity: item.disabled ? 0.58 : pressed ? 0.72 : 1,
                     },
                   ]}
                 >
@@ -1536,6 +1809,7 @@ function MoreScreenContent({}: Record<string, never>) {
           </BoardCard>
 
           {/* Profile header card */}
+          {!careStorageUnavailable ? (
           <View style={[s.profileCard, { backgroundColor: colors.card, shadowColor: colors.primary }]}>
             <LinearGradient
               colors={[colors.forest, colors.forestBright]}
@@ -1572,53 +1846,74 @@ function MoreScreenContent({}: Record<string, never>) {
               <View style={[s.profileStats, { borderTopColor: colors.border }]}>
                 <View style={s.profileStat}>
                   <Text style={[s.profileStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                    {profile.weight.current > 0 ? `${profile.weight.current} ${profile.weight.unit}` : "—"}
+                    {moreCareFacts.trusted && profile.weight.current > 0
+                      ? `${profile.weight.current} ${profile.weight.unit}`
+                      : "—"}
                   </Text>
                   <Text style={[s.profileStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Weight</Text>
                 </View>
                 <View style={[s.profileStatDivider, { backgroundColor: colors.border }]} />
                 <View style={s.profileStat}>
-                  <Text style={[s.profileStatValue, { color: streak > 0 ? colors.sage : colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>
-                    {streak > 0 ? `${streak}d` : "—"}
+                  <Text style={[s.profileStatValue, { color: (moreCareFacts.streakDays ?? 0) > 0 ? colors.sage : colors.mutedForeground, fontFamily: DISPLAY_SEMI }]}>
+                    {(moreCareFacts.streakDays ?? 0) > 0 ? `${moreCareFacts.streakDays}d` : "—"}
                   </Text>
                   <Text style={[s.profileStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Streak</Text>
                 </View>
                 <View style={[s.profileStatDivider, { backgroundColor: colors.border }]} />
                 <View style={s.profileStat}>
-                  <Text style={[s.profileStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{routines.length}</Text>
+                  <Text style={[s.profileStatValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                    {moreCareFacts.routineCount ?? "—"}
+                  </Text>
                   <Text style={[s.profileStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Routines</Text>
                 </View>
               </View>
             </View>
           </View>
+          ) : null}
 
           {/* Today's status strip */}
           <View style={[s.statusStrip, { backgroundColor: colors.card, shadowColor: colors.primary, marginTop: 12 }]}>
             <View style={[s.statusCell, { borderRightWidth: 1, borderRightColor: colors.border }]}>
-              <Text style={[s.statusValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{status.meta.label}</Text>
+              <Text style={[s.statusValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                {moreCareFacts.trusted && status.evidence.mood ? status.meta.label : "No data"}
+              </Text>
               <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Mood</Text>
             </View>
-            <View style={s.statusCell}>
-              <View style={s.statusEnergyRow}>
-                {[1, 2, 3, 4, 5].map((dot) => (
-                  <View
-                    key={dot}
-                    style={[
-                      s.statusEnergyDot,
-                      { backgroundColor: dot <= energyDots ? colors.primary : colors.border },
-                    ]}
-                  />
-                ))}
-              </View>
+            <View
+              style={s.statusCell}
+              accessible
+              accessibilityLabel="Energy level"
+              accessibilityValue={
+                { text: energyEvidenceLabel }
+              }
+            >
+              {energyDots === null ? (
+                <Text style={[s.statusValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>No data</Text>
+              ) : (
+                <View style={s.statusEnergyRow}>
+                  {[1, 2, 3, 4, 5].map((dot) => (
+                    <View
+                      key={dot}
+                      style={[
+                        s.statusEnergyDot,
+                        { backgroundColor: dot <= energyDots ? colors.primary : colors.border },
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
               <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Energy level</Text>
             </View>
             <View style={[s.statusCell, { borderLeftWidth: 1, borderLeftColor: colors.border }]}>
-              <Text style={[s.statusValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{todayLogCount}</Text>
+              <Text style={[s.statusValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                {moreCareFacts.todayLogCount ?? "—"}
+              </Text>
               <Text style={[s.statusLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>Logs today</Text>
             </View>
           </View>
 
 
+          {moreCareFacts.careIntelligenceAvailable ? (
           <BoardCard style={[s.moreBoardCard, { borderColor: intelligenceTone + "44" }]}>
             <BoardSectionHeader
               title="Care Intelligence"
@@ -1681,6 +1976,17 @@ function MoreScreenContent({}: Record<string, never>) {
               <Ionicons name="chevron-forward" size={17} color={colors.primaryForeground} />
             </Pressable>
           </BoardCard>
+          ) : (
+            <BoardCard style={[s.moreBoardCard, { borderColor: colors.amber + "44" }]}>
+              <BoardSectionHeader
+                title="Care Intelligence"
+                accessory={<BoardPill label="Unavailable" tone={colors.amber} />}
+              />
+              <Text style={[s.intelligenceSummary, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                Scores, routine status, and care-log recommendations are withheld until device storage is trusted.
+              </Text>
+            </BoardCard>
+          )}
 
           {ownerOps ? (
             <>
@@ -1947,8 +2253,8 @@ function MoreScreenContent({}: Record<string, never>) {
                     { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 },
                   ]}
                 >
-                  <Ionicons name="construct-outline" size={15} color="#FFFFFF" />
-                  <Text style={[s.providerSetupButtonText, { fontFamily: "Inter_800ExtraBold" }]}>Edit Provider Plan</Text>
+                  <Ionicons name="construct-outline" size={15} color={colors.primaryForeground} />
+                  <Text style={[s.providerSetupButtonText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Edit Provider Plan</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -1959,8 +2265,8 @@ function MoreScreenContent({}: Record<string, never>) {
                     { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
                   ]}
                 >
-                  <Ionicons name="share-social-outline" size={15} color="#FFFFFF" />
-                  <Text style={[s.providerSetupButtonText, { fontFamily: "Inter_800ExtraBold" }]}>Share Provider Plan</Text>
+                  <Ionicons name="share-social-outline" size={15} color={colors.primaryForeground} />
+                  <Text style={[s.providerSetupButtonText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Share Provider Plan</Text>
                 </Pressable>
               </View>
             </View>
@@ -2142,8 +2448,8 @@ function MoreScreenContent({}: Record<string, never>) {
                       { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
                     ]}
                   >
-                    <Ionicons name="share-social-outline" size={15} color="#FFFFFF" />
-                    <Text style={[s.nativeQaCaptureShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share QA Plan</Text>
+                    <Ionicons name="share-social-outline" size={15} color={colors.primaryForeground} />
+                    <Text style={[s.nativeQaCaptureShareText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Share QA Plan</Text>
                   </Pressable>
                   {nativeQaCaptureNeedsTuneTarget ? (
                     <Pressable
@@ -2417,8 +2723,8 @@ function MoreScreenContent({}: Record<string, never>) {
                 { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
               ]}
             >
-              <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
-              <Text style={[s.launchShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share Launch Packet</Text>
+              <Ionicons name="share-social-outline" size={16} color={colors.primaryForeground} />
+              <Text style={[s.launchShareText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Share Launch Packet</Text>
             </Pressable>
             <View style={[s.launchPacket, { backgroundColor: storeSubmissionTone + "10", borderColor: storeSubmissionTone + "33" }]}>
               <View style={[s.launchScore, { backgroundColor: storeSubmissionTone + "18" }]}>
@@ -2447,8 +2753,8 @@ function MoreScreenContent({}: Record<string, never>) {
                 { backgroundColor: colors.forest, opacity: pressed ? 0.84 : 1 },
               ]}
             >
-              <Ionicons name="storefront-outline" size={16} color="#FFFFFF" />
-              <Text style={[s.launchShareText, { fontFamily: "Inter_800ExtraBold" }]}>Share Store Packet</Text>
+              <Ionicons name="storefront-outline" size={16} color={colors.primaryForeground} />
+              <Text style={[s.launchShareText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>Share Store Packet</Text>
             </Pressable>
           </BoardCard>
 
@@ -2468,15 +2774,15 @@ function MoreScreenContent({}: Record<string, never>) {
               style={s.premiumCard}
             >
               <View style={s.premiumIcon}>
-                <Ionicons name="diamond-outline" size={19} color="#FFFFFF" />
+                <Ionicons name="diamond-outline" size={19} color={colors.primaryForeground} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.premiumTitle, { fontFamily: DISPLAY_SEMI }]}>WoofWatcher Plus</Text>
-                <Text style={[s.premiumSub, { fontFamily: "Inter_500Medium" }]}>
+                <Text style={[s.premiumTitle, { color: colors.primaryForeground, fontFamily: DISPLAY_SEMI }]}>WoofWatcher Plus</Text>
+                <Text style={[s.premiumSub, { color: colors.primaryForeground, fontFamily: "Inter_500Medium" }]}>
                   Advanced meals, Health Watch, reports, records, and household care sync.
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+              <Ionicons name="chevron-forward" size={20} color={colors.primaryForeground} />
             </LinearGradient>
           </Pressable>
             </>
@@ -2492,10 +2798,21 @@ function MoreScreenContent({}: Record<string, never>) {
                   : "Device Storage"
               }
               accessory={
-                consumerSurfacePolicy.providerSyncControls ? (
+                consumerSurfacePolicy.providerSyncControls &&
+                !careStorageUnavailable &&
+                initialSyncStatus.state !== "pending" &&
+                (initialSyncStatus.state !== "error" ||
+                  initialSyncStatus.retryable) ? (
                   <Pressable
                     onPress={() => {
                       Haptics.selectionAsync();
+                      if (
+                        initialSyncStatus.state === "error" &&
+                        initialSyncStatus.retryable
+                      ) {
+                        retryInitialSync();
+                        return;
+                      }
                       if (!isClerkEnabledForBuild) {
                         notifyDialog(
                           "Saved on this device",
@@ -2514,7 +2831,11 @@ function MoreScreenContent({}: Record<string, never>) {
                     }}
                     disabled={isSyncing}
                     accessibilityRole="button"
-                    accessibilityLabel="Refresh household sync"
+                    accessibilityLabel={
+                      initialSyncStatus.state === "error"
+                        ? "Retry household sync"
+                        : "Refresh household sync"
+                    }
                     hitSlop={MOBILE_INLINE_HIT_SLOP}
                   >
                     <Text style={[s.sectionLink, { color: syncTone, fontFamily: "Inter_600SemiBold", opacity: isSyncing ? 0.65 : 1 }]}>
@@ -2522,7 +2843,16 @@ function MoreScreenContent({}: Record<string, never>) {
                     </Text>
                   </Pressable>
                 ) : (
-                  <BoardPill label="Local" tone={colors.sage} />
+                  <BoardPill
+                    label={
+                      syncDashboard.status === "healthy"
+                        ? "Local"
+                        : syncDashboard.status === "loading"
+                          ? "Checking"
+                          : "Attention"
+                    }
+                    tone={syncTone}
+                  />
                 )
               }
             />
@@ -2554,6 +2884,45 @@ function MoreScreenContent({}: Record<string, never>) {
             <Text style={[s.syncNextStep, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {syncDashboard.nextStep}
             </Text>
+            {careStorageRecoveryAction ? (
+              <Pressable
+                onPress={runCareStorageRecovery}
+                accessibilityRole="button"
+                accessibilityLabel={careStorageRecoveryAction.label}
+                style={({ pressed }) => [
+                  s.providerSetupRowAction,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                    opacity: pressed ? 0.72 : 1,
+                  },
+                ]}
+              >
+                <Ionicons name="refresh-outline" size={14} color={syncTone} />
+                <Text style={[s.providerSetupRowActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  {careStorageRecoveryAction.label}
+                </Text>
+              </Pressable>
+            ) : storageWarning === "reset" ? (
+              <Pressable
+                onPress={() => openMoreSection("privacy")}
+                accessibilityRole="button"
+                accessibilityLabel="Review backup options in Privacy and Safety"
+                style={({ pressed }) => [
+                  s.providerSetupRowAction,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                    opacity: pressed ? 0.72 : 1,
+                  },
+                ]}
+              >
+                <Ionicons name="shield-checkmark-outline" size={14} color={syncTone} />
+                <Text style={[s.providerSetupRowActionText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  Review backup options
+                </Text>
+              </Pressable>
+            ) : null}
             {ownerOps ? (
               <Pressable
                 onPress={openCareEntryProviderSyncProofMission}
@@ -2625,7 +2994,7 @@ function MoreScreenContent({}: Record<string, never>) {
       </ScrollView>
 
 
-      <Modal visible={providerSetupOpen} transparent animationType="slide" onRequestClose={() => setProviderSetupOpen(false)}>
+      <Modal visible={providerSetupOpen} transparent animationType={reducedMotion ? "none" : "slide"} onRequestClose={() => setProviderSetupOpen(false)}>
         <ModalBackdropPressable style={[s.modalBackdrop, { justifyContent: "flex-end" }]} onPress={() => setProviderSetupOpen(false)}>
           <ModalSheetPressable
             visible={providerSetupOpen}
@@ -2660,6 +3029,7 @@ function MoreScreenContent({}: Record<string, never>) {
                       }}
                       accessibilityRole="button"
                       accessibilityLabel={`Set provider setup status to ${statusOption.label}`}
+                      accessibilityState={{ selected }}
                       style={[
                         s.providerStatusPill,
                         {
@@ -2713,6 +3083,7 @@ function MoreScreenContent({}: Record<string, never>) {
               <TextInput
                 value={providerDraft.notes}
                 onChangeText={(notes) => setProviderDraft((prev) => ({ ...prev, notes }))}
+                accessibilityLabel="Provider operator notes"
                 placeholder="What still needs keys, rules, account approval, or QA?"
                 placeholderTextColor={colors.mutedForeground}
                 multiline
@@ -3011,7 +3382,7 @@ const s = StyleSheet.create({
     gap: 8,
     marginTop: 13,
   },
-  intelligenceActionText: { color: "#FFFFFF", fontSize: 13.5 },
+  intelligenceActionText: { fontSize: 13.5 },
   launchGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   launchTile: {
     flexGrow: 1,
@@ -3109,7 +3480,7 @@ const s = StyleSheet.create({
   providerSetupRowSub: { fontSize: 10.8, lineHeight: 15, marginTop: 2 },
   providerSetupRowProof: { fontSize: 10, lineHeight: 14, marginTop: 3 },
   providerSetupRowAction: {
-    minHeight: 34,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     alignSelf: "flex-start",
     borderRadius: 8,
     borderWidth: 1,
@@ -3131,7 +3502,7 @@ const s = StyleSheet.create({
     gap: 7,
     paddingHorizontal: 9,
   },
-  providerSetupButtonText: { color: "#FFFFFF", fontSize: 11.8 },
+  providerSetupButtonText: { fontSize: 11.8 },
   nativeQaCapturePanel: {
     marginTop: 12,
     borderRadius: 8,
@@ -3184,7 +3555,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
   },
-  nativeQaCaptureShareText: { color: "#FFFFFF", fontSize: 12.5 },
+  nativeQaCaptureShareText: { fontSize: 12.5 },
   nativeQaCaptureFixBrief: {
     flex: 1,
     minWidth: 132,
@@ -3315,7 +3686,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
   },
-  launchShareText: { color: "#FFFFFF", fontSize: 13 },
+  launchShareText: { fontSize: 13 },
 
   syncTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   syncIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center" },
@@ -3362,8 +3733,8 @@ const s = StyleSheet.create({
   statusEnergyDot: { width: 8, height: 8, borderRadius: 4 },
   premiumCard: { flexDirection: "row", alignItems: "center", gap: 13, borderRadius: 22, padding: 16, marginTop: 12 },
   premiumIcon: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.15)" },
-  premiumTitle: { color: "#FFFFFF", fontSize: 17, letterSpacing: 0 },
-  premiumSub: { color: "rgba(255,255,255,0.78)", fontSize: 12.5, lineHeight: 18, marginTop: 2 },
+  premiumTitle: { fontSize: 17, letterSpacing: 0 },
+  premiumSub: { fontSize: 12.5, lineHeight: 18, marginTop: 2 },
 
   notice: { flexDirection: "row", gap: 10, borderRadius: 18, borderWidth: 1, padding: 16, marginTop: 24 },
   noticeText: { flex: 1, fontSize: 13, lineHeight: 19 },

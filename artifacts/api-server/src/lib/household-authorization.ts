@@ -1,3 +1,5 @@
+import { parseHouseholdMemberRole } from "./household-role-authority.ts";
+
 export type HouseholdMemberMutationAction = "update-role" | "revoke";
 
 export interface HouseholdMemberMutationInput {
@@ -14,30 +16,6 @@ export interface HouseholdMemberMutationPolicy {
   nextRole?: string;
 }
 
-const ROLE_ALIASES: Record<string, string> = {
-  admin: "owner",
-  "adult admin": "owner",
-  owner: "owner",
-  adult: "adult",
-  member: "adult",
-  "primary caregiver": "adult",
-  teen: "teen",
-  kid: "kid",
-  child: "kid",
-  minor: "kid",
-  sitter: "sitter",
-  trainer: "trainer",
-  walker: "walker",
-  helper: "sitter",
-  "temporary helper": "sitter",
-  viewer: "vet viewer",
-  vet: "vet viewer",
-  "vet viewer": "vet viewer",
-  "veterinary viewer": "vet viewer",
-  "read-only": "vet viewer",
-  readonly: "vet viewer",
-};
-
 export const ACCESS_PASS_COMPATIBLE_ROLES = [
   "sitter",
   "trainer",
@@ -45,35 +23,38 @@ export const ACCESS_PASS_COMPATIBLE_ROLES = [
   "vet viewer",
 ] as const;
 
-function clean(value: unknown): string {
-  return String(value ?? "").replace(/\s+/g, " ").trim();
-}
-
 export function normalizeHouseholdMemberRole(role: string | null | undefined): string {
-  const normalized = clean(role).toLowerCase();
-  return ROLE_ALIASES[normalized] ?? "adult";
+  return parseHouseholdMemberRole(role) ?? "";
 }
 
-function isOwnerAdminRole(role: string): boolean {
+function isOwnerAdminRole(role: string | null): boolean {
   return role === "owner";
 }
 
-function isProtectedOwnerRole(role: string): boolean {
+function isProtectedOwnerRole(role: string | null): boolean {
   return role === "owner";
 }
 
 export function assertHouseholdMemberMutationAllowed(
   input: HouseholdMemberMutationInput,
 ): HouseholdMemberMutationPolicy {
-  const actorRole = normalizeHouseholdMemberRole(input.actorRole);
-  const targetRole = normalizeHouseholdMemberRole(input.targetRole);
-  const nextRole = normalizeHouseholdMemberRole(input.nextRole ?? targetRole);
+  const actorRole = parseHouseholdMemberRole(input.actorRole);
+  const targetRole = parseHouseholdMemberRole(input.targetRole);
+  const nextRole = parseHouseholdMemberRole(input.nextRole ?? targetRole);
 
   if (!isOwnerAdminRole(actorRole)) {
     return {
       allowed: false,
       reason: "Only an owner/admin can change household roles or revoke helpers.",
-      nextRole,
+      ...(nextRole ? { nextRole } : {}),
+    };
+  }
+
+  if (!targetRole || !nextRole) {
+    return {
+      allowed: false,
+      reason: "Household member role authority is invalid.",
+      ...(nextRole ? { nextRole } : {}),
     };
   }
 

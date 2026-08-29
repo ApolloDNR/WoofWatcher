@@ -40,6 +40,38 @@ const baseAlias = {
   ),
   "@": mobileRoot,
 };
+const careHouseholdExpoAdapters = path.join(
+  supportRoot,
+  "careHouseholdExpoAdapters.test.tsx",
+);
+const careHouseholdAlias = {
+  ...baseAlias,
+  "react-native": path.join(
+    supportRoot,
+    "careHouseholdReactNativeHost.test.tsx",
+  ),
+  "react-native-reanimated": path.join(
+    supportRoot,
+    "careHouseholdReanimatedAdapter.test.tsx",
+  ),
+  "@react-native-async-storage/async-storage": path.join(
+    supportRoot,
+    "careHouseholdRendererAuthStorage.test.ts",
+  ),
+  "@workspace/api-client-react": path.join(
+    supportRoot,
+    "careHouseholdRendererApi.test.tsx",
+  ),
+  "@/lib/auth": path.join(
+    supportRoot,
+    "careHouseholdRendererAuthStorage.test.ts",
+  ),
+  "@expo/vector-icons": careHouseholdExpoAdapters,
+  "expo-haptics": careHouseholdExpoAdapters,
+  "expo-location": careHouseholdExpoAdapters,
+  "expo-router": careHouseholdExpoAdapters,
+  "react-native-safe-area-context": careHouseholdExpoAdapters,
+};
 const entries = [
   {
     source: path.join(
@@ -48,7 +80,13 @@ const entries = [
       "queryCacheLocalDataReset.renderer.test.tsx",
     ),
     output: "query-cache-reset-renderer.test.mjs",
-    alias: baseAlias,
+    alias: {
+      ...baseAlias,
+      "@/context/CareContext": path.join(
+        supportRoot,
+        "localDataRendererAdapters.test.ts",
+      ),
+    },
   },
   {
     source: path.join(
@@ -69,6 +107,15 @@ const entries = [
       ),
     },
   },
+  {
+    source: path.join(
+      mobileRoot,
+      "lib",
+      "careTeamSuppliesShipping.renderer.test.tsx",
+    ),
+    output: "care-team-supplies-shipping-renderer.test.mjs",
+    alias: careHouseholdAlias,
+  },
 ];
 const outputDirectory = await mkdtemp(
   path.join(tmpdir(), "woofwatcher-renderer-test-"),
@@ -84,6 +131,7 @@ try {
       format: "esm",
       platform: "node",
       target: "node22",
+      loader: { ".png": "dataurl" },
       logLevel: "warning",
     });
   }

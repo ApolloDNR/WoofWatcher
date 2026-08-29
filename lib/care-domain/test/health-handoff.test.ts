@@ -222,6 +222,53 @@ test("builds a caregiver handoff with done, watch, next, and load", () => {
   assert.match(handoff.message, /Emma logged 2/i);
 });
 
+test("filters private, malformed, and future evidence at the exported handoff boundary", () => {
+  const hiddenVisibility = [
+    false,
+    "true",
+    "false",
+    null,
+    0,
+    1,
+    {},
+    [],
+  ] as const;
+  const hiddenEntries = hiddenVisibility.map((householdVisible, index) => ({
+    id: `private_meal_${index}`,
+    type: "meal",
+    title: `Private meal ${index}`,
+    caregiver: "Private caregiver",
+    occurredAt: "2026-06-06T14:00:00.000Z",
+    details: { householdVisible },
+  }));
+  const handoff = deriveCareHandoff({
+    now: NOW,
+    caregivers: [{ name: "Private caregiver", role: "Owner" }],
+    entries: [
+      ...hiddenEntries,
+      {
+        id: "future_shared_meal",
+        type: "meal",
+        title: "Future shared meal",
+        caregiver: "Private caregiver",
+        occurredAt: "2026-06-06T23:00:00.000Z",
+        details: { householdVisible: true },
+      },
+    ],
+  });
+
+  assert.deepEqual(handoff.sections.done, []);
+  assert.deepEqual(handoff.sections.watch, []);
+  assert.equal(handoff.caregiverLoad[0]?.todayLogs, 0);
+  assert.equal(handoff.caregiverLoad[0]?.latestAction, "");
+  assert.equal(handoff.message, "No caregiver handoff activity logged today.");
+  const serialized = JSON.stringify(handoff);
+  for (const entry of [...hiddenEntries, { id: "future_shared_meal", title: "Future shared meal" }]) {
+    assert.doesNotMatch(serialized, new RegExp(entry.id));
+    assert.doesNotMatch(serialized, new RegExp(entry.title));
+  }
+});
+
 test("omits malformed legacy times from the caregiver handoff next routine", () => {
   const handoff = deriveCareHandoff({
     now: NOW,

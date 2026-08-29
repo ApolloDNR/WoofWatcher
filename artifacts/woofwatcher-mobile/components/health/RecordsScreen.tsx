@@ -18,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReducedMotion } from "react-native-reanimated";
 import Svg, {
   Circle,
   Defs,
@@ -64,6 +65,10 @@ import { useAppViewport } from "@/context/AppViewportContext";
 import { useAppFileSystem } from "@/context/AppFileSystemContext";
 import { useCare, type Record as CareRecord } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
+import {
+  createRecordsDeepLinkController,
+  decideRecordsDeepLinkRequest,
+} from "@/lib/recordsDeepLink";
 import {
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
@@ -267,6 +272,8 @@ export interface RecordsScreenProps {
 
 export default function RecordsScreen({
   section,
+  entryId,
+  reportId,
   onBack,
 }: RecordsScreenProps) {
   const colors = useColors();
@@ -277,6 +284,11 @@ export default function RecordsScreen({
   const {
     state,
     careMutationsBlocked,
+    isLoaded,
+    isSyncing,
+    isInitialSyncSettled,
+    initialSyncStatus,
+    retryInitialSync,
     updateCareDoc,
     persistCurrentCareSnapshot,
   } = useCare();
@@ -285,6 +297,7 @@ export default function RecordsScreen({
   const showCareReadOnly = () =>
     notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
   const { width } = useAppViewport();
+  const reducedMotion = useReducedMotion();
 
   const topPadding = getRouteTopPadding({
     platform: Platform.OS,
@@ -317,7 +330,7 @@ export default function RecordsScreen({
       // layout.y excludes the ScrollView content container's top padding.
       scrollRef.current?.scrollTo({
         y: Math.max(0, topPadding + anchorY - 8),
-        animated: true,
+        animated: false,
       });
       return true;
     },
@@ -373,6 +386,13 @@ export default function RecordsScreen({
   );
   const recordFormOpenRef = useRef(false);
   const recordsScreenMountedRef = useRef(true);
+  const deepLinkControllerRef = useRef<ReturnType<
+    typeof createRecordsDeepLinkController
+  > | null>(null);
+  if (!deepLinkControllerRef.current) {
+    deepLinkControllerRef.current = createRecordsDeepLinkController();
+  }
+  const deepLinkController = deepLinkControllerRef.current;
   const recordPickerInFlightRef = useRef(false);
   const recordSaveInFlightRef = useRef(false);
   const recordsShareGateRef = useRef<ReturnType<
@@ -424,8 +444,8 @@ export default function RecordsScreen({
     [state.launchProviderProfile],
   );
   const householdEntries = useMemo(
-    () => selectRecordsHouseholdEntries(state.entries),
-    [state.entries],
+    () => selectRecordsHouseholdEntries(state.entries, now),
+    [state.entries, now],
   );
 
   const healthWatch = useMemo(
@@ -542,8 +562,8 @@ export default function RecordsScreen({
   );
 
   const dietHistory = useMemo(
-    () => selectRecordsRecentMealNotes(householdEntries),
-    [householdEntries],
+    () => selectRecordsRecentMealNotes(householdEntries, now),
+    [householdEntries, now],
   );
   const dietPrimaryFood = (state.dietProfile.primaryFood ?? "").trim();
   const dietMeta = [state.dietProfile.normalPortion, state.dietProfile.mealSchedule]
@@ -1307,17 +1327,99 @@ export default function RecordsScreen({
     router.push("/care-twin-qa?qaSurface=report-binary-export-proof" as never);
   };
 
+  // Resolve one canonical Records target at a time. Entry wins when a crafted
+  // route includes both identifiers, and an absent target stays pending until
+  // CareProvider proves local hydration and the current auth cycle's first
+  // signed-in refresh. An unavailable notice is not consumption: a later
+  // successful refresh can still supply and open the same target.
+  useEffect(() => {
+    const action = deepLinkController.next(
+      decideRecordsDeepLinkRequest({
+        entryId,
+        reportId,
+        isLoaded,
+        isSyncing,
+        isInitialSyncSettled,
+        entryIds: householdEntries.map((entry) => entry.id),
+        reportIds: state.reportArtifacts.map((artifact) => artifact.id),
+      }),
+    );
+    if (!action) return;
+
+    if (action.kind === "open-entry") {
+      const matchingEntry = householdEntries.find(
+        (entry) => entry.id === action.id,
+      );
+      if (matchingEntry) {
+        Haptics.selectionAsync().catch(() => {});
+        // Consume the Records deep link while opening Log's canonical entry
+        // detail. Replace avoids a Back loop that would remount this same
+        // identifier and immediately open it again.
+        router.replace({ pathname: "/log", params: { entry: action.id } });
+      }
+      return;
+    }
+
+    if (action.kind === "unavailable-entry") {
+      notifyDialog(
+        "Record entry unavailable",
+        "That care entry is no longer in household-visible Records. It may have been removed or made private.",
+      );
+      return;
+    }
+
+    if (action.kind === "open-report") {
+      const matchingReport = state.reportArtifacts.find(
+        (artifact) => artifact.id === action.id,
+      );
+      if (matchingReport) {
+        Haptics.selectionAsync().catch(() => {});
+        setCarePassPreviewAudience(matchingReport.audience);
+      }
+      return;
+    }
+
+    notifyDialog(
+      "Report preset unavailable",
+      "That saved report preset is no longer in Records. Choose a current Care Pass audience or save a new preset.",
+    );
+  }, [
+    entryId,
+    householdEntries,
+    isInitialSyncSettled,
+    isLoaded,
+    isSyncing,
+    deepLinkController,
+    reportId,
+    router,
+    state.reportArtifacts,
+  ]);
+
   // Mount animation
   const isWebRoutePreview = (Platform.OS as string) === "web";
-  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
-  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
+  const fade = useRef(
+    new Animated.Value(isWebRoutePreview || reducedMotion ? 1 : 0),
+  ).current;
+  const slide = useRef(
+    new Animated.Value(isWebRoutePreview || reducedMotion ? 0 : 16),
+  ).current;
   useEffect(() => {
-    if (isWebRoutePreview) return;
-    Animated.parallel([
+    if (isWebRoutePreview || reducedMotion) {
+      fade.stopAnimation();
+      slide.stopAnimation();
+      fade.setValue(1);
+      slide.setValue(0);
+      return;
+    }
+    fade.setValue(0);
+    slide.setValue(16);
+    const entrance = Animated.parallel([
       Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
       Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
-    ]).start();
-  }, [fade, isWebRoutePreview, slide]);
+    ]);
+    entrance.start();
+    return () => entrance.stop();
+  }, [fade, isWebRoutePreview, reducedMotion, slide]);
 
   // Chart geometry
   const H_PAD = 16;
@@ -1561,6 +1663,74 @@ export default function RecordsScreen({
             back
             onBack={onBack}
           />
+          {(entryId || reportId) && initialSyncStatus.state !== "settled" ? (
+            <View
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+              style={[
+                s.deepLinkSyncError,
+                {
+                  backgroundColor: colors.amber + "14",
+                  borderColor: colors.amber + "55",
+                },
+              ]}
+            >
+              <View style={s.deepLinkSyncErrorCopy}>
+                <Text
+                  style={[
+                    s.deepLinkSyncErrorTitle,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Inter_700Bold",
+                    },
+                  ]}
+                >
+                  {initialSyncStatus.state === "error"
+                    ? "Records could not confirm this target"
+                    : "Confirming current household records"}
+                </Text>
+                <Text
+                  style={[
+                    s.deepLinkSyncErrorBody,
+                    {
+                      color: colors.mutedForeground,
+                      fontFamily: "Inter_500Medium",
+                    },
+                  ]}
+                >
+                  {initialSyncStatus.state === "error"
+                    ? initialSyncStatus.message ??
+                      "WoofWatcher could not confirm the current household records."
+                    : "WoofWatcher will open this target only after the current household refresh finishes."}
+                </Text>
+              </View>
+              {initialSyncStatus.state === "error" &&
+              initialSyncStatus.retryable ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry current household Records refresh"
+                  onPress={retryInitialSync}
+                  style={({ pressed }) => [
+                    s.deepLinkSyncRetry,
+                    {
+                      backgroundColor: colors.primary,
+                      opacity: pressed ? 0.82 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      color: colors.primaryForeground,
+                      fontFamily: "Inter_700Bold",
+                      fontSize: 13,
+                    }}
+                  >
+                    Retry
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
           {recordsShareBusy || carePassSaveShareNotice ? (
             <View
               accessibilityRole="alert"
@@ -2100,8 +2270,8 @@ export default function RecordsScreen({
                   accessibilityLabel="Log a weight from the Log tab"
                   style={({ pressed }) => [s.emptyAddBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                 >
-                  <Ionicons name="add" size={16} color="#FFFFFF" />
-                  <Text style={[s.emptyAddText, { fontFamily: "Inter_700Bold" }]}>Log weight</Text>
+                  <Ionicons name="add" size={16} color={colors.primaryForeground} />
+                  <Text style={[s.emptyAddText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Log weight</Text>
                 </Pressable>
               </View>
             )}
@@ -2981,6 +3151,7 @@ export default function RecordsScreen({
                 <TextInput
                   value={medicationSearch}
                   onChangeText={setMedicationSearch}
+                  accessibilityLabel="Search medication history"
                   placeholder="Search meds, dose, caregiver..."
                   placeholderTextColor={colors.mutedForeground}
                   autoCapitalize="none"
@@ -3023,7 +3194,7 @@ export default function RecordsScreen({
                         },
                       ]}
                     >
-                      <Text style={[s.medFilterText, { color: active ? "#FFFFFF" : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
+                      <Text style={[s.medFilterText, { color: active ? colors.primaryForeground : colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
                         {option.label}
                       </Text>
                     </Pressable>
@@ -3500,8 +3671,8 @@ export default function RecordsScreen({
                   accessibilityState={{ disabled: false }}
                   style={({ pressed }) => [s.emptyAddBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
                 >
-                  <Ionicons name="add" size={16} color="#FFFFFF" />
-                  <Text style={[s.emptyAddText, { fontFamily: "Inter_700Bold" }]}>Add first record</Text>
+                  <Ionicons name="add" size={16} color={colors.primaryForeground} />
+                  <Text style={[s.emptyAddText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Add first record</Text>
                 </Pressable>
               </View>
             ) : (
@@ -3589,7 +3760,7 @@ export default function RecordsScreen({
       <Modal
         visible={carePassPreview !== null}
         transparent
-        animationType="slide"
+        animationType={reducedMotion ? "none" : "slide"}
         onRequestClose={() => {
           if (!carePassSaveShareBusy) setCarePassPreviewAudience(null);
         }}
@@ -3603,6 +3774,8 @@ export default function RecordsScreen({
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
             <ModalSheetPressable
               visible={carePassPreview !== null}
+              closeDisabled={carePassSaveShareBusy}
+              closeBusy={carePassSaveShareBusy}
               onRequestClose={() => {
                 if (!carePassSaveShareBusy) setCarePassPreviewAudience(null);
               }}
@@ -3676,11 +3849,13 @@ export default function RecordsScreen({
         </ModalBackdropPressable>
       </Modal>
 
-      <Modal visible={recordOpen} transparent animationType="slide" onRequestClose={() => void closeRecordForm()}>
+      <Modal visible={recordOpen} transparent animationType={reducedMotion ? "none" : "slide"} onRequestClose={() => void closeRecordForm()}>
         <ModalBackdropPressable style={s.modalBackdrop} onPress={() => void closeRecordForm()}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
             <ModalSheetPressable
               visible={recordOpen}
+              closeDisabled={recordSaveBusy}
+              closeBusy={recordSaveBusy}
               onRequestClose={() => void closeRecordForm()}
               style={[s.recordSheet, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
             >
@@ -3726,8 +3901,8 @@ export default function RecordsScreen({
                         },
                       ]}
                     >
-                      <Ionicons name={option.icon} size={14} color={active ? "#FFFFFF" : colors.primary} />
-                      <Text style={[s.recordTypeText, { color: active ? "#FFFFFF" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                      <Ionicons name={option.icon} size={14} color={active ? colors.primaryForeground : colors.primary} />
+                      <Text style={[s.recordTypeText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
                         {option.label}
                       </Text>
                     </Pressable>
@@ -3738,6 +3913,7 @@ export default function RecordsScreen({
               <TextInput
                 value={recordTitle}
                 onChangeText={setRecordTitle}
+                accessibilityLabel={`${recordOption.label} title`}
                 placeholder={`${recordOption.label} name`}
                 placeholderTextColor={colors.mutedForeground}
                 style={[s.recordInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
@@ -3746,6 +3922,7 @@ export default function RecordsScreen({
               <TextInput
                 value={recordDue}
                 onChangeText={(value) => { setRecordDue(value); setRecordDueError(null); }}
+                accessibilityLabel={recordOption.dueLabel}
                 placeholder="YYYY-MM-DD (optional)"
                 placeholderTextColor={colors.mutedForeground}
                 maxLength={10}
@@ -3760,6 +3937,7 @@ export default function RecordsScreen({
               <TextInput
                 value={recordNote}
                 onChangeText={setRecordNote}
+                accessibilityLabel={`${recordOption.label} notes`}
                 placeholder="Dose, provider, receipt amount, card details, or anything useful"
                 placeholderTextColor={colors.mutedForeground}
                 multiline
@@ -3839,6 +4017,27 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   shareStatusText: { flex: 1, fontSize: 12.5, lineHeight: 18 },
+  deepLinkSyncError: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  deepLinkSyncErrorCopy: { flex: 1, gap: 2 },
+  deepLinkSyncErrorTitle: { fontSize: 13.5, lineHeight: 18 },
+  deepLinkSyncErrorBody: { fontSize: 12, lineHeight: 17 },
+  deepLinkSyncRetry: {
+    minWidth: 68,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
   shareInline: {
     flexDirection: "row",
     alignItems: "center",
@@ -4351,7 +4550,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  emptyAddText: { color: "#FFFFFF", fontSize: 13.5 },
+  emptyAddText: { fontSize: 13.5 },
 
   highlightStrip: {
     flexDirection: "row",
@@ -4455,5 +4654,5 @@ const s = StyleSheet.create({
   sheetCancel: { flex: 1, minHeight: MIN_MOBILE_TOUCH_TARGET, alignItems: "center", justifyContent: "center" },
   sheetCancelText: { fontSize: 15 },
   sheetSave: { flex: 2, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  sheetSaveText: { color: "#FFFFFF", fontSize: 15 },
+  sheetSaveText: { fontSize: 15 },
 });

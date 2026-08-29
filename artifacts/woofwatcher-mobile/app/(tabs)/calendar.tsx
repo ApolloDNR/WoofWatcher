@@ -16,6 +16,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWoofAuth } from "@/lib/auth";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
@@ -297,13 +298,14 @@ interface PlanMissionRow {
   icon: PixelIconName;
   tone: string;
   actionLabel: string;
-  onPress: () => void;
+  onPress?: () => void;
 }
 
 export default function CalendarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const reducedMotion = useReducedMotion();
   const calendarScreenMountedRef = useRef(true);
   useEffect(() => {
     calendarScreenMountedRef.current = true;
@@ -984,6 +986,21 @@ export default function CalendarScreen() {
     router.push(`/log?entry=${encodeURIComponent(entryId)}` as never);
   };
 
+  const openRoutineCompletion = (routine: RoutineBoardItem) => {
+    const completion = entries.find(
+      (entry) => entry.id === routine.completionEntryId,
+    );
+    if (!completion?.id) {
+      notifyDialog(
+        "Completion already logged",
+        "WoofWatcher could not locate that care log to review. Open Log history before making a correction.",
+      );
+      return;
+    }
+    Haptics.selectionAsync();
+    router.push(`/log?entry=${encodeURIComponent(completion.id)}` as never);
+  };
+
   const logRoutineDone = (routine: {
     id: string;
     label: string;
@@ -1181,10 +1198,7 @@ export default function CalendarScreen() {
           detail: careReminderCenter.summary,
           icon: "happy",
           tone: colors.sage,
-          actionLabel: "Clear",
-          onPress: () => {
-            Haptics.selectionAsync();
-          },
+          actionLabel: "All clear",
         },
   );
 
@@ -1193,20 +1207,30 @@ export default function CalendarScreen() {
 
   // Mount animation
   const isWebRoutePreview = (Platform.OS as string) === "web";
-  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
-  const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 16)).current;
+  const fade = useRef(new Animated.Value(isWebRoutePreview || reducedMotion ? 1 : 0)).current;
+  const slide = useRef(new Animated.Value(isWebRoutePreview || reducedMotion ? 0 : 16)).current;
   useEffect(() => {
     return () => {
       if (routineFeedbackTimer.current) clearTimeout(routineFeedbackTimer.current);
     };
   }, []);
   useEffect(() => {
-    if (isWebRoutePreview) return;
-    Animated.parallel([
+    if (isWebRoutePreview || reducedMotion) {
+      fade.stopAnimation();
+      slide.stopAnimation();
+      fade.setValue(1);
+      slide.setValue(0);
+      return;
+    }
+    fade.setValue(0);
+    slide.setValue(16);
+    const entrance = Animated.parallel([
       Animated.timing(fade, { toValue: 1, duration: 460, useNativeDriver: !isWebRoutePreview }),
       Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
-    ]).start();
-  }, [fade, isWebRoutePreview, slide]);
+    ]);
+    entrance.start();
+    return () => entrance.stop();
+  }, [fade, isWebRoutePreview, reducedMotion, slide]);
 
   useEffect(() => {
     reminderFocusLifecycle.update({
@@ -1667,77 +1691,93 @@ export default function CalendarScreen() {
                   <React.Fragment key={`${row.id}-${index}`}>
                   {bandHeader}
                   {nowLine}
-                  <PressScale
-                    accessibilityRole="button"
-                    accessibilityLabel={`${row.time} ${row.label}`}
-                    haptic="none"
-                    scaleTo={0.98}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      if (sourceRoutine) openBoardRoutine(sourceRoutine);
-                    }}
+                  <View
                     style={[
                       s.scheduleRow,
                       index > 0 && !showBandHeader && !showNowLine && { borderTopColor: colors.border, borderTopWidth: 1 },
                     ]}
                   >
-                    <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                      {row.time}
-                    </Text>
-                    <View style={[s.scheduleIconChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                      <PixelIcon name={routinePixelIcon(row.type)} size={20} />
-                    </View>
-                    <View style={s.scheduleRowCopy}>
-                      <Text style={[s.scheduleTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                        {row.label}
-                      </Text>
-                      {row.owner ? (
-                        <View style={s.scheduleOwnerRow}>
-                          <Ionicons name="person-outline" size={11} color={colors.mutedForeground} />
-                          <Text
-                            numberOfLines={1}
-                            style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
-                          >
-                            {row.owner}
-                          </Text>
-                        </View>
-                      ) : row.detail ? (
-                        <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                          {row.detail}
-                        </Text>
-                      ) : null}
-                      {row.correctionValue ? (
-                        <Text style={[s.scheduleDetail, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
-                          Saved value: {row.correctionValue}
-                        </Text>
-                      ) : null}
-                      {showRowPill ? (
-                        <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
-                      ) : null}
-                    </View>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={
+                      accessibilityLabel={`Edit routine ${row.label}`}
+                      accessibilityHint={
+                        row.owner
+                          ? `Assigned to ${row.owner}. Opens the routine editor.`
+                          : "No caregiver assigned. Opens the routine editor."
+                      }
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        if (sourceRoutine) openBoardRoutine(sourceRoutine);
+                      }}
+                      style={({ pressed }) => [s.scheduleEditArea, { opacity: pressed ? 0.72 : 1 }]}
+                    >
+                      <Text style={[s.scheduleTime, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                        {row.time}
+                      </Text>
+                      <View style={[s.scheduleIconChip, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                        <PixelIcon name={routinePixelIcon(row.type)} size={20} />
+                      </View>
+                      <View style={s.scheduleRowCopy}>
+                        <Text style={[s.scheduleTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                          {row.label}
+                        </Text>
+                        {row.owner ? (
+                          <View style={s.scheduleOwnerRow}>
+                            <Ionicons name="person-outline" size={11} color={colors.mutedForeground} />
+                            <Text
+                              style={[s.scheduleOwnerText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}
+                            >
+                              {row.owner}
+                            </Text>
+                          </View>
+                        ) : row.detail ? (
+                          <Text style={[s.scheduleDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                            {row.detail}
+                          </Text>
+                        ) : null}
+                        {row.correctionValue ? (
+                          <Text style={[s.scheduleDetail, { color: colors.amber, fontFamily: "Inter_600SemiBold" }]}>
+                            Saved value: {row.correctionValue}
+                          </Text>
+                        ) : null}
+                        {showRowPill ? (
+                          <BoardStatusPill label={pill.label} tone={pill.tone} style={s.scheduleRowPill} />
+                        ) : null}
+                      </View>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={done ? `View ${row.label} completion log` :
                         needsCorrection
                           ? `${row.label} needs a corrected time before it can be logged`
                           : `Mark ${row.label} done`
                       }
-                      onPress={(event) => {
-                        event.stopPropagation();
-                        if (sourceRoutine && !needsCorrection) logRoutineDone(sourceRoutine);
+                      onPress={() => {
+                        if (!sourceRoutine) return;
+                        if (done) {
+                          openRoutineCompletion(sourceRoutine);
+                          return;
+                        }
+                        if (!needsCorrection) logRoutineDone(sourceRoutine);
                       }}
                       disabled={needsCorrection}
-                      style={[
+                      accessibilityState={{ disabled: needsCorrection, selected: done }}
+                      style={({ pressed }) => [
                         s.scheduleStatus,
                         {
-                          borderColor: done ? colors.sage : colors.border,
+                          borderColor: done ? colors.sage : needsCorrection ? colors.amber : colors.primary,
                           backgroundColor: done ? colors.sage : "transparent",
+                          opacity: pressed && !needsCorrection ? 0.68 : needsCorrection ? 0.58 : 1,
                         },
                       ]}
                     >
-                      {done ? <Ionicons name="checkmark" size={13} color="#FFFFFF" /> : needsCorrection ? <Ionicons name="warning-outline" size={13} color={colors.amber} /> : null}
+                      <Ionicons
+                        name={done ? "checkmark" : needsCorrection ? "warning-outline" : "checkmark"}
+                        size={13}
+                        color={done ? colors.brandNavy : needsCorrection ? colors.amber : colors.primary}
+                      />
                     </Pressable>
-                  </PressScale>
+                  </View>
                   </React.Fragment>
                 );
               })}
@@ -1777,43 +1817,63 @@ export default function CalendarScreen() {
               }
             />
             <View style={s.planMissionList}>
-              {planMissionRows.map((mission, index) => (
-                <Pressable
-                  key={mission.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Open ${mission.eyebrow}: ${mission.title}`}
-                  onPress={mission.onPress}
-                  style={({ pressed }) => [
-                    s.planMissionRow,
-                    {
-                      backgroundColor: pressed ? mission.tone + "10" : colors.background,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <View style={[s.planMissionIcon, { backgroundColor: mission.tone + "18" }]}>
-                    <PixelIcon name={mission.icon} size={22} />
+              {planMissionRows.map((mission, index) => {
+                const content = (
+                  <>
+                    <View style={[s.planMissionIcon, { backgroundColor: mission.tone + "18" }]}>
+                      <PixelIcon name={mission.icon} size={22} />
+                    </View>
+                    <View style={s.planMissionCopy}>
+                      <Text style={[s.planMissionEyebrow, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                        {mission.eyebrow}
+                      </Text>
+                      <Text style={[s.planMissionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
+                        {mission.title}
+                      </Text>
+                      <Text style={[s.planMissionDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                        {mission.detail}
+                      </Text>
+                    </View>
+                    <View style={[s.planMissionAction, { backgroundColor: mission.tone + "16" }]}>
+                      <Text style={[s.planMissionActionText, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                        {mission.actionLabel}
+                      </Text>
+                      {mission.onPress ? <Ionicons name="chevron-forward" size={13} color={mission.tone} /> : null}
+                    </View>
+                    {index < planMissionRows.length - 1 ? <View style={[s.planMissionDivider, { backgroundColor: colors.border }]} /> : null}
+                  </>
+                );
+
+                return mission.onPress ? (
+                  <Pressable
+                    key={mission.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open ${mission.eyebrow}: ${mission.title}`}
+                    onPress={mission.onPress}
+                    style={({ pressed }) => [
+                      s.planMissionRow,
+                      {
+                        backgroundColor: pressed ? mission.tone + "10" : colors.background,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    {content}
+                  </Pressable>
+                ) : (
+                  <View
+                    key={mission.id}
+                    accessible
+                    accessibilityLabel={`${mission.eyebrow}: ${mission.title}. Status: ${mission.actionLabel}`}
+                    style={[
+                      s.planMissionRow,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                    ]}
+                  >
+                    {content}
                   </View>
-                  <View style={s.planMissionCopy}>
-                    <Text style={[s.planMissionEyebrow, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
-                      {mission.eyebrow}
-                    </Text>
-                    <Text numberOfLines={1} style={[s.planMissionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                      {mission.title}
-                    </Text>
-                    <Text numberOfLines={1} style={[s.planMissionDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                      {mission.detail}
-                    </Text>
-                  </View>
-                  <View style={[s.planMissionAction, { backgroundColor: mission.tone + "16" }]}>
-                    <Text style={[s.planMissionActionText, { color: mission.tone, fontFamily: "Inter_800ExtraBold" }]}>
-                      {mission.actionLabel}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={13} color={mission.tone} />
-                  </View>
-                  {index < planMissionRows.length - 1 ? <View style={[s.planMissionDivider, { backgroundColor: colors.border }]} /> : null}
-                </Pressable>
-              ))}
+                );
+              })}
             </View>
           </BoardCard>
 
@@ -1844,14 +1904,28 @@ export default function CalendarScreen() {
                     <TextInput
                       value={location}
                       onChangeText={setLocation}
+                      accessibilityLabel="Dog event search location"
                       placeholder="Your city or area"
                       placeholderTextColor={colors.mutedForeground}
                       style={[s.discoverInput, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
                       returnKeyType="search"
                       onSubmitEditing={discover}
                     />
-                    <Pressable onPress={discover} disabled={loadingEvents} style={[s.discoverGo, { backgroundColor: colors.copper }]}>
-                      {loadingEvents ? <ActivityIndicator size="small" color="#fff" /> : <Text style={[s.discoverGoText, { fontFamily: "Inter_700Bold" }]}>Find</Text>}
+                    <Pressable
+                      onPress={discover}
+                      disabled={loadingEvents}
+                      accessibilityRole="button"
+                      accessibilityLabel={loadingEvents ? "Finding nearby dog events" : "Find nearby dog events"}
+                      accessibilityState={{ disabled: loadingEvents, busy: loadingEvents }}
+                      style={({ pressed }) => [
+                        s.discoverGo,
+                        {
+                          backgroundColor: colors.copperBright,
+                          opacity: loadingEvents ? 0.6 : pressed ? 0.82 : 1,
+                        },
+                      ]}
+                    >
+                      {loadingEvents ? <ActivityIndicator size="small" color={colors.brandNavy} /> : <Text style={[s.discoverGoText, { color: colors.brandNavy, fontFamily: "Inter_700Bold" }]}>Find</Text>}
                     </Pressable>
                   </View>
 
@@ -1893,10 +1967,18 @@ export default function CalendarScreen() {
                             <Pressable
                               accessibilityRole="button"
                               accessibilityLabel={added ? `${sug.title} added` : `Add ${sug.title}`}
+                              accessibilityState={{ disabled: added }}
                               aria-disabled={added}
+                              disabled={added}
                               onPress={() => !added && addSuggestion(sug)}
                               hitSlop={MOBILE_INLINE_HIT_SLOP}
-                              style={[s.sugAdd, { backgroundColor: added ? colors.sage + "22" : colors.primary }]}
+                              style={({ pressed }) => [
+                                s.sugAdd,
+                                {
+                                  backgroundColor: added ? colors.sage + "22" : colors.primary,
+                                  opacity: pressed && !added ? 0.68 : 1,
+                                },
+                              ]}
                             >
                               <Ionicons name={added ? "checkmark" : "add"} size={18} color={added ? colors.sage : colors.primaryForeground} />
                             </Pressable>
@@ -1928,7 +2010,7 @@ export default function CalendarScreen() {
             ) : (
               upcoming.map((group) => (
                 <View key={group.date} style={{ marginBottom: 18 }}>
-                  <Text style={[s.dayHeading, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>
+                  <Text style={[s.dayHeading, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>
                     {group.date === "needs-correction" ? "Needs correction" : dayLabel(group.date)}
                   </Text>
                   {group.events.map((e) => {
@@ -1964,7 +2046,7 @@ export default function CalendarScreen() {
                             )}
                             {countdownLabel && (
                               <View style={[s.tag, { backgroundColor: (daysUntil === 0 ? colors.copper : colors.sage) + "18" }]}>
-                                <Text style={[s.tagText, { color: daysUntil === 0 ? colors.copper : colors.sage, fontFamily: "Inter_700Bold" }]}>{countdownLabel}</Text>
+                                <Text style={[s.tagText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{countdownLabel}</Text>
                               </View>
                             )}
                           </View>
@@ -1982,7 +2064,10 @@ export default function CalendarScreen() {
                             accessibilityRole="button"
                             accessibilityLabel={`Edit ${e.title}`}
                             onPress={() => openEditEvent(e)}
-                            style={s.removeBtn}
+                            style={({ pressed }) => [
+                              s.removeBtn,
+                              { backgroundColor: pressed ? colors.primary + "12" : "transparent" },
+                            ]}
                           >
                             <Ionicons name="pencil" size={15} color={colors.primary} />
                           </Pressable>
@@ -1990,7 +2075,10 @@ export default function CalendarScreen() {
                             accessibilityRole="button"
                             accessibilityLabel={`Remove ${e.title}`}
                             onPress={() => removeEvent(e.id)}
-                            style={s.removeBtn}
+                            style={({ pressed }) => [
+                              s.removeBtn,
+                              { backgroundColor: pressed ? colors.rose + "12" : "transparent" },
+                            ]}
                           >
                             <Ionicons name="close" size={16} color={colors.mutedForeground} />
                           </Pressable>
@@ -2210,7 +2298,10 @@ export default function CalendarScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="Add routine"
                     onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }}
-                    style={[s.sectionAddBtn, { backgroundColor: colors.primary }]}
+                    style={({ pressed }) => [
+                      s.sectionAddBtn,
+                      { backgroundColor: colors.primary, opacity: pressed ? 0.7 : 1 },
+                    ]}
                   >
                     <Ionicons name="add" size={18} color={colors.primaryForeground} />
                   </Pressable>
@@ -2218,7 +2309,15 @@ export default function CalendarScreen() {
               }
             />
             {routineBoard.items.length === 0 ? (
-              <Pressable onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }} style={[s.emptyPanel, { backgroundColor: colors.background }]}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Add your first routine"
+                onPress={() => { Haptics.selectionAsync(); openNewRoutine(); }}
+                style={({ pressed }) => [
+                  s.emptyPanel,
+                  { backgroundColor: pressed ? colors.secondary : colors.background },
+                ]}
+              >
                 <PulseIcon name="bowl" size={30} />
                 <Text style={[s.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
                   No routines yet. Tap to add feeding times, walks, and more.
@@ -2306,36 +2405,48 @@ export default function CalendarScreen() {
                           ? colors.amber
                           : tint;
                   return (
-                    <Pressable key={r.id} onPress={() => { Haptics.selectionAsync(); openBoardRoutine(r); }} style={s.timelineRow}>
+                    <View key={r.id} style={s.timelineRow}>
                       <View style={s.rail}>
                         <View style={[s.railDot, { backgroundColor: statusColor, borderColor: statusColor }]} />
                         {!last && <View style={[s.railLine, { backgroundColor: colors.border }]} />}
                       </View>
                       <View style={[s.routineCard, { backgroundColor: colors.card, shadowColor: colors.primary, opacity: done ? 0.72 : 1 }]}>
-                        <View style={[s.routineIconWrap, { backgroundColor: statusColor + "16" }]}>
-                          {r.normalizedType === "potty" ? (
-                            <PixelIcon name="pee" size={20} />
-                          ) : (
-                            <PulseIcon name={icon} size={20} color={done ? colors.sage : undefined} />
-                          )}
-                        </View>
-                        <View style={s.routineMain}>
-                          <Text style={[s.routineLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{r.label}</Text>
-                          <View style={s.routineMetaRow}>
-                            <Text style={[s.routineOwner, { color: r.owner ? colors.mutedForeground : colors.amber, fontFamily: "Inter_500Medium" }]}>
-                              {r.owner ? `Assigned to ${r.owner}` : "Tap to assign owner"}
-                            </Text>
-                            {r.completedBy ? (
-                              <Text style={[s.routineOwner, { color: colors.sage, fontFamily: "Inter_600SemiBold" }]}>Done by {r.completedBy}</Text>
-                            ) : null}
-                            {r.completion && r.completion !== "complete" ? (
-                              <Text style={[s.routineOwner, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>{r.completionLabel}</Text>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Edit routine ${r.label}`}
+                          accessibilityHint={
+                            r.owner
+                              ? `Assigned to ${r.owner}. Opens the routine editor.`
+                              : "No caregiver assigned. Opens the routine editor."
+                          }
+                          onPress={() => { Haptics.selectionAsync(); openBoardRoutine(r); }}
+                          style={({ pressed }) => [s.routineEditArea, { opacity: pressed ? 0.72 : 1 }]}
+                        >
+                          <View style={[s.routineIconWrap, { backgroundColor: statusColor + "16" }]}>
+                            {r.normalizedType === "potty" ? (
+                              <PixelIcon name="pee" size={20} />
+                            ) : (
+                              <PulseIcon name={icon} size={20} color={done ? colors.sage : undefined} />
+                            )}
+                          </View>
+                          <View style={s.routineMain}>
+                            <Text style={[s.routineLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{r.label}</Text>
+                            <View style={s.routineMetaRow}>
+                              <Text style={[s.routineOwner, { color: r.owner ? colors.mutedForeground : colors.amber, fontFamily: "Inter_500Medium" }]}>
+                                {r.owner ? `Assigned to ${r.owner}` : "Tap to assign owner"}
+                              </Text>
+                              {r.completedBy ? (
+                                <Text style={[s.routineOwner, { color: colors.sage, fontFamily: "Inter_600SemiBold" }]}>Done by {r.completedBy}</Text>
+                              ) : null}
+                              {r.completion && r.completion !== "complete" ? (
+                                <Text style={[s.routineOwner, { color: colors.amber, fontFamily: "Inter_700Bold" }]}>{r.completionLabel}</Text>
+                              ) : null}
+                            </View>
+                            {r.note ? (
+                              <Text numberOfLines={1} style={[s.routineNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{r.note}</Text>
                             ) : null}
                           </View>
-                          {r.note ? (
-                            <Text numberOfLines={1} style={[s.routineNote, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{r.note}</Text>
-                          ) : null}
-                        </View>
+                        </Pressable>
                         <View style={s.routineActions}>
                           <BoardStatusPill
                             label={routineStatusLabel(r.status)}
@@ -2357,27 +2468,37 @@ export default function CalendarScreen() {
                             </Text>
                           ) : null}
                           <Pressable
-                            onPress={(event) => {
-                              event.stopPropagation?.();
-                              if (!done && r.status !== "needs-correction") logRoutineDone(r);
+                            onPress={() => {
+                              if (done) {
+                                openRoutineCompletion(r);
+                                return;
+                              }
+                              if (r.status !== "needs-correction") logRoutineDone(r);
                             }}
-                            disabled={done || r.status === "needs-correction"}
+                            disabled={r.status === "needs-correction"}
                             hitSlop={MOBILE_INLINE_HIT_SLOP}
                             accessibilityRole="button"
                             accessibilityLabel={
                               done
-                                ? `${r.label} already logged`
+                                ? `View ${r.label} completion log`
                                 : r.status === "needs-correction"
                                   ? `${r.label} needs a corrected time before it can be logged`
                                   : `Log ${r.label} as done`
                             }
-                            style={[s.routineDoneBtn, { backgroundColor: done ? colors.sage + "18" : colors.primary }]}
+                            accessibilityState={{ disabled: r.status === "needs-correction", selected: done }}
+                            style={({ pressed }) => [
+                              s.routineDoneBtn,
+                              {
+                                backgroundColor: done ? colors.sage + "18" : colors.primary,
+                                opacity: pressed && r.status !== "needs-correction" ? 0.68 : 1,
+                              },
+                            ]}
                           >
                             <Ionicons name={done ? "checkmark-circle" : "checkmark"} size={16} color={done ? colors.sage : "#fff"} />
                           </Pressable>
                         </View>
                       </View>
-                    </Pressable>
+                    </View>
                   );
                 })}
               </View>
@@ -2433,13 +2554,13 @@ export default function CalendarScreen() {
               style={({ pressed }) => [
                 s.routineFeedbackButton,
                 {
-                  backgroundColor: pressed && !routineFeedbackUndoBusy ? colors.copper + "DD" : colors.copper,
-                  borderColor: colors.copper,
+                  backgroundColor: pressed && !routineFeedbackUndoBusy ? colors.copperBright + "DD" : colors.copperBright,
+                  borderColor: colors.copperBright,
                   opacity: routineFeedbackUndoBusy ? 0.5 : 1,
                 },
               ]}
             >
-              <Text style={[s.routineFeedbackButtonText, { color: colors.ivory, fontFamily: "Inter_800ExtraBold" }]}>
+              <Text style={[s.routineFeedbackButtonText, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
                 Add details
               </Text>
             </Pressable>
@@ -2448,7 +2569,7 @@ export default function CalendarScreen() {
       ) : null}
 
       {/* Routine editor modal */}
-      <Modal visible={routineOpen} transparent animationType="slide" onRequestClose={() => setRoutineOpen(false)}>
+      <Modal visible={routineOpen} transparent animationType={reducedMotion ? "none" : "slide"} onRequestClose={() => setRoutineOpen(false)}>
         <ModalBackdropPressable style={s.modalBackdrop} onPress={() => setRoutineOpen(false)}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
             <ModalSheetPressable
@@ -2470,6 +2591,7 @@ export default function CalendarScreen() {
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>LABEL</Text>
             <TextInput
+              accessibilityLabel="Routine label"
               value={rLabel}
               onChangeText={(value) => { setRLabel(value); setRLabelError(null); }}
               placeholder="Morning walk"
@@ -2483,17 +2605,29 @@ export default function CalendarScreen() {
             ) : null}
             {(ROUTINE_LABEL_SUGGESTIONS[rType] ?? []).length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.ownerQuickRow}>
-                {(ROUTINE_LABEL_SUGGESTIONS[rType] ?? []).map((sug) => (
-                  <Pressable
-                    key={sug}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Use label ${sug}`}
-                    onPress={() => { Haptics.selectionAsync(); setRLabel(sug); setRLabelError(null); }}
-                    style={[s.ownerQuickChip, { backgroundColor: colors.background, borderColor: colors.border }]}
-                  >
-                    <Text style={[s.ownerQuickText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{sug}</Text>
-                  </Pressable>
-                ))}
+                {(ROUTINE_LABEL_SUGGESTIONS[rType] ?? []).map((sug) => {
+                  const active = rLabel.trim() === sug;
+                  return (
+                    <Pressable
+                      key={sug}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Use label ${sug}`}
+                      accessibilityState={{ selected: active }}
+                      aria-selected={active}
+                      onPress={() => { Haptics.selectionAsync(); setRLabel(sug); setRLabelError(null); }}
+                      style={({ pressed }) => [
+                        s.ownerQuickChip,
+                        {
+                          backgroundColor: active ? colors.primary : colors.background,
+                          borderColor: active ? colors.primary : colors.border,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}
+                    >
+                      <Text style={[s.ownerQuickText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" }]}>{sug}</Text>
+                    </Pressable>
+                  );
+                })}
               </ScrollView>
             ) : null}
 
@@ -2502,7 +2636,22 @@ export default function CalendarScreen() {
               {ROUTINE_TYPES.map((t) => {
                 const active = rType === t.key;
                 return (
-                  <Pressable key={t.key} onPress={() => { Haptics.selectionAsync(); setRType(t.key); }} style={[s.typeChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}>
+                  <Pressable
+                    key={t.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Select routine type ${t.label}`}
+                    accessibilityState={{ selected: active }}
+                    aria-selected={active}
+                    onPress={() => { Haptics.selectionAsync(); setRType(t.key); }}
+                    style={({ pressed }) => [
+                      s.typeChip,
+                      {
+                        backgroundColor: active ? colors.primary : colors.background,
+                        borderColor: active ? colors.primary : colors.border,
+                        opacity: pressed ? 0.72 : 1,
+                      },
+                    ]}
+                  >
                     {t.key === "potty" ? (
                       <PixelIcon name="pee" size={14} />
                     ) : (
@@ -2518,6 +2667,7 @@ export default function CalendarScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TIME</Text>
                 <TextInput
+                  accessibilityLabel="Routine time"
                   value={rTime}
                   onChangeText={(v) => { setRTime(v); setRTimeError(null); }}
                   placeholder="7:00 AM"
@@ -2531,6 +2681,7 @@ export default function CalendarScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>OWNER (OPTIONAL)</Text>
                 <TextInput
+                  accessibilityLabel="Routine owner, optional"
                   value={rOwner}
                   onChangeText={setROwner}
                   placeholder="Caregiver name"
@@ -2549,9 +2700,17 @@ export default function CalendarScreen() {
                     key={t}
                     accessibilityRole="button"
                     accessibilityLabel={`Set time ${t}`}
+                    accessibilityState={{ selected: active }}
                     aria-selected={active}
                     onPress={() => { Haptics.selectionAsync(); setRTime(t); setRTimeError(null); }}
-                    style={[s.ownerQuickChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}
+                    style={({ pressed }) => [
+                      s.ownerQuickChip,
+                      {
+                        backgroundColor: active ? colors.primary : colors.background,
+                        borderColor: active ? colors.primary : colors.border,
+                        opacity: pressed ? 0.72 : 1,
+                      },
+                    ]}
                   >
                     <Text style={[s.ownerQuickText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" }]}>{t}</Text>
                   </Pressable>
@@ -2566,8 +2725,19 @@ export default function CalendarScreen() {
                   return (
                     <Pressable
                       key={caregiver.name}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Assign ${caregiver.name} as caregiver`}
+                      accessibilityState={{ selected: active }}
+                      aria-selected={active}
                       onPress={() => { Haptics.selectionAsync(); setROwner(caregiver.name); }}
-                      style={[s.ownerQuickChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}
+                      style={({ pressed }) => [
+                        s.ownerQuickChip,
+                        {
+                          backgroundColor: active ? colors.primary : colors.background,
+                          borderColor: active ? colors.primary : colors.border,
+                          opacity: pressed ? 0.72 : 1,
+                        },
+                      ]}
                     >
                       <Text style={[s.ownerQuickText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" }]}>
                         {caregiver.name}
@@ -2580,6 +2750,7 @@ export default function CalendarScreen() {
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>NOTE (OPTIONAL)</Text>
             <TextInput
+              accessibilityLabel="Routine note, optional"
               value={rNote}
               onChangeText={setRNote}
               placeholder="Any extra details..."
@@ -2587,7 +2758,15 @@ export default function CalendarScreen() {
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
 
-            <Pressable onPress={submitRoutine} style={[s.saveBtn, { backgroundColor: colors.primary }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={routineEditId ? "Save routine changes" : "Add routine"}
+              onPress={submitRoutine}
+              style={({ pressed }) => [
+                s.saveBtn,
+                { backgroundColor: colors.primary, opacity: pressed ? 0.76 : 1 },
+              ]}
+            >
               <Text style={[s.saveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{routineEditId ? "Save Changes" : "Add Routine"}</Text>
             </Pressable>
             {/* Validation feedback lives next to the submit button so the
@@ -2603,7 +2782,12 @@ export default function CalendarScreen() {
             ) : null}
 
                 {routineEditId && (
-                  <Pressable onPress={() => deleteRoutine(routineEditId)} style={s.deleteBtn}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Delete routine"
+                    onPress={() => deleteRoutine(routineEditId)}
+                    style={({ pressed }) => [s.deleteBtn, { opacity: pressed ? 0.62 : 1 }]}
+                  >
                     <Ionicons name="trash-outline" size={15} color={colors.rose} />
                     <Text style={[s.deleteBtnText, { color: colors.rose, fontFamily: "Inter_600SemiBold" }]}>Delete Routine</Text>
                   </Pressable>
@@ -2615,7 +2799,7 @@ export default function CalendarScreen() {
       </Modal>
 
       {/* Add-event modal */}
-      <Modal visible={addOpen} transparent animationType="slide" onRequestClose={() => setAddOpen(false)}>
+      <Modal visible={addOpen} transparent animationType={reducedMotion ? "none" : "slide"} onRequestClose={() => setAddOpen(false)}>
         <ModalBackdropPressable style={s.modalBackdrop} onPress={() => setAddOpen(false)}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={keyboardOffset} style={s.modalDock}>
             <ModalSheetPressable
@@ -2635,6 +2819,7 @@ export default function CalendarScreen() {
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TITLE</Text>
             <TextInput
+              accessibilityLabel="Event title"
               value={evTitle}
               onChangeText={(value) => { setEvTitle(value); setEvTitleError(null); }}
               placeholder="Beach day, vet visit, hike..."
@@ -2652,7 +2837,22 @@ export default function CalendarScreen() {
               {EVENT_TYPES.map((t) => {
                 const active = evType === t.key;
                 return (
-                  <Pressable key={t.key} onPress={() => { Haptics.selectionAsync(); setEvType(t.key); }} style={[s.typeChip, { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border }]}>
+                  <Pressable
+                    key={t.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Select event type ${t.label}`}
+                    accessibilityState={{ selected: active }}
+                    aria-selected={active}
+                    onPress={() => { Haptics.selectionAsync(); setEvType(t.key); }}
+                    style={({ pressed }) => [
+                      s.typeChip,
+                      {
+                        backgroundColor: active ? colors.primary : colors.background,
+                        borderColor: active ? colors.primary : colors.border,
+                        opacity: pressed ? 0.72 : 1,
+                      },
+                    ]}
+                  >
                     <Ionicons name={EVENT_ICON[t.key] ?? "calendar"} size={14} color={active ? colors.primaryForeground : colors.mutedForeground} />
                     <Text style={[s.typeChipText, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{t.label}</Text>
                   </Pressable>
@@ -2664,6 +2864,7 @@ export default function CalendarScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>DATE</Text>
                 <TextInput
+                  accessibilityLabel="Event date"
                   value={evDate}
                   onChangeText={(raw) => {
                     setDateError(null);
@@ -2687,6 +2888,7 @@ export default function CalendarScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>TIME</Text>
                 <TextInput
+                  accessibilityLabel="Event time"
                   value={evTime}
                   onChangeText={(value) => { setEvTime(value); setEvTimeError(null); }}
                   placeholder="9:00 AM"
@@ -2701,6 +2903,7 @@ export default function CalendarScreen() {
 
             <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>LOCATION (OPTIONAL)</Text>
             <TextInput
+              accessibilityLabel="Event location, optional"
               value={evLocation}
               onChangeText={setEvLocation}
               placeholder="Where?"
@@ -2708,7 +2911,15 @@ export default function CalendarScreen() {
               style={[s.field, { backgroundColor: colors.background, color: colors.foreground, fontFamily: "Inter_500Medium" }]}
             />
 
-            <Pressable onPress={submitEvent} style={[s.saveBtn, { backgroundColor: colors.primary }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={eventEditId ? "Save event changes" : "Add event to calendar"}
+              onPress={submitEvent}
+              style={({ pressed }) => [
+                s.saveBtn,
+                { backgroundColor: colors.primary, opacity: pressed ? 0.76 : 1 },
+              ]}
+            >
               <Text style={[s.saveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>{eventEditId ? "Save Changes" : "Add to Calendar"}</Text>
             </Pressable>
             {/* Validation feedback lives next to the submit button so the
@@ -2760,7 +2971,7 @@ const s = StyleSheet.create({
   discoverInputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   discoverInput: { flex: 1, fontSize: 15, paddingVertical: 8 },
   discoverGo: { paddingHorizontal: 18, minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 12, alignItems: "center", justifyContent: "center", minWidth: 64 },
-  discoverGoText: { color: "#fff", fontSize: 14 },
+  discoverGoText: { fontSize: 14 },
   discoverHint: { fontSize: 12, lineHeight: 17, marginTop: 10, marginBottom: 4 },
 
   sugRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 },
@@ -2876,9 +3087,9 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: 10,
-    overflow: "hidden",
   },
   planMissionIcon: {
     width: 36,
@@ -2890,7 +3101,9 @@ const s = StyleSheet.create({
   planMissionCopy: {
     flex: 1,
     flexShrink: 1,
-    minWidth: 0,
+    // Preserve a readable copy column; the wrapping row can move the action
+    // below it on narrow or large-text layouts instead of crushing the words.
+    minWidth: 140,
   },
   planMissionEyebrow: {
     fontSize: 8.5,
@@ -2907,11 +3120,13 @@ const s = StyleSheet.create({
     marginTop: 1,
   },
   planMissionAction: {
-    width: 66,
-    flexShrink: 0,
+    minWidth: 66,
+    maxWidth: "100%",
+    flexShrink: 1,
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 10,
     paddingHorizontal: 6,
+    paddingVertical: 6,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -2922,6 +3137,8 @@ const s = StyleSheet.create({
     lineHeight: 11,
     letterSpacing: 0.4,
     textTransform: "uppercase",
+    flexShrink: 1,
+    textAlign: "center",
   },
   planMissionDivider: {
     position: "absolute",
@@ -3041,15 +3258,24 @@ const s = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  scheduleEditArea: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
   scheduleTitle: { fontSize: 13.5 },
   scheduleDetail: { fontSize: 11.5, marginTop: 2 },
   scheduleRowPill: { alignSelf: "flex-start", marginTop: 5 },
   scheduleOwnerRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 4,
     marginTop: 1,
   },
+  scheduleOwnerText: { flex: 1, minWidth: 0, fontSize: 11.5, lineHeight: 16 },
   scheduleIconChip: {
     width: 36,
     height: 36,
@@ -3309,6 +3535,14 @@ const s = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 12,
     elevation: 2,
+  },
+  routineEditArea: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   routineIconWrap: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   routineMain: { flex: 1, minWidth: 0 },

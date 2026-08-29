@@ -5,8 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { CareEntryUpdateClientSyncProtocol } from './careEntryUpdateClientSyncProtocol';
-import type { CareEntryUpdateDetails } from './careEntryUpdateDetails';
+import type { CareEntryUpdateClientSyncProtocol } from "./careEntryUpdateClientSyncProtocol";
+import type { CareEntryUpdateDetails } from "./careEntryUpdateDetails";
 
 export interface CareEntryUpdate {
   clientSyncProtocol?: CareEntryUpdateClientSyncProtocol;

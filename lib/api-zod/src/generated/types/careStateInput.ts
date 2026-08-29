@@ -5,9 +5,13 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { CareStateInputDoc } from './careStateInputDoc';
+import type { CareStateInputDoc } from "./careStateInputDoc";
 
 export interface CareStateInput {
+  /**
+   * @minimum 1
+   * @maximum 2147483646
+   */
   version: number;
   doc: CareStateInputDoc;
 }

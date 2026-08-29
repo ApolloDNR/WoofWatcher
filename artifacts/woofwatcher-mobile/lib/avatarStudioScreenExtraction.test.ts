@@ -100,7 +100,25 @@ test("preserves the Avatar state, art, picker, motion, and creator anatomy", () 
     /if \(!res \|\| res\.canceled \|\| !res\.assets\?\.\[0\]\?\.uri\) return/,
   );
   assert.match(component, /Haptics\.impactAsync\(Haptics\.ImpactFeedbackStyle\.Medium\)/);
-  assert.equal(component.match(/\buseEffect\(/g)?.length ?? 0, 3);
+  assert.match(
+    component,
+    /useEffect\([\s\S]{0,120}navigation\.addListener\("beforeRemove"[\s\S]{0,260}event\.preventDefault\(\)[\s\S]{0,220}requestAvatarDraftExit\([\s\S]{0,340}navigation\.dispatch\(event\.data\.action\)[\s\S]{0,120}\[navigation\]/,
+  );
+  assert.match(
+    component,
+    /useEffect\(\(\) => \{[\s\S]{0,100}shouldSyncAvatarStudioDraftFromContext\([\s\S]{0,220}setDraft\(avatarConfig\)[\s\S]{0,100}\[avatarConfig\]/,
+    "saved avatar changes must still synchronize into a clean draft",
+  );
+  assert.match(
+    component,
+    /useEffect\(\(\) => \{[\s\S]{0,100}avatarStudioMountedRef\.current = true[\s\S]{0,120}setInterval\([\s\S]{0,220}avatarStudioMountedRef\.current = false[\s\S]{0,260}clearInterval\(id\)[\s\S]{0,520}releasePickedMediaReferences\([\s\S]{0,360}\[appFileSystem\]/,
+    "unmount must stop timers and release the locally owned photo reference",
+  );
+  assert.match(
+    component,
+    /useEffect\(\(\) => \{[\s\S]{0,80}if \(reduced\) return[\s\S]{0,100}Animated\.loop\([\s\S]{0,620}lifeLoop\.start\(\)[\s\S]{0,180}lifeLoop\.stop\(\)[\s\S]{0,100}templateLife\.setValue\(0\)[\s\S]{0,100}\[reduced, templateLife\]/,
+    "the template preview loop must honor Reduce Motion and clean up",
+  );
   assert.equal(component.match(/\bAnimated\.loop\(/g)?.length ?? 0, 1);
   assert.equal(component.match(/\.stop\(\)/g)?.length ?? 0, 1);
   assert.equal(component.match(/\bclearInterval\(/g)?.length ?? 0, 1);

@@ -4,6 +4,8 @@ import React, { useCallback, useEffect, useMemo, useRef, type ReactNode } from "
 import { ImageBackground, type LayoutChangeEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
+  deriveBileVomitEvidence30,
+  deriveBileWatchStatus,
   deriveCareReminderCenter,
   deriveHealthWatch,
   deriveMedicationAdherence,
@@ -11,6 +13,7 @@ import {
   getRecordDueStatus,
   normalizeCareEventType,
   recordDueNeedsCorrection,
+  selectSharedCareEvidence,
   summarizeRecordVault,
 } from "@workspace/care-domain";
 
@@ -32,7 +35,8 @@ import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { CARE_TWIN_ROOM_VARIANT_ASSETS, getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import {
   buildHealthReviewPacketShareText,
-  deriveBileWatchStatus,
+  deriveHealthMetricEvidence,
+  deriveMealLogIntervalEvidence,
   deriveHealthReviewPacket,
   resolveHealthReviewPacketActionHref,
   type HealthReviewPacketAction,
@@ -89,25 +93,6 @@ function HealthHeaderAction({
       </Text>
     </Pressable>
   );
-}
-
-function entryText(entry: { title?: string; note?: string; details?: { [key: string]: unknown } }): string {
-  const details = entry.details
-    ? Object.values(entry.details)
-        .filter((value): value is string => typeof value === "string")
-        .join(" ")
-    : "";
-  return `${entry.title ?? ""} ${entry.note ?? ""} ${details}`.toLowerCase();
-}
-
-function isYellowBile(entry: { type: string; title?: string; note?: string; details?: { [key: string]: unknown } }): boolean {
-  const type = normalizeCareEventType(entry.type, entry.details);
-  const text = entryText(entry);
-  return type === "vomit" && (text.includes("bile") || (text.includes("yellow") && text.includes("vomit")));
-}
-
-function hoursBetween(a: string, b: string): number {
-  return Math.abs(new Date(a).getTime() - new Date(b).getTime()) / 3600000;
 }
 
 function formatDateTime(iso?: string): string {
@@ -260,9 +245,13 @@ function HealthCoreScreen({
   const { state } = useCare();
   const now = Date.now();
   const healthWeek = useMemo(() => buildTrendWindow("week", now), [now]);
+  const sharedEntries = useMemo(
+    () => selectSharedCareEvidence(state.entries, now),
+    [now, state.entries],
+  );
   const recentHealthEntries = useMemo(
     () =>
-      state.entries.filter((entry) => {
+      sharedEntries.filter((entry) => {
         const eventTime = new Date(entry.occurredAt).getTime();
         return (
           Number.isFinite(eventTime) &&
@@ -270,7 +259,7 @@ function HealthCoreScreen({
           eventTime <= now
         );
       }),
-    [healthWeek.start, now, state.entries],
+    [healthWeek.start, now, sharedEntries],
   );
   const scrollRef = useRef<ScrollView>(null);
   const medicationAnchorYRef = useRef<number | null>(null);
@@ -332,20 +321,51 @@ function HealthCoreScreen({
     // on the current dog name, with a neutral fresh-install fallback.
     () =>
       deriveHealthWatch({
-        entries: state.entries,
+        entries: sharedEntries,
         routines: state.routines,
         now,
         petName: state.profile.name,
       }),
-    [state.entries, state.routines, state.profile.name, now],
+    [sharedEntries, state.routines, state.profile.name, now],
   );
 
-  const bileEntries = useMemo(
+  // Metric counts and rows share the exact calendar window shown by the
+  // seven-day chart. The broader Health Watch remains separate so 8-30-day
+  // alerts stay visible without leaking their counts into this chart.
+  const healthWindowWatch = useMemo(
     () =>
-      recentHealthEntries
-        .filter(isYellowBile)
-        .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()),
-    [recentHealthEntries],
+      deriveHealthWatch({
+        entries: recentHealthEntries,
+        routines: state.routines,
+        now,
+        petName: state.profile.name,
+      }),
+    [recentHealthEntries, state.routines, state.profile.name, now],
+  );
+
+  // Bile Watch uses one explicit 30-day evidence set for its status, last
+  // event, and evidence counts. Its seven-day chart is a clearly labeled
+  // subset of the same normalized bile/vomit lane.
+  const bileEvidence30 = useMemo(
+    () => deriveBileVomitEvidence30({ entries: sharedEntries, now }),
+    [sharedEntries, now],
+  );
+  const bileEntries = bileEvidence30.yellowBileEntriesNewestFirst;
+  const recentVomitEntries = useMemo(
+    () =>
+      bileEvidence30.vomitEntriesNewestFirst.filter((entry) => {
+        const eventTime = Date.parse(entry.occurredAt);
+        return eventTime >= healthWeek.start && eventTime <= now;
+      }),
+    [bileEvidence30.vomitEntriesNewestFirst, healthWeek.start, now],
+  );
+  const recentBileEntries = useMemo(
+    () =>
+      bileEvidence30.yellowBileEntriesNewestFirst.filter((entry) => {
+        const eventTime = Date.parse(entry.occurredAt);
+        return eventTime >= healthWeek.start && eventTime <= now;
+      }),
+    [bileEvidence30.yellowBileEntriesNewestFirst, healthWeek.start, now],
   );
 
   // Mockup-board Overview data: every value below is derived from persisted
@@ -355,20 +375,20 @@ function HealthCoreScreen({
     () =>
       deriveCareReminderCenter({
         routines: state.routines,
-        entries: state.entries,
+        entries: sharedEntries,
         records: state.records,
         caregivers: state.caregivers,
         now,
         limit: 3,
       }),
-    [state.routines, state.entries, state.records, state.caregivers, now],
+    [state.routines, sharedEntries, state.records, state.caregivers, now],
   );
   const nextReminder = careReminderCenter.items[0] ?? null;
 
   const weightTrend = useMemo(
     () =>
       deriveWeightTrend({
-        entries: state.entries,
+        entries: sharedEntries,
         profile: state.profile,
         goals: state.goals,
         now,
@@ -376,7 +396,7 @@ function HealthCoreScreen({
         limit: 8,
         petName: state.profile.name,
       }),
-    [state.entries, state.profile, state.goals, now],
+    [sharedEntries, state.profile, state.goals, now],
   );
   const weightOnFile = weightTrend.currentWeight > 0;
   const weightValue = weightOnFile ? `${weightTrend.currentWeight} ${weightTrend.unit}` : "Not on file";
@@ -393,8 +413,8 @@ function HealthCoreScreen({
   const sparkRange = Math.max(0.1, sparkMax - sparkMin);
 
   const medicationAdherence = useMemo(
-    () => deriveMedicationAdherence({ entries: state.entries, routines: state.routines, now }),
-    [state.entries, state.routines, now],
+    () => deriveMedicationAdherence({ entries: sharedEntries, routines: state.routines, now }),
+    [sharedEntries, state.routines, now],
   );
 
   const recordVault = useMemo(() => summarizeRecordVault(state.records), [state.records]);
@@ -430,20 +450,14 @@ function HealthCoreScreen({
 
   const sensitivitiesOnFile = (state.dietProfile.sensitivities ?? "").trim();
 
-  const mealGaps = useMemo(() => {
-    const meals = state.entries
-      .filter((entry) => normalizeCareEventType(entry.type, entry.details) === "meal")
-      .sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime());
-    let longest = 0;
-    for (let i = 1; i < meals.length; i += 1) {
-      longest = Math.max(longest, hoursBetween(meals[i - 1].occurredAt, meals[i].occurredAt));
-    }
-    return longest;
-  }, [state.entries]);
+  const mealLogIntervalEvidence = useMemo(
+    () => deriveMealLogIntervalEvidence({ entries: state.entries, now }),
+    [state.entries, now],
+  );
 
   const bileTrend = useMemo(() => {
     return healthWeek.buckets.map((bucket) => {
-      const count = bileEntries.filter((entry) => {
+      const count = recentBileEntries.filter((entry) => {
         const eventTime = new Date(entry.occurredAt).getTime();
         return eventTime >= bucket.start && eventTime < bucket.end;
       }).length;
@@ -452,7 +466,18 @@ function HealthCoreScreen({
         count,
       };
     });
-  }, [bileEntries, healthWeek.buckets]);
+  }, [healthWeek.buckets, recentBileEntries]);
+
+  const bileLoggedDays7 = useMemo(
+    () =>
+      healthWeek.buckets.filter((bucket) =>
+        recentVomitEntries.some((entry) => {
+          const eventTime = new Date(entry.occurredAt).getTime();
+          return eventTime >= bucket.start && eventTime < bucket.end;
+        }),
+      ).length,
+    [healthWeek.buckets, recentVomitEntries],
+  );
 
   const healthRhythm = useMemo(() => {
     return healthWeek.buckets.map((bucket) => {
@@ -493,13 +518,13 @@ function HealthCoreScreen({
     recentHealthEntries,
   ]);
 
-  const bileStatus = deriveBileWatchStatus({
-    vomit7: healthWatch.counts.vomit7,
-    recentYellowBileCount: bileEntries.length,
-    signals: healthWatch.signals,
-  });
+  const bileStatus = deriveBileWatchStatus(bileEvidence30);
   const bileTone =
-    bileStatus === "Review" ? colors.rose : bileStatus === "Watch" ? colors.amber : colors.sage;
+    bileStatus === "Review"
+      ? colors.rose
+      : bileStatus === "Watch"
+        ? colors.amber
+        : colors.mutedForeground;
   // Health Watch is intentionally qualitative. A made-up 0-100 "health
   // score" would imply clinical precision the owner-entered logs cannot
   // support. The snapshot instead shows the factual number of days with care
@@ -513,14 +538,14 @@ function HealthCoreScreen({
   const statusTone = !hasHealthSignalData
     ? colors.mutedForeground
     : healthWatch.status === "good"
-      ? colors.sage
+      ? colors.blueSignal
       : healthWatch.status === "watch"
         ? colors.amber
         : colors.rose;
   const heroTitle = !hasHealthSignalData
     ? "No health logs yet"
     : healthWatch.status === "good"
-      ? "Stable right now"
+      ? "Care observations logged"
       : healthWatch.status === "alert"
         ? "Review needed"
         : "Worth watching";
@@ -532,14 +557,14 @@ function HealthCoreScreen({
   const statusMedallionLabel = !hasHealthSignalData
     ? "READY"
     : healthWatch.status === "good"
-      ? "GOOD"
+      ? "LOGGED"
       : healthWatch.status === "watch"
         ? "WATCH"
         : "REVIEW";
   const statusSupportCopy = !hasHealthSignalData
     ? "Health Watch starts with your first log."
     : healthWatch.status === "good"
-      ? "You're on a roll. Keep the daily rhythm steady and share patterns when they matter."
+      ? "No active Health Watch signals are showing; keep logging observations so changes remain reviewable."
       : healthWatch.status === "alert"
         ? "Consider sharing these observations with your vet, especially if patterns repeat."
         : "Pattern noticed. Keep logging food, stool, vomiting, energy, and timing.";
@@ -549,30 +574,73 @@ function HealthCoreScreen({
       : "Capture timing, food context, energy, stool detail, and repeat events before sharing with your vet.";
 
   const isBileTab = activeTab === "bile";
+  const bileObservationCount30 = bileEvidence30.vomitEntriesNewestFirst.length;
+  const bileObservationCopy30 = `${bileObservationCount30} vomiting observation${bileObservationCount30 === 1 ? "" : "s"} logged in 30 days.`;
   const heroBubbleTitle = isBileTab
-    ? bileStatus === "Low Risk"
-      ? "Bile looks calm."
-      : "Watching bile gently."
+    ? bileStatus === "No data"
+      ? "Bile needs more data."
+      : bileStatus === "Review"
+        ? "Review bile or vomiting logs."
+        : "Watching bile and vomiting logs."
     : !hasHealthSignalData
       ? "Ready when you are."
       : healthWatch.status === "good"
-        ? "Feeling steady."
-        : "Let's take it easy.";
+        ? "Care notes logged."
+        : healthWatch.status === "alert"
+          ? "Review these observations."
+          : "Keep watching the pattern.";
   const heroBubbleCopy = isBileTab
-    ? "Bile Watch records patterns calmly."
-    : "Health Watch records patterns calmly.";
+    ? bileStatus === "No data"
+      ? "Log bile or vomiting observations to build this view."
+      : "Bile Watch organizes owner observations from the last 30 days."
+    : "Health Watch organizes owner observations.";
   const snapshotTitle = isBileTab ? "Bile Snapshot" : "Health Snapshot";
-  const heroStatusKicker = isBileTab ? "BILE STATUS" : "CARE STATUS";
+  const heroStatusKicker = isBileTab ? "BILE / VOMIT · 30 DAYS" : "CARE STATUS";
   const heroPanelTitle = isBileTab
     ? bileStatus === "Review"
-      ? "Bile worth review"
+      ? "Bile or vomiting worth review"
       : bileStatus === "Watch"
-        ? "Bile worth watching"
-        : "Bile looks low risk"
+        ? "Bile or vomiting worth watching"
+        : "Not enough bile or vomiting data"
     : heroTitle;
   const heroPanelCopy = isBileTab
-    ? "Yellow bile events are tracked as calm owner notes, not diagnoses."
+    ? bileStatus === "No data"
+      ? "No bile or vomiting observations are logged in the 30-day evidence window."
+      : bileObservationCopy30
     : heroCopy;
+  const heroLoggedDays7 = isBileTab ? bileLoggedDays7 : loggedDays7;
+  const heroLogCoveragePercent = isBileTab
+    ? Math.round((bileLoggedDays7 / 7) * 100)
+    : logCoveragePercent;
+  const heroStatusTone = isBileTab ? bileTone : statusTone;
+  const heroStatusMedallionLabel = isBileTab
+    ? bileStatus === "Review"
+      ? "REVIEW"
+      : bileStatus === "Watch"
+        ? "WATCH"
+        : "NO DATA"
+    : statusMedallionLabel;
+  const heroStatusSupportCopy = isBileTab
+    ? bileStatus === "No data"
+      ? "Log a bile or vomiting observation to start this evidence window."
+      : "Use the seven-day chart for recent timing and the 30-day count for review context."
+    : statusSupportCopy;
+  const heroLoggedDaysLabel = isBileTab ? "Bile/vomit days" : "Days logged";
+
+  const metricEvidence = deriveHealthMetricEvidence({
+    entries: recentHealthEntries,
+    now,
+    healthCounts: healthWindowWatch.counts,
+    signals: healthWindowWatch.signals,
+  });
+  const metricTone = (tone: (typeof metricEvidence)[keyof typeof metricEvidence]["tone"], positive: string) =>
+    tone === "review"
+      ? colors.rose
+      : tone === "watch"
+        ? colors.amber
+        : tone === "empty"
+          ? colors.mutedForeground
+          : positive;
 
   const healthRows: {
     label: string;
@@ -585,84 +653,77 @@ function HealthCoreScreen({
   }[] = [
     {
       label: "Activity",
-      status: "Good",
-      detail: "Active daily",
+      status: metricEvidence.activity.status,
+      detail: metricEvidence.activity.detail,
       icon: "walk",
-      tone: colors.sage,
+      tone: metricTone(metricEvidence.activity.tone, colors.sage),
       routeType: "walk",
       actionLabel: statusActionLabel("walk"),
     },
     {
       label: "Appetite",
-      status: healthWatch.counts.appetiteWatch7 ? "Watch" : "Good",
-      detail: healthWatch.counts.appetiteWatch7 ? `${healthWatch.counts.appetiteWatch7} reduced meals` : "Eating well",
+      status: metricEvidence.appetite.status,
+      detail: metricEvidence.appetite.detail,
       icon: "meal",
-      tone: healthWatch.counts.appetiteWatch7 ? colors.amber : colors.sage,
+      tone: metricTone(metricEvidence.appetite.tone, colors.sage),
       routeType: "meal",
       actionLabel: statusActionLabel("meal"),
     },
     {
       label: "Stool",
-      status: healthWatch.counts.stoolWatch7 ? "Watch" : "Normal",
-      detail: healthWatch.counts.stoolWatch7 ? `${healthWatch.counts.stoolWatch7} review logs` : "Solid and healthy",
+      status: metricEvidence.stool.status,
+      detail: metricEvidence.stool.detail,
       icon: "poo",
-      tone: healthWatch.counts.stoolWatch7 ? colors.amber : colors.sage,
+      tone: metricTone(metricEvidence.stool.tone, colors.sage),
       routeType: "potty",
       actionLabel: statusActionLabel("potty"),
     },
     {
       label: "Hydration",
-      status: "Good",
-      detail: "Well hydrated",
+      status: metricEvidence.hydration.status,
+      detail: metricEvidence.hydration.detail,
       icon: "bile",
-      tone: colors.blueSignal,
+      tone: metricTone(metricEvidence.hydration.tone, colors.blueSignal),
       routeType: "water",
       actionLabel: statusActionLabel("water"),
     },
     {
       label: "Energy",
-      status: healthWatch.status === "good" ? "Good" : "Watch",
-      detail: healthWatch.status === "good" ? "High and playful" : "Worth watching",
+      status: metricEvidence.energy.status,
+      detail: metricEvidence.energy.detail,
       icon: "energy",
-      tone: healthWatch.status === "good" ? colors.sage : colors.amber,
+      tone: metricTone(metricEvidence.energy.tone, colors.sage),
       routeType: "mood",
       actionLabel: statusActionLabel("mood"),
     },
     {
       label: "Vomiting",
-      status: healthWatch.counts.vomit7 ? "Watch" : "None",
-      detail: healthWatch.counts.vomit7 ? `${healthWatch.counts.vomit7} in 7 days` : "No logs",
+      status: metricEvidence.vomiting.status,
+      detail: metricEvidence.vomiting.detail,
       icon: "vomit",
-      tone: healthWatch.counts.vomit7 ? colors.amber : colors.sage,
+      tone: metricTone(metricEvidence.vomiting.tone, colors.sage),
       routeType: "symptom",
       actionLabel: statusActionLabel("symptom"),
     },
   ];
-  // Zero-data honesty for the signal rows: "Active daily" / "Eating well"
-  // are observations, and nothing has been observed before the first log.
-  const displayHealthRows = hasHealthSignalData
-    ? healthRows
-    : healthRows.map((row) => ({
-        ...row,
-        status: "No logs",
-        detail: "Starts with your first log",
-        tone: colors.mutedForeground,
-      }));
+  const displayHealthRows = healthRows;
   const healthReviewPacket = deriveHealthReviewPacket({
     dogName: resolvePetName(state.profile.name),
     healthStatus: healthWatch.status,
     healthSummary: healthWatch.summary,
     healthCounts: {
-      vomit7: healthWatch.counts.vomit7,
+      vomit30: healthWatch.counts.vomit30,
       appetiteWatch7: healthWatch.counts.appetiteWatch7,
       stoolWatch7: healthWatch.counts.stoolWatch7,
       anxiety7: healthWatch.counts.anxiety7,
     },
     redFlagCount: healthWatch.redFlags.length,
     bileStatus,
-    lastYellowBileLabel: formatDateTime(bileEntries[0]?.occurredAt),
-    longestFoodGapLabel: mealGaps ? `${mealGaps.toFixed(1)} hours` : "Needs more meal logs",
-    bedtimeSnackLabel: state.dietProfile.bedtimeSnack || "Not set",
+    lastYellowBileLabel: bileEntries[0]?.occurredAt
+      ? formatDateTime(bileEntries[0].occurredAt)
+      : "No data in 30 days",
+    longestMealLogIntervalLabel: mealLogIntervalEvidence.label,
+    bedtimeSnackPlanLabel: state.dietProfile.bedtimeSnack || "Not set",
   });
 
   function openHealthReviewAction(action: HealthReviewPacketAction): void {
@@ -768,7 +829,7 @@ function HealthCoreScreen({
         {isBileTab ? (
           <BoardCard style={s.bileCard} enter={0}>
             <View style={s.sectionTop}>
-              <BoardSectionHeader title="Bile Watch" style={s.boardSectionTop} />
+              <BoardSectionHeader title="7-day bile log" style={s.boardSectionTop} />
               <BoardPill label={bileStatus} icon="water-outline" tone={bileTone} />
             </View>
 
@@ -781,10 +842,10 @@ function HealthCoreScreen({
               </View>
               <View style={s.bileTrendArea}>
                 <Text style={[s.bileTrendTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-                  7-day bile log
+                  Recent timing
                 </Text>
                 <Text style={[s.bileTrendCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Yellow bile events are tracked as owner notes, not diagnoses.
+                  Seven calendar days of owner-entered yellow bile observations.
                 </Text>
                 <View style={s.bileBars}>
                   {bileTrend.map((day, index) => {
@@ -796,7 +857,7 @@ function HealthCoreScreen({
                             s.bileBar,
                             {
                               height: active ? Math.min(34, 14 + day.count * 8) : 8,
-                              backgroundColor: active ? bileTone : colors.sage + "33",
+                              backgroundColor: active ? bileTone : colors.muted,
                               borderColor: active ? bileTone : colors.border,
                             },
                           ]}
@@ -814,30 +875,30 @@ function HealthCoreScreen({
             <View style={s.metricGrid}>
               <BoardMetricTile
                 icon="bile"
-                label="Last yellow bile event"
-                value={formatDateTime(bileEntries[0]?.occurredAt)}
+                label="Last yellow bile event · 30 days"
+                value={bileEntries[0]?.occurredAt ? formatDateTime(bileEntries[0].occurredAt) : "No data"}
                 tone={bileTone}
                 style={s.metricHalf}
               />
               <BoardMetricTile
-                icon="meal"
-                label="Longest food gap"
-                value={mealGaps ? `${mealGaps.toFixed(1)} hours` : "Needs more meal logs"}
-                tone={colors.copper}
-                style={s.metricHalf}
-              />
-              <BoardMetricTile
-                icon="treat"
-                label="Bedtime snack proof"
-                value={state.dietProfile.bedtimeSnack || "Not set"}
-                tone={colors.amber}
+                icon="bile"
+                label="Yellow bile · 30 days"
+                value={bileEntries.length ? `${bileEntries.length} observation${bileEntries.length === 1 ? "" : "s"}` : "No data"}
+                tone={bileTone}
                 style={s.metricHalf}
               />
               <BoardMetricTile
                 icon="vomit"
-                label="7-day trend"
-                value={`${healthWatch.counts.vomit7} vomit logs`}
-                tone={colors.rose}
+                label="Vomiting · 30 days"
+                value={bileObservationCount30 ? `${bileObservationCount30} observation${bileObservationCount30 === 1 ? "" : "s"}` : "No data"}
+                tone={bileTone}
+                style={s.metricHalf}
+              />
+              <BoardMetricTile
+                icon="vomit"
+                label="Bile/vomit days · 7 days"
+                value={bileLoggedDays7 ? `${bileLoggedDays7} of 7` : "No data"}
+                tone={bileTone}
                 style={s.metricHalf}
               />
             </View>
@@ -862,10 +923,10 @@ function HealthCoreScreen({
                 </Text>
                 <View style={s.healthStageBubbleTail} />
               </View>
-              <View style={[s.healthStageChip, { backgroundColor: colors.sageSoft, borderColor: colors.sage + "55" }]}>
+              <View style={[s.healthStageChip, { backgroundColor: colors.card, borderColor: heroStatusTone }]}>
                 <PixelIcon name="health" size={16} />
-                <Text style={[s.healthStageChipText, { color: colors.forest, fontFamily: "Inter_700Bold" }]}>
-                  {statusMedallionLabel}
+                <Text style={[s.healthStageChipText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  {heroStatusMedallionLabel}
                 </Text>
               </View>
             </View>
@@ -885,35 +946,28 @@ function HealthCoreScreen({
             <BoardSectionHeader
               title={snapshotTitle}
               style={s.healthSnapshotHeader}
-              accessory={
-                <HealthHeaderAction
-                  label="7-day view"
-                  accessibilityLabel="Show Health 7-day rhythm"
-                  onPress={() => {
-                    selectHealthTab("health");
-                  }}
-                />
-              }
             />
             <View style={s.healthHeroStatusRow}>
-              <View style={[s.healthScoreToken, { backgroundColor: statusTone + "14", borderColor: statusTone + "66" }]}>
-                <Text style={[s.healthScoreValue, { color: statusTone, fontFamily: DISPLAY }]}>{loggedDays7}/7</Text>
-                <Text style={[s.healthScoreLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
-                  Days logged
+              <View style={[s.healthScoreToken, { backgroundColor: heroStatusTone + "14", borderColor: heroStatusTone + "66" }]}>
+                <Text style={[s.healthScoreValue, { color: heroStatusTone, fontFamily: DISPLAY }]}>
+                  {isBileTab ? <>{heroLoggedDays7}/7</> : <>{loggedDays7}/7</>}
+                </Text>
+                <Text style={[s.healthScoreLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                  {heroLoggedDaysLabel}
                 </Text>
               </View>
 
               <View style={s.healthHeroCopyStack}>
-                <Text style={[s.heroLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>{heroStatusKicker}</Text>
+                <Text style={[s.heroLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{heroStatusKicker}</Text>
                 <Text style={[s.heroTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>{heroPanelTitle}</Text>
                 <Text style={[s.heroCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                   {heroPanelCopy}
                 </Text>
                 <View style={[s.statusScoreTrack, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                  <View style={[s.statusScoreFill, { width: `${logCoveragePercent}%`, backgroundColor: statusTone }]} />
+                  <View style={[s.statusScoreFill, { width: `${heroLogCoveragePercent}%`, backgroundColor: heroStatusTone }]} />
                 </View>
                 <Text style={[s.statusSupportCopy, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
-                  {statusSupportCopy}
+                  {heroStatusSupportCopy}
                 </Text>
               </View>
             </View>
@@ -922,7 +976,7 @@ function HealthCoreScreen({
               <>
                 <View style={[s.healthRhythmPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
                   <View style={s.healthRhythmHeader}>
-                    <Text style={[s.healthRhythmTitle, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>
+                    <Text style={[s.healthRhythmTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                       7-day rhythm
                     </Text>
                     <Text style={[s.healthRhythmMeta, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>
@@ -974,17 +1028,17 @@ function HealthCoreScreen({
                           <Text style={[s.healthSignalTitle, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
                             {row.label}
                           </Text>
-                          <Text style={[s.healthSignalStatus, { color: row.tone, fontFamily: DISPLAY_SEMI }]}>{row.status}</Text>
+                          <Text style={[s.healthSignalStatus, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>{row.status}</Text>
                         </View>
                         <Text style={[s.healthSignalDetail, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                           {row.detail}
                         </Text>
                       </View>
                       <View style={[s.healthSignalActionPill, { backgroundColor: row.tone + "10", borderColor: row.tone + "44" }]}>
-                        <Text style={[s.healthSignalAction, { color: row.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                        <Text style={[s.healthSignalAction, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
                           Log
                         </Text>
-                        <Text style={[s.healthSignalActionArrow, { color: row.tone, fontFamily: "Inter_800ExtraBold" }]}>
+                        <Text style={[s.healthSignalActionArrow, { color: colors.foreground, fontFamily: "Inter_800ExtraBold" }]}>
                           {">"}
                         </Text>
                       </View>
@@ -998,14 +1052,16 @@ function HealthCoreScreen({
           <View style={s.healthActionRow}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Log a health note"
-              onPress={() => openHealthStatusRoute("note")}
+              accessibilityLabel={isBileTab ? "Log vomiting details" : "Log a health note"}
+              onPress={() => openHealthStatusRoute(isBileTab ? "symptom" : "note")}
               style={({ pressed }) => [
                 s.heroActionPrimary,
                 { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
               ]}
             >
-              <Text style={[s.heroActionPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Log health note</Text>
+              <Text style={[s.heroActionPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                {isBileTab ? "Log vomiting" : "Log health note"}
+              </Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -1272,7 +1328,7 @@ function HealthCoreScreen({
           <View style={s.reviewPacketTop}>
             <View style={s.reviewPacketTitleStack}>
               <BoardSectionHeader title="Review packet" style={s.boardSectionTop} />
-              <Text style={[s.reviewPacketStatus, { color: statusTone, fontFamily: DISPLAY_SEMI }]}>
+              <Text style={[s.reviewPacketStatus, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                 {healthReviewPacket.statusLabel}
               </Text>
             </View>
@@ -1354,7 +1410,7 @@ function HealthCoreScreen({
                 { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
               ]}
             >
-              <Text style={[s.reviewPacketPrimaryText, { fontFamily: "Inter_700Bold" }]}>
+              <Text style={[s.reviewPacketPrimaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
                 {healthReviewPacket.primaryAction.label}
               </Text>
             </Pressable>
@@ -1392,35 +1448,64 @@ function HealthCoreScreen({
           />
           <View style={[s.reviewPanel, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <Text style={[s.reviewTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
-              {healthWatch.status === "good" ? "Care rhythm looks steady" : "Next best review step"}
+              {!hasHealthSignalData
+                ? "More observations needed"
+                : healthWatch.status === "good"
+                  ? "No active Health Watch signals"
+                  : "Next best review step"}
             </Text>
             <Text style={[s.reviewCopy, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {reviewCopy}
             </Text>
           </View>
-          {healthWatch.patterns.slice(0, 4).map((pattern) => (
-            <View key={pattern.kind} style={[s.patternRow, { borderTopColor: colors.border }]}>
-              <View style={s.patternTitleRow}>
-                <Text style={[s.patternTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  {pattern.label}
+          {healthWatch.patterns.slice(0, 4).map((pattern) => {
+            const goodPatternHasNoData = pattern.status === "good" && !hasHealthSignalData;
+            return (
+              <View key={pattern.kind} style={[s.patternRow, { borderTopColor: colors.border }]}>
+                <View style={s.patternTitleRow}>
+                  <Text style={[s.patternTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    {pattern.status === "good"
+                      ? goodPatternHasNoData
+                        ? "Health Watch needs logs"
+                        : "No active Health Watch signals"
+                      : pattern.label}
+                  </Text>
+                  <BoardPill
+                    label={
+                      pattern.status === "good"
+                        ? goodPatternHasNoData
+                          ? "No data"
+                          : "Logged"
+                        : pattern.status === "alert"
+                          ? "Review"
+                          : "Watch"
+                    }
+                    tone={
+                      pattern.status === "alert"
+                        ? colors.rose
+                        : pattern.status === "watch"
+                          ? colors.amber
+                          : goodPatternHasNoData
+                            ? colors.mutedForeground
+                            : colors.blueSignal
+                    }
+                  />
+                </View>
+                <Text style={[s.patternCopy, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                  {goodPatternHasNoData
+                    ? "No Health Watch observations are logged in the current window."
+                    : pattern.evidence}
                 </Text>
-                <BoardPill
-                  label={pattern.status === "good" ? "Steady" : pattern.status === "alert" ? "Review" : "Watch"}
-                  tone={pattern.status === "alert" ? colors.rose : pattern.status === "watch" ? colors.amber : colors.sage}
-                />
+                <Text style={[s.patternStep, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+                  {pattern.nextStep}
+                </Text>
               </View>
-              <Text style={[s.patternCopy, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                {pattern.evidence}
-              </Text>
-              <Text style={[s.patternStep, { color: colors.copper, fontFamily: "Inter_600SemiBold" }]}>
-                {pattern.nextStep}
-              </Text>
-            </View>
-          ))}
+            );
+          })}
         </BoardCard>
 
         <View style={[s.boundaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[s.boundaryLabel, { color: colors.sage, fontFamily: "Inter_700Bold" }]}>CARE BOUNDARY</Text>
+          <Text style={[s.boundaryLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>CARE BOUNDARY</Text>
           <Text style={[s.boundary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
             {healthWatch.vetBoundary} Not veterinary advice.
           </Text>
@@ -1946,7 +2031,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
   },
   reviewPacketPrimaryText: {
-    color: "#FFFFFF",
     fontSize: 13,
     textAlign: "center",
   },

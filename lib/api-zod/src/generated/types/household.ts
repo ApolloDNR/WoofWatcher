@@ -9,5 +9,10 @@
 export interface Household {
   id: string;
   name: string;
+  /**
+   * Deprecated compatibility field. Always empty; durable HouseholdInvitation rows are the only production join credentials.
+   * @deprecated
+   * @maxLength 0
+   */
   inviteCode: string;
 }

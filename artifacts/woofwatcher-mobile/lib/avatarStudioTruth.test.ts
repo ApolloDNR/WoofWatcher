@@ -123,7 +123,10 @@ test("Avatar Studio reports picker, removal, save, and reset failures without ly
   const save = between(screen, "const saveDraft = async", "const resetDraft = async");
   const reset = between(screen, "const resetDraft = async", "return (");
 
-  assert.match(screen, /import \{ notifyDialog \} from "@\/lib\/confirmDialog"/);
+  assert.match(
+    screen,
+    /import\s*\{[^}]*\bnotifyDialog\b[^}]*\}\s*from\s*"@\/lib\/confirmDialog"/s,
+  );
   assert.match(pick, /permissionDenied = true/);
   assert.match(pick, /Permission needed/);
   assert.match(pick, /catch \(error\)/);

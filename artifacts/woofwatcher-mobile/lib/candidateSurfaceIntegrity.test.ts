@@ -51,11 +51,11 @@ test("keeps every React Native modal on the VoiceOver-safe structural contract",
   assert.match(primitives, /accessibilityRole="button"/);
   assert.match(
     primitives,
-    /<Pressable[\s\S]*accessible=\{false\}[\s\S]*accessibilityViewIsModal[\s\S]*onAccessibilityEscape=\{onRequestClose\}[\s\S]*event\.stopPropagation\(\)/,
+    /<Pressable[\s\S]*accessible=\{false\}[\s\S]*accessibilityViewIsModal[\s\S]*onAccessibilityEscape=\{requestCloseIfAllowed\}[\s\S]*event\.stopPropagation\(\)/,
   );
   assert.match(primitives, /accessibilityLabel=\{closeAccessibilityLabel\}/);
   assert.match(primitives, /AccessibilityInfo\.setAccessibilityFocus\(reactTag\)/);
-  assert.match(primitives, /if \(!visible\) return/);
+  assert.match(primitives, /if \(!visible \|\| closeBlocked\) return/);
   assert.match(primitives, /minHeight:\s*MIN_MOBILE_TOUCH_TARGET/);
   assert.match(primitives, /minWidth:\s*MIN_MOBILE_TOUCH_TARGET/);
   assert.ok(modalOwners.length > 0, "the candidate should still have modal owners");
@@ -169,6 +169,8 @@ test("QA evidence actions are exclusive and freeze concurrent note or status edi
 test("keeps long modal forms reachable above compact screens and the keyboard", () => {
   const calendar = readMobile("app", "(tabs)", "calendar.tsx");
   const records = readMobile("components", "health", "RecordsScreen.tsx");
+  const dogProfile = readMobile("components", "more", "DogProfileScreen.tsx");
+  const diet = readMobile("components", "health", "DietScreen.tsx");
 
   assert.match(calendar, /KeyboardAvoidingView/);
   assert.match(calendar, /getKeyboardAvoidingVerticalOffset/);
@@ -191,6 +193,24 @@ test("keeps long modal forms reachable above compact screens and the keyboard", 
   );
   assert.match(records, /recordFormScroll:\s*\{\s*flexShrink:\s*1\s*\}/);
   assert.match(records, /recordFormContent:\s*\{[^}]*paddingBottom:/);
+
+  for (const [label, source] of [
+    ["Dog Profile", dogProfile],
+    ["Diet Profile", diet],
+  ] as const) {
+    assert.match(source, /KeyboardAvoidingView/, `${label} must avoid the keyboard`);
+    assert.match(source, /getKeyboardAvoidingVerticalOffset/);
+    assert.match(
+      source,
+      /behavior=\{Platform\.OS === "ios" \? "padding" : undefined\}/,
+    );
+    assert.match(source, /keyboardShouldPersistTaps="handled"/);
+    assert.match(
+      source,
+      /profileFormScroll:\s*\{[^}]*flexShrink:\s*1[^}]*minHeight:\s*0/,
+      `${label} must let its long form shrink and scroll above the keyboard`,
+    );
+  }
 });
 
 test("keeps owner tooling and proof language outside the consumer candidate", () => {

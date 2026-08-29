@@ -94,6 +94,42 @@ test("prompts setup when there is no care team or routine board", () => {
   assert.match(responsibility.nextStep, /Add the first caregiver/i);
 });
 
+test("future and private same-day logs cannot become household activity", () => {
+  let privateTimestampRead = false;
+  const responsibility = deriveHouseholdResponsibility({
+    now: NOW,
+    caregivers: [{ name: "Apollo", role: "Owner" }],
+    routines: [],
+    entries: [
+      {
+        id: "future_note",
+        type: "note",
+        title: "Later update",
+        caregiver: "Apollo",
+        occurredAt: "2026-06-11T10:30:00-07:00",
+        details: { householdVisible: true },
+      },
+      {
+        id: "private_note",
+        type: "note",
+        title: "Private update",
+        caregiver: "Apollo",
+        get occurredAt(): string {
+          privateTimestampRead = true;
+          throw new Error("private household evidence timestamp must stay unread");
+        },
+        details: { householdVisible: false },
+      },
+    ],
+  });
+
+  const apollo = responsibility.members.find((member) => member.name === "Apollo");
+  assert.equal(privateTimestampRead, false);
+  assert.equal(apollo?.todayLogs, 0);
+  assert.equal(apollo?.latestLogTitle, null);
+  assert.equal(apollo?.latestLogAt, null);
+});
+
 test("assigned correction-only array values stay outside household care metrics", () => {
   const responsibility = deriveHouseholdResponsibility({
     now: NOW,

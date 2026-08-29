@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
+import { isHouseholdVisibleCareEvidence } from "./shared-evidence.ts";
 
 export type GroomingCareStatus = "needs-log" | "steady" | "due-soon" | "watch";
 export type GroomingKind = "brush" | "bath" | "nails" | "teeth" | "other";
@@ -81,7 +82,7 @@ function countLabel(value: number, noun: string): string {
 }
 
 function isVisible(entry: GroomingCareEntry): boolean {
-  return asObject(entry.details).householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 function isInLookback(iso: string | null | undefined, now: number, lookbackDays: number): boolean {

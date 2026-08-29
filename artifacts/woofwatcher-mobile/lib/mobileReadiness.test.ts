@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, relative } from "node:path";
-import { deriveHealthWatch } from "../../../lib/care-domain/src/index.ts";
+import {
+  deriveBileVomitEvidence30,
+  deriveHealthWatch,
+} from "../../../lib/care-domain/src/index.ts";
 import { describeQuickLogDetailSheet } from "./quickLogEntry.ts";
 import { buildTrendWindow } from "./trendsChart.ts";
 import {
@@ -868,8 +871,11 @@ test("keeps critical mobile actions accessible to screen readers", () => {
     woofGuide,
     /accessibilityLabel=\{`Review WoofGuide action: \$\{action\.label\}/,
   );
-  assert.match(woofGuide, /accessibilityLabel="Close owner review"/);
-  assert.match(woofGuide, /accessibilityLabel="Send WoofGuide message"/);
+  assert.match(woofGuide, /closeAccessibilityLabel="Close owner review"/);
+  assert.match(
+    woofGuide,
+    /accessibilityLabel=\{loading \? "WoofGuide is thinking" : "Send WoofGuide message"\}/,
+  );
   assert.match(more, /accessibilityLabel="Open dog profile"/);
   assert.match(dogProfile, /accessibilityLabel=\{`Edit \$\{petName\}'s profile`\}/);
   assert.match(dogProfile, /accessibilityLabel="Save dog profile"/);
@@ -1621,7 +1627,10 @@ test("keeps Home welcome persistence on the reset-aware device store", () => {
   assert.match(home, /useDevicePreferences/);
   assert.doesNotMatch(home, /\bAsyncStorage\b/);
   assert.match(home, /store\s*\.\s*hydrate\(HOME_WELCOME_DISMISSED_KEY/);
-  assert.match(home, /apply:\s*\(raw\)\s*=>\s*setWelcomeDismissed\(raw === "true"\)/);
+  assert.match(
+    home,
+    /apply:\s*\(raw\)\s*=>\s*\{\s*applyHomeWelcomePreferenceHydration\(\s*raw,\s*deferWelcomeForSessionRef\.current,\s*welcomeDismissedRef,\s*setWelcomeDismissed,?\s*\);\s*\}/,
+  );
   assert.match(home, /store\s*\.\s*save\(HOME_WELCOME_DISMISSED_KEY,\s*"true"\)/);
   assert.match(home, /LocalDataResetInProgressError/);
   assert.match(home, /operationSettledEpoch/);
@@ -2046,7 +2055,9 @@ test("keeps Home first-screen status grouped as a care status board", () => {
   assert.doesNotMatch(home, /const hydrationScore =/);
   assert.doesNotMatch(home, /value="Good"/);
   assert.match(home, /valueLabel=\{hasMoodEvidence \? status\.meta\.label : "No data"\}/);
-  assert.match(home, /valueLabel=\{hasEnergyEvidence \? `\$\{status\.energy\}%` : "No data"\}/);
+  assert.match(home, /const hasEnergyEvidence = status\.evidence\.energy !== null/);
+  assert.match(home, /valueLabel=\{energyEvidenceLabel\}/);
+  assert.doesNotMatch(home, /`\$\{status\.energy\}%`/);
   assert.match(home, /formatHomeCompletion\(meals\.done, meals\.target\)/);
   assert.doesNotMatch(home, /meals\.target \|\| 2/);
   assert.doesNotMatch(home, /potty\.target \|\| 3/);
@@ -2350,8 +2361,11 @@ test("keeps Home no-target meal readings visually neutral", () => {
     /tone=\{hasMealTarget \? colors\.meterHunger : colors\.mutedForeground\}/,
   );
   assert.doesNotMatch(home, /tone=\{colors\.meterHunger\}/);
-  assert.match(home, /Mood needs a mood, alone-time, or symptom log/);
+  assert.match(home, /Mood needs an explicit mood or return outcome/);
+  assert.match(home, /Energy needs an energy level from a mood check-in/);
   assert.doesNotMatch(home, /Mood needs a mood, activity/);
+  assert.doesNotMatch(home, /Mood needs[^.]*symptom observation/);
+  assert.doesNotMatch(home, /Energy needs an activity log/);
 });
 
 test("keeps Home presence panel routed to exact household care state", () => {
@@ -2592,17 +2606,25 @@ test("keeps 8-30-day Health Watch evidence visible outside the seven-day rhythm"
     now,
     petName: "Phoenix",
   });
+  const bileEvidence30 = deriveBileVomitEvidence30({ entries, now });
 
   assert.equal(recentHealthEntries.length, 0);
   assert.equal(healthWatch.status, "alert");
   assert.ok(healthWatch.signals.length > 0);
   assert.equal(healthWatch.redFlags.length, 1);
+  assert.equal(bileEvidence30.vomitEntriesNewestFirst.length, 1);
+  assert.equal(bileEvidence30.yellowBileEntriesNewestFirst.length, 1);
 
   const health = readAppFile(join("(tabs)", "health.tsx"));
   assert.match(
     health,
-    /deriveBileWatchStatus\(\{[\s\S]*vomit7:\s*healthWatch\.counts\.vomit7,[\s\S]*recentYellowBileCount:\s*bileEntries\.length,[\s\S]*signals:\s*healthWatch\.signals/,
-    "Bile Watch must retain 8-30-day vomit-pattern signals without widening the seven-day chart",
+    /const sharedEntries = useMemo\([\s\S]*selectSharedCareEvidence\(state\.entries, now\)[\s\S]*const bileEvidence30 = useMemo\([\s\S]*deriveBileVomitEvidence30\(\{ entries: sharedEntries, now \}\)/,
+    "Bile Watch must select its status and metrics from the shared 30-day evidence window",
+  );
+  assert.match(
+    health,
+    /const bileStatus = deriveBileWatchStatus\(bileEvidence30\)/,
+    "Bile Watch status must consume the same evidence object as its metrics",
   );
   assert.match(
     health,
@@ -2625,14 +2647,25 @@ test("web notices and confirms use the themed dialog host, not raw window.alert 
   assert.match(dialogLib, /registerWebDialogPresenter/);
   assert.match(dialogLib, /if \(webDialogPresenter\)/);
   assert.match(dialogLib, /cancelLabel: null/);
-  assert.match(dialogLib, /onConfirm: \(\) => confirmThroughSteps\(rest, onConfirmed\)/);
+  assert.match(dialogLib, /function presentConfirmationSteps/);
+  assert.match(dialogLib, /onConfirm: confirmStep/);
+  assert.match(dialogLib, /onCancel: cancelStep/);
+  assert.match(dialogLib, /onPress: cancelStep/);
+  assert.match(dialogLib, /cancelable: true/);
+  assert.match(dialogLib, /onDismiss: cancelStep/);
+  assert.match(dialogLib, /onCancelled: \(\) => void = noop/);
+  assert.match(
+    dialogLib,
+    /if \(webConfirm\(step\)\)[\s\S]{0,120}confirmStep\(\)[\s\S]{0,120}else[\s\S]{0,120}cancelStep\(\)/,
+  );
 
   // The host is themed (board card + palette tokens), accessible, and queued
   // so chained confirm steps are never lost.
   assert.match(host, /registerWebDialogPresenter\(/);
   assert.match(host, /useColors\(\)/);
   assert.match(host, /accessibilityRole="alert"/);
-  assert.match(host, /setQueue\(\(current\) => \[\.\.\.current, request\]\)/);
+  assert.match(host, /const nextQueue = \[\.\.\.queueRef\.current, request\]/);
+  assert.match(host, /setQueue\(nextQueue\)/);
   assert.match(host, /current\.cancelLabel != null/);
 
   // Mounted once inside the web frame so dialogs overlay the app shell.
@@ -2748,11 +2781,16 @@ test("keeps Health tab wired to non-diagnostic Health Watch and Bile Watch", () 
   assert.match(health, /7-day bile log/);
   assert.match(health, /function HealthHeaderAction/);
   assert.match(health, /hitSlop=\{MOBILE_INLINE_HIT_SLOP\}/);
-  assert.match(health, /accessibilityLabel="Show Health 7-day rhythm"/);
+  assert.doesNotMatch(
+    health,
+    /accessibilityLabel="Show Health 7-day rhythm"/,
+    "the Health/Bile snapshot must not offer a dead or misleading self-navigation action",
+  );
   assert.match(
     health,
-    /accessibilityLabel="Show Health 7-day rhythm"[\s\S]{0,180}selectHealthTab\("health"\)/,
+    /<BoardSectionHeader title="7-day bile log" style=\{s\.boardSectionTop\} \/>/,
   );
+  assert.match(health, />\s*Recent timing\s*<\/Text>/);
   assert.match(health, /accessibilityLabel="Open health owner notes"/);
   assert.match(health, /openHealthStatusRoute/);
   assert.match(health, /statusActionLabel/);
@@ -3007,12 +3045,12 @@ test("keeps web route previews visible before native entry animation starts", ()
     );
     assert.match(
       source,
-      /new Animated\.Value\(isWebRoutePreview \? 1 : 0\)/,
+      /new Animated\.Value\(isWebRoutePreview(?: \|\| reducedMotion)? \? 1 : 0\)/,
       `${route} should render visible immediately in web previews`,
     );
     assert.match(
       source,
-      /if \(isWebRoutePreview\) return;/,
+      /if \(isWebRoutePreview(?: \|\| reducedMotion)?\)(?: return;| \{[\s\S]{0,180}?return;)/,
       `${route} should skip native-style entrance animation on web`,
     );
   }
@@ -3026,7 +3064,7 @@ test("keeps web route previews visible before native entry animation starts", ()
   })) {
     assert.match(
       source,
-      /new Animated\.Value\(isWebRoutePreview \? 0 : (?:16|18)\)/,
+      /new Animated\.Value\(isWebRoutePreview(?: \|\| reducedMotion)? \? 0 : (?:16|18)\)/,
       `${route} should keep web slide offset at rest for deterministic captures`,
     );
   }
@@ -3086,11 +3124,20 @@ test("keeps compact mobile proof and mission cards from clipping", () => {
     /maxWidth:\s*"100%"/,
     "QA badges should stay inside compact card headers",
   );
+  const planMissionRow = getStyleBlock(plans, "planMissionRow");
+  const planMissionAction = getStyleBlock(plans, "planMissionAction");
   assert.match(
-    getStyleBlock(plans, "planMissionAction"),
-    /width:\s*66[\s\S]*flexShrink:\s*0/,
-    "Plan action chips should keep a compact fixed width on phones",
+    planMissionRow,
+    /flexWrap:\s*"wrap"/,
+    "Plan mission rows should reflow instead of clipping large text",
   );
+  assert.doesNotMatch(planMissionRow, /overflow:\s*"hidden"/);
+  assert.match(
+    planMissionAction,
+    /minWidth:\s*66[\s\S]*maxWidth:\s*"100%"[\s\S]*flexShrink:\s*1[\s\S]*minHeight:\s*MIN_MOBILE_TOUCH_TARGET/,
+    "Plan action chips should reflow while preserving the shared touch target",
+  );
+  assert.doesNotMatch(planMissionAction, /\bwidth:\s*66/);
   assert.match(
     getStyleBlock(readAppFile(join("(tabs)", "log.tsx")), "logCommandStageCard"),
     /width:\s*"100%"[\s\S]*maxWidth:\s*"100%"/,
@@ -5096,11 +5143,12 @@ test("keeps the durable sync outbox visible in care context and Log", () => {
   assert.match(log, /syncOutbox\.retryable/);
 });
 
-test("keeps care log audit trails wired into Log edit, sticky note, delete, and detail flows", () => {
+test("keeps care log audit trails wired into edits and details while deletion publishes no stale audit", () => {
   const log = readAppFile(join("(tabs)", "log.tsx"));
 
   assert.match(log, /appendCareAuditEvent/);
-  assert.match(log, /buildCareLogDeletionAuditEntry/);
+  assert.match(log, /runCareLogDeletionWithoutSharedAudit/);
+  assert.doesNotMatch(log, /buildCareLogDeletionAuditEntry/);
   assert.match(log, /getCareAuditTrail/);
   assert.match(log, /detailAuditTrail/);
   assert.match(log, /detailAuditSummary/);
@@ -5195,7 +5243,12 @@ test("keeps household sync health visible from More", () => {
   assert.match(more, /care-entry-provider-sync-proof/);
   assert.match(more, /Open sync proof/);
   assert.match(more, /accessibilityLabel="Open care-entry provider sync proof mission"/);
-  assert.match(more, /accessibilityLabel="Refresh household sync"/);
+  assert.match(more, /initialSyncStatus\.state === "error"/);
+  assert.match(more, /retryInitialSync\(\)/);
+  assert.match(
+    more,
+    /accessibilityLabel=\{[\s\S]{0,220}"Retry household sync"[\s\S]{0,120}"Refresh household sync"/,
+  );
 });
 
 test("keeps household responsibility visible in Calendar, More directory, and Care Team", () => {
@@ -5581,7 +5634,12 @@ test("keeps household access readiness visible from the Care Team owner", () => 
   assert.match(careTeamSupplies, /localOnlyCaregivers/);
   assert.match(careTeamSupplies, /routineOnlyOwners/);
   assert.match(careTeamSupplies, /person\.permissions\.slice\(0, 2\)/);
-  assert.match(careTeamSupplies, /accessibilityLabel="Share household invite"/);
+  assert.match(
+    careTeamSupplies,
+    /accessibilityLabel="Create and share one-time household invite"/,
+  );
+  assert.match(careTeamSupplies, /createHouseholdInvitation\(/);
+  assert.doesNotMatch(careTeamSupplies, /household(?:Access)?\.inviteCode/);
 });
 
 test("keeps Access Pass and My Care Today operations visible from Care Team", () => {
@@ -6293,7 +6351,7 @@ test("keeps care document refresh conflict-safe in CareContext", () => {
 
   assert.match(careContext, /reconcileCareDocFromServer/);
   assert.match(careContext, /shouldPushLocal/);
-  assert.match(careContext, /putCareState\(\{\s*version: plan\.version/);
+  assert.match(careContext, /putCareState\(\s*\{\s*version: plan\.version/);
 });
 
 test("keeps future care documents read-only across every persistence and sync boundary", () => {
@@ -6305,7 +6363,15 @@ test("keeps future care documents read-only across every persistence and sync bo
 
   assert.match(careContext, /futureCareDocRef/);
   assert.match(careContext, /futureCareCacheRawRef/);
-  assert.match(careContext, /futureRaw = raw/);
+  assert.match(
+    careContext,
+    /parseCareIdentityVault\(raw, dataScope\)[\s\S]*readCareIdentitySlot<[^>]+>\(\s*vault,\s*dataScope,[\s\S]*futureRaw = readCareIdentitySlotRaw\(vault, dataScope\)/,
+  );
+  assert.doesNotMatch(
+    careContext,
+    /futureRaw = raw/,
+    "a future document must preserve only the active identity slot, never another account's raw vault",
+  );
   assert.match(
     careContext,
     /futureCareCacheRawRef\.current = staged\.futureRaw/,
@@ -6323,12 +6389,31 @@ test("keeps future care documents read-only across every persistence and sync bo
   assert.match(careContext, /const updateEntry = useCallback\(\s*\([^)]*\) => \{\s*if \(careDocWritesBlocked\(\)\) return false;/);
   assert.ok((careContext.match(/careDocWritesBlocked\(\)/g) ?? []).length >= 10,
     "cache, document, entry, attachment ownership, provider mutation, and reconciliation paths must all fail closed");
-  assert.match(careContext, /onSuccess: \([^)]*\) => \{[\s\S]{0,260}careWriteCanContinue\(writeGeneration\)/);
-  assert.match(careContext, /onFailure: \([^)]*\) => \{[\s\S]{0,260}careWriteCanContinue\(writeGeneration\)/);
+  for (const handler of ["onSuccess", "onFailure"]) {
+    assert.match(
+      careContext,
+      new RegExp(
+        `${handler}: (?:async )?\\([^)]*\\) => \\{[\\s\\S]{0,700}` +
+          `authIdentityBoundary\\.canContinue\\(authPermit\\)[\\s\\S]{0,180}` +
+          `activeDataScopeRef\\.current !== authPermit\\.dataScope[\\s\\S]{0,180}` +
+          `careWriteCanContinue\\(writeGeneration\\)`,
+      ),
+      `${handler} must reject stale auth identity, data scope, and write generation`,
+    );
+  }
   assert.match(careContext, /createCareEntry\([^;]*\)\s*\.then\(async \(created\) => \{\s*if \(!canContinue\(\)\) return;/);
-  assert.match(careContext, /\.catch\(\(\) => \{\s*if \(!canContinue\(\)\) return;/);
-  assert.match(careContext, /await deleteCareEntry\(realId\);[\s\S]{0,220}if \(!canContinue\(\)\) return false;/);
-  assert.match(careContext, /await putCareState\([\s\S]{0,300}!canContinue\(\)/);
+  assert.match(
+    careContext,
+    /\.catch\(async \(error\) => \{\s*if \(!canContinue\(\)\) return;/,
+  );
+  assert.match(
+    careContext,
+    /await runHouseholdBoundRequest\(\s*authPermit!,[\s\S]{0,180}deleteCareEntry\(\s*realId,[\s\S]{0,140}expectedHouseholdHeaders\(authPermit!\.householdId\)[\s\S]{0,220}if \(!canContinue\(\)\) return false;/,
+  );
+  assert.match(
+    careContext,
+    /await runHouseholdBoundRequest\(\s*authPermit,[\s\S]{0,160}putCareState\([\s\S]{0,300}expectedHouseholdHeaders\(authPermit\.householdId\)[\s\S]{0,260}!canContinue\(\)/,
+  );
   assert.ok((careContext.match(/if \(!canContinue\(\)\) return/g) ?? []).length >= 25,
     "create, delete, push, and reconciliation continuations must re-check the monotonic protection token");
   assert.match(careContext, /setStorageWarning\("newer-version"\)/);
@@ -6393,7 +6478,7 @@ test("keeps every current care mutation surface truthful when future data is rea
   const expectedInventory = {
     "app/(tabs)/calendar.tsx": { addEntry: 1, deleteEntry: 1, updateCareDoc: 6, updateEntry: 0 },
     "app/(tabs)/index.tsx": { addEntry: 2, deleteEntry: 1, updateCareDoc: 0, updateEntry: 1 },
-    "app/(tabs)/log.tsx": { addEntry: 5, deleteEntry: 2, updateCareDoc: 1, updateEntry: 8 },
+    "app/(tabs)/log.tsx": { addEntry: 4, deleteEntry: 2, updateCareDoc: 1, updateEntry: 8 },
     "app/(tabs)/more.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
     "components/more/CareTeamSuppliesScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 2, updateEntry: 0 },
     "components/more/DogProfileScreen.tsx": { addEntry: 0, deleteEntry: 0, updateCareDoc: 1, updateEntry: 0 },
@@ -6444,7 +6529,7 @@ test("keeps every current care mutation surface truthful when future data is rea
   }
 
   assert.deepEqual(actualInventory, expectedInventory);
-  assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.addEntry, 0), 13);
+  assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.addEntry, 0), 12);
   assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.updateCareDoc, 0), 19);
   assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.updateEntry, 0), 10);
   assert.equal(Object.values(actualInventory).reduce((sum, item) => sum + item.deleteEntry, 0), 5);
@@ -6453,7 +6538,7 @@ test("keeps every current care mutation surface truthful when future data is rea
       (sum, item) => sum + item.addEntry + item.updateCareDoc + item.updateEntry + item.deleteEntry,
       0,
     ),
-    47,
+    46,
   );
 
   for (const [path, source, expectedAcceptedCallbacks] of [
@@ -6525,6 +6610,7 @@ test("wires strict workflow validation and canonical local care dates through ev
   const month = readAppFile("calendar-month.tsx");
   const guide = readWoofGuideScreen();
   const guideActions = readMobileLibFile("woofGuideActions.ts");
+  const guideContext = readMobileLibFile("woofGuideAssistantContext.ts");
 
   assert.match(calendar, /validateRoutineDraft/);
   assert.match(calendar, /validateCalendarEventDraft/);
@@ -6595,8 +6681,9 @@ test("wires strict workflow validation and canonical local care dates through ev
   assert.doesNotMatch(more, /validateProfileWeightDraft|parseFloat\(pWeight\)/);
 
   assert.match(month, /dateKeyForYmd/);
-  assert.match(guide, /localDateKey/);
-  assert.match(guide, /todayLocalDateKey/);
+  assert.match(guide, /buildWoofGuideAssistantContext/);
+  assert.match(guideContext, /localDateKey/);
+  assert.match(guideContext, /todayLocalDateKey/);
   assert.match(guideActions, /localDateKey/);
   assert.match(guideActions, /todayLocalDateKey/);
 
@@ -6607,6 +6694,7 @@ test("wires strict workflow validation and canonical local care dates through ev
     more,
     guide,
     guideActions,
+    guideContext,
   })) {
     assert.doesNotMatch(
       source,

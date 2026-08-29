@@ -1,4 +1,5 @@
 import type { LocalDataResetParticipant } from "./localDataResetCoordinator.ts";
+import { clearWebAnnouncements } from "./webAnnouncementRuntime.ts";
 
 export interface WebRuntimeCacheStorage {
   keys(): Promise<string[]>;
@@ -16,6 +17,7 @@ export interface WebRuntimeLocalDataResetEnvironment {
   platform: string;
   cacheStorage: WebRuntimeCacheStorage | null;
   sessionStorage?: WebRuntimeSessionStorage | null;
+  clearAnnouncements?: () => void | Promise<void>;
   requestServiceWorkerClear(): Promise<void>;
 }
 
@@ -37,6 +39,14 @@ export function createWebRuntimeLocalDataResetController(
     if (environment.platform !== "web") return;
 
     const failures: unknown[] = [];
+    try {
+      await Promise.resolve(
+        (environment.clearAnnouncements ?? clearWebAnnouncements)(),
+      );
+    } catch (error) {
+      failures.push(error);
+    }
+
     if (environment.cacheStorage) {
       let keys: string[] = [];
       try {

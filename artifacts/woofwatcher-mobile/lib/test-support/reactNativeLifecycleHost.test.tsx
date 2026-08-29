@@ -9,7 +9,9 @@ const host = (tag: string) =>
       children,
       accessibilityLabel,
       accessibilityRole,
+      contentContainerStyle: _contentContainerStyle,
       onPress,
+      showsVerticalScrollIndicator: _showsVerticalScrollIndicator,
       style,
       ...rest
     } = props;
@@ -34,6 +36,8 @@ const host = (tag: string) =>
 export const View = host("div");
 export const Text = host("span");
 export const Pressable = host("button");
+export const ScrollView = host("section");
+export const SafeAreaView = host("main");
 export const ActivityIndicator = host("i");
 export const StyleSheet = {
   create<T>(styles: T): T {
@@ -48,4 +52,8 @@ export const Platform = {
 };
 export function useColorScheme(): "light" {
   return "light";
+}
+
+export function useWindowDimensions() {
+  return { width: 320, height: 568, scale: 1, fontScale: 1.6 };
 }

@@ -54,16 +54,50 @@ function webConfirm(step: ConfirmStepInput): boolean {
   return dialog(`${step.title}\n\n${step.message}`);
 }
 
-/** Walks the steps in order; onConfirmed fires only if every step is accepted. */
-export function confirmThroughSteps(
+interface ConfirmationFlowSettlement {
+  settled: boolean;
+  onConfirmed: () => void;
+  onCancelled: () => void;
+}
+
+function settleConfirmed(settlement: ConfirmationFlowSettlement): void {
+  if (settlement.settled) return;
+  settlement.settled = true;
+  settlement.onConfirmed();
+}
+
+function settleCancelled(settlement: ConfirmationFlowSettlement): void {
+  if (settlement.settled) return;
+  settlement.settled = true;
+  settlement.onCancelled();
+}
+
+function presentConfirmationSteps(
   steps: readonly ConfirmStepInput[],
-  onConfirmed: () => void,
+  settlement: ConfirmationFlowSettlement,
 ): void {
+  if (settlement.settled) return;
   if (!steps.length) {
-    onConfirmed();
+    settleConfirmed(settlement);
     return;
   }
   const [step, ...rest] = steps;
+  let stepAnswered = false;
+  const confirmStep = (): void => {
+    if (stepAnswered || settlement.settled) return;
+    stepAnswered = true;
+    try {
+      presentConfirmationSteps(rest, settlement);
+    } catch (error) {
+      settleCancelled(settlement);
+      throw error;
+    }
+  };
+  const cancelStep = (): void => {
+    if (stepAnswered || settlement.settled) return;
+    stepAnswered = true;
+    settleCancelled(settlement);
+  };
 
   if (Platform.OS === "web") {
     if (webDialogPresenter) {
@@ -73,25 +107,58 @@ export function confirmThroughSteps(
         confirmLabel: step.confirmLabel,
         cancelLabel: step.cancelLabel ?? "Cancel",
         destructive: step.destructive ?? false,
-        onConfirm: () => confirmThroughSteps(rest, onConfirmed),
-        onCancel: noop,
+        onConfirm: confirmStep,
+        onCancel: cancelStep,
       });
       return;
     }
     if (webConfirm(step)) {
-      confirmThroughSteps(rest, onConfirmed);
+      confirmStep();
+    } else {
+      cancelStep();
     }
     return;
   }
 
-  Alert.alert(step.title, step.message, [
-    { text: step.cancelLabel ?? "Cancel", style: "cancel" },
+  Alert.alert(
+    step.title,
+    step.message,
+    [
+      {
+        text: step.cancelLabel ?? "Cancel",
+        style: "cancel",
+        onPress: cancelStep,
+      },
+      {
+        text: step.confirmLabel,
+        style: step.destructive ? "destructive" : "default",
+        onPress: confirmStep,
+      },
+    ],
     {
-      text: step.confirmLabel,
-      style: step.destructive ? "destructive" : "default",
-      onPress: () => confirmThroughSteps(rest, onConfirmed),
+      cancelable: true,
+      onDismiss: cancelStep,
     },
-  ]);
+  );
+}
+
+/** Walks the steps in order; onConfirmed fires only if every step is accepted. */
+export function confirmThroughSteps(
+  steps: readonly ConfirmStepInput[],
+  onConfirmed: () => void,
+  onCancelled: () => void = noop,
+): void {
+  const settlement: ConfirmationFlowSettlement = {
+    settled: false,
+    onConfirmed,
+    onCancelled,
+  };
+  try {
+    presentConfirmationSteps(steps, settlement);
+  } catch (error) {
+    settleCancelled(settlement);
+    throw error;
+  }
 }
 
 /** Cross-platform notice: Alert on native, themed dialog host on web. */

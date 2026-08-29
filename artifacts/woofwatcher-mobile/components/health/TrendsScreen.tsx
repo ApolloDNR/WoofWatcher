@@ -17,7 +17,12 @@ import Animated, {
   withDelay,
   withTiming,
 } from "react-native-reanimated";
-import { deriveCareTrends, deriveMoodTrend, normalizeCareEventType } from "@workspace/care-domain";
+import {
+  deriveCareTrends,
+  deriveMoodTrend,
+  normalizeCareEventType,
+  selectSharedCareEvidence,
+} from "@workspace/care-domain";
 
 import {
   BoardCard,
@@ -355,9 +360,10 @@ export default function TrendsScreen({
     const mood: TrendSample[] = [];
     const activity: TrendSample[] = [];
     const potty: number[] = [];
+    const sharedEntries = selectSharedCareEvidence(state.entries, now);
 
     const moodTrend = deriveMoodTrend({
-      entries: state.entries,
+      entries: sharedEntries,
       now,
       lookbackDays: moodLookbackDays(windowKey),
       limit: Number.MAX_SAFE_INTEGER,
@@ -368,7 +374,7 @@ export default function TrendsScreen({
       if (Number.isFinite(at)) mood.push({ at, value: item.score });
     }
 
-    for (const entry of state.entries) {
+    for (const entry of sharedEntries) {
       const at = Date.parse(entry.occurredAt);
       if (!Number.isFinite(at)) continue;
       const type = normalizeCareEventType(entry.type, entry.details);
@@ -671,7 +677,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   summaryToggle: {
-    minHeight: 38,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 14,

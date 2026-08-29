@@ -2,6 +2,7 @@ import { normalizeCareEventType, type CareEventType } from "./events.ts";
 import { parseClockTime } from "./clock-time.ts";
 import { deriveCareDayStatus } from "./status.ts";
 import { deriveHealthWatch, type CareHealthEntry, type CareHealthStatus } from "./health.ts";
+import { selectSharedCareEvidence } from "./shared-evidence.ts";
 
 export interface CareHandoffRoutine {
   id?: string;
@@ -118,7 +119,7 @@ function doneItem(
 
 export function deriveCareHandoff(input: CareHandoffInput): CareHandoffSummary {
   const now = input.now ?? Date.now();
-  const entries = input.entries ?? [];
+  const entries = selectSharedCareEvidence(input.entries ?? [], now);
   const routines = input.routines ?? [];
   const scheduledRoutines = routines.filter((routine) => parseClockTime(routine.time) !== null);
   const correctionRoutines = routines.filter((routine) => parseClockTime(routine.time) === null);
@@ -216,7 +217,7 @@ export function deriveCareHandoff(input: CareHandoffInput): CareHandoffSummary {
   const openWalks = todays.filter((entry) => {
     if (normalizeCareEventType(entry.type, entry.details) !== "walk") return false;
     const details = detailRecord(entry);
-    return details.householdVisible !== false && details.walkLifecycle === "in-progress";
+    return details.walkLifecycle === "in-progress";
   });
   if (openWalks.length > 0) {
     needsAttention.push({

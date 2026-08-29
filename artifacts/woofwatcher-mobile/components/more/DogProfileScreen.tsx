@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Image,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -26,6 +27,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   BoardCard,
+  BoardRouteHeader,
   BoardSectionHeader,
   ModalBackdropPressable,
   ModalSheetPressable,
@@ -41,6 +43,7 @@ import {
 } from "@/lib/careWriteProtection";
 import { validateProfileWeightDraft } from "@/lib/careWorkflowValidation";
 import {
+  getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getStandaloneRouteBottomPadding,
@@ -52,7 +55,11 @@ import {
   DEFAULT_PET_PLACEHOLDER,
   resolvePetName,
 } from "@/lib/petIdentity";
-import { derivePhoenixStatus } from "@/lib/phoenixStatus";
+import {
+  deriveCareStorageRecoveryAction,
+  deriveCareStorageUnavailableDashboard,
+  derivePhoenixStatus,
+} from "@/lib/phoenixStatus";
 
 const SERIF = "Fraunces_700Bold";
 
@@ -226,7 +233,17 @@ export default function DogProfileScreen({
 }: DogProfileScreenProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { state, careMutationsBlocked, updateCareDoc } = useCare();
+  const reducedMotion = useReducedMotion();
+  const {
+    state,
+    careMutationsBlocked,
+    isInitialSyncSettled,
+    isLoaded,
+    persistCurrentCareSnapshot,
+    retryLocalHydration,
+    storageWarning,
+    updateCareDoc,
+  } = useCare();
   const { getAvatarSource } = useAvatar();
   const breathStyle = useBreath();
   const now = Date.now();
@@ -255,6 +272,21 @@ export default function DogProfileScreen({
   const modalSheetBottomPadding = getModalSheetBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+  });
+  const keyboardOffset = getKeyboardAvoidingVerticalOffset({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface,
+  });
+  const profileStorageUnavailable = !isLoaded || storageWarning !== null;
+  const profileStorageDashboard = deriveCareStorageUnavailableDashboard({
+    isLoaded,
+    storageWarning,
+  });
+  const profileStorageRecoveryAction = deriveCareStorageRecoveryAction({
+    isLoaded,
+    isInitialSyncSettled,
+    storageWarning,
   });
 
   const [profileOpen, setProfileOpen] = useState(false);
@@ -433,6 +465,87 @@ export default function DogProfileScreen({
     },
   ];
 
+  if (profileStorageUnavailable) {
+    const recoveryActionLabel =
+      profileStorageRecoveryAction?.label ??
+      (storageWarning === "newer-version"
+        ? "Update required"
+        : storageWarning === "reset"
+          ? "Back to More"
+          : null);
+    const runStorageRecovery = () => {
+      void Haptics.selectionAsync();
+      if (profileStorageRecoveryAction?.kind === "retry-read") {
+        retryLocalHydration();
+        return;
+      }
+      if (profileStorageRecoveryAction?.kind === "retry-save") {
+        void persistCurrentCareSnapshot();
+        return;
+      }
+      if (storageWarning === "newer-version") {
+        showCareReadOnly();
+        return;
+      }
+      onBack();
+    };
+
+    return (
+      <View style={[s.root, { backgroundColor: colors.background }]}>
+        <ScrollView
+          style={s.container}
+          contentContainerStyle={[
+            s.recoveryContent,
+            { paddingTop: heroTopPadding, paddingBottom: bottomPadding },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <BoardRouteHeader
+            kicker="WOOFWATCHER"
+            title="Dog Profile"
+            subtitle="Profile details are hidden until device storage is trusted."
+            back
+            onBack={goBack}
+            plain
+          />
+          <BoardCard style={s.recoveryCard}>
+            <BoardSectionHeader title="Profile details hidden" />
+            <Text
+              style={[
+                s.recoveryMessage,
+                { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+              ]}
+            >
+              {profileStorageDashboard?.message ??
+                "WoofWatcher is checking device storage before showing personal profile details."}
+            </Text>
+            {recoveryActionLabel ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={recoveryActionLabel}
+                onPress={runStorageRecovery}
+                style={({ pressed }) => [
+                  s.recoveryAction,
+                  { backgroundColor: colors.primary, opacity: pressed ? 0.84 : 1 },
+                ]}
+              >
+                <Ionicons name="refresh-outline" size={17} color={colors.primaryForeground} />
+                <Text
+                  style={[
+                    s.recoveryActionText,
+                    { color: colors.primaryForeground, fontFamily: "Inter_700Bold" },
+                  ]}
+                >
+                  {recoveryActionLabel}
+                </Text>
+              </Pressable>
+            ) : null}
+          </BoardCard>
+        </ScrollView>
+      </View>
+    );
+  }
+
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -579,26 +692,33 @@ export default function DogProfileScreen({
       <Modal
         visible={profileOpen}
         transparent
-        animationType="slide"
+        animationType={reducedMotion ? "none" : "slide"}
         onRequestClose={() => setProfileOpen(false)}
       >
         <ModalBackdropPressable
           style={s.modalBackdrop}
           onPress={() => setProfileOpen(false)}
         >
-          <ModalSheetPressable
-            visible={profileOpen}
-            onRequestClose={() => setProfileOpen(false)}
-            style={[s.profileModal, { backgroundColor: colors.card }]}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            keyboardVerticalOffset={keyboardOffset}
+            style={s.modalDock}
           >
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{
-                paddingBottom: modalSheetBottomPadding,
-                paddingHorizontal: 22,
-              }}
-              bounces={false}
+            <ModalSheetPressable
+              visible={profileOpen}
+              onRequestClose={() => setProfileOpen(false)}
+              style={[s.profileModal, { backgroundColor: colors.card }]}
             >
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                  paddingBottom: modalSheetBottomPadding,
+                  paddingHorizontal: 22,
+                }}
+                bounces={false}
+                style={s.profileFormScroll}
+              >
               <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
               <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: SERIF }]}>Dog Profile</Text>
               <Text style={[s.sheetSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Keep the details caregivers need in one clear place.</Text>
@@ -769,8 +889,9 @@ export default function DogProfileScreen({
               >
                 <Text style={[s.profSaveBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Save profile</Text>
               </Pressable>
-            </ScrollView>
-          </ModalSheetPressable>
+              </ScrollView>
+            </ModalSheetPressable>
+          </KeyboardAvoidingView>
         </ModalBackdropPressable>
       </Modal>
     </View>
@@ -780,6 +901,20 @@ export default function DogProfileScreen({
 const s = StyleSheet.create({
   root: { flex: 1 },
   container: { flex: 1 },
+  recoveryContent: { paddingHorizontal: 16 },
+  recoveryCard: { marginTop: 14 },
+  recoveryMessage: { fontSize: 13, lineHeight: 19, marginTop: 8 },
+  recoveryAction: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    borderRadius: 8,
+    marginTop: 16,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  recoveryActionText: { fontSize: 13 },
 
   hero: {
     width: "100%",
@@ -891,7 +1026,10 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   aboutBody: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     marginTop: 2,
+    paddingVertical: 8,
+    justifyContent: "center",
   },
   aboutText: {
     fontSize: 14,
@@ -921,12 +1059,14 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(15,31,36,0.45)",
     justifyContent: "flex-end",
   },
+  modalDock: { flex: 1, justifyContent: "flex-end" },
   profileModal: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: "90%",
     paddingTop: 14,
   },
+  profileFormScroll: { flexShrink: 1, minHeight: 0 },
   modalHandle: {
     alignSelf: "center",
     width: 40,

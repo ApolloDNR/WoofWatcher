@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  AppState,
   Easing,
   Image,
   Platform,
@@ -16,6 +17,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
+  deriveBileVomitEvidence30,
   deriveAdventureMode,
   deriveCareIntelligence,
   normalizeCareEventType,
@@ -83,13 +85,16 @@ import {
   resolveHomeWelcomeCardMaxHeight,
   shouldHoldHomeFixedHeroTop,
 } from "@/lib/homeFixedHeroLayout";
-import { isHomeSceneReady } from "@/lib/homeSceneReady";
+import {
+  applyHomeWelcomePreferenceHydration,
+  isHomeSceneReady,
+  shouldDeferHomeWelcomeAfterReadFailure,
+} from "@/lib/homeSceneReady";
 import { getHomeMissionDeckLayout } from "@/lib/homeMissionLayout";
 import {
   deriveHomeEvidenceCopy,
   formatHomeCompletion,
-  isHomeMoodEvidence,
-  selectHomeVisibleEntries,
+  selectObservableHomeEntries,
 } from "@/lib/homeEvidence";
 import { findOpenAloneTimeSession } from "@/lib/aloneTimeSession";
 import {
@@ -108,7 +113,12 @@ import {
   buildWalkSessionStartEntry,
   findOpenWalkSession,
 } from "@/lib/walkSession";
-import { derivePhoenixStatus, type Mood } from "@/lib/phoenixStatus";
+import {
+  derivePhoenixStatus,
+  isCareEntryObservableAt,
+  type Mood,
+  type ObservedEnergyLevel,
+} from "@/lib/phoenixStatus";
 import {
   buildCareTwinRoomAccessibilityLabel,
   buildPetSetupCopy,
@@ -136,6 +146,7 @@ import { LocalDataResetInProgressError } from "@/lib/removableLocalDataStorage";
 
 const HOME_PROVIDER_SYNC_ENABLED =
   isClerkEnabledForBuild && getConsumerSurfacePolicy().providerSyncControls;
+const HOME_PREFERENCE_ANNOUNCEMENT_DELAY_MS = 1000;
 
 interface QuickItem {
   key: string;
@@ -278,6 +289,7 @@ function formatDuration(min: number): string {
 }
 
 function isToday(iso: string, now: number): boolean {
+  if (!isCareEntryObservableAt({ occurredAt: iso }, now)) return false;
   const d = new Date(iso);
   const n = new Date(now);
   return (
@@ -285,6 +297,20 @@ function isToday(iso: string, now: number): boolean {
     d.getMonth() === n.getMonth() &&
     d.getDate() === n.getDate()
   );
+}
+
+function observedEnergyLabel(level: ObservedEnergyLevel | null): string {
+  if (level === "low") return "Low";
+  if (level === "steady") return "Steady";
+  if (level === "high") return "High";
+  return "No data";
+}
+
+function observedEnergyProgress(level: ObservedEnergyLevel | null): number {
+  if (level === "low") return 0.3;
+  if (level === "steady") return 0.65;
+  if (level === "high") return 1;
+  return 0;
 }
 
 function shortTime(iso: string): string {
@@ -441,8 +467,8 @@ export default function HomeScreen() {
   // the boundary, before any status, story, activity, or recommendation can
   // select their title, caregiver, details, or derived signals.
   const homeEntries = useMemo(
-    () => selectHomeVisibleEntries(state.entries),
-    [state.entries],
+    () => selectObservableHomeEntries(state.entries, now),
+    [now, state.entries],
   );
   const todayHomeEntries = useMemo(
     () => homeEntries.filter((entry) => isToday(entry.occurredAt, now)),
@@ -450,11 +476,9 @@ export default function HomeScreen() {
   );
   const bileCount = useMemo(
     () =>
-      todayHomeEntries.filter((entry) => {
-        const type = normalizeCareEventType(entry.type, entry.details);
-        return type === "vomit" || type === "symptom" || /bile/i.test(entry.title);
-      }).length,
-    [todayHomeEntries],
+      deriveBileVomitEvidence30({ entries: todayHomeEntries, now })
+        .vomitEntriesNewestFirst.length,
+    [now, todayHomeEntries],
   );
   const status = useMemo(
     () => derivePhoenixStatus({ ...state, entries: homeEntries }, now),
@@ -469,17 +493,10 @@ export default function HomeScreen() {
       }),
     [bileCount, status.counts.healthAlert, todayHomeEntries.length],
   );
-  const hasMoodEvidence = todayHomeEntries.some((entry) => {
-    return isHomeMoodEvidence({
-      mood: entry.mood,
-      normalizedType: normalizeCareEventType(entry.type, entry.details),
-    });
-  });
-  const hasEnergyEvidence = todayHomeEntries.some((entry) =>
-    ["walk", "play", "training"].includes(
-      normalizeCareEventType(entry.type, entry.details),
-    ),
-  );
+  const hasMoodEvidence = status.evidence.mood !== null;
+  const hasEnergyEvidence = status.evidence.energy !== null;
+  const energyEvidenceLabel = observedEnergyLabel(status.evidence.energy);
+  const energyEvidenceProgress = observedEnergyProgress(status.evidence.energy);
   const bondEvidenceCount = todayHomeEntries.filter((entry) =>
     ["play", "training"].includes(
       normalizeCareEventType(entry.type, entry.details),
@@ -613,6 +630,19 @@ export default function HomeScreen() {
   const [welcomeDismissed, setWelcomeDismissed] = useState<boolean | null>(
     null,
   );
+  const [welcomePreferenceReadFailed, setWelcomePreferenceReadFailed] =
+    useState(false);
+  const [welcomePreferenceRetryEpoch, setWelcomePreferenceRetryEpoch] =
+    useState(0);
+  const welcomeDismissedRef = useRef<boolean | null>(welcomeDismissed);
+  const deferWelcomeForSessionRef = useRef(false);
+  welcomeDismissedRef.current = welcomeDismissed;
+  const homeSceneReady = isHomeSceneReady(
+    isLoaded,
+    welcomeDismissed,
+    storageWarning,
+    welcomePreferenceReadFailed,
+  );
   const welcomeHydrationRetryRef = useRef<ReturnType<
     typeof createDevicePreferenceHydrationRetryScheduler
   > | null>(null);
@@ -630,14 +660,27 @@ export default function HomeScreen() {
       void store
         .hydrate(HOME_WELCOME_DISMISSED_KEY, {
           isCancelled: () => cancelled,
-          apply: (raw) => setWelcomeDismissed(raw === "true"),
+          apply: (raw) => {
+            applyHomeWelcomePreferenceHydration(
+              raw,
+              deferWelcomeForSessionRef.current,
+              welcomeDismissedRef,
+              setWelcomeDismissed,
+            );
+          },
         })
         .then((result) => {
           if (cancelled || result === "cancelled") return;
+          setWelcomePreferenceReadFailed(false);
           hydrationRetry.reset();
         })
         .catch((error) => {
           if (cancelled || error instanceof LocalDataResetInProgressError) return;
+          deferWelcomeForSessionRef.current ||=
+            shouldDeferHomeWelcomeAfterReadFailure(
+              welcomeDismissedRef.current,
+            );
+          setWelcomePreferenceReadFailed(true);
           hydrationRetry.request(hydrateWelcomePreference);
         });
     }
@@ -647,7 +690,59 @@ export default function HomeScreen() {
       cancelled = true;
       hydrationRetry.deactivate();
     };
-  }, [hydrationRetry, operationSettledEpoch, store]);
+  }, [
+    hydrationRetry,
+    operationSettledEpoch,
+    store,
+    welcomePreferenceRetryEpoch,
+  ]);
+  useFocusEffect(
+    useCallback(() => {
+      if (
+        Platform.OS !== "ios" ||
+        !welcomePreferenceReadFailed ||
+        !homeSceneReady ||
+        storageWarning
+      ) {
+        return undefined;
+      }
+
+      let announcementTimer: ReturnType<typeof setTimeout> | undefined;
+      const clearAnnouncement = () => {
+        if (announcementTimer === undefined) return;
+        clearTimeout(announcementTimer);
+        announcementTimer = undefined;
+      };
+      const scheduleAnnouncement = () => {
+        clearAnnouncement();
+        if (AppState.currentState !== "active") return;
+        announcementTimer = setTimeout(() => {
+          announcementTimer = undefined;
+          if (AppState.currentState !== "active") return;
+          announce(
+            "Couldn't load a Home display preference. Home is available. Retry is available.",
+          );
+        }, HOME_PREFERENCE_ANNOUNCEMENT_DELAY_MS);
+      };
+
+      scheduleAnnouncement();
+      const appStateSubscription = AppState.addEventListener(
+        "change",
+        (nextState) => {
+          clearAnnouncement();
+          if (nextState === "active") scheduleAnnouncement();
+        },
+      );
+      return () => {
+        clearAnnouncement();
+        appStateSubscription.remove();
+      };
+    }, [homeSceneReady, storageWarning, welcomePreferenceReadFailed]),
+  );
+  const retryWelcomePreference = () => {
+    hydrationRetry.reset();
+    setWelcomePreferenceRetryEpoch((epoch) => epoch + 1);
+  };
   const dismissWelcome = () => {
     setWelcomeDismissed(true);
     void store
@@ -1036,10 +1131,10 @@ export default function HomeScreen() {
       },
       {
         label: "Energy",
-        value: hasEnergyEvidence ? `${status.energy}%` : "No data",
+        value: energyEvidenceLabel,
         icon: "energy",
         tone: colors.sage,
-        progress: hasEnergyEvidence ? status.energy : 0,
+        progress: Math.round(energyEvidenceProgress * 100),
       },
       {
         label: "Hunger",
@@ -1058,6 +1153,8 @@ export default function HomeScreen() {
       hungerTone,
       hasEnergyEvidence,
       hasMoodEvidence,
+      energyEvidenceLabel,
+      energyEvidenceProgress,
       hungerLabel,
       hungerScore,
       moodIcon,
@@ -1385,6 +1482,25 @@ export default function HomeScreen() {
     opacity: mealChipReveal.value,
     maxHeight: 88 * mealChipReveal.value,
   }));
+  const setToastVisibility = (
+    toValue: 0 | 1,
+    duration: number,
+    onComplete?: () => void,
+  ) => {
+    toastOpacity.stopAnimation();
+    if (reducedMotion) {
+      toastOpacity.setValue(toValue);
+      onComplete?.();
+      return;
+    }
+    Animated.timing(toastOpacity, {
+      toValue,
+      duration,
+      useNativeDriver: Platform.OS !== "web",
+    }).start(({ finished }) => {
+      if (finished) onComplete?.();
+    });
+  };
   const showToast = (
     msg: string,
     feedback?: { id: string; title: string; type: CareEventType },
@@ -1396,19 +1512,11 @@ export default function HomeScreen() {
     // The toast is invisible to screen readers and its Undo button vanishes
     // on a timer - announce so the core loop is not silent under VoiceOver.
     announce(feedback ? `${msg}. Undo available.` : msg);
-    Animated.timing(toastOpacity, {
-      toValue: 1,
-      duration: 160,
-      useNativeDriver: Platform.OS !== "web",
-    }).start();
+    setToastVisibility(1, 160);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(
       () => {
-        Animated.timing(toastOpacity, {
-          toValue: 0,
-          duration: 240,
-          useNativeDriver: Platform.OS !== "web",
-        }).start(() => {
+        setToastVisibility(0, 240, () => {
           quickFeedbackRef.current = null;
           setToast(null);
           setQuickFeedback(null);
@@ -1780,15 +1888,20 @@ export default function HomeScreen() {
     maxHeight: heroStageHeight * (1 - welcomeCollapse.value),
   }));
   const [fixedHeroTop, setFixedHeroTop] = useState<number | null>(null);
-  const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
+  const fade = useRef(
+    new Animated.Value(isWebRoutePreview || reducedMotion ? 1 : 0),
+  ).current;
   useEffect(() => {
-    if (isWebRoutePreview) return;
+    if (isWebRoutePreview || reducedMotion) {
+      fade.setValue(1);
+      return;
+    }
     Animated.timing(fade, {
       toValue: 1,
       duration: 450,
       useNativeDriver: !isWebRoutePreview,
     }).start();
-  }, [fade, isWebRoutePreview]);
+  }, [fade, isWebRoutePreview, reducedMotion]);
 
   const roomIsNight =
     colors.isDark || homeImmersiveRoomIsNight(new Date(now).getHours());
@@ -1868,7 +1981,7 @@ export default function HomeScreen() {
       </Reanimated.View>
     );
 
-  if (!isHomeSceneReady(isLoaded, welcomeDismissed, storageWarning)) {
+  if (!homeSceneReady) {
     return (
       <View
         accessibilityLabel="Loading Home"
@@ -1937,7 +2050,6 @@ export default function HomeScreen() {
               accessibilityLabel={`${petName}. ${careStatusLabel}. Open profile`}
               accessibilityHint={`Opens ${petName}'s profile.`}
               onPress={() => router.push(canonicalMoreRoute("dog-profile"))}
-              hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={({ pressed }) => [s.identityWrap, { opacity: pressed ? 0.75 : 1 }]}
             >
               <PetPortrait size={42} />
@@ -1971,7 +2083,6 @@ export default function HomeScreen() {
               accessibilityLabel="Open Care Team & Supplies"
               accessibilityHint="Opens caregivers, supply inventory, and travel checklists."
               onPress={() => router.push(canonicalMoreRoute("care-team-supplies"))}
-              hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[
                 s.headerButton,
                 { borderColor: "transparent", backgroundColor: "transparent" },
@@ -1988,7 +2099,6 @@ export default function HomeScreen() {
                   : "Upcoming care reminders"
               }
               onPress={() => router.push(canonicalPlansRoute())}
-              hitSlop={MOBILE_INLINE_HIT_SLOP}
               style={[
                 s.headerButton,
                 { borderColor: "transparent", backgroundColor: "transparent" },
@@ -2001,7 +2111,12 @@ export default function HomeScreen() {
               />
               {watchSignalCount > 0 ? (
                 <View style={[s.badge, { backgroundColor: colors.rose }]}>
-                  <Text style={[s.badgeText, { fontFamily: "Inter_700Bold" }]}>
+                  <Text
+                    style={[
+                      s.badgeText,
+                      { color: colors.brandNavy, fontFamily: "Inter_700Bold" },
+                    ]}
+                  >
                     {watchSignalCount}
                   </Text>
                 </View>
@@ -2028,11 +2143,12 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Dismiss welcome"
-                hitSlop={MOBILE_INLINE_HIT_SLOP}
                 onPress={dismissWelcome}
                 style={s.welcomeDismiss}
               >
-                <Ionicons name="close" size={16} color={colors.primaryForeground} />
+                <View style={s.welcomeDismissVisual}>
+                  <Ionicons name="close" size={16} color={colors.primaryForeground} />
+                </View>
               </Pressable>
               <Text style={[s.welcomeKicker, { color: colors.amberSoft, fontFamily: "Fredoka_600SemiBold" }]}>
                 WELCOME TO WOOFWATCHER
@@ -2166,10 +2282,67 @@ export default function HomeScreen() {
             </View>
           ) : null}
 
+          {welcomePreferenceReadFailed ? (
+            <View
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+              aria-live="polite"
+              style={[
+                s.storageWarningCard,
+                {
+                  backgroundColor: colors.amberSoft,
+                  borderColor: colors.amber + "66",
+                },
+              ]}
+            >
+              <Ionicons name="refresh-outline" size={17} color={colors.amber} />
+              <View style={s.preferenceWarningBody}>
+                <Text
+                  style={[
+                    s.storageWarningText,
+                    {
+                      color: colors.foreground,
+                      fontFamily: "Inter_600SemiBold",
+                    },
+                  ]}
+                >
+                  Couldn't load a Home display preference. Home is available,
+                  and retrying will not change care data.
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry welcome preference"
+                  onPress={retryWelcomePreference}
+                  style={({ pressed }) => [
+                    s.preferenceRetryButton,
+                    {
+                      borderColor: colors.amber + "88",
+                      backgroundColor: pressed
+                        ? colors.amber + "24"
+                        : colors.background,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      color: colors.foreground,
+                      fontFamily: "Inter_800ExtraBold",
+                      fontSize: 12.5,
+                    }}
+                  >
+                    Retry
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
+
           {/* Mock-board Care Sense card: mood, energy, hunger, and alone
               time as chunky pip meters. Missing evidence stays at zero with
               an explicit No data/No target label. */}
-          <Reanimated.View entering={enterUp(0)}>
+          <Reanimated.View
+            entering={reducedMotion ? undefined : enterUp(0)}
+          >
             <BoardCard style={s.careSenseCard}>
               <View style={s.careSenseHeader}>
                 <Text
@@ -2185,7 +2358,6 @@ export default function HomeScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="Open Trends and Insights"
                     accessibilityHint="Charts these meters over time from real logged care."
-                    hitSlop={MOBILE_INLINE_HIT_SLOP}
                     onPress={() => router.push(canonicalHealthRoute("trends") as never)}
                     style={({ pressed }) => [
                       s.careSenseTrendsLink,
@@ -2205,14 +2377,16 @@ export default function HomeScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="How Care Sense works"
-                    hitSlop={MOBILE_INLINE_HIT_SLOP}
                     onPress={() =>
                       notifyDialog(
                         "Care Sense",
-                        `Care Sense uses care data available on this device. Mood needs a mood, alone-time, or symptom log. Energy needs an activity log. Meals are compared only when ${petName} has a daily target. Alone Time fills only while an away session is open. Missing evidence stays marked as No data or No target.`,
+                        `Care Sense uses care data available on this device. Mood needs an explicit mood or return outcome. Energy needs an energy level from a mood check-in; walks, play, and symptom categories do not invent either reading. Meals are compared only when ${petName} has a daily target. Alone Time fills only while an away session is open. Missing evidence stays marked as No data or No target.`,
                       )
                     }
-                    style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                    style={({ pressed }) => [
+                      s.homeInlineIconAction,
+                      { opacity: pressed ? 0.6 : 1 },
+                    ]}
                   >
                     <Ionicons
                       name="information-circle-outline"
@@ -2226,7 +2400,6 @@ export default function HomeScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`Today Command. ${careSenseHeadline} ${careSenseSubline}`}
                 accessibilityHint="Opens the exact care workflow behind today's recommended action."
-                hitSlop={MOBILE_INLINE_HIT_SLOP}
                 onPress={() =>
                   router.push(todayCommand.primaryAction.route as never)
                 }
@@ -2282,18 +2455,18 @@ export default function HomeScreen() {
                 <StatusMeter
                   label="Energy"
                   icon="energy"
-                  value={hasEnergyEvidence ? status.energy / 100 : 0}
-                  valueLabel={hasEnergyEvidence ? `${status.energy}%` : "No data"}
+                  value={energyEvidenceProgress}
+                  valueLabel={energyEvidenceLabel}
                   tone={colors.meterEnergy}
                   onPress={() =>
-                    router.push(homeLogDetailRoute("walk", now) as never)
+                    router.push(homeLogDetailRoute("mood", now) as never)
                   }
                   accessibilityLabel={
                     hasEnergyEvidence
-                      ? `Energy ${status.energy} percent`
-                      : "Energy, no activity data"
+                      ? `Energy ${energyEvidenceLabel}`
+                      : "Energy, no logged energy level"
                   }
-                  accessibilityHint="Opens the walk detail flow - activity builds energy."
+                  accessibilityHint="Opens the mood check-in to log an energy observation."
                 />
                 <StatusMeter
                   label="Hunger"
@@ -2350,7 +2523,9 @@ export default function HomeScreen() {
             {/* Mock-board Quick Log card: Meal · Potty · Walk · Meds · More
                 as springy medallion tiles inside one cream card. More opens
                 the fast-log sheet where Water, Note, and the rest live. */}
-            <Reanimated.View entering={enterUp(1)}>
+            <Reanimated.View
+              entering={reducedMotion ? undefined : enterUp(1)}
+            >
               <BoardCard style={s.quickHomeCard}>
                 <View style={s.quickSectionHeader}>
                   <Text
@@ -2364,9 +2539,11 @@ export default function HomeScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Open full Quick Log"
-                    hitSlop={MOBILE_INLINE_HIT_SLOP}
                     onPress={() => router.push("/log")}
-                    style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                    style={({ pressed }) => [
+                      s.homeInlineIconAction,
+                      { opacity: pressed ? 0.6 : 1 },
+                    ]}
                   >
                     <Ionicons
                       name="chevron-forward"
@@ -3662,6 +3839,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 4,
     marginBottom: 10,
     borderRadius: 20,
     paddingHorizontal: 10,
@@ -3687,10 +3865,11 @@ const s = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 4,
   },
-  badgeText: { color: "#FFFFFF", fontSize: 10 },
+  badgeText: { fontSize: 10 },
   identityWrap: {
     flex: 1,
     minWidth: 0,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -3798,10 +3977,10 @@ const s = StyleSheet.create({
   },
   welcomeDismiss: {
     position: "absolute",
-    top: 12,
-    right: 12,
-    width: 28,
-    height: 28,
+    top: 2,
+    right: 2,
+    width: MIN_MOBILE_TOUCH_TARGET,
+    height: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
@@ -3809,16 +3988,25 @@ const s = StyleSheet.create({
     // an explicit z-order the full-width kicker Text sits on top and eats
     // every tap - the X looked tappable but was dead.
     zIndex: 5,
+  },
+  welcomeDismissVisual: {
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.14)",
   },
   welcomeKicker: {
     fontSize: 11,
     letterSpacing: 1.3,
     marginBottom: 4,
+    paddingRight: MIN_MOBILE_TOUCH_TARGET,
   },
   welcomeTitle: {
     fontSize: 22,
     marginBottom: 6,
+    paddingRight: MIN_MOBILE_TOUCH_TARGET,
   },
   welcomeBody: {
     fontSize: 13,
@@ -3833,6 +4021,7 @@ const s = StyleSheet.create({
     gap: 10,
   },
   welcomePrimary: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
@@ -3844,8 +4033,10 @@ const s = StyleSheet.create({
     fontSize: 14,
   },
   welcomeGhost: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     paddingHorizontal: 10,
     paddingVertical: 11,
+    justifyContent: "center",
   },
   welcomeGhostText: {
     fontSize: 13,
@@ -3868,6 +4059,20 @@ const s = StyleSheet.create({
     fontSize: 12.5,
     lineHeight: 17,
   },
+  preferenceWarningBody: {
+    flex: 1,
+    gap: 8,
+  },
+  preferenceRetryButton: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    justifyContent: "center",
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+  },
   careSenseCard: {
     marginTop: 12,
     marginBottom: 4,
@@ -3885,9 +4090,18 @@ const s = StyleSheet.create({
     gap: 12,
   },
   careSenseTrendsLink: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 1,
+  },
+  homeInlineIconAction: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    alignItems: "center",
+    justifyContent: "center",
   },
   careSenseTrendsText: {
     fontSize: 11.5,

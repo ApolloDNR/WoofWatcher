@@ -5,10 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { CareEntryDetails } from './careEntryDetails';
+import type { CareEntryDetails } from "./careEntryDetails";
 
 export interface CareEntry {
   id: string;
+  householdId: string;
   /** @nullable */
   petId?: string | null;
   type: string;

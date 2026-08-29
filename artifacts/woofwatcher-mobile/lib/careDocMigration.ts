@@ -93,7 +93,6 @@ export function isFutureCareDocDataVersion(
   if (!isRecord(value)) return false;
   return (
     typeof value.dataVersion === "number" &&
-    Number.isFinite(value.dataVersion) &&
     value.dataVersion > CURRENT_CARE_DOC_DATA_VERSION
   );
 }

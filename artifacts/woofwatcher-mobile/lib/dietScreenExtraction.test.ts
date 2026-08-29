@@ -134,6 +134,11 @@ test("preserves every Diet field and gates its only write before success feedbac
     /Haptics\.impactAsync\(Haptics\.ImpactFeedbackStyle\.Light\);[\s\S]*setDietEditOpen\(false\);/,
   );
   assert.match(diet, /notifyDialog\("Update WoofWatcher", CARE_READ_ONLY_MESSAGE\)/);
-  assert.match(diet, /MOBILE_INLINE_HIT_SLOP/);
+  assert.equal((diet.match(/style=\{s\.sectionActionTarget\}/g) ?? []).length, 2);
+  assert.match(
+    diet,
+    /sectionActionTarget:[\s\S]{0,140}minWidth: MIN_MOBILE_TOUCH_TARGET[\s\S]{0,100}minHeight: MIN_MOBILE_TOUCH_TARGET/,
+  );
+  assert.doesNotMatch(diet, /MOBILE_INLINE_HIT_SLOP/);
   assert.match(diet, /profSaveBtn:[\s\S]{0,180}MIN_MOBILE_TOUCH_TARGET/);
 });

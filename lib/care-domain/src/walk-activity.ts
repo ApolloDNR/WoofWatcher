@@ -1,5 +1,6 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
 import { resolvePetName } from "./pet-identity.ts";
+import { isHouseholdVisibleCareEvidence } from "./shared-evidence.ts";
 
 export type WalkActivityStatus = "active" | "light" | "needs-walk";
 
@@ -126,7 +127,7 @@ function isInLookback(iso: string | null | undefined, now: number, lookbackDays:
 }
 
 function isVisible(entry: WalkActivityEntry): boolean {
-  return asObject(entry.details).householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 function isWalk(entry: WalkActivityEntry): boolean {

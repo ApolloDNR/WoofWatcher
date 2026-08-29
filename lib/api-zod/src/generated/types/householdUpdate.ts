@@ -7,6 +7,10 @@
  */
 
 export interface HouseholdUpdate {
-  /** @minLength 1 */
+  /**
+   * Leading and trailing whitespace is trimmed by the server; the submitted name must contain at least one non-whitespace character.
+   * @minLength 1
+   * @pattern .*\S.*
+   */
   name: string;
 }

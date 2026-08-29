@@ -10,6 +10,7 @@ import { deriveMedicationAdherence, deriveMedicationFollowUps } from "./medicati
 import { recordDueNeedsCorrection } from "./record-vault.ts";
 import { DEFAULT_PET_DISPLAY_NAME, resolvePetName } from "./pet-identity.ts";
 import { derivePottyHealth } from "./potty-health.ts";
+import { isHouseholdVisibleCareEvidence, selectSharedCareEvidence } from "./shared-evidence.ts";
 import { deriveTrainingProgress, type TrainingProgressItem } from "./training-progress.ts";
 import { deriveWaterHydration } from "./water.ts";
 import { deriveWalkActivity, deriveWalkRouteTemplates, type WalkRouteTemplate } from "./walk-activity.ts";
@@ -380,7 +381,7 @@ function lower(value: unknown): string {
 }
 
 function isHouseholdVisible(entry: CareHealthEntry): boolean {
-  return detailRecord(entry).householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 function isPendingMeal(entry: CareHealthEntry): boolean {
@@ -942,13 +943,12 @@ export function buildCarePass(input: CarePassInput): CarePass {
     appetiteQuirks: boundedCarePassLine(sourceDiet.appetiteQuirks, 512),
     vetNotes: boundedCarePassLine(sourceDiet.vetNotes, 512),
   };
-  // Privacy chokepoint: the Care Pass is a SHARED artifact, so private
-  // (household-hidden) logs are excluded here, before any section derives
-  // from them. Filtering once at the entrance guarantees no downstream
-  // helper - including sibling modules that do not self-filter - can leak a
-  // private entry into the pass, and keeps every section consistent with
-  // the Care Trends section, which already honored the flag.
-  const entries = (input.entries ?? []).filter(isHouseholdVisible);
+  // Privacy/truthfulness chokepoint: the Care Pass is a shared artifact, so
+  // private logs are rejected before their timestamp or content is observed,
+  // and future/malformed logs are rejected before any section derives from
+  // them. Filtering once at the entrance keeps every downstream helper and
+  // every exported section on the same observable evidence set.
+  const entries = selectSharedCareEvidence(input.entries ?? [], now);
   const routines = input.routines ?? [];
   const records = input.records ?? [];
   // The share artifact must agree with every app surface: the stored "My Dog"

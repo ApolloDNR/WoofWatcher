@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReducedMotion } from "react-native-reanimated";
 import { deriveOnboardingStatus } from "@workspace/care-domain";
 import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
@@ -43,6 +44,7 @@ import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getStandaloneRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
 } from "@/lib/mobileLayout";
 import {
   applySetupWizardDraft,
@@ -121,6 +123,7 @@ const HOUSEHOLD_MODES: {
 
 export default function SetupScreen() {
   const colors = useColors();
+  const reducedMotion = useReducedMotion();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
@@ -412,7 +415,7 @@ export default function SetupScreen() {
               accessory={<BoardPill label={`${onboarding.completedCount}/${onboarding.totalCount} ready`} tone={colors.primary} />}
             />
             <View style={s.progressTop}>
-              <View>
+              <View style={s.progressSummary}>
                 <Text style={[s.progressValue, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                   {onboarding.completedCount}/{onboarding.totalCount}
                 </Text>
@@ -435,7 +438,7 @@ export default function SetupScreen() {
                     size={15}
                     color={step.done ? colors.sage : colors.mutedForeground}
                   />
-                  <Text numberOfLines={1} style={[s.stepText, { color: step.done ? colors.foreground : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  <Text style={[s.stepText, { color: step.done ? colors.foreground : colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
                     {(() => {
                       const t = step.title.replace("Set up ", "").replace("Add ", "");
                       return t.charAt(0).toUpperCase() + t.slice(1);
@@ -533,8 +536,8 @@ export default function SetupScreen() {
                       },
                     ]}
                   >
-                    <Ionicons name={item.icon} size={14} color={selected ? "#fff" : colors.primary} />
-                    <Text style={[s.typeText, { color: selected ? "#fff" : colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
+                    <Ionicons name={item.icon} size={14} color={selected ? colors.primaryForeground : colors.primary} />
+                    <Text style={[s.typeText, { color: selected ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
                   </Pressable>
                 );
               })}
@@ -570,7 +573,7 @@ export default function SetupScreen() {
                       ]}
                     >
                       <View style={[s.modeIcon, { backgroundColor: selected ? colors.primary : colors.primary + "16" }]}>
-                        <Ionicons name={item.icon} size={16} color={selected ? "#fff" : colors.primary} />
+                        <Ionicons name={item.icon} size={16} color={selected ? colors.primaryForeground : colors.primary} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={[s.modeTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
@@ -696,7 +699,7 @@ export default function SetupScreen() {
                     : "Loading saved care"
               }
               accessibilityHint={canSave ? undefined : saveBlockedMessage}
-              aria-disabled={!canSave || controlsDisabled}
+              accessibilityState={{ disabled: controlsDisabled }}
               style={({ pressed }) => [
                 s.saveBtn,
                 {
@@ -759,7 +762,7 @@ export default function SetupScreen() {
       <Modal
         visible={successMoment !== null}
         transparent
-        animationType="slide"
+        animationType={reducedMotion ? "none" : "slide"}
         onRequestClose={meetDog}
       >
         <ModalBackdropPressable
@@ -769,55 +772,64 @@ export default function SetupScreen() {
           <ModalSheetPressable
             visible={successMoment !== null}
             onRequestClose={meetDog}
+            closeAccessibilityLabel="Close saved care foundation dialog"
+            style={s.sheetSurface}
           >
             <BoardCard style={[s.sheetCard, { paddingBottom: modalSheetBottomPadding }]}>
-              <View style={[s.sheetHandle, { backgroundColor: colors.border }]} />
-              <View style={[s.sheetBadge, { backgroundColor: colors.primary + "16" }]}>
-                <Ionicons name="sparkles" size={26} color={colors.primary} />
-              </View>
-              <Text style={[s.sheetKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
-                Care foundation saved
-              </Text>
-              <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: TITLE_SERIF }]}>
-                {successMoment?.twinLine}
-              </Text>
-              <Text style={[s.sheetTwinLine, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
-                {successMoment?.templateLine}
-              </Text>
-              <View style={s.sheetBoundaryRow}>
-                <Ionicons name="lock-closed-outline" size={13} color={colors.mutedForeground} />
-                <Text style={[s.sheetBoundaryText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                  Everything stays on this device.
-                </Text>
-              </View>
-              <Pressable
-                onPress={meetDog}
-                accessibilityRole="button"
-                accessibilityLabel={`Continue to Home and meet ${successMoment?.dogName ?? "your dog"}`}
-                style={({ pressed }) => [
-                  s.saveBtn,
-                  s.sheetPrimaryBtn,
-                  { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
-                ]}
+              <ScrollView
+                style={s.sheetScroll}
+                contentContainerStyle={s.sheetScrollContent}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
               >
-                <Ionicons name="paw" size={17} color={colors.primaryForeground} />
-                <Text style={[s.saveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
-                  Meet {successMoment?.dogName ?? "your dog"}
+                <View style={[s.sheetHandle, { backgroundColor: colors.border }]} />
+                <View style={[s.sheetBadge, { backgroundColor: colors.primary + "16" }]}>
+                  <Ionicons name="sparkles" size={26} color={colors.primary} />
+                </View>
+                <Text style={[s.sheetKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                  Care foundation saved
                 </Text>
-              </Pressable>
-              <Pressable
-                onPress={reviewPlan}
-                accessibilityRole="button"
-                accessibilityLabel="Review plan"
-                style={({ pressed }) => [
-                  s.sheetSecondaryBtn,
-                  { borderColor: colors.border, opacity: pressed ? 0.72 : 1 },
-                ]}
-              >
-                <Text style={[s.sheetSecondaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
-                  Review plan
+                <Text style={[s.sheetTitle, { color: colors.foreground, fontFamily: TITLE_SERIF }]}>
+                  {successMoment?.twinLine}
                 </Text>
-              </Pressable>
+                <Text style={[s.sheetTwinLine, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>
+                  {successMoment?.templateLine}
+                </Text>
+                <View style={s.sheetBoundaryRow}>
+                  <Ionicons name="lock-closed-outline" size={13} color={colors.mutedForeground} />
+                  <Text style={[s.sheetBoundaryText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+                    Everything stays on this device.
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={meetDog}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Continue to Home and meet ${successMoment?.dogName ?? "your dog"}`}
+                  style={({ pressed }) => [
+                    s.saveBtn,
+                    s.sheetPrimaryBtn,
+                    { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
+                  ]}
+                >
+                  <Ionicons name="paw" size={17} color={colors.primaryForeground} />
+                  <Text style={[s.saveText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+                    Meet {successMoment?.dogName ?? "your dog"}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={reviewPlan}
+                  accessibilityRole="button"
+                  accessibilityLabel="Review plan"
+                  style={({ pressed }) => [
+                    s.sheetSecondaryBtn,
+                    { borderColor: colors.border, opacity: pressed ? 0.72 : 1 },
+                  ]}
+                >
+                  <Text style={[s.sheetSecondaryText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                    Review plan
+                  </Text>
+                </Pressable>
+              </ScrollView>
             </BoardCard>
           </ModalSheetPressable>
         </ModalBackdropPressable>
@@ -873,6 +885,7 @@ function Field({
     <View style={{ flex: 1 }}>
       <Text style={[s.fieldLabel, { color: colors.mutedForeground, fontFamily: "Inter_700Bold" }]}>{label.toUpperCase()}</Text>
       <TextInput
+        accessibilityLabel={label}
         editable={editable}
         value={value}
         onChangeText={onChangeText}
@@ -900,7 +913,8 @@ const s = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1 },
   progressCard: { marginBottom: 16 },
-  progressTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  progressTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
+  progressSummary: { flex: 1, minWidth: 0, paddingRight: 12 },
   progressValue: { fontSize: 28 },
   progressLabel: { fontSize: 12, marginTop: 1 },
   percentPill: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 13 },
@@ -908,8 +922,8 @@ const s = StyleSheet.create({
   progressTrack: { height: 7, borderRadius: 4, overflow: "hidden", marginTop: 14 },
   progressFill: { height: "100%", borderRadius: 4 },
   stepGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginTop: 14 },
-  stepItem: { flexDirection: "row", alignItems: "center", gap: 5, width: "47%" },
-  stepText: { fontSize: 11.5 },
+  stepItem: { flexDirection: "row", alignItems: "flex-start", gap: 5, width: "47%" },
+  stepText: { flex: 1, fontSize: 11.5, lineHeight: 16 },
   section: { marginBottom: 14 },
   sectionHead: { flexDirection: "row", alignItems: "center", gap: 10 },
   sectionIcon: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
@@ -923,7 +937,7 @@ const s = StyleSheet.create({
   twinLineRow: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
   twinLineText: { flex: 1, fontSize: 11.5, lineHeight: 16 },
   twinToggle: {
-    minHeight: 44,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 13,
     paddingHorizontal: 12,
@@ -934,7 +948,7 @@ const s = StyleSheet.create({
   },
   twinToggleText: { flex: 1, fontSize: 12.5, lineHeight: 17 },
   typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 2 },
-  typePill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 14, borderWidth: 1 },
+  typePill: { minHeight: MIN_MOBILE_TOUCH_TARGET, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 14, borderWidth: 1 },
   typeText: { fontSize: 12.5 },
   modeStack: { gap: 9, marginBottom: 2 },
   modeCard: { borderWidth: 1, borderRadius: 16, padding: 12, flexDirection: "row", alignItems: "center", gap: 10 },
@@ -964,15 +978,21 @@ const s = StyleSheet.create({
   authSetupProofDetail: { fontSize: 10, lineHeight: 14, marginTop: 4 },
   authSetupProofBlocker: { fontSize: 10.5, lineHeight: 15, marginTop: 8 },
   actions: { gap: 12, marginTop: 8 },
-  saveBtn: { height: 54, borderRadius: 17, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
-  saveText: { fontSize: 15.5 },
+  saveBtn: { minHeight: 54, borderRadius: 17, paddingHorizontal: 16, paddingVertical: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  saveText: { flexShrink: 1, fontSize: 15.5, lineHeight: 21, textAlign: "center" },
   saveHint: { fontSize: 12, lineHeight: 17, textAlign: "center", marginTop: -4, paddingHorizontal: 8 },
-  laterBtn: { height: 42, alignItems: "center", justifyContent: "center" },
+  laterBtn: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   laterText: { fontSize: 14 },
-  proofBtn: { minHeight: 42, borderRadius: 14, borderWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
+  proofBtn: { minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 14, borderWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 },
   proofText: { fontSize: 12.5 },
   sheetBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(8, 20, 36, 0.45)" },
+  sheetSurface: { width: "100%", maxHeight: "96%", flexShrink: 1 },
   sheetCard: {
+    flexShrink: 1,
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     borderBottomLeftRadius: 0,
@@ -980,14 +1000,16 @@ const s = StyleSheet.create({
     paddingHorizontal: 22,
     paddingTop: 12,
   },
+  sheetScroll: { flexShrink: 1 },
+  sheetScrollContent: { paddingBottom: 2 },
   sheetHandle: { alignSelf: "center", width: 42, height: 5, borderRadius: 3, marginBottom: 14 },
   sheetBadge: { alignSelf: "center", width: 56, height: 56, borderRadius: 20, alignItems: "center", justifyContent: "center", marginBottom: 10 },
   sheetKicker: { fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase", textAlign: "center" },
   sheetTitle: { fontSize: 23, lineHeight: 29, textAlign: "center", marginTop: 5 },
   sheetTwinLine: { fontSize: 12.5, lineHeight: 18, textAlign: "center", marginTop: 8 },
   sheetBoundaryRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, marginTop: 12 },
-  sheetBoundaryText: { fontSize: 11.5, lineHeight: 16 },
+  sheetBoundaryText: { flexShrink: 1, fontSize: 11.5, lineHeight: 16 },
   sheetPrimaryBtn: { marginTop: 18 },
-  sheetSecondaryBtn: { height: 46, borderRadius: 15, borderWidth: 1, alignItems: "center", justifyContent: "center", marginTop: 10 },
-  sheetSecondaryText: { fontSize: 13.5 },
+  sheetSecondaryBtn: { minHeight: MIN_MOBILE_TOUCH_TARGET, borderRadius: 15, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 12, alignItems: "center", justifyContent: "center", marginTop: 10 },
+  sheetSecondaryText: { flexShrink: 1, fontSize: 13.5, lineHeight: 19, textAlign: "center" },
 });

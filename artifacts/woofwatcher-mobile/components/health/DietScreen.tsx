@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useState } from "react";
 import {
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -12,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReducedMotion } from "react-native-reanimated";
 
 import {
   BoardCard,
@@ -28,9 +30,9 @@ import {
 } from "@/lib/careWriteProtection";
 import { notifyDialog } from "@/lib/confirmDialog";
 import {
+  getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   MIN_MOBILE_TOUCH_TARGET,
-  MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -44,11 +46,17 @@ export default function DietScreen({
 }: DietScreenProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
   const { state, careMutationsBlocked, updateCareDoc } = useCare();
   const { dietProfile } = state;
   const modalSheetBottomPadding = getModalSheetBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+  });
+  const keyboardOffset = getKeyboardAvoidingVerticalOffset({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
   });
 
   const [dietOpen, setDietOpen] = useState(false);
@@ -134,11 +142,13 @@ export default function DietScreen({
           accessory={
             <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Edit diet profile"
                 onPress={() => {
                   Haptics.selectionAsync();
                   openDietEdit();
                 }}
-                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                style={s.sectionActionTarget}
               >
                 <Text
                   style={[
@@ -153,11 +163,13 @@ export default function DietScreen({
                 </Text>
               </Pressable>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${dietOpen ? "Hide" : "Show"} diet profile details`}
                 onPress={() => {
                   Haptics.selectionAsync();
                   setDietOpen((value) => !value);
                 }}
-                hitSlop={MOBILE_INLINE_HIT_SLOP}
+                style={s.sectionActionTarget}
               >
                 <Text
                   style={[
@@ -276,26 +288,34 @@ export default function DietScreen({
       <Modal
         visible={dietEditOpen}
         transparent
-        animationType="slide"
+        animationType={reducedMotion ? "none" : "slide"}
         onRequestClose={() => setDietEditOpen(false)}
       >
         <ModalBackdropPressable
           style={s.modalBackdrop}
           onPress={() => setDietEditOpen(false)}
         >
-          <ModalSheetPressable
-            visible={dietEditOpen}
-            onRequestClose={() => setDietEditOpen(false)}
-            style={[s.profileModal, { backgroundColor: colors.card }]}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            keyboardVerticalOffset={keyboardOffset}
+            style={s.modalDock}
           >
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{
-                paddingBottom: modalSheetBottomPadding,
-                paddingHorizontal: 22,
-              }}
-              bounces={false}
+            <ModalSheetPressable
+              visible={dietEditOpen}
+              onRequestClose={() => setDietEditOpen(false)}
+              closeAccessibilityLabel="Close diet profile editor"
+              style={[s.profileModal, { backgroundColor: colors.card }]}
             >
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                  paddingBottom: modalSheetBottomPadding,
+                  paddingHorizontal: 22,
+                }}
+                bounces={false}
+                style={s.profileFormScroll}
+              >
               <View style={[s.modalHandle, { backgroundColor: colors.border }]} />
               <Text
                 style={[
@@ -389,6 +409,7 @@ export default function DietScreen({
                   <TextInput
                     value={field.value}
                     onChangeText={field.set}
+                    accessibilityLabel={field.label}
                     placeholder={field.placeholder}
                     placeholderTextColor={colors.mutedForeground}
                     style={[
@@ -405,6 +426,8 @@ export default function DietScreen({
 
               <Pressable
                 onPress={saveDiet}
+                accessibilityRole="button"
+                accessibilityLabel="Save diet profile"
                 style={({ pressed }) => [
                   s.profSaveBtn,
                   {
@@ -425,8 +448,9 @@ export default function DietScreen({
                   Save diet profile
                 </Text>
               </Pressable>
-            </ScrollView>
-          </ModalSheetPressable>
+              </ScrollView>
+            </ModalSheetPressable>
+          </KeyboardAvoidingView>
         </ModalBackdropPressable>
       </Modal>
     </>
@@ -435,6 +459,12 @@ export default function DietScreen({
 
 const s = StyleSheet.create({
   card: { marginTop: 14 },
+  sectionActionTarget: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   sectionLink: { fontSize: 14 },
   dietHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   dietIconWrap: {
@@ -478,12 +508,14 @@ const s = StyleSheet.create({
     justifyContent: "flex-end",
     paddingHorizontal: 28,
   },
+  modalDock: { flex: 1, justifyContent: "flex-end" },
   profileModal: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: "90%",
     paddingTop: 14,
   },
+  profileFormScroll: { flexShrink: 1, minHeight: 0 },
   modalHandle: {
     alignSelf: "center",
     width: 40,

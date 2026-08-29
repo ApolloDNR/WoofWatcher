@@ -41,7 +41,9 @@ This repo is a pnpm workspace.
 - `pnpm --filter @workspace/woofwatcher-mobile run dev` starts Expo.
 - `pnpm --filter @workspace/care-domain test` runs zero-dependency domain tests.
 - `pnpm --filter @workspace/api-spec run codegen` regenerates API client and Zod schemas.
-- `pnpm --filter @workspace/db run push` pushes DB schema changes in development.
+- `pnpm --filter @workspace/db run push` pushes declared DB schema changes for
+  disposable development databases; release databases require every ordered
+  SQL migration in `supabase/migrations` (see `docs/handoff/DATABASE_SETUP.md`).
 
 ## Product Direction
 

@@ -27,7 +27,7 @@ import { PixelIcon, type PixelIconName } from "@/components/PixelIcon";
 import { useColors } from "@/hooks/useColors";
 import { hapticSelect } from "@/lib/haptics";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
-import { MIN_MOBILE_TOUCH_TARGET, MOBILE_INLINE_HIT_SLOP } from "@/lib/mobileLayout";
+import { MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -83,18 +83,26 @@ export function ModalSheetPressable({
   visible,
   onRequestClose,
   closeAccessibilityLabel = "Dismiss dialog",
+  closeDisabled = false,
+  closeBusy = false,
   children,
   ...props
 }: StructuralPressableProps & {
   visible: boolean;
   onRequestClose: () => void;
   closeAccessibilityLabel?: string;
+  closeDisabled?: boolean;
+  closeBusy?: boolean;
 }) {
   const colors = useColors();
   const closeButtonRef = useRef<View | null>(null);
+  const closeBlocked = closeDisabled || closeBusy;
+  const requestCloseIfAllowed = () => {
+    if (!closeBlocked) onRequestClose();
+  };
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || closeBlocked) return;
     const focusTimer = setTimeout(() => {
       const reactTag = findNodeHandle(closeButtonRef.current);
       if (reactTag !== null) {
@@ -102,14 +110,14 @@ export function ModalSheetPressable({
       }
     }, 100);
     return () => clearTimeout(focusTimer);
-  }, [visible]);
+  }, [closeBlocked, visible]);
 
   return (
     <Pressable
       {...props}
       accessible={false}
       accessibilityViewIsModal
-      onAccessibilityEscape={onRequestClose}
+      onAccessibilityEscape={requestCloseIfAllowed}
       onPress={(event) => event.stopPropagation()}
     >
       <View style={styles.modalCloseRow}>
@@ -117,17 +125,28 @@ export function ModalSheetPressable({
           ref={closeButtonRef}
           accessibilityRole="button"
           accessibilityLabel={closeAccessibilityLabel}
-          accessibilityHint="Closes this dialog."
-          onPress={onRequestClose}
+          accessibilityHint={
+            closeBlocked
+              ? "Available when this action finishes."
+              : "Closes this dialog."
+          }
+          accessibilityState={{ disabled: closeBlocked, busy: closeBusy }}
+          disabled={closeBlocked}
+          onPress={requestCloseIfAllowed}
           style={({ pressed }) => [
             styles.modalCloseButton,
             {
               backgroundColor: pressed ? colors.secondary : colors.card,
               borderColor: colors.border,
+              opacity: closeBlocked ? 0.5 : 1,
             },
           ]}
         >
-          <Ionicons name="close" size={22} color={colors.foreground} />
+          <Ionicons
+            name="close"
+            size={22}
+            color={closeBlocked ? colors.mutedForeground : colors.foreground}
+          />
         </Pressable>
       </View>
       {children}
@@ -488,7 +507,6 @@ export function BoardActionButton({
     >
       {icon ? <Ionicons name={icon} size={compact ? 14 : 16} color={foreground} /> : null}
       <Text
-        numberOfLines={1}
         style={[
           styles.actionButtonText,
           compact && styles.actionButtonTextCompact,
@@ -516,19 +534,25 @@ export function BoardPill({
 }) {
   const colors = useColors();
   const pillTone = tone ?? colors.sage;
+  const pillForeground = active
+    ? pillTone === colors.primary
+      ? colors.primaryForeground
+      : colors.brandNavy
+    : colors.foreground;
+  const activeBackground = colors.isDark ? pillTone : `${pillTone}E6`;
   return (
     <View
       style={[
         styles.pill,
         {
-          backgroundColor: active ? pillTone : pillTone + "18",
-          borderColor: pillTone + "55",
+          backgroundColor: active ? activeBackground : pillTone + "24",
+          borderColor: pillTone,
         },
         style,
       ]}
     >
-      {icon ? <Ionicons name={icon} size={12} color={active ? "#FFFFFF" : pillTone} /> : null}
-      <Text style={[styles.pillText, { color: active ? "#FFFFFF" : pillTone, fontFamily: "Inter_700Bold" }]}>
+      {icon ? <Ionicons name={icon} size={12} color={pillForeground} /> : null}
+      <Text style={[styles.pillText, { color: pillForeground, fontFamily: "Inter_700Bold" }]}>
         {label}
       </Text>
     </View>
@@ -585,6 +609,7 @@ export function BoardCard({
   enter?: number;
 }) {
   const colors = useColors();
+  const reducedMotion = useReducedMotion();
   const navy = tone === "navy";
   const backgroundColor = navy ? colors.brandNavy : tone === "soft" ? colors.accent : colors.card;
   const borderColor = navy ? colors.copper + "66" : tone === "soft" ? colors.stone : colors.border;
@@ -611,7 +636,13 @@ export function BoardCard({
   );
 
   if (enter === undefined) return card;
-  return <Reanimated.View entering={enterUp(enter)}>{card}</Reanimated.View>;
+  return (
+    <Reanimated.View
+      entering={reducedMotion ? undefined : enterUp(enter)}
+    >
+      {card}
+    </Reanimated.View>
+  );
 }
 
 export function BoardSectionHeader({
@@ -628,20 +659,32 @@ export function BoardSectionHeader({
   textStyle?: StyleProp<TextStyle>;
 }) {
   const colors = useColors();
+  let renderedAccessory = accessory;
+  if (
+    accessory &&
+    React.isValidElement<PressableProps>(accessory) &&
+    accessory.type === Pressable
+  ) {
+    const accessoryStyle = accessory.props.style;
+    renderedAccessory = React.cloneElement(accessory, {
+      style:
+        typeof accessoryStyle === "function"
+          ? (state) => [accessoryStyle(state), styles.sectionAccessoryTarget]
+          : [accessoryStyle, styles.sectionAccessoryTarget],
+    });
+  }
   return (
     <View style={[styles.sectionHeader, { borderBottomColor: colors.border }, style]}>
       <Text
         accessibilityRole="header"
-        numberOfLines={1}
         style={[styles.sectionTitle, { color: colors.foreground, fontFamily: DISPLAY_SEMI }, textStyle]}
       >
         {title}
       </Text>
-      {accessory ? (
-        accessory
+      {renderedAccessory ? (
+        renderedAccessory
       ) : action ? (
         <Text
-          numberOfLines={1}
           style={[styles.sectionAction, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}
         >
           {action}
@@ -719,7 +762,6 @@ export function StatusMeter({
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel ?? `${label} ${valueLabel ?? `${Math.round(pct * 100)} percent`}`}
         accessibilityHint={accessibilityHint}
-        hitSlop={MOBILE_INLINE_HIT_SLOP}
         onPress={() => {
           hapticSelect();
           onPress();
@@ -1005,6 +1047,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 16,
+    paddingVertical: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1017,13 +1060,16 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 13.5,
+    flexShrink: 1,
+    textAlign: "center",
   },
   actionButtonTextCompact: {
     fontSize: 12,
   },
   pill: {
     alignSelf: "flex-start",
-    borderWidth: 0,
+    maxWidth: "100%",
+    borderWidth: 1,
     borderRadius: 999,
     minHeight: 28,
     paddingHorizontal: 11,
@@ -1033,6 +1079,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   pillText: {
+    flexShrink: 1,
     fontSize: 11,
     letterSpacing: 0.2,
   },
@@ -1079,7 +1126,8 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: 10,
     marginBottom: 10,
@@ -1087,14 +1135,23 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   sectionTitle: {
+    flexBasis: 160,
+    flexGrow: 1,
     flexShrink: 1,
     minWidth: 0,
     fontSize: 16,
     letterSpacing: 0,
   },
   sectionAction: {
-    flexShrink: 0,
+    flexShrink: 1,
+    maxWidth: "100%",
     fontSize: 11,
+  },
+  sectionAccessoryTarget: {
+    minWidth: MIN_MOBILE_TOUCH_TARGET,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    alignItems: "center",
+    justifyContent: "center",
   },
   meterRow: {
     flexDirection: "row",

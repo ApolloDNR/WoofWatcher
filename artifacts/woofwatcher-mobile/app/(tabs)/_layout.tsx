@@ -13,11 +13,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBounce } from "@/components/motion/GameFeel";
 import { UniversalTabButton } from "@/components/navigation/UniversalTabButton";
 import { useColors } from "@/hooks/useColors";
+import { requestRegisteredAvatarDraftExit } from "@/lib/avatarDraftExitGuard";
 import {
   getFloatingTabChromeMetrics,
   MAX_TAB_LABEL_FONT_SCALE,
 } from "@/lib/mobileLayout";
+import { resolveHealthSectionRoute } from "@/lib/healthSectionRouting";
 import { resolveMoreSectionRoute } from "@/lib/moreSectionRouting";
+import { resolvePlanReminderDestination } from "@/lib/planReminderCenter";
 import {
   handleUniversalTabPress,
   UNIVERSAL_COMPATIBILITY_TABS,
@@ -79,6 +82,14 @@ export default function TabLayout() {
   const pathname = usePathname();
   const params = useGlobalSearchParams<Record<string, string | string[]>>();
   const router = useRouter();
+  const activePlansItem =
+    pathname === "/calendar"
+      ? resolvePlanReminderDestination(params).params?.item
+      : undefined;
+  const activeHealthSection =
+    pathname === "/health"
+      ? resolveHealthSectionRoute(params).section
+      : "overview";
   const activeMoreSection =
     pathname === "/more" ? resolveMoreSectionRoute(params).section : "root";
   const chrome = getFloatingTabChromeMetrics({
@@ -150,7 +161,9 @@ export default function TabLayout() {
             key={tab.name}
             name={tab.name}
             listeners={
-              tab.name === "more"
+              tab.name === "more" ||
+              tab.name === "calendar" ||
+              tab.name === "health"
                 ? ({ navigation }) => ({
                     tabPress: (event) => {
                       handleUniversalTabPress(
@@ -158,12 +171,20 @@ export default function TabLayout() {
                           tabName: tab.name,
                           focused: navigation.isFocused(),
                           pathname,
+                          plansItem: activePlansItem,
+                          healthSection: activeHealthSection,
                           moreSection: activeMoreSection,
                         },
                         {
                           preventDefault: () => event.preventDefault(),
-                          replace: (nextPathname) =>
-                            router.replace(nextPathname),
+                          replace: (nextPathname) => {
+                            const avatarExit = requestRegisteredAvatarDraftExit(
+                              () => router.replace(nextPathname),
+                            );
+                            if (avatarExit === "unhandled") {
+                              router.replace(nextPathname);
+                            }
+                          },
                         },
                       );
                     },

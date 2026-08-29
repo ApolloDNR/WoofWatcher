@@ -3,7 +3,9 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
+  useReducer,
   useRef,
 } from "react";
 
@@ -11,7 +13,10 @@ import { useLocalDataReset } from "@/context/LocalDataResetContext";
 import { useWoofAuth } from "@/lib/auth";
 import {
   createPersonalQueryObserverShield,
+  createQueryCacheAuthTransitionController,
   createQueryCacheLocalDataResetController,
+  type QueryCacheAuthTransitionController,
+  type QueryCacheAuthTransitionSnapshot,
   type QueryCacheLocalDataResetController,
   type QueryCacheResetIdentityState,
 } from "@/lib/queryCacheLocalDataReset";
@@ -22,6 +27,14 @@ export interface QueryCacheLocalDataResetContextValue {
   isPersonalQueryObserverShieldRequested(): boolean;
   confirmPersonalQueryObserversHidden(): void;
   releasePersonalQueryObserverShield(): void;
+  authTransition: QueryCacheAuthTransitionSnapshot;
+  observeAuthDataScopeKey(
+    dataScopeKey: string | null,
+  ): QueryCacheAuthTransitionSnapshot;
+  confirmAuthTransitionObserversHidden(revision: number): void;
+  runAuthTransition(): Promise<void>;
+  retryAuthTransition(): Promise<void>;
+  prepareHouseholdTransition(expectedDataScopeKey: string): Promise<void>;
 }
 
 const QueryCacheLocalDataResetContext =
@@ -34,7 +47,8 @@ export function QueryCacheLocalDataResetProvider({
 }): React.JSX.Element {
   const queryClient = useQueryClient();
   const { isLoaded, userId, sessionId } = useWoofAuth();
-  const { attachRequiredParticipant } = useLocalDataReset();
+  const { attachRequiredParticipant, drainTrackedLocalDataWork } =
+    useLocalDataReset();
   const identityRef = useRef<QueryCacheResetIdentityState>({
     isLoaded: Boolean(isLoaded),
     userId: userId ?? null,
@@ -66,6 +80,53 @@ export function QueryCacheLocalDataResetProvider({
   }
   const controller = controllerRef.current;
 
+  const authTransitionControllerRef =
+    useRef<QueryCacheAuthTransitionController | null>(null);
+  if (authTransitionControllerRef.current === null) {
+    authTransitionControllerRef.current =
+      createQueryCacheAuthTransitionController({
+        cancelQueries: () =>
+          queryClient.cancelQueries(undefined, {
+            revert: true,
+            silent: true,
+          }),
+        drainMutations: drainTrackedLocalDataWork,
+        clearQueryAndMutationCaches: () => queryClient.clear(),
+      });
+  }
+  const authTransitionController = authTransitionControllerRef.current;
+  const authTransition = authTransitionController.observeIdentity(
+    identityRef.current,
+  );
+  const [, renderAuthTransitionEpoch] = useReducer(
+    (epoch: number) => epoch + 1,
+    0,
+  );
+
+  useEffect(
+    () => authTransitionController.subscribe(renderAuthTransitionEpoch),
+    [authTransitionController],
+  );
+
+  // The descendant auth boundary renders no personal screens while blocked.
+  // Layout effects run after React's mutation phase, so this acknowledgement
+  // is later than every observer cleanup from that same identity change.
+  useLayoutEffect(() => {
+    if (authTransition.status === "blocked") {
+      authTransitionController.confirmPersonalObserversHidden(
+        authTransition.revision,
+      );
+    }
+  }, [authTransition, authTransitionController]);
+
+  useEffect(() => {
+    if (authTransition.status !== "blocked") return;
+    void authTransitionController.runCurrentTransition().catch(() => {
+      // The controller publishes a retryable failed state. Keeping the
+      // boundary mounted and blocked is the fail-closed behavior.
+    });
+  }, [authTransition, authTransitionController]);
+
   useEffect(
     () => attachRequiredParticipant("query-cache", controller.participant),
     [attachRequiredParticipant, controller],
@@ -79,8 +140,16 @@ export function QueryCacheLocalDataResetProvider({
       confirmPersonalQueryObserversHidden:
         shield.confirmPersonalObserversHidden,
       releasePersonalQueryObserverShield: shield.release,
+      authTransition,
+      observeAuthDataScopeKey: authTransitionController.observeDataScopeKey,
+      confirmAuthTransitionObserversHidden:
+        authTransitionController.confirmPersonalObserversHidden,
+      runAuthTransition: authTransitionController.runCurrentTransition,
+      retryAuthTransition: authTransitionController.retryCurrentTransition,
+      prepareHouseholdTransition:
+        authTransitionController.prepareHouseholdTransition,
     }),
-    [shield],
+    [authTransition, authTransitionController, shield],
   );
 
   return (

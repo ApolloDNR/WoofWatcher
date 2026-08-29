@@ -1,24 +1,30 @@
-import { and, desc, eq, gte, sql } from "drizzle-orm";
-import { db, careEntriesTable, careEntryTombstonesTable } from "@workspace/db";
-import { requireAuth, getUserId } from "../lib/auth.ts";
+import { and, desc, eq, gte, or, sql } from "drizzle-orm";
 import {
-  getActiveHouseholdId,
-  getCaregiverName,
-  getHouseholdMemberAuthz,
-} from "../lib/household.ts";
-import { createCareEntriesRouter } from "./care-entries-router.ts";
-
-const router = createCareEntriesRouter({
-  db,
   careEntriesTable,
   careEntryTombstonesTable,
-  queryOps: { and, desc, eq, gte, sql },
+  db,
+  householdMembersTable,
+  usersTable,
+} from "@workspace/db";
+import { requireAuth, getUserId } from "../lib/auth.ts";
+import { createHouseholdScopedOperationRunner } from "../lib/household-scoped-operation.ts";
+import { createDrizzleHouseholdScopedOperationStore } from "../lib/household-scoped-operation-store.ts";
+import { createCareEntriesRouter } from "./care-entries-router.ts";
+
+const runHouseholdScopedOperation = createHouseholdScopedOperationRunner(
+  createDrizzleHouseholdScopedOperationStore({
+    database: db,
+    tables: { usersTable, householdMembersTable },
+  }),
+);
+
+const router = createCareEntriesRouter({
+  careEntriesTable,
+  careEntryTombstonesTable,
+  queryOps: { and, desc, eq, gte, or, sql },
   requireAuth,
   getUserId,
-  getActiveHouseholdId,
-  getCaregiverName,
-  getHouseholdMemberAuthz,
-  now: () => new Date(),
+  runHouseholdScopedOperation,
 });
 
 export { createCareEntriesRouter };

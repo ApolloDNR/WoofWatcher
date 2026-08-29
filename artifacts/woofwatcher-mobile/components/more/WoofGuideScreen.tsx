@@ -18,12 +18,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  deriveCareDayStatus,
-  deriveCareHandoff,
-  deriveHealthWatch,
-  normalizeCareEventType,
-} from "@workspace/care-domain";
+import { useReducedMotion } from "react-native-reanimated";
 import { useColors } from "@/hooks/useColors";
 import { useCare, CareState } from "@/context/CareContext";
 import {
@@ -44,7 +39,6 @@ import {
   getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   MIN_MOBILE_TOUCH_TARGET,
-  MOBILE_INLINE_HIT_SLOP,
 } from "@/lib/mobileLayout";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 import { buildAiProviderProofManifest } from "@/lib/aiProviderProof";
@@ -56,8 +50,8 @@ import {
   type WoofGuideActionCard,
   type WoofGuideActionIcon,
 } from "@/lib/woofGuideActions";
+import { buildWoofGuideAssistantContext } from "@/lib/woofGuideAssistantContext";
 import { notifyDialog } from "@/lib/confirmDialog";
-import { localDateKey, todayLocalDateKey } from "@/lib/localCalendar";
 import {
   CARE_READ_ONLY_MESSAGE,
   careMutationWasAccepted,
@@ -98,93 +92,6 @@ const ASSISTANT_GATE = resolveWoofGuideAssistantGate({
   liveAiProofReady: buildAiProviderProofManifest({}).liveAiAllowed,
 });
 
-function buildAssistantContext(state: CareState) {
-  const now = Date.now();
-  const today = todayLocalDateKey(new Date(now));
-  const todayEntries = state.entries.filter((entry) => {
-    const occurredAt = new Date(entry.occurredAt);
-    return Number.isFinite(occurredAt.getTime()) && localDateKey(occurredAt) === today;
-  });
-  const normalizedType = (entry: CareState["entries"][number]) =>
-    normalizeCareEventType(entry.type, entry.details);
-  const sortedEntries = [...state.entries].sort(
-    (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
-  );
-  const meals = sortedEntries.filter((e) => normalizedType(e) === "meal");
-  const walks = sortedEntries.filter((e) => normalizedType(e) === "walk");
-  const lastMeal = meals[0] ?? null;
-  const lastWalk = walks[0] ?? null;
-  const dayStatus = deriveCareDayStatus(state.entries, state.routines, now);
-  const healthWatch = deriveHealthWatch({
-    entries: state.entries,
-    routines: state.routines,
-    now,
-  });
-  const handoffSummary = deriveCareHandoff({
-    entries: state.entries,
-    routines: state.routines,
-    caregivers: state.caregivers,
-    now,
-  });
-
-  return {
-    profile: {
-      name: state.profile.name,
-      breed: state.profile.breed,
-      background: state.profile.background,
-      careFocus: state.profile.careFocus,
-      weight: state.profile.weight,
-      vetBoundary: state.profile.vetBoundary,
-    },
-    summary: {
-      totalEntries: state.entries.length,
-      todayEntries: todayEntries.length,
-      meals: dayStatus.counts.meals.done,
-      walks: dayStatus.counts.walks.done,
-      vomitIncidents: healthWatch.counts.vomit30,
-    },
-    healthWatch: {
-      status: healthWatch.status,
-      label: healthWatch.status === "good" ? "No concerns" : healthWatch.summary,
-      summary: healthWatch.summary,
-      signals: healthWatch.signals.slice(0, 4),
-      redFlags: healthWatch.redFlags,
-      counts: healthWatch.counts,
-      vetBoundary: healthWatch.vetBoundary,
-    },
-    todayPlan: {
-      dateLabel: today,
-      completedCount: todayEntries.length,
-      totalCount: state.routines.length,
-      nextItems: handoffSummary.next
-        ? [{
-            label: handoffSummary.next.label,
-            time: handoffSummary.next.time,
-            owner: handoffSummary.next.owner,
-            note: handoffSummary.next.note,
-          }]
-        : [],
-    },
-    handoff: {
-      nextRoutine: handoffSummary.next
-        ? {
-            label: handoffSummary.next.label,
-            time: handoffSummary.next.time,
-            owner: handoffSummary.next.owner,
-          }
-        : null,
-      lastMeal,
-      lastWalk,
-      followUps: state.entries.filter((e) => e.severity === "watch" || e.severity === "urgent").slice(0, 3),
-      caregiverLoad: handoffSummary.caregiverLoad,
-      sections: handoffSummary.sections,
-      message: handoffSummary.message,
-    },
-    latest: sortedEntries.slice(0, 5),
-    dietProfile: state.dietProfile,
-  };
-}
-
 export interface WoofGuideScreenProps {
   prompt?: string;
   onBack: () => void;
@@ -193,6 +100,7 @@ export interface WoofGuideScreenProps {
 export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
   const router = useRouter();
   const { state, careMutationsBlocked, addEntry, updateCareDoc } = useCare();
   const showCareReadOnly = useCallback(
@@ -282,7 +190,7 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
 
     try {
       const token = await getToken();
-      const context = buildAssistantContext(state);
+      const context = buildWoofGuideAssistantContext(state);
       const res = await fetch(`${BASE_URL}/api/care-helper`, {
         method: "POST",
         headers: {
@@ -390,7 +298,7 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
 
     if (draft.kind === "care_pass") {
       setReviewAction(null);
-      router.push({ pathname: "/health", params: { section: "records" } });
+      router.push({ pathname: "/health", params: { section: "care-pass" } });
     }
   }, [
     reviewAction,
@@ -424,7 +332,13 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             loading ? (
-              <View style={[s.typingBubble, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View
+                accessibilityRole="progressbar"
+                accessibilityLiveRegion="polite"
+                accessibilityLabel="WoofGuide is thinking"
+                accessibilityState={{ busy: true }}
+                style={[s.typingBubble, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
                 <ActivityIndicator size="small" color={colors.copper} />
                 <Text style={[s.typingText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Thinking...</Text>
               </View>
@@ -444,7 +358,7 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                     <View style={s.guideStageShade} />
                     <View style={s.guideStageTop}>
                       <View style={s.guideBubble}>
-                        <Text style={[s.guideKicker, { color: colors.copper, fontFamily: DISPLAY_SEMI }]}>
+                        <Text style={[s.guideKicker, { color: colors.brandNavy, fontFamily: DISPLAY_SEMI }]}>
                           WoofGuide Console
                         </Text>
                         <Text
@@ -513,7 +427,7 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
 
                     <View style={s.guideStageFooter}>
                       <View style={[s.guideBoundaryCard, { backgroundColor: colors.ivory + "E8", borderColor: colors.ivory + "AA" }]}>
-                        <Text style={[s.guideBoundaryLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                        <Text style={[s.guideBoundaryLabel, { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" }]}>
                           Not veterinary advice
                         </Text>
                         <Text
@@ -532,13 +446,13 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                           }}
                           style={({ pressed }) => [
                             s.guideStageAction,
-                            { backgroundColor: colors.sage, opacity: pressed ? 0.82 : 1 },
+                            { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
                           ]}
                         >
-                          <Text style={[s.guideStageActionText, { fontFamily: "Inter_800ExtraBold" }]}>
+                          <Text style={[s.guideStageActionText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>
                             Ask WoofGuide
                           </Text>
-                          <Ionicons name="arrow-forward" size={15} color={colors.ivory} />
+                          <Ionicons name="arrow-forward" size={15} color={colors.primaryForeground} />
                         </Pressable>
                       ) : (
                         <Pressable
@@ -550,13 +464,13 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                           }}
                           style={({ pressed }) => [
                             s.guideStageAction,
-                            { backgroundColor: colors.sage, opacity: pressed ? 0.82 : 1 },
+                            { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
                           ]}
                         >
-                          <Text style={[s.guideStageActionText, { fontFamily: "Inter_800ExtraBold" }]}>
+                          <Text style={[s.guideStageActionText, { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" }]}>
                             Health Watch
                           </Text>
-                          <Ionicons name="arrow-forward" size={15} color={colors.ivory} />
+                          <Ionicons name="arrow-forward" size={15} color={colors.primaryForeground} />
                         </Pressable>
                       )}
                     </View>
@@ -568,7 +482,7 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                       <Ionicons name="chatbubbles-outline" size={21} color={colors.brandNavy} />
                     </View>
                     <View style={s.guideIntroText}>
-                      <Text style={[s.guideIntroKicker, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                      <Text style={[s.guideIntroKicker, { color: colors.primary, fontFamily: "Inter_800ExtraBold" }]}>
                         WoofGuide
                       </Text>
                       <Text
@@ -619,7 +533,7 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                     <Text style={[s.gatePrivacyNote, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
                       {ASSISTANT_GATE.privacyNote}
                     </Text>
-                    <Text style={[s.gateWorksLabel, { color: colors.copper, fontFamily: "Inter_800ExtraBold" }]}>
+                    <Text style={[s.gateWorksLabel, { color: colors.primary, fontFamily: "Inter_800ExtraBold" }]}>
                       What works today
                     </Text>
                     <View style={s.gateLinkList}>
@@ -703,10 +617,10 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
             <View style={[
               s.bubble,
               item.role === "user"
-                ? [s.userBubble, { backgroundColor: colors.copper }]
+                ? [s.userBubble, { backgroundColor: colors.copperBright }]
                 : [s.assistantBubble, { backgroundColor: colors.card, borderColor: colors.border }],
             ]}>
-              <Text style={[s.bubbleText, { color: item.role === "user" ? "#fff" : colors.foreground, fontFamily: "Inter_400Regular" }]}>
+              <Text style={[s.bubbleText, { color: item.role === "user" ? colors.brandNavy : colors.foreground, fontFamily: "Inter_400Regular" }]}>
                 {item.content}
               </Text>
             </View>
@@ -718,6 +632,7 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
             <TextInput
               value={input}
               onChangeText={setInput}
+              accessibilityLabel={`Ask WoofGuide about ${name}`}
               placeholder={`Ask about ${name}...`}
               placeholderTextColor={colors.mutedForeground}
               style={[s.input, { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, fontFamily: "Inter_400Regular" }]}
@@ -730,8 +645,16 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
               onPress={() => sendMessage(input)}
               disabled={!input.trim() || loading}
               accessibilityRole="button"
-              accessibilityLabel="Send WoofGuide message"
-              style={[s.sendBtn, { backgroundColor: input.trim() && !loading ? colors.primary : colors.card, borderColor: colors.border }]}
+              accessibilityLabel={loading ? "WoofGuide is thinking" : "Send WoofGuide message"}
+              accessibilityState={{ disabled: !input.trim() || loading, busy: loading }}
+              style={({ pressed }) => [
+                s.sendBtn,
+                {
+                  backgroundColor: input.trim() && !loading ? colors.primary : colors.card,
+                  borderColor: colors.border,
+                  opacity: input.trim() && !loading && pressed ? 0.82 : 1,
+                },
+              ]}
             >
               {loading
                 ? <ActivityIndicator size="small" color={colors.primaryForeground} />
@@ -764,7 +687,7 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
           </View>
         )}
       </KeyboardAvoidingView>
-      <Modal visible={reviewAction !== null} transparent animationType="slide" onRequestClose={() => setReviewAction(null)}>
+      <Modal visible={reviewAction !== null} transparent animationType={reducedMotion ? "none" : "slide"} onRequestClose={() => setReviewAction(null)}>
         <ModalBackdropPressable
           style={s.reviewBackdrop}
           onPress={() => setReviewAction(null)}
@@ -772,6 +695,7 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
           <ModalSheetPressable
             visible={reviewAction !== null}
             onRequestClose={() => setReviewAction(null)}
+            closeAccessibilityLabel="Close owner review"
             style={[s.reviewSheet, { backgroundColor: colors.card, borderColor: colors.border, paddingBottom: modalSheetBottomPadding }]}
           >
             {reviewAction?.draft ? (
@@ -781,17 +705,9 @@ export default function WoofGuideScreen({ prompt, onBack }: WoofGuideScreenProps
                     <Ionicons name="sparkles-outline" size={18} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.reviewEyebrow, { color: colors.copper, fontFamily: "Inter_700Bold" }]}>OWNER REVIEW</Text>
+                    <Text style={[s.reviewEyebrow, { color: colors.primary, fontFamily: "Inter_700Bold" }]}>OWNER REVIEW</Text>
                     <Text style={[s.reviewTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{reviewAction.draft.title}</Text>
                   </View>
-                  <Pressable
-                    onPress={() => setReviewAction(null)}
-                    hitSlop={MOBILE_INLINE_HIT_SLOP}
-                    accessibilityRole="button"
-                    accessibilityLabel="Close owner review"
-                  >
-                    <Ionicons name="close" size={22} color={colors.mutedForeground} />
-                  </Pressable>
                 </View>
                 <ScrollView style={s.reviewBodyWrap} showsVerticalScrollIndicator={false}>
                   <Text style={[s.reviewBody, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>
@@ -957,7 +873,7 @@ const s = StyleSheet.create({
     gap: 7,
     paddingHorizontal: 12,
   },
-  guideStageActionText: { color: "#FFF9EF", fontSize: 11, lineHeight: 14 },
+  guideStageActionText: { fontSize: 11, lineHeight: 14 },
   guideIntroCard: { alignSelf: "stretch", marginTop: 8 },
   guideIntroRow: { flexDirection: "row", alignItems: "center", gap: 11 },
   guideIntroIcon: {

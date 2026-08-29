@@ -420,8 +420,16 @@ export interface SerializedCareEntryMutationQueueOptions<TInput, TResult> {
     input: TInput,
     signal: AbortSignal,
   ) => Promise<TResult>;
-  onSuccess: (entryId: string, input: TInput, result: TResult) => void;
-  onFailure: (entryId: string, input: TInput, error: unknown) => void;
+  onSuccess: (
+    entryId: string,
+    input: TInput,
+    result: TResult,
+  ) => void | Promise<void>;
+  onFailure: (
+    entryId: string,
+    input: TInput,
+    error: unknown,
+  ) => void | Promise<void>;
   timeoutMs?: number;
   timeoutScheduler?: {
     schedule: (callback: () => void, delayMs: number) => unknown;
@@ -431,6 +439,13 @@ export interface SerializedCareEntryMutationQueueOptions<TInput, TResult> {
 
 export interface SerializedCareEntryMutationQueue<TInput> {
   enqueue: (entryId: string, input: TInput) => number;
+  /**
+   * Enqueues one exact generation and resolves only after its authoritative
+   * success/failure callback has settled, or immediately if that generation
+   * is superseded/cancelled. This lets first-sync admission wait for durable
+   * terminal reconciliation without changing normal fire-and-forget edits.
+   */
+  enqueueAndWait: (entryId: string, input: TInput) => Promise<void>;
   cancel: (entryId: string) => void;
   cancelAll: () => void;
 }
@@ -455,6 +470,20 @@ export class CareEntryConflictRetryError<TInput> extends Error {
     this.rebasedInput = rebasedInput;
     this.originalError = originalError;
   }
+}
+
+/**
+ * A conflict retry preserves its underlying transport error so an exact
+ * rebased PATCH 404 cannot be mistaken for a generic offline failure.
+ */
+export function isCareEntryMutationNotFound(error: unknown): boolean {
+  const candidate =
+    error instanceof CareEntryConflictRetryError ? error.originalError : error;
+  return (
+    !!candidate &&
+    typeof candidate === "object" &&
+    (candidate as { status?: unknown }).status === 404
+  );
 }
 
 export interface RetryCareEntryMutationAfterConflictInput<
@@ -529,11 +558,14 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
     generation: number;
     epoch: number;
     input: TInput;
+    settle: () => void;
+    settled: Promise<void>;
   };
 
   const latestGeneration = new Map<string, number>();
   const queued = new Map<string, PendingMutation>();
   const inFlight = new Set<string>();
+  const inFlightMutation = new Map<string, PendingMutation>();
   const abortControllers = new Map<string, AbortController>();
   const effectiveTimeoutMs =
     Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 30_000;
@@ -545,6 +577,7 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
     if (!pending) return;
     queued.delete(entryId);
     inFlight.add(entryId);
+    inFlightMutation.set(entryId, pending);
     const abortController = new AbortController();
     abortControllers.set(entryId, abortController);
 
@@ -589,7 +622,7 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
             pending.epoch === epoch &&
             latestGeneration.get(entryId) === pending.generation
           ) {
-            onSuccess(entryId, pending.input, result);
+            return onSuccess(entryId, pending.input, result);
           }
         },
         (error) => {
@@ -597,12 +630,16 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
             pending.epoch === epoch &&
             latestGeneration.get(entryId) === pending.generation
           ) {
-            onFailure(entryId, pending.input, error);
+            return onFailure(entryId, pending.input, error);
           }
         },
       )
       .then(
         () => {
+          pending.settle();
+          if (inFlightMutation.get(entryId) === pending) {
+            inFlightMutation.delete(entryId);
+          }
           if (abortControllers.get(entryId) === abortController) {
             abortControllers.delete(entryId);
           }
@@ -611,6 +648,10 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
         },
         () => {
           // A state callback must never strand a newer queued mutation.
+          pending.settle();
+          if (inFlightMutation.get(entryId) === pending) {
+            inFlightMutation.delete(entryId);
+          }
           if (abortControllers.get(entryId) === abortController) {
             abortControllers.delete(entryId);
           }
@@ -620,16 +661,46 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
       );
   };
 
+  const enqueueMutation = (entryId: string, input: TInput) => {
+    const supersededQueued = queued.get(entryId);
+    supersededQueued?.settle();
+    // The in-flight transport may still drain, but incrementing the latest
+    // generation makes its callback inert. Its exact waiter must not strand a
+    // stale identity or an admission barrier behind that obsolete transport.
+    inFlightMutation.get(entryId)?.settle();
+    const generation = (latestGeneration.get(entryId) ?? 0) + 1;
+    latestGeneration.set(entryId, generation);
+    let settle!: () => void;
+    const settled = new Promise<void>((resolve) => {
+      let didSettle = false;
+      settle = () => {
+        if (didSettle) return;
+        didSettle = true;
+        resolve();
+      };
+    });
+    queued.set(entryId, {
+      generation,
+      epoch,
+      input,
+      settle,
+      settled,
+    });
+    pump(entryId);
+    return { generation, settled };
+  };
+
   return {
     enqueue(entryId, input) {
-      const generation = (latestGeneration.get(entryId) ?? 0) + 1;
-      latestGeneration.set(entryId, generation);
-      queued.set(entryId, { generation, epoch, input });
-      pump(entryId);
-      return generation;
+      return enqueueMutation(entryId, input).generation;
+    },
+    enqueueAndWait(entryId, input) {
+      return enqueueMutation(entryId, input).settled;
     },
     cancel(entryId) {
       abortControllers.get(entryId)?.abort();
+      queued.get(entryId)?.settle();
+      inFlightMutation.get(entryId)?.settle();
       latestGeneration.set(
         entryId,
         (latestGeneration.get(entryId) ?? 0) + 1,
@@ -637,6 +708,8 @@ export function createSerializedCareEntryMutationQueue<TInput, TResult>({
       queued.delete(entryId);
     },
     cancelAll() {
+      for (const pending of queued.values()) pending.settle();
+      for (const pending of inFlightMutation.values()) pending.settle();
       for (const controller of abortControllers.values()) {
         controller.abort();
       }
@@ -781,6 +854,32 @@ export function filterDiscardedServerEntries<
       !(typeof clientKey === "string" && discarded.has(clientKey))
     );
   });
+}
+
+/**
+ * Applies the exact identity-scoped deletion ledger to the local cache before
+ * hydration can render or retry it. Server filtering alone is insufficient:
+ * the primary slot may still contain the old temp/server row if the process
+ * stopped after the durable ledger write but before the slot rewrite.
+ */
+export function partitionCachedCareEntriesByDiscardedIdentity<
+  T extends {
+    id: string;
+    details?: Record<string, unknown> | null;
+  },
+>(
+  entries: readonly T[],
+  discardedEntryIds: readonly string[],
+): { retained: T[]; quarantined: T[] } {
+  const retained = filterDiscardedServerEntries(
+    entries,
+    discardedEntryIds,
+  );
+  const retainedEntries = new Set(retained);
+  return {
+    retained,
+    quarantined: entries.filter((entry) => !retainedEntries.has(entry)),
+  };
 }
 
 export interface DiscardedServerEntryCleanupInput<

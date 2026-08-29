@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { QueryClient, QueryObserver } from "@tanstack/react-query";
 
 import { createLocalDataResetCoordinator } from "./localDataResetCoordinator.ts";
+import * as queryCacheAuthModule from "./queryCacheLocalDataReset.ts";
 import {
   createLocalDataResetRuntime,
   REQUIRED_LOCAL_DATA_PARTICIPANT_IDS,
@@ -43,6 +44,14 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
+function careIdentityScopeKey(
+  userId: string,
+  sessionId: string,
+  householdId: string,
+): string {
+  return JSON.stringify([userId, sessionId, householdId]);
+}
+
 function controllerHarness(initial?: Partial<QueryCacheResetIdentityState>) {
   let identity: QueryCacheResetIdentityState = {
     isLoaded: true,
@@ -74,6 +83,403 @@ function controllerHarness(initial?: Partial<QueryCacheResetIdentityState>) {
     },
   };
 }
+
+test("ordinary auth transitions stay blocked until observers, queries, and mutations are closed", async () => {
+  type AuthTransitionController = {
+    observeIdentity(identity: QueryCacheResetIdentityState): {
+      revision: number;
+      status: "loading" | "blocked" | "failed" | "admitted";
+      identity: {
+        userId: string | null;
+        sessionId: string | null;
+        dataScopeKey: string | null;
+      } | null;
+    };
+    observeDataScopeKey(dataScopeKey: string | null): {
+      revision: number;
+      status: "loading" | "blocked" | "failed" | "admitted";
+      identity: {
+        userId: string | null;
+        sessionId: string | null;
+        dataScopeKey: string | null;
+      } | null;
+    };
+    confirmPersonalObserversHidden(revision: number): void;
+    runCurrentTransition(): Promise<void>;
+    getSnapshot(): {
+      revision: number;
+      status: "loading" | "blocked" | "failed" | "admitted";
+      identity: {
+        userId: string | null;
+        sessionId: string | null;
+        dataScopeKey: string | null;
+      } | null;
+    };
+  };
+  type CreateAuthTransitionController = (adapters: {
+    cancelQueries(): Promise<void>;
+    drainMutations(): Promise<void>;
+    clearQueryAndMutationCaches(): void;
+  }) => AuthTransitionController;
+  const createController = (
+    queryCacheAuthModule as typeof queryCacheAuthModule & {
+      createQueryCacheAuthTransitionController?: CreateAuthTransitionController;
+    }
+  ).createQueryCacheAuthTransitionController;
+
+  assert.equal(
+    typeof createController,
+    "function",
+    "the query-cache owner needs an ordinary auth-transition controller",
+  );
+  if (!createController) return;
+
+  const mutationDrain = deferred<void>();
+  const events: string[] = [];
+  let cacheOwner: string | null = "stale-bootstrap-owner";
+  const controller = createController({
+    async cancelQueries() {
+      events.push("cancel-queries");
+    },
+    async drainMutations() {
+      events.push("drain-mutations:start");
+      await mutationDrain.promise;
+      events.push("drain-mutations:end");
+    },
+    clearQueryAndMutationCaches() {
+      events.push("clear-cache");
+      cacheOwner = null;
+    },
+  });
+
+  controller.observeIdentity({
+    isLoaded: true,
+    userId: "user-a",
+    sessionId: "session-a",
+  });
+  const userAScope = careIdentityScopeKey("user-a", "session-a", "household-a");
+  const bootstrap = controller.observeDataScopeKey(userAScope);
+  assert.equal(bootstrap.status, "blocked");
+
+  let settled = false;
+  const cleaning = controller.runCurrentTransition().then(() => {
+    settled = true;
+  });
+  await Promise.resolve();
+  assert.equal(settled, false);
+  assert.deepEqual(events, [], "cleanup cannot start before observer teardown");
+
+  controller.confirmPersonalObserversHidden(bootstrap.revision);
+  while (!events.includes("drain-mutations:start")) await Promise.resolve();
+  assert.equal(settled, false);
+  assert.equal(cacheOwner, "stale-bootstrap-owner");
+  mutationDrain.resolve();
+  await cleaning;
+
+  assert.deepEqual(events, [
+    "cancel-queries",
+    "drain-mutations:start",
+    "drain-mutations:end",
+    "cancel-queries",
+    "clear-cache",
+  ]);
+  assert.equal(cacheOwner, null);
+  assert.deepEqual(controller.getSnapshot(), {
+    revision: bootstrap.revision,
+    status: "admitted",
+    identity: {
+      userId: "user-a",
+      sessionId: "session-a",
+      dataScopeKey: userAScope,
+    },
+    error: null,
+  });
+});
+
+test("a household-pending scope stays closed after cleanup until the exact replacement scope is cleared", async () => {
+  const events: string[] = [];
+  const controller =
+    queryCacheAuthModule.createQueryCacheAuthTransitionController({
+      async cancelQueries() {
+        events.push("cancel");
+      },
+      async drainMutations() {
+        events.push("drain");
+      },
+      clearQueryAndMutationCaches() {
+        events.push("clear");
+      },
+    });
+
+  controller.observeIdentity({
+    isLoaded: true,
+    userId: "user-a",
+    sessionId: "session-a",
+  });
+  const householdAScope = careIdentityScopeKey(
+    "user-a",
+    "session-a",
+    "household-a",
+  );
+  const householdBScope = careIdentityScopeKey(
+    "user-a",
+    "session-a",
+    "household-b",
+  );
+  let transition = controller.observeDataScopeKey(householdAScope);
+  controller.confirmPersonalObserversHidden(transition.revision);
+  await controller.runCurrentTransition();
+  assert.equal(controller.getSnapshot().status, "admitted");
+
+  transition = controller.observeDataScopeKey(null);
+  assert.equal(transition.status, "blocked");
+  controller.confirmPersonalObserversHidden(transition.revision);
+  await controller.runCurrentTransition();
+  assert.deepEqual(controller.getSnapshot(), {
+    revision: transition.revision,
+    status: "loading",
+    identity: {
+      userId: "user-a",
+      sessionId: "session-a",
+      dataScopeKey: null,
+    },
+    error: null,
+  });
+
+  transition = controller.observeDataScopeKey(householdBScope);
+  assert.equal(transition.status, "blocked");
+  controller.confirmPersonalObserversHidden(transition.revision);
+  await controller.runCurrentTransition();
+  assert.deepEqual(controller.getSnapshot(), {
+    revision: transition.revision,
+    status: "admitted",
+    identity: {
+      userId: "user-a",
+      sessionId: "session-a",
+      dataScopeKey: householdBScope,
+    },
+    error: null,
+  });
+  assert.deepEqual(events, [
+    "cancel",
+    "drain",
+    "cancel",
+    "clear",
+    "cancel",
+    "drain",
+    "cancel",
+    "clear",
+    "cancel",
+    "drain",
+    "cancel",
+    "clear",
+  ]);
+});
+
+test("imperative household preparation blocks synchronously and completes A teardown before transport admission", async () => {
+  const events: string[] = [];
+  let drainGate: Promise<void> = Promise.resolve();
+  let drainCall = 0;
+  const controller =
+    queryCacheAuthModule.createQueryCacheAuthTransitionController({
+      async cancelQueries() {
+        events.push("cancel");
+      },
+      async drainMutations() {
+        drainCall += 1;
+        events.push("drain:start");
+        await drainGate;
+        events.push("drain:end");
+      },
+      clearQueryAndMutationCaches() {
+        events.push("clear");
+      },
+    });
+  const householdAScope = careIdentityScopeKey(
+    "user-a",
+    "session-a",
+    "household-a",
+  );
+  controller.observeIdentity({
+    isLoaded: true,
+    userId: "user-a",
+    sessionId: "session-a",
+  });
+  let transition = controller.observeDataScopeKey(householdAScope);
+  controller.confirmPersonalObserversHidden(transition.revision);
+  await controller.runCurrentTransition();
+  events.length = 0;
+
+  const transitionDrain = deferred<void>();
+  drainGate = transitionDrain.promise;
+  let prepared = false;
+  const preparing = controller
+    .prepareHouseholdTransition(householdAScope)
+    .then(() => {
+      prepared = true;
+      events.push("transport-admitted");
+    });
+  assert.equal(
+    controller.getSnapshot().status,
+    "blocked",
+    "the call must close admission before returning its promise",
+  );
+  assert.equal(prepared, false);
+  transition = controller.getSnapshot();
+  controller.confirmPersonalObserversHidden(transition.revision);
+  while (!events.includes("drain:start")) await Promise.resolve();
+  assert.equal(prepared, false);
+  transitionDrain.resolve();
+  await preparing;
+  assert.equal(drainCall, 2);
+  assert.deepEqual(events, [
+    "cancel",
+    "drain:start",
+    "drain:end",
+    "cancel",
+    "clear",
+    "transport-admitted",
+  ]);
+  assert.equal(controller.getSnapshot().status, "loading");
+  assert.equal(
+    controller.getSnapshot().identity?.dataScopeKey,
+    null,
+  );
+});
+
+test("household preparation rejects stale source authority without disturbing admitted A", async () => {
+  const controller =
+    queryCacheAuthModule.createQueryCacheAuthTransitionController({
+      async cancelQueries() {},
+      async drainMutations() {},
+      clearQueryAndMutationCaches() {},
+    });
+  const householdAScope = careIdentityScopeKey(
+    "user-a",
+    "session-a",
+    "household-a",
+  );
+  controller.observeIdentity({
+    isLoaded: true,
+    userId: "user-a",
+    sessionId: "session-a",
+  });
+  const transition = controller.observeDataScopeKey(householdAScope);
+  controller.confirmPersonalObserversHidden(transition.revision);
+  await controller.runCurrentTransition();
+
+  await assert.rejects(
+    controller.prepareHouseholdTransition(
+      careIdentityScopeKey("user-a", "session-a", "household-stale"),
+    ),
+    /source household scope/i,
+  );
+  assert.equal(controller.getSnapshot().status, "admitted");
+  assert.equal(
+    controller.getSnapshot().identity?.dataScopeKey,
+    householdAScope,
+  );
+});
+
+test("ordinary auth cache cleanup failures remain shielded until an explicit successful retry", async () => {
+  let cancelCalls = 0;
+  const controller =
+    queryCacheAuthModule.createQueryCacheAuthTransitionController({
+      async cancelQueries() {
+        cancelCalls += 1;
+        if (cancelCalls === 1) throw new Error("transport cancellation failed");
+      },
+      async drainMutations() {},
+      clearQueryAndMutationCaches() {},
+    });
+
+  controller.observeIdentity({
+    isLoaded: true,
+    userId: null,
+    sessionId: null,
+  });
+  const first = controller.getSnapshot();
+  controller.confirmPersonalObserversHidden(first.revision);
+  await assert.rejects(
+    controller.runCurrentTransition(),
+    /transport cancellation failed/,
+  );
+  assert.equal(controller.getSnapshot().status, "failed");
+
+  let retried = false;
+  const retry = controller.retryCurrentTransition().then(() => {
+    retried = true;
+  });
+  await Promise.resolve();
+  assert.equal(retried, false);
+  assert.equal(controller.getSnapshot().status, "blocked");
+  controller.confirmPersonalObserversHidden(controller.getSnapshot().revision);
+  await retry;
+  assert.equal(controller.getSnapshot().status, "admitted");
+  assert.equal(cancelCalls, 3);
+});
+
+test("a superseded cleanup rejection cannot strand the replacement identity behind a spinner", async () => {
+  const firstCancellation = deferred<void>();
+  const events: string[] = [];
+  let cancelCalls = 0;
+  const controller =
+    queryCacheAuthModule.createQueryCacheAuthTransitionController({
+      async cancelQueries() {
+        cancelCalls += 1;
+        events.push(`cancel-${cancelCalls}`);
+        if (cancelCalls === 1) await firstCancellation.promise;
+      },
+      async drainMutations() {
+        events.push("drain");
+      },
+      clearQueryAndMutationCaches() {
+        events.push("clear");
+      },
+    });
+
+  controller.observeIdentity({
+    isLoaded: true,
+    userId: "user-a",
+    sessionId: "session-a",
+  });
+  let transition = controller.observeDataScopeKey(
+    careIdentityScopeKey("user-a", "session-a", "household-a"),
+  );
+  controller.confirmPersonalObserversHidden(transition.revision);
+  const cleaning = controller.runCurrentTransition();
+  while (!events.includes("cancel-1")) await Promise.resolve();
+
+  controller.observeIdentity({
+    isLoaded: true,
+    userId: "user-b",
+    sessionId: "session-b",
+  });
+  transition = controller.observeDataScopeKey(
+    careIdentityScopeKey("user-b", "session-b", "household-b"),
+  );
+  controller.confirmPersonalObserversHidden(transition.revision);
+  firstCancellation.reject(new Error("old user cancellation failed"));
+
+  await cleaning;
+  assert.deepEqual(controller.getSnapshot(), {
+    revision: transition.revision,
+    status: "admitted",
+    identity: {
+      userId: "user-b",
+      sessionId: "session-b",
+      dataScopeKey: careIdentityScopeKey("user-b", "session-b", "household-b"),
+    },
+    error: null,
+  });
+  assert.deepEqual(events, [
+    "cancel-1",
+    "cancel-2",
+    "drain",
+    "cancel-3",
+    "clear",
+  ]);
+});
 
 test("captures a frozen loaded identity and normalizes undefined IDs to null", () => {
   const identity = {

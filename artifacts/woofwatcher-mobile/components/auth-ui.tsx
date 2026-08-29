@@ -22,7 +22,11 @@ import { WoofWatcherLogo } from "@/components/brand/WoofWatcherLogo";
 import { isClerkEnabledForBuild } from "@/lib/auth";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { buildAuthSetupProofManifest } from "@/lib/authProviderProof";
-import { getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
+import {
+  getRouteTopPadding,
+  getStandaloneRouteBottomPadding,
+  MIN_MOBILE_TOUCH_TARGET,
+} from "@/lib/mobileLayout";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
 
 const PIXEL_ROOM_SOURCE = require("@/assets/avatar/rooms/phoenix-room-day-option-b.png");
@@ -229,6 +233,7 @@ export function AuthShell({
 export function Field({
   label,
   error,
+  accessibilityLabel,
   ...props
 }: TextInputProps & { label: string; error?: string }) {
   const colors = useColors();
@@ -243,6 +248,7 @@ export function Field({
         {label}
       </Text>
       <TextInput
+        accessibilityLabel={accessibilityLabel ?? label}
         placeholderTextColor={colors.mutedForeground}
         style={[
           styles.input,
@@ -286,6 +292,7 @@ export function PrimaryButton({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled: Boolean(isDisabled), busy: Boolean(loading) }}
       onPress={onPress}
       disabled={isDisabled}
       style={({ pressed }) => [
@@ -332,34 +339,42 @@ export function LocalPreviewGateway({ subtitle }: { subtitle: string }) {
 export function GoogleButton({
   onPress,
   loading,
+  disabled,
 }: {
   onPress: () => void;
   loading?: boolean;
+  disabled?: boolean;
 }) {
   const colors = useColors();
+  const isDisabled = Boolean(disabled || loading);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Continue with Google"
+      accessibilityLabel={loading ? "Connecting to Google" : "Continue with Google"}
+      accessibilityState={{ disabled: isDisabled, busy: Boolean(loading) }}
       onPress={onPress}
-      disabled={loading}
+      disabled={isDisabled}
       style={({ pressed }) => [
         styles.googleButton,
         {
           backgroundColor: colors.card,
           borderColor: colors.border,
-          opacity: loading ? 0.6 : pressed ? 0.9 : 1,
+          opacity: isDisabled ? 0.6 : pressed ? 0.9 : 1,
         },
       ]}
     >
-      <Ionicons name="logo-google" size={18} color={colors.foreground} />
+      {loading ? (
+        <ActivityIndicator color={colors.foreground} />
+      ) : (
+        <Ionicons name="logo-google" size={18} color={colors.foreground} />
+      )}
       <Text
         style={[
           styles.googleText,
           { color: colors.foreground, fontFamily: "Inter_600SemiBold" },
         ]}
       >
-        Continue with Google
+        {loading ? "Connecting to Google…" : "Continue with Google"}
       </Text>
     </Pressable>
   );
@@ -388,15 +403,23 @@ export function FormError({ message }: { message?: string }) {
   if (!message) return null;
   return (
     <View
+      role="alert"
+      accessibilityRole="alert"
+      aria-live="assertive"
       style={[
         styles.formError,
-        { backgroundColor: colors.secondary, borderColor: colors.destructive },
+        { backgroundColor: colors.destructive, borderColor: colors.destructive },
       ]}
     >
       <Text
         style={[
           styles.formErrorText,
-          { color: colors.destructive, fontFamily: "Inter_500Medium" },
+          {
+            color: colors.isDark
+              ? colors.brandNavy
+              : colors.destructiveForeground,
+            fontFamily: "Inter_700Bold",
+          },
         ]}
       >
         {message}
@@ -516,7 +539,7 @@ const styles = StyleSheet.create({
     lineHeight: 13,
   },
   proofButton: {
-    minHeight: 40,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 14,
     marginTop: 10,
@@ -639,12 +662,16 @@ const styles = StyleSheet.create({
     gap: 10,
     borderWidth: 1,
     borderRadius: 14,
+    paddingHorizontal: 16,
     paddingVertical: 15,
     alignItems: "center",
     justifyContent: "center",
   },
   googleText: {
+    flexShrink: 1,
     fontSize: 15,
+    lineHeight: 20,
+    textAlign: "center",
   },
   dividerRow: {
     flexDirection: "row",

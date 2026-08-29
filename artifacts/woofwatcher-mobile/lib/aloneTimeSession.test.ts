@@ -49,6 +49,72 @@ test("finds the newest active alone-time session and ignores completed or privat
   assert.equal(found?.id, "active");
 });
 
+test("alone-time find and finish fail closed for every malformed-present household visibility value", () => {
+  const malformedValues: unknown[] = ["true", "false", null, 0, 1, {}, []];
+
+  for (const householdVisible of malformedValues) {
+    const entry = {
+      ...buildAloneTimeStartEntry({ caregiver: "Emma", now: START }),
+      id: "malformed",
+      details: {
+        aloneLifecycle: "active",
+        aloneStartedAt: "2026-06-19T19:30:00.000Z",
+        householdVisible,
+      },
+    };
+
+    assert.equal(
+      findOpenAloneTimeSession([entry]),
+      null,
+      `find: ${JSON.stringify(householdVisible)}`,
+    );
+    assert.equal(
+      buildAloneTimeReturnPatch(entry, {
+        caregiver: "Apollo",
+        outcome: "calm",
+        now: RETURN,
+      }).details.householdVisible,
+      false,
+      `finish: ${JSON.stringify(householdVisible)}`,
+    );
+  }
+});
+
+test("alone-time visibility preserves only legacy absence and literal true as shared", () => {
+  const legacy = {
+    ...buildAloneTimeStartEntry({ caregiver: "Emma", now: START }),
+    id: "legacy",
+    details: {
+      aloneLifecycle: "active",
+      aloneStartedAt: "2026-06-19T19:30:00.000Z",
+    },
+  };
+  const explicit = {
+    ...legacy,
+    id: "explicit",
+    details: { ...legacy.details, householdVisible: true },
+  };
+
+  assert.equal(findOpenAloneTimeSession([legacy])?.id, "legacy");
+  assert.equal(findOpenAloneTimeSession([explicit])?.id, "explicit");
+  assert.equal(
+    buildAloneTimeReturnPatch(legacy, {
+      caregiver: "Apollo",
+      outcome: "calm",
+      now: RETURN,
+    }).details.householdVisible,
+    true,
+  );
+  assert.equal(
+    buildAloneTimeReturnPatch(explicit, {
+      caregiver: "Apollo",
+      outcome: "calm",
+      now: RETURN,
+    }).details.householdVisible,
+    true,
+  );
+});
+
 test("closing an alone-time session records duration, return outcome, mood, severity, and audit detail", () => {
   const start = { ...buildAloneTimeStartEntry({ caregiver: "Emma", now: START }), id: "alone_1" };
 

@@ -7,7 +7,11 @@
  */
 
 export type ListCareEntriesParams = {
-since?: Date;
-updatedSince?: Date;
-limit?: number;
+  since?: Date;
+  updatedSince?: Date;
+  /**
+   * @minimum 1
+   * @maximum 500
+   */
+  limit?: number;
 };

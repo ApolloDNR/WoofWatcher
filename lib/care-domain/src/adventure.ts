@@ -1,4 +1,6 @@
+import { normalizeCareEventType, type CareEventType } from "./events.ts";
 import { resolvePetName } from "./pet-identity.ts";
+import { isHouseholdVisibleCareEvidence } from "./shared-evidence.ts";
 
 export type AdventureQuestStatus = "available" | "complete" | "locked";
 export type AdventureModeStatus = "needs-outing" | "quest-ready" | "memory-ready";
@@ -113,7 +115,48 @@ function isSameLocalDay(iso: string, now: number): boolean {
 }
 
 function visible(entry: AdventureEntry): boolean {
-  return entry.details?.householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
+}
+
+export function adventureQuestCareType(quest: AdventureQuest): CareEventType | null {
+  if (quest.action === "start-walk") return "walk";
+  if (quest.action === "log-training") return "training";
+  if (quest.action === "log-play") return "play";
+  return null;
+}
+
+export function findAdventureQuestProofEntryId(
+  quest: AdventureQuest,
+  entries: readonly AdventureEntry[],
+  now: number,
+): string | null {
+  const careType = adventureQuestCareType(quest);
+  if (!careType) return null;
+
+  return (
+    [...entries]
+      .filter((entry) => {
+        if (!entry.id || !isSameLocalDay(entry.occurredAt, now)) return false;
+        if (!isHouseholdVisibleCareEvidence(entry)) return false;
+        return normalizeCareEventType(entry.type, entry.details) === careType;
+      })
+      .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))[0]
+      ?.id ?? null
+  );
+}
+
+export function buildAdventureEvidenceDetails(
+  quest: AdventureQuest,
+  current?: Record<string, unknown> | null,
+): Record<string, unknown> {
+  return {
+    ...(current ?? {}),
+    householdVisible: isHouseholdVisibleCareEvidence({ details: current }),
+    adventureQuestId: quest.id,
+    adventureQuestTitle: quest.title,
+    adventureRewardXp: quest.rewardXp,
+    careAdventure: true,
+  };
 }
 
 function normalizedType(entry: AdventureEntry): string {

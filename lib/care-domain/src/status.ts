@@ -1,4 +1,8 @@
-import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
+import {
+  isHealthWatchEventType,
+  normalizeCareEventType,
+  type CareEventDetails,
+} from "./events.ts";
 
 export interface CareStatusEntry {
   type: string;
@@ -43,14 +47,38 @@ function isSameLocalDay(iso: string, now: number): boolean {
   );
 }
 
-function isAnxietyEntry(entry: CareStatusEntry): boolean {
-  const mood = (entry.mood ?? "").toLowerCase();
+export function isOwnerMarkedUrgentHealthEntry(
+  entry: CareStatusEntry,
+): boolean {
   return (
-    normalizeCareEventType(entry.type, entry.details) === "alone" ||
-    mood.includes("anx") ||
-    mood.includes("nerv") ||
-    mood.includes("unsure")
+    isHealthWatchEventType(entry.type, entry.details) &&
+    ["alert", "urgent"].includes(
+      (entry.severity ?? "").trim().toLowerCase(),
+    )
   );
+}
+
+export function isStructuredAnxietyEvidence(
+  entry: CareStatusEntry,
+): boolean {
+  const details = asObject(entry.details);
+  return [
+    entry.mood,
+    details.mood,
+    details.aloneOutcome,
+    details.returnState,
+  ]
+    .map((value) => String(value ?? "").trim().toLowerCase())
+    .some((value) =>
+      [
+        "anxious",
+        "nervous",
+        "unsure",
+        "uneasy",
+        "distressed",
+        "restless",
+      ].includes(value),
+    );
 }
 
 function asObject(details: CareEventDetails): Record<string, unknown> {
@@ -94,9 +122,13 @@ export function deriveCareDayStatus(
       .length || 2;
 
   const vomitEntries = normalized.filter((entry) => entry.normalizedType === "vomit");
-  const healthAlert = vomitEntries.some((entry) =>
-    ["alert", "urgent", "watch"].includes((entry.severity ?? "").toLowerCase()),
-  );
+  const healthAlert =
+    normalized.some(isOwnerMarkedUrgentHealthEntry) ||
+    vomitEntries.some((entry) =>
+      ["alert", "urgent", "watch"].includes(
+        (entry.severity ?? "").toLowerCase(),
+      ),
+    );
   const mealEntries = normalized.filter((entry) => entry.normalizedType === "meal");
   const pendingMealOutcomes = mealEntries.filter(isPendingMealOutcome).length;
   const resolvedMealCount = Math.max(0, mealEntries.length - pendingMealOutcomes);
@@ -109,7 +141,7 @@ export function deriveCareDayStatus(
       training: countType("training"),
       medication: countType("medication"),
       vomit: vomitEntries.length,
-      anxiety: todays.filter(isAnxietyEntry).length,
+      anxiety: todays.filter(isStructuredAnxietyEvidence).length,
       walkMinutes: normalized
         .filter((entry) => entry.normalizedType === "walk")
         .reduce((sum, entry) => sum + (entry.durationMinutes ?? 0), 0),

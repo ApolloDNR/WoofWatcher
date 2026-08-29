@@ -29,6 +29,7 @@ import {
   buildCareEntryRefreshPlan,
   mergeServerAndLocalEntries,
   normalizeDiscardedServerEntryIds,
+  partitionCachedCareEntriesByDiscardedIdentity,
   reconcileCreatedCareEntryAcknowledgement,
   removeDiscardedServerEntryId,
   restoreEntryAfterDeleteFailure,
@@ -1117,6 +1118,52 @@ test("cancelling an entry mutation suppresses its result and queued update", asy
   assert.deepEqual(outcomes, []);
 });
 
+test("enqueueAndWait holds admission through the async state callback", async () => {
+  const mutation = deferred<string>();
+  const durableCallback = deferred<void>();
+  let callbackStarted = false;
+  let settled = false;
+  const queue = createSerializedCareEntryMutationQueue<string, string>({
+    mutate: () => mutation.promise,
+    onSuccess: () => {},
+    async onFailure() {
+      callbackStarted = true;
+      await durableCallback.promise;
+    },
+  });
+
+  const settlement = queue.enqueueAndWait("server_walk", "pending edit");
+  void settlement.then(() => {
+    settled = true;
+  });
+  mutation.reject(new Error("terminal provider response"));
+  await flushMutationQueue();
+
+  assert.equal(callbackStarted, true);
+  assert.equal(settled, false);
+  durableCallback.resolve();
+  await settlement;
+  assert.equal(settled, true);
+});
+
+test("cancelAll releases an exact settlement waiter and keeps its late callback inert", async () => {
+  const mutation = deferred<string>();
+  const outcomes: string[] = [];
+  const queue = createSerializedCareEntryMutationQueue<string, string>({
+    mutate: () => mutation.promise,
+    onSuccess: () => outcomes.push("success"),
+    onFailure: () => outcomes.push("failure"),
+  });
+
+  const settlement = queue.enqueueAndWait("server_walk", "old identity");
+  queue.cancelAll();
+  await settlement;
+  mutation.resolve("stale success");
+  await flushMutationQueue();
+
+  assert.deepEqual(outcomes, []);
+});
+
 test("a timed-out mutation aborts its request and releases the queued update", async () => {
   const first = deferred<string>();
   const calls: string[] = [];
@@ -1723,6 +1770,21 @@ test("a durable cancelled client key suppresses its server row after process dea
     ),
     [{ id: "server_safe", details: { clientKey: "temp_safe" } }],
   );
+});
+
+test("identity-scoped cleanup partitions cached rows by exact id or client key before hydration", () => {
+  const cached = [
+    { id: "server_deleted", details: { clientKey: "temp_server_deleted" } },
+    { id: "temp_deleted", details: { clientKey: "temp_deleted" } },
+    { id: "server_safe", details: { clientKey: "temp_safe" } },
+  ];
+  const partition = partitionCachedCareEntriesByDiscardedIdentity(
+    cached,
+    ["server_deleted", "temp_deleted"],
+  );
+
+  assert.deepEqual(partition.retained, [cached[2]]);
+  assert.deepEqual(partition.quarantined, [cached[0], cached[1]]);
 });
 
 test("one empty refresh does not make a late cancelled create eligible to reappear", () => {

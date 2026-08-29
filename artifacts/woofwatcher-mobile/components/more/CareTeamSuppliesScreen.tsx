@@ -1,8 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -13,12 +20,17 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useQueryClient } from "@tanstack/react-query";
+import { useReducedMotion } from "react-native-reanimated";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  activateHousehold,
+  createHouseholdInvitation,
   getGetMeQueryKey,
+  joinHousehold,
+  listMyHouseholdMemberships,
+  revokeHouseholdInvitation,
+  updateHousehold,
   useGetMe,
-  useJoinHousehold,
-  useUpdateHousehold,
   useUpdateMe,
 } from "@workspace/api-client-react";
 import {
@@ -27,6 +39,7 @@ import {
   deriveHouseholdAccessPlan,
   deriveHouseholdResponsibility,
   deriveMyCareToday,
+  selectSharedCareEvidence,
   type AccessPassKind,
 } from "@workspace/care-domain";
 
@@ -43,6 +56,7 @@ import { PressScale } from "@/components/motion/GameFeel";
 import { useCare } from "@/context/CareContext";
 import { useDevicePreferences } from "@/context/DevicePreferencesContext";
 import { useLocalDataReset } from "@/context/LocalDataResetContext";
+import { useQueryCacheLocalDataReset } from "@/context/QueryCacheLocalDataResetContext";
 import { useColors } from "@/hooks/useColors";
 import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
 import { getConsumerSurfacePolicy } from "@/lib/consumerSurfacePolicy";
@@ -56,6 +70,8 @@ import {
   runAcceptedCareMutation,
 } from "@/lib/careWriteProtection";
 import {
+  getCenteredModalBackdropPadding,
+  getKeyboardAvoidingVerticalOffset,
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
@@ -94,6 +110,18 @@ import { shareTextPayload } from "@/lib/shareText";
 import { relativeTime } from "@/lib/time";
 import { LocalDataResetInProgressError } from "@/lib/removableLocalDataStorage";
 import { createDevicePreferenceHydrationRetryScheduler } from "@/lib/devicePreferences";
+import {
+  runHouseholdInviteOperation,
+  runHouseholdJoinOperation,
+  runHouseholdRenameOperation,
+  runHouseholdSwitchOperation,
+} from "@/lib/householdOperation";
+import {
+  admitHouseholdMembershipList,
+  buildHouseholdMembershipRows,
+  describeHouseholdMembershipListFailure,
+  renameHouseholdMembershipInList,
+} from "@/lib/householdMembershipList";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
@@ -104,6 +132,7 @@ type HouseholdMemberSummary = {
   displayName?: string | null;
   email?: string | null;
   role?: string | null;
+  isSelf?: boolean;
 };
 
 const CARE_TEAM_SECTIONS: readonly { key: CareTeamSection; label: string }[] = [
@@ -563,9 +592,35 @@ export function CareTeamSuppliesScreen({
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { state, careMutationsBlocked, refresh, updateCareDoc } = useCare();
+  const reducedMotion = useReducedMotion();
+  const {
+    state,
+    careMutationsBlocked,
+    captureCareOperationPermit,
+    isCareOperationPermitCurrent,
+    restartIdentityScope,
+    rediscoverIdentityScopeFromMembershipList,
+    confirmHouseholdMembershipListHealthy,
+    identityScopeStatus,
+    captureCareHouseholdOperationPermit,
+    isCareHouseholdOperationPermitCurrent,
+    beginCareHouseholdTransition,
+    resumeCareHouseholdTransition,
+    householdOperationController,
+    householdOperationSnapshot,
+    updateCareDoc,
+  } = useCare();
+  const renderCareOperationPermit = captureCareOperationPermit();
+  const canContinueRenderCareOperation = () =>
+    renderCareOperationPermit?.phase === "signed-in" &&
+    isCareOperationPermitCurrent(renderCareOperationPermit);
   const { store, operationSettledEpoch } = useDevicePreferences();
-  const { runTrackedLocalDataWork } = useLocalDataReset();
+  const {
+    operationState,
+    isWriteAdmissionOpen,
+    runTrackedLocalDataWork,
+  } = useLocalDataReset();
+  const { prepareHouseholdTransition } = useQueryCacheLocalDataReset();
   const { isSignedIn } = useWoofAuth();
   const consumerSurfacePolicy = getConsumerSurfacePolicy();
   const queryClient = useQueryClient();
@@ -578,12 +633,171 @@ export function CareTeamSuppliesScreen({
         Boolean(isSignedIn),
     },
   });
-  const updateHousehold = useUpdateHousehold();
-  const joinHousehold = useJoinHousehold();
   const updateMe = useUpdateMe();
   const now = Date.now();
+  const sharedEntries = selectSharedCareEvidence(state.entries, now);
   const showCareReadOnly = () =>
     notifyDialog("Update WoofWatcher", CARE_READ_ONLY_MESSAGE);
+  const householdOperationActive =
+    householdOperationSnapshot.activeKind !== null;
+  const localDataOperationActive =
+    operationState.status === "exporting" ||
+    operationState.status === "deleting";
+  const householdActionsBlocked =
+    householdOperationActive || localDataOperationActive;
+  const renderHouseholdOperationPermit =
+    captureCareHouseholdOperationPermit();
+  const canContinueRenderHouseholdOperation = () =>
+    !householdActionsBlocked &&
+    isWriteAdmissionOpen() &&
+    renderHouseholdOperationPermit !== null &&
+    isCareHouseholdOperationPermitCurrent(renderHouseholdOperationPermit);
+  const householdActionsUnavailable =
+    !canContinueRenderHouseholdOperation();
+  const householdMemberships = useQuery({
+    queryKey: [
+      "listMyHouseholdMemberships",
+      renderHouseholdOperationPermit?.identityKey ?? "blocked",
+    ],
+    enabled:
+      consumerSurfacePolicy.householdProviderActions &&
+      isClerkEnabledForBuild &&
+      Boolean(isSignedIn) &&
+      !householdActionsBlocked &&
+      renderHouseholdOperationPermit !== null &&
+      isCareHouseholdOperationPermitCurrent(renderHouseholdOperationPermit),
+    retry: false,
+    queryFn: ({ signal }) => {
+      const requestPermit = renderHouseholdOperationPermit;
+      if (
+        !requestPermit ||
+        !isCareHouseholdOperationPermitCurrent(requestPermit)
+      ) {
+        throw new Error("The household-list authority is stale.");
+      }
+      return listMyHouseholdMemberships(
+        {
+          "X-WoofWatcher-Expected-Household-Id": requestPermit.householdId,
+        },
+        { signal },
+      );
+    },
+  });
+  const admittedHouseholdMemberships = renderHouseholdOperationPermit
+    ? admitHouseholdMembershipList(
+        householdMemberships.data,
+        renderHouseholdOperationPermit,
+        isCareHouseholdOperationPermitCurrent,
+      )
+    : null;
+  const householdMembershipRows = admittedHouseholdMemberships
+    ? buildHouseholdMembershipRows(
+        admittedHouseholdMemberships,
+        householdActionsUnavailable,
+      )
+    : [];
+  const householdMembershipListRejected = Boolean(
+    householdMemberships.isFetchedAfterMount &&
+      householdMemberships.data &&
+      renderHouseholdOperationPermit &&
+      isCareHouseholdOperationPermitCurrent(
+        renderHouseholdOperationPermit,
+      ) &&
+      !admittedHouseholdMemberships,
+  );
+  const householdMembershipListFailure = householdMembershipListRejected
+    ? describeHouseholdMembershipListFailure(
+        Object.assign(new Error("Household-list authority mismatch."), {
+          status: 409,
+        }),
+      )
+    : householdMemberships.isFetchedAfterMount && householdMemberships.isError
+      ? describeHouseholdMembershipListFailure(householdMemberships.error)
+      : null;
+
+  useLayoutEffect(() => {
+    if (
+      !householdMembershipListFailure?.rediscoverIdentity ||
+      !renderHouseholdOperationPermit ||
+      !isCareHouseholdOperationPermitCurrent(
+        renderHouseholdOperationPermit,
+      )
+    ) {
+      return;
+    }
+    rediscoverIdentityScopeFromMembershipList(
+      renderHouseholdOperationPermit,
+    );
+  }, [
+    householdMembershipListFailure?.rediscoverIdentity,
+    householdMemberships.errorUpdatedAt,
+    householdMemberships.dataUpdatedAt,
+    isCareHouseholdOperationPermitCurrent,
+    rediscoverIdentityScopeFromMembershipList,
+    renderHouseholdOperationPermit,
+  ]);
+
+  useLayoutEffect(() => {
+    if (
+      !admittedHouseholdMemberships ||
+      !householdMemberships.isFetchedAfterMount ||
+      admittedHouseholdMemberships.activeMembershipPresent ||
+      !renderHouseholdOperationPermit ||
+      !isCareHouseholdOperationPermitCurrent(
+        renderHouseholdOperationPermit,
+      )
+    ) {
+      return;
+    }
+    // Absence of A contradicts the active permit. Revoke before paint; one
+    // fresh rediscovery is allowed, then Care stays in its retryable shield.
+    rediscoverIdentityScopeFromMembershipList(
+      renderHouseholdOperationPermit,
+    );
+  }, [
+    admittedHouseholdMemberships,
+    householdMemberships.isFetchedAfterMount,
+    isCareHouseholdOperationPermitCurrent,
+    rediscoverIdentityScopeFromMembershipList,
+    renderHouseholdOperationPermit,
+  ]);
+
+  useEffect(() => {
+    if (
+      !admittedHouseholdMemberships?.activeMembershipPresent ||
+      !householdMemberships.isFetchedAfterMount ||
+      !renderHouseholdOperationPermit ||
+      !isCareHouseholdOperationPermitCurrent(
+        renderHouseholdOperationPermit,
+      )
+    ) {
+      return;
+    }
+    confirmHouseholdMembershipListHealthy(renderHouseholdOperationPermit);
+  }, [
+    admittedHouseholdMemberships?.activeMembershipPresent,
+    confirmHouseholdMembershipListHealthy,
+    householdMemberships.isFetchedAfterMount,
+    isCareHouseholdOperationPermitCurrent,
+    renderHouseholdOperationPermit,
+  ]);
+
+  useEffect(() => {
+    if (
+      householdOperationSnapshot.activeKind !== null ||
+      !householdOperationSnapshot.notice ||
+      (identityScopeStatus.state !== "resolved" &&
+        identityScopeStatus.state !== "local")
+    ) {
+      return;
+    }
+    const notice = householdOperationController.consumeNotice();
+    if (notice) notifyDialog(notice.title, notice.message);
+  }, [
+    householdOperationController,
+    householdOperationSnapshot,
+    identityScopeStatus.state,
+  ]);
 
   // Supplies checklist: null until the stored list loads, so the starter
   // defaults never flash in over a user's saved answers (same pattern as
@@ -720,6 +934,12 @@ export function CareTeamSuppliesScreen({
 
   const household = me.data?.household;
   const members: HouseholdMemberSummary[] = me.data?.members ?? [];
+  const canCreateHouseholdInvitation = Boolean(
+    household &&
+      members.some(
+        (member) => member.isSelf === true && member.role === "owner",
+      ),
+  );
   const myName = me.data?.user?.displayName?.trim() || "";
 
   const bottomPadding = getTabbedRouteBottomPadding({
@@ -729,6 +949,11 @@ export function CareTeamSuppliesScreen({
   const modalSheetBottomPadding = getModalSheetBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+  });
+  const keyboardOffset = getKeyboardAvoidingVerticalOffset({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
   });
 
   const petName = resolvePetName(state.profile.name);
@@ -769,7 +994,7 @@ export function CareTeamSuppliesScreen({
     () =>
       deriveHouseholdAccessPlan({
         household: household
-          ? { name: household.name, inviteCode: household.inviteCode }
+          ? { name: household.name }
           : null,
         members,
         caregivers: state.caregivers,
@@ -802,6 +1027,12 @@ export function CareTeamSuppliesScreen({
       : householdAccess.status === "needs-roles"
         ? colors.copper
         : colors.sage;
+  const householdAccessNextStep =
+    householdAccess.status === "needs-invites" && household
+      ? canCreateHouseholdInvitation
+        ? "Create a one-time invite when you are ready to share it with a caregiver."
+        : "Ask the active household owner to create a one-time invite for each caregiver."
+      : householdAccess.nextStep;
   const responsibilityTone =
     householdResponsibility.status === "needs-care"
       ? colors.rose
@@ -1056,11 +1287,96 @@ export function CareTeamSuppliesScreen({
   };
 
   const shareInvite = () => {
-    if (!household) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    void shareTextPayload({
-      message: `Join our ${household.name} on WoofWatcher to help care for ${petName}. Invite code: ${household.inviteCode}`,
-      title: "WoofWatcher invite",
+    const permit = renderHouseholdOperationPermit;
+    if (
+      !household ||
+      !canCreateHouseholdInvitation ||
+      !permit ||
+      !canContinueRenderHouseholdOperation()
+    ) {
+      return;
+    }
+    const householdName = household.name;
+    void runHouseholdInviteOperation({
+      controller: householdOperationController,
+      permit,
+      isPermitCurrent: isCareHouseholdOperationPermitCurrent,
+      runTrackedTransport: (start) =>
+        runTrackedLocalDataWork(async (scope) => {
+          if (!scope.isCurrent()) throw new LocalDataResetInProgressError();
+          return start(scope.isCurrent);
+        }),
+      createInvitation: (expectedHouseholdId, expiresAt) =>
+        createHouseholdInvitation(
+          { role: "adult", lifecycleState: "approved", expiresAt },
+          {
+            "X-WoofWatcher-Expected-Household-Id": expectedHouseholdId,
+          },
+        ),
+      shareInvitation: async (inviteCode) => {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        const outcome = await shareTextPayload(
+          {
+            message: `Join our ${householdName} on WoofWatcher to help care for ${petName}. One-time invite code: ${inviteCode}`,
+            title: "WoofWatcher one-time invite",
+          },
+          { notifyOnFailure: false },
+        );
+        return outcome;
+      },
+      revokeInvitation: (invitationId, expectedHouseholdId) =>
+        revokeHouseholdInvitation(
+          invitationId,
+          {
+            "X-WoofWatcher-Expected-Household-Id": expectedHouseholdId,
+          },
+          { reason: "The share was dismissed or unavailable." },
+        ),
+      restartIdentityResolution: restartIdentityScope,
+    });
+  };
+
+  const retryHouseholdList = () => {
+    if (!canContinueRenderHouseholdOperation()) return;
+    void householdMemberships.refetch();
+  };
+
+  const switchHousehold = (targetHouseholdId: string) => {
+    const permit = renderHouseholdOperationPermit;
+    if (
+      !permit ||
+      targetHouseholdId === permit.householdId ||
+      !canContinueRenderHouseholdOperation()
+    ) {
+      return;
+    }
+    void runHouseholdSwitchOperation({
+      controller: householdOperationController,
+      permit,
+      targetHouseholdId,
+      beginCareTransition: beginCareHouseholdTransition,
+      prepareQueryTransition: prepareHouseholdTransition,
+      // As with Join, old-A query work drains before the activation is
+      // admitted, preventing the transition from waiting on itself.
+      runTrackedTransport: (start) =>
+        runTrackedLocalDataWork(async (scope) => {
+          if (!scope.isCurrent()) throw new LocalDataResetInProgressError();
+          return start();
+        }),
+      activateTransport: (
+        targetHouseholdId,
+        expectedSourceHouseholdId,
+      ) =>
+        activateHousehold(
+          { householdId: targetHouseholdId },
+          {
+            "X-WoofWatcher-Expected-Household-Id":
+              expectedSourceHouseholdId,
+          },
+        ),
+      // The activation response is intentionally never rendered or cached.
+      // Care resume starts fresh /api/me authority while the shield is closed.
+      resumeCareTransition: resumeCareHouseholdTransition,
     });
   };
 
@@ -1153,63 +1469,96 @@ export function CareTeamSuppliesScreen({
 
   const submitJoin = () => {
     const code = joinCode.trim();
-    if (!code) return;
-    void runTrackedLocalDataWork(async (scope) => {
-      try {
-        await joinHousehold.mutateAsync({ data: { inviteCode: code } });
-      } catch {
-        if (!scope.isCurrent()) return;
-        notifyDialog(
-          "Couldn't join",
-          "That invite code didn't match a household.",
-        );
-        return;
-      }
-      if (!scope.isCurrent()) return;
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setJoinOpen(false);
-      setJoinCode("");
-      refreshMe();
-      refresh();
-    }).catch((error: unknown) => {
-      if (error instanceof LocalDataResetInProgressError) return;
-      notifyDialog("Couldn't join", "That invite code didn't match a household.");
+    const permit = renderHouseholdOperationPermit;
+    if (!code || !permit || !canContinueRenderHouseholdOperation()) return;
+    setJoinOpen(false);
+    void runHouseholdJoinOperation({
+      controller: householdOperationController,
+      permit,
+      inviteCode: code,
+      beginCareTransition: beginCareHouseholdTransition,
+      prepareQueryTransition: prepareHouseholdTransition,
+      // Query preparation drains the old tracked-work set first. Only after
+      // that promise resolves may Join itself enter tracked local-data work;
+      // admitting it earlier would make the query drain wait on itself.
+      runTrackedTransport: (start) =>
+        runTrackedLocalDataWork(async (scope) => {
+          if (!scope.isCurrent()) throw new LocalDataResetInProgressError();
+          return start();
+        }),
+      joinTransport: (inviteCode, expectedHouseholdId) =>
+        joinHousehold(
+          { inviteCode },
+          {
+            "X-WoofWatcher-Expected-Household-Id": expectedHouseholdId,
+          },
+        ),
+      resumeCareTransition: resumeCareHouseholdTransition,
     });
   };
 
   const submitRename = () => {
     const name = renameValue.trim();
-    if (!name) return;
-    void runTrackedLocalDataWork(async (scope) => {
-      try {
-        await updateHousehold.mutateAsync({ data: { name } });
-      } catch {
-        if (!scope.isCurrent()) return;
-        notifyDialog("Couldn't rename", "Please try again.");
-        return;
-      }
-      if (!scope.isCurrent()) return;
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setRenameOpen(false);
-      refreshMe();
-    }).catch((error: unknown) => {
-      if (error instanceof LocalDataResetInProgressError) return;
-      notifyDialog("Couldn't rename", "Please try again.");
+    const permit = renderHouseholdOperationPermit;
+    if (
+      !name ||
+      !canCreateHouseholdInvitation ||
+      !permit ||
+      !canContinueRenderHouseholdOperation()
+    ) {
+      return;
+    }
+    setRenameOpen(false);
+    void runHouseholdRenameOperation({
+      controller: householdOperationController,
+      permit,
+      name,
+      isPermitCurrent: isCareHouseholdOperationPermitCurrent,
+      runTrackedTransport: (start) =>
+        runTrackedLocalDataWork(async (scope) => {
+          if (!scope.isCurrent()) throw new LocalDataResetInProgressError();
+          return start();
+        }),
+      renameTransport: (householdName, expectedHouseholdId) =>
+        updateHousehold(
+          { name: householdName },
+          {
+            "X-WoofWatcher-Expected-Household-Id": expectedHouseholdId,
+          },
+        ),
+      restartIdentityResolution: restartIdentityScope,
+      acceptResponse: (response) => {
+        queryClient.setQueryData(getGetMeQueryKey(), response);
+        queryClient.setQueryData(
+          ["listMyHouseholdMemberships", permit.identityKey],
+          (current: unknown) =>
+            renameHouseholdMembershipInList(
+              current,
+              permit,
+              name,
+              isCareHouseholdOperationPermitCurrent,
+            ) ?? current,
+        );
+        void queryClient.invalidateQueries({
+          queryKey: ["listMyHouseholdMemberships", permit.identityKey],
+        });
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      },
     });
   };
 
   const submitName = () => {
     const name = nameValue.trim();
-    if (!name) return;
+    if (!name || !canContinueRenderCareOperation()) return;
     void runTrackedLocalDataWork(async (scope) => {
       try {
         await updateMe.mutateAsync({ data: { displayName: name } });
       } catch {
-        if (!scope.isCurrent()) return;
+        if (!scope.isCurrent() || !canContinueRenderCareOperation()) return;
         notifyDialog("Couldn't update name", "Please try again.");
         return;
       }
-      if (!scope.isCurrent()) return;
+      if (!scope.isCurrent() || !canContinueRenderCareOperation()) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setNameOpen(false);
       refreshMe();
@@ -1858,15 +2207,39 @@ export function CareTeamSuppliesScreen({
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel="Rename care team"
-                      disabled={!household}
+                      accessibilityState={{
+                        disabled:
+                          !household ||
+                          !canCreateHouseholdInvitation ||
+                          householdActionsUnavailable,
+                      }}
+                      disabled={
+                        !household ||
+                        !canCreateHouseholdInvitation ||
+                        householdActionsUnavailable
+                      }
                       onPress={() => {
+                        if (
+                          !canCreateHouseholdInvitation ||
+                          householdActionsUnavailable
+                        ) {
+                          return;
+                        }
                         Haptics.selectionAsync();
                         setRenameValue(household?.name ?? "");
                         setRenameOpen(true);
                       }}
                       style={({ pressed }) => [
                         s.inlineAction,
-                        { opacity: pressed || !household ? 0.55 : 1 },
+                        {
+                          opacity:
+                            pressed ||
+                            !household ||
+                            !canCreateHouseholdInvitation ||
+                            householdActionsUnavailable
+                              ? 0.55
+                              : 1,
+                        },
                       ]}
                     >
                       <Text
@@ -1922,28 +2295,45 @@ export function CareTeamSuppliesScreen({
                         },
                       ]}
                     >
-                      INVITE CODE
+                      ONE-TIME INVITES
                     </Text>
                     <Text
                       style={[
-                        s.inviteCode,
-                        { color: colors.foreground, fontFamily: DISPLAY },
+                        s.inviteCopy,
+                        {
+                          color: colors.foreground,
+                          fontFamily: "Inter_500Medium",
+                        },
                       ]}
                     >
-                      {householdAccess.inviteCode || "—"}
+                      {canCreateHouseholdInvitation
+                        ? "Create a one-time invite only when you're ready to share it. WoofWatcher does not save the code in the app; your share choice may copy or download it."
+                        : "Only the active household owner can create a one-time invite."}
                     </Text>
                   </View>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Share household invite"
-                    disabled={!householdAccess.canShareInvite}
+                    accessibilityLabel="Create and share one-time household invite"
+                    disabled={
+                      !canCreateHouseholdInvitation ||
+                      householdActionsUnavailable
+                    }
+                    accessibilityState={{
+                      disabled:
+                        !canCreateHouseholdInvitation ||
+                        householdActionsUnavailable,
+                    }}
                     onPress={shareInvite}
                     style={({ pressed }) => [
                       s.primaryInlineButton,
                       {
                         backgroundColor: colors.primary,
                         opacity:
-                          pressed || !householdAccess.canShareInvite ? 0.55 : 1,
+                          pressed ||
+                          !canCreateHouseholdInvitation ||
+                          householdActionsUnavailable
+                            ? 0.55
+                            : 1,
                       },
                     ]}
                   >
@@ -1982,7 +2372,7 @@ export function CareTeamSuppliesScreen({
                 ) : (
                   householdAccess.people.map((person, index) => {
                     const tone = memberColor(index);
-                    const logCount = state.entries.filter(
+                    const logCount = sharedEntries.filter(
                       (entry) =>
                         entry.caregiver.trim().toLowerCase() ===
                         person.name.toLowerCase(),
@@ -2047,6 +2437,247 @@ export function CareTeamSuppliesScreen({
 
             {consumerSurfacePolicy.householdProviderActions ? (
               <>
+                <BoardCard style={s.sectionCard}>
+                  <BoardSectionHeader title="Your households" />
+                  {householdMembershipListFailure ? (
+                    <View
+                      style={s.householdListRecovery}
+                    >
+                      <View
+                        accessibilityRole="alert"
+                        accessibilityLabel={`${householdMembershipListFailure.title}. ${householdMembershipListFailure.message}`}
+                        style={s.flexCopy}
+                      >
+                        <Text
+                          style={[
+                            s.rowTitle,
+                            {
+                              color: colors.foreground,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          {householdMembershipListFailure.title}
+                        </Text>
+                        <Text
+                          style={[
+                            s.secondaryText,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
+                          {householdMembershipListFailure.message}
+                        </Text>
+                      </View>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Retry household list"
+                        accessibilityState={{
+                          disabled: householdActionsUnavailable,
+                        }}
+                        disabled={householdActionsUnavailable}
+                        onPress={retryHouseholdList}
+                        style={({ pressed }) => [
+                          s.inlineAction,
+                          {
+                            opacity:
+                              pressed || householdActionsUnavailable
+                                ? 0.55
+                                : 1,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            s.inlineActionText,
+                            {
+                              color: colors.copper,
+                              fontFamily: "Inter_700Bold",
+                            },
+                          ]}
+                        >
+                          Retry
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ) : admittedHouseholdMemberships ? (
+                    <>
+                      {!admittedHouseholdMemberships.activeMembershipPresent ? (
+                        <View
+                          accessibilityRole="alert"
+                          style={[
+                            s.boundaryInline,
+                            {
+                              backgroundColor: colors.amberSoft,
+                              borderColor: colors.amber + "55",
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name="alert-circle-outline"
+                            size={20}
+                            color={colors.amber}
+                          />
+                          <Text
+                            style={[
+                              s.bodyText,
+                              s.flexCopy,
+                              {
+                                color: colors.foreground,
+                                fontFamily: "Inter_600SemiBold",
+                              },
+                            ]}
+                          >
+                            Current household access ended. Choose another
+                            household.
+                          </Text>
+                        </View>
+                      ) : null}
+                      {householdMembershipRows.length > 0 ? (
+                        <View style={s.householdList}>
+                          {householdMembershipRows.map((membershipRow) =>
+                            membershipRow.current ? (
+                              <View
+                                key={membershipRow.householdId}
+                                accessible
+                                accessibilityRole="text"
+                                accessibilityLabel={
+                                  membershipRow.accessibilityLabel
+                                }
+                                style={[
+                                  s.infoAction,
+                                  { borderColor: colors.border },
+                                ]}
+                              >
+                                <Ionicons
+                                  name="home-outline"
+                                  size={22}
+                                  color={colors.sage}
+                                />
+                                <View style={s.flexCopy}>
+                                  <Text
+                                    style={[
+                                      s.rowTitle,
+                                      {
+                                        color: colors.foreground,
+                                        fontFamily: "Inter_700Bold",
+                                      },
+                                    ]}
+                                  >
+                                    {membershipRow.householdName}
+                                  </Text>
+                                  <Text
+                                    style={[
+                                      s.secondaryText,
+                                      {
+                                        color: colors.mutedForeground,
+                                        fontFamily: "Inter_500Medium",
+                                      },
+                                    ]}
+                                  >
+                                    {membershipRow.roleLabel}
+                                  </Text>
+                                </View>
+                                <BoardPill label="Current" tone={colors.sage} />
+                              </View>
+                            ) : (
+                              <Pressable
+                                key={membershipRow.householdId}
+                                accessibilityRole="button"
+                                accessibilityLabel={
+                                  membershipRow.accessibilityLabel
+                                }
+                                accessibilityState={{
+                                  disabled: membershipRow.disabled,
+                                }}
+                                disabled={membershipRow.disabled}
+                                onPress={() => {
+                                  if (membershipRow.disabled) return;
+                                  void Haptics.selectionAsync();
+                                  switchHousehold(
+                                    membershipRow.householdId,
+                                  );
+                                }}
+                                style={({ pressed }) => [
+                                  s.infoAction,
+                                  {
+                                    borderColor: colors.border,
+                                    opacity:
+                                      pressed || membershipRow.disabled
+                                        ? 0.55
+                                        : 1,
+                                  },
+                                ]}
+                              >
+                                <Ionicons
+                                  name="home-outline"
+                                  size={22}
+                                  color={colors.copper}
+                                />
+                                <View style={s.flexCopy}>
+                                  <Text
+                                    style={[
+                                      s.rowTitle,
+                                      {
+                                        color: colors.foreground,
+                                        fontFamily: "Inter_700Bold",
+                                      },
+                                    ]}
+                                  >
+                                    {membershipRow.householdName}
+                                  </Text>
+                                  <Text
+                                    style={[
+                                      s.secondaryText,
+                                      {
+                                        color: colors.mutedForeground,
+                                        fontFamily: "Inter_500Medium",
+                                      },
+                                    ]}
+                                  >
+                                    {membershipRow.roleLabel}
+                                  </Text>
+                                </View>
+                                <Ionicons
+                                  name="chevron-forward"
+                                  size={18}
+                                  color={colors.mutedForeground}
+                                />
+                              </Pressable>
+                            ),
+                          )}
+                        </View>
+                      ) : (
+                        <Text
+                          style={[
+                            s.secondaryText,
+                            {
+                              color: colors.mutedForeground,
+                              fontFamily: "Inter_500Medium",
+                            },
+                          ]}
+                        >
+                          No retained households are currently available.
+                        </Text>
+                      )}
+                    </>
+                  ) : (
+                    <Text
+                      style={[
+                        s.secondaryText,
+                        {
+                          color: colors.mutedForeground,
+                          fontFamily: "Inter_500Medium",
+                        },
+                      ]}
+                    >
+                      Checking secure household access…
+                    </Text>
+                  )}
+                </BoardCard>
+
                 <BoardCard
                   style={[s.sectionCard, { borderColor: accessTone + "44" }]}
                 >
@@ -2055,14 +2686,24 @@ export function CareTeamSuppliesScreen({
                     accessory={
                       <Pressable
                         accessibilityRole="button"
-                        accessibilityLabel="Share household invite"
-                        disabled={!householdAccess.canShareInvite}
+                        accessibilityLabel="Create and share one-time household invite"
+                        disabled={
+                          !canCreateHouseholdInvitation ||
+                          householdActionsUnavailable
+                        }
+                        accessibilityState={{
+                          disabled:
+                            !canCreateHouseholdInvitation ||
+                            householdActionsUnavailable,
+                        }}
                         onPress={shareInvite}
                         style={({ pressed }) => [
                           s.inlineAction,
                           {
                             opacity:
-                              pressed || !householdAccess.canShareInvite
+                              pressed ||
+                              !canCreateHouseholdInvitation ||
+                              householdActionsUnavailable
                                 ? 0.55
                                 : 1,
                           },
@@ -2147,7 +2788,7 @@ export function CareTeamSuppliesScreen({
                       },
                     ]}
                   >
-                    {householdAccess.nextStep}
+                    {householdAccessNextStep}
                   </Text>
                   {householdAccess.people.length > 0 ? (
                     <View style={s.peopleList}>
@@ -2637,14 +3278,20 @@ export function CareTeamSuppliesScreen({
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Join another household"
+                  accessibilityState={{ disabled: householdActionsUnavailable }}
+                  disabled={householdActionsUnavailable}
                   onPress={() => {
+                    if (householdActionsUnavailable) return;
                     Haptics.selectionAsync();
                     setJoinCode("");
                     setJoinOpen(true);
                   }}
                   style={({ pressed }) => [
                     s.infoAction,
-                    { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                    {
+                      borderColor: colors.border,
+                      opacity: pressed || householdActionsUnavailable ? 0.55 : 1,
+                    },
                   ]}
                 >
                   <Ionicons
@@ -2771,7 +3418,8 @@ export function CareTeamSuppliesScreen({
             onChangeText={setJoinCode}
             autoCapitalize="characters"
             confirmLabel="Join"
-            loading={joinHousehold.isPending}
+            valid={joinCode.trim().length > 0}
+            loading={householdActionsBlocked}
             onCancel={() => setJoinOpen(false)}
             onConfirm={submitJoin}
           />
@@ -2785,7 +3433,11 @@ export function CareTeamSuppliesScreen({
             value={renameValue}
             onChangeText={setRenameValue}
             confirmLabel="Save"
-            loading={updateHousehold.isPending}
+            valid={
+              renameValue.trim().length > 0 &&
+              canCreateHouseholdInvitation
+            }
+            loading={householdActionsBlocked}
             onCancel={() => setRenameOpen(false)}
             onConfirm={submitRename}
           />
@@ -2799,6 +3451,7 @@ export function CareTeamSuppliesScreen({
             value={nameValue}
             onChangeText={setNameValue}
             confirmLabel="Save"
+            valid={nameValue.trim().length > 0}
             loading={updateMe.isPending}
             onCancel={() => setNameOpen(false)}
             onConfirm={submitName}
@@ -2810,126 +3463,136 @@ export function CareTeamSuppliesScreen({
         <Modal
           visible={petRosterOpen}
           transparent
-          animationType="slide"
+          animationType={reducedMotion ? "none" : "slide"}
           onRequestClose={() => setPetRosterOpen(false)}
         >
           <ModalBackdropPressable
             style={[s.modalBackdrop, { justifyContent: "flex-end" }]}
             onPress={() => setPetRosterOpen(false)}
           >
-            <ModalSheetPressable
-              visible={petRosterOpen}
-              onRequestClose={() => setPetRosterOpen(false)}
-              style={[s.profileModal, { backgroundColor: colors.card }]}
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+              keyboardVerticalOffset={keyboardOffset}
+              style={s.modalDock}
             >
-              <View
-                style={{
-                  paddingBottom: modalSheetBottomPadding,
-                  paddingHorizontal: 22,
-                }}
+              <ModalSheetPressable
+                visible={petRosterOpen}
+                onRequestClose={() => setPetRosterOpen(false)}
+                style={[s.profileModal, { backgroundColor: colors.card }]}
               >
-                <View
-                  style={[s.modalHandle, { backgroundColor: colors.border }]}
-                />
-                <Text
-                  style={[
-                    s.sheetTitle,
-                    { color: colors.foreground, fontFamily: DISPLAY_SEMI },
-                  ]}
+                <ScrollView
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator
+                  bounces={false}
+                  style={s.profileFormScroll}
+                  contentContainerStyle={{
+                    paddingBottom: modalSheetBottomPadding,
+                    paddingHorizontal: 22,
+                  }}
                 >
-                  Add future dog
-                </Text>
-                <Text
-                  style={[
-                    s.sheetSubtitle,
-                    {
-                      color: colors.mutedForeground,
-                      fontFamily: "Inter_500Medium",
-                    },
-                  ]}
-                >
-                  This saves a planned slot for a future dog. Multi-dog logs,
-                  routines, and records are coming soon - everything stays on
-                  this device for now.
-                </Text>
-                <Text
-                  style={[
-                    s.profFieldLabel,
-                    {
-                      color: colors.mutedForeground,
-                      fontFamily: "Inter_600SemiBold",
-                    },
-                  ]}
-                >
-                  NAME
-                </Text>
-                <TextInput
-                  value={petRosterName}
-                  onChangeText={setPetRosterName}
-                  placeholder="e.g. London"
-                  placeholderTextColor={colors.mutedForeground}
-                  accessibilityLabel="Future dog name"
-                  style={[
-                    s.profField,
-                    {
-                      backgroundColor: colors.background,
-                      color: colors.foreground,
-                      fontFamily: "Inter_500Medium",
-                    },
-                  ]}
-                />
-                <Text
-                  style={[
-                    s.profFieldLabel,
-                    {
-                      color: colors.mutedForeground,
-                      fontFamily: "Inter_600SemiBold",
-                    },
-                  ]}
-                >
-                  BREED
-                </Text>
-                <TextInput
-                  value={petRosterBreed}
-                  onChangeText={setPetRosterBreed}
-                  placeholder="e.g. Golden Retriever"
-                  placeholderTextColor={colors.mutedForeground}
-                  accessibilityLabel="Future dog breed"
-                  style={[
-                    s.profField,
-                    {
-                      backgroundColor: colors.background,
-                      color: colors.foreground,
-                      fontFamily: "Inter_500Medium",
-                    },
-                  ]}
-                />
-                <Pressable
-                  onPress={saveFuturePet}
-                  accessibilityRole="button"
-                  accessibilityLabel="Save future dog to CareTwin roster"
-                  style={({ pressed }) => [
-                    s.profSaveBtn,
-                    {
-                      backgroundColor: colors.primary,
-                      opacity: pressed ? 0.85 : 1,
-                    },
-                  ]}
-                >
+                  <View
+                    style={[s.modalHandle, { backgroundColor: colors.border }]}
+                  />
                   <Text
                     style={[
-                      s.profSaveBtnText,
+                      s.sheetTitle,
+                      { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                    ]}
+                  >
+                    Add future dog
+                  </Text>
+                  <Text
+                    style={[
+                      s.sheetSubtitle,
                       {
-                        color: colors.primaryForeground,
-                        fontFamily: "Inter_700Bold",
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_500Medium",
                       },
                     ]}
                   >
-                    Save planned slot
+                    This saves a planned slot for a future dog. Multi-dog logs,
+                    routines, and records are coming soon - everything stays on
+                    this device for now.
                   </Text>
-                </Pressable>
-              </View>
-            </ModalSheetPressable>
+                  <Text
+                    style={[
+                      s.profFieldLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    NAME
+                  </Text>
+                  <TextInput
+                    value={petRosterName}
+                    onChangeText={setPetRosterName}
+                    placeholder="e.g. London"
+                    placeholderTextColor={colors.mutedForeground}
+                    accessibilityLabel="Future dog name"
+                    style={[
+                      s.profField,
+                      {
+                        backgroundColor: colors.background,
+                        color: colors.foreground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      s.profFieldLabel,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    BREED
+                  </Text>
+                  <TextInput
+                    value={petRosterBreed}
+                    onChangeText={setPetRosterBreed}
+                    placeholder="e.g. Golden Retriever"
+                    placeholderTextColor={colors.mutedForeground}
+                    accessibilityLabel="Future dog breed"
+                    style={[
+                      s.profField,
+                      {
+                        backgroundColor: colors.background,
+                        color: colors.foreground,
+                        fontFamily: "Inter_500Medium",
+                      },
+                    ]}
+                  />
+                  <Pressable
+                    onPress={saveFuturePet}
+                    accessibilityRole="button"
+                    accessibilityLabel="Save future dog to CareTwin roster"
+                    style={({ pressed }) => [
+                      s.profSaveBtn,
+                      {
+                        backgroundColor: colors.primary,
+                        opacity: pressed ? 0.85 : 1,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.profSaveBtnText,
+                        {
+                          color: colors.primaryForeground,
+                          fontFamily: "Inter_700Bold",
+                        },
+                      ]}
+                    >
+                      Save planned slot
+                    </Text>
+                  </Pressable>
+                </ScrollView>
+              </ModalSheetPressable>
+            </KeyboardAvoidingView>
           </ModalBackdropPressable>
         </Modal>
       ) : null}
@@ -2938,24 +3601,33 @@ export function CareTeamSuppliesScreen({
         <Modal
           visible={accessPassOpen}
           transparent
-          animationType="slide"
+          animationType={reducedMotion ? "none" : "slide"}
           onRequestClose={() => setAccessPassOpen(false)}
         >
           <ModalBackdropPressable
             style={[s.modalBackdrop, { justifyContent: "flex-end" }]}
             onPress={() => setAccessPassOpen(false)}
           >
-            <ModalSheetPressable
-              visible={accessPassOpen}
-              onRequestClose={() => setAccessPassOpen(false)}
-              style={[s.profileModal, { backgroundColor: colors.card }]}
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+              keyboardVerticalOffset={keyboardOffset}
+              style={s.modalDock}
             >
-              <View
-                style={{
-                  paddingBottom: modalSheetBottomPadding,
-                  paddingHorizontal: 22,
-                }}
+              <ModalSheetPressable
+                visible={accessPassOpen}
+                onRequestClose={() => setAccessPassOpen(false)}
+                style={[s.profileModal, { backgroundColor: colors.card }]}
               >
+                <ScrollView
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator
+                  bounces={false}
+                  style={s.profileFormScroll}
+                  contentContainerStyle={{
+                    paddingBottom: modalSheetBottomPadding,
+                    paddingHorizontal: 22,
+                  }}
+                >
                 <View
                   style={[s.modalHandle, { backgroundColor: colors.border }]}
                 />
@@ -3086,8 +3758,9 @@ export function CareTeamSuppliesScreen({
                     Save Local Draft
                   </Text>
                 </Pressable>
-              </View>
-            </ModalSheetPressable>
+                </ScrollView>
+              </ModalSheetPressable>
+            </KeyboardAvoidingView>
           </ModalBackdropPressable>
         </Modal>
       ) : null}
@@ -3105,6 +3778,7 @@ function PromptModal({
   value,
   onChangeText,
   confirmLabel,
+  valid = true,
   loading,
   autoCapitalize = "sentences",
   onCancel,
@@ -3119,114 +3793,161 @@ function PromptModal({
   value: string;
   onChangeText: (value: string) => void;
   confirmLabel: string;
+  valid?: boolean;
   loading?: boolean;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const reducedMotion = useReducedMotion();
+  const insets = useSafeAreaInsets();
+  const keyboardOffset = getKeyboardAvoidingVerticalOffset({
+    platform: Platform.OS,
+    topInset: insets.top,
+    surface: "tabbed",
+  });
+  const centeredModalPadding = getCenteredModalBackdropPadding({
+    platform: Platform.OS,
+    topInset: insets.top,
+    bottomInset: insets.bottom,
+  });
+  const busy = Boolean(loading);
+  const confirmDisabled = busy || !valid;
+  const cancelIfIdle = () => {
+    if (!busy) onCancel();
+  };
+  const confirmIfIdle = () => {
+    if (!confirmDisabled) onConfirm();
+  };
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
-      onRequestClose={onCancel}
+      animationType={reducedMotion ? "none" : "fade"}
+      onRequestClose={cancelIfIdle}
     >
-      <ModalBackdropPressable style={s.modalBackdrop} onPress={onCancel}>
-        <ModalSheetPressable
-          visible={visible}
-          onRequestClose={onCancel}
-          style={[s.modalCard, { backgroundColor: colors.card }]}
+      <ModalBackdropPressable
+        style={[s.modalBackdrop, centeredModalPadding]}
+        onPress={cancelIfIdle}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={keyboardOffset}
+          style={s.modalCenter}
         >
-          <View
-            style={[s.modalIcon, { backgroundColor: colors.primary + "1A" }]}
+          <ModalSheetPressable
+            visible={visible}
+            onRequestClose={cancelIfIdle}
+            closeDisabled={busy}
+            closeBusy={busy}
+            style={[s.modalCard, { backgroundColor: colors.card }]}
           >
-            <Ionicons name={icon} size={22} color={colors.primary} />
-          </View>
-          <Text
-            style={[
-              s.modalTitle,
-              { color: colors.foreground, fontFamily: DISPLAY_SEMI },
-            ]}
-          >
-            {title}
-          </Text>
-          <Text
-            style={[
-              s.modalSub,
-              { color: colors.mutedForeground, fontFamily: "Inter_400Regular" },
-            ]}
-          >
-            {subtitle}
-          </Text>
-          <TextInput
-            accessibilityLabel={title}
-            placeholder={placeholder}
-            placeholderTextColor={colors.mutedForeground}
-            value={value}
-            onChangeText={onChangeText}
-            autoCapitalize={autoCapitalize}
-            autoCorrect={false}
-            style={[
-              s.modalInput,
-              {
-                backgroundColor: colors.background,
-                color: colors.foreground,
-                borderColor: colors.border,
-                fontFamily: "Inter_500Medium",
-              },
-            ]}
-            returnKeyType="done"
-            onSubmitEditing={onConfirm}
-          />
-          <View style={s.modalActions}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Cancel ${title}`}
-              onPress={onCancel}
-              style={({ pressed }) => [
-                s.modalCancel,
-                { opacity: pressed ? 0.6 : 1 },
-              ]}
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator
+              bounces={false}
+              style={s.modalContentScroll}
+              contentContainerStyle={s.modalContent}
             >
+              <View
+                style={[s.modalIcon, { backgroundColor: colors.primary + "1A" }]}
+              >
+                <Ionicons name={icon} size={22} color={colors.primary} />
+              </View>
               <Text
                 style={[
-                  s.modalCancelText,
+                  s.modalTitle,
+                  { color: colors.foreground, fontFamily: DISPLAY_SEMI },
+                ]}
+              >
+                {title}
+              </Text>
+              <Text
+                style={[
+                  s.modalSub,
                   {
                     color: colors.mutedForeground,
-                    fontFamily: "Inter_600SemiBold",
+                    fontFamily: "Inter_400Regular",
                   },
                 ]}
               >
-                Cancel
+                {subtitle}
               </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={confirmLabel}
-              onPress={onConfirm}
-              disabled={loading}
-              style={({ pressed }) => [
-                s.modalConfirm,
-                {
-                  backgroundColor: colors.primary,
-                  opacity: pressed || loading ? 0.7 : 1,
-                },
-              ]}
-            >
-              <Text
+              <TextInput
+                accessibilityLabel={title}
+                placeholder={placeholder}
+                placeholderTextColor={colors.mutedForeground}
+                value={value}
+                onChangeText={onChangeText}
+                autoCapitalize={autoCapitalize}
+                autoCorrect={false}
+                editable={!busy}
                 style={[
-                  s.modalConfirmText,
+                  s.modalInput,
                   {
-                    color: colors.primaryForeground,
-                    fontFamily: "Inter_700Bold",
+                    backgroundColor: colors.background,
+                    color: colors.foreground,
+                    borderColor: colors.border,
+                    fontFamily: "Inter_500Medium",
                   },
                 ]}
-              >
-                {loading ? "…" : confirmLabel}
-              </Text>
-            </Pressable>
-          </View>
-        </ModalSheetPressable>
+                returnKeyType="done"
+                onSubmitEditing={confirmDisabled ? undefined : confirmIfIdle}
+              />
+              <View style={s.modalActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Cancel ${title}`}
+                  accessibilityState={{ disabled: busy }}
+                  onPress={cancelIfIdle}
+                  disabled={busy}
+                  style={({ pressed }) => [
+                    s.modalCancel,
+                    { opacity: pressed || busy ? 0.6 : 1 },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.modalCancelText,
+                      {
+                        color: colors.mutedForeground,
+                        fontFamily: "Inter_600SemiBold",
+                      },
+                    ]}
+                  >
+                    Cancel
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={busy ? `${confirmLabel} in progress` : confirmLabel}
+                  accessibilityState={{ disabled: confirmDisabled, busy }}
+                  onPress={confirmIfIdle}
+                  disabled={confirmDisabled}
+                  style={({ pressed }) => [
+                    s.modalConfirm,
+                    {
+                      backgroundColor: colors.primary,
+                      opacity: pressed || confirmDisabled ? 0.7 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.modalConfirmText,
+                      {
+                        color: colors.primaryForeground,
+                        fontFamily: "Inter_700Bold",
+                      },
+                    ]}
+                  >
+                    {busy ? `${confirmLabel}…` : confirmLabel}
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </ModalSheetPressable>
+        </KeyboardAvoidingView>
       </ModalBackdropPressable>
     </Modal>
   );
@@ -3418,6 +4139,14 @@ const s = StyleSheet.create({
   rowTitle: { fontSize: 16, lineHeight: 21 },
   flexCopy: { flex: 1, minWidth: 0 },
   rosterList: { borderTopWidth: 1, marginTop: 12 },
+  householdList: { marginTop: 0 },
+  householdListRecovery: {
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 10,
+  },
   rosterRow: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     flexDirection: "row",
@@ -3447,7 +4176,7 @@ const s = StyleSheet.create({
     marginTop: 12,
   },
   fieldLabel: { fontSize: 14, lineHeight: 18, letterSpacing: 0.5 },
-  inviteCode: { fontSize: 16, lineHeight: 22, marginTop: 2 },
+  inviteCopy: { fontSize: 16, lineHeight: 22, marginTop: 2 },
   primaryInlineButton: {
     minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 12,
@@ -3572,6 +4301,7 @@ const s = StyleSheet.create({
   modalCard: {
     borderRadius: 26,
     padding: 24,
+    maxHeight: "100%",
     shadowColor: "#0F1F33",
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.2,
@@ -3618,12 +4348,17 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   modalConfirmText: { fontSize: 16 },
+  modalDock: { flex: 1, justifyContent: "flex-end" },
+  modalCenter: { flex: 1, justifyContent: "center" },
+  modalContentScroll: { flexShrink: 1, minHeight: 0 },
+  modalContent: { paddingBottom: 2 },
   profileModal: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: "90%",
     paddingTop: 14,
   },
+  profileFormScroll: { flexShrink: 1, minHeight: 0 },
   modalHandle: {
     alignSelf: "center",
     width: 40,

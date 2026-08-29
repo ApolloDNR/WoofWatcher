@@ -26,11 +26,13 @@ import React, { useEffect } from "react";
 import { Platform, StyleSheet, useColorScheme, useWindowDimensions, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import { useReducedMotion } from "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LocalDataResetAppShield } from "@/components/LocalDataResetAppShield";
+import { QueryCacheAuthIdentityBoundary } from "@/components/QueryCacheAuthIdentityBoundary";
 import { WalkRouteRecorderBridge } from "@/components/WalkRouteRecorder";
 import { WebDialogHost } from "@/components/WebDialogHost";
 import { CareProvider } from "@/context/CareContext";
@@ -72,6 +74,7 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   const colors = useColors();
+  const reducedMotion = useReducedMotion();
 
   // Free production intentionally skips accounts. Development/internal builds
   // enforce sign-in only when the provider runtime was explicitly configured.
@@ -165,7 +168,10 @@ function RootLayoutNav() {
           // transition matching instead of a platform-default cut. The web
           // build ignores it, so the fastlog screen runs its own mount
           // fade/rise there.
-          animation: "slide_from_bottom",
+          animation:
+            Platform.OS !== "web" && reducedMotion
+              ? "none"
+              : "slide_from_bottom",
           // Themed, not hardcoded cream: a hardcoded light background flashed
           // behind the slide-up for a beat in dark mode.
           contentStyle: { backgroundColor: colors.background },
@@ -258,7 +264,7 @@ function useWebViewportClamp() {
   }, []);
 }
 
-function AppFrame() {
+function PersonalAppFrame() {
   useWebViewportClamp();
 
   if (Platform.OS !== "web") return <RootLayoutNav />;
@@ -333,6 +339,14 @@ function AppFrame() {
         </AppViewportProvider>
       </View>
     </View>
+  );
+}
+
+function AppFrame() {
+  return (
+    <QueryCacheAuthIdentityBoundary>
+      <PersonalAppFrame />
+    </QueryCacheAuthIdentityBoundary>
   );
 }
 

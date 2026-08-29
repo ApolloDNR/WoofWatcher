@@ -130,6 +130,7 @@ test("keeps both accepted v1 stores and every inventory/travel action in the com
 
 test("moves the two accepted Care Team writes and their truthful provider boundaries", () => {
   const component = read(COMPONENT_PATH);
+  const promptModal = component.slice(component.indexOf("function PromptModal("));
 
   assert.equal(mutationCount(component, "updateCareDoc"), 2);
   assert.equal(mutationCount(component, "runAcceptedCareMutation"), 2);
@@ -151,14 +152,80 @@ test("moves the two accepted Care Team writes and their truthful provider bounda
     /enabled:\s*consumerSurfacePolicy\.householdProviderActions[\s\S]*isClerkEnabledForBuild[\s\S]*Boolean\(isSignedIn\)/,
   );
   assert.match(component, /invalidateQueries\(\{ queryKey: getGetMeQueryKey\(\) \}\)/);
+  assert.match(component, /runTrackedLocalDataWork/);
+  assert.match(component, /isWriteAdmissionOpen/);
+  assert.match(component, /operationState/);
+  assert.equal(component.match(/runTrackedLocalDataWork\(async \(scope\) =>/g)?.length, 5);
+  assert.equal(component.match(/\.mutateAsync\(/g)?.length, 1);
+  assert.equal(component.match(/\.mutate\(/g)?.length ?? 0, 0);
+  assert.match(component, /runHouseholdJoinOperation\(\{/);
+  assert.match(component, /runHouseholdRenameOperation\(\{/);
+  assert.match(component, /runHouseholdInviteOperation\(\{/);
+  assert.match(component, /runHouseholdSwitchOperation\(\{/);
+  assert.match(component, /createHouseholdInvitation\(/);
+  assert.match(component, /listMyHouseholdMemberships\(/);
+  assert.match(component, /activateHousehold\(/);
+  assert.match(component, /householdOperationSnapshot\.activeKind !== null/);
+  assert.equal(
+    component.match(
+      /"X-WoofWatcher-Expected-Household-Id":/g,
+    )?.length,
+    6,
+  );
   assert.match(
     component,
-    /const \{ runTrackedLocalDataWork \} = useLocalDataReset\(\);/,
+    /createHouseholdInvitation\(\s*\{[\s\S]*role: "adult",[\s\S]*lifecycleState: "approved",[\s\S]*expiresAt[\s\S]*\},\s*\{\s*"X-WoofWatcher-Expected-Household-Id": expectedHouseholdId/,
   );
-  assert.equal(component.match(/runTrackedLocalDataWork\(async \(scope\) =>/g)?.length, 3);
-  assert.equal(component.match(/\.mutateAsync\(/g)?.length, 3);
-  assert.equal(component.match(/\.mutate\(/g)?.length ?? 0, 0);
-  assert.equal(component.match(/if \(!scope\.isCurrent\(\)\) return;/g)?.length, 6);
+  assert.match(
+    component,
+    /revokeHouseholdInvitation\(\s*invitationId,\s*\{\s*"X-WoofWatcher-Expected-Household-Id": expectedHouseholdId[\s\S]*?\{ reason:/,
+  );
+  assert.doesNotMatch(
+    component,
+    /headers:\s*\{\s*"X-WoofWatcher-Expected-Household-Id"/,
+  );
+  assert.doesNotMatch(component, /household(?:Access)?\.inviteCode/);
+  assert.doesNotMatch(component, /INVITE CODE/);
+  assert.match(component, /Create a one-time invite/);
+  assert.match(component, /Your households/);
+  assert.match(
+    component,
+    /Current household access ended\.[\s\S]{0,80}Choose another[\s\S]{0,40}household\./,
+  );
+  assert.match(component, /Retry household list/);
+  assert.match(component, /buildHouseholdMembershipRows/);
+  assert.match(
+    component,
+    /queryKey:\s*\[[\s\S]*renderHouseholdOperationPermit\?\.identityKey/,
+  );
+  assert.match(
+    component,
+    /activateHousehold\(\s*\{ householdId: targetHouseholdId \},\s*\{\s*"X-WoofWatcher-Expected-Household-Id":\s*expectedSourceHouseholdId/,
+  );
+  assert.doesNotMatch(
+    component,
+    /acceptResponse:[\s\S]{0,200}activateHousehold/,
+  );
+  assert.match(component, /editable=\{!busy\}/);
+  assert.match(
+    component,
+    /onSubmitEditing=\{confirmDisabled \? undefined : confirmIfIdle\}/,
+  );
+  assert.match(component, /const confirmDisabled = busy \|\| !valid/);
+  assert.match(
+    component,
+    /accessibilityState=\{\{ disabled: confirmDisabled, busy \}\}/,
+  );
+  assert.match(component, /disabled=\{busy\}/);
+  assert.match(component, /accessibilityState=\{\{ disabled: busy \}\}/);
+  assert.match(
+    promptModal,
+    /<ModalSheetPressable[\s\S]{0,240}closeDisabled=\{busy\}/,
+  );
+  assert.match(
+    promptModal,
+    /<ModalSheetPressable[\s\S]{0,240}closeBusy=\{busy\}/,
+  );
 
   for (const action of [
     "shareInvite",
@@ -190,6 +257,98 @@ test("moves the two accepted Care Team writes and their truthful provider bounda
   assert.match(component, /person\.permissions\.slice\(0, 2\)\.join\(", "\)/);
   assert.doesNotMatch(component, /buildCarePass/);
   assert.doesNotMatch(component, /deriveCarePass/);
+});
+
+test("household controls ship the repaired owner, recovery, cache, and modal boundaries", () => {
+  const component = read(COMPONENT_PATH);
+
+  assert.match(
+    component,
+    /accessibilityLabel="Rename care team"[\s\S]{0,180}accessibilityState=\{\{[\s\S]{0,80}disabled:[\s\S]{0,120}canCreateHouseholdInvitation/,
+  );
+  assert.match(
+    component,
+    /disabled=\{[\s\S]{0,100}!canCreateHouseholdInvitation[\s\S]{0,100}householdActionsUnavailable/,
+  );
+  assert.match(
+    component,
+    /const householdActionsUnavailable =\s*!canContinueRenderHouseholdOperation\(\)/,
+  );
+  assert.match(component, /renameHouseholdMembershipInList/);
+  assert.match(component, /invalidateQueries\(\{[\s\S]*listMyHouseholdMemberships/);
+  assert.match(component, /rediscoverIdentityScopeFromMembershipList/);
+  assert.match(
+    component,
+    /admittedHouseholdMemberships\.activeMembershipPresent[\s\S]{0,700}rediscoverIdentityScopeFromMembershipList\(/,
+  );
+  assert.ok(
+    (component.match(/householdMemberships\.isFetchedAfterMount/g)?.length ??
+      0) >= 3,
+  );
+  assert.match(
+    component,
+    /setJoinOpen\(false\)[\s\S]{0,180}runHouseholdJoinOperation/,
+  );
+  assert.match(
+    component,
+    /setRenameOpen\(false\)[\s\S]{0,180}runHouseholdRenameOperation/,
+  );
+  assert.match(component, /WoofWatcher does not save the code/);
+  assert.doesNotMatch(component, /never kept on this device/);
+});
+
+test("Care Team input sheets stay keyboard-aware and vertically reachable with large text", () => {
+  const component = read(COMPONENT_PATH);
+  const futureDogSheet = component.slice(
+    component.indexOf("visible={petRosterOpen}"),
+    component.indexOf("visible={accessPassOpen}"),
+  );
+  const accessPassSheet = component.slice(
+    component.indexOf("visible={accessPassOpen}"),
+    component.indexOf("function PromptModal("),
+  );
+  const promptModal = component.slice(component.indexOf("function PromptModal("));
+
+  for (const sheet of [futureDogSheet, accessPassSheet]) {
+    assert.match(
+      sheet,
+      /<KeyboardAvoidingView[\s\S]{0,220}style=\{s\.modalDock\}/,
+    );
+    assert.match(
+      sheet,
+      /<ScrollView[\s\S]{0,280}style=\{s\.profileFormScroll\}/,
+    );
+  }
+  assert.match(
+    promptModal,
+    /getCenteredModalBackdropPadding[\s\S]*<KeyboardAvoidingView[\s\S]{0,240}style=\{s\.modalCenter\}/,
+  );
+  assert.match(
+    promptModal,
+    /<ScrollView[\s\S]{0,260}style=\{s\.modalContentScroll\}/,
+  );
+  assert.match(component, /profileFormScroll:\s*\{[^}]*flexShrink:\s*1[^}]*minHeight:\s*0/);
+  assert.match(component, /modalCard:\s*\{[^}]*maxHeight:\s*"100%"/);
+  assert.match(component, /modalContentScroll:\s*\{[^}]*flexShrink:\s*1[^}]*minHeight:\s*0/);
+});
+
+test("Care Team prompts preserve the action name while a confirm operation is busy", () => {
+  const component = read(COMPONENT_PATH);
+  const promptModal = component.slice(component.indexOf("function PromptModal("));
+
+  assert.match(
+    promptModal,
+    /accessibilityLabel=\{busy\s*\?\s*`\$\{confirmLabel\} in progress`\s*:\s*confirmLabel\}/,
+  );
+  assert.match(
+    promptModal,
+    /accessibilityState=\{\{ disabled: confirmDisabled, busy \}\}/,
+  );
+  assert.match(
+    promptModal,
+    /\{busy\s*\?\s*`\$\{confirmLabel\}…`\s*:\s*confirmLabel\}/,
+  );
+  assert.doesNotMatch(promptModal, /\{busy\s*\?\s*"…"\s*:\s*confirmLabel\}/);
 });
 
 test("makes the extracted controls visible and usable without a hidden gesture", () => {
@@ -227,7 +386,7 @@ test("makes the extracted controls visible and usable without a hidden gesture",
     "bodyText",
     "cardTitle",
     "rowTitle",
-    "inviteCode",
+    "inviteCopy",
     "metricValue",
   ]) {
     assert.match(

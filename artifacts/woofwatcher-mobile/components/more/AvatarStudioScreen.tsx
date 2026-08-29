@@ -3,7 +3,14 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useFocusEffect, useNavigation } from "expo-router";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Animated,
   Easing,
@@ -16,6 +23,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useReducedMotion } from "react-native-reanimated";
+import { selectSharedCareEvidence } from "@workspace/care-domain";
 
 import {
   BoardCard,
@@ -32,6 +40,13 @@ import { useAvatar } from "@/context/AvatarContext";
 import { useCare } from "@/context/CareContext";
 import { useColors } from "@/hooks/useColors";
 import { deriveAvatarMotion } from "@/lib/avatarMotion";
+import {
+  activateAvatarDraftExitConfirmationLatch,
+  createAvatarDraftExitConfirmationLatch,
+  invalidateAvatarDraftExitConfirmationLatch,
+  registerAvatarDraftExitRequestHandler,
+  requestAvatarDraftExit,
+} from "@/lib/avatarDraftExitGuard";
 import { collectCareAppOwnedFileReferences } from "@/lib/appOwnedFileReferences";
 import {
   deriveAvatarPreviewAccessories,
@@ -83,7 +98,7 @@ import { resolveConsumerPetName } from "@/lib/petIdentity";
 import { pixelImageStyle } from "@/lib/pixelRendering";
 import { releasePickedMediaReferences } from "@/lib/pickedMediaLocalDataActions";
 import { derivePhoenixStatus } from "@/lib/phoenixStatus";
-import { notifyDialog } from "@/lib/confirmDialog";
+import { confirmThroughSteps, notifyDialog } from "@/lib/confirmDialog";
 
 const DISPLAY = "Fredoka_700Bold";
 const PIXEL_ROOM_SOURCE = require("@/assets/avatar/rooms/phoenix-room-day-option-b.png");
@@ -172,12 +187,37 @@ export interface AvatarStudioScreenProps {
   onOpenSpriteQa: () => void;
 }
 
+function confirmAvatarDraftDiscard(
+  onConfirmed: () => void,
+  onCancelled: () => void,
+): void {
+  confirmThroughSteps(
+    [
+      {
+        title: "Discard unsaved avatar changes?",
+        message:
+          "Your Avatar Studio edits have not been saved. Leave without saving them?",
+        confirmLabel: "Discard changes",
+        cancelLabel: "Keep editing",
+        destructive: true,
+      },
+    ],
+    onConfirmed,
+    onCancelled,
+  );
+}
+
+function clearAvatarDraftDirty(dirtyRef: { current: boolean }): void {
+  dirtyRef.current = false;
+}
+
 export default function AvatarStudioScreen({
   surface,
   onBack,
   onOpenSpriteQa,
 }: AvatarStudioScreenProps) {
   const colors = useColors();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const appFileSystem = useAppFileSystem();
   const ownerOps = isOwnerOpsBuild();
@@ -226,12 +266,67 @@ export default function AvatarStudioScreen({
   const avatarPickerInFlightRef = useRef(false);
   const avatarPersistenceInFlightRef = useRef(false);
   const avatarDraftDirtyRef = useRef(false);
+  const avatarDraftExitConfirmationLatchRef = useRef(
+    createAvatarDraftExitConfirmationLatch(),
+  );
   const savedToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [avatarPhotoBusy, setAvatarPhotoBusy] = useState(false);
   const [avatarPersistenceBusy, setAvatarPersistenceBusy] = useState(false);
   const [savedToast, setSavedToast] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const avatarEditorDisabled = !avatarIsLoaded || avatarPersistenceBusy;
+
+  const requestAvatarStudioExit = useCallback(
+    (exit: () => void) =>
+      requestAvatarDraftExit({
+        dirty: avatarDraftDirtyRef.current,
+        persistenceInFlight: avatarPersistenceInFlightRef.current,
+        confirmationLatch: avatarDraftExitConfirmationLatchRef.current,
+        confirmDiscard: confirmAvatarDraftDiscard,
+        markClean: () => clearAvatarDraftDirty(avatarDraftDirtyRef),
+        exit,
+      }),
+    [],
+  );
+
+  // Tab scenes remain mounted when another primary tab is active. Own the
+  // global replacement guard only while More/Avatar is focused, otherwise an
+  // unrelated Plans or Health reselect could consume this draft's exit latch.
+  useFocusEffect(
+    useCallback(() => {
+      const confirmationLatch = avatarDraftExitConfirmationLatchRef.current;
+      activateAvatarDraftExitConfirmationLatch(confirmationLatch);
+      const unregister = registerAvatarDraftExitRequestHandler(
+        requestAvatarStudioExit,
+      );
+      return () => {
+        unregister();
+        invalidateAvatarDraftExitConfirmationLatch(confirmationLatch);
+      };
+    }, [requestAvatarStudioExit]),
+  );
+
+  useEffect(
+    () =>
+      navigation.addListener("beforeRemove", (event) => {
+        if (
+          !avatarDraftDirtyRef.current &&
+          !avatarPersistenceInFlightRef.current
+        ) {
+          return;
+        }
+        event.preventDefault();
+        requestAvatarDraftExit({
+          dirty: avatarDraftDirtyRef.current,
+          persistenceInFlight: avatarPersistenceInFlightRef.current,
+          confirmationLatch: avatarDraftExitConfirmationLatchRef.current,
+          confirmDiscard: confirmAvatarDraftDiscard,
+          markClean: () => clearAvatarDraftDirty(avatarDraftDirtyRef),
+          exit: () => navigation.dispatch(event.data.action),
+        });
+      }),
+    [navigation],
+  );
 
   const templateLife = useRef(new Animated.Value(0)).current;
   const reduced = useReducedMotion();
@@ -370,17 +465,21 @@ export default function AvatarStudioScreen({
     templateSpritePreview?.label ?? previewMotion.label;
   const avatarSummary = describeAvatarConfig(draft);
   const status = useMemo(() => derivePhoenixStatus(state, now), [state, now]);
+  const sharedEntries = useMemo(
+    () => selectSharedCareEvidence(state.entries, now),
+    [state.entries, now],
+  );
   const avatarMotion = useMemo(
     () =>
       deriveAvatarMotion({
-        entries: state.entries,
+        entries: sharedEntries,
         routines: state.routines,
         caregivers: state.caregivers,
         petName,
         now,
         energy: status.energy,
       }),
-    [state.entries, state.routines, state.caregivers, petName, now, status.energy],
+    [sharedEntries, state.routines, state.caregivers, petName, now, status.energy],
   );
   const caregiver = state.caregivers[0]?.name ?? "you";
   const templateLift = templateLife.interpolate({
@@ -610,6 +709,17 @@ export default function AvatarStudioScreen({
     onOpenSpriteQa();
   };
 
+  const requestAvatarStudioBack = () => {
+    requestAvatarDraftExit({
+      dirty: avatarDraftDirtyRef.current,
+      persistenceInFlight: avatarPersistenceInFlightRef.current,
+      confirmationLatch: avatarDraftExitConfirmationLatchRef.current,
+      confirmDiscard: confirmAvatarDraftDiscard,
+      markClean: () => clearAvatarDraftDirty(avatarDraftDirtyRef),
+      exit: onBack,
+    });
+  };
+
   const saveDraft = async () => {
     if (!avatarIsLoaded || avatarPersistenceInFlightRef.current) return;
     avatarPersistenceInFlightRef.current = true;
@@ -668,6 +778,24 @@ export default function AvatarStudioScreen({
     }
   };
 
+  const renderAvatarStudioHeader = (onBack: () => void) => (
+    <BoardRouteHeader
+      kicker="Pixel Twin"
+      title="Avatar Studio"
+      subtitle={avatarIsLoaded
+        ? "Choose a pixel twin, then customize."
+        : "Loading saved avatar choices…"}
+      back
+      onBack={onBack}
+      backDisabled={avatarPersistenceBusy}
+      actionIcon="checkmark"
+      actionLabel="Save avatar"
+      onAction={saveDraft}
+      actionDisabled={avatarEditorDisabled}
+      plain
+    />
+  );
+
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -679,21 +807,7 @@ export default function AvatarStudioScreen({
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
-        <BoardRouteHeader
-          kicker="Pixel Twin"
-          title="Avatar Studio"
-          subtitle={avatarIsLoaded
-            ? "Choose a pixel twin, then customize."
-            : "Loading saved avatar choices…"}
-          back
-          onBack={onBack}
-          backDisabled={avatarPersistenceBusy}
-          actionIcon="checkmark"
-          actionLabel="Save avatar"
-          onAction={saveDraft}
-          actionDisabled={avatarEditorDisabled}
-          plain
-        />
+        {renderAvatarStudioHeader(requestAvatarStudioBack)}
 
         <BoardCard padded={false} style={s.heroPreview}>
             <View style={s.liveRoomStage}>
@@ -1075,8 +1189,8 @@ export default function AvatarStudioScreen({
                 <Text style={[s.secondaryBtnText, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Gallery</Text>
               </Pressable>
               <Pressable accessibilityRole="button" accessibilityLabel="Take dog photo" accessibilityState={{ disabled: avatarPhotoBusy }} disabled={avatarPhotoBusy} onPress={() => void pick(true)} style={({ pressed }) => [s.primaryBtn, { backgroundColor: colors.primary, opacity: avatarPhotoBusy ? 0.5 : pressed ? 0.82 : 1 }]}>
-                <Ionicons name="camera" size={18} color="#FFF9EF" />
-                <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>Take photo</Text>
+                <Ionicons name="camera" size={18} color={colors.primaryForeground} />
+                <Text style={[s.primaryBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Take photo</Text>
               </Pressable>
             </View>
             {sourceUri ? (
@@ -1936,8 +2050,8 @@ export default function AvatarStudioScreen({
               { backgroundColor: colors.primary, opacity: avatarEditorDisabled ? 0.5 : pressed ? 0.82 : 1 },
             ]}
           >
-            <Ionicons name="heart" size={18} color="#FFF9EF" />
-            <Text style={[s.primaryBtnText, { fontFamily: "Inter_700Bold" }]}>
+            <Ionicons name="heart" size={18} color={colors.primaryForeground} />
+            <Text style={[s.primaryBtnText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
               Save Avatar
             </Text>
           </Pressable>
@@ -2274,7 +2388,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
   },
-  primaryBtnText: { color: "#FFF9EF", fontSize: 14 },
+  primaryBtnText: { fontSize: 14 },
   templateGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   templateTileLayout: {
     flexBasis: "48%",

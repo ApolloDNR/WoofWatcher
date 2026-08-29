@@ -1,4 +1,9 @@
-import { appendCareAuditEvent, normalizeCareEventType, type CareAuditEvent } from "../../../lib/care-domain/src/index.ts";
+import {
+  appendCareAuditEvent,
+  isHouseholdVisibleCareEvidence,
+  normalizeCareEventType,
+  type CareAuditEvent,
+} from "../../../lib/care-domain/src/index.ts";
 
 export type WalkLifecycle = "in-progress" | "completed";
 
@@ -83,7 +88,7 @@ function isWalk(entry: WalkSessionEntryLike): boolean {
 
 function isOpenWalk(entry: WalkSessionEntryLike): boolean {
   const details = asObject(entry.details);
-  return isWalk(entry) && details.householdVisible !== false && details.walkLifecycle === "in-progress";
+  return isWalk(entry) && isHouseholdVisibleCareEvidence(entry) && details.walkLifecycle === "in-progress";
 }
 
 export function buildWalkSessionStartEntry(options: WalkSessionStartOptions): Omit<WalkSessionEntryLike, "id"> {
@@ -127,7 +132,7 @@ export function buildWalkSessionFinishPatch(entry: WalkSessionEntryLike, options
 
   const nextDetails: Record<string, unknown> = {
     ...details,
-    householdVisible: details.householdVisible !== false,
+    householdVisible: isHouseholdVisibleCareEvidence(entry),
     walkLifecycle: "completed",
     walkStartedAt: startedAt,
     walkEndedAt: endedAt,

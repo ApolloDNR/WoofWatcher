@@ -173,6 +173,20 @@ test("keeps truthful facts and routes every supported edit into the one editor",
   assert.match(component, /accessibilityLabel="Save dog profile"/);
 });
 
+test("keeps a short About bio inside the shared 48-point edit target", () => {
+  const component = read(COMPONENT_PATH);
+  const aboutBodyStyle =
+    component.match(/aboutBody:\s*\{([\s\S]*?)\n\s*\},/)?.[1] ?? "";
+
+  assert.match(
+    component,
+    /<PressScale[\s\S]{0,420}accessibilityHint="Opens the profile editor to edit the About text\."[\s\S]{0,160}style=\{s\.aboutBody\}/,
+  );
+  assert.match(aboutBodyStyle, /minHeight:\s*MIN_MOBILE_TOUCH_TARGET/);
+  assert.match(aboutBodyStyle, /justifyContent:\s*"center"/);
+  assert.match(aboutBodyStyle, /paddingVertical:\s*8/);
+});
+
 test("keeps More's truthful profile summary linked to its closed canonical child", () => {
   const more = read(MORE_PATH);
 

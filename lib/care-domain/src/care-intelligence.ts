@@ -3,6 +3,7 @@ import { resolvePetName } from "./pet-identity.ts";
 import { deriveRoutineBoard, type RoutineBoardCaregiver, type RoutineBoardRoutine } from "./routine-board.ts";
 import { parseClockTime } from "./clock-time.ts";
 import { deriveCareDayStatus } from "./status.ts";
+import { isHouseholdVisibleCareEvidence } from "./shared-evidence.ts";
 
 export type CareIntelligenceStatus = "excellent" | "steady" | "building" | "needs-attention";
 export type CareIntelligenceTone = "good" | "watch" | "neutral" | "attention";
@@ -173,7 +174,7 @@ function hasAnyField(entry: CareIntelligenceEntry, keys: readonly string[]): boo
 }
 
 function isHouseholdVisible(entry: CareIntelligenceEntry): boolean {
-  return asObject(entry.details).householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 function isPendingMeal(entry: CareIntelligenceEntry): boolean {

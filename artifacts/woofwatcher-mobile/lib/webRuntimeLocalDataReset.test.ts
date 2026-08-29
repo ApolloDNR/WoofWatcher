@@ -136,3 +136,40 @@ test("web-runtime removes legacy notification session metadata", async () => {
   assert.equal((await runtime.operations.runReset()).status, "complete");
   assert.deepEqual(removed, ["woofwatcher.v1.lastNotificationKey"]);
 });
+
+test("web-runtime treats announcement cleanup failure as partial and still attempts its peers", async () => {
+  const events: string[] = [];
+  const controller = createWebRuntimeLocalDataResetController({
+    platform: "web",
+    cacheStorage: {
+      async keys() {
+        events.push("cache:keys");
+        return ["woofwatcher-runtime-current"];
+      },
+      async delete(name) {
+        events.push(`cache:delete:${name}`);
+        return true;
+      },
+    },
+    clearAnnouncements() {
+      events.push("announcements:clear");
+      throw new Error("the live region could not be removed");
+    },
+    async requestServiceWorkerClear() {
+      events.push("service-worker:clear");
+    },
+  });
+  const runtime = createLocalDataResetRuntime(createStorageAdapter());
+  attachPeers(runtime, controller.participant);
+
+  const result = await runtime.operations.runReset();
+
+  assert.equal(result.status, "partial-failure");
+  assert.deepEqual(result.failedParticipantIds, ["web-runtime"]);
+  assert.deepEqual(events, [
+    "announcements:clear",
+    "cache:keys",
+    "cache:delete:woofwatcher-runtime-current",
+    "service-worker:clear",
+  ]);
+});

@@ -13,10 +13,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
+  adventureQuestCareType as questCareType,
+  buildAdventureEvidenceDetails as adventureDetails,
   buildAdventureMemoryDraft,
   deriveAdventureMode,
   deriveWalkRouteTemplates,
-  normalizeCareEventType,
+  findAdventureQuestProofEntryId as findQuestProofEntryId,
   type AdventureMemory,
   type CareEventType,
   type AdventureQuest,
@@ -61,49 +63,6 @@ function questIcon(id: string): keyof typeof Ionicons.glyphMap {
   if (id.includes("training")) return "ribbon-outline";
   if (id.includes("play")) return "sparkles-outline";
   return "camera-outline";
-}
-
-function isSameLocalDay(iso: string, now: number): boolean {
-  const d = new Date(iso);
-  const n = new Date(now);
-  return (
-    d.getFullYear() === n.getFullYear() &&
-    d.getMonth() === n.getMonth() &&
-    d.getDate() === n.getDate()
-  );
-}
-
-function questCareType(quest: AdventureQuest): CareEventType | null {
-  if (quest.action === "start-walk") return "walk";
-  if (quest.action === "log-training") return "training";
-  if (quest.action === "log-play") return "play";
-  return null;
-}
-
-function findQuestProofEntryId(quest: AdventureQuest, entries: Entry[], now: number): string | null {
-  const careType = questCareType(quest);
-  if (!careType) return null;
-
-  return (
-    [...entries]
-      .filter((entry) => {
-        if (!entry.id || !isSameLocalDay(entry.occurredAt, now)) return false;
-        if (entry.details?.householdVisible === false) return false;
-        return normalizeCareEventType(entry.type, entry.details) === careType;
-      })
-      .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))[0]?.id ?? null
-  );
-}
-
-function adventureDetails(quest: AdventureQuest, current?: Record<string, unknown> | null): Record<string, unknown> {
-  return {
-    ...(current ?? {}),
-    householdVisible: current?.householdVisible !== false,
-    adventureQuestId: quest.id,
-    adventureQuestTitle: quest.title,
-    adventureRewardXp: quest.rewardXp,
-    careAdventure: true,
-  };
 }
 
 function formatMemoryDate(iso: string): string {

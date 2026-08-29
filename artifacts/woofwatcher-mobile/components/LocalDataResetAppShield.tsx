@@ -6,8 +6,11 @@ import React, {
 import {
   ActivityIndicator,
   Pressable,
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 
@@ -18,6 +21,8 @@ import {
   getPrivacyLocalDataResetView,
   runPrivacyLocalDataReset,
 } from "@/lib/privacyLocalDataActions";
+import { getLocalDataResetShieldLayout } from "@/lib/localDataResetShieldLayout";
+import { MIN_MOBILE_TOUCH_TARGET } from "@/lib/mobileLayout";
 
 export function LocalDataResetAppShield({
   children,
@@ -25,6 +30,11 @@ export function LocalDataResetAppShield({
   children: React.ReactNode;
 }): React.JSX.Element {
   const colors = useColors();
+  const { height: viewportHeight, fontScale } = useWindowDimensions();
+  const shieldLayout = getLocalDataResetShieldLayout({
+    viewportHeight,
+    fontScale,
+  });
   const { operationState, runReset, clearResult } = useLocalDataReset();
   const {
     attachPersonalQueryObserverShieldHost,
@@ -64,124 +74,173 @@ export function LocalDataResetAppShield({
 
   if (resetView.status === "complete") {
     return (
-      <View
+      <SafeAreaView
         accessibilityRole="alert"
         accessibilityLabel="Local care content deleted"
-        style={[styles.root, { backgroundColor: colors.background }]}
+        style={[
+          styles.root,
+          {
+            backgroundColor: colors.background,
+            paddingVertical: shieldLayout.outerPaddingVertical,
+          },
+        ]}
       >
         <View
           style={[
             styles.card,
-            { backgroundColor: colors.card, borderColor: colors.border },
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              maxHeight: shieldLayout.maxCardHeight,
+            },
           ]}
         >
-          <Text style={[styles.eyebrow, { color: colors.sage }]}>
-            DELETE COMPLETE
-          </Text>
-          <Text style={[styles.title, { color: colors.foreground }]}>
-            {resetView.title}
-          </Text>
-          <Text style={[styles.message, { color: colors.mutedForeground }]}>
-            {resetView.detail}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Continue after local data deletion"
-            onPress={leaveTerminalState}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
-            ]}
+          <ScrollView
+            showsVerticalScrollIndicator
+            style={styles.terminalScroll}
+            contentContainerStyle={styles.terminalScrollContent}
           >
-            <Text
-              style={[
-                styles.primaryButtonText,
-                { color: colors.primaryForeground },
+            <Text style={[styles.eyebrow, { color: colors.sage }]}>
+              DELETE COMPLETE
+            </Text>
+            <Text style={[styles.title, { color: colors.foreground }]}>
+              {resetView.title}
+            </Text>
+            <Text style={[styles.message, { color: colors.mutedForeground }]}>
+              {resetView.detail}
+            </Text>
+          </ScrollView>
+          <View style={styles.terminalActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Continue after local data deletion"
+              onPress={leaveTerminalState}
+              style={({ pressed }) => [
+                styles.primaryButton,
+                { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
               ]}
             >
-              Continue
-            </Text>
-          </Pressable>
+              <Text
+                style={[
+                  styles.primaryButtonText,
+                  { color: colors.primaryForeground },
+                ]}
+              >
+                Continue
+              </Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (resetView.status === "failed") {
     return (
-      <View
+      <SafeAreaView
         accessibilityRole="alert"
         accessibilityLabel="Local data deletion needs attention"
-        style={[styles.root, { backgroundColor: colors.background }]}
+        style={[
+          styles.root,
+          {
+            backgroundColor: colors.background,
+            paddingVertical: shieldLayout.outerPaddingVertical,
+          },
+        ]}
       >
         <View
           style={[
             styles.card,
-            { backgroundColor: colors.card, borderColor: colors.rose },
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.rose,
+              maxHeight: shieldLayout.maxCardHeight,
+            },
           ]}
         >
-          <Text style={[styles.eyebrow, { color: colors.rose }]}>
-            DELETION NEEDS ATTENTION
-          </Text>
-          <Text style={[styles.title, { color: colors.foreground }]}>
-            {resetView.title}
-          </Text>
-          <Text style={[styles.message, { color: colors.mutedForeground }]}>
-            WoofWatcher could not verify every local-data owner. Retry now, or
-            return and keep the categories below for support.
-          </Text>
-          <View style={styles.failureList}>
-            {resetView.failures.map((failure) => (
+          <ScrollView
+            showsVerticalScrollIndicator
+            style={styles.terminalScroll}
+            contentContainerStyle={styles.terminalScrollContent}
+          >
+            <Text style={[styles.eyebrow, { color: colors.rose }]}>
+              DELETION NEEDS ATTENTION
+            </Text>
+            <Text style={[styles.title, { color: colors.foreground }]}>
+              {resetView.title}
+            </Text>
+            <Text style={[styles.message, { color: colors.mutedForeground }]}>
+              WoofWatcher could not verify every local-data owner. Retry now, or
+              return and keep the categories below for support.
+            </Text>
+            <View style={styles.failureList}>
+              {resetView.failures.map((failure) => (
+                <Text
+                  key={failure.id}
+                  accessibilityLabel={`${failure.label}. Failed owner ID: ${failure.id}`}
+                  style={[
+                    styles.failureRow,
+                    { color: colors.foreground, borderColor: colors.border },
+                  ]}
+                >
+                  {failure.label} · {failure.id}
+                </Text>
+              ))}
+            </View>
+          </ScrollView>
+          <View style={styles.terminalActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Retry deleting all local data"
+              onPress={() => {
+                void runPrivacyLocalDataReset(runReset);
+              }}
+              style={({ pressed }) => [
+                styles.primaryButton,
+                { backgroundColor: colors.rose, opacity: pressed ? 0.82 : 1 },
+              ]}
+            >
               <Text
-                key={failure.id}
-                accessibilityLabel={`${failure.label}. Failed owner ID: ${failure.id}`}
                 style={[
-                  styles.failureRow,
-                  { color: colors.foreground, borderColor: colors.border },
+                  styles.destructiveButtonText,
+                  { color: colors.brandNavy },
                 ]}
               >
-                {failure.label} · {failure.id}
+                Retry deletion
               </Text>
-            ))}
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Retry deleting all local data"
-            onPress={() => {
-              void runPrivacyLocalDataReset(runReset);
-            }}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              { backgroundColor: colors.rose, opacity: pressed ? 0.82 : 1 },
-            ]}
-          >
-            <Text style={styles.destructiveButtonText}>Retry deletion</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Return without claiming deletion succeeded"
-            onPress={leaveTerminalState}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              { borderColor: colors.border, opacity: pressed ? 0.72 : 1 },
-            ]}
-          >
-            <Text
-              style={[styles.secondaryButtonText, { color: colors.foreground }]}
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Return without claiming deletion succeeded"
+              onPress={leaveTerminalState}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                { borderColor: colors.border, opacity: pressed ? 0.72 : 1 },
+              ]}
             >
-              Return
-            </Text>
-          </Pressable>
+              <Text
+                style={[styles.secondaryButtonText, { color: colors.foreground }]}
+              >
+                Return
+              </Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View
+    <SafeAreaView
       accessibilityRole="alert"
       accessibilityLabel="Deleting all local WoofWatcher data"
-      style={[styles.root, { backgroundColor: colors.background }]}
+      style={[
+        styles.root,
+        {
+          backgroundColor: colors.background,
+          paddingVertical: shieldLayout.outerPaddingVertical,
+        },
+      ]}
     >
       <View
         style={[
@@ -200,7 +259,7 @@ export function LocalDataResetAppShield({
           owner before showing a result.
         </Text>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -209,7 +268,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
-    paddingVertical: 32,
   },
   card: {
     width: "100%",
@@ -218,7 +276,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     padding: 24,
+    minHeight: 0,
+    flexShrink: 1,
+    overflow: "hidden",
+  },
+  terminalScroll: {
+    minHeight: 0,
+    flexShrink: 1,
+  },
+  terminalScrollContent: {
     gap: 14,
+  },
+  terminalActions: {
+    flexShrink: 0,
+    gap: 14,
+    marginTop: 14,
   },
   eyebrow: {
     fontFamily: "Inter_800ExtraBold",
@@ -247,7 +319,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   primaryButton: {
-    minHeight: 48,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
@@ -258,12 +330,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   destructiveButtonText: {
-    color: "#FFFFFF",
     fontFamily: "Inter_800ExtraBold",
     fontSize: 15,
   },
   secondaryButton: {
-    minHeight: 46,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderWidth: 1,
     borderRadius: 14,
     alignItems: "center",

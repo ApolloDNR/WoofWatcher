@@ -5,15 +5,19 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import { AppState } from "react-native";
 import {
   createCareEntry,
   deleteCareEntry,
+  deleteCareEntryByClientKey,
   getCareState,
-  getListCareEntriesQueryKey,
+  getMe,
+  getListCareEntriesHouseholdQueryKey,
   listCareEntries,
   putCareState,
   updateCareEntry,
@@ -28,7 +32,6 @@ import {
   applyQueuedPatchToAcknowledgedEntry,
   buildCareEntryRefreshPlan,
   CareEntryConflictRetryError,
-  cleanupDiscardedServerEntryRows,
   createSerializedCareSyncWriter,
   createSerializedCareEntryMutationQueue,
   decideCareEntryEditSyncDisposition,
@@ -36,9 +39,12 @@ import {
   diffCareEntryPendingDetails,
   filterDiscardedServerEntries,
   findCreatedCareEntryLocalSnapshot,
+  isCareEntryMutationNotFound,
+  isUnsyncedEntry,
   mergeCareEntryPendingSyncPatch,
   mergeServerAndLocalEntries,
   normalizeDiscardedServerEntryIds,
+  partitionCachedCareEntriesByDiscardedIdentity,
   prepareCareEntryForOfflineEdit,
   recoverInterruptedCareEntryMutations,
   rebaseCareEntryAfterConflict,
@@ -56,6 +62,16 @@ import {
   type SerializedCareSyncWriter,
   type SerializedCareEntryMutationQueue,
 } from "@/lib/careSync";
+import {
+  partitionCareEntriesForSignedInUser,
+  stampSignedInPrivateCareEntryCreator,
+} from "@/lib/careEntryOwnerPrivacy";
+import {
+  applyExactCareEntryCreateRevocation,
+  applyExactCareEntryNotFoundRevocation,
+  persistCareEntryRevocationSuppression,
+  releaseCareEntryRevocationSuppression,
+} from "@/lib/careEntryMutationRevocation";
 import {
   CARE_ENTRY_SYNC_PROTOCOL,
   CARE_ENTRY_SYNC_REVISION_KEY,
@@ -82,6 +98,52 @@ import {
   createCarePersistenceWriter,
   type CarePersistenceWriter,
 } from "@/lib/carePersistenceWriter";
+import {
+  createCareInitialSyncReadiness,
+  runAtomicCareInitialRefresh,
+  type CareInitialSyncStatus,
+} from "@/lib/careInitialSyncReadiness";
+import {
+  beginCareInitialSyncLifecycle,
+  type CareInitialSyncSettlement,
+} from "@/lib/careInitialSyncLifecycle";
+import {
+  createCareAuthIdentityBoundary,
+  type CareAuthIdentityPermit,
+  type CareMutationOriginPermit,
+} from "@/lib/careAuthIdentityBoundary";
+import {
+  createCareIdentityVault,
+  decodeCareCleanupLedger,
+  parseCareIdentityVault,
+  readCareIdentitySlot,
+  readCareIdentitySlotRaw,
+  replaceCareCleanupLedgerScope,
+  scopeCareCleanupEntryIds,
+  serializeCareIdentityVault,
+  writeCareIdentitySlot,
+  type CareIdentityVault,
+} from "@/lib/careIdentityStorage";
+import {
+  createCareHouseholdIdentityResolution,
+  createCareHouseholdExpiryRevocation,
+  type CareHouseholdIdentityResolutionAttempt,
+} from "@/lib/careHouseholdIdentityResolution";
+import { createHouseholdMembershipRediscoveryController } from "@/lib/householdMembershipList";
+import {
+  createCareHouseholdTransitionController,
+  type CareHouseholdTransitionToken,
+} from "@/lib/careHouseholdTransition";
+import {
+  createHouseholdOperationController,
+  type HouseholdOperationController,
+  type HouseholdOperationSnapshot,
+} from "@/lib/householdOperation";
+import {
+  assertCareHouseholdConflictAuthority,
+  assertCareHouseholdSuccessAuthority,
+  isCareHouseholdResponseAuthorityError,
+} from "@/lib/careHouseholdResponseAuthority";
 import {
   CARE_PRESERVED_LOCAL_DATA_KEY,
   CARE_PRIMARY_LOCAL_DATA_KEY,
@@ -114,6 +176,21 @@ interface CarePersistenceSnapshot {
   raw: string;
   writeGeneration: number;
   eraseGeneration: number;
+}
+
+interface PersistedCareIdentitySnapshot {
+  doc: CareDoc;
+  entries: Entry[];
+  serverVersion: number;
+}
+
+interface CareCleanupLedgerPersistence {
+  raw: string | null;
+}
+
+interface AuthorizedCareEntryMutation {
+  authPermit: CareAuthIdentityPermit;
+  writeGeneration: number;
 }
 
 export interface WeightInfo {
@@ -266,10 +343,14 @@ type CareEntryPendingSyncPatch = {
 
 export interface Entry extends CareEntryMutableFields {
   id: string;
+  /** Authenticated creator authority returned by the server. */
+  caregiverUserId?: string;
   syncStatus?: EntrySyncStatus;
   syncError?: string;
   pendingSyncPatch?: CareEntryPendingSyncPatch;
 }
+
+const EMPTY_IDENTITY_SCOPED_ENTRIES: Entry[] = [];
 
 export interface DietProfile {
   primaryFood: string;
@@ -451,6 +532,7 @@ function toEntry(c: ApiCareEntry): Entry {
     type: c.type,
     title: typeof d.title === "string" ? d.title : "",
     caregiver: c.caregiverName ?? "",
+    caregiverUserId: c.caregiverUserId ?? undefined,
     occurredAt: c.occurredAt,
     durationMinutes:
       typeof d.durationMinutes === "number" ? d.durationMinutes : undefined,
@@ -495,6 +577,7 @@ function toCareEntryMutablePatch(
   patch: Partial<Omit<Entry, "id">>,
 ): Partial<CareEntryMutableFields> {
   const {
+    caregiverUserId: _caregiverUserId,
     syncStatus: _syncStatus,
     syncError: _syncError,
     pendingSyncPatch: _pendingSyncPatch,
@@ -631,6 +714,12 @@ function isNotFound(err: unknown): boolean {
   );
 }
 
+function expectedHouseholdHeaders(householdId: string) {
+  return {
+    "X-WoofWatcher-Expected-Household-Id": householdId,
+  } as const;
+}
+
 interface CareContextValue {
   state: CareState;
   careMutationsBlocked: boolean;
@@ -643,6 +732,35 @@ interface CareContextValue {
   syncOutbox: CareSyncOutbox;
   isLoaded: boolean;
   isSyncing: boolean;
+  isInitialSyncSettled: boolean;
+  initialSyncStatus: CareInitialSyncStatus;
+  retryInitialSync: () => void;
+  retryLocalHydration: () => void;
+  /** Exact local/remote identity scope used to synchronously shield consumers. */
+  identityScopeKey: string | null;
+  identityScopeStatus: CareIdentityScopeStatus;
+  retryIdentityScope: () => void;
+  restartIdentityScope: () => void;
+  rediscoverIdentityScopeFromMembershipList: (
+    permit: CareAuthIdentityPermit,
+  ) => boolean;
+  confirmHouseholdMembershipListHealthy: (
+    permit: CareAuthIdentityPermit,
+  ) => boolean;
+  captureCareHouseholdOperationPermit: () => CareAuthIdentityPermit | null;
+  isCareHouseholdOperationPermitCurrent: (
+    permit: CareAuthIdentityPermit,
+  ) => boolean;
+  beginCareHouseholdTransition: (
+    permit: CareAuthIdentityPermit,
+  ) => CareHouseholdTransitionToken | null;
+  resumeCareHouseholdTransition: (
+    token: CareHouseholdTransitionToken,
+  ) => boolean;
+  householdOperationController: HouseholdOperationController;
+  householdOperationSnapshot: HouseholdOperationSnapshot;
+  captureCareOperationPermit: () => CareMutationOriginPermit | null;
+  isCareOperationPermitCurrent: (permit: CareMutationOriginPermit) => boolean;
   /**
    * Local-storage health. Local-first means a failing device store IS a data
    * risk, so it must be visible ("sync failures visible" applies doubly to
@@ -662,10 +780,21 @@ interface CareContextValue {
   legacyImport: LegacyImportResult["summary"] | null;
 }
 
+export interface CareIdentityScopeStatus {
+  state: "local" | "pending" | "resolved" | "error";
+  retryable: boolean;
+  message: string | null;
+}
+
 const CareContext = createContext<CareContextValue | null>(null);
 
 export function CareProvider({ children }: { children: React.ReactNode }) {
-  const { isSignedIn, isLoaded: clerkLoaded } = useWoofAuth();
+  const {
+    isSignedIn,
+    isLoaded: clerkLoaded,
+    userId,
+    sessionId,
+  } = useWoofAuth();
   const queryClient = useQueryClient();
   const {
     attachRequiredParticipant,
@@ -678,7 +807,17 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [serverVersion, setServerVersion] = useState(0);
   const [hydrated, setHydrated] = useState(false);
+  const [localHydrationRetryEpoch, setLocalHydrationRetryEpoch] = useState(0);
+  const [localHydrationFailure, setLocalHydrationFailure] = useState<{
+    dataScope: string;
+    generation: number;
+  } | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [, setInitialSyncReadinessRevision] = useState(0);
+  const [authSyncRetryEpoch, setAuthSyncRetryEpoch] = useState(0);
+  const [householdResolutionRetryEpoch, setHouseholdResolutionRetryEpoch] =
+    useState(0);
+  const [householdForegroundEpoch, setHouseholdForegroundEpoch] = useState(0);
   const [storageWarning, setStorageWarning] = useState<CareStorageWarning>(null);
   const [legacyImport, setLegacyImport] = useState<
     LegacyImportResult["summary"] | null
@@ -686,11 +825,120 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   // Refs mirror state so async callbacks read fresh values without re-binding.
   const docRef = useRef(doc);
+  const docRevisionRef = useRef(0);
   const entriesRef = useRef(entries);
   const versionRef = useRef(serverVersion);
+  const hiddenIdentityDocRef = useRef<CareDoc>(getDefaultDoc());
   const signedInRef = useRef(false);
   const syncingRef = useRef(false);
   const hydratedRef = useRef(false);
+  const hydrationAttemptGenerationRef = useRef(0);
+  const activeDataScopeRef = useRef<string | null>(null);
+  const careIdentityVaultRef = useRef<CareIdentityVault>(
+    createCareIdentityVault(),
+  );
+  const cleanupLedgerRawRef = useRef<string | null>(null);
+  const pendingScopeTransitionSnapshotRef = useRef<{
+    dataScope: string;
+    snapshot: PersistedCareIdentitySnapshot;
+  } | null>(null);
+  const authIdentityBoundaryRef = useRef(
+    createCareAuthIdentityBoundary(),
+  );
+  const authIdentityBoundary = authIdentityBoundaryRef.current;
+  const householdIdentityResolutionRef = useRef(
+    createCareHouseholdIdentityResolution(),
+  );
+  const householdIdentityResolution = householdIdentityResolutionRef.current;
+  const householdExpiryRevocationRef = useRef(
+    createCareHouseholdExpiryRevocation(),
+  );
+  const householdExpiryRevocation = householdExpiryRevocationRef.current;
+  const householdForegroundRef = useRef(AppState.currentState === "active");
+  const temporaryHouseholdForegroundGuardRef = useRef<{
+    identityKey: string | null;
+    hasTemporaryAccess: boolean;
+  }>({ identityKey: null, hasTemporaryAccess: false });
+  const householdMembershipRediscoveryRef = useRef(
+    createHouseholdMembershipRediscoveryController(),
+  );
+  const householdMembershipRediscovery =
+    householdMembershipRediscoveryRef.current;
+  const householdTransitionControllerRef = useRef(
+    createCareHouseholdTransitionController(),
+  );
+  const householdTransitionController =
+    householdTransitionControllerRef.current;
+  const householdOperationControllerRef = useRef(
+    createHouseholdOperationController(),
+  );
+  const householdOperationController = householdOperationControllerRef.current;
+  const [householdOperationSnapshot, setHouseholdOperationSnapshot] =
+    useState<HouseholdOperationSnapshot>(() =>
+      householdOperationController.getSnapshot(),
+    );
+  useEffect(
+    () =>
+      householdOperationController.subscribe(() => {
+        setHouseholdOperationSnapshot(
+          householdOperationController.getSnapshot(),
+        );
+      }),
+    [householdOperationController],
+  );
+  const householdIdentitySnapshot = householdIdentityResolution.observeAuth({
+    clerkLoaded,
+    isSignedIn: !!isSignedIn,
+    userId,
+    sessionId,
+  });
+  const normalizedUserId = householdIdentitySnapshot.userId;
+  const normalizedSessionId = householdIdentitySnapshot.sessionId;
+  const resolvedHouseholdId = householdIdentitySnapshot.householdId;
+  if (
+    temporaryHouseholdForegroundGuardRef.current.identityKey !==
+    householdIdentitySnapshot.identityKey
+  ) {
+    temporaryHouseholdForegroundGuardRef.current = {
+      identityKey: householdIdentitySnapshot.identityKey,
+      hasTemporaryAccess: false,
+    };
+  }
+  const authIdentity = authIdentityBoundary.observe({
+    clerkLoaded,
+    isSignedIn: !!isSignedIn,
+    userId: normalizedUserId,
+    sessionId: normalizedSessionId,
+    householdId: resolvedHouseholdId,
+  });
+  const currentClerkIdentityInputRef = useRef({
+    clerkLoaded,
+    isSignedIn: !!isSignedIn,
+    userId: normalizedUserId,
+    sessionId: normalizedSessionId,
+  });
+  currentClerkIdentityInputRef.current = {
+    clerkLoaded,
+    isSignedIn: !!isSignedIn,
+    userId: normalizedUserId,
+    sessionId: normalizedSessionId,
+  };
+  signedInRef.current = authIdentity.phase === "signed-in";
+  const initialSyncReadinessRef =
+    useRef<ReturnType<typeof createCareInitialSyncReadiness> | null>(null);
+  if (!initialSyncReadinessRef.current) {
+    initialSyncReadinessRef.current = createCareInitialSyncReadiness();
+  }
+  const initialSyncReadiness = initialSyncReadinessRef.current;
+  initialSyncReadiness.observeAuth({
+    clerkLoaded,
+    isSignedIn: !!isSignedIn,
+    identityKey:
+      authIdentity.identityKey ??
+      (normalizedUserId && normalizedSessionId
+        ? JSON.stringify([normalizedUserId, normalizedSessionId, null])
+        : null),
+  });
   const careHydrationAttemptAuthorityRef =
     useRef<CareHydrationAttemptAuthority | null>(null);
   if (!careHydrationAttemptAuthorityRef.current) {
@@ -723,24 +971,26 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const careDocWritesBlocked = useCallback(
     (): boolean =>
+      !authIdentityBoundary.canDisplay(activeDataScopeRef.current) ||
       !careWriteAdmissionIsOpen({
-        hydrated: hydratedRef.current,
-        ownerWipeInProgress: ownerWipeInProgressRef.current,
-        localDataAdmissionOpen: isWriteAdmissionOpen(),
-        versionProtectionBlocked: careWriteProtectionRef.current.isBlocked(),
-      }),
-    [isWriteAdmissionOpen],
+          hydrated: hydratedRef.current,
+          ownerWipeInProgress: ownerWipeInProgressRef.current,
+          localDataAdmissionOpen: isWriteAdmissionOpen(),
+          versionProtectionBlocked: careWriteProtectionRef.current.isBlocked(),
+        }),
+    [authIdentityBoundary, isWriteAdmissionOpen],
   );
   const careWriteCanContinue = useCallback(
     (generation: number): boolean =>
+      authIdentityBoundary.canDisplay(activeDataScopeRef.current) &&
       careWriteAdmissionIsOpen({
-        hydrated: hydratedRef.current,
-        ownerWipeInProgress: ownerWipeInProgressRef.current,
-        localDataAdmissionOpen: isWriteAdmissionOpen(),
-        versionProtectionBlocked: careWriteProtectionRef.current.isBlocked(),
-      }) &&
+          hydrated: hydratedRef.current,
+          ownerWipeInProgress: ownerWipeInProgressRef.current,
+          localDataAdmissionOpen: isWriteAdmissionOpen(),
+          versionProtectionBlocked: careWriteProtectionRef.current.isBlocked(),
+        }) &&
       careWriteProtectionRef.current.canContinue(generation),
-    [isWriteAdmissionOpen],
+    [authIdentityBoundary, isWriteAdmissionOpen],
   );
   // Maps optimistic temp ids to their server ids, and queues patches that
   // arrive before a create resolves (post-log quick-note race).
@@ -748,13 +998,14 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const pendingPatch = useRef<Map<string, Partial<Omit<Entry, "id">>>>(new Map());
   const cancelledTempEntries = useRef<Set<string>>(new Set());
   const creatingTempEntries = useRef<Set<string>>(new Set());
+  const createAttemptTokenByTemp = useRef<Map<string, object>>(new Map());
   // A cancelled create is hidden until its newly-created server row is
   // successfully removed. This prevents a transient DELETE failure from
   // reviving a care moment on the next refresh in the same session.
   const discardedServerEntryIdsRef = useRef<Set<string>>(new Set());
   const recentlyDiscardedServerEntryIdsRef = useRef<Set<string>>(new Set());
   const discardedServerEntryWriterRef =
-    useRef<SerializedCareSyncWriter<string[] | null> | null>(null);
+    useRef<SerializedCareSyncWriter<CareCleanupLedgerPersistence> | null>(null);
   const carePersistenceWriterRef =
     useRef<CarePersistenceWriter<CarePersistenceSnapshot> | null>(null);
   const latestCareSnapshotRef = useRef(0);
@@ -772,6 +1023,14 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const entryUpdateQueueRef =
     useRef<SerializedCareEntryMutationQueue<Entry> | null>(null);
   const entryWriteGenerationRef = useRef<Map<string, number>>(new Map());
+  const entryAuthPermitRef = useRef<Map<string, CareAuthIdentityPermit>>(new Map());
+  const authorizedEntryMutationRef = useRef<
+    WeakMap<Entry, AuthorizedCareEntryMutation>
+  >(new WeakMap());
+  const syncOperationIdRef = useRef(0);
+  const initialSyncRetryTimerRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null);
+  const observedAuthGenerationRef = useRef(authIdentity.generation);
   // Bumped by the coordinated Care owner so in-flight sync results cannot
   // resurrect data the owner just deleted from this device.
   const eraseGenerationRef = useRef(0);
@@ -794,17 +1053,24 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const persistCurrentCareSnapshot = useCallback(async (): Promise<boolean> => {
     if (!hydratedRef.current || careDocWritesBlocked()) return false;
+    const dataScope = activeDataScopeRef.current;
+    if (!dataScope || !authIdentityBoundary.canDisplay(dataScope)) return false;
     const writeGeneration = careWriteProtectionRef.current.capture();
     const eraseGeneration = eraseGenerationRef.current;
     const snapshot = latestCareSnapshotRef.current + 1;
     latestCareSnapshotRef.current = snapshot;
+    writeCareIdentitySlot<PersistedCareIdentitySnapshot>(
+      careIdentityVaultRef.current,
+      dataScope,
+      {
+        doc: docRef.current,
+        entries: entriesRef.current,
+        serverVersion: versionRef.current,
+      },
+    );
     try {
       await carePersistenceWriter.enqueue({
-        raw: JSON.stringify({
-          doc: docRef.current,
-          entries: entriesRef.current,
-          serverVersion: versionRef.current,
-        }),
+        raw: serializeCareIdentityVault(careIdentityVaultRef.current),
         writeGeneration,
         eraseGeneration,
       });
@@ -834,6 +1100,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     }
     return true;
   }, [
+    authIdentityBoundary,
     careDocWritesBlocked,
     carePersistenceWriter,
     careWriteCanContinue,
@@ -842,11 +1109,11 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   if (!discardedServerEntryWriterRef.current) {
     discardedServerEntryWriterRef.current =
-      createSerializedCareSyncWriter<string[] | null>(async (entryIds) => {
-        if (entryIds && entryIds.length > 0) {
+      createSerializedCareSyncWriter<CareCleanupLedgerPersistence>(async ({ raw }) => {
+        if (raw) {
           await removableStorage.setItem(
             CARE_PRESERVED_LOCAL_DATA_KEY,
-            JSON.stringify(entryIds),
+            raw,
           );
           return;
         }
@@ -857,57 +1124,116 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     discardedServerEntryWriterRef.current;
 
   const markServerEntryDiscarded = useCallback(
-    async (entryId: string) => {
+    async (entryId: string, dataScope = activeDataScopeRef.current) => {
+      if (!dataScope) {
+        throw new Error("A Care identity scope is required for cleanup.");
+      }
       const next = addDiscardedServerEntryId(
         [...discardedServerEntryIdsRef.current],
         entryId,
       );
       discardedServerEntryIdsRef.current = new Set(next);
       recentlyDiscardedServerEntryIdsRef.current.add(entryId);
+      const raw = replaceCareCleanupLedgerScope(
+        cleanupLedgerRawRef.current,
+        dataScope,
+        next,
+      );
+      cleanupLedgerRawRef.current = raw;
       try {
-        await discardedServerEntryWriter.enqueue(next);
+        await discardedServerEntryWriter.enqueue({ raw });
       } catch {
-        setCareStorageWarning("save-failed");
+        if (
+          activeDataScopeRef.current === dataScope &&
+          authIdentityBoundary.canDisplay(dataScope)
+        ) {
+          setCareStorageWarning("save-failed");
+        }
         throw new Error("Could not persist cancelled care-entry cleanup.");
       }
     },
-    [discardedServerEntryWriter, setCareStorageWarning],
+    [
+      authIdentityBoundary,
+      discardedServerEntryWriter,
+      setCareStorageWarning,
+    ],
   );
 
   const clearDiscardedServerEntry = useCallback(
-    async (entryId: string) => {
+    async (entryId: string, dataScope = activeDataScopeRef.current) => {
+      if (!dataScope) return false;
       const next = removeDiscardedServerEntryId(
         [...discardedServerEntryIdsRef.current],
         entryId,
       );
       discardedServerEntryIdsRef.current = new Set(next);
+      const raw = replaceCareCleanupLedgerScope(
+        cleanupLedgerRawRef.current,
+        dataScope,
+        next,
+      );
+      cleanupLedgerRawRef.current = raw;
       try {
-        await discardedServerEntryWriter.enqueue(
-          next.length > 0 ? next : null,
-        );
+        await discardedServerEntryWriter.enqueue({ raw });
+        return true;
       } catch {
+        if (
+          activeDataScopeRef.current !== dataScope ||
+          !authIdentityBoundary.canDisplay(dataScope)
+        ) {
+          return false;
+        }
+        const retained = addDiscardedServerEntryId(
+          [...discardedServerEntryIdsRef.current],
+          entryId,
+        );
+        discardedServerEntryIdsRef.current = new Set(retained);
+        cleanupLedgerRawRef.current = replaceCareCleanupLedgerScope(
+          cleanupLedgerRawRef.current,
+          dataScope,
+          retained,
+        );
+        recentlyDiscardedServerEntryIdsRef.current.add(entryId);
         setCareStorageWarning("save-failed");
+        return false;
       }
     },
-    [discardedServerEntryWriter, setCareStorageWarning],
+    [
+      authIdentityBoundary,
+      discardedServerEntryWriter,
+      setCareStorageWarning,
+    ],
   );
 
   if (!entryUpdateQueueRef.current) {
     entryUpdateQueueRef.current =
       createSerializedCareEntryMutationQueue<Entry, ApiCareEntry>({
         mutate: async (entryId, entry, signal) => {
-          const writeGeneration = entryWriteGenerationRef.current.get(entryId);
+          const authorization = authorizedEntryMutationRef.current.get(entry);
+          const writeGeneration = authorization?.writeGeneration;
+          const authPermit = authorization?.authPermit;
           const canContinue = () =>
             writeGeneration !== undefined &&
+            authPermit !== undefined &&
+            authIdentityBoundary.canContinue(authPermit) &&
+            activeDataScopeRef.current === authPermit.dataScope &&
             careWriteCanContinue(writeGeneration);
-          if (!canContinue()) {
+          if (
+            writeGeneration === undefined ||
+            !authPermit ||
+            !canContinue()
+          ) {
             throw new Error("Care writes are blocked by a newer data version.");
           }
           try {
-            const updated = await updateCareEntry(
-              entryId,
-              toUpdateInput(entry),
-              { signal },
+            const updated = await runHouseholdBoundRequest(
+              authPermit,
+              () => updateCareEntry(
+                entryId,
+                toUpdateInput(entry),
+                expectedHouseholdHeaders(authPermit.householdId),
+                { signal },
+              ),
             );
             if (!canContinue()) {
               throw new Error("Care writes are blocked by a newer data version.");
@@ -926,9 +1252,14 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
                   entryId,
                 );
                 if (conflictEntry) return conflictEntry;
-                const rows = await listCareEntries(undefined, {
-                  signal,
-                });
+                const rows = await runHouseholdBoundRequest(
+                  authPermit,
+                  () => listCareEntries(
+                    expectedHouseholdHeaders(authPermit.householdId),
+                    undefined,
+                    { signal },
+                  ),
+                );
                 if (!canContinue()) throw error;
                 const currentServerEntry = rows.find(
                   (row) => row.id === entryId,
@@ -940,22 +1271,33 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
               rebase: rebasePendingCareEntryAfterConflict,
               mutate: (rebasedEntry) => {
                 if (!canContinue()) throw error;
-                return updateCareEntry(
-                  entryId,
-                  toUpdateInput(rebasedEntry),
-                  { signal },
+                return runHouseholdBoundRequest(
+                  authPermit,
+                  () => updateCareEntry(
+                    entryId,
+                    toUpdateInput(rebasedEntry),
+                    expectedHouseholdHeaders(authPermit.householdId),
+                    { signal },
+                  ),
                 );
               },
             });
           }
         },
         onSuccess: (entryId, localEntry, updated) => {
-          const writeGeneration = entryWriteGenerationRef.current.get(entryId);
+          const authorization =
+            authorizedEntryMutationRef.current.get(localEntry);
+          const writeGeneration = authorization?.writeGeneration;
+          const authPermit = authorization?.authPermit;
           if (
             writeGeneration === undefined ||
+            authPermit === undefined ||
+            !authIdentityBoundary.canContinue(authPermit) ||
+            activeDataScopeRef.current !== authPermit.dataScope ||
             !careWriteCanContinue(writeGeneration)
           ) return;
           entryWriteGenerationRef.current.delete(entryId);
+          entryAuthPermitRef.current.delete(entryId);
           const synced = {
             ...adoptServerEntry(localEntry, toEntry(updated)),
             pendingSyncPatch: undefined,
@@ -969,16 +1311,90 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             ),
           );
           queryClient.invalidateQueries({
-            queryKey: getListCareEntriesQueryKey(),
+            queryKey: getListCareEntriesHouseholdQueryKey(
+              expectedHouseholdHeaders(authPermit.householdId),
+            ),
           });
         },
-        onFailure: (entryId, localEntry, error) => {
-          const writeGeneration = entryWriteGenerationRef.current.get(entryId);
+        onFailure: async (entryId, localEntry, error) => {
+          const authorization =
+            authorizedEntryMutationRef.current.get(localEntry);
+          const writeGeneration = authorization?.writeGeneration;
+          const authPermit = authorization?.authPermit;
           if (
             writeGeneration === undefined ||
+            authPermit === undefined ||
+            !authIdentityBoundary.canContinue(authPermit) ||
+            activeDataScopeRef.current !== authPermit.dataScope ||
             !careWriteCanContinue(writeGeneration)
           ) return;
+          const revocation = await applyExactCareEntryNotFoundRevocation({
+            entryId,
+            submittedEntry: localEntry,
+            error,
+            isNotFoundError: isCareEntryMutationNotFound,
+            canContinue: () =>
+              authIdentityBoundary.canContinue(authPermit) &&
+              activeDataScopeRef.current === authPermit.dataScope &&
+              careWriteCanContinue(writeGeneration),
+            readEntries: () => entriesRef.current,
+            cancelMutation(revokedId) {
+              entryUpdateQueueRef.current?.cancel(revokedId);
+            },
+            clearMutationAuthority(revokedId, revokedEntry) {
+              entryWriteGenerationRef.current.delete(revokedId);
+              entryAuthPermitRef.current.delete(revokedId);
+              authorizedEntryMutationRef.current.delete(localEntry);
+              authorizedEntryMutationRef.current.delete(revokedEntry);
+              pendingPatch.current.delete(revokedId);
+              for (const [tempId, realId] of realIdByTemp.current) {
+                if (realId !== revokedId) continue;
+                realIdByTemp.current.delete(tempId);
+                pendingPatch.current.delete(tempId);
+              }
+            },
+            replaceActiveSlot(retained, revokedEntry) {
+              careIdentityVaultRef.current.quarantine.push({
+                reason:
+                  "A Care entry became private or was deleted before this device's pending edit completed.",
+                snapshot: {
+                  dataScope: authPermit.dataScope,
+                  entry: revokedEntry,
+                },
+              });
+              entriesRef.current = retained;
+              writeCareIdentitySlot<PersistedCareIdentitySnapshot>(
+                careIdentityVaultRef.current,
+                authPermit.dataScope,
+                {
+                  doc: docRef.current,
+                  entries: retained,
+                  serverVersion: versionRef.current,
+                },
+              );
+            },
+            publishEntries(retained) {
+              setEntries(retained);
+            },
+            async persistActiveSlot() {
+              return persistCareEntryRevocationSuppression({
+                persistCleanupLedger: async () => {
+                  await markServerEntryDiscarded(
+                    entryId,
+                    authPermit.dataScope,
+                  );
+                  return true;
+                },
+                persistIdentitySlot: persistCurrentCareSnapshot,
+              });
+            },
+            onPersistenceFailure() {
+              setCareStorageWarning("save-failed");
+            },
+          });
+          if (revocation.status !== "not-revoked") return;
           entryWriteGenerationRef.current.delete(entryId);
+          entryAuthPermitRef.current.delete(entryId);
           const retryBase =
             error instanceof CareEntryConflictRetryError
               ? error.rebasedInput
@@ -1000,6 +1416,272 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       });
   }
   const entryUpdateQueue = entryUpdateQueueRef.current;
+
+  useEffect(() => {
+    if (AppState.currentState !== "active") return;
+    if (!householdTransitionController.canResolveHousehold()) return;
+    const firstAttempt = householdIdentityResolution.captureAttempt();
+    if (!firstAttempt) return;
+    let cancelled = false;
+    let controller: AbortController | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const runAttempt = async (
+      attempt: CareHouseholdIdentityResolutionAttempt,
+    ) => {
+      if (cancelled || !householdIdentityResolution.canContinue(attempt)) {
+        return;
+      }
+      controller = new AbortController();
+      let settlement;
+      try {
+        const me = await getMe({
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        if (cancelled || !householdIdentityResolution.canContinue(attempt)) {
+          return;
+        }
+        settlement = householdIdentityResolution.settleFreshMe(attempt, me);
+        if (settlement.householdId) {
+          temporaryHouseholdForegroundGuardRef.current = {
+            identityKey: attempt.identityKey,
+            hasTemporaryAccess:
+              householdIdentityResolution.hasActiveTemporaryAccess(),
+          };
+        }
+      } catch (error) {
+        if (cancelled || controller.signal.aborted) return;
+        settlement = householdIdentityResolution.settleFailure(attempt, error);
+      }
+      if (!settlement.accepted || cancelled) return;
+      if (settlement.retry && typeof settlement.retryDelayMs === "number") {
+        retryTimer = setTimeout(() => {
+          retryTimer = null;
+          if (cancelled) return;
+          const retryAttempt = householdIdentityResolution.captureRetry(
+            settlement.retry!,
+          );
+          if (retryAttempt) void runAttempt(retryAttempt);
+        }, settlement.retryDelayMs);
+        return;
+      }
+      // Resolved and terminal-error snapshots both need one React turn so the
+      // auth boundary/AppFrame shield can publish the exact new state.
+      setHouseholdResolutionRetryEpoch((epoch) => epoch + 1);
+    };
+
+    void runAttempt(firstAttempt);
+
+    return () => {
+      cancelled = true;
+      controller?.abort();
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+  }, [
+    householdIdentityResolution,
+    householdIdentitySnapshot.generation,
+    householdForegroundEpoch,
+    householdResolutionRetryEpoch,
+    householdTransitionController,
+  ]);
+
+  const revokeHouseholdAuthority = useCallback(() => {
+    const currentClerkIdentity = currentClerkIdentityInputRef.current;
+    authIdentityBoundary.observe({
+      ...currentClerkIdentity,
+      householdId: null,
+    });
+    householdIdentityResolution.restartResolution();
+    setHouseholdResolutionRetryEpoch((epoch) => epoch + 1);
+  }, [authIdentityBoundary, householdIdentityResolution]);
+
+  const rejectHouseholdAuthority = useCallback(() => {
+    const currentClerkIdentity = currentClerkIdentityInputRef.current;
+    authIdentityBoundary.observe({
+      ...currentClerkIdentity,
+      householdId: null,
+    });
+    householdIdentityResolution.rejectAuthority();
+    setHouseholdResolutionRetryEpoch((epoch) => epoch + 1);
+  }, [authIdentityBoundary, householdIdentityResolution]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener(
+      "change",
+      (nextState) => {
+        const wasForeground = householdForegroundRef.current;
+        const nextIsForeground = nextState === "active";
+        householdForegroundRef.current = nextIsForeground;
+
+        if (!nextIsForeground) {
+          const currentResolution = householdIdentityResolution.snapshot();
+          const householdAuthorityPending =
+            currentResolution.state === "pending" &&
+            currentResolution.pendingFor === "household";
+          if (
+            wasForeground &&
+            (temporaryHouseholdForegroundGuardRef.current.hasTemporaryAccess ||
+              householdAuthorityPending)
+          ) {
+            revokeHouseholdAuthority();
+          }
+          return;
+        }
+
+        if (!wasForeground) {
+          setHouseholdForegroundEpoch((epoch) => epoch + 1);
+        }
+      },
+    );
+    return () => subscription.remove();
+  }, [householdIdentityResolution, revokeHouseholdAuthority]);
+
+  useLayoutEffect(() => {
+    if (householdIdentitySnapshot.state !== "resolved") {
+      householdExpiryRevocation.cancel();
+      return;
+    }
+    householdExpiryRevocation.arm(
+      householdIdentityResolution.activeAccessLease(),
+      revokeHouseholdAuthority,
+    );
+    return () => householdExpiryRevocation.cancel();
+  }, [
+    householdExpiryRevocation,
+    householdIdentityResolution,
+    householdIdentitySnapshot.generation,
+    householdIdentitySnapshot.state,
+    revokeHouseholdAuthority,
+  ]);
+
+  const rediscoverIdentityScopeFromMembershipList = useCallback(
+    (permit: CareAuthIdentityPermit): boolean => {
+      if (!authIdentityBoundary.canContinue(permit)) return false;
+      if (householdMembershipRediscovery.request(permit)) {
+        revokeHouseholdAuthority();
+      } else {
+        // A persistent contradiction must not spin or restore A. Revoke the
+        // exact permit synchronously and leave the root shield actionable.
+        rejectHouseholdAuthority();
+      }
+      return true;
+    }, [
+      authIdentityBoundary,
+      householdMembershipRediscovery,
+      rejectHouseholdAuthority,
+      revokeHouseholdAuthority,
+    ],
+  );
+  const confirmHouseholdMembershipListHealthy = useCallback(
+    (permit: CareAuthIdentityPermit): boolean => {
+      if (!authIdentityBoundary.canContinue(permit)) return false;
+      householdMembershipRediscovery.confirmHealthy(permit);
+      return true;
+    }, [authIdentityBoundary, householdMembershipRediscovery],
+  );
+
+  const captureCareHouseholdOperationPermit = useCallback(
+    () => authIdentityBoundary.captureSignedIn(),
+    [authIdentityBoundary],
+  );
+  const isCareHouseholdOperationPermitCurrent = useCallback(
+    (permit: CareAuthIdentityPermit) =>
+      authIdentityBoundary.canContinue(permit),
+    [authIdentityBoundary],
+  );
+  const beginCareHouseholdTransition = useCallback(
+    (permit: CareAuthIdentityPermit): CareHouseholdTransitionToken | null => {
+      if (!authIdentityBoundary.canContinue(permit)) return null;
+      const token = householdTransitionController.begin(permit);
+      if (!token) return null;
+
+      // Revoke A in this JavaScript turn. The controller is already suspended,
+      // so the fresh /api/me resolver cannot start until the exact token is
+      // resumed after the Join transport settles.
+      const currentClerkIdentity = currentClerkIdentityInputRef.current;
+      authIdentityBoundary.observe({
+        ...currentClerkIdentity,
+        householdId: null,
+      });
+      if (!householdIdentityResolution.restartResolution()) {
+        householdTransitionController.resume(token);
+        return null;
+      }
+      setHouseholdResolutionRetryEpoch((epoch) => epoch + 1);
+      return token;
+    }, [
+      authIdentityBoundary,
+      householdIdentityResolution,
+      householdTransitionController,
+    ],
+  );
+  const resumeCareHouseholdTransition = useCallback(
+    (token: CareHouseholdTransitionToken): boolean => {
+      if (!householdTransitionController.resume(token)) return false;
+      // Always begin a fresh authority read after an exact or ambiguous Join
+      // settlement. Neither the Join response nor the previous A permit is
+      // allowed to guess whether server truth is now A, B, or C.
+      householdIdentityResolution.restartResolution();
+      setHouseholdResolutionRetryEpoch((epoch) => epoch + 1);
+      return true;
+    }, [householdIdentityResolution, householdTransitionController],
+  );
+
+  const runHouseholdBoundRequest = useCallback(
+    async <T,>(
+      permit: CareAuthIdentityPermit,
+      request: () => Promise<T>,
+      options: { allowVoid?: boolean } = {},
+    ): Promise<T> => {
+      if (!authIdentityBoundary.canContinue(permit)) {
+        throw new Error("The Care identity changed before the request began.");
+      }
+      try {
+        const result = await request();
+        if (!authIdentityBoundary.canContinue(permit)) {
+          throw new Error("The Care identity changed while the request was active.");
+        }
+        assertCareHouseholdSuccessAuthority(
+          result,
+          permit.householdId,
+          options,
+        );
+        return result;
+      } catch (error) {
+        // A rejection may arrive after Clerk/session/household authority has
+        // already admitted a replacement identity. Old-A transport evidence
+        // is not allowed to revoke or otherwise disturb current B authority.
+        if (!authIdentityBoundary.canContinue(permit)) {
+          throw error;
+        }
+        try {
+          assertCareHouseholdConflictAuthority(error, permit.householdId);
+        } catch (authorityError) {
+          if (authIdentityBoundary.canContinue(permit)) {
+            revokeHouseholdAuthority();
+          }
+          throw authorityError;
+        }
+        const status =
+          error && typeof error === "object"
+            ? (error as { status?: unknown }).status
+            : null;
+        if (
+          status === 412 ||
+          status === 428 ||
+          isCareHouseholdResponseAuthorityError(error)
+        ) {
+          if (authIdentityBoundary.canContinue(permit)) {
+            revokeHouseholdAuthority();
+          }
+        }
+        throw error;
+      }
+    },
+    [authIdentityBoundary, revokeHouseholdAuthority],
+  );
+
   useEffect(() => {
     docRef.current = doc;
   }, [doc]);
@@ -1009,10 +1691,81 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     versionRef.current = serverVersion;
   }, [serverVersion]);
-  // Event handlers can run in the first frame after an auth flip, before
-  // effects flush. Mirror this render input synchronously so an offline edit
-  // never queues a provider write or accepts an older in-flight result.
-  signedInRef.current = !!isSignedIn;
+  useEffect(() => {
+    if (observedAuthGenerationRef.current === authIdentity.generation) return;
+    observedAuthGenerationRef.current = authIdentity.generation;
+    syncOperationIdRef.current += 1;
+    syncingRef.current = false;
+    setIsSyncing(false);
+    entryUpdateQueue.cancelAll();
+    entryWriteGenerationRef.current.clear();
+    entryAuthPermitRef.current.clear();
+    authorizedEntryMutationRef.current = new WeakMap();
+    realIdByTemp.current.clear();
+    pendingPatch.current.clear();
+    cancelledTempEntries.current.clear();
+    creatingTempEntries.current.clear();
+    createAttemptTokenByTemp.current.clear();
+    recentlyDiscardedServerEntryIdsRef.current.clear();
+    const recoveredEntries = recoverInterruptedCareEntryMutations(
+      entriesRef.current,
+    );
+    entriesRef.current = recoveredEntries;
+    setEntries(recoveredEntries);
+    if (initialSyncRetryTimerRef.current) {
+      clearTimeout(initialSyncRetryTimerRef.current);
+      initialSyncRetryTimerRef.current = null;
+    }
+    if (
+      authIdentity.phase === "signed-in" &&
+      authIdentityBoundary.canDisplay(activeDataScopeRef.current)
+    ) {
+      setAuthSyncRetryEpoch((epoch) => epoch + 1);
+    }
+  }, [
+    authIdentity.generation,
+    authIdentity.phase,
+    authIdentityBoundary,
+    entryUpdateQueue,
+  ]);
+  const currentScopeLoaded =
+    hydrated && authIdentityBoundary.canDisplay(activeDataScopeRef.current);
+  const trackedInitialSyncStatus =
+    initialSyncReadiness.getStatus(currentScopeLoaded);
+  const initialSyncStatus: CareInitialSyncStatus =
+    householdIdentitySnapshot.state === "error"
+      ? {
+          state: "error",
+          isSettled: false,
+          retryable: householdIdentitySnapshot.retryable,
+          message: householdIdentitySnapshot.message,
+        }
+      : trackedInitialSyncStatus;
+  const isInitialSyncSettled = initialSyncStatus.isSettled;
+
+  const retryLocalHydration = useCallback(() => {
+    const currentDataScope = authIdentity.dataScope;
+    if (
+      !currentDataScope ||
+      localHydrationFailure?.dataScope !== currentDataScope ||
+      localHydrationFailure.generation !==
+        hydrationAttemptGenerationRef.current ||
+      (hydratedRef.current &&
+        authIdentityBoundary.canDisplay(activeDataScopeRef.current)) ||
+      ownerWipeInProgressRef.current ||
+      !isWriteAdmissionOpen()
+    ) {
+      return;
+    }
+    setLocalHydrationFailure(null);
+    setStorageWarning(null);
+    setLocalHydrationRetryEpoch((epoch) => epoch + 1);
+  }, [
+    authIdentity.dataScope,
+    authIdentityBoundary,
+    isWriteAdmissionOpen,
+    localHydrationFailure,
+  ]);
 
   // Hydrate instantly from the offline cache so the UI never flashes empty.
   // Failure handling is data-safety-critical: `hydrated` gates the persist
@@ -1020,12 +1773,64 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   // completed - otherwise the persist effect overwrites intact stored data
   // with in-memory defaults.
   useEffect(() => {
-    if (hydratedRef.current) return;
+    const dataScope = authIdentity.dataScope;
+    if (!dataScope) return;
+    const signedInUserId =
+      authIdentity.phase === "signed-in" ? authIdentity.userId : null;
+    if (
+      hydratedRef.current &&
+      activeDataScopeRef.current === dataScope
+    ) {
+      return;
+    }
     const hydrationAttempt =
       careHydrationAttemptAuthorityRef.current!.begin(
         isWriteAdmissionOpen(),
       );
     if (!hydrationAttempt) return;
+    const hydrationGeneration = hydrationAttemptGenerationRef.current + 1;
+    hydrationAttemptGenerationRef.current = hydrationGeneration;
+    const previousDataScope = activeDataScopeRef.current;
+    const previousSnapshot =
+      previousDataScope &&
+      hydratedRef.current &&
+      !futureCareDocRef.current
+      ? {
+          doc: docRef.current,
+          entries: entriesRef.current,
+          serverVersion: versionRef.current,
+        }
+      : null;
+    if (previousDataScope && previousSnapshot) {
+      pendingScopeTransitionSnapshotRef.current = {
+        dataScope: previousDataScope,
+        snapshot: previousSnapshot,
+      };
+    }
+
+    // Make the old scope undisplayable before any asynchronous drain or read.
+    // The auth boundary already revoked its provider permits synchronously.
+    activeDataScopeRef.current = null;
+    hydratedRef.current = false;
+    setHydrated(false);
+    syncingRef.current = false;
+    syncOperationIdRef.current += 1;
+    setIsSyncing(false);
+    entryUpdateQueue.cancelAll();
+    entryWriteGenerationRef.current.clear();
+    entryAuthPermitRef.current.clear();
+    authorizedEntryMutationRef.current = new WeakMap();
+    realIdByTemp.current.clear();
+    pendingPatch.current.clear();
+    cancelledTempEntries.current.clear();
+    creatingTempEntries.current.clear();
+    createAttemptTokenByTemp.current.clear();
+    recentlyDiscardedServerEntryIdsRef.current.clear();
+    if (initialSyncRetryTimerRef.current) {
+      clearTimeout(initialSyncRetryTimerRef.current);
+      initialSyncRetryTimerRef.current = null;
+    }
+
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     const hydrationEraseGeneration = eraseGenerationRef.current;
@@ -1033,18 +1838,21 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       !cancelled &&
       hydrationAttempt.isCurrent() &&
       !ownerWipeInProgressRef.current &&
-      eraseGenerationRef.current === hydrationEraseGeneration;
+      eraseGenerationRef.current === hydrationEraseGeneration &&
+      authIdentityBoundary.snapshot().dataScope === dataScope;
     if (!hydrationCanContinue()) return;
 
     interface StagedCareHydration {
-      cachedDoc: CareDoc | null;
-      cachedEntries: Entry[] | null;
-      cachedServerVersion: number | null;
+      cachedDoc: CareDoc;
+      cachedEntries: Entry[];
+      cachedServerVersion: number;
       discardedServerEntryIds: string[];
       futureDoc: object | null;
       futureRaw: string | null;
       legacySummary: LegacyImportResult["summary"] | null;
       warning: CareStorageWarning;
+      vault: CareIdentityVault;
+      cleanupLedgerRaw: string | null;
     }
 
     const persistRecoveryEvidence = async (key: string, raw: string) => {
@@ -1058,6 +1866,31 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     };
 
     const stageCareHydration = async (): Promise<StagedCareHydration> => {
+      // Identity switches share the same physical keys, so both serialized
+      // writers must finish before the next scope reads and edits their vaults.
+      await discardedServerEntryWriter.drain();
+      if (!hydrationCanContinue()) {
+        throw new LocalDataResetInProgressError();
+      }
+      const pendingTransition = pendingScopeTransitionSnapshotRef.current;
+      if (pendingTransition) {
+        writeCareIdentitySlot(
+          careIdentityVaultRef.current,
+          pendingTransition.dataScope,
+          pendingTransition.snapshot,
+        );
+        const previousWriteGeneration =
+          careWriteProtectionRef.current.capture();
+        await carePersistenceWriter.enqueue({
+          raw: serializeCareIdentityVault(careIdentityVaultRef.current),
+          writeGeneration: previousWriteGeneration,
+          eraseGeneration: hydrationEraseGeneration,
+        });
+        if (!hydrationCanContinue()) {
+          throw new LocalDataResetInProgressError();
+        }
+      }
+
       const [raw, discardedRaw] = await Promise.all([
         removableStorage.getItem(CARE_PRIMARY_LOCAL_DATA_KEY),
         removableStorage.getItem(CARE_PRESERVED_LOCAL_DATA_KEY),
@@ -1067,67 +1900,134 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       }
 
       let warning: CareStorageWarning = null;
-      let discardedServerEntryIds: string[] = [];
-      try {
-        discardedServerEntryIds = normalizeDiscardedServerEntryIds(
-          discardedRaw ? JSON.parse(discardedRaw) : [],
-        );
-      } catch {
+      const cleanupLedger = decodeCareCleanupLedger(discardedRaw, dataScope);
+      const discardedServerEntryIds = normalizeDiscardedServerEntryIds(
+        cleanupLedger.entryIds,
+      );
+      if (cleanupLedger.quarantined.length > 0) {
         warning = "reset";
-        if (discardedRaw) {
-          await persistRecoveryEvidence(
-            `${CARE_PRESERVED_LOCAL_DATA_KEY}.recovery`,
-            discardedRaw,
-          );
-        }
+        await persistRecoveryEvidence(
+          `${CARE_PRESERVED_LOCAL_DATA_KEY}.recovery`,
+          discardedRaw ?? JSON.stringify(cleanupLedger.quarantined),
+        );
       }
 
-      let cachedDoc: CareDoc | null = null;
-      let cachedEntries: Entry[] | null = null;
-      let cachedServerVersion: number | null = null;
+      const parsedVault = parseCareIdentityVault(raw, dataScope);
+      const vault = parsedVault.vault;
+      let cachedDoc = getDefaultDoc();
+      let cachedEntries: Entry[] = [];
+      let cachedServerVersion = 0;
       let futureDoc: object | null = null;
       let futureRaw: string | null = null;
-      let primaryIsPristine = !raw;
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw);
-          if (parsed?.doc && isFutureCareDocDataVersion(parsed.doc)) {
-            futureDoc = parsed.doc;
-            futureRaw = raw;
-            primaryIsPristine = false;
-          } else {
-            if (parsed?.doc) cachedDoc = mergeDoc(parsed.doc);
-            if (Array.isArray(parsed?.entries)) {
-              cachedEntries = recoverInterruptedCareEntryMutations(
-                parsed.entries.filter(
-                  (entry: unknown): entry is Entry =>
-                    !!entry && typeof (entry as Entry).id === "string",
-                ),
-              );
-            }
-            if (typeof parsed?.serverVersion === "number") {
-              cachedServerVersion = parsed.serverVersion;
-            }
-            const docUpdatedAt =
-              typeof parsed?.doc?.updatedAt === "string"
-                ? parsed.doc.updatedAt
-                : "";
-            primaryIsPristine =
-              (cachedEntries?.length ?? 0) === 0 &&
-              (!docUpdatedAt || docUpdatedAt === new Date(0).toISOString());
-          }
-        } catch {
-          warning = "reset";
+      let primaryIsPristine = true;
+      if (parsedVault.corruptRaw) {
+        warning = "reset";
+        primaryIsPristine = false;
+        await persistRecoveryEvidence(
+          `${CARE_PRIMARY_LOCAL_DATA_KEY}.recovery`,
+          parsedVault.corruptRaw,
+        );
+      }
+      if (vault.quarantine.length > 0) {
+        warning = "reset";
+      }
+      const selectedSnapshot = readCareIdentitySlot<PersistedCareIdentitySnapshot>(
+        vault,
+        dataScope,
+      );
+      if (selectedSnapshot) {
+        if (isFutureCareDocDataVersion(selectedSnapshot.doc)) {
+          futureDoc = selectedSnapshot.doc;
+          futureRaw = readCareIdentitySlotRaw(vault, dataScope);
           primaryIsPristine = false;
-          await persistRecoveryEvidence(
-            `${CARE_PRIMARY_LOCAL_DATA_KEY}.recovery`,
-            raw,
+        } else {
+          cachedDoc = mergeDoc(selectedSnapshot.doc);
+          const validCachedEntries = selectedSnapshot.entries.filter(
+            (entry: unknown): entry is Entry =>
+              !!entry && typeof (entry as Entry).id === "string",
           );
+          const cachedPrivacy = signedInUserId
+            ? partitionCareEntriesForSignedInUser(
+                validCachedEntries,
+                signedInUserId,
+              )
+            : { retained: validCachedEntries, quarantined: [] as Entry[] };
+          if (cachedPrivacy.quarantined.length > 0) {
+            warning = "reset";
+            vault.quarantine.push({
+              reason:
+                "Private Care entries for another or unknown creator were hidden during signed-in recovery.",
+              snapshot: {
+                dataScope,
+                entries: cachedPrivacy.quarantined,
+              },
+            });
+            writeCareIdentitySlot<PersistedCareIdentitySnapshot>(
+              vault,
+              dataScope,
+              {
+                ...selectedSnapshot,
+                entries: cachedPrivacy.retained,
+              },
+            );
+            const privacyWriteGeneration =
+              careWriteProtectionRef.current.capture();
+            await carePersistenceWriter.enqueue({
+              raw: serializeCareIdentityVault(vault),
+              writeGeneration: privacyWriteGeneration,
+              eraseGeneration: hydrationEraseGeneration,
+            });
+            if (!hydrationCanContinue()) {
+              throw new LocalDataResetInProgressError();
+            }
+          }
+          const cachedDeletion =
+            partitionCachedCareEntriesByDiscardedIdentity(
+              cachedPrivacy.retained,
+              discardedServerEntryIds,
+            );
+          if (cachedDeletion.quarantined.length > 0) {
+            warning = "reset";
+            vault.quarantine.push({
+              reason:
+                "Care entries covered by this identity's durable deletion ledger were hidden before local recovery.",
+              snapshot: {
+                dataScope,
+                entries: cachedDeletion.quarantined,
+              },
+            });
+            writeCareIdentitySlot<PersistedCareIdentitySnapshot>(
+              vault,
+              dataScope,
+              {
+                ...selectedSnapshot,
+                entries: cachedDeletion.retained,
+              },
+            );
+            const deletionWriteGeneration =
+              careWriteProtectionRef.current.capture();
+            await carePersistenceWriter.enqueue({
+              raw: serializeCareIdentityVault(vault),
+              writeGeneration: deletionWriteGeneration,
+              eraseGeneration: hydrationEraseGeneration,
+            });
+            if (!hydrationCanContinue()) {
+              throw new LocalDataResetInProgressError();
+            }
+          }
+          cachedEntries = recoverInterruptedCareEntryMutations(
+            cachedDeletion.retained,
+          );
+          cachedServerVersion = selectedSnapshot.serverVersion;
+          const docUpdatedAt = selectedSnapshot.doc.updatedAt;
+          primaryIsPristine =
+            cachedEntries.length === 0 &&
+            (!docUpdatedAt || docUpdatedAt === new Date(0).toISOString());
         }
       }
 
       let legacySummary: LegacyImportResult["summary"] | null = null;
-      if (primaryIsPristine) {
+      if (primaryIsPristine && dataScope === "local") {
         try {
           const [flag, legacyRaw] = await Promise.all([
             removableStorage.getItem(LEGACY_IMPORT_FLAG_KEY),
@@ -1139,7 +2039,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           if (!flag && legacyRaw) {
             const result = convertLegacyState(parseLegacyState(legacyRaw));
             if (result) {
-              const previous = cachedDoc ?? docRef.current;
+              const previous = cachedDoc;
               const importedDoc = Object.keys(result.docPatch).length
                 ? mergeDoc({
                     ...previous,
@@ -1164,18 +2064,22 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
                   })
                 : previous;
               const importedEntries = [
-                ...(cachedEntries ?? entriesRef.current),
+                ...cachedEntries,
                 ...result.entries,
               ];
+              writeCareIdentitySlot<PersistedCareIdentitySnapshot>(
+                vault,
+                dataScope,
+                {
+                  doc: importedDoc,
+                  entries: importedEntries,
+                  serverVersion: cachedServerVersion,
+                },
+              );
               const writeGeneration =
                 careWriteProtectionRef.current.capture();
               await carePersistenceWriter.enqueue({
-                raw: JSON.stringify({
-                  doc: importedDoc,
-                  entries: importedEntries,
-                  serverVersion:
-                    cachedServerVersion ?? versionRef.current,
-                }),
+                raw: serializeCareIdentityVault(vault),
                 writeGeneration,
                 eraseGeneration: hydrationEraseGeneration,
               });
@@ -1217,33 +2121,43 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         futureRaw,
         legacySummary,
         warning,
+        vault,
+        cleanupLedgerRaw: discardedRaw,
       };
     };
 
     const applyStagedCareHydration = (staged: StagedCareHydration) => {
-      discardedServerEntryIdsRef.current = new Set(
-        normalizeDiscardedServerEntryIds([
-          ...staged.discardedServerEntryIds,
-          ...discardedServerEntryIdsRef.current,
-        ]),
+      if (!hydrationCanContinue()) return;
+      setLocalHydrationFailure((current) =>
+        current?.dataScope === dataScope &&
+        current.generation === hydrationGeneration
+          ? null
+          : current,
       );
+      careIdentityVaultRef.current = staged.vault;
+      pendingScopeTransitionSnapshotRef.current = null;
+      cleanupLedgerRawRef.current = staged.cleanupLedgerRaw;
+      discardedServerEntryIdsRef.current = new Set(
+        staged.discardedServerEntryIds,
+      );
+      futureCareDocRef.current = null;
+      futureCareCacheRawRef.current = null;
+      careWriteProtectionRef.current.reset();
       if (staged.futureDoc) {
         preserveFutureCareDoc(staged.futureDoc);
         futureCareCacheRawRef.current = staged.futureRaw;
-      } else if (staged.cachedDoc) {
-        docRef.current = staged.cachedDoc;
-        setDoc(staged.cachedDoc);
+      } else {
+        setStorageWarning(staged.warning);
       }
-      if (staged.cachedEntries) {
-        entriesRef.current = staged.cachedEntries;
-        setEntries(staged.cachedEntries);
-      }
-      if (staged.cachedServerVersion !== null) {
-        versionRef.current = staged.cachedServerVersion;
-        setServerVersion(staged.cachedServerVersion);
-      }
-      if (staged.legacySummary) setLegacyImport(staged.legacySummary);
-      if (staged.warning) setCareStorageWarning(staged.warning);
+      docRef.current = staged.cachedDoc;
+      docRevisionRef.current += 1;
+      entriesRef.current = staged.cachedEntries;
+      versionRef.current = staged.cachedServerVersion;
+      activeDataScopeRef.current = dataScope;
+      setDoc(staged.cachedDoc);
+      setEntries(staged.cachedEntries);
+      setServerVersion(staged.cachedServerVersion);
+      setLegacyImport(staged.legacySummary);
       hydratedRef.current = true;
       setHydrated(true);
     };
@@ -1261,7 +2175,11 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           retryTimer = setTimeout(() => void hydrate(false), 1500);
           return;
         }
-        setCareStorageWarning("read-failed");
+        setLocalHydrationFailure({
+          dataScope,
+          generation: hydrationGeneration,
+        });
+        setStorageWarning("read-failed");
       }
     };
     void hydrate(true);
@@ -1271,7 +2189,14 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       if (retryTimer) clearTimeout(retryTimer);
     };
   }, [
+    authIdentity.dataScope,
+    authIdentity.phase,
+    authIdentity.userId,
+    authIdentityBoundary,
+    discardedServerEntryWriter,
+    entryUpdateQueue,
     isWriteAdmissionOpen,
+    localHydrationRetryEpoch,
     operationSettledEpoch,
     carePersistenceWriter,
     preserveFutureCareDoc,
@@ -1321,18 +2246,31 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
 
   const pushDoc = useCallback(async (next: CareDoc) => {
     if (careDocWritesBlocked() || preserveFutureCareDoc(next)) return;
+    const authPermit = authIdentityBoundary.captureSignedIn();
+    if (!authPermit || activeDataScopeRef.current !== authPermit.dataScope) {
+      return;
+    }
     // Guard every post-await state write against an owner wipe: a push (or
     // its conflict-retry) that resolves after reset completion must not
     // write the pre-wipe doc back into memory, disk, or the server.
     const eraseGenerationAtStart = eraseGenerationRef.current;
     const writeGeneration = careWriteProtectionRef.current.capture();
-    const canContinue = () => careWriteCanContinue(writeGeneration);
+    const canContinue = () =>
+      authIdentityBoundary.canContinue(authPermit) &&
+      activeDataScopeRef.current === authPermit.dataScope &&
+      careWriteCanContinue(writeGeneration);
     if (!canContinue()) return;
     try {
-      const res = await putCareState({
-        version: versionRef.current,
-        doc: next as unknown as CareStateEnvelope["doc"],
-      });
+      const res = await runHouseholdBoundRequest(
+        authPermit,
+        () => putCareState(
+          {
+            version: versionRef.current,
+            doc: next as unknown as CareStateEnvelope["doc"],
+          },
+          expectedHouseholdHeaders(authPermit.householdId),
+        ),
+      );
       if (
         eraseGenerationRef.current !== eraseGenerationAtStart ||
         !canContinue()
@@ -1366,10 +2304,16 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       setDoc(merged);
       try {
         if (!canContinue()) return;
-        const res = await putCareState({
-          version: envelope.version,
-          doc: merged as unknown as CareStateEnvelope["doc"],
-        });
+        const res = await runHouseholdBoundRequest(
+          authPermit,
+          () => putCareState(
+            {
+              version: envelope.version,
+              doc: merged as unknown as CareStateEnvelope["doc"],
+            },
+            expectedHouseholdHeaders(authPermit.householdId),
+          ),
+        );
         if (
           eraseGenerationRef.current !== eraseGenerationAtStart ||
           !canContinue()
@@ -1379,36 +2323,63 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         // Give up; the next full refresh reconciles.
       }
     }
-  }, [careDocWritesBlocked, careWriteCanContinue, preserveFutureCareDoc]);
+  }, [
+    authIdentityBoundary,
+    careDocWritesBlocked,
+    careWriteCanContinue,
+    preserveFutureCareDoc,
+  ]);
 
   const persistEntryCreate = useCallback(
-    (tempId: string, entry: Omit<Entry, "id">) => {
+    (tempId: string, entry: Entry) => {
       if (careDocWritesBlocked()) return;
       if (!signedInRef.current) return;
+      const authPermit = authIdentityBoundary.captureSignedIn();
+      if (!authPermit || activeDataScopeRef.current !== authPermit.dataScope) {
+        return;
+      }
       const eraseGenerationAtStart = eraseGenerationRef.current;
       const writeGeneration = careWriteProtectionRef.current.capture();
-      const canContinue = () => careWriteCanContinue(writeGeneration);
-      if (!canContinue()) return;
+      const identityCanContinue = () =>
+        authIdentityBoundary.canContinue(authPermit) &&
+        activeDataScopeRef.current === authPermit.dataScope &&
+        careWriteCanContinue(writeGeneration);
+      if (!identityCanContinue()) return;
       const createWasRetried =
         entry.syncStatus === "failed" || entry.syncStatus === "local";
+      const currentEntry = entriesRef.current.find(
+        (candidate) => candidate.id === tempId,
+      );
+      if (!currentEntry) return;
+      const createAttemptToken = {};
+      createAttemptTokenByTemp.current.set(tempId, createAttemptToken);
+      const isCurrentAttempt = () =>
+        createAttemptTokenByTemp.current.get(tempId) === createAttemptToken;
+      const canContinue = () =>
+        identityCanContinue() && isCurrentAttempt();
+      const submittedEntry: Entry = {
+        ...currentEntry,
+        syncStatus: "pending",
+        syncError: undefined,
+      };
       if (!canContinue()) return;
       creatingTempEntries.current.add(tempId);
       if (!canContinue()) return;
       entriesRef.current = entriesRef.current.map((current) =>
-        current.id === tempId
-          ? { ...current, syncStatus: "pending", syncError: undefined }
-          : current,
+        current.id === tempId ? submittedEntry : current,
       );
       if (!canContinue()) return;
       setEntries((prev) =>
-        prev.map((e) =>
-          e.id === tempId
-            ? { ...e, syncStatus: "pending", syncError: undefined }
-            : e,
-        ),
+        prev.map((e) => (e.id === tempId ? submittedEntry : e)),
       );
       if (!canContinue()) return;
-      createCareEntry(toCreateInput(entry, tempId))
+      return runHouseholdBoundRequest(
+        authPermit,
+        () => createCareEntry(
+          toCreateInput(submittedEntry, tempId),
+          expectedHouseholdHeaders(authPermit.householdId),
+        ),
+      )
         .then(async (created) => {
           if (!canContinue()) return;
           const serverEntry = toEntry(created);
@@ -1417,7 +2388,14 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           ) => {
             if (!canContinue()) return;
             try {
-              await deleteCareEntry(entryId);
+              await runHouseholdBoundRequest(
+                authPermit,
+                () => deleteCareEntry(
+                  entryId,
+                  expectedHouseholdHeaders(authPermit.householdId),
+                ),
+                { allowVoid: true },
+              );
               if (!canContinue()) return;
             } catch (error) {
               if (!canContinue()) return;
@@ -1437,9 +2415,12 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             // delete. If the process exits between create and delete, a later
             // refresh can suppress by server id or by details.clientKey.
             if (!canContinue()) return;
-            await markServerEntryDiscarded(tempId);
+            await markServerEntryDiscarded(tempId, authPermit.dataScope);
             if (!canContinue()) return;
-            await markServerEntryDiscarded(serverEntry.id);
+            await markServerEntryDiscarded(
+              serverEntry.id,
+              authPermit.dataScope,
+            );
             if (!canContinue()) return;
           }
           if (!canContinue()) return;
@@ -1470,9 +2451,12 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
               eraseGenerationRef.current !== eraseGenerationAtStart;
             if (mustDiscard) {
               if (!canContinue()) return;
-              await markServerEntryDiscarded(tempId);
+              await markServerEntryDiscarded(tempId, authPermit.dataScope);
               if (!canContinue()) return;
-              await markServerEntryDiscarded(serverEntry.id);
+              await markServerEntryDiscarded(
+                serverEntry.id,
+                authPermit.dataScope,
+              );
               if (!canContinue()) return;
             }
             if (!canContinue()) return;
@@ -1491,16 +2475,11 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           }
 
           if (acknowledgement.status === "discarded") {
-            if (acknowledgement.deleteSucceeded) {
-              if (!canContinue()) return;
-              await clearDiscardedServerEntry(
-                acknowledgement.serverEntryId,
-              );
-              if (!canContinue()) return;
-            } else {
+            if (!acknowledgement.deleteSucceeded) {
               if (!canContinue()) return;
               await markServerEntryDiscarded(
                 acknowledgement.serverEntryId,
+                authPermit.dataScope,
               );
               if (!canContinue()) return;
             }
@@ -1523,12 +2502,40 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
               previous.filter(
                 (entry) =>
                   entry.id !== tempId &&
-                  entry.id !== acknowledgement.serverEntryId,
+                entry.id !== acknowledgement.serverEntryId,
               ),
             );
             if (!canContinue()) return;
+            if (acknowledgement.deleteSucceeded) {
+              await releaseCareEntryRevocationSuppression({
+                persistIdentitySlot: async () => {
+                  if (!canContinue()) return false;
+                  const persisted = await persistCurrentCareSnapshot();
+                  return persisted && canContinue();
+                },
+                clearCleanupLedger: async () => {
+                  if (!canContinue()) {
+                    throw new Error(
+                      "The Care identity changed before cleanup completed.",
+                    );
+                  }
+                  const cleared = await clearDiscardedServerEntry(
+                    acknowledgement.serverEntryId,
+                    authPermit.dataScope,
+                  );
+                  if (!cleared) {
+                    throw new Error(
+                      "The Care cleanup ledger could not be released.",
+                    );
+                  }
+                },
+              });
+            }
+            if (!canContinue()) return;
             queryClient.invalidateQueries({
-              queryKey: getListCareEntriesQueryKey(),
+              queryKey: getListCareEntriesHouseholdQueryKey(
+                expectedHouseholdHeaders(authPermit.householdId),
+              ),
             });
             return;
           }
@@ -1551,7 +2558,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             : real;
           const needsUpdate =
             signedInRef.current &&
-            (Boolean(queued) || shouldRetryUpdate(acknowledged));
+            (createWasRetried ||
+              Boolean(queued) ||
+              shouldRetryUpdate(acknowledged));
           const merged = needsUpdate
             ? ensureCareEntrySyncRevision(acknowledged)
             : acknowledged;
@@ -1584,16 +2593,23 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           );
           if (!canContinue()) return;
           queryClient.invalidateQueries({
-            queryKey: getListCareEntriesQueryKey(),
+            queryKey: getListCareEntriesHouseholdQueryKey(
+              expectedHouseholdHeaders(authPermit.householdId),
+            ),
           });
           if (needsUpdate) {
             if (!canContinue()) return;
             entryWriteGenerationRef.current.set(real.id, writeGeneration);
+            entryAuthPermitRef.current.set(real.id, authPermit);
+            authorizedEntryMutationRef.current.set(merged, {
+              authPermit,
+              writeGeneration,
+            });
             if (!canContinue()) return;
-            entryUpdateQueue.enqueue(real.id, merged);
+            await entryUpdateQueue.enqueueAndWait(real.id, merged);
           }
         })
-        .catch(() => {
+        .catch(async (error) => {
           if (!canContinue()) return;
           if (
             cancelledTempEntries.current.has(tempId) ||
@@ -1601,6 +2617,63 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           ) {
             return;
           }
+          const revocation = applyExactCareEntryCreateRevocation({
+            tempId,
+            error,
+            canContinue,
+            isCurrentAttempt,
+            readEntries: () => entriesRef.current,
+            clearCreateState(revokedTempId) {
+              creatingTempEntries.current.delete(revokedTempId);
+              if (isCurrentAttempt()) {
+                createAttemptTokenByTemp.current.delete(revokedTempId);
+              }
+              cancelledTempEntries.current.delete(revokedTempId);
+              pendingPatch.current.delete(revokedTempId);
+              realIdByTemp.current.delete(revokedTempId);
+              entryUpdateQueue.cancel(revokedTempId);
+            },
+            replaceActiveSlot(retained, revokedEntry) {
+              careIdentityVaultRef.current.quarantine.push({
+                reason:
+                  "A Care entry deleted on another device was blocked from being recreated by this device.",
+                snapshot: {
+                  dataScope: authPermit.dataScope,
+                  entry: revokedEntry,
+                },
+              });
+              entriesRef.current = retained;
+              writeCareIdentitySlot<PersistedCareIdentitySnapshot>(
+                careIdentityVaultRef.current,
+                authPermit.dataScope,
+                {
+                  doc: docRef.current,
+                  entries: retained,
+                  serverVersion: versionRef.current,
+                },
+              );
+            },
+            publishEntries(retained) {
+              setEntries(retained);
+            },
+            async persistActiveSlot() {
+              return persistCareEntryRevocationSuppression({
+                persistCleanupLedger: async () => {
+                  await markServerEntryDiscarded(
+                    tempId,
+                    authPermit.dataScope,
+                  );
+                  return true;
+                },
+                persistIdentitySlot: persistCurrentCareSnapshot,
+              });
+            },
+            onPersistenceFailure() {
+              setCareStorageWarning("save-failed");
+            },
+          });
+          const revocationResult = await revocation;
+          if (revocationResult.status !== "not-revoked") return;
           if (!canContinue()) return;
           entriesRef.current = entriesRef.current.map((current) =>
             current.id === tempId
@@ -1625,17 +2698,21 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           );
         })
         .finally(() => {
-          if (!canContinue()) return;
+          if (!identityCanContinue() || !isCurrentAttempt()) return;
+          createAttemptTokenByTemp.current.delete(tempId);
           creatingTempEntries.current.delete(tempId);
         });
     },
     [
+      authIdentityBoundary,
       clearDiscardedServerEntry,
       careDocWritesBlocked,
       careWriteCanContinue,
       entryUpdateQueue,
       markServerEntryDiscarded,
+      persistCurrentCareSnapshot,
       queryClient,
+      setCareStorageWarning,
     ],
   );
 
@@ -1646,27 +2723,46 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         entryUpdateQueue.cancel(id);
         return;
       }
+      const authPermit = authIdentityBoundary.captureSignedIn();
+      if (!authPermit || activeDataScopeRef.current !== authPermit.dataScope) {
+        entryUpdateQueue.cancel(id);
+        return;
+      }
       const writeGeneration = careWriteProtectionRef.current.capture();
-      if (!careWriteCanContinue(writeGeneration)) return;
+      const canContinue = () =>
+        authIdentityBoundary.canContinue(authPermit) &&
+        activeDataScopeRef.current === authPermit.dataScope &&
+        careWriteCanContinue(writeGeneration);
+      if (!canContinue()) return;
       const pendingEntry: Entry = {
         ...ensureCareEntrySyncRevision(entry),
         syncStatus: "pending",
         syncError: undefined,
       };
-      if (!careWriteCanContinue(writeGeneration)) return;
+      if (!canContinue()) return;
       entriesRef.current = entriesRef.current.map((current) =>
         current.id === id ? pendingEntry : current,
       );
-      if (!careWriteCanContinue(writeGeneration)) return;
+      if (!canContinue()) return;
       setEntries((prev) =>
         prev.map((current) => (current.id === id ? pendingEntry : current)),
       );
-      if (!careWriteCanContinue(writeGeneration)) return;
+      if (!canContinue()) return;
       entryWriteGenerationRef.current.set(id, writeGeneration);
-      if (!careWriteCanContinue(writeGeneration)) return;
-      entryUpdateQueue.enqueue(id, pendingEntry);
+      entryAuthPermitRef.current.set(id, authPermit);
+      authorizedEntryMutationRef.current.set(pendingEntry, {
+        authPermit,
+        writeGeneration,
+      });
+      if (!canContinue()) return;
+      return entryUpdateQueue.enqueueAndWait(id, pendingEntry);
     },
-    [careDocWritesBlocked, careWriteCanContinue, entryUpdateQueue],
+    [
+      authIdentityBoundary,
+      careDocWritesBlocked,
+      careWriteCanContinue,
+      entryUpdateQueue,
+    ],
   );
 
   const syncFromServer = useCallback(async () => {
@@ -1678,28 +2774,90 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     ) {
       return;
     }
+    const authPermit = authIdentityBoundary.captureSignedIn();
+    if (!authPermit || activeDataScopeRef.current !== authPermit.dataScope) {
+      return;
+    }
+    let initialFailureRetryDelay: number | null | undefined;
     // Capture the erase generation so results from a sync that was in
     // flight when the owner wiped this device are discarded instead of
     // resurrecting the deleted data.
     const eraseGenerationAtStart = eraseGenerationRef.current;
     const writeGeneration = careWriteProtectionRef.current.capture();
-    const canContinue = () => careWriteCanContinue(writeGeneration);
+    const syncOperationId = syncOperationIdRef.current + 1;
+    syncOperationIdRef.current = syncOperationId;
+    const canContinue = () =>
+      syncOperationIdRef.current === syncOperationId &&
+      authIdentityBoundary.canContinue(authPermit) &&
+      activeDataScopeRef.current === authPermit.dataScope &&
+      careWriteCanContinue(writeGeneration);
+    const exactIdentityStillCurrent = () =>
+      authIdentityBoundary.canContinue(authPermit) &&
+      activeDataScopeRef.current === authPermit.dataScope;
     if (!canContinue()) return;
+    const initialSyncLifecycle = beginCareInitialSyncLifecycle({
+      readiness: initialSyncReadiness,
+      isIdentityCurrent: exactIdentityStillCurrent,
+      canApply: canContinue,
+      readLocalDoc: () => ({
+        revision: docRevisionRef.current,
+        doc: docRef.current,
+      }),
+    });
+    const recordInitialSyncSettlement = (
+      settlement: CareInitialSyncSettlement | null | undefined,
+    ) => {
+      if (!settlement || !settlement.accepted) return;
+      if (settlement.kind === "failure") {
+        initialFailureRetryDelay = settlement.retryDelayMs;
+      }
+      setInitialSyncReadinessRevision((revision) => revision + 1);
+    };
     syncingRef.current = true;
     setIsSyncing(true);
     try {
-      const envelope = await getCareState();
-      if (
-        eraseGenerationRef.current !== eraseGenerationAtStart ||
-        !signedInRef.current ||
-        !canContinue()
-      ) {
-        return;
-      }
+      const entryRefreshPlan = buildCareEntryRefreshPlan({
+        // The current API `since` filter is occurrence-based, not a server
+        // update cursor, so full refresh remains the safe household sync path.
+        hasUpdatedAtCursor: false,
+        hasDeleteTombstones: false,
+      });
+      let fetched: {
+        envelope: CareStateEnvelope;
+        rows: ApiCareEntry[];
+      } | null = null;
+      const refreshResult = await runAtomicCareInitialRefresh({
+        permit: authPermit,
+        canContinue: () => canContinue(),
+        fetchDoc: () => runHouseholdBoundRequest(
+          authPermit,
+          () => getCareState(
+            expectedHouseholdHeaders(authPermit.householdId),
+          ),
+        ),
+        fetchEntries: () => runHouseholdBoundRequest(
+          authPermit,
+          () => listCareEntries(
+            expectedHouseholdHeaders(authPermit.householdId),
+            entryRefreshPlan.params,
+          ),
+        ),
+        stage: (envelope, rows) => ({ envelope, rows }),
+        commit: (staged) => {
+          fetched = staged;
+        },
+      });
+      if (refreshResult === "stale" || !fetched || !canContinue()) return;
+      const { envelope, rows } = fetched as {
+        envelope: CareStateEnvelope;
+        rows: ApiCareEntry[];
+      };
       if (preserveFutureCareDoc(envelope.doc)) {
+        initialSyncLifecycle?.failForFutureSchema(envelope.doc);
         return;
       }
       if (!canContinue()) return;
+      const plannedDocRevision = docRevisionRef.current;
       const plan = reconcileCareDocFromServer<CareDoc>({
         localDoc: docRef.current,
         localVersion: versionRef.current,
@@ -1707,12 +2865,21 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         serverVersion: envelope.version,
         serverUpdatedAt: envelope.updatedAt,
       });
+      let nextDoc: CareDoc;
+      let nextServerVersion: number;
+      let shouldRepushConcurrentLocalDoc = false;
       if (plan.shouldPushLocal) {
         if (!canContinue()) return;
-        const res = await putCareState({
-          version: plan.version,
-          doc: plan.doc as unknown as CareStateEnvelope["doc"],
-        });
+        const res = await runHouseholdBoundRequest(
+          authPermit,
+          () => putCareState(
+            {
+              version: plan.version,
+              doc: plan.doc as unknown as CareStateEnvelope["doc"],
+            },
+            expectedHouseholdHeaders(authPermit.householdId),
+          ),
+        );
         // Re-check after the await: a wipe during the PUT must not have its
         // pre-wipe doc restored into memory (and re-persisted) here.
         if (
@@ -1722,26 +2889,17 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         ) {
           return;
         }
-        if (preserveFutureCareDoc(res.doc)) return;
+        if (preserveFutureCareDoc(res.doc)) {
+          initialSyncLifecycle?.failForFutureSchema(res.doc);
+          return;
+        }
         if (!canContinue()) return;
-        setDoc(mergeDoc(res.doc as Partial<CareDoc>));
-        if (!canContinue()) return;
-        setServerVersion(res.version);
+        nextDoc = mergeDoc(res.doc as Partial<CareDoc>);
+        nextServerVersion = res.version;
       } else {
-        if (!canContinue()) return;
-        setDoc(mergeDoc(plan.doc as Partial<CareDoc>));
-        if (!canContinue()) return;
-        setServerVersion(plan.version);
+        nextDoc = mergeDoc(plan.doc as Partial<CareDoc>);
+        nextServerVersion = plan.version;
       }
-
-      if (!canContinue()) return;
-      const entryRefreshPlan = buildCareEntryRefreshPlan({
-        // The current API `since` filter is occurrence-based, not a server
-        // update cursor, so full refresh remains the safe household sync path.
-        hasUpdatedAtCursor: false,
-        hasDeleteTombstones: false,
-      });
-      const rows = await listCareEntries(entryRefreshPlan.params);
       if (
         eraseGenerationRef.current !== eraseGenerationAtStart ||
         !signedInRef.current ||
@@ -1750,76 +2908,54 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const suppressedIds = new Set(discardedServerEntryIdsRef.current);
-      const rowsById = new Map(rows.map((row) => [row.id, row]));
-      const rowsByClientKey = new Map<string, ApiCareEntry[]>();
-      for (const row of rows) {
-        const clientKey = row.details?.clientKey;
-        if (typeof clientKey !== "string") continue;
-        rowsByClientKey.set(clientKey, [
-          ...(rowsByClientKey.get(clientKey) ?? []),
-          row,
-        ]);
-      }
+      const discardedIdsReadyForRelease = new Set<string>();
       // Cleanup is deliberately serialized with the durable ledger writes.
       // A temp id is a cancelled create's clientKey; a server id is a known
-      // orphan. Both stay opaque and non-renderable until full-list absence or
-      // a compensating DELETE confirms the remote row is gone.
+      // orphan. Both stay opaque and non-renderable until an exact
+      // compensating DELETE returns success/not-found. Capped list absence is
+      // never deletion proof. A server-id fallback is released only after the
+      // clean primary slot is durable.
       for (const discardedId of suppressedIds) {
         if (!signedInRef.current || !canContinue()) return;
         if (discardedId.startsWith("temp_")) {
-          const matchingRows = rowsByClientKey.get(discardedId) ?? [];
-          if (matchingRows.length === 0) {
-            // One empty list is not proof that a cancelled CREATE cannot
-            // commit later (especially after process death, when the in-memory
-            // request set is gone). The opaque clientKey stays in the local
-            // deletion ledger permanently; later matching rows are deleted
-            // without reopening a path for an even later retry to reappear.
-            continue;
+          try {
+            await runHouseholdBoundRequest(
+              authPermit,
+              () =>
+                deleteCareEntryByClientKey(
+                  discardedId,
+                  expectedHouseholdHeaders(authPermit.householdId),
+                ),
+              { allowVoid: true },
+            );
+            if (!canContinue()) return;
+            discardedIdsReadyForRelease.add(discardedId);
+          } catch {
+            // Unlike a capped list response, the exact endpoint commits a
+            // creator/household-scoped tombstone even when the row has not
+            // appeared yet. Any failure keeps the client key pinned locally
+            // so the remote deletion obligation remains retryable.
           }
-          await cleanupDiscardedServerEntryRows({
-            rows: matchingRows,
-            markDiscarded: async (entryId) => {
-              if (!canContinue()) return;
-              await markServerEntryDiscarded(entryId);
-              if (!canContinue()) return;
-            },
-            deleteEntry: async (entryId) => {
-              if (!canContinue()) return;
-              try {
-                await deleteCareEntry(entryId);
-                if (!canContinue()) return;
-              } catch (error) {
-                if (!canContinue()) return;
-                if (!isNotFound(error)) throw error;
-              }
-            },
-            clearDiscarded: async (entryId) => {
-              if (!canContinue()) return;
-              await clearDiscardedServerEntry(entryId);
-              if (!canContinue()) return;
-            },
-            shouldContinue: () => signedInRef.current && canContinue(),
-          });
-          if (!canContinue()) return;
-          continue;
-        }
-        if (!rowsById.has(discardedId)) {
-          if (!canContinue()) return;
-          await clearDiscardedServerEntry(discardedId);
-          if (!canContinue()) return;
           continue;
         }
         try {
           if (!canContinue()) return;
           try {
-            await deleteCareEntry(discardedId);
+            await runHouseholdBoundRequest(
+              authPermit,
+              () => deleteCareEntry(
+                discardedId,
+                expectedHouseholdHeaders(authPermit.householdId),
+              ),
+              { allowVoid: true },
+            );
             if (!canContinue()) return;
           } catch (error) {
             if (!canContinue()) return;
             if (!isNotFound(error)) throw error;
           }
           if (!canContinue()) return;
-          await clearDiscardedServerEntry(discardedId);
+          discardedIdsReadyForRelease.add(discardedId);
           if (!canContinue()) return;
         } catch {
           // Keep suppressing the cancelled create and retry next refresh.
@@ -1841,54 +2977,273 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         [...discardedServerEntryIdsRef.current],
         recentlySuppressed,
       ).map(toEntry);
-      const mergedEntries = mergeServerAndLocalEntries(
+      const localPrivacy = partitionCareEntriesForSignedInUser(
         entriesRef.current,
-        serverEntries,
+        authPermit.userId,
       );
-      if (!canContinue()) return;
-      entriesRef.current = mergedEntries;
-      if (!canContinue()) return;
-      setEntries(mergedEntries);
-      // Drain only the ids observed by this refresh. Tombstones added after
-      // the snapshot remain in the set for the next refresh.
-      for (const discardedId of recentlySuppressed) {
-        if (!canContinue()) return;
-        recentlyDiscardedServerEntryIdsRef.current.delete(discardedId);
-      }
+      const localDeletion =
+        partitionCachedCareEntriesByDiscardedIdentity(
+          localPrivacy.retained,
+          [
+            ...suppressedIds,
+            ...discardedServerEntryIdsRef.current,
+            ...recentlySuppressed,
+          ],
+        );
+      const serverPrivacy = partitionCareEntriesForSignedInUser(
+        serverEntries,
+        authPermit.userId,
+      );
+      const mergedEntries = mergeServerAndLocalEntries(
+        localDeletion.retained,
+        serverPrivacy.retained,
+      );
       const retryableCreates = mergedEntries.filter(
         (entry) => shouldRetryCreate(entry) && entry.syncStatus !== "pending",
       );
       const retryableUpdates = mergedEntries.filter(
         (entry) => shouldRetryUpdate(entry),
       );
-      retryableCreates.forEach((entry) => {
+      if (!canContinue()) return;
+      // Commit the authoritative doc/version and entry list as one staged
+      // React turn. Until this point neither half has touched rendered state.
+      const commitRefs = (safeDoc: CareDoc) => {
+        nextDoc = safeDoc;
+        docRef.current = safeDoc;
+        entriesRef.current = mergedEntries;
+        versionRef.current = nextServerVersion;
+      };
+      if (initialSyncLifecycle) {
+        const selection = initialSyncLifecycle.commitDoc(
+          nextDoc,
+          ({ doc: safeDoc }) => commitRefs(safeDoc),
+        );
+        if (!selection) return;
+        shouldRepushConcurrentLocalDoc =
+          selection.preservedConcurrentLocalEdit;
+      } else {
+        if (docRevisionRef.current !== plannedDocRevision) {
+          nextDoc = docRef.current;
+          shouldRepushConcurrentLocalDoc = true;
+        }
+        commitRefs(nextDoc);
+      }
+      if (!canContinue()) return;
+      if (discardedIdsReadyForRelease.size > 0) {
+        await releaseCareEntryRevocationSuppression({
+          persistIdentitySlot: async () => {
+            if (!canContinue()) return false;
+            const persisted = await persistCurrentCareSnapshot();
+            return persisted && canContinue();
+          },
+          clearCleanupLedger: async () => {
+            for (const discardedId of discardedIdsReadyForRelease) {
+              if (!canContinue()) {
+                throw new Error(
+                  "The Care identity changed before cleanup completed.",
+                );
+              }
+              const cleared = await clearDiscardedServerEntry(
+                discardedId,
+                authPermit.dataScope,
+              );
+              if (!cleared) {
+                throw new Error(
+                  "The Care cleanup ledger could not be released.",
+                );
+              }
+            }
+          },
+        });
+      }
+      if (!canContinue()) return;
+      if (
+        initialSyncLifecycle &&
+        (retryableCreates.length > 0 || retryableUpdates.length > 0)
+      ) {
+        // A capped list omission is not deletion proof. Keep the personal
+        // screen shield closed while each exact pending CREATE/PATCH reaches a
+        // trusted success or terminal 410/404 and its callback finishes the
+        // durable identity-slot/cleanup-ledger work.
+        await Promise.all([
+          ...retryableCreates.map((entry) => {
+            if (!canContinue()) return Promise.resolve();
+            return Promise.resolve(persistEntryCreate(entry.id, entry));
+          }),
+          ...retryableUpdates.map((entry) => {
+            if (!canContinue()) return Promise.resolve();
+            return Promise.resolve(persistEntryUpdate(entry.id, entry));
+          }),
+        ]);
         if (!canContinue()) return;
-        persistEntryCreate(entry.id, entry);
-      });
-      retryableUpdates.forEach((entry) => {
+
+        const liveEntries = entriesRef.current;
+        const unresolvedCreate = retryableCreates.some((candidate) =>
+          liveEntries.some(
+            (entry) =>
+              (entry.id === candidate.id ||
+                entry.details?.clientKey === candidate.id) &&
+              isUnsyncedEntry(entry),
+          ),
+        );
+        const unresolvedUpdate = retryableUpdates.some((candidate) =>
+          liveEntries.some(
+            (entry) =>
+              entry.id === candidate.id && isUnsyncedEntry(entry),
+          ),
+        );
+        if (unresolvedCreate || unresolvedUpdate) {
+          throw new Error(
+            "Pending Care changes could not be authoritatively reconciled.",
+          );
+        }
+
+        // Re-read the live refs after terminal callbacks. Publishing the
+        // pre-reconciliation merge here would resurrect an exact 404/410 purge
+        // for one render. The final combined snapshot must also be durable
+        // before initial readiness can admit personal children.
+        const persisted = await persistCurrentCareSnapshot();
+        if (!persisted || !canContinue()) {
+          throw new Error(
+            "Reconciled Care changes could not be saved safely on this device.",
+          );
+        }
+      }
+      if (!canContinue()) return;
+      const committedEntries = entriesRef.current;
+      setDoc(nextDoc);
+      setEntries(committedEntries);
+      setServerVersion(nextServerVersion);
+      if (initialSyncLifecycle) {
+        const settlement = initialSyncLifecycle.succeed();
+        if (settlement.kind !== "success") return;
+      }
+      if (shouldRepushConcurrentLocalDoc && canContinue()) {
+        void pushDoc(nextDoc);
+      }
+      // Drain only the ids observed by this refresh. Tombstones added after
+      // the snapshot remain in the set for the next refresh.
+      for (const discardedId of recentlySuppressed) {
         if (!canContinue()) return;
-        persistEntryUpdate(entry.id, entry);
-      });
-    } catch {
-      // Offline or transient failure: keep showing the cached state.
+        recentlyDiscardedServerEntryIdsRef.current.delete(discardedId);
+      }
+      if (!initialSyncLifecycle) {
+        retryableCreates.forEach((entry) => {
+          if (!canContinue()) return;
+          void persistEntryCreate(entry.id, entry);
+        });
+        retryableUpdates.forEach((entry) => {
+          if (!canContinue()) return;
+          void persistEntryUpdate(entry.id, entry);
+        });
+      }
+    } catch (error) {
+      // Offline or transient failure: keep showing the identity-scoped cache,
+      // retry boundedly, then expose a truthful manual retry state.
+      // In particular, a future-schema conflict from an already-revoked A
+      // request must not protect the global Care store or settle B's sync.
+      if (!canContinue()) return;
+      const conflictDoc =
+        isConflict(error) &&
+        error.data &&
+        typeof error.data === "object" &&
+        "doc" in error.data
+          ? (error.data as { doc?: unknown }).doc
+          : null;
+      if (conflictDoc && preserveFutureCareDoc(conflictDoc)) {
+        initialSyncLifecycle?.failForFutureSchema(conflictDoc);
+      } else {
+        initialSyncLifecycle?.fail(error);
+      }
     } finally {
-      syncingRef.current = false;
-      setIsSyncing(false);
+      if (initialSyncLifecycle) {
+        recordInitialSyncSettlement(
+          initialSyncLifecycle.finish(
+            new Error("The initial Care sync exited before an atomic commit."),
+          ),
+        );
+      }
+      if (syncOperationIdRef.current === syncOperationId) {
+        syncingRef.current = false;
+        setIsSyncing(false);
+      }
+      if (
+        typeof initialFailureRetryDelay === "number" &&
+        exactIdentityStillCurrent()
+      ) {
+        if (initialSyncRetryTimerRef.current) {
+          clearTimeout(initialSyncRetryTimerRef.current);
+        }
+        initialSyncRetryTimerRef.current = setTimeout(() => {
+          initialSyncRetryTimerRef.current = null;
+          if (!exactIdentityStillCurrent()) return;
+          setAuthSyncRetryEpoch((epoch) => epoch + 1);
+        }, initialFailureRetryDelay);
+      } else if (
+        syncOperationIdRef.current === syncOperationId &&
+        !authIdentityBoundary.canContinue(authPermit) &&
+        authIdentityBoundary.snapshot().phase === "signed-in" &&
+        authIdentityBoundary.canDisplay(activeDataScopeRef.current)
+      ) {
+        setAuthSyncRetryEpoch((epoch) => epoch + 1);
+      }
     }
   }, [
+    authIdentityBoundary,
     careDocWritesBlocked,
     careWriteCanContinue,
     clearDiscardedServerEntry,
     markServerEntryDiscarded,
+    persistCurrentCareSnapshot,
     persistEntryCreate,
     persistEntryUpdate,
     preserveFutureCareDoc,
+    pushDoc,
+    initialSyncReadiness,
   ]);
 
   useEffect(() => {
-    if (!hydrated || !clerkLoaded || !isSignedIn) return;
+    if (
+      !currentScopeLoaded ||
+      authIdentity.phase !== "signed-in"
+    ) return;
     void syncFromServer();
-  }, [clerkLoaded, hydrated, isSignedIn, syncFromServer]);
+  }, [
+    authIdentity.identityKey,
+    authIdentity.phase,
+    authSyncRetryEpoch,
+    currentScopeLoaded,
+    operationSettledEpoch,
+    syncFromServer,
+  ]);
+
+  const retryIdentityScope = useCallback(() => {
+    if (householdIdentityResolution.requestRetry()) {
+      setHouseholdResolutionRetryEpoch((epoch) => epoch + 1);
+    }
+  }, [householdIdentityResolution]);
+
+  const retryInitialSync = useCallback(() => {
+    if (
+      authIdentityBoundary.snapshot().phase === "household-pending" &&
+      householdIdentityResolution.snapshot().state === "error"
+    ) {
+      retryIdentityScope();
+      return;
+    }
+    if (!initialSyncReadiness.requestRetry()) return;
+    if (initialSyncRetryTimerRef.current) {
+      clearTimeout(initialSyncRetryTimerRef.current);
+      initialSyncRetryTimerRef.current = null;
+    }
+    setInitialSyncReadinessRevision((revision) => revision + 1);
+    setAuthSyncRetryEpoch((epoch) => epoch + 1);
+  }, [
+    authIdentityBoundary,
+    householdIdentityResolution,
+    initialSyncReadiness,
+    retryIdentityScope,
+  ]);
 
   const addEntry = useCallback(
     (entry: Omit<Entry, "id">) => {
@@ -1896,15 +3251,23 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       const tempId = `temp_${Date.now()}_${Math.random()
         .toString(36)
         .slice(2, 7)}`;
-      const localEntry: Entry = {
+      const unstampedLocalEntry: Entry = {
         id: tempId,
         ...entry,
         syncStatus: signedInRef.current ? "pending" : "local",
       };
+      const currentUserId = authIdentityBoundary.snapshot().userId;
+      const localEntry =
+        signedInRef.current && currentUserId
+          ? stampSignedInPrivateCareEntryCreator(
+              unstampedLocalEntry,
+              currentUserId,
+            )
+          : unstampedLocalEntry;
       entriesRef.current = [localEntry, ...entriesRef.current];
       setEntries((prev) => [localEntry, ...prev]);
       if (!signedInRef.current) return tempId;
-      persistEntryCreate(tempId, entry);
+      persistEntryCreate(tempId, localEntry);
       return tempId;
     },
     [careDocWritesBlocked, persistEntryCreate],
@@ -1913,8 +3276,17 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
   const deleteEntry = useCallback(
     async (id: string) => {
       if (careDocWritesBlocked()) return false;
+      const dataScopeAtStart = activeDataScopeRef.current;
+      if (!dataScopeAtStart) return false;
+      const authPermit = signedInRef.current
+        ? authIdentityBoundary.captureSignedIn()
+        : null;
+      if (signedInRef.current && !authPermit) return false;
       const writeGeneration = careWriteProtectionRef.current.capture();
-      const canContinue = () => careWriteCanContinue(writeGeneration);
+      const canContinue = () =>
+        activeDataScopeRef.current === dataScopeAtStart &&
+        (!authPermit || authIdentityBoundary.canContinue(authPermit)) &&
+        careWriteCanContinue(writeGeneration);
       if (!canContinue()) return false;
       // A quick undo can arrive after the optimistic create already swapped
       // its temp id for the server id; resolve through the mapping so the
@@ -1949,6 +3321,11 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         deletionLedgerIds.push(cancelledClientKey, realId);
         cancelledTempEntries.current.add(cancelledClientKey);
         pendingPatch.current.delete(cancelledClientKey);
+      } else if (authPermit) {
+        // A real-row delete also gets a durable identity-scoped tombstone
+        // before the optimistic hide. If auth changes while DELETE is in
+        // flight, A's intent remains retryable without ever running under B.
+        deletionLedgerIds.push(realId);
       }
       try {
         // Commit cancellation intent before hiding the row. If the create
@@ -1956,14 +3333,14 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         // row by id or by details.clientKey.
         for (const discardedId of deletionLedgerIds) {
           if (!canContinue()) return false;
-          await markServerEntryDiscarded(discardedId);
+          await markServerEntryDiscarded(discardedId, dataScopeAtStart);
           if (!canContinue()) return false;
         }
       } catch {
         if (!canContinue()) return false;
         for (const discardedId of deletionLedgerIds) {
           if (!canContinue()) return false;
-          await clearDiscardedServerEntry(discardedId);
+          await clearDiscardedServerEntry(discardedId, dataScopeAtStart);
           if (!canContinue()) return false;
           recentlyDiscardedServerEntryIdsRef.current.delete(discardedId);
         }
@@ -1986,23 +3363,55 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       try {
         try {
           if (!canContinue()) return false;
-          await deleteCareEntry(realId);
+          await runHouseholdBoundRequest(
+            authPermit!,
+            () => deleteCareEntry(
+              realId,
+              expectedHouseholdHeaders(authPermit!.householdId),
+            ),
+            { allowVoid: true },
+          );
           if (!canContinue()) return false;
         } catch (error) {
           if (!canContinue()) return false;
           if (!isNotFound(error)) throw error;
         }
         if (!canContinue()) return false;
-        for (const discardedId of deletionLedgerIds) {
-          if (!discardedId.startsWith("temp_")) {
-            if (!canContinue()) return false;
-            await clearDiscardedServerEntry(discardedId);
-            if (!canContinue()) return false;
-          }
+        const serverIdsReadyForRelease = deletionLedgerIds.filter(
+          (discardedId) => !discardedId.startsWith("temp_"),
+        );
+        if (serverIdsReadyForRelease.length > 0) {
+          await releaseCareEntryRevocationSuppression({
+            persistIdentitySlot: async () => {
+              if (!canContinue()) return false;
+              const persisted = await persistCurrentCareSnapshot();
+              return persisted && canContinue();
+            },
+            clearCleanupLedger: async () => {
+              for (const discardedId of serverIdsReadyForRelease) {
+                if (!canContinue()) {
+                  throw new Error(
+                    "The Care identity changed before cleanup completed.",
+                  );
+                }
+                const cleared = await clearDiscardedServerEntry(
+                  discardedId,
+                  dataScopeAtStart,
+                );
+                if (!cleared) {
+                  throw new Error(
+                    "The Care cleanup ledger could not be released.",
+                  );
+                }
+              }
+            },
+          });
         }
         if (!canContinue()) return false;
         queryClient.invalidateQueries({
-          queryKey: getListCareEntriesQueryKey(),
+          queryKey: getListCareEntriesHouseholdQueryKey(
+            expectedHouseholdHeaders(authPermit!.householdId),
+          ),
         });
         return true;
       } catch {
@@ -2013,7 +3422,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         if (removed && eraseGenerationRef.current === eraseGenerationAtStart) {
           for (const discardedId of deletionLedgerIds) {
             if (!canContinue()) return false;
-            await clearDiscardedServerEntry(discardedId);
+            await clearDiscardedServerEntry(discardedId, dataScopeAtStart);
             if (!canContinue()) return false;
             recentlyDiscardedServerEntryIdsRef.current.delete(discardedId);
           }
@@ -2035,11 +3444,13 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       }
     },
     [
+      authIdentityBoundary,
       clearDiscardedServerEntry,
       careDocWritesBlocked,
       careWriteCanContinue,
       entryUpdateQueue,
       markServerEntryDiscarded,
+      persistCurrentCareSnapshot,
       queryClient,
     ],
   );
@@ -2059,12 +3470,15 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
       const current = entriesRef.current.find((e) => e.id === realId);
       if (!current) return false;
       const mutablePatch = toCareEntryMutablePatch(patch);
+      const currentUserId = signedInRef.current
+        ? authIdentityBoundary.snapshot().userId
+        : null;
       const syncDisposition = decideCareEntryEditSyncDisposition(
         current,
         signedInRef.current,
       );
       if (syncDisposition === "review-required") {
-        const preserved: Entry = {
+        const unstampedPreserved: Entry = {
           ...prepareCareEntryForOfflineEdit<Entry>(
             current,
             mutablePatch,
@@ -2072,7 +3486,15 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           syncError:
             "Older saved change preserved on this device. Contact support before household sync.",
         };
+        const preserved = currentUserId
+          ? stampSignedInPrivateCareEntryCreator(
+              unstampedPreserved,
+              currentUserId,
+            )
+          : unstampedPreserved;
         entryUpdateQueue.cancel(realId);
+        entryWriteGenerationRef.current.delete(realId);
+        entryAuthPermitRef.current.delete(realId);
         entriesRef.current = entriesRef.current.map((entry) =>
           entry.id === realId ? preserved : entry,
         );
@@ -2092,7 +3514,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
           current.pendingSyncPatch,
           pendingPatchDelta,
         );
-      const merged: Entry = syncDisposition === "queue"
+      const unstampedMerged: Entry = syncDisposition === "queue"
         ? advanceCareEntrySyncRevision(
             {
               ...current,
@@ -2108,6 +3530,9 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
             mutablePatch,
             pendingSyncPatch,
           );
+      const merged = currentUserId
+        ? stampSignedInPrivateCareEntryCreator(unstampedMerged, currentUserId)
+        : unstampedMerged;
       entriesRef.current = entriesRef.current.map((e) =>
         e.id === realId ? merged : e,
       );
@@ -2129,14 +3554,31 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         // Invalidate an older in-flight PATCH generation before returning.
         // Its eventual acknowledgement must not replace this offline edit.
         entryUpdateQueue.cancel(realId);
+        entryWriteGenerationRef.current.delete(realId);
+        entryAuthPermitRef.current.delete(realId);
         return true;
       }
+      const authPermit = authIdentityBoundary.captureSignedIn();
+      if (!authPermit || activeDataScopeRef.current !== authPermit.dataScope) {
+        entryUpdateQueue.cancel(realId);
+        return false;
+      }
       entryWriteGenerationRef.current.set(realId, writeGeneration);
+      entryAuthPermitRef.current.set(realId, authPermit);
+      authorizedEntryMutationRef.current.set(merged, {
+        authPermit,
+        writeGeneration,
+      });
       if (!careWriteCanContinue(writeGeneration)) return false;
       entryUpdateQueue.enqueue(realId, merged);
       return true;
     },
-    [careDocWritesBlocked, careWriteCanContinue, entryUpdateQueue],
+    [
+      authIdentityBoundary,
+      careDocWritesBlocked,
+      careWriteCanContinue,
+      entryUpdateQueue,
+    ],
   );
 
   const updateCareDoc = useCallback(
@@ -2156,6 +3598,7 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
         ...updater(docRef.current),
         updatedAt: new Date().toISOString(),
       });
+      docRevisionRef.current += 1;
       docRef.current = next;
       setDoc(next);
       if (signedInRef.current) void pushDoc(next);
@@ -2164,34 +3607,42 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     [careDocWritesBlocked, pushDoc, setCareStorageWarning],
   );
 
+  const visibleDoc = currentScopeLoaded ? doc : hiddenIdentityDocRef.current;
+  const visibleEntries = currentScopeLoaded
+    ? entries
+    : EMPTY_IDENTITY_SCOPED_ENTRIES;
+  const visibleServerVersion = currentScopeLoaded ? serverVersion : 0;
   const state = useMemo<CareState>(
     () => ({
-      version: serverVersion,
-      dataVersion: doc.dataVersion,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-      activePetId: doc.activePetId,
-      profile: doc.profile,
-      pets: doc.pets,
-      caregivers: doc.caregivers,
-      householdSetup: doc.householdSetup,
-      launchSupportProfile: doc.launchSupportProfile,
-      launchProviderProfile: doc.launchProviderProfile,
-      reminderNotificationPreferences: doc.reminderNotificationPreferences,
-      dietProfile: doc.dietProfile,
-      routines: doc.routines,
-      goals: doc.goals,
-      records: doc.records,
-      accessPasses: doc.accessPasses,
-      adventureMemories: doc.adventureMemories,
-      reportArtifacts: doc.reportArtifacts,
-      calendarEvents: doc.calendarEvents,
-      entries,
+      version: visibleServerVersion,
+      dataVersion: visibleDoc.dataVersion,
+      createdAt: visibleDoc.createdAt,
+      updatedAt: visibleDoc.updatedAt,
+      activePetId: visibleDoc.activePetId,
+      profile: visibleDoc.profile,
+      pets: visibleDoc.pets,
+      caregivers: visibleDoc.caregivers,
+      householdSetup: visibleDoc.householdSetup,
+      launchSupportProfile: visibleDoc.launchSupportProfile,
+      launchProviderProfile: visibleDoc.launchProviderProfile,
+      reminderNotificationPreferences: visibleDoc.reminderNotificationPreferences,
+      dietProfile: visibleDoc.dietProfile,
+      routines: visibleDoc.routines,
+      goals: visibleDoc.goals,
+      records: visibleDoc.records,
+      accessPasses: visibleDoc.accessPasses,
+      adventureMemories: visibleDoc.adventureMemories,
+      reportArtifacts: visibleDoc.reportArtifacts,
+      calendarEvents: visibleDoc.calendarEvents,
+      entries: visibleEntries,
     }),
-    [doc, entries, serverVersion],
+    [visibleDoc, visibleEntries, visibleServerVersion],
   );
 
-  const syncOutbox = useMemo(() => deriveCareSyncOutbox(entries), [entries]);
+  const syncOutbox = useMemo(
+    () => deriveCareSyncOutbox(visibleEntries),
+    [visibleEntries],
+  );
 
   const beginCoordinatedCareReset = useCallback(() => {
     stagedCareResetTempIdsRef.current.clear();
@@ -2243,10 +3694,25 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     ]);
 
     if (cleanupLedger.length > 0) {
+      const dataScope = activeDataScopeRef.current;
+      if (!dataScope) {
+        throw new Error("The Care identity scope is unavailable for reset.");
+      }
       if (!commitContext) {
         throw new Error("The Care reset commit capability is unavailable.");
       }
-      await commitContext.persistCareCleanupLedger(cleanupLedger);
+      const scopedCleanupLedger = scopeCareCleanupEntryIds(
+        dataScope,
+        cleanupLedger,
+      );
+      await commitContext.persistCareCleanupLedger(scopedCleanupLedger);
+      cleanupLedgerRawRef.current = JSON.stringify(scopedCleanupLedger);
+    } else if (commitContext) {
+      // Overwrite any quarantined/other-identity ledger bytes during a full
+      // local-data reset. An empty scoped cleanup set must not leave another
+      // user's opaque identifiers behind on this device.
+      await commitContext.persistCareCleanupLedger([]);
+      cleanupLedgerRawRef.current = "[]";
     }
     stagedCareResetCleanupLedgerRef.current = cleanupLedger;
     stagedCareResetTempIdsRef.current = new Set(
@@ -2264,17 +3730,27 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     stagedCareResetTempIdsRef.current.clear();
     futureCareDocRef.current = null;
     futureCareCacheRawRef.current = null;
+    careIdentityVaultRef.current = createCareIdentityVault();
+    pendingScopeTransitionSnapshotRef.current = null;
     careWriteProtectionRef.current.reset();
     realIdByTemp.current.clear();
     pendingPatch.current.clear();
     creatingTempEntries.current.clear();
+    createAttemptTokenByTemp.current.clear();
     entryWriteGenerationRef.current.clear();
+    entryAuthPermitRef.current.clear();
     entryUpdateQueue.cancelAll();
     syncingRef.current = false;
+    syncOperationIdRef.current += 1;
+    if (initialSyncRetryTimerRef.current) {
+      clearTimeout(initialSyncRetryTimerRef.current);
+      initialSyncRetryTimerRef.current = null;
+    }
 
     const defaultDoc = getDefaultDoc();
     const emptyEntries: Entry[] = [];
     docRef.current = defaultDoc;
+    docRevisionRef.current += 1;
     entriesRef.current = emptyEntries;
     versionRef.current = 0;
     hydratedRef.current = true;
@@ -2325,37 +3801,147 @@ export function CareProvider({ children }: { children: React.ReactNode }) {
     [attachRequiredParticipant, careLocalDataResetController],
   );
 
+  const refreshCare = useCallback(() => {
+    if (initialSyncReadiness.getStatus(currentScopeLoaded).state === "error") {
+      retryInitialSync();
+      return;
+    }
+    void syncFromServer();
+  }, [
+    currentScopeLoaded,
+    initialSyncReadiness,
+    retryInitialSync,
+    syncFromServer,
+  ]);
+
   const careMutationsBlocked = careDocWritesBlocked();
+  const currentHydrationReadFailed =
+    storageWarning === "read-failed" &&
+    localHydrationFailure?.dataScope === authIdentity.dataScope &&
+    localHydrationFailure.generation ===
+      hydrationAttemptGenerationRef.current;
+  const visibleStorageWarning = currentScopeLoaded
+    ? storageWarning
+    : currentHydrationReadFailed
+      ? "read-failed"
+      : null;
+  const visibleLegacyImport = currentScopeLoaded ? legacyImport : null;
+  const identityScopeKey =
+    authIdentity.phase === "signed-in" ? authIdentity.identityKey : null;
+  const identityScopeStatus: CareIdentityScopeStatus =
+    {
+      state: householdIdentitySnapshot.state,
+      retryable: householdIdentitySnapshot.retryable,
+      message: householdIdentitySnapshot.message,
+    };
+  const restartIdentityScope = revokeHouseholdAuthority;
+  const renderMutationOrigin = authIdentityBoundary.captureMutationOrigin();
+  const addEntryForRender = useCallback(
+    (entry: Omit<Entry, "id">) =>
+      renderMutationOrigin && authIdentityBoundary.canInvoke(renderMutationOrigin)
+        ? addEntry(entry)
+        : "",
+    [addEntry, authIdentityBoundary, renderMutationOrigin],
+  );
+  const deleteEntryForRender = useCallback(
+    (id: string) =>
+      renderMutationOrigin && authIdentityBoundary.canInvoke(renderMutationOrigin)
+        ? deleteEntry(id)
+        : Promise.resolve(false),
+    [authIdentityBoundary, deleteEntry, renderMutationOrigin],
+  );
+  const updateEntryForRender = useCallback(
+    (id: string, patch: Partial<Omit<Entry, "id">>) =>
+      Boolean(
+        renderMutationOrigin &&
+          authIdentityBoundary.canInvoke(renderMutationOrigin) &&
+          updateEntry(id, patch),
+      ),
+    [authIdentityBoundary, renderMutationOrigin, updateEntry],
+  );
+  const updateCareDocForRender = useCallback(
+    (updater: (doc: CareDoc) => CareDoc) =>
+      Boolean(
+        renderMutationOrigin &&
+          authIdentityBoundary.canInvoke(renderMutationOrigin) &&
+          updateCareDoc(updater),
+      ),
+    [authIdentityBoundary, renderMutationOrigin, updateCareDoc],
+  );
+  const captureCareOperationPermit = useCallback(
+    () => authIdentityBoundary.captureMutationOrigin(),
+    [authIdentityBoundary],
+  );
+  const isCareOperationPermitCurrent = useCallback(
+    (permit: CareMutationOriginPermit) => authIdentityBoundary.canInvoke(permit),
+    [authIdentityBoundary],
+  );
   const value = useMemo<CareContextValue>(
     () => ({
       state,
       careMutationsBlocked,
-      addEntry,
-      deleteEntry,
-      updateEntry,
-      updateCareDoc,
+      addEntry: addEntryForRender,
+      deleteEntry: deleteEntryForRender,
+      updateEntry: updateEntryForRender,
+      updateCareDoc: updateCareDocForRender,
       persistCurrentCareSnapshot,
-      refresh: () => void syncFromServer(),
+      refresh: refreshCare,
       syncOutbox,
-      isLoaded: hydrated,
-      isSyncing,
-      storageWarning,
-      legacyImport,
+      isLoaded: currentScopeLoaded,
+      isSyncing: currentScopeLoaded && isSyncing,
+      isInitialSyncSettled,
+      initialSyncStatus,
+      retryInitialSync,
+      retryLocalHydration,
+      identityScopeKey,
+      identityScopeStatus,
+      retryIdentityScope,
+      restartIdentityScope,
+      rediscoverIdentityScopeFromMembershipList,
+      confirmHouseholdMembershipListHealthy,
+      captureCareHouseholdOperationPermit,
+      isCareHouseholdOperationPermitCurrent,
+      beginCareHouseholdTransition,
+      resumeCareHouseholdTransition,
+      householdOperationController,
+      householdOperationSnapshot,
+      captureCareOperationPermit,
+      isCareOperationPermitCurrent,
+      storageWarning: visibleStorageWarning,
+      legacyImport: visibleLegacyImport,
     }),
     [
       state,
       careMutationsBlocked,
-      addEntry,
-      deleteEntry,
-      updateEntry,
-      updateCareDoc,
+      addEntryForRender,
+      deleteEntryForRender,
+      updateEntryForRender,
+      updateCareDocForRender,
       persistCurrentCareSnapshot,
-      syncFromServer,
+      refreshCare,
       syncOutbox,
-      hydrated,
+      currentScopeLoaded,
       isSyncing,
-      storageWarning,
-      legacyImport,
+      isInitialSyncSettled,
+      initialSyncStatus,
+      retryInitialSync,
+      retryLocalHydration,
+      identityScopeKey,
+      identityScopeStatus,
+      retryIdentityScope,
+      restartIdentityScope,
+      rediscoverIdentityScopeFromMembershipList,
+      confirmHouseholdMembershipListHealthy,
+      captureCareHouseholdOperationPermit,
+      isCareHouseholdOperationPermitCurrent,
+      beginCareHouseholdTransition,
+      resumeCareHouseholdTransition,
+      householdOperationController,
+      householdOperationSnapshot,
+      captureCareOperationPermit,
+      isCareOperationPermitCurrent,
+      visibleStorageWarning,
+      visibleLegacyImport,
     ],
   );
 

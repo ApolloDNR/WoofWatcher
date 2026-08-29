@@ -43,29 +43,34 @@ anon/authenticated privileges. The server's Postgres role bypasses RLS and keeps
 working; a leaked anon key exposes nothing. (An optional Clerk-JWT policy
 template is included, commented, only for a future direct-client model.)
 
-## 3. Apply it (two equivalent options)
+## 3. Apply the canonical migrations
 
 Prereq: create the dedicated project (§0), grab its connection string, and set
 `DATABASE_URL` in the environment.
 
-**Option A — Drizzle (matches the repo tooling):**
+Apply every numbered migration exactly once, in order, to the dedicated
+WoofWatcher database. Stop on the first error; do not skip ahead.
+
 ```bash
 export DATABASE_URL="postgres://…dedicated-woofwatcher-db…"
-pnpm --filter @workspace/db run push        # creates all 8 tables from the schema
-# then apply RLS (drizzle push does NOT do RLS):
-psql "$DATABASE_URL" -f supabase/migrations/0002_woofwatcher_rls.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/0001_woofwatcher_init.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/0002_woofwatcher_rls.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/0003_care_entries_client_key.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/0004_users_active_household.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/0005_private_care_entry_isolation.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/0006_household_role_canonicalization.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/0007_care_entry_create_revocation.sql
 ```
 
-**Option B — SQL files (e.g. Supabase SQL editor or psql):**
-```bash
-psql "$DATABASE_URL" -f supabase/migrations/0001_woofwatcher_init.sql
-psql "$DATABASE_URL" -f supabase/migrations/0002_woofwatcher_rls.sql
-```
-(Or paste each file into the Supabase SQL editor in order.)
+You may instead paste those same files into the Supabase SQL editor in the same
+order. Record which migrations were applied before running any later migration
+against an existing database.
 
-Use Option A if you want the schema to stay drizzle-managed going forward;
-Option B if you prefer explicit SQL under version control. Either way, run the
-RLS file.
+`pnpm --filter @workspace/db run push` remains useful for disposable local
+development. Drizzle push mirrors the declared final columns, checks, and
+indexes, but it does not run the required data backfills, legacy-role
+normalization, RLS/revocation statements, or other ordered migration work. It
+is not an equivalent release-provisioning path.
 
 ## 4. Verify
 

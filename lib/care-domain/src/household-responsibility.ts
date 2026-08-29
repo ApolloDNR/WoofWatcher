@@ -6,6 +6,7 @@ import {
   deriveRoutineBoard,
   isRoutineBoardScheduledItem,
 } from "./routine-board.ts";
+import { selectSharedCareEvidence } from "./shared-evidence.ts";
 
 export type HouseholdResponsibilityStatus =
   | "needs-setup"
@@ -99,17 +100,15 @@ function isSameLocalDay(iso: string, now: number): boolean {
   );
 }
 
-function isVisible(entry: RoutineBoardEntry): boolean {
-  return entry.details?.householdVisible !== false;
-}
-
 function completionPercent(done: number, assigned: number): number {
   if (assigned <= 0) return 0;
   return Math.round((done / assigned) * 100);
 }
 
 function visibleTodayEntries(entries: readonly RoutineBoardEntry[], now: number): RoutineBoardEntry[] {
-  return entries.filter((entry) => isVisible(entry) && isSameLocalDay(entry.occurredAt, now));
+  return selectSharedCareEvidence(entries, now).filter((entry) =>
+    isSameLocalDay(entry.occurredAt, now),
+  );
 }
 
 function routineAction(kind: HouseholdResponsibilityActionKind, item: RoutineBoardItem): HouseholdResponsibilityNextAction {

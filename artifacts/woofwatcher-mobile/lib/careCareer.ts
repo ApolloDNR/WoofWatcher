@@ -1,4 +1,9 @@
-import { normalizeCareEventType, type CareEventDetails } from "@workspace/care-domain";
+import {
+  isSharedCareEvidenceObservableAt,
+  normalizeCareEventType,
+  selectSharedCareEvidence,
+  type CareEventDetails,
+} from "@workspace/care-domain";
 
 /**
  * Care Career derives a Tamagotchi-style level, title, and XP progress from
@@ -100,7 +105,11 @@ function walkDurationMinutes(entry: CareCareerEntryLike): number {
   return typeof raw === "number" && Number.isFinite(raw) ? Math.max(0, Math.round(raw)) : 0;
 }
 
-export function careXpForEntry(entry: CareCareerEntryLike): number {
+export function careXpForEntry(
+  entry: CareCareerEntryLike,
+  now: number = Date.now(),
+): number {
+  if (!isSharedCareEvidenceObservableAt(entry, now)) return 0;
   const normalized = normalizeCareEventType(
     entry.type ?? "",
     entry.details as CareEventDetails,
@@ -123,6 +132,16 @@ export function careXpForEntry(entry: CareCareerEntryLike): number {
   return CARE_XP_BY_TYPE[normalized] ?? DEFAULT_EVENT_XP;
 }
 
+/** Canonical evidence lane shared by every career, streak, week, and badge fact. */
+export function selectCareCareerEvidence<TEntry extends CareCareerEntryLike>(
+  entries: readonly TEntry[],
+  now: number,
+): TEntry[] {
+  return selectSharedCareEvidence(entries, now).filter(
+    (entry) => careXpForEntry(entry, now) > 0,
+  );
+}
+
 /** XP required to move from `level` to `level + 1`. Grows linearly. */
 export function careLevelSpanXp(level: number): number {
   return 100 + Math.max(0, level - 1) * 50;
@@ -133,6 +152,51 @@ export function careTitleForLevel(level: number): string {
     if (level >= step.level) return step.title;
   }
   return CARE_TITLES[CARE_TITLES.length - 1].title;
+}
+
+export interface CareCareerBadgeTier {
+  title: string;
+  xpRequired: number;
+}
+
+/**
+ * Replays only canonical shared care evidence to identify the exact log that
+ * earned each career title. Story badges use this helper so their dates
+ * cannot diverge from the private/future/invalid boundary used by XP totals.
+ */
+export function deriveCareCareerBadgeEarnDates(
+  entries: readonly CareCareerEntryLike[],
+  tiers: readonly CareCareerBadgeTier[],
+  now: number,
+): Map<string, string> {
+  const ordered = selectCareCareerEvidence(entries, now)
+    .slice()
+    .sort(
+      (left, right) =>
+        Date.parse(left.occurredAt ?? "") -
+        Date.parse(right.occurredAt ?? ""),
+    );
+  const earnedAt = new Map<string, string>();
+  let cumulativeXp = 0;
+  let index = 0;
+
+  for (const tier of tiers) {
+    if (tier.xpRequired === 0) {
+      const firstOccurredAt = ordered[0]?.occurredAt;
+      if (firstOccurredAt) earnedAt.set(tier.title, firstOccurredAt);
+      continue;
+    }
+    while (index < ordered.length && cumulativeXp < tier.xpRequired) {
+      cumulativeXp += careXpForEntry(ordered[index], now);
+      index += 1;
+    }
+    const earnedEntry = ordered[index - 1];
+    if (cumulativeXp >= tier.xpRequired && earnedEntry?.occurredAt) {
+      earnedAt.set(tier.title, earnedEntry.occurredAt);
+    }
+  }
+
+  return earnedAt;
 }
 
 function isSameLocalDay(iso: string, now: number): boolean {
@@ -159,9 +223,8 @@ export function deriveCareStreak(
   now: number,
 ): number {
   const loggedDays = new Set<string>();
-  for (const entry of entries) {
+  for (const entry of selectCareCareerEvidence(entries, now)) {
     const occurred = Date.parse(entry.occurredAt ?? "");
-    if (!Number.isFinite(occurred) || occurred > now) continue;
     loggedDays.add(localDayKey(new Date(occurred)));
   }
   if (loggedDays.size === 0) return 0;
@@ -195,9 +258,8 @@ export function deriveCareerWeek(
 ): CareerWeekModel {
   const dayKeys = new Set<string>();
   let logsThisWeek = 0;
-  for (const entry of entries) {
+  for (const entry of selectCareCareerEvidence(entries, now)) {
     const occurred = Date.parse(entry.occurredAt ?? "");
-    if (!Number.isFinite(occurred) || occurred > now) continue;
     if (occurred < now - WEEK_MS) continue;
     logsThisWeek += 1;
     dayKeys.add(localDayKey(new Date(occurred)));
@@ -211,11 +273,10 @@ export function deriveCareCareer(
 ): CareCareerModel {
   let totalXp = 0;
   let todayXp = 0;
-  for (const entry of entries) {
+  for (const entry of selectCareCareerEvidence(entries, now)) {
     const occurredAt = entry.occurredAt ?? "";
     const occurred = Date.parse(occurredAt);
-    if (!Number.isFinite(occurred) || occurred > now) continue;
-    const xp = careXpForEntry(entry);
+    const xp = careXpForEntry(entry, now);
     totalXp += xp;
     if (isSameLocalDay(occurredAt, now)) todayXp += xp;
   }

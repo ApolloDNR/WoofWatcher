@@ -8,6 +8,7 @@ import {
   careLevelSpanXp,
   careTitleForLevel,
   careXpForEntry,
+  deriveCareCareerBadgeEarnDates,
   deriveCareCareer,
   deriveCareerWeek,
   deriveCareStreak,
@@ -59,9 +60,23 @@ test("in-progress walk sessions earn no XP until they finish", () => {
   const whileWalking = deriveCareCareer([started], NOW);
   assert.equal(whileWalking.totalXp, 0);
   assert.equal(whileWalking.todayXp, 0);
+  assert.equal(deriveCareStreak([started], NOW), 0);
+  assert.deepEqual(deriveCareerWeek([started], NOW), {
+    logsThisWeek: 0,
+    activeDays: 0,
+  });
+  assert.deepEqual(
+    [...deriveCareCareerBadgeEarnDates(
+      [started],
+      [{ title: "New Paw", xpRequired: 0 }],
+      NOW,
+    )],
+    [],
+  );
   const afterWalk = deriveCareCareer([finished], NOW);
   assert.equal(afterWalk.totalXp, 30);
   assert.equal(afterWalk.todayXp, 30);
+  assert.equal(deriveCareStreak([finished], NOW), 1);
 });
 
 test("completed-walk XP is honest: 0-minute farming earns nothing, real walks scale", () => {
@@ -79,6 +94,11 @@ test("completed-walk XP is honest: 0-minute farming earns nothing, real walks sc
   assert.equal(instant.durationMinutes, 0);
   assert.equal(careXpForEntry(instant), 0);
   assert.equal(deriveCareCareer([instant], NOW).totalXp, 0);
+  assert.equal(deriveCareStreak([instant], NOW), 0);
+  assert.deepEqual(deriveCareerWeek([instant], NOW), {
+    logsThisWeek: 0,
+    activeDays: 0,
+  });
 
   // A genuine 1-minute walk earns the small floor (5 XP).
   const oneMinute = { ...started, ...buildWalkSessionFinishPatch(started, {
@@ -176,6 +196,104 @@ test("future-dated and unparseable logs never mint XP", () => {
   assert.equal(model.todayXp, 15);
 });
 
+test("private logs mint no XP or streak and are excluded before sensitive getters", () => {
+  let timestampRead = false;
+  let typeRead = false;
+  const privateEntry = {
+    details: { householdVisible: false },
+    get occurredAt(): string {
+      timestampRead = true;
+      throw new Error("private timestamp must not be read");
+    },
+    get type(): string {
+      typeRead = true;
+      throw new Error("private care type must not be read");
+    },
+  };
+
+  assert.equal(careXpForEntry(privateEntry, NOW), 0);
+  assert.equal(deriveCareCareer([privateEntry], NOW).totalXp, 0);
+  assert.equal(deriveCareStreak([privateEntry], NOW), 0);
+  assert.deepEqual(deriveCareerWeek([privateEntry], NOW), {
+    logsThisWeek: 0,
+    activeDays: 0,
+  });
+  assert.equal(timestampRead, false);
+  assert.equal(typeRead, false);
+});
+
+test("badge earn dates exclude private, malformed, and future logs before XP reads", () => {
+  let privateTimestampRead = false;
+  let rejectedTypeRead = false;
+  const earnedAt = deriveCareCareerBadgeEarnDates(
+    [
+      {
+        details: { householdVisible: false },
+        get occurredAt(): string {
+          privateTimestampRead = true;
+          throw new Error("private badge timestamp must not be read");
+        },
+        get type(): string {
+          rejectedTypeRead = true;
+          throw new Error("private badge type must not be read");
+        },
+      },
+      {
+        occurredAt: "not-a-date",
+        get type(): string {
+          rejectedTypeRead = true;
+          throw new Error("malformed badge type must not be read");
+        },
+      },
+      {
+        occurredAt: "2026-07-07T08:00:00.000Z",
+        get type(): string {
+          rejectedTypeRead = true;
+          throw new Error("future badge type must not be read");
+        },
+      },
+      entry("meal", "2026-07-06T08:00:00.000Z"),
+    ],
+    [
+      { title: "New Paw", xpRequired: 0 },
+      { title: "First Meal", xpRequired: 15 },
+      { title: "Not Yet", xpRequired: 16 },
+    ],
+    NOW,
+  );
+
+  assert.deepEqual([...earnedAt], [
+    ["New Paw", "2026-07-06T08:00:00.000Z"],
+    ["First Meal", "2026-07-06T08:00:00.000Z"],
+  ]);
+  assert.equal(privateTimestampRead, false);
+  assert.equal(rejectedTypeRead, false);
+});
+
+test("Story badge replay uses the canonical career evidence derivation", () => {
+  const story = readFileSync(
+    join(
+      dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "components",
+      "more",
+      "StoryProgressScreen.tsx",
+    ),
+    "utf8",
+  );
+  const badgeStart = story.indexOf("const badgeEarnDates = useMemo(");
+  const earnedTitlesStart = story.indexOf("const earnedTitles = useMemo(", badgeStart);
+  assert.notEqual(badgeStart, -1);
+  assert.notEqual(earnedTitlesStart, -1);
+  const badgeSource = story.slice(badgeStart, earnedTitlesStart);
+  assert.match(
+    badgeSource,
+    /deriveCareCareerBadgeEarnDates\(storyEntries, badgeLadder, now\)/,
+  );
+  assert.doesNotMatch(badgeSource, /state\.entries\s*\.filter\(/);
+  assert.doesNotMatch(badgeSource, /careXpForEntry\(/);
+});
+
 test("Home wires the care career level strip, XP toasts, and level-up celebration", () => {
   const home = readFileSync(
     join(
@@ -187,8 +305,46 @@ test("Home wires the care career level strip, XP toasts, and level-up celebratio
     ),
     "utf8",
   );
-  assert.match(home, /const homeEntries = useMemo\([\s\S]{0,120}selectHomeVisibleEntries\(state\.entries\)/);
-  assert.match(home, /deriveCareCareer\(homeEntries, now\)/);
+  // Bound the assertions to the two declarations that establish and consume
+  // the career evidence. This proves the dataflow rather than accepting an
+  // unrelated selector or timestamp check elsewhere in the large Home file.
+  const homeEntriesStart = home.indexOf("const homeEntries = useMemo(");
+  const todayEntriesStart = home.indexOf(
+    "const todayHomeEntries = useMemo(",
+    homeEntriesStart,
+  );
+  const careerStart = home.indexOf("const careCareer = useMemo(");
+  const streakStart = home.indexOf("const careStreak = useMemo(", careerStart);
+
+  assert.notEqual(homeEntriesStart, -1, "Home must establish its evidence boundary");
+  assert.notEqual(todayEntriesStart, -1, "Home evidence boundary must be bounded");
+  assert.notEqual(careerStart, -1, "Home must derive its career model");
+  assert.notEqual(streakStart, -1, "Home career derivation must be bounded");
+
+  const homeEntriesSource = home.slice(homeEntriesStart, todayEntriesStart);
+  const careerSource = home.slice(careerStart, streakStart);
+  assert.match(
+    homeEntriesSource,
+    /selectObservableHomeEntries\(state\.entries, now\)/,
+  );
+  assert.match(homeEntriesSource, /\[now, state\.entries\]/);
+  assert.doesNotMatch(
+    homeEntriesSource,
+    /state\.entries\.filter\(/,
+    "Home must not bypass its privacy-and-time evidence boundary",
+  );
+  assert.match(careerSource, /deriveCareCareer\(homeEntries, now\)/);
+  assert.match(careerSource, /\[homeEntries, now\]/);
+  assert.doesNotMatch(
+    careerSource,
+    /state\.entries/,
+    "Career XP must never bypass the canonical Home evidence boundary",
+  );
+  assert.equal(
+    [...home.matchAll(/\bderiveCareCareer\(/g)].length,
+    1,
+    "Home must have one canonical care-career derivation",
+  );
   assert.match(home, /careXpForEntry\(entry\)/);
   assert.match(home, /care XP/);
   assert.match(home, /Level up!/);

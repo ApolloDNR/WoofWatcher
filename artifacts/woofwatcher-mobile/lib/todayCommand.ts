@@ -1,9 +1,11 @@
 import {
   deriveCareDayStatus,
   deriveRoutineBoard,
+  isHouseholdVisibleCareEvidence,
   isRoutineBoardScheduledItem,
   normalizeCareEventType,
   parseClockTime,
+  selectSharedCareEvidence,
   type CareEventType,
   type RoutineBoardItem,
 } from "../../../lib/care-domain/src/index.ts";
@@ -280,7 +282,7 @@ function lower(value: unknown): string {
 }
 
 function isHouseholdVisible(entry: TodayCommandEntry): boolean {
-  return detailRecord(entry).householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 /**
@@ -355,7 +357,7 @@ export function deriveTodayCommand(
   state: TodayCommandState,
   now: number = Date.now(),
 ): TodayCommandModel {
-  const entries = state.entries ?? [];
+  const entries = selectSharedCareEvidence(state.entries ?? [], now);
   const routines = state.routines ?? [];
   const providerSyncEnabled = state.providerSyncEnabled === true;
   const todays = entries.filter((entry) => isSameLocalDay(entry.occurredAt, now));

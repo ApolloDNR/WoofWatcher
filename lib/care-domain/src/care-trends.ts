@@ -1,4 +1,5 @@
 import { normalizeCareEventType, type CareEventDetails } from "./events.ts";
+import { isHouseholdVisibleCareEvidence } from "./shared-evidence.ts";
 
 export type CareTrendTone = "good" | "watch" | "alert" | "info";
 export type CareTrendSignalKind =
@@ -160,7 +161,7 @@ function formatAmount(value: number): string {
 }
 
 function visible(entry: CareTrendsEntry): boolean {
-  return asObject(entry.details).householdVisible !== false;
+  return isHouseholdVisibleCareEvidence(entry);
 }
 
 function timeFor(entry: CareTrendsEntry): number {

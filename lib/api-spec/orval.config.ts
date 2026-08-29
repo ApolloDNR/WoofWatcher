@@ -4,6 +4,10 @@ import path from "path";
 const root = path.resolve(__dirname, "..", "..");
 const apiClientReactSrc = path.resolve(root, "lib", "api-client-react", "src");
 const apiZodSrc = path.resolve(root, "lib", "api-zod", "src");
+const householdQueryKey = {
+  path: path.resolve(apiClientReactSrc, "query-key.ts"),
+  name: "buildHouseholdQueryKey",
+};
 
 // Our exports make assumptions about the title of the API being "Api" (i.e. generated output is `api.ts`).
 const titleTransformer: InputTransformerFn = (config) => {
@@ -28,8 +32,23 @@ export default defineConfig({
       mode: "split",
       baseUrl: "/api",
       clean: true,
-      prettier: true,
+      headers: true,
+      formatter: "prettier",
+      tsconfig: path.resolve(root, "lib", "api-client-react", "tsconfig.json"),
       override: {
+        operations: {
+          listMyHouseholdMemberships: {
+            query: { queryKey: householdQueryKey },
+          },
+          listHouseholdInvitations: { query: { queryKey: householdQueryKey } },
+          listHouseholdSharingCleanup: {
+            query: { queryKey: householdQueryKey },
+          },
+          listHouseholdAuditEvents: { query: { queryKey: householdQueryKey } },
+          getCareState: { query: { queryKey: householdQueryKey } },
+          listCareEntries: { query: { queryKey: householdQueryKey } },
+          listCareEntryTombstones: { query: { queryKey: householdQueryKey } },
+        },
         fetch: {
           includeHttpResponseReturnType: false,
         },
@@ -54,14 +73,15 @@ export default defineConfig({
       schemas: { path: "generated/types", type: "typescript" },
       mode: "split",
       clean: true,
-      prettier: true,
+      formatter: "prettier",
       override: {
         zod: {
+          generateEachHttpStatus: true,
           coerce: {
-            query: ['boolean', 'number', 'string'],
-            param: ['boolean', 'number', 'string'],
-            body: ['bigint', 'date'],
-            response: ['bigint', 'date'],
+            query: ["boolean", "number", "string"],
+            param: ["boolean", "number", "string"],
+            body: ["bigint", "date"],
+            response: ["bigint", "date"],
           },
         },
         useDates: true,

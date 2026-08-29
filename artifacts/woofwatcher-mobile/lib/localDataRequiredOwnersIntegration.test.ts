@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
+import ts from "typescript";
 
 const mobileRoot = join(process.cwd(), "artifacts", "woofwatcher-mobile");
 const careContextSource = readFileSync(
@@ -169,10 +170,81 @@ test("all generated queries forward AbortSignal and all TanStack mutation starts
     join(process.cwd(), "lib", "api-client-react", "src", "generated", "api.ts"),
     "utf8",
   );
-  const queryFunctions = generated.match(/const queryFn: QueryFunction</g)?.length ?? 0;
-  const signalConsumers = generated.match(/= \(\{ signal \}\) =>/g)?.length ?? 0;
-  assert.ok(queryFunctions > 0);
-  assert.equal(signalConsumers, queryFunctions);
+  const generatedSource = ts.createSourceFile(
+    "api.ts",
+    generated,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const queryFunctions: ts.VariableDeclaration[] = [];
+
+  const collectQueryFunctions = (node: ts.Node): void => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === "queryFn" &&
+      node.type &&
+      ts.isTypeReferenceNode(node.type) &&
+      ts.isIdentifier(node.type.typeName) &&
+      node.type.typeName.text === "QueryFunction"
+    ) {
+      queryFunctions.push(node);
+    }
+    ts.forEachChild(node, collectQueryFunctions);
+  };
+  collectQueryFunctions(generatedSource);
+
+  assert.ok(queryFunctions.length > 0);
+  for (const declaration of queryFunctions) {
+    const line = generatedSource.getLineAndCharacterOfPosition(
+      declaration.getStart(generatedSource),
+    ).line + 1;
+    const initializer = declaration.initializer;
+    assert.ok(
+      initializer && ts.isArrowFunction(initializer),
+      `generated queryFn at line ${line} must be an arrow function`,
+    );
+    const parameter = initializer.parameters[0];
+    assert.ok(
+      parameter && ts.isObjectBindingPattern(parameter.name),
+      `generated queryFn at line ${line} must destructure its query context`,
+    );
+    assert.ok(
+      parameter.name.elements.some(
+        (element) =>
+          ts.isIdentifier(element.name) &&
+          element.name.text === "signal" &&
+          (!element.propertyName ||
+            (ts.isIdentifier(element.propertyName) &&
+              element.propertyName.text === "signal")),
+      ),
+      `generated queryFn at line ${line} must consume AbortSignal`,
+    );
+    assert.ok(
+      ts.isCallExpression(initializer.body),
+      `generated queryFn at line ${line} must return its request call directly`,
+    );
+    const requestName = initializer.body.expression.getText(generatedSource);
+    const forwardsSignal = initializer.body.arguments.some(
+      (argument) =>
+        ts.isObjectLiteralExpression(argument) &&
+        argument.properties.some(
+          (property) =>
+            (ts.isShorthandPropertyAssignment(property) &&
+              property.name.text === "signal") ||
+            (ts.isPropertyAssignment(property) &&
+              ts.isIdentifier(property.name) &&
+              property.name.text === "signal" &&
+              ts.isIdentifier(property.initializer) &&
+              property.initializer.text === "signal"),
+        ),
+    );
+    assert.ok(
+      forwardsSignal,
+      `generated queryFn at line ${line} must forward AbortSignal to ${requestName}`,
+    );
+  }
 
   const mutationStarts = productionTypeScriptFiles(mobileRoot).flatMap((path) => {
     const source = readFileSync(path, "utf8");
@@ -188,13 +260,39 @@ test("all generated queries forward AbortSignal and all TanStack mutation starts
     })),
     [
       { path: "components/more/CareTeamSuppliesScreen.tsx", method: "mutateAsync" },
-      { path: "components/more/CareTeamSuppliesScreen.tsx", method: "mutateAsync" },
-      { path: "components/more/CareTeamSuppliesScreen.tsx", method: "mutateAsync" },
     ],
   );
   assert.equal(
     careTeamSuppliesSource.match(/runTrackedLocalDataWork\(async \(scope\) =>/g)?.length,
-    3,
+    5,
+  );
+  assert.match(careTeamSuppliesSource, /runHouseholdJoinOperation\(\{/);
+  assert.match(careTeamSuppliesSource, /runHouseholdRenameOperation\(\{/);
+  assert.match(careTeamSuppliesSource, /runHouseholdInviteOperation\(\{/);
+  assert.match(careTeamSuppliesSource, /runHouseholdSwitchOperation\(\{/);
+  assert.match(
+    careTeamSuppliesSource,
+    /joinHousehold\([\s\S]*"X-WoofWatcher-Expected-Household-Id": expectedHouseholdId/,
+  );
+  assert.match(
+    careTeamSuppliesSource,
+    /updateHousehold\([\s\S]*"X-WoofWatcher-Expected-Household-Id": expectedHouseholdId/,
+  );
+  assert.match(
+    careTeamSuppliesSource,
+    /createHouseholdInvitation\([\s\S]*"X-WoofWatcher-Expected-Household-Id": expectedHouseholdId/,
+  );
+  assert.match(
+    careTeamSuppliesSource,
+    /listMyHouseholdMemberships\([\s\S]*"X-WoofWatcher-Expected-Household-Id": requestPermit\.householdId/,
+  );
+  assert.match(
+    careTeamSuppliesSource,
+    /activateHousehold\([\s\S]*"X-WoofWatcher-Expected-Household-Id":\s*expectedSourceHouseholdId/,
+  );
+  assert.doesNotMatch(
+    careTeamSuppliesSource,
+    /household(?:Access)?\.inviteCode/,
   );
 });
 
@@ -335,19 +433,18 @@ test("future-schema Care hydration keeps the unknown primary envelope opaque", (
     "const stageCareHydration = async",
     "const applyStagedCareHydration =",
   );
-  const primaryStage = sourceSlice(
-    hydration,
-    "if (raw) {",
-    "let legacySummary:",
-  );
-
   assert.match(
-    primaryStage,
-    /if \(parsed\?\.doc && isFutureCareDocDataVersion\(parsed\.doc\)\) \{[\s\S]*futureDoc = parsed\.doc;[\s\S]*futureRaw = raw;[\s\S]*primaryIsPristine = false;[\s\S]*\} else \{[\s\S]*Array\.isArray\(parsed\?\.entries\)[\s\S]*cachedServerVersion = parsed\.serverVersion;/,
+    hydration,
+    /const parsedVault = parseCareIdentityVault\(raw, dataScope\)[\s\S]*readCareIdentitySlot<PersistedCareIdentitySnapshot>\([\s\S]*vault,[\s\S]*dataScope/,
   );
   assert.match(
     hydration,
-    /if \(primaryIsPristine\) \{/,
+    /if \(isFutureCareDocDataVersion\(selectedSnapshot\.doc\)\) \{[\s\S]*futureDoc = selectedSnapshot\.doc;[\s\S]*futureRaw = readCareIdentitySlotRaw\(vault, dataScope\);[\s\S]*primaryIsPristine = false;/,
+  );
+  assert.match(hydration, /primaryIsPristine && dataScope === "local"/);
+  assert.doesNotMatch(
+    hydration,
+    /const parsed = JSON\.parse\(raw\)[\s\S]*cachedDoc = mergeDoc\(parsed\.doc\)/,
   );
 });
 
@@ -381,7 +478,15 @@ test("coordinated exact-key deletion uses a scoped Care commit capability and fi
   );
   assert.match(
     cleanupIntent,
-    /if \(cleanupLedger\.length > 0\) \{[\s\S]*if \(!commitContext\) \{[\s\S]*throw new Error\("The Care reset commit capability is unavailable\."\);[\s\S]*await commitContext\.persistCareCleanupLedger\(cleanupLedger\);/,
+    /if \(cleanupLedger\.length > 0\) \{[\s\S]*const dataScope = activeDataScopeRef\.current;[\s\S]*if \(!commitContext\) \{[\s\S]*throw new Error\("The Care reset commit capability is unavailable\."\);[\s\S]*scopeCareCleanupEntryIds\([\s\S]*dataScope,[\s\S]*cleanupLedger,[\s\S]*await commitContext\.persistCareCleanupLedger\(scopedCleanupLedger\);/,
+  );
+  assert.doesNotMatch(
+    cleanupIntent,
+    /persistCareCleanupLedger\(cleanupLedger\)/,
+  );
+  assert.match(
+    cleanupIntent,
+    /else if \(commitContext\) \{[\s\S]*persistCareCleanupLedger\(\[\]\)/,
   );
   assert.doesNotMatch(cleanupIntent, /resetCommitStorage/);
   assert.doesNotMatch(localDataResetContextSource, /resetCommitStorage/);
@@ -477,7 +582,11 @@ test("settled reset epochs trigger persistence without rerunning completed hydra
   );
   assert.match(
     hydration,
-    /if \(hydratedRef\.current\) return;/,
+    /hydratedRef\.current &&[\s\S]*activeDataScopeRef\.current === dataScope[\s\S]*return;/,
+  );
+  assert.match(
+    hydration,
+    /activeDataScopeRef\.current = null;[\s\S]*hydratedRef\.current = false;[\s\S]*setHydrated\(false\);/,
   );
   assert.match(hydration, /operationSettledEpoch/);
   assert.match(

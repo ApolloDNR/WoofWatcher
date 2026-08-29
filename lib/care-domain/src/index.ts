@@ -2,6 +2,7 @@ export * from "./events.ts";
 export * from "./clock-time.ts";
 export * from "./pet-identity.ts";
 export * from "./status.ts";
+export * from "./shared-evidence.ts";
 export * from "./health.ts";
 export * from "./handoff.ts";
 export * from "./care-pass.ts";

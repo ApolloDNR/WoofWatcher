@@ -2,8 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildAdventureEvidenceDetails,
   buildAdventureMemoryDraft,
   deriveAdventureMode,
+  findAdventureQuestProofEntryId,
+  type AdventureQuest,
 } from "../src/index.ts";
 
 process.env.TZ = "America/Los_Angeles";
@@ -54,6 +57,99 @@ test("derives private adventure quests from real care evidence", () => {
   assert.equal(adventure.quests.some((quest) => quest.id === "sniffari-walk" && quest.status === "complete"), true);
   assert.equal(adventure.quests.some((quest) => quest.id === "training-win" && quest.action === "log-training"), true);
   assert.match(adventure.nextStep, /Save a private memory/);
+});
+
+test("Adventure selection fails closed for every malformed-present household visibility value", () => {
+  const malformedValues: unknown[] = ["true", "false", null, 0, 1, {}, []];
+
+  for (const householdVisible of malformedValues) {
+    const adventure = deriveAdventureMode({
+      now: NOW,
+      entries: [
+        {
+          id: "private-walk",
+          type: "walk",
+          title: "Must stay private",
+          occurredAt: "2026-06-11T08:00:00-07:00",
+          durationMinutes: 30,
+          details: { householdVisible, walkLifecycle: "completed" },
+        },
+      ],
+      memories: [],
+    });
+
+    assert.equal(adventure.todayXp, 0, JSON.stringify(householdVisible));
+    assert.deepEqual(adventure.completedProof, [], JSON.stringify(householdVisible));
+  }
+});
+
+test("Adventure selection preserves only legacy absence and literal true as shared", () => {
+  const entry = {
+    id: "walk",
+    type: "walk",
+    occurredAt: "2026-06-11T08:00:00-07:00",
+    durationMinutes: 30,
+    details: { walkLifecycle: "completed" },
+  };
+  const legacy = deriveAdventureMode({ now: NOW, entries: [entry], memories: [] });
+  const explicit = deriveAdventureMode({
+    now: NOW,
+    entries: [{ ...entry, details: { ...entry.details, householdVisible: true } }],
+    memories: [],
+  });
+
+  assert.equal(legacy.todayXp, 30);
+  assert.equal(explicit.todayXp, 30);
+});
+
+test("Adventure proof selection and patching share the strict visibility table", () => {
+  const quest: AdventureQuest = {
+    id: "sniffari-walk",
+    title: "Calm Sniffari Walk",
+    prompt: "Walk",
+    rewardXp: 20,
+    status: "available",
+    action: "start-walk",
+    actionLabel: "Start walk",
+    evidence: "None",
+    safetyNote: "Stay safe",
+  };
+  const base = {
+    id: "walk-proof",
+    type: "walk",
+    occurredAt: "2026-06-11T08:00:00-07:00",
+  };
+  const malformedValues: unknown[] = ["true", "false", null, 0, 1, {}, []];
+
+  for (const householdVisible of malformedValues) {
+    const entry = { ...base, details: { householdVisible } };
+    assert.equal(
+      findAdventureQuestProofEntryId(quest, [entry], NOW),
+      null,
+      `selector: ${JSON.stringify(householdVisible)}`,
+    );
+    assert.equal(
+      buildAdventureEvidenceDetails(quest, entry.details).householdVisible,
+      false,
+      `patch: ${JSON.stringify(householdVisible)}`,
+    );
+  }
+
+  assert.equal(findAdventureQuestProofEntryId(quest, [base], NOW), "walk-proof");
+  assert.equal(
+    findAdventureQuestProofEntryId(
+      quest,
+      [{ ...base, details: { householdVisible: true } }],
+      NOW,
+    ),
+    "walk-proof",
+  );
+  assert.equal(buildAdventureEvidenceDetails(quest, {}).householdVisible, true);
+  assert.equal(
+    buildAdventureEvidenceDetails(quest, { householdVisible: true })
+      .householdVisible,
+    true,
+  );
 });
 
 test("keeps Adventure Mode private and calm when no outings are logged", () => {

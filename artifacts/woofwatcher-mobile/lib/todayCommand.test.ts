@@ -1,7 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { deriveTodayCommand, type TodayCommandState } from "./todayCommand.ts";
+import {
+  deriveTodayCommand,
+  findPendingMealOutcome,
+  type TodayCommandEntry,
+  type TodayCommandState,
+} from "./todayCommand.ts";
 
 process.env.TZ = "America/Los_Angeles";
 
@@ -112,6 +117,50 @@ test("served meal with pending outcome becomes the primary update action", () =>
   assert.match(command.handoff.detail, /Emma served Breakfast/i);
   assert.match(command.handoff.detail, /outcome pending/i);
   assert.doesNotMatch(command.handoff.detail, /logged Breakfast/i);
+});
+
+test("Today pending-meal selection fails closed for every malformed-present visibility value", () => {
+  const malformedValues: unknown[] = ["true", "false", null, 0, 1, {}, []];
+
+  for (const householdVisible of malformedValues) {
+    const entry: TodayCommandEntry = {
+      id: "meal-malformed",
+      type: "meal",
+      title: "Private meal",
+      occurredAt: "2026-06-06T07:38:00-07:00",
+      details: {
+        householdVisible,
+        mealCompletion: "served",
+        mealLifecycle: "outcome-pending",
+      },
+    };
+
+    assert.equal(
+      findPendingMealOutcome([entry], MORNING),
+      null,
+      JSON.stringify(householdVisible),
+    );
+  }
+});
+
+test("Today pending-meal selection preserves only legacy absence and literal true as shared", () => {
+  const base: TodayCommandEntry = {
+    id: "meal-legacy",
+    type: "meal",
+    occurredAt: "2026-06-06T07:38:00-07:00",
+    details: {
+      mealCompletion: "served",
+      mealLifecycle: "outcome-pending",
+    },
+  };
+  const explicit: TodayCommandEntry = {
+    ...base,
+    id: "meal-explicit",
+    details: { ...base.details, householdVisible: true },
+  };
+
+  assert.equal(findPendingMealOutcome([base], MORNING)?.id, "meal-legacy");
+  assert.equal(findPendingMealOutcome([explicit], MORNING)?.id, "meal-explicit");
 });
 
 test("meal served before midnight keeps its outcome action after the rollover", () => {
@@ -402,6 +451,71 @@ test("handoff review opens the exact latest care log when the day is caught up",
   assert.equal(command.primaryAction.kind, "handoff");
   assert.equal(command.primaryAction.route, "/log?entry=training_1");
   assert.match(command.primaryAction.label, /Review handoff/i);
+});
+
+test("filters private, malformed, and future evidence at the exported Today Command boundary", () => {
+  const hiddenVisibility = [
+    false,
+    "true",
+    "false",
+    null,
+    0,
+    1,
+    {},
+    [],
+  ] as const;
+  const hiddenEntries: TodayCommandEntry[] = hiddenVisibility.map(
+    (householdVisible, index) => ({
+      id: `private_today_${index}`,
+      type: "meal",
+      title: `SECRET PRIVATE MEAL ${index}`,
+      caregiver: "Private caregiver",
+      occurredAt: "2026-06-06T00:10:00-07:00",
+      syncStatus: index === 0 ? "failed" : "synced",
+      details: { householdVisible },
+    }),
+  );
+  const command = deriveTodayCommand(
+    state({
+      routines: [],
+      entries: [
+        ...hiddenEntries,
+        {
+          id: "future_shared_today",
+          type: "meal",
+          title: "FUTURE SHARED MEAL",
+          caregiver: "Future caregiver",
+          occurredAt: "2026-06-06T00:40:00-07:00",
+          syncStatus: "pending",
+          details: { householdVisible: true },
+        },
+      ],
+      providerSyncEnabled: true,
+    }),
+    BEFORE_CARE_DAY,
+  );
+
+  assert.equal(command.primaryAction.kind, "review");
+  assert.equal(command.primaryAction.route, "/more");
+  assert.equal(command.handoff.label, "Start handoff");
+  assert.equal(command.handoff.caregiver, null);
+  assert.deepEqual(command.sync, {
+    pending: 0,
+    failed: 0,
+    local: 0,
+    label: "Synced",
+  });
+  assert.equal(command.health.label, "Health steady");
+  const serialized = JSON.stringify(command);
+  for (const token of [
+    ...hiddenEntries.flatMap((entry) => [entry.id, entry.title, entry.caregiver]),
+    "future_shared_today",
+    "FUTURE SHARED MEAL",
+    "Future caregiver",
+  ]) {
+    assert.ok(token);
+    assert.doesNotMatch(serialized, new RegExp(token));
+  }
 });
 
 test("a correction-only meal array keeps the default meal target and copy", () => {

@@ -51,7 +51,7 @@ test("Records filters household-private logs once before every shared aggregate"
 
   assert.match(
     records,
-    /const householdEntries = useMemo\([\s\S]{0,180}selectRecordsHouseholdEntries\(state\.entries\)/,
+    /const householdEntries = useMemo\([\s\S]{0,180}selectRecordsHouseholdEntries\(state\.entries, now\)/,
   );
   assert.doesNotMatch(aggregateSetup, /state\.entries/);
   assert.match(aggregateSetup, /entries: householdEntries/);
@@ -61,7 +61,7 @@ test("Records filters household-private logs once before every shared aggregate"
   );
   assert.match(
     aggregateSetup,
-    /selectRecordsRecentMealNotes\(householdEntries\)/,
+    /selectRecordsRecentMealNotes\(householdEntries, now\)/,
   );
   assert.doesNotMatch(streakSetup, /state\.entries/);
   assert.match(streakSetup, /householdEntries\.flatMap/);
@@ -173,7 +173,7 @@ test("private logs cannot enter Records cards, meal notes, caregiver ranking, or
   ];
   const originalSnapshot = JSON.stringify(entries);
 
-  const visible = selectRecordsHouseholdEntries(entries);
+  const visible = selectRecordsHouseholdEntries(entries, now);
   const report = buildRecordsProgressReport(visible, 30, now);
   const mealNotes = selectRecordsRecentMealNotes(visible);
   const pass = buildCarePass({
@@ -211,4 +211,56 @@ test("private logs cannot enter Records cards, meal notes, caregiver ranking, or
   // the local care document for owner export, editing, and deletion.
   assert.equal(entries[2], privateMeal);
   assert.equal(JSON.stringify(entries), originalSnapshot);
+});
+
+test("Records excludes future and malformed logs before cards, Today labels, notes, and public export", () => {
+  const now = new Date("2026-08-23T18:00:00.000Z").getTime();
+  const entries = [
+    {
+      id: "past-meal",
+      type: "meal",
+      title: "PAST_MEAL_ALLOWED",
+      caregiver: "Ava",
+      occurredAt: "2026-08-23T17:00:00.000Z",
+      note: "Past note allowed.",
+      details: { householdVisible: true },
+    },
+    {
+      id: "future-meal",
+      type: "meal",
+      title: "FUTURE_MEAL_MUST_NOT_APPEAR_TODAY",
+      caregiver: "Future caregiver",
+      occurredAt: "2026-08-23T20:00:00.000Z",
+      note: "Future note must not export.",
+      details: { householdVisible: true },
+    },
+    {
+      id: "invalid-urgent",
+      type: "symptom",
+      title: "INVALID_URGENT_MUST_NOT_EXPORT",
+      caregiver: "Invalid caregiver",
+      occurredAt: "not-a-date",
+      details: { householdVisible: true },
+    },
+  ];
+
+  const visible = selectRecordsHouseholdEntries(entries, now);
+  const report = buildRecordsProgressReport(entries, 30, now);
+  const mealNotes = selectRecordsRecentMealNotes(entries, now);
+  const pass = buildCarePass({
+    audience: "vet",
+    profile: { name: "Phoenix" },
+    entries,
+    now,
+  });
+
+  assert.deepEqual(visible.map((entry) => entry.id), ["past-meal"]);
+  assert.equal(report.total, 1);
+  assert.equal(report.meals, 1);
+  assert.deepEqual(mealNotes.map((entry) => entry.id), ["past-meal"]);
+  assert.match(pass.message, /PAST_MEAL_ALLOWED/);
+  assert.doesNotMatch(
+    JSON.stringify({ visible, report, mealNotes, pass }),
+    /FUTURE_MEAL_MUST_NOT_APPEAR_TODAY|Future note must not export|INVALID_URGENT_MUST_NOT_EXPORT|Invalid Date/,
+  );
 });

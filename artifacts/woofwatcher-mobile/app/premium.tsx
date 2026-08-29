@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useLayoutEffect, useMemo, useRef } from "react";
 import {
   Animated,
   ImageBackground,
@@ -12,8 +12,10 @@ import {
   Text,
   View,
 } from "react-native";
+import { useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { OwnerOpsUnavailableScreen } from "@/components/board/OwnerOpsBoundary";
+import { MOTION_MS, SPRING } from "@/components/motion/GameFeel";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import {
   deriveHealthWatch,
@@ -30,6 +32,7 @@ import { SpriteSheetPlayer } from "@/components/SpriteSheetPlayer";
 import { CARE_TWIN_SPRITE_MANIFEST } from "@/lib/avatarLifeEngine";
 import { getCareTwinSpriteAsset } from "@/lib/careTwinAssets";
 import { notifyDialog } from "@/lib/confirmDialog";
+import { canonicalHomeRoute } from "@/lib/canonicalRouteBuilders";
 import { MIN_MOBILE_TOUCH_TARGET, getRouteTopPadding, getStandaloneRouteBottomPadding } from "@/lib/mobileLayout";
 import { buildPaymentsProviderProofManifest } from "@/lib/paymentsProviderProof";
 import { pixelImageStyle, stageImageFill } from "@/lib/pixelRendering";
@@ -107,17 +110,32 @@ function PremiumScreenBody() {
   ];
   const paymentsProofManifest = buildPaymentsProviderProofManifest();
   const premiumStageIsNight = colors.isDark || homeImmersiveRoomIsNight(new Date().getHours());
-
+  const reducedMotion = useReducedMotion();
   const isWebRoutePreview = (Platform.OS as string) === "web";
   const fade = useRef(new Animated.Value(isWebRoutePreview ? 1 : 0)).current;
   const slide = useRef(new Animated.Value(isWebRoutePreview ? 0 : 18)).current;
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isWebRoutePreview) return;
-    Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 420, useNativeDriver: !isWebRoutePreview }),
-      Animated.spring(slide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: !isWebRoutePreview }),
-    ]).start();
-  }, [fade, isWebRoutePreview, slide]);
+    if (reducedMotion) {
+      fade.setValue(1);
+      slide.setValue(0);
+      return;
+    }
+    const entrance = Animated.parallel([
+      Animated.timing(fade, {
+        toValue: 1,
+        duration: MOTION_MS.screen,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slide, {
+        toValue: 0,
+        ...SPRING.default,
+        useNativeDriver: true,
+      }),
+    ]);
+    entrance.start();
+    return () => entrance.stop();
+  }, [fade, isWebRoutePreview, reducedMotion, slide]);
 
   const showLaunchChecklist = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -144,7 +162,7 @@ function PremiumScreenBody() {
         contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 20, paddingBottom: bottomPadding }}
       >
         <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }] }}>
-          <BoardCard padded={false} enter={0} style={s.premiumValueStageCard}>
+          <BoardCard padded={false} style={s.premiumValueStageCard}>
             <ImageBackground
               source={PREMIUM_VALUE_STAGE_ROOM}
               resizeMode="stretch"
@@ -263,13 +281,18 @@ function PremiumScreenBody() {
                   onPress={showLaunchChecklist}
                   style={({ pressed }) => [
                     s.premiumValueAction,
-                    { backgroundColor: colors.sage, opacity: pressed ? 0.82 : 1 },
+                    { backgroundColor: colors.primary, opacity: pressed ? 0.82 : 1 },
                   ]}
                 >
-                  <Text style={[s.premiumValueActionText, { fontFamily: "Inter_800ExtraBold" }]}>
+                  <Text
+                    style={[
+                      s.premiumValueActionText,
+                      { color: colors.primaryForeground, fontFamily: "Inter_800ExtraBold" },
+                    ]}
+                  >
                     Launch checklist
                   </Text>
-                  <Ionicons name="arrow-forward" size={15} color={colors.ivory} />
+                  <Ionicons name="arrow-forward" size={15} color={colors.primaryForeground} />
                 </Pressable>
               </View>
             </View>
@@ -282,7 +305,7 @@ function PremiumScreenBody() {
             </Text>
           </View>
 
-          <BoardCard enter={1} style={s.paymentsProofCard}>
+          <BoardCard style={s.paymentsProofCard}>
             {/* Short title: "Payments proof manifest" truncated to "manife..."
                 beside the accessory pill on phone widths. */}
             <BoardSectionHeader
@@ -327,7 +350,7 @@ function PremiumScreenBody() {
             ))}
           </BoardCard>
 
-          <BoardCard enter={2} style={s.premiumBoard}>
+          <BoardCard style={s.premiumBoard}>
             <BoardSectionHeader
               title="Why upgrade"
               accessory={<BoardPill label={`${preview.valueSignals.length} signals`} tone={colors.sage} />}
@@ -365,7 +388,7 @@ function PremiumScreenBody() {
             ))}
           </View>
 
-          <BoardCard enter={3} style={s.entitlementCard}>
+          <BoardCard style={s.entitlementCard}>
             <BoardSectionHeader title="Launch entitlements" accessory={<BoardPill label="Current: Free" tone={colors.primary} />} />
             <Text style={[s.entitlementSub, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               Current plan: Free
@@ -402,7 +425,11 @@ function PremiumScreenBody() {
             <Pressable
               onPress={() => {
                 Haptics.selectionAsync();
-                router.back();
+                if (router.canGoBack()) {
+                  router.back();
+                  return;
+                }
+                router.replace(canonicalHomeRoute() as never);
               }}
               accessibilityRole="button"
               accessibilityLabel="Back to care"
@@ -482,7 +509,7 @@ function PlanCard({
           </Text>
         </View>
         <View style={[s.pricePill, { backgroundColor: recommended ? colors.primary : colors.background }]}>
-          <Text style={[s.priceText, { color: recommended ? "#FFFFFF" : colors.foreground, fontFamily: "Inter_700Bold" }]}>
+          <Text style={[s.priceText, { color: recommended ? colors.primaryForeground : colors.foreground, fontFamily: "Inter_700Bold" }]}>
             {plan.monthlyPrice}
           </Text>
         </View>
@@ -673,7 +700,6 @@ const s = StyleSheet.create({
     gap: 6,
   },
   premiumValueActionText: {
-    color: "#FFF9EF",
     fontSize: 12,
   },
   notice: { flexDirection: "row", gap: 9, borderWidth: 1, borderRadius: 17, padding: 14, marginTop: 14 },

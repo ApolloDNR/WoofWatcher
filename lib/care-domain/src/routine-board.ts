@@ -1,5 +1,6 @@
 import { normalizeCareEventType, type CareEventDetails, type CareEventType } from "./events.ts";
 import { parseClockTime } from "./clock-time.ts";
+import { selectSharedCareEvidence } from "./shared-evidence.ts";
 
 export type RoutineBoardStatus = "done" | "pending" | "overdue" | "due" | "upcoming" | "needs-correction";
 export type RoutineCompletion = "complete" | "partial" | "skipped" | "pending";
@@ -42,6 +43,7 @@ interface RoutineBoardItemBase extends RoutineBoardRoutine {
   completionLabel: string | null;
   completedBy: string | null;
   completedAt: string | null;
+  completionEntryId: string | null;
 }
 
 export type RoutineBoardScheduledItem = RoutineBoardItemBase & {
@@ -105,10 +107,6 @@ function entryRoutineId(entry: RoutineBoardEntry): string {
   return typeof id === "string" ? id : "";
 }
 
-function entryIsHouseholdVisible(entry: RoutineBoardEntry): boolean {
-  return entry.details?.householdVisible !== false;
-}
-
 function detailText(details: CareEventDetails, key: string): string {
   const value = details?.[key];
   return typeof value === "string" ? clean(value).toLowerCase() : "";
@@ -165,8 +163,8 @@ export function isRoutineBoardScheduledItem(
 
 export function deriveRoutineBoard(input: RoutineBoardInput): RoutineBoard {
   const now = input.now ?? Date.now();
-  const todays = input.entries
-    .filter((entry) => isSameLocalDay(entry.occurredAt, now) && entryIsHouseholdVisible(entry))
+  const todays = selectSharedCareEvidence(input.entries, now)
+    .filter((entry) => isSameLocalDay(entry.occurredAt, now))
     .map((entry, index) => ({
       entry,
       key: entry.id ? `id:${entry.id}` : `index:${index}`,
@@ -199,6 +197,7 @@ export function deriveRoutineBoard(input: RoutineBoardInput): RoutineBoard {
         completionLabel: null,
         completedBy: null,
         completedAt: null,
+        completionEntryId: null,
         minutesFromNow: null,
       };
     }
@@ -239,6 +238,7 @@ export function deriveRoutineBoard(input: RoutineBoardInput): RoutineBoard {
       completionLabel: completion ? completionLabel(completion) : null,
       completedBy: fuzzy ? clean(fuzzy.entry.caregiver) || null : null,
       completedAt: fuzzy?.entry.occurredAt ?? null,
+      completionEntryId: fuzzy?.entry.id ?? null,
       minutesFromNow: Math.round((routineMs - now) / 60000),
     };
   });

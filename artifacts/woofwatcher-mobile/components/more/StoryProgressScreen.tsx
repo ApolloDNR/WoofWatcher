@@ -10,13 +10,14 @@ import {
   Text,
   View,
 } from "react-native";
-import Animated from "react-native-reanimated";
+import Animated, { useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   deriveAdventureMode,
   deriveWalkActivity,
   deriveWalkRouteTemplates,
   normalizeCareEventType,
+  selectSharedCareEvidence,
 } from "@workspace/care-domain";
 
 import {
@@ -40,7 +41,7 @@ import { useColors } from "@/hooks/useColors";
 import {
   careLevelSpanXp,
   careTitleForLevel,
-  careXpForEntry,
+  deriveCareCareerBadgeEarnDates,
   deriveCareCareer,
   deriveCareStreak,
   deriveCareerWeek,
@@ -190,6 +191,7 @@ export default function StoryProgressScreen({
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
   const { width: windowWidth } = useAppViewport();
   const { state } = useCare();
   const now = Date.now();
@@ -209,13 +211,17 @@ export default function StoryProgressScreen({
   });
 
   const petName = resolvePetName(state.profile.name);
+  const storyEntries = useMemo(
+    () => selectSharedCareEvidence(state.entries, now),
+    [state.entries, now],
+  );
 
   /* Care career: level, title, XP, and streak from real logged care only. */
-  const career = useMemo(() => deriveCareCareer(state.entries, now), [state.entries, now]);
-  const careStreak = useMemo(() => deriveCareStreak(state.entries, now), [state.entries, now]);
+  const career = useMemo(() => deriveCareCareer(storyEntries, now), [storyEntries, now]);
+  const careStreak = useMemo(() => deriveCareStreak(storyEntries, now), [storyEntries, now]);
   const careerWeek = useMemo(
-    () => deriveCareerWeek(state.entries, now),
-    [state.entries, now],
+    () => deriveCareerWeek(storyEntries, now),
+    [storyEntries, now],
   );
 
   /* Adventure preview: same inputs the full Adventure Mode screen derives from. */
@@ -223,15 +229,15 @@ export default function StoryProgressScreen({
     () =>
       deriveAdventureMode({
         petName,
-        entries: state.entries,
+        entries: storyEntries,
         memories: state.adventureMemories,
         now,
       }),
-    [petName, state.entries, state.adventureMemories, now],
+    [petName, storyEntries, state.adventureMemories, now],
   );
   const trailStops = useMemo(
-    () => deriveWalkRouteTemplates({ entries: state.entries, now, limit: 3 }),
-    [state.entries, now],
+    () => deriveWalkRouteTemplates({ entries: storyEntries, now, limit: 3 }),
+    [storyEntries, now],
   );
   const questsCompleteToday = useMemo(
     () => adventure.quests.filter((quest) => quest.status === "complete").length,
@@ -252,8 +258,7 @@ export default function StoryProgressScreen({
         photoUri: memory.photoUri?.trim() || undefined,
       });
     }
-    for (const entry of state.entries) {
-      if (entry.details?.householdVisible === false) continue;
+    for (const entry of storyEntries) {
       const uri = entryPhotoUri(entry.details);
       if (!uri) continue;
       items.push({
@@ -274,7 +279,7 @@ export default function StoryProgressScreen({
       else months.push({ key: `${label}-${months.length}`, label, items: [item] });
     }
     return months;
-  }, [adventure.memories, state.entries]);
+  }, [adventure.memories, storyEntries]);
 
   /* Walk journal: real walk logs that carry journal content (a note, a mood,
      or a proof photo), told as mock-board story cards. There is no reaction
@@ -282,11 +287,8 @@ export default function StoryProgressScreen({
      counts are never invented. */
   const walkJournal = useMemo(() => {
     const stories: WalkJournalStory[] = [];
-    for (const entry of state.entries) {
-      if (entry.details?.householdVisible === false) continue;
+    for (const entry of storyEntries) {
       if (normalizeCareEventType(entry.type, entry.details) !== "walk") continue;
-      const occurred = Date.parse(entry.occurredAt);
-      if (!Number.isFinite(occurred) || occurred > now) continue;
       const note = (entry.note ?? "").trim();
       const mood = (entry.mood ?? "").trim();
       const photoUri = entryPhotoUri(entry.details);
@@ -301,22 +303,21 @@ export default function StoryProgressScreen({
     }
     stories.sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt));
     return stories.slice(0, 3);
-  }, [state.entries, now]);
+  }, [storyEntries]);
 
   /* Walk story: today's derived walk activity plus a real trailing-week count. */
   const walkActivity = useMemo(
-    () => deriveWalkActivity({ entries: state.entries, now }),
-    [state.entries, now],
+    () => deriveWalkActivity({ entries: storyEntries, now }),
+    [storyEntries, now],
   );
   const walksThisWeek = useMemo(
     () =>
-      state.entries.filter((entry) => {
-        if (entry.details?.householdVisible === false) return false;
+      storyEntries.filter((entry) => {
         const occurred = Date.parse(entry.occurredAt);
-        if (!Number.isFinite(occurred) || occurred > now || occurred < now - WEEK_MS) return false;
+        if (occurred < now - WEEK_MS) return false;
         return normalizeCareEventType(entry.type, entry.details) === "walk";
       }).length,
-    [state.entries, now],
+    [storyEntries, now],
   );
 
   /* Real trail map: the most recent household-visible walk with a recorded
@@ -324,15 +325,14 @@ export default function StoryProgressScreen({
      illustrated map remains the empty state until the first routed walk. */
   const routedWalk = useMemo(() => {
     const routed: { entry: Entry; route: WalkRoutePoint[] }[] = [];
-    for (const entry of state.entries) {
-      if (entry.details?.householdVisible === false) continue;
+    for (const entry of storyEntries) {
       if (normalizeCareEventType(entry.type, entry.details) !== "walk") continue;
       const route = parseWalkRoute(entry.details?.route);
       if (route) routed.push({ entry, route });
     }
     routed.sort((a, b) => Date.parse(b.entry.occurredAt) - Date.parse(a.entry.occurredAt));
     return routed[0] ?? null;
-  }, [state.entries]);
+  }, [storyEntries]);
 
   /* Day Trail: today's real, household-visible care logs in the order they
      happened - the waypoints of the empty-state hero. The scene draws only
@@ -340,10 +340,8 @@ export default function StoryProgressScreen({
   const dayTrailStops = useMemo<DayTrailStop[]>(() => {
     const today = new Date(now);
     const stops: { at: number; stop: DayTrailStop }[] = [];
-    for (const entry of state.entries) {
-      if (entry.details?.householdVisible === false) continue;
+    for (const entry of storyEntries) {
       const occurred = Date.parse(entry.occurredAt);
-      if (!Number.isFinite(occurred) || occurred > now) continue;
       const when = new Date(occurred);
       if (
         when.getFullYear() !== today.getFullYear() ||
@@ -364,7 +362,7 @@ export default function StoryProgressScreen({
     }
     stops.sort((a, b) => a.at - b.at);
     return stops.map((item) => item.stop);
-  }, [state.entries, now]);
+  }, [storyEntries, now]);
 
   /* One-line recap that pays off Home's "Today's Story" promise - the same
      real logs, summarized. Empty state is honest, never a fake highlight. */
@@ -413,32 +411,10 @@ export default function StoryProgressScreen({
 
   /* Real earn moments: replay the logged care history in order and record the
      entry whose XP pushed the lifetime total across each tier's threshold. */
-  const badgeEarnDates = useMemo(() => {
-    const ordered = state.entries
-      .filter((entry) => {
-        const occurred = Date.parse(entry.occurredAt);
-        return Number.isFinite(occurred) && occurred <= now;
-      })
-      .sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt));
-    const earnedAt = new Map<string, string>();
-    let cumulativeXp = 0;
-    let index = 0;
-    for (const tier of badgeLadder) {
-      if (tier.xpRequired === 0) {
-        // The starter title is held from the first real log.
-        if (ordered.length > 0) earnedAt.set(tier.title, ordered[0].occurredAt);
-        continue;
-      }
-      while (index < ordered.length && cumulativeXp < tier.xpRequired) {
-        cumulativeXp += careXpForEntry(ordered[index]);
-        index += 1;
-      }
-      if (cumulativeXp >= tier.xpRequired) {
-        earnedAt.set(tier.title, ordered[index - 1].occurredAt);
-      }
-    }
-    return earnedAt;
-  }, [state.entries, now, badgeLadder]);
+  const badgeEarnDates = useMemo(
+    () => deriveCareCareerBadgeEarnDates(storyEntries, badgeLadder, now),
+    [storyEntries, now, badgeLadder],
+  );
 
   const earnedTitles = useMemo(
     () =>
@@ -755,7 +731,7 @@ export default function StoryProgressScreen({
                 invented. */}
             {walkJournal.length > 0 ? (
               <>
-                <Animated.View entering={enterUp(2)}>
+                <Animated.View entering={reducedMotion ? undefined : enterUp(2)}>
                   <Text style={[s.quietLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                     Walk journal
                   </Text>
@@ -822,7 +798,11 @@ export default function StoryProgressScreen({
                   rounded tiles, straight on the parchment background. Every
                   tile is a real saved memory or care-log proof photo. */}
               {memoryMonths.map((month, monthIndex) => (
-                <Animated.View key={month.key} entering={enterUp(monthIndex)} style={s.memoryMonth}>
+                <Animated.View
+                  key={month.key}
+                  entering={reducedMotion ? undefined : enterUp(monthIndex)}
+                  style={s.memoryMonth}
+                >
                   <Text style={[s.quietLabel, { color: colors.foreground, fontFamily: DISPLAY_SEMI }]}>
                     {month.label}
                   </Text>

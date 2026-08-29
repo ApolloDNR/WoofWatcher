@@ -48,7 +48,7 @@ test("declares the exact universal primary and compatibility tab models", async 
   );
 });
 
-test("a focused More child tab press replaces exactly once with the More root", async () => {
+test("focused Plans, Health, and More child presses replace exactly once with their roots", async () => {
   const model = await import("./universalTabBar.ts");
   const handleUniversalTabPress = Reflect.get(
     model,
@@ -60,35 +60,60 @@ test("a focused More child tab press replaces exactly once with the More root", 
     "the tab model should expose its focused-child press contract",
   );
 
-  const effects: string[] = [];
-  const handled = (
-    handleUniversalTabPress as (
-      input: {
-        tabName: string;
-        focused: boolean;
-        pathname: string;
-        moreSection: string;
-      },
-      effects: {
-        preventDefault: () => void;
-        replace: (pathname: string) => void;
-      },
-    ) => boolean
-  )(
+  for (const { input, root } of [
     {
-      tabName: "more",
-      focused: true,
-      pathname: "/more",
-      moreSection: "privacy",
+      input: {
+        tabName: "calendar",
+        focused: true,
+        pathname: "/calendar",
+        plansItem: "routine:morning-walk",
+        healthSection: "overview",
+        moreSection: "root",
+      },
+      root: "/calendar",
     },
     {
+      input: {
+        tabName: "health",
+        focused: true,
+        pathname: "/health",
+        healthSection: "records",
+        moreSection: "root",
+      },
+      root: "/health",
+    },
+    {
+      input: {
+        tabName: "more",
+        focused: true,
+        pathname: "/more",
+        healthSection: "overview",
+        moreSection: "avatar-studio",
+      },
+      root: "/more",
+    },
+  ] as const) {
+    const effects: string[] = [];
+    const handled = (
+      handleUniversalTabPress as (
+        input: typeof input,
+        effects: {
+          preventDefault: () => void;
+          replace: (pathname: string) => void;
+        },
+      ) => boolean
+    )(input, {
       preventDefault: () => effects.push("prevent-default"),
       replace: (pathname) => effects.push(`replace:${pathname}`),
-    },
-  );
+    });
 
-  assert.equal(handled, true);
-  assert.deepEqual(effects, ["prevent-default", "replace:/more"]);
+    assert.equal(handled, true, JSON.stringify(input));
+    assert.deepEqual(
+      effects,
+      ["prevent-default", `replace:${root}`],
+      JSON.stringify(input),
+    );
+  }
 });
 
 test("root and unfocused tab presses remain Expo-owned without a second action", async () => {
@@ -112,21 +137,30 @@ test("root and unfocused tab presses remain Expo-owned without a second action",
 
   for (const input of [
     {
+      tabName: "calendar",
+      focused: true,
+      pathname: "/calendar",
+      healthSection: "overview",
+      moreSection: "root",
+    },
+    {
       tabName: "more",
       focused: true,
       pathname: "/more",
       moreSection: "root",
     },
     {
-      tabName: "more",
+      tabName: "health",
       focused: false,
       pathname: "/health",
+      healthSection: "records",
       moreSection: "root",
     },
     {
       tabName: "health",
       focused: true,
       pathname: "/health",
+      healthSection: "overview",
       moreSection: "root",
     },
   ] as const) {
@@ -167,7 +201,7 @@ test("keeps all five primary and three compatibility route files available", () 
   );
 });
 
-test("maps the canonical model to regular Expo tab screens without a second Home action", () => {
+test("maps the canonical model to Expo tabs with one bounded stateful-root listener factory", () => {
   const layout = readSource(TAB_LAYOUT_PATH);
 
   assert.match(layout, /UNIVERSAL_PRIMARY_TABS/);
@@ -206,11 +240,19 @@ test("maps the canonical model to regular Expo tab screens without a second Home
   assert.equal(
     layout.match(/tabPress:/g)?.length ?? 0,
     1,
-    "only the More screen installs the focused-child reset listener",
+    "one shared listener factory serves the three stateful tab roots",
   );
   assert.match(
     layout,
-    /tab\.name\s*===\s*"more"[\s\S]*tabPress:[\s\S]*handleUniversalTabPress[\s\S]*navigation\.isFocused\(\)[\s\S]*router\.replace/,
+    /tab\.name === "more" \|\|[\s\S]{0,100}tab\.name === "calendar" \|\|[\s\S]{0,100}tab\.name === "health"[\s\S]{0,220}tabPress:[\s\S]{0,220}handleUniversalTabPress/,
+  );
+  assert.match(layout, /plansItem:\s*activePlansItem/);
+  assert.match(layout, /healthSection:\s*activeHealthSection/);
+  assert.match(layout, /moreSection:\s*activeMoreSection/);
+  assert.match(layout, /focused:\s*navigation\.isFocused\(\)/);
+  assert.match(
+    layout,
+    /replace:\s*\(nextPathname\)[\s\S]{0,260}requestRegisteredAvatarDraftExit[\s\S]{0,260}router\.replace\(nextPathname\)/,
   );
 });
 

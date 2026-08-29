@@ -1,6 +1,10 @@
-import { normalizeCareEventType } from "@workspace/care-domain";
+import {
+  normalizeCareEventType,
+  selectSharedCareEvidence,
+} from "@workspace/care-domain";
 
 export interface RecordsHouseholdVisibilityEntry {
+  occurredAt?: unknown;
   details?: unknown;
 }
 
@@ -24,13 +28,6 @@ export interface RecordsProgressReport {
   topCaregiver: { name: string; count: number } | null;
 }
 
-function isHouseholdVisible(details: unknown): boolean {
-  if (!details || typeof details !== "object" || Array.isArray(details)) {
-    return true;
-  }
-  return (details as Record<string, unknown>).householdVisible !== false;
-}
-
 function careEventDetails(
   details: unknown,
 ): Record<string, unknown> | undefined {
@@ -40,14 +37,14 @@ function careEventDetails(
 }
 
 /**
- * Records is a household-facing surface. Keep private logs in the local care
- * document, but remove them from the single dataset used by Records cards and
- * outbound reports.
+ * Records is a household-facing surface. Keep private/future/malformed logs in
+ * the owned local care document, but remove them from the single observable
+ * dataset used by Records cards and outbound reports.
  */
 export function selectRecordsHouseholdEntries<
   T extends RecordsHouseholdVisibilityEntry,
->(entries: readonly T[]): T[] {
-  return entries.filter((entry) => isHouseholdVisible(entry.details));
+>(entries: readonly T[], now: number = Date.now()): T[] {
+  return selectSharedCareEvidence(entries, now);
 }
 
 export function buildRecordsProgressReport(
@@ -55,7 +52,7 @@ export function buildRecordsProgressReport(
   periodDays: number,
   now: number,
 ): RecordsProgressReport {
-  const within = selectRecordsHouseholdEntries(entries).filter(
+  const within = selectRecordsHouseholdEntries(entries, now).filter(
     (entry) =>
       (now - new Date(entry.occurredAt).getTime()) / 86_400_000 <= periodDays,
   );
@@ -101,9 +98,10 @@ export function buildRecordsProgressReport(
 
 export function selectRecordsRecentMealNotes<T extends RecordsHouseholdEntry>(
   entries: readonly T[],
+  now: number = Date.now(),
   limit = 4,
 ): T[] {
-  return selectRecordsHouseholdEntries(entries)
+  return selectRecordsHouseholdEntries(entries, now)
     .filter(
       (entry) =>
         normalizeCareEventType(

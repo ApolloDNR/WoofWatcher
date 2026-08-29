@@ -194,6 +194,21 @@ test("preserves future documents and forward correction metadata without interpr
   ]);
 });
 
+test("a valid JSON version exponent that overflows to positive Infinity stays future and opaque", () => {
+  const overflowFuture = JSON.parse(
+    '{"dataVersion":1e400,"futureCounter":9007199254740993}',
+  ) as Record<string, unknown>;
+
+  assert.equal(overflowFuture.dataVersion, Number.POSITIVE_INFINITY);
+  assert.equal(isFutureCareDocDataVersion(overflowFuture), true);
+  assert.strictEqual(migrateCareDoc(overflowFuture), overflowFuture);
+  assert.equal(isFutureCareDocDataVersion({ dataVersion: Number.NaN }), false);
+  assert.equal(
+    isFutureCareDocDataVersion({ dataVersion: Number.NEGATIVE_INFINITY }),
+    false,
+  );
+});
+
 test("migrated unsafe routine times stay quarantined from every scheduling consumer", () => {
   const now = new Date("2026-06-11T08:00:00-07:00").getTime();
   for (const rawTime of [

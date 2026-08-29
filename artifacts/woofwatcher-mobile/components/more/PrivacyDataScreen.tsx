@@ -11,9 +11,11 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReducedMotion } from "react-native-reanimated";
 import { getGetMeQueryKey, useGetMe } from "@workspace/api-client-react";
 import { useCare, type LaunchSupportProfile } from "@/context/CareContext";
 import { useAppFileSystem } from "@/context/AppFileSystemContext";
@@ -30,7 +32,7 @@ import {
   getModalSheetBottomPadding,
   getRouteTopPadding,
   getTabbedRouteBottomPadding,
-  MOBILE_INLINE_HIT_SLOP,
+  MIN_MOBILE_TOUCH_TARGET,
 } from "@/lib/mobileLayout";
 import {
   buildAccountDeletionRequest,
@@ -42,7 +44,6 @@ import {
 } from "@/lib/privacySafety";
 import { isOwnerOpsBuild } from "@/lib/buildChannel";
 import { isClerkEnabledForBuild, useWoofAuth } from "@/lib/auth";
-import { resolvePetName } from "@/lib/petIdentity";
 import { deriveLaunchProviderSetup } from "@/lib/launchProviderSetup";
 import { shareTextPayload } from "@/lib/shareText";
 import { notifyDialog } from "@/lib/confirmDialog";
@@ -63,9 +64,23 @@ import {
   runPrivacyCareDataExport,
   runPrivacyLocalDataReset,
 } from "@/lib/privacyLocalDataActions";
+import { derivePrivacyConfirmationLayout } from "@/lib/privacyConfirmationLayout";
+import { getPrivacyDataTruthCopy } from "@/lib/privacyDataTruth";
+import {
+  activateDeliberateConfirmation,
+  createDeliberateConfirmationLatch,
+  DELIBERATE_CONFIRMATION_TRANSITION_MS,
+  getDeliberateConfirmationDelay,
+  resetDeliberateConfirmation,
+  transitionDeliberateConfirmation,
+  trySettleDeliberateConfirmation,
+} from "@/lib/deliberateConfirmation";
 
 const DISPLAY = "Fredoka_700Bold";
 const DISPLAY_SEMI = "Fredoka_600SemiBold";
+
+type EraseStage = "confirm" | "confirm-final";
+type EraseStepToken = Readonly<{ stage: EraseStage }>;
 
 type SafetySectionLike = AccountSafetySection | SupportRunbookSection;
 type SafetyStatusLike = AccountSafetyStatus | SupportRunbookStatus;
@@ -107,6 +122,8 @@ export interface PrivacyDataScreenProps {
 export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataScreenProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const reducedMotion = useReducedMotion();
+  const { height: viewportHeight, fontScale } = useWindowDimensions();
   const router = useRouter();
   const { state, careMutationsBlocked, updateCareDoc } = useCare();
   const fileSystem = useAppFileSystem();
@@ -114,11 +131,22 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
   // Launch-ops cards (support runbook, launch gates) are owner tooling and
   // stay out of store production builds.
   const ownerOps = isOwnerOpsBuild();
+  const privacyTruthCopy = useMemo(
+    () => getPrivacyDataTruthCopy(ownerOps),
+    [ownerOps],
+  );
   const privacyScreenMountedRef = useRef(true);
   const privacyExportInFlightRef = useRef(false);
   const [privacyExportBusy, setPrivacyExportBusy] = useState(false);
   const [launchEditorOpen, setLaunchEditorOpen] = useState(false);
   const [launchDraft, setLaunchDraft] = useState<LaunchSupportProfile>(state.launchSupportProfile);
+  const [eraseStep, setEraseStep] = useState<EraseStepToken | null>(null);
+  const [eraseActivationEpoch, setEraseActivationEpoch] = useState(0);
+  const eraseConfirmationLatchRef = useRef(
+    createDeliberateConfirmationLatch<EraseStepToken>(
+      DELIBERATE_CONFIRMATION_TRANSITION_MS,
+    ),
+  );
   const { isSignedIn } = useWoofAuth();
   const me = useGetMe({
     query: {
@@ -165,6 +193,7 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
     privacyScreenMountedRef.current = true;
     return () => {
       privacyScreenMountedRef.current = false;
+      resetDeliberateConfirmation(eraseConfirmationLatchRef.current);
     };
   }, []);
 
@@ -187,6 +216,11 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
   const modalSheetBottomPadding = getModalSheetBottomPadding({
     platform: Platform.OS,
     bottomInset: insets.bottom,
+  });
+  const privacyConfirmationLayout = derivePrivacyConfirmationLayout({
+    viewportHeight,
+    topInset: insets.top,
+    fontScale,
   });
 
   const launchProfileProviderApproved =
@@ -325,52 +359,91 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
   // Themed two-step delete-all confirmation: the native confirm()/alert()
   // fallback read as browser chrome on web, so the flow now runs in the
   // app's own board-style sheet on every platform. Semantics are unchanged:
-  // two explicit confirmations, then the root reset shield owns progress and
-  // the terminal complete/partial-failure verdict after this screen unmounts.
-  const [eraseStage, setEraseStage] = useState<
-    "confirm" | "confirm-final" | null
-  >(null);
-
-  const eraseSteps = {
-    confirm: {
-      title: "Delete all data on this device?",
-      message: `This permanently removes every log, routine, record, memory, report, avatar, app-owned file, preference, cache, and saved sign-in credential for ${resolvePetName(state.profile.name)} from this device. WoofWatcher V1 has no cloud backup. If an older connected build was used, the reset may retain opaque non-content sync-cleanup IDs only to stop deleted entries from returning; it does not prove deletion of a connected service's account copy. Export first if you want a backup.`,
-      confirmLabel: "Delete local content",
-      cancelLabel: "Cancel",
-    },
-    "confirm-final": {
-      title: "This cannot be undone",
-      message: "Delete all WoofWatcher care content and app-owned local data from this device now?",
-      confirmLabel: "Yes, delete local content",
-      cancelLabel: "Keep my data",
-    },
-  } as const;
+  // two deliberate confirmations (with a transition latch between them), then
+  // the root reset shield owns progress and the terminal complete/partial-
+  // failure verdict after this screen unmounts.
+  const eraseSteps = privacyTruthCopy.eraseSteps;
 
   const confirmEraseAllLocalData = () => {
     if (localDataOperationBusy) return;
+    const firstStep: EraseStepToken = { stage: "confirm" };
+    if (
+      !activateDeliberateConfirmation(
+        eraseConfirmationLatchRef.current,
+        firstStep,
+        Date.now(),
+      )
+    ) {
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setEraseStage("confirm");
+    setEraseStep(firstStep);
   };
 
   const cancelEraseFlow = () => {
     if (localDataOperationBusy) return;
-    setEraseStage(null);
+    resetDeliberateConfirmation(eraseConfirmationLatchRef.current);
+    setEraseStep(null);
   };
 
   const advanceEraseFlow = () => {
-    if (eraseStage === "confirm") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      setEraseStage("confirm-final");
+    if (!eraseStep || localDataOperationBusy) return;
+    const settledAt = Date.now();
+    if (
+      !trySettleDeliberateConfirmation(
+        eraseConfirmationLatchRef.current,
+        eraseStep,
+        settledAt,
+      )
+    ) {
       return;
     }
-    if (eraseStage === "confirm-final") {
-      if (localDataOperationBusy) return;
-      setEraseStage(null);
+
+    if (eraseStep.stage === "confirm") {
+      const finalStep: EraseStepToken = { stage: "confirm-final" };
+      transitionDeliberateConfirmation(
+        eraseConfirmationLatchRef.current,
+        finalStep,
+        settledAt,
+      );
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setEraseStep(finalStep);
+      setEraseActivationEpoch((epoch) => epoch + 1);
+      return;
+    }
+    if (eraseStep.stage === "confirm-final") {
+      resetDeliberateConfirmation(eraseConfirmationLatchRef.current);
+      setEraseStep(null);
       void runPrivacyLocalDataReset(runReset);
       return;
     }
-    setEraseStage(null);
   };
+
+  const eraseTransitionDelay = eraseStep
+    ? getDeliberateConfirmationDelay(
+        eraseConfirmationLatchRef.current,
+        eraseStep,
+        Date.now(),
+      )
+    : 0;
+  const eraseTransitionBlocked =
+    eraseStep !== null &&
+    (!Number.isFinite(eraseTransitionDelay) || eraseTransitionDelay > 0);
+
+  useEffect(() => {
+    if (
+      !eraseStep ||
+      !Number.isFinite(eraseTransitionDelay) ||
+      eraseTransitionDelay <= 0
+    ) {
+      return;
+    }
+    const timer = setTimeout(
+      () => setEraseActivationEpoch((epoch) => epoch + 1),
+      Math.max(1, eraseTransitionDelay),
+    );
+    return () => clearTimeout(timer);
+  }, [eraseActivationEpoch, eraseStep, eraseTransitionDelay]);
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
@@ -381,7 +454,9 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
         contentContainerStyle={{ paddingTop: topPadding, paddingHorizontal: 16, paddingBottom: bottomPadding }}
       >
         <LinearGradient
-          colors={[colors.midnight, colors.primary]}
+          colors={colors.isDark
+            ? [colors.brandNavy, colors.shellNavy]
+            : [colors.midnight, colors.primary]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.hero}
@@ -392,18 +467,16 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
             </View>
             <Pressable
               onPress={onBack}
-              hitSlop={MOBILE_INLINE_HIT_SLOP}
               accessibilityRole="button"
               accessibilityLabel="Close Privacy and Safety"
+              style={s.heroCloseButton}
             >
               <Ionicons name="close" size={24} color="rgba(255,255,255,0.82)" />
             </Pressable>
           </View>
           <Text style={[s.heroTitle, { fontFamily: DISPLAY }]}>Privacy & Safety</Text>
           <Text style={[s.heroSub, { fontFamily: "Inter_500Medium" }]}>
-            {ownerOps
-              ? "Export care data, prepare deletion requests, and review the rules that keep AI, documents, and payments gated."
-              : "Your household's care data lives on this device. Export it, read the policy, or delete everything at any time."}
+            {privacyTruthCopy.hero}
           </Text>
         </LinearGradient>
 
@@ -412,6 +485,9 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
             title="Export summary"
             accessory={<BoardPill label="Local bundle" tone={colors.sage} />}
           />
+          <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
+            {privacyTruthCopy.exportLimitation}
+          </Text>
           <View style={s.statsGrid}>
             <StatCard label="Logs" value={String(bundle.counts.entries)} colors={colors} />
             <StatCard label="Records" value={String(bundle.counts.records)} colors={colors} />
@@ -460,13 +536,12 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
               },
             ]}
           >
-            <Ionicons name="download-outline" size={18} color="#FFFFFF" />
+            <Ionicons name="download-outline" size={18} color={colors.primaryForeground} />
             <Text style={[s.primaryText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>Export care data</Text>
           </Pressable>
-          {/* The email-based "Deletion request" only makes sense once a
-              provider account exists. In the local-first build there is no
-              server copy, so the on-device "Delete all data" below is the
-              real, complete deletion path - keep this owner-gated. */}
+          {/* The provider-account deletion request is owner tooling. It stays
+              distinct from the device reset because neither operation proves
+              that the other data location has been deleted. */}
           {ownerOps ? (
             <Pressable
               onPress={shareDeletionRequest}
@@ -486,8 +561,7 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
             accessory={<BoardPill label="On this device" tone={colors.sage} />}
           />
           <Text style={[s.queueSummary, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-            Every care log lives only on this device. Read the full privacy
-            policy and terms, or delete your local care content and app data in one step.
+            {privacyTruthCopy.rules}
           </Text>
           <Pressable
             onPress={openLegalDocuments}
@@ -514,6 +588,7 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
             disabled={localDataOperationBusy}
             accessibilityRole="button"
             accessibilityLabel="Delete all WoofWatcher data on this device"
+            accessibilityState={{ disabled: localDataOperationBusy }}
             style={({ pressed }) => [
               s.legalRow,
               {
@@ -647,9 +722,9 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
         ) : null}
       </ScrollView>
       <Modal
-        visible={eraseStage !== null}
+        visible={eraseStep !== null}
         transparent
-        animationType="fade"
+        animationType={reducedMotion ? "none" : "fade"}
         onRequestClose={cancelEraseFlow}
       >
         <ModalBackdropPressable
@@ -657,60 +732,79 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
           onPress={cancelEraseFlow}
         >
           <ModalSheetPressable
-            visible={eraseStage !== null}
+            visible={eraseStep !== null}
             onRequestClose={cancelEraseFlow}
+            closeAccessibilityLabel="Cancel local data reset"
             style={[
               s.confirmSheet,
               {
                 backgroundColor: colors.card,
                 borderColor: colors.border,
                 paddingBottom: Math.max(modalSheetBottomPadding, 18),
+                maxHeight: privacyConfirmationLayout.maxHeight,
               },
             ]}
           >
             <View style={s.modalHandle} />
-            {eraseStage ? (
+            {eraseStep ? (
               <>
-                <View style={s.confirmHeader}>
-                  <View
+                <ScrollView
+                  style={s.confirmScroll}
+                  contentContainerStyle={s.confirmScrollContent}
+                  showsVerticalScrollIndicator
+                >
+                  <View style={s.confirmHeader}>
+                    <View
+                      style={[
+                        s.confirmIcon,
+                        {
+                          backgroundColor:
+                            colors.rose + "14",
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="trash-bin-outline"
+                        size={20}
+                        color={colors.rose}
+                      />
+                    </View>
+                    <Text style={[s.confirmTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
+                      {eraseSteps[eraseStep.stage].title}
+                    </Text>
+                  </View>
+                  <Text
                     style={[
-                      s.confirmIcon,
-                      {
-                        backgroundColor:
-                          colors.rose + "14",
-                      },
+                      s.confirmMessage,
+                      { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
                     ]}
                   >
-                    <Ionicons
-                      name="trash-bin-outline"
-                      size={20}
-                      color={colors.rose}
-                    />
-                  </View>
-                  <Text style={[s.confirmTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>
-                    {eraseSteps[eraseStage].title}
+                    {eraseSteps[eraseStep.stage].message}
                   </Text>
-                </View>
-                <Text
+                </ScrollView>
+                <View
                   style={[
-                    s.confirmMessage,
-                    { color: colors.mutedForeground, fontFamily: "Inter_500Medium" },
+                    s.confirmActions,
+                    privacyConfirmationLayout.stackActions && s.confirmActionsStacked,
                   ]}
                 >
-                  {eraseSteps[eraseStage].message}
-                </Text>
-                <View style={s.confirmActions}>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={eraseSteps[eraseStage].cancelLabel}
+                      accessibilityLabel={eraseSteps[eraseStep.stage].cancelLabel}
+                      accessibilityState={{ disabled: localDataOperationBusy }}
                       disabled={localDataOperationBusy}
                       onPress={cancelEraseFlow}
                       style={({ pressed }) => [
                         s.confirmCancelBtn,
+                        privacyConfirmationLayout.stackActions && s.confirmActionStacked,
                         {
                           borderColor: colors.border,
                           backgroundColor: colors.background,
-                          opacity: pressed ? 0.72 : 1,
+                          opacity: localDataOperationBusy
+                            ? 0.55
+                            : pressed
+                              ? 0.72
+                              : 1,
                         },
                       ]}
                     >
@@ -720,24 +814,34 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                           { color: colors.foreground, fontFamily: "Inter_800ExtraBold" },
                         ]}
                       >
-                        {eraseSteps[eraseStage].cancelLabel}
+                        {eraseSteps[eraseStep.stage].cancelLabel}
                       </Text>
                     </Pressable>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={eraseSteps[eraseStage].confirmLabel}
-                      disabled={localDataOperationBusy}
+                      accessibilityLabel={eraseSteps[eraseStep.stage].confirmLabel}
+                      accessibilityState={{
+                        disabled:
+                          localDataOperationBusy || eraseTransitionBlocked,
+                      }}
+                      disabled={localDataOperationBusy || eraseTransitionBlocked}
                       onPress={advanceEraseFlow}
                       style={({ pressed }) => [
                         s.confirmPrimaryBtn,
+                        privacyConfirmationLayout.stackActions && s.confirmActionStacked,
                         {
                           backgroundColor: colors.rose,
-                          opacity: localDataOperationBusy ? 0.6 : pressed ? 0.84 : 1,
+                          opacity: localDataOperationBusy || eraseTransitionBlocked ? 0.6 : pressed ? 0.84 : 1,
                         },
                       ]}
                     >
-                      <Text style={[s.confirmPrimaryText, { fontFamily: "Inter_800ExtraBold" }]}>
-                        {eraseSteps[eraseStage].confirmLabel}
+                      <Text
+                        style={[
+                          s.confirmPrimaryText,
+                          { color: colors.brandNavy, fontFamily: "Inter_800ExtraBold" },
+                        ]}
+                      >
+                        {eraseSteps[eraseStep.stage].confirmLabel}
                       </Text>
                     </Pressable>
                 </View>
@@ -746,11 +850,12 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
           </ModalSheetPressable>
         </ModalBackdropPressable>
       </Modal>
-      <Modal visible={launchEditorOpen} transparent animationType="slide" onRequestClose={() => setLaunchEditorOpen(false)}>
+      <Modal visible={launchEditorOpen} transparent animationType={reducedMotion ? "none" : "slide"} onRequestClose={() => setLaunchEditorOpen(false)}>
         <ModalBackdropPressable style={s.modalBackdrop} onPress={() => setLaunchEditorOpen(false)}>
           <ModalSheetPressable
             visible={launchEditorOpen}
             onRequestClose={() => setLaunchEditorOpen(false)}
+            closeAccessibilityLabel="Close launch support profile editor"
             style={[s.launchModal, { backgroundColor: colors.card, paddingBottom: modalSheetBottomPadding }]}
           >
             <View style={s.modalHandle} />
@@ -761,14 +866,6 @@ export default function PrivacyDataScreen({ onBack, onOpenLegal }: PrivacyDataSc
                 </Text>
                 <Text style={[s.modalTitle, { color: colors.foreground, fontFamily: DISPLAY }]}>Support readiness</Text>
               </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Close launch support profile editor"
-                hitSlop={MOBILE_INLINE_HIT_SLOP}
-                onPress={() => setLaunchEditorOpen(false)}
-              >
-                <Ionicons name="close" size={23} color={colors.mutedForeground} />
-              </Pressable>
             </View>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.modalScroll}>
               <ProfileInput
@@ -958,6 +1055,7 @@ function ProfileInput({
         {label}
       </Text>
       <TextInput
+        accessibilityLabel={label}
         value={value}
         placeholder={placeholder}
         placeholderTextColor={colors.mutedForeground}
@@ -1006,7 +1104,15 @@ function PolicyToggle({
       ]}
     >
       <View style={[s.policyCheck, { backgroundColor: value ? colors.sage : colors.card, borderColor: value ? colors.sage : colors.border }]}>
-        <Ionicons name={value ? "checkmark" : "ellipse-outline"} size={15} color={value ? "#FFFFFF" : colors.mutedForeground} />
+        <Ionicons
+          name={value ? "checkmark" : "ellipse-outline"}
+          size={15}
+          color={value
+            ? colors.isDark
+              ? colors.brandNavy
+              : colors.destructiveForeground
+            : colors.mutedForeground}
+        />
       </View>
       <Text style={[s.policyLabel, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{label}</Text>
     </Pressable>
@@ -1017,6 +1123,12 @@ const s = StyleSheet.create({
   root: { flex: 1 },
   hero: { borderRadius: 26, padding: 22, minHeight: 230, justifyContent: "space-between" },
   heroTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  heroCloseButton: {
+    width: MIN_MOBILE_TOUCH_TARGET,
+    height: MIN_MOBILE_TOUCH_TARGET,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   heroIcon: {
     width: 44,
     height: 44,
@@ -1077,7 +1189,7 @@ const s = StyleSheet.create({
   launchProfileStatus: { fontSize: 14.5, marginTop: 4 },
   launchProfileDetail: { fontSize: 12, lineHeight: 17, marginTop: 4 },
   profileEditBtn: {
-    minHeight: 38,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
@@ -1098,7 +1210,7 @@ const s = StyleSheet.create({
   supportActionRow: { flexDirection: "row", gap: 10, marginTop: 12 },
   supportProofBtn: {
     flex: 1,
-    minHeight: 46,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: "row",
@@ -1109,7 +1221,7 @@ const s = StyleSheet.create({
   supportProofText: { fontSize: 13 },
   supportShareBtn: {
     flex: 1,
-    minHeight: 46,
+    minHeight: MIN_MOBILE_TOUCH_TARGET,
     borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
@@ -1149,8 +1261,12 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   confirmTitle: { flex: 1, fontSize: 20, lineHeight: 25 },
+  confirmScroll: { flexShrink: 1, minHeight: 0 },
+  confirmScrollContent: { paddingBottom: 2 },
   confirmMessage: { fontSize: 13.5, lineHeight: 20, marginTop: 12 },
   confirmActions: { flexDirection: "row", gap: 10, marginTop: 18 },
+  confirmActionsStacked: { flexDirection: "column" },
+  confirmActionStacked: { flex: 0, width: "100%" },
   confirmCancelBtn: {
     flex: 1,
     minHeight: 50,
@@ -1170,7 +1286,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     marginTop: 0,
   },
-  confirmPrimaryText: { color: "#FFFFFF", fontSize: 13 },
+  confirmPrimaryText: { fontSize: 13 },
   launchModal: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,

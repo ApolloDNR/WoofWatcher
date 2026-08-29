@@ -62,11 +62,7 @@ test("personal API query hooks stay inside AppFrame screen content", () => {
     },
     {
       path: "components/more/CareTeamSuppliesScreen.tsx",
-      hook: "useJoinHousehold",
-    },
-    {
-      path: "components/more/CareTeamSuppliesScreen.tsx",
-      hook: "useUpdateHousehold",
+      hook: "useQuery",
     },
     {
       path: "components/more/CareTeamSuppliesScreen.tsx",

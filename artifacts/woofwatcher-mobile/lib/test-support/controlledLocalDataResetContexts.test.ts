@@ -12,18 +12,24 @@ let operationState: OperationState;
 let shieldRequested: boolean;
 let clearResultCalls: number;
 let releaseCalls: number;
+let runResetCalls: number;
 const operationListeners = new Set<() => void>();
 const shieldListeners = new Set<() => void>();
 
 export function resetControlledGenericFailure(): void {
+  resetControlledFailure([]);
+}
+
+export function resetControlledFailure(failedParticipantIds: string[]): void {
   operationState = {
     status: "failed",
     operation: "delete",
-    failedParticipantIds: [],
+    failedParticipantIds: [...failedParticipantIds],
   };
   shieldRequested = true;
   clearResultCalls = 0;
   releaseCalls = 0;
+  runResetCalls = 0;
 }
 
 resetControlledGenericFailure();
@@ -31,8 +37,13 @@ resetControlledGenericFailure();
 export function getControlledCalls(): {
   clearResult: number;
   release: number;
+  runReset: number;
 } {
-  return { clearResult: clearResultCalls, release: releaseCalls };
+  return {
+    clearResult: clearResultCalls,
+    release: releaseCalls,
+    runReset: runResetCalls,
+  };
 }
 
 export function useLocalDataReset() {
@@ -47,7 +58,14 @@ export function useLocalDataReset() {
   return {
     operationState: state,
     runReset: async () => {
-      throw new Error("not used by the generic failure case");
+      runResetCalls += 1;
+      return {
+        status: "failed" as const,
+        failedParticipantIds:
+          operationState.status === "failed"
+            ? [...operationState.failedParticipantIds]
+            : [],
+      };
     },
     clearResult() {
       clearResultCalls += 1;

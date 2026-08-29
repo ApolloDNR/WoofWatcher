@@ -3,6 +3,7 @@ import {
   deriveRecordReminders,
   getRecordDueStatus,
   normalizeCareEventType,
+  selectSharedCareEvidence,
   summarizeRecordVault,
 } from "../../../lib/care-domain/src/index.ts";
 import { localDateKey, todayLocalDateKey } from "./localCalendar.ts";
@@ -343,14 +344,18 @@ export function deriveWoofGuideVetNoteAction(
   state: WoofGuideActionState,
   now: number = Date.now(),
 ): WoofGuideActionCard {
-  const health = deriveHealthWatch({ entries: state.entries, routines: state.routines, now });
+  const sharedState = {
+    ...state,
+    entries: selectSharedCareEvidence(state.entries, now),
+  };
+  const health = deriveHealthWatch({ entries: sharedState.entries, routines: sharedState.routines, now });
   return {
     id: "health-review-vet-note",
     label: "Draft vet note",
     detail: health.summary,
     urgency: health.status === "alert" ? "alert" : health.status === "watch" ? "watch" : "normal",
     icon: "heart",
-    draft: vetNoteDraft(state, now),
+    draft: vetNoteDraft(sharedState, now),
   };
 }
 
@@ -358,16 +363,20 @@ export function deriveWoofGuideActions(
   state: WoofGuideActionState,
   now: number = Date.now(),
 ): WoofGuideActionCard[] {
-  const name = dogName(state);
-  const health = deriveHealthWatch({ entries: state.entries, routines: state.routines, now });
-  const records = state.records ?? [];
+  const sharedState = {
+    ...state,
+    entries: selectSharedCareEvidence(state.entries, now),
+  };
+  const name = dogName(sharedState);
+  const health = deriveHealthWatch({ entries: sharedState.entries, routines: sharedState.routines, now });
+  const records = sharedState.records ?? [];
   const recordVault = summarizeRecordVault(records);
   const recordReminders = deriveRecordReminders(records, { now });
   const recordAttention = records.filter((record) => {
     const status = getRecordDueStatus(record, now).status;
     return status === "expired" || status === "due_soon";
   });
-  const todaysEntries = state.entries.filter((entry) => isToday(entry.occurredAt, now));
+  const todaysEntries = sharedState.entries.filter((entry) => isToday(entry.occurredAt, now));
   const mealsToday = todaysEntries.filter((entry) => normalizeCareEventType(entry.type, entry.details) === "meal");
   const actions: WoofGuideActionCard[] = [];
 
@@ -379,7 +388,7 @@ export function deriveWoofGuideActions(
       urgency: health.status === "alert" ? "alert" : "watch",
       icon: "heart",
       prompt: `Draft a concise vet note for ${name} using recent health logs, red flags, and the non-diagnostic boundary.`,
-      draft: vetNoteDraft(state, now),
+      draft: vetNoteDraft(sharedState, now),
     });
   }
 
@@ -396,11 +405,11 @@ export function deriveWoofGuideActions(
       urgency: recordAttention.some((record) => getRecordDueStatus(record, now).status === "expired") ? "alert" : "watch",
       icon: "records",
       route: canonicalHealthRoute("records"),
-      draft: reminderDraft(state, now),
+      draft: reminderDraft(sharedState, now),
     });
   }
 
-  if (!hasDietBaseline(state.dietProfile)) {
+  if (!hasDietBaseline(sharedState.dietProfile)) {
     actions.push({
       id: "diet-baseline",
       label: "Set diet baseline",
@@ -417,11 +426,11 @@ export function deriveWoofGuideActions(
       urgency: "normal",
       icon: "bowl",
       route: canonicalLogRoute(),
-      draft: mealLogDraft(state, now),
+      draft: mealLogDraft(sharedState, now),
     });
   }
 
-  if (state.routines.length === 0) {
+  if (sharedState.routines.length === 0) {
     actions.push({
       id: "routine-setup",
       label: "Create routine",

@@ -65,6 +65,7 @@ test("keeps Story and Progress read-only and preserves every real derivation", (
   assert.doesNotMatch(component, /@workspace\/api-client|\bapiMutation\b|fetch\(|axios\./);
 
   for (const anchor of [
+    "selectSharedCareEvidence",
     "deriveAdventureMode",
     "deriveWalkActivity",
     "deriveWalkRouteTemplates",
@@ -75,9 +76,32 @@ test("keeps Story and Progress read-only and preserves every real derivation", (
   ]) {
     assert.match(component, new RegExp(`\\b${anchor}\\b`), `${anchor} must survive the move`);
   }
-  assert.match(component, /householdVisible === false/);
+  assert.doesNotMatch(
+    component,
+    /householdVisible === false/,
+    "Story should consume one canonical privacy-and-time selector instead of duplicating it",
+  );
   assert.match(component, /return stories\.slice\(0, 3\)/);
-  assert.match(component, /deriveWalkRouteTemplates\(\{ entries: state\.entries, now, limit: 3 \}\)/);
+  assert.match(component, /selectSharedCareEvidence\(state\.entries, now\)/);
+  assert.match(component, /deriveWalkRouteTemplates\(\{ entries: storyEntries, now, limit: 3 \}\)/);
+  for (const consumer of [
+    "deriveAdventureMode",
+    "deriveWalkActivity",
+    "deriveWalkRouteTemplates",
+    "deriveCareCareer",
+    "deriveCareStreak",
+    "deriveCareerWeek",
+    "deriveCareCareerBadgeEarnDates",
+  ]) {
+    assert.doesNotMatch(
+      component,
+      new RegExp(`${consumer}\\([^)]*state\\.entries`),
+      `${consumer} must consume the observable Story evidence boundary`,
+    );
+  }
+  for (const loop of component.matchAll(/for \(const entry of ([^)]+)\)/g)) {
+    assert.equal(loop[1], "storyEntries", "Story route/photo/journal loops must use observable evidence");
+  }
 });
 
 test("preserves Story assets, structure, safe areas, and accessibility anchors", () => {
@@ -148,7 +172,7 @@ test("uses canonical child transitions and consolidates weekly career metrics", 
   assert.doesNotMatch(component, /section=career/);
 
   assert.match(component, /const careerWeek = useMemo/);
-  assert.match(component, /deriveCareerWeek\(state\.entries, now\)/);
+  assert.match(component, /deriveCareerWeek\(storyEntries, now\)/);
   assert.match(component, /Logs this week/);
   assert.match(component, /Active days/);
   assert.match(component, /careerWeek\.logsThisWeek/);
