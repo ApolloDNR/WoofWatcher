@@ -1,12 +1,12 @@
 # WoofWatcher: paste-ready continuation prompt
 
-Updated 2026-08-28 for the canonical V1 release lane.
+Updated 2026-08-29 for the canonical V1 release lane.
 
 Use the prompt below in the next Work/Codex chat. After fetching, the SHA from
-`git rev-parse origin/release/woofwatcher-v1` is authoritative. The parent
-checkpoint for this handoff is
-`dd5c6a55a26fe410ee119e1d7ffc9a0aa45c214b` (tree
-`ef1fe872db7abf263cbaac6464690b887e65b21f`).
+`git rev-parse origin/release/woofwatcher-v1` is authoritative. The
+implementation checkpoint for this handoff is
+`3e90f5527780354aacd931d256fb8be7acbaf532` (tree
+`a3a509ef39d11b3ea0cf8dcfa9b996daa25374d1`).
 
 ---
 
@@ -39,32 +39,39 @@ branch. In particular, do not resume claude/mockup-parity-polish or its old
 but names an obsolete head and unfinished reset state.
 
 Durable handoff state:
-- The starting parent checkpoint is dd5c6a55a26fe410ee119e1d7ffc9a0aa45c214b.
+- The starting implementation checkpoint is 3e90f5527780354aacd931d256fb8be7acbaf532,
+  tree a3a509ef39d11b3ea0cf8dcfa9b996daa25374d1.
 - At handoff there was one clean worktree, one local branch, no stash, no
   uncommitted/untracked files, no unreachable commits, and nothing stranded
   outside origin/release/woofwatcher-v1.
-- The release branch was 52 commits ahead of main, and main was its ancestor.
 - PR #12 was intentionally draft and unmerged.
-- The verified engineering implementation checkpoint is
-  57c5926ce844bef38c798069c602bc19dc09ad3c, tree
-  98742050003dd59976073b4d0718ca21c1153b95.
-- GitHub Actions WoofWatcher Verify #1028 passed on that exact implementation
-  checkpoint: 1,528/1,528 focused tests, zero failures/skips, typecheck,
-  CI-safe builds, production-profile web export, runtime checks, live-preview
-  checks, candidate packaging, and artifact upload.
+- Exact-checkpoint local verification passed 34/34 mounted-renderer and
+  2,227/2,227 repository tests: 2,261/2,261 total, zero failures/skips. Typecheck,
+  CI-safe builds, Expo compatibility, the 260-file production web candidate,
+  47-route runtime smoke, and 56-route live-preview proof also passed locally.
+- This checkpoint repairs Log intent initialization, historical record and Care
+  Pass semantics, malformed migration handling, device-local attachment
+  boundaries, active Health/Plans clocks, Reduce Motion, chart accessibility,
+  responsive tab layouts, and Expo Run/dependency setup.
+- GitHub Actions WoofWatcher Verify #1040 passed on that exact implementation
+  checkpoint: https://github.com/ApolloDNR/WoofWatcher/actions/runs/33272562673.
+  Do not treat predecessor CI or artifact identifiers as current-checkpoint proof.
 - Reset/deletion integrity is complete at the automated engineering boundary:
   277/277 adversarial cases passed. Preserve all owner attachment, drain,
   export/reset exclusion, stale-writer, file/cache/walk cleanup, and truthful
   partial-failure guarantees.
-- Exact-head web artifact: ID 9507485215,
-  woofwatcher-web-candidate-57c5926ce844bef38c798069c602bc19dc09ad3c,
-  digest sha256:01d9b839919354c4a885f15575956762062358d5c472f5e47e991de76bfbb081.
-  This is browser evidence only, not a signed native binary.
+- Exact-checkpoint web artifact: ID 9720570465,
+  woofwatcher-web-candidate-3e90f5527780354aacd931d256fb8be7acbaf532,
+  22,895,098 bytes, digest
+  sha256:22b840f1bccac61a5df553b9ae2f501907c9d0cb96407654409a8c60f168b057.
+  This is a downloadable browser candidate, not a hosted preview or signed native
+  binary.
 - No signed iOS or Android candidate, native build identifier, physical-device
   screenshots, or physical-device QA evidence exists yet.
-- The anti-slop visual review is not current-head proof. Most major screens
-  changed in 05172461 after the last broad design screenshots. Old screenshot
-  and legacy web-workflow scripts do not cover the full canonical route set.
+- The rendered audit is not current-head proof. `3e90f552...` changed Home, Log,
+  Plans, Health, Records, Trends, and the living care-twin scene; all require
+  fresh rendered inspection. Old screenshot and legacy web-workflow scripts do
+  not cover the full canonical route set.
 
 Apollo's expectation:
 You own the cleanup and proof end-to-end. Do not make Apollo hunt bugs or find
@@ -112,6 +119,8 @@ Execute the remaining gates in this order:
    - Use Node 24 and pnpm 10.24.0.
    - Run a frozen install, `pnpm run doctor:mobile-beta`,
      `pnpm run test:focused`, and `pnpm run build:ci`.
+   - At this handoff, `test:focused` should report at least 34 renderer plus
+     2,227 repository tests (2,261 total); investigate any reduction.
    - Keep the worktree byte-clean after generated builds.
    - Push only release/woofwatcher-v1 and require GitHub CI on the exact remote
      SHA. Record SHA, tree, run URL, counts, preview/artifact identifier,
