@@ -5,8 +5,8 @@ Updated 2026-08-29 for the canonical V1 release lane.
 Use the prompt below in the next Work/Codex chat. After fetching, the SHA from
 `git rev-parse origin/release/woofwatcher-v1` is authoritative. The
 implementation checkpoint for this handoff is
-`ab1924c77182db17136fb2822429f24b7d537857` (tree
-`2d89f146b6d2b2bbede3d825f9c4018e3fe68342`).
+`0c7e62e6d5da9e57380cadc095e2e8be20b8a204` (tree
+`784d8090b00e2ffdb4371e441fdcd5352293e86e`).
 
 ---
 
@@ -39,14 +39,14 @@ branch. In particular, do not resume claude/mockup-parity-polish or its old
 but names an obsolete head and unfinished reset state.
 
 Durable handoff state:
-- The starting implementation checkpoint is ab1924c77182db17136fb2822429f24b7d537857,
-  tree 2d89f146b6d2b2bbede3d825f9c4018e3fe68342.
+- The starting implementation checkpoint is 0c7e62e6d5da9e57380cadc095e2e8be20b8a204,
+  tree 784d8090b00e2ffdb4371e441fdcd5352293e86e.
 - At handoff there was one clean worktree, one local branch, no stash, no
   uncommitted/untracked files, no unreachable commits, and nothing stranded
   outside origin/release/woofwatcher-v1.
 - PR #12 was intentionally draft and unmerged.
 - Exact-checkpoint local verification passed 35/35 mounted-renderer and
-  2,279/2,279 repository tests: 2,314/2,314 total, zero failures/skips. Typecheck,
+  2,281/2,281 repository tests: 2,316/2,316 total, zero failures/skips. Typecheck,
   CI-safe builds, Expo compatibility, the strict 212-file / 1,924-module
   production consumer web candidate with a 4.62 MB entry bundle, 50-route
   runtime smoke, and 59-route live-preview proof also passed locally.
@@ -55,17 +55,23 @@ Durable handoff state:
   reflow, bounds Log and Story rendering, adds memory-friendly image loading,
   compacts and searches More, and excludes owner-only QA/launch/provider/privacy
   implementations from the production consumer bundle.
+- This checkpoint also closes the CI-exposed auth handoff settling race: a
+  replacement identity queued while the prior cleanup promise settles cannot
+  remain blocked. Deterministic tests cover both fulfillment and rejection
+  windows, and the formerly failing mounted identity-switch scenario passes.
 - Avatar Studio's accessory-fit panel now uses concise customer language:
   "How accessories fit," "Tailored fit," and "Standard preview." Internal
   overlay-production wording is absent from consumer and store-review copy.
 - Unsigned production-profile Expo exports passed for iOS (2,222 modules; one
   8.57 MB Hermes bundle) and Android (2,218 modules; one 8.57 MB Hermes bundle).
   They are compile proof, not signed binaries or physical-device proof.
-- GitHub Actions WoofWatcher Verify #1040 is predecessor evidence for
-  `3e90f552...`, not current-checkpoint proof. Use the exact-head CI run and
-  artifact recorded in PR #12 after this handoff was pushed.
+- GitHub Actions WoofWatcher Verify #1044 failed at predecessor
+  `4b84e664...` and exposed the auth handoff settling race. It is not
+  current-checkpoint proof; use the exact-head CI run and artifact recorded in
+  PR #12 after this handoff was pushed.
 - Reset/deletion integrity is complete at the automated engineering boundary:
-  277/277 adversarial cases passed. Preserve all owner attachment, drain,
+  the predecessor ad hoc selection passed 277/277 adversarial cases, and the
+  current full focused suite passes. Preserve all owner attachment, drain,
   export/reset exclusion, stale-writer, file/cache/walk cleanup, and truthful
   partial-failure guarantees.
 - Current exact-head web artifact identity, size, digest, and CI run are in PR
@@ -73,7 +79,8 @@ Durable handoff state:
   native binary.
 - No signed iOS or Android candidate, native build identifier, physical-device
   screenshots, or physical-device QA evidence exists yet.
-- The rendered audit is not current-head proof. `ab1924c7...` changes Home, Log,
+- The rendered audit is not current-head proof. Screen work introduced at
+  `ab1924c7...` and retained by the current implementation changes Home, Log,
   Plans, Health, Records, Trends, More, Story, Adventure, Avatar Studio, and the
   living care-twin scene; all still require fresh physical-device inspection.
   The checked-in Playwright harness covers 49 screenshot routes when an
@@ -126,7 +133,7 @@ Execute the remaining gates in this order:
    - Run a frozen install, `pnpm run doctor:mobile-beta`,
      `pnpm run test:focused`, and `pnpm run build:ci`.
    - At this handoff, `test:focused` should report at least 35 renderer plus
-     2,279 repository tests (2,314 total); investigate any reduction.
+     2,281 repository tests (2,316 total); investigate any reduction.
    - Keep the worktree byte-clean after generated builds.
    - Push only release/woofwatcher-v1 and require GitHub CI on the exact remote
      SHA. Record SHA, tree, run URL, counts, preview/artifact identifier,
