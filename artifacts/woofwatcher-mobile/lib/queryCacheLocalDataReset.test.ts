@@ -341,10 +341,7 @@ test("imperative household preparation blocks synchronously and completes A tear
     "transport-admitted",
   ]);
   assert.equal(controller.getSnapshot().status, "loading");
-  assert.equal(
-    controller.getSnapshot().identity?.dataScopeKey,
-    null,
-  );
+  assert.equal(controller.getSnapshot().identity?.dataScopeKey, null);
 });
 
 test("household preparation rejects stale source authority without disturbing admitted A", async () => {
@@ -469,6 +466,165 @@ test("a superseded cleanup rejection cannot strand the replacement identity behi
       userId: "user-b",
       sessionId: "session-b",
       dataScopeKey: careIdentityScopeKey("user-b", "session-b", "household-b"),
+    },
+    error: null,
+  });
+  assert.deepEqual(events, [
+    "cancel-1",
+    "cancel-2",
+    "drain",
+    "cancel-3",
+    "clear",
+  ]);
+});
+
+test("a transition requested while prior cleanup settles cannot stay blocked", async () => {
+  const events: string[] = [];
+  const controller =
+    queryCacheAuthModule.createQueryCacheAuthTransitionController({
+      async cancelQueries() {
+        events.push("cancel");
+      },
+      async drainMutations() {
+        events.push("drain");
+      },
+      clearQueryAndMutationCaches() {
+        events.push("clear");
+      },
+    });
+  const userCScope = careIdentityScopeKey("user-c", "session-c", "household-c");
+  const userDScope = careIdentityScopeKey("user-d", "session-d", "household-d");
+  let userDCleanup: Promise<void> | null = null;
+  let queuedUserD = false;
+
+  const unsubscribe = controller.subscribe(() => {
+    const current = controller.getSnapshot();
+    if (
+      queuedUserD ||
+      current.status !== "admitted" ||
+      current.identity?.userId !== "user-c"
+    ) {
+      return;
+    }
+    queuedUserD = true;
+    queueMicrotask(() => {
+      controller.observeIdentity({
+        isLoaded: true,
+        userId: "user-d",
+        sessionId: "session-d",
+      });
+      const userDTransition = controller.observeDataScopeKey(userDScope);
+      controller.confirmPersonalObserversHidden(userDTransition.revision);
+      userDCleanup = controller.runCurrentTransition();
+    });
+  });
+
+  controller.observeIdentity({
+    isLoaded: true,
+    userId: "user-c",
+    sessionId: "session-c",
+  });
+  const userCTransition = controller.observeDataScopeKey(userCScope);
+  controller.confirmPersonalObserversHidden(userCTransition.revision);
+  await controller.runCurrentTransition();
+  await Promise.resolve();
+
+  assert.ok(userDCleanup, "the replacement transition was requested");
+  await userDCleanup;
+  unsubscribe();
+
+  assert.deepEqual(controller.getSnapshot(), {
+    revision: 4,
+    status: "admitted",
+    identity: {
+      userId: "user-d",
+      sessionId: "session-d",
+      dataScopeKey: userDScope,
+    },
+    error: null,
+  });
+  assert.deepEqual(events, [
+    "cancel",
+    "drain",
+    "cancel",
+    "clear",
+    "cancel",
+    "drain",
+    "cancel",
+    "clear",
+  ]);
+});
+
+test("a replacement requested while prior cleanup rejection settles is admitted", async () => {
+  const events: string[] = [];
+  let cancelCalls = 0;
+  const controller =
+    queryCacheAuthModule.createQueryCacheAuthTransitionController({
+      async cancelQueries() {
+        cancelCalls += 1;
+        events.push(`cancel-${cancelCalls}`);
+        if (cancelCalls === 1) {
+          throw new Error("user C cancellation failed");
+        }
+      },
+      async drainMutations() {
+        events.push("drain");
+      },
+      clearQueryAndMutationCaches() {
+        events.push("clear");
+      },
+    });
+  const userCScope = careIdentityScopeKey("user-c", "session-c", "household-c");
+  const userDScope = careIdentityScopeKey("user-d", "session-d", "household-d");
+  let userDCleanup: Promise<void> | null = null;
+  let queuedUserD = false;
+
+  const unsubscribe = controller.subscribe(() => {
+    const current = controller.getSnapshot();
+    if (
+      queuedUserD ||
+      current.status !== "failed" ||
+      current.identity?.userId !== "user-c"
+    ) {
+      return;
+    }
+    queuedUserD = true;
+    queueMicrotask(() => {
+      controller.observeIdentity({
+        isLoaded: true,
+        userId: "user-d",
+        sessionId: "session-d",
+      });
+      const userDTransition = controller.observeDataScopeKey(userDScope);
+      controller.confirmPersonalObserversHidden(userDTransition.revision);
+      userDCleanup = controller.runCurrentTransition();
+    });
+  });
+
+  controller.observeIdentity({
+    isLoaded: true,
+    userId: "user-c",
+    sessionId: "session-c",
+  });
+  const userCTransition = controller.observeDataScopeKey(userCScope);
+  controller.confirmPersonalObserversHidden(userCTransition.revision);
+  await assert.rejects(
+    controller.runCurrentTransition(),
+    /user C cancellation failed/,
+  );
+  await Promise.resolve();
+
+  assert.ok(userDCleanup, "the replacement transition was requested");
+  await userDCleanup;
+  unsubscribe();
+
+  assert.deepEqual(controller.getSnapshot(), {
+    revision: 4,
+    status: "admitted",
+    identity: {
+      userId: "user-d",
+      sessionId: "session-d",
+      dataScopeKey: userDScope,
     },
     error: null,
   });

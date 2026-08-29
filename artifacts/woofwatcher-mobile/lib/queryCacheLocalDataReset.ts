@@ -292,7 +292,22 @@ export function createQueryCacheAuthTransitionController(
   };
 
   const runCurrentTransition = (): Promise<void> => {
-    if (inFlight) return inFlight;
+    if (inFlight) {
+      // A replacement can be requested after the loop settles but before the
+      // in-flight cleanup reaction runs. Join the old run, then start any
+      // replacement that is still blocked.
+      const running = inFlight;
+      return running.then(
+        () =>
+          snapshot.status === "blocked" ? runCurrentTransition() : undefined,
+        (error) => {
+          if (snapshot.status === "blocked") {
+            return runCurrentTransition();
+          }
+          throw error;
+        },
+      );
+    }
     if (snapshot.status !== "blocked") return Promise.resolve();
     const running = runTransitionsUntilCurrent();
     inFlight = running;
